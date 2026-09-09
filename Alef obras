@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alef Obras</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f4f6f8;
+      color: #222;
+    }
+
+    header {
+      background: #1f2937;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+
+    header p {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 15px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+
+    .card h2 {
+      margin-bottom: 15px;
+      color: #1f2937;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .green {
+      background: #16a34a;
+    }
+
+    .orange {
+      background: #ea580c;
+    }
+
+    .red {
+      background: #dc2626;
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .resultado {
+      margin-top: 15px;
+      padding: 15px;
+      background: #eef2ff;
+      border-radius: 10px;
+      display: none;
+    }
+
+    footer {
+      text-align: center;
+      padding: 25px;
+      color: #666;
+      font-size: 13px;
+    }
+
+    @media (max-width: 600px) {
+      .buttons {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>🏗️ Alef Obras</h1>
+    <p>Gerenciamento de obras</p>
+  </header>
+
+  <div class="container">
+
+    <div class="card">
+      <h2>Menu</h2>
+
+      <div class="buttons">
+        <button onclick="mostrar('obra')">
+          🏗️ Nova Obra
+        </button>
+
+        <button class="green" onclick="mostrar('servicos')">
+          🔨 Serviços
+        </button>
+
+        <button class="orange" onclick="mostrar('materiais')">
+          📦 Materiais
+        </button>
+
+        <button class="red" onclick="mostrar('financeiro')">
+          💰 Financeiro
+        </button>
+      </div>
+    </div>
+
+    <div id="obra" class="card">
+      <h2>Nova Obra</h2>
+
+      <label>Nome da obra</label>
+      <input type="text" id="nomeObra" placeholder="Digite o nome da obra">
+
+      <label>Cliente</label>
+      <input type="text" id="cliente" placeholder="Nome do cliente">
+
+      <label>Endereço</label>
+      <input type="text" id="endereco" placeholder="Endereço da obra">
+
+      <label>Observações</label>
+      <textarea id="observacoes" placeholder="Digite observações"></textarea>
+
+      <br><br>
+
+      <button onclick="salvarObra()">Salvar obra</button>
+
+      <div id="resultadoObra" class="resultado"></div>
+    </div>
+
+    <div id="servicos" class="card">
+      <h2>Serviços</h2>
+
+      <label>Serviço realizado</label>
+      <input type="text" id="servico" placeholder="Ex.: Alvenaria">
+
+      <label>Valor</label>
+      <input type="number" id="valorServico" placeholder="R$">
+
+      <br><br>
+
+      <button class="green" onclick="salvarServico()">
+        Adicionar serviço
+      </button>
+
+      <div id="resultadoServico" class="resultado"></div>
+    </div>
+
+    <div id="materiais" class="card">
+      <h2>Materiais</h2>
+
+      <label>Material</label>
+      <input type="text" id="material" placeholder="Ex.: Cimento">
+
+      <label>Quantidade</label>
+      <input type="number" id="quantidade" placeholder="Quantidade">
+
+      <br><br>
+
+      <button class="orange" onclick="salvarMaterial()">
+        Adicionar material
+      </button>
+
+      <div id="resultadoMaterial" class="resultado"></div>
+    </div>
+
+    <div id="financeiro" class="card">
+      <h2>Financeiro</h2>
+
+      <label>Descrição</label>
+      <input type="text" id="descricaoFinanceira"
+             placeholder="Ex.: Compra de material">
+
+      <label>Valor</label>
+      <input type="number" id="valorFinanceiro" placeholder="R$">
+
+      <br><br>
+
+      <button class="red" onclick="salvarFinanceiro()">
+        Registrar gasto
+      </button>
+
+      <div id="resultadoFinanceiro" class="resultado"></div>
+    </div>
+
+  </div>
+
+  <footer>
+    Alef Obras © 2026
+  </footer>
+
+  <script>
+    function mostrar(id) {
+      document.getElementById(id).scrollIntoView({
+        behavior: "smooth"
+      });
+    }
+
+    function salvarObra() {
+      const nome = document.getElementById("nomeObra").value;
+      const cliente = document.getElementById("cliente").value;
+      const endereco = document.getElementById("endereco").value;
+
+      const resultado = document.getElementById("resultadoObra");
+
+      resultado.style.display = "block";
+      resultado.innerHTML =
+        "<strong>Obra cadastrada!</strong><br>" +
+        "Obra: " + nome + "<br>" +
+        "Cliente: " + cliente + "<br>" +
+        "Endereço: " + endereco;
+    }
+
+    function salvarServico() {
+      const servico = document.getElementById("servico").value;
+      const valor = document.getElementById("valorServico").value;
+
+      const resultado = document.getElementById("resultadoServico");
+
+      resultado.style.display = "block";
+      resultado.innerHTML =
+        "<strong>Serviço adicionado!</strong><br>" +
+        servico + " — R$ " + valor;
+    }
+
+    function salvarMaterial() {
+      const material = document.getElementById("material").value;
+      const quantidade = document.getElementById("quantidade").value;
+
+      const resultado = document.getElementById("resultadoMaterial");
+
+      resultado.style.display = "block";
+      resultado.innerHTML =
+        "<strong>Material adicionado!</strong><br>" +
+        material + " — Quantidade: " + quantidade;
+    }
+
+    function salvarFinanceiro() {
+      const descricao =
+        document.getElementById("descricaoFinanceira").value;
+
+      const valor =
+        document.getElementById("valorFinanceiro").value;
+
+      const resultado =
+        document.getElementById("resultadoFinanceiro");
+
+      resultado.style.display = "block";
+      resultado.innerHTML =
+        "<strong>Gasto registrado!</strong><br>" +
+        descricao + " — R$ " + valor;
+    }
+  </script>
+
+</body>
+</html>
