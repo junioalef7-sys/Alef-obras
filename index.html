@@ -1,442 +1,152 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#090a0c">
-<title>EDIFIQ — Gestão de Obras</title>
+<meta name="theme-color" content="#0b0d10">
+<title>EDIFIQ — Gestão de Obras e Reformas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-:root{--bg:#090a0c;--card:#15171b;--card2:#1b1e24;--line:#2b2f36;--gold:#f5c400;--gold2:#ffda55;--text:#f7f7f7;--muted:#9ba0aa;--green:#36d399;--red:#ff6670;--blue:#67a8ff}
-*{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
-body{padding-bottom:82px}
-button,input,select,textarea{font:inherit}
-button{cursor:pointer}
-.app{max-width:760px;margin:auto}
-header{position:sticky;top:0;z-index:20;background:rgba(9,10,12,.97);border-bottom:1px solid var(--line);padding:18px 18px 14px}
-.brand{display:flex;align-items:center;gap:12px}
-.logo{width:54px;height:54px;border:3px solid var(--gold);border-radius:16px;display:grid;place-items:center;color:var(--gold);font-size:30px;font-weight:900}
-.brand b{font-size:32px;letter-spacing:3px}.brand b span{color:var(--gold)}
-.brand small{display:block;color:var(--muted);font-size:14px;margin-top:4px}
-main{padding:18px}
-.page{display:none}.page.active{display:block}
-.hero{background:linear-gradient(145deg,#1c2027,#101114);border:1px solid var(--line);border-radius:24px;padding:22px;margin-bottom:16px}
-.hero .mini{width:58px;height:58px;border:3px solid var(--gold);border-radius:17px;display:grid;place-items:center;color:var(--gold);font-size:30px;font-weight:900;margin-bottom:14px}
-.hero h1{font-size:32px;margin:0 0 6px}.hero p{color:var(--muted);font-size:17px;margin:0}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.stat,.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:17px}
-.stat label{display:block;color:var(--muted);font-size:14px;margin-bottom:8px}.stat strong{font-size:25px}
-.green{color:var(--green)!important}.red{color:var(--red)!important}.gold{color:var(--gold)!important}.blue{color:var(--blue)!important}
-.section-title{display:flex;align-items:center;justify-content:space-between;margin:22px 0 12px}.section-title h2{font-size:21px;margin:0}
-.btn{border:0;border-radius:12px;padding:11px 15px;font-weight:800;background:var(--gold);color:#111}.btn.secondary{background:var(--card2);color:var(--text);border:1px solid var(--line)}.btn.danger{background:#3a1d21;color:#ff9ba2;border:1px solid #6a3038}
-.list{display:grid;gap:10px}.item{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px}.item-head{display:flex;justify-content:space-between;gap:12px}.item h3{margin:0 0 5px;font-size:18px}.item p{margin:3px 0;color:var(--muted);font-size:14px}.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#252932;color:var(--muted);font-size:12px}
-.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.actions .btn{padding:9px 12px;font-size:13px}
-.empty{text-align:center;color:var(--muted);padding:30px 12px;background:var(--card);border:1px dashed var(--line);border-radius:16px}
-.form{display:grid;gap:12px}.form label{font-size:13px;color:var(--muted)}.field{display:grid;gap:6px}.form input,.form select,.form textarea{width:100%;background:#0f1115;color:var(--text);border:1px solid var(--line);border-radius:11px;padding:12px;outline:none}.form input:focus,.form select:focus,.form textarea:focus{border-color:var(--gold)}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;display:none;align-items:flex-end;justify-content:center}.modal.open{display:flex}.modal-box{width:min(760px,100%);max-height:92vh;overflow:auto;background:#111318;border:1px solid var(--line);border-radius:24px 24px 0 0;padding:20px}.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.modal-head h2{margin:0}.x{background:none;border:0;color:var(--muted);font-size:28px}
-.bottom{position:fixed;bottom:0;left:0;right:0;height:78px;background:#0c0e12;border-top:1px solid var(--line);display:flex;justify-content:center;z-index:30}.bottom-inner{width:min(760px,100%);display:grid;grid-template-columns:repeat(7,1fr)}.nav{border:0;background:none;color:var(--muted);font-size:12px;display:grid;place-items:center;gap:2px}.nav span{font-size:24px}.nav.active{color:var(--gold)}
-.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#f5c400;color:#111;padding:11px 15px;border-radius:12px;font-weight:800;z-index:200;display:none}.toast.show{display:block}
-.progress{height:8px;background:#272b32;border-radius:99px;overflow:hidden;margin-top:10px}.progress i{display:block;height:100%;background:var(--gold);width:0}
-.small{font-size:13px;color:var(--muted)}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--muted)}
-@media(max-width:520px){.brand b{font-size:28px}.hero h1{font-size:29px}.two{grid-template-columns:1fr}.grid{gap:10px}.stat{padding:14px}.stat strong{font-size:21px}}
-
-/* v5 additions */
-.tabs{display:flex;gap:8px;overflow:auto;margin:0 0 14px;padding-bottom:2px}.tab{white-space:nowrap;border:1px solid var(--line);background:var(--card2);color:var(--muted);border-radius:999px;padding:9px 13px;font-weight:800}.tab.active{background:var(--gold);color:#111;border-color:var(--gold)}
-.photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.photo{background:#0f1115;border:1px solid var(--line);border-radius:14px;overflow:hidden}.photo img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}.photo .pc{padding:10px}.photo .pc b{display:block;margin-bottom:4px}.check-item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;background:#0f1115;border:1px solid var(--line);border-radius:14px;padding:12px}.check-item.done{border-color:#2c765f}.check-item input[type=checkbox]{width:21px;height:21px;accent-color:var(--gold);margin-top:2px}.check-item .ctitle{font-weight:800}.check-item.done .ctitle{text-decoration:line-through;color:var(--muted)}.category{color:var(--gold);font-size:12px;font-weight:800;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}.mini-stat{background:#101217;border:1px solid var(--line);border-radius:14px;padding:12px}.mini-stat b{font-size:20px}.iconbtn{border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:10px;padding:7px 9px}.mutedbox{background:#101217;border:1px dashed var(--line);border-radius:14px;padding:13px;color:var(--muted)}
-@media(max-width:520px){.photo-grid{grid-template-columns:1fr 1fr}.check-item{grid-template-columns:auto 1fr}.check-item .actions{grid-column:2}}
-\n@media print{body{background:#fff;color:#111;padding:0}.bottom,header,.btn,.nav,.actions,.modal{display:none!important}.page{display:none!important}.page.active{display:block!important}.card,.item,.stat,.mini-stat,.check-item{background:#fff;color:#111;border:1px solid #ccc}.small,.mutedbox,.item p{color:#444}.photo-grid{grid-template-columns:repeat(2,1fr)}}\n</style>
+:root{--bg:#090b0e;--panel:#12161b;--panel2:#181d23;--gold:#d8ad45;--text:#f4f4f4;--muted:#9da5ae;--green:#36c98f;--red:#ef6670;--line:#2a3038}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}.hidden{display:none!important}
+header{position:sticky;top:0;z-index:5;background:#0b0d10ee;backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-weight:900;letter-spacing:2px}.logo span{color:var(--gold)}.sub{font-size:11px;color:var(--muted);letter-spacing:.5px}
+main{max-width:900px;margin:auto;padding:18px 16px 90px}.page{display:none}.page.active{display:block}
+h1{margin:5px 0}.lead{color:var(--muted);margin-top:4px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.card,.item,.authbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px;margin:10px 0}.stat{font-size:23px;font-weight:800;margin-top:6px}.gold{color:var(--gold)}.green{color:var(--green)}.red{color:var(--red)}
+.label,small{color:var(--muted)}.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.action,.primary,.secondary,.danger{border-radius:12px;padding:12px 14px;font-weight:700}.action{background:var(--panel2);border:1px solid var(--line);color:var(--text);text-align:left}.primary{background:var(--gold);color:#15110a}.secondary{background:#20262d;color:var(--text);border:1px solid var(--line)}.danger{background:#32191c;color:#ff9ca3;border:1px solid #653038}
+.form{display:grid;gap:10px}.form input,.form select,.form textarea,.toolbar input,.toolbar select{width:100%;background:#0e1216;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px}.form textarea{min-height:80px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.badge{background:#242b33;border-radius:999px;padding:5px 9px;font-size:12px}.progress{height:7px;background:#252b32;border-radius:9px;overflow:hidden;margin:10px 0}.progress i{display:block;height:100%;background:var(--gold)}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#0b0d10f5;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:7px env(safe-area-inset-right) calc(7px + env(safe-area-inset-bottom)) env(safe-area-inset-left);z-index:6}.nav{background:none;color:var(--muted);padding:7px}.nav.active{color:var(--gold)}
+.modal{position:fixed;inset:0;background:#000b;z-index:20;display:none;align-items:end}.modal.open{display:flex}.sheet{background:#11151a;border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow:auto;padding:18px}.close{float:right;background:none;color:var(--muted);font-size:28px}
+.toolbar{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}.empty{text-align:center;color:var(--muted);padding:25px}.auth{min-height:100vh;display:grid;place-items:center;padding:20px}.authbox{width:min(440px,100%);padding:25px}.authlogo{text-align:center;font-size:30px;font-weight:900;letter-spacing:4px}.authlogo span{color:var(--gold)}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--muted)}
+@media(max-width:560px){.grid3{grid-template-columns:1fr 1fr}.actions{grid-template-columns:1fr 1fr}}
+</style>
 </head>
 <body>
-<div class="app">
-<header>
-  <div class="brand"><div class="logo">E</div><div><b>EDIFI<span>Q</span></b><small>GESTÃO DE OBRAS E REFORMAS</small></div></div>
-</header>
-
-<main>
-<section id="dashboard" class="page active">
-  <div class="hero"><div class="mini">E</div><h1>Dashboard</h1><p>Controle completo da sua operação de obras.</p></div>
-  <div class="grid">
-    <div class="stat"><label>Obras</label><strong id="sObras" class="gold">0</strong></div>
-    <div class="stat"><label>Funcionários</label><strong id="sEquipe">0</strong></div>
-    <div class="stat"><label>Total recebido</label><strong id="sRecebido" class="green">R$ 0,00</strong></div>
-    <div class="stat"><label>A receber</label><strong id="sAReceber" class="gold">R$ 0,00</strong></div>
-    <div class="stat"><label>Despesas</label><strong id="sDespesas" class="red">R$ 0,00</strong></div>
-    <div class="stat"><label>Diárias</label><strong id="sDiarias" class="blue">R$ 0,00</strong></div>
+<div id="auth" class="auth">
+  <div class="authbox">
+    <div class="authlogo">EDIFI<span>Q</span></div>
+    <p class="sub" style="text-align:center">GESTÃO DE OBRAS E REFORMAS</p>
+    <div class="form" style="margin-top:20px">
+      <input id="email" type="email" placeholder="E-mail" autocomplete="email">
+      <input id="password" type="password" placeholder="Senha" autocomplete="current-password">
+      <button class="primary" onclick="login()">Entrar</button>
+      <button class="secondary" onclick="signup()">Criar minha conta</button>
+      <button class="secondary" onclick="resetPassword()">Esqueci a senha</button>
+    </div>
+    <p id="authMsg" class="sub"></p>
   </div>
-  <div class="section-title"><h2>Acesso rápido</h2></div>
-  <div class="grid">
-    <button class="card" onclick="openModal('obraModal')"><b>🏗️ Nova obra</b><p class="small">Cadastrar contrato e valores</p></button>
-    <button class="card" onclick="openModal('diariaModal')"><b>👷 Registrar diária</b><p class="small">Lançar trabalho da equipe</p></button>
-    <button class="card" onclick="openModal('recebimentoModal')"><b>💰 Registrar recebimento</b><p class="small">Controlar o que o cliente pagou</p></button>
-    <button class="card" onclick="openModal('despesaModal')"><b>🧾 Nova despesa</b><p class="small">Registrar custos da obra</p></button>
-  </div>
-  <div class="section-title"><h2>Resumo das obras</h2><button class="btn secondary" onclick="showPage('obras')">Ver todas</button></div>
-  <div id="dashObras" class="list"></div>
-</section>
-
-<section id="obras" class="page">
-  <div class="section-title"><h2>🏗️ Obras</h2><button class="btn" onclick="openModal('obraModal')">+ Nova obra</button></div>
-  <div id="obrasList" class="list"></div>
-</section>
-
-<section id="equipe" class="page">
-  <div class="section-title"><h2>👷 Equipe</h2><button class="btn" onclick="openModal('funcModal')">+ Funcionário</button></div>
-  <div class="card" style="margin-bottom:12px"><b>Registrar diária</b><p class="small">Escolha funcionário, obra, data e quantidade. O total é calculado automaticamente.</p><button class="btn" onclick="openModal('diariaModal')">Registrar agora</button></div>
-  <div id="equipeList" class="list"></div>
-  <div class="section-title"><h2>Últimas diárias</h2></div>
-  <div id="diariasList" class="list"></div>
-</section>
-
-<section id="financeiro" class="page">
-  <div class="section-title"><h2>💰 Financeiro</h2></div>
-  <div class="grid">
-    <div class="stat"><label>Recebimentos</label><strong id="fRecebido" class="green">R$ 0,00</strong></div>
-    <div class="stat"><label>A receber</label><strong id="fAReceber" class="gold">R$ 0,00</strong></div>
-    <div class="stat"><label>Despesas gerais</label><strong id="fDespesas" class="red">R$ 0,00</strong></div>
-    <div class="stat"><label>Diárias</label><strong id="fDiarias" class="blue">R$ 0,00</strong></div>
-  </div>
-  <div class="section-title"><h2>Lançamentos</h2><div class="actions"><button class="btn" onclick="openModal('recebimentoModal')">+ Recebimento</button><button class="btn secondary" onclick="openModal('despesaModal')">+ Despesa</button></div></div>
-  <div id="financeList" class="list"></div>
-</section>
-
-<section id="contratos" class="page">
-  <div class="section-title"><h2>📄 Contratos</h2></div>
-  <div class="empty">A gestão de contratos fica vinculada às obras. Ao cadastrar uma obra, informe o valor contratado, cliente e condições. Depois você poderá acompanhar recebimentos e saldo.</div>
-</section>
-
-<section id="relatorios" class="page">
-  <div class="section-title"><h2>📊 Relatórios</h2><button class="btn secondary" onclick="window.print()">Imprimir</button></div>
-  <div id="relatorio" class="list"></div>
-</section>
-
-<section id="fotografico" class="page">
-  <div class="section-title"><h2>📸 Relatório fotográfico</h2><button class="btn" onclick="openModal('fotoModal')">+ Foto</button></div>
-  <div class="card" style="margin-bottom:12px"><div class="field"><label>Filtrar por obra</label><select id="fotoFiltro" onchange="renderFotos()"></select></div></div>
-  <div id="fotoResumo" class="grid" style="margin-bottom:12px"></div>
-  <div id="fotosList"></div>
-</section>
-
-<section id="checklists" class="page">
-  <div class="section-title"><h2>✅ Checklists</h2><button class="btn" onclick="openModal('checkModal')">+ Item</button></div>
-  <div class="card" style="margin-bottom:12px"><div class="field"><label>Obra</label><select id="checkFiltro" onchange="renderChecklist()"></select></div></div>
-  <div id="checkResumo" class="grid" style="margin-bottom:12px"></div>
-  <div class="actions" style="margin-bottom:12px"><button class="btn secondary" onclick="addDefaultChecklist()">Adicionar checklist padrão</button><button class="btn secondary" onclick="printChecklist()">Imprimir checklist</button></div>
-  <div id="checkList" class="list"></div>
-</section>
-</main>
 </div>
 
-<nav class="bottom"><div class="bottom-inner">
-<button class="nav active" data-page="dashboard"><span>⌂</span>Início</button>
-<button class="nav" data-page="obras"><span>🏗️</span>Obras</button>
-<button class="nav" data-page="equipe"><span>👷</span>Equipe</button>
-<button class="nav" data-page="financeiro"><span>💰</span>Financeiro</button>
-<button class="nav" data-page="fotografico"><span>📸</span>Fotos</button>
-<button class="nav" data-page="checklists"><span>✅</span>Checklist</button>
-<button class="nav" data-page="relatorios"><span>☰</span>Mais</button>
-</div></nav>
+<div id="app" class="hidden">
+<header><div><div class="logo">EDIFI<span>Q</span></div><div class="sub">Gestão de Obras e Reformas</div></div><button class="secondary" onclick="logout()">Sair</button></header>
+<main>
+<section id="home" class="page active"><h1>Olá! 👋</h1><p class="lead">Seu painel de controle.</p>
+<div class="grid3"><div class="card"><div class="label">Obras</div><div class="stat gold" id="kObras">0</div></div><div class="card"><div class="label">Funcionários</div><div class="stat" id="kFunc">0</div></div><div class="card"><div class="label">A receber</div><div class="stat green" id="kReceber">R$ 0,00</div></div></div>
+<div class="actions">
+<button class="action" onclick="go('obras')">🏗️ <b>Obras</b><br><small>Projetos e andamento</small></button>
+<button class="action" onclick="go('equipe')">👷 <b>Funcionários</b><br><small>Equipe e folha</small></button>
+<button class="action" onclick="go('financeiro')">💰 <b>Financeiro</b><br><small>Entradas e despesas</small></button>
+<button class="action" onclick="go('importar')">🔄 <b>Importar / Exportar</b><br><small>Excel, CSV e JSON</small></button>
+</div>
+<div class="section"><h2>Obras recentes</h2><div id="recentes"></div></div>
+</section>
 
-<div id="toast" class="toast"></div>
+<section id="obras" class="page"><h1>Obras</h1><p class="lead">Cadastre e acompanhe seus projetos.</p><button class="primary" onclick="openM('obraM')">＋ Nova obra</button><div id="obrasList"></div></section>
 
-<!-- OBRA -->
-<div id="obraModal" class="modal"><div class="modal-box"><div class="modal-head"><h2>Nova obra</h2><button class="x" onclick="closeModal('obraModal')">×</button></div>
-<form id="obraForm" class="form">
-<div class="field"><label>Nome da obra</label><input id="obraNome" required placeholder="Ex.: Reforma Casa Evandro"></div>
-<div class="field"><label>Cliente</label><input id="obraCliente" placeholder="Nome do cliente"></div>
-<div class="two"><div class="field"><label>Valor contratado</label><input id="obraValor" type="number" step="0.01" min="0" required placeholder="0,00"></div><div class="field"><label>Data de início</label><input id="obraInicio" type="date"></div></div>
-<div class="field"><label>Descrição / serviços</label><textarea id="obraDesc" rows="3" placeholder="Pintura, reboco, passeio..."></textarea></div>
-<button class="btn">Salvar obra</button></form></div></div>
+<section id="equipe" class="page"><h1>Funcionários</h1><p class="lead">Diárias, salários e folha de pagamento.</p><button class="primary" onclick="openM('funcM')">＋ Novo funcionário</button>
+<div class="toolbar"><select id="payPeriod" onchange="renderPayroll()"><option value="dia">Hoje</option><option value="semana" selected>Esta semana</option><option value="quinzena">Quinzena</option><option value="mes">Este mês</option><option value="custom">Personalizado</option></select><select id="payFunc" onchange="renderPayroll()"><option value="all">Todos</option></select></div>
+<div id="customDates" class="toolbar hidden"><input id="payStart" type="date" onchange="renderPayroll()"><input id="payEnd" type="date" onchange="renderPayroll()"></div>
+<div class="grid"><div class="card"><div class="label">Total da equipe</div><div class="stat gold" id="payTotal">R$ 0,00</div></div><div class="card"><div class="label">Funcionários no período</div><div class="stat" id="payCount">0</div></div></div>
+<div id="funcList"></div><div class="section"><h2>Diárias lançadas</h2><button class="secondary" onclick="openM('diaM')">＋ Registrar diária</button></div><div id="diaList"></div>
+</section>
 
-<!-- FUNCIONARIO -->
-<div id="funcModal" class="modal"><div class="modal-box"><div class="modal-head"><h2>Novo funcionário</h2><button class="x" onclick="closeModal('funcModal')">×</button></div>
-<form id="funcForm" class="form">
-<div class="field"><label>Nome</label><input id="funcNome" required placeholder="Nome do funcionário"></div>
-<div class="field"><label>Função / cargo</label><input id="funcFuncao" required placeholder="Ex.: Pedreiro, Pintor, Servente, Eletricista"></div>
-<div class="two"><div class="field"><label>Valor da diária (R$)</label><input id="funcDiaria" type="number" step="0.01" min="0" required placeholder="Ex.: 120"></div><div class="field"><label>Telefone (opcional)</label><input id="funcTelefone" placeholder="(00) 00000-0000"></div></div>
-<button class="btn">Salvar funcionário</button></form></div></div>
+<section id="financeiro" class="page"><h1>Financeiro</h1><p class="lead">Recebimentos, despesas e resultado.</p><div class="grid"><div class="card"><div class="label">Entradas</div><div class="stat green" id="finEnt">R$ 0,00</div></div><div class="card"><div class="label">Despesas</div><div class="stat red" id="finDesp">R$ 0,00</div></div></div><div class="card"><div class="label">Resultado</div><div class="stat gold" id="finRes">R$ 0,00</div></div>
+<button class="primary" onclick="openM('finM')">＋ Novo lançamento</button><div id="finList"></div></section>
 
-<!-- DIARIA -->
-<div id="diariaModal" class="modal"><div class="modal-box"><div class="modal-head"><h2>Registrar diária</h2><button class="x" onclick="closeModal('diariaModal')">×</button></div>
-<form id="diariaForm" class="form">
-<div class="field"><label>Funcionário</label><select id="dFunc" required></select></div>
-<div class="field"><label>Obra</label><select id="dObra" required></select></div>
-<div class="two"><div class="field"><label>Data</label><input id="dData" type="date" required></div><div class="field"><label>Quantidade de diárias</label><input id="dQtd" type="number" step="0.5" min="0.5" value="1" required></div></div>
-<div class="card"><span class="small">Total da diária</span><h2 id="dTotal" class="blue">R$ 0,00</h2></div>
-<button class="btn">Registrar diária</button></form></div></div>
+<section id="checklist" class="page"><h1>Checklist</h1><p class="lead">Etapas e acompanhamento por obra.</p><div id="checkList"></div></section>
+<section id="relatorios" class="page"><h1>Relatórios</h1><p class="lead">Resumo dos dados do EDIFIQ.</p><div class="actions"><button class="action" onclick="exportModule('obras')">🏗️ Exportar obras</button><button class="action" onclick="exportModule('funcionarios')">👷 Exportar equipe</button><button class="action" onclick="exportModule('diarias')">💵 Exportar diárias</button><button class="action" onclick="exportModule('gastos')">💰 Exportar despesas</button><button class="action" onclick="exportFull()">💾 Backup completo</button><button class="action" onclick="go('importar')">🔄 Importar dados</button></div></section>
 
-<!-- RECEBIMENTO -->
-<div id="recebimentoModal" class="modal"><div class="modal-box"><div class="modal-head"><h2>Registrar recebimento</h2><button class="x" onclick="closeModal('recebimentoModal')">×</button></div>
-<form id="recebimentoForm" class="form">
-<div class="field"><label>Obra</label><select id="rObra" required></select></div>
-<div class="two"><div class="field"><label>Data</label><input id="rData" type="date" required></div><div class="field"><label>Valor recebido</label><input id="rValor" type="number" step="0.01" min="0.01" required placeholder="0,00"></div></div>
-<div class="field"><label>Descrição</label><input id="rDesc" placeholder="Ex.: Entrada / 2ª parcela"></div>
-<button class="btn">Salvar recebimento</button></form></div></div>
+<section id="importar" class="page"><h1>Importar / Exportar</h1><p class="lead">Transfira seus dados entre aplicativos sem perder o controle.</p>
+<div class="item"><b>Importar</b><p class="sub">Aceita JSON, CSV e Excel (.xlsx). O arquivo é lido primeiro e depois você confirma.</p><input id="importFile" type="file" accept=".json,.csv,.xlsx,.xls" onchange="previewImport(event)"><div id="importPreview"></div></div>
+<div class="item"><b>Exportar</b><p class="sub">Escolha um formato para fazer backup ou levar os dados para outro sistema.</p><div class="actions"><button class="action" onclick="exportFull()">💾 Backup JSON</button><button class="action" onclick="exportExcel()">📊 Excel</button><button class="action" onclick="exportAllCsv()">📄 CSV</button></div></div>
+</section>
+<section id="config" class="page"><h1>Configurações</h1><div class="item"><b>Conta</b><br><small id="accountEmail"></small></div><div class="item"><b>EDIFIQ</b><br><small>Dados principais salvos na nuvem quando o banco Supabase estiver configurado corretamente.</small></div></section>
+</main>
+<nav class="bottom"><button class="nav active" data-p="home" onclick="go('home')">⌂<br>Início</button><button class="nav" data-p="obras" onclick="go('obras')">🏗<br>Obras</button><button class="nav" data-p="equipe" onclick="go('equipe')">👷<br>Equipe</button><button class="nav" data-p="financeiro" onclick="go('financeiro')">R$<br>Financeiro</button></nav>
+</div>
 
-<!-- DESPESA -->
-<div id="despesaModal" class="modal"><div class="modal-box"><div class="modal-head"><h2>Nova despesa</h2><button class="x" onclick="closeModal('despesaModal')">×</button></div>
-<form id="despesaForm" class="form">
-<div class="field"><label>Obra</label><select id="xObra" required></select></div>
-<div class="two"><div class="field"><label>Data</label><input id="xData" type="date" required></div><div class="field"><label>Valor</label><input id="xValor" type="number" step="0.01" min="0.01" required></div></div>
-<div class="field"><label>Descrição</label><input id="xDesc" required placeholder="Material, transporte, ferramenta..."></div>
-<button class="btn">Salvar despesa</button></form></div></div>
+<div class="modal" id="obraM"><div class="sheet"><button class="close" onclick="closeM('obraM')">×</button><h2>Nova obra</h2><form class="form" onsubmit="saveObra(event)"><input id="oNome" required placeholder="Nome da obra"><input id="oCli" placeholder="Cliente"><input id="oLoc" placeholder="Endereço / cidade"><input id="oVal" type="number" step=".01" placeholder="Valor do contrato"><input id="oPrazo" type="date"><input id="oProg" type="number" min="0" max="100" value="0" placeholder="Progresso %"><textarea id="oObs" placeholder="Observações"></textarea><button class="primary">Salvar obra</button></form></div></div>
 
+<div class="modal" id="funcM"><div class="sheet"><button class="close" onclick="closeM('funcM')">×</button><h2>Novo funcionário</h2><form class="form" onsubmit="saveFunc(event)"><input id="fNome" required placeholder="Nome"><input id="fFunc" placeholder="Função / cargo"><input id="fTel" placeholder="Telefone"><select id="fTipo"><option value="diaria">Diária</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option></select><input id="fDia" type="number" step=".01" placeholder="Valor da diária / período"><input id="fSal" type="number" step=".01" placeholder="Salário mensal (se mensal)"><input id="fPag" type="number" min="1" max="31" placeholder="Dia do pagamento mensal"><button class="primary">Salvar funcionário</button></form></div></div>
 
-<!-- FOTO -->
-<div id="fotoModal" class="modal"><div class="modal-box"><div class="modal-head"><h2>Adicionar foto da obra</h2><button class="x" onclick="closeModal('fotoModal')">×</button></div>
-<form id="fotoForm" class="form">
-<div class="field"><label>Obra</label><select id="fotoObra" required></select></div>
-<div class="two"><div class="field"><label>Data</label><input id="fotoData" type="date" required></div><div class="field"><label>Etapa</label><input id="fotoEtapa" placeholder="Ex.: Reboco, pintura, acabamento"></div></div>
-<div class="field"><label>Descrição da foto</label><textarea id="fotoDesc" rows="2" placeholder="O que foi registrado nesta foto?"></textarea></div>
-<div class="field"><label>Selecionar foto</label><input id="fotoArquivo" type="file" accept="image/*" capture="environment" required></div>
-<div class="mutedbox">A foto é reduzida para ocupar menos espaço e fica salva no navegador deste aparelho.</div>
-<button class="btn">Salvar foto</button></form></div></div>
+<div class="modal" id="diaM"><div class="sheet"><button class="close" onclick="closeM('diaM')">×</button><h2>Registrar diária</h2><form class="form" onsubmit="saveDia(event)"><select id="dFunc" required></select><select id="dObra"><option value="">Sem obra</option></select><input id="dData" type="date" required><input id="dQtd" type="number" step=".25" value="1" placeholder="Quantidade"><input id="dVal" type="number" step=".01" placeholder="Valor unitário"><textarea id="dObs" placeholder="Observações"></textarea><button class="primary">Salvar diária</button></form></div></div>
 
-<!-- CHECKLIST -->
-<div id="checkModal" class="modal"><div class="modal-box"><div class="modal-head"><h2>Novo item do checklist</h2><button class="x" onclick="closeModal('checkModal')">×</button></div>
-<form id="checkForm" class="form">
-<div class="field"><label>Obra</label><select id="checkObra" required></select></div>
-<div class="field"><label>Categoria</label><input id="checkCategoria" required placeholder="Ex.: Segurança, Execução, Acabamento"></div>
-<div class="field"><label>Item / tarefa</label><input id="checkTitulo" required placeholder="Ex.: Conferir nível das paredes"></div>
-<div class="field"><label>Observação</label><textarea id="checkObs" rows="2" placeholder="Detalhes ou orientação"></textarea></div>
-<button class="btn">Adicionar item</button></form></div></div>
-
+<div class="modal" id="finM"><div class="sheet"><button class="close" onclick="closeM('finM')">×</button><h2>Novo lançamento</h2><form class="form" onsubmit="saveFin(event)"><select id="tFin"><option value="entrada">Entrada / recebimento</option><option value="despesa">Despesa</option></select><input id="dFin" required placeholder="Descrição"><input id="vFin" required type="number" step=".01" placeholder="Valor"><input id="dtFin" type="date" required><select id="oFin"><option value="">Sem obra</option></select><button class="primary">Salvar lançamento</button></form></div></div>
 <script>
-const KEY='edifiq_v4_data';
-const today=new Date().toISOString().slice(0,10);
-let db=JSON.parse(localStorage.getItem(KEY)||'null')||{obras:[],funcionarios:[],diarias:[],recebimentos:[],despesas:[]};
+const SUPA_URL="https://lwqntzwajjgkvtynwdjg.supabase.co";
+const SUPA_KEY="sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
+const sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+let user=null, D={obras:[],funcionarios:[],diarias:[],gastos:[],pagamentos:[]};
+
 const $=id=>document.getElementById(id);
 const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const save=()=>{localStorage.setItem(KEY,JSON.stringify(db));render();};
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-function toast(t){$('toast').textContent=t;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),1800)}
-function openModal(id){populateSelects(); if(id==='diariaModal'){$('dData').value=today;$('dQtd').value=1;calcDiaria()} if(id==='recebimentoModal')$('rData').value=today;if(id==='despesaModal')$('xData').value=today;$(id).classList.add('open')}
-function closeModal(id){$(id).classList.remove('open')}
-function showPage(id){
- document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));$(id).classList.add('active');
- document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===id));
- render();
- window.scrollTo({top:0,behavior:'smooth'});
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function msg(s){$('authMsg').textContent=s||''}
+function go(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(p).classList.add('active');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.p===p));renderAll()}
+function openM(id){$(id).classList.add('open');if(id==='diaM')fillSelectors();if(id==='finM')fillSelectors();if(id==='funcM')clearFuncForm()}
+function closeM(id){$(id).classList.remove('open')}
+function today(){return new Date().toISOString().slice(0,10)}
+
+async function login(){const email=$('email').value.trim(),password=$('password').value;if(!email||!password)return msg('Informe e-mail e senha.');const {error}=await sb.auth.signInWithPassword({email,password});if(error)return msg(error.message);msg('Entrando...')}
+async function signup(){const email=$('email').value.trim(),password=$('password').value;if(password.length<6)return msg('Use uma senha com pelo menos 6 caracteres.');const {error}=await sb.auth.signUp({email,password});msg(error?error.message:'Conta criada. Se a confirmação por e-mail estiver ativa, confirme seu e-mail e depois entre.')}
+async function resetPassword(){const email=$('email').value.trim();if(!email)return msg('Digite seu e-mail.');const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.href});msg(error?error.message:'Link de recuperação enviado.')}
+async function logout(){await sb.auth.signOut()}
+sb.auth.onAuthStateChange(async(_e,s)=>{user=s?.user||null;if(user){$('auth').classList.add('hidden');$('app').classList.remove('hidden');$('accountEmail').textContent=user.email||'';await loadCloud();renderAll()}else{$('app').classList.add('hidden');$('auth').classList.remove('hidden')}});
+
+async function loadCloud(){
+  const specs=[['obras','obras'],['funcionarios','funcionarios'],['diarias','diarias'],['gastos','gastos'],['pagamentos','pagamentos']];
+  for(const [key,table] of specs){const {data,error}=await sb.from(table).select('*').order('created_at',{ascending:false});if(!error)D[key]=data||[];else console.warn(table,error.message)}
 }
-document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>showPage(n.dataset.page));
+async function ins(table,row){const {data,error}=await sb.from(table).insert({...row,user_id:user.id}).select().single();if(error){alert('Não foi possível salvar: '+error.message);return null}return data}
+async function del(table,id){const {error}=await sb.from(table).delete().eq('id',id);if(error)alert(error.message);return !error}
 
-function obra(id){return db.obras.find(x=>x.id===id)}
-function func(id){return db.funcionarios.find(x=>x.id===id)}
-function recebido(id){return db.recebimentos.filter(x=>x.obraId===id).reduce((s,x)=>s+Number(x.valor),0)}
-function despesas(id){return db.despesas.filter(x=>x.obraId===id).reduce((s,x)=>s+Number(x.valor),0)}
-function diarias(id){return db.diarias.filter(x=>x.obraId===id).reduce((s,x)=>s+Number(x.total),0)}
-function aReceber(id){let o=obra(id);return Math.max(0,Number(o?.valor||0)-recebido(id))}
-function totalRecebido(){return db.recebimentos.reduce((s,x)=>s+Number(x.valor),0)}
-function totalDespesas(){return db.despesas.reduce((s,x)=>s+Number(x.valor),0)}
-function totalDiarias(){return db.diarias.reduce((s,x)=>s+Number(x.total),0)}
-function totalAReceber(){return db.obras.reduce((s,o)=>s+aReceber(o.id),0)}
-
-function populateSelects(){
- const optsObras=db.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');
- ['dObra','rObra','xObra'].forEach(id=>$(id).innerHTML=optsObras||'<option value="">Cadastre uma obra primeiro</option>');
- const optsFunc=db.funcionarios.map(f=>`<option value="${f.id}">${esc(f.nome)} — ${money(f.diaria)}</option>`).join('');
- $('dFunc').innerHTML=optsFunc||'<option value="">Cadastre um funcionário primeiro</option>';
+function renderAll(){
+ $('kObras').textContent=D.obras.length;$('kFunc').textContent=D.funcionarios.length;
+ const ent=D.gastos.filter(x=>x.categoria==='entrada').reduce((a,x)=>a+Number(x.valor||0),0)+D.pagamentos.reduce((a,x)=>a+Number(x.valor||0),0);
+ const desp=D.gastos.filter(x=>x.categoria!=='entrada').reduce((a,x)=>a+Number(x.valor||0),0);
+ const contract=D.obras.reduce((a,x)=>a+Number(x.valor_contrato||0),0); $('kReceber').textContent=money(Math.max(0,contract-ent));
+ $('recentes').innerHTML=D.obras.slice(0,3).map(o=>`<div class="item"><b>${esc(o.nome)}</b><br><small>${esc(o.cliente||'Cliente não informado')} • ${money(o.valor_contrato)}</small></div>`).join('')||'<div class="empty">Cadastre sua primeira obra.</div>';
+ $('obrasList').innerHTML=D.obras.map(o=>`<div class="item"><div class="row"><div><b>${esc(o.nome)}</b><br><small>${esc(o.cliente||'Cliente')} • ${esc(o.local||'')}</small></div><span class="badge">${Number(o.progresso||0)}%</span></div><div class="progress"><i style="width:${Number(o.progresso||0)}%"></i></div><small>Contrato: ${money(o.valor_contrato)} • Previsão: ${esc(o.data_previsao||'')}</small><br><button class="danger" style="margin-top:9px" onclick="deleteObra('${o.id}')">Excluir</button></div>`).join('')||'<div class="empty">Nenhuma obra cadastrada.</div>';
+ $('finEnt').textContent=money(ent);$('finDesp').textContent=money(desp);$('finRes').textContent=money(ent-desp);
+ $('finList').innerHTML=D.gastos.map(x=>`<div class="item"><div class="row"><div><b>${esc(x.descricao)}</b><br><small>${x.data||''}</small></div><b class="${x.categoria==='entrada'?'green':'red'}">${x.categoria==='entrada'?'+':'-'} ${money(x.valor)}</b></div><button class="danger" style="margin-top:8px" onclick="deleteRow('gastos','${x.id}')">Excluir</button></div>`).join('')||'<div class="empty">Nenhum lançamento.</div>';
+ $('funcList').innerHTML=D.funcionarios.map(f=>`<div class="item"><div class="row"><div><b>${esc(f.nome)}</b><br><small>${esc(f.funcao||'Função não informada')}</small></div><span class="badge">${esc(f.tipo_pagamento||'diaria')}</span></div><small>${f.tipo_pagamento==='mensal'?money(f.salario_mensal):money(f.dia||f.salario_mensal)} • ${esc(f.telefone||'')}</small></div>`).join('')||'<div class="empty">Nenhum funcionário cadastrado.</div>';
+ fillSelectors();renderPayroll();renderChecklist();
 }
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-
-$('obraForm').onsubmit=e=>{e.preventDefault();
- db.obras.push({id:uid(),nome:$('obraNome').value.trim(),cliente:$('obraCliente').value.trim(),valor:Number($('obraValor').value),inicio:$('obraInicio').value,desc:$('obraDesc').value.trim()});
- e.target.reset();closeModal('obraModal');save();toast('Obra cadastrada!');
-};
-$('funcForm').onsubmit=e=>{e.preventDefault();
- db.funcionarios.push({id:uid(),nome:$('funcNome').value.trim(),diaria:Number($('funcDiaria').value)});
- e.target.reset();closeModal('funcModal');save();toast('Funcionário cadastrado!');
-};
-function calcDiaria(){let f=func($('dFunc').value),q=Number($('dQtd').value||0);$('dTotal').textContent=money((f?.diaria||0)*q)}
-$('dFunc').onchange=calcDiaria;$('dQtd').oninput=calcDiaria;
-$('diariaForm').onsubmit=e=>{e.preventDefault();let f=func($('dFunc').value);if(!f)return toast('Cadastre um funcionário primeiro.');
- db.diarias.push({id:uid(),funcId:f.id,obraId:$('dObra').value,data:$('dData').value,qtd:Number($('dQtd').value),total:f.diaria*Number($('dQtd').value)});
- e.target.reset();closeModal('diariaModal');save();toast('Diária registrada!');
-};
-$('recebimentoForm').onsubmit=e=>{e.preventDefault();
- let o=obra($('rObra').value),v=Number($('rValor').value);if(!o)return;
- if(v>aReceber(o.id)+0.005 && !confirm('Esse valor é maior que o saldo a receber. Registrar mesmo assim?'))return;
- db.recebimentos.push({id:uid(),obraId:o.id,data:$('rData').value,valor:v,desc:$('rDesc').value.trim()||'Recebimento'});
- e.target.reset();closeModal('recebimentoModal');save();toast('Recebimento registrado!');
-};
-$('despesaForm').onsubmit=e=>{e.preventDefault();
- db.despesas.push({id:uid(),obraId:$('xObra').value,data:$('xData').value,valor:Number($('xValor').value),desc:$('xDesc').value.trim()});
- e.target.reset();closeModal('despesaModal');save();toast('Despesa registrada!');
-};
-
-function del(type,id){
- if(!confirm('Excluir este registro?'))return;
- db[type]=db[type].filter(x=>x.id!==id);save();toast('Registro excluído');
-}
-function render(){
- const rec=totalRecebido(), ar=totalAReceber(), des=totalDespesas(), dia=totalDiarias();
- $('sObras').textContent=db.obras.length;$('sEquipe').textContent=db.funcionarios.length;
- $('sRecebido').textContent=money(rec);$('sAReceber').textContent=money(ar);$('sDespesas').textContent=money(des);$('sDiarias').textContent=money(dia);
- $('fRecebido').textContent=money(rec);$('fAReceber').textContent=money(ar);$('fDespesas').textContent=money(des);$('fDiarias').textContent=money(dia);
- renderObras();renderEquipe();renderDiarias();renderFinance();renderRelatorio();populateSelects();calcDiaria();
-}
-function obraCard(o){
- const r=recebido(o.id),a=Math.max(0,Number(o.valor)-r),d=despesas(o.id),di=diarias(o.id),p=Number(o.valor)?Math.min(100,r/Number(o.valor)*100):0;
- return `<div class="item"><div class="item-head"><div><h3>${esc(o.nome)}</h3><p>${esc(o.cliente||'Sem cliente')}</p></div><span class="pill">${p.toFixed(0)}% recebido</span></div>
- <div class="grid" style="margin-top:12px"><div><span class="small">Contratado</span><br><b>${money(o.valor)}</b></div><div><span class="small">Recebido</span><br><b class="green">${money(r)}</b></div><div><span class="small">A receber</span><br><b class="gold">${money(a)}</b></div><div><span class="small">Custos</span><br><b class="red">${money(d+di)}</b></div></div>
- <div class="progress"><i style="width:${p}%"></i></div>
- <p class="small" style="margin-top:10px">Resultado até agora: <b class="${(r-d-di)>=0?'green':'red'}">${money(r-d-di)}</b></p>
- <div class="actions"><button class="btn" onclick="openReceb('${o.id}')">+ Recebimento</button><button class="btn secondary" onclick="openDiariaObra('${o.id}')">+ Diária</button><button class="btn secondary" onclick="openDespesaObra('${o.id}')">+ Despesa</button><button class="btn danger" onclick="del('obras','${o.id}')">Excluir</button></div></div>`;
-}
-function renderObras(){
- const html=db.obras.map(obraCard).join('')||'<div class="empty">Nenhuma obra cadastrada.<br><br>Comece clicando em <b>+ Nova obra</b>.</div>';
- $('obrasList').innerHTML=html;$('dashObras').innerHTML=html;
-}
-function renderEquipe(){
- $('equipeList').innerHTML=db.funcionarios.map(f=>{let qs=db.diarias.filter(x=>x.funcId===f.id).reduce((s,x)=>s+Number(x.qtd),0),tt=db.diarias.filter(x=>x.funcId===f.id).reduce((s,x)=>s+Number(x.total),0);
- return `<div class="item"><div class="item-head"><div><h3>${esc(f.nome)}</h3><p>Diária: <b>${money(f.diaria)}</b></p></div><span class="pill">${qs} diária(s)</span></div><p>Total lançado: <b class="blue">${money(tt)}</b></p><div class="actions"><button class="btn" onclick="openDiariaFunc('${f.id}')">+ Registrar diária</button><button class="btn danger" onclick="del('funcionarios','${f.id}')">Excluir</button></div></div>`}).join('')||'<div class="empty">Nenhum funcionário cadastrado.</div>';
-}
-function renderDiarias(){
- const arr=[...db.diarias].sort((a,b)=>b.data.localeCompare(a.data)).slice(0,30);
- $('diariasList').innerHTML=arr.map(x=>`<div class="item"><div class="item-head"><div><h3>${esc(func(x.funcId)?.nome||'Funcionário')}</h3><p>${esc(obra(x.obraId)?.nome||'Obra')} • ${x.data}</p></div><b class="blue">${money(x.total)}</b></div><p>${x.qtd} diária(s)</p><div class="actions"><button class="btn danger" onclick="del('diarias','${x.id}')">Excluir</button></div></div>`).join('')||'<div class="empty">Nenhuma diária registrada.</div>';
-}
-function renderFinance(){
- const arr=[...db.recebimentos.map(x=>({...x,t:'recebimento'})),...db.despesas.map(x=>({...x,t:'despesa'}))].sort((a,b)=>b.data.localeCompare(a.data)).slice(0,40);
- $('financeList').innerHTML=arr.map(x=>`<div class="item"><div class="item-head"><div><h3>${x.t==='recebimento'?'💰 Recebimento':'🧾 Despesa'}</h3><p>${esc(obra(x.obraId)?.nome||'Obra')} • ${x.data}</p><p>${esc(x.desc||'')}</p></div><b class="${x.t==='recebimento'?'green':'red'}">${x.t==='recebimento'?'+':'-'} ${money(x.valor)}</b></div><div class="actions"><button class="btn danger" onclick="del('${x.t==='recebimento'?'recebimentos':'despesas'}','${x.id}')">Excluir</button></div></div>`).join('')||'<div class="empty">Nenhum lançamento financeiro.</div>';
-}
-function renderRelatorio(){
- $('relatorio').innerHTML=db.obras.map(o=>`<div class="item"><h3>${esc(o.nome)}</h3><table><tr><th>Contratado</th><td>${money(o.valor)}</td></tr><tr><th>Recebido</th><td class="green">${money(recebido(o.id))}</td></tr><tr><th>A receber</th><td class="gold">${money(aReceber(o.id))}</td></tr><tr><th>Despesas</th><td class="red">${money(despesas(o.id))}</td></tr><tr><th>Diárias</th><td class="blue">${money(diarias(o.id))}</td></tr><tr><th>Resultado</th><td>${money(recebido(o.id)-despesas(o.id)-diarias(o.id))}</td></tr></table></div>`).join('')||'<div class="empty">Cadastre uma obra para gerar o relatório.</div>';
-}
-function openReceb(id){populateSelects();$('rObra').value=id;$('rData').value=today;openModal('recebimentoModal')}
-function openDespesaObra(id){populateSelects();$('xObra').value=id;$('xData').value=today;openModal('despesaModal')}
-function openDiariaObra(id){populateSelects();$('dObra').value=id;$('dData').value=today;openModal('diariaModal')}
-function openDiariaFunc(id){populateSelects();$('dFunc').value=id;$('dData').value=today;calcDiaria();openModal('diariaModal')}
-
-render();
-
-
-/* ===== EDIFIQ v5: funções, fotos e checklist ===== */
-if(!db.fotos) db.fotos=[];
-if(!db.checklists) db.checklists=[];
-
-function ensureDefaultChecklistFor(o){
-  const exists=db.checklists.some(x=>x.obraId===o.id);
-  if(exists) return;
-  const base=[
-    ['Planejamento','Conferir escopo e serviços contratados'],
-    ['Planejamento','Conferir medidas e materiais necessários'],
-    ['Segurança','Verificar EPIs da equipe'],
-    ['Segurança','Organizar área de trabalho e circulação'],
-    ['Preparação','Proteger pisos, portas e móveis'],
-    ['Preparação','Corrigir trincas, fissuras e imperfeições'],
-    ['Execução','Conferir qualidade do serviço executado'],
-    ['Execução','Conferir prumo, nível e alinhamento'],
-    ['Execução','Registrar andamento com fotos'],
-    ['Acabamento','Conferir pintura e acabamento'],
-    ['Acabamento','Limpar a área de trabalho'],
-    ['Entrega','Fazer vistoria final com o cliente']
-  ];
-  base.forEach(([cat,titulo])=>db.checklists.push({id:uid(),obraId:o.id,categoria:cat,titulo,obs:'',done:false}));
-}
-
-function editFunc(id){
- const f=func(id); if(!f)return;
- $('funcNome').value=f.nome||'';$('funcFuncao').value=f.funcao||'';$('funcDiaria').value=f.diaria||'';$('funcTelefone').value=f.telefone||'';
- $('funcModal').classList.add('open');$('funcModal').dataset.edit=id;
-}
-
-// replace employee save with edit-aware handler
-$('funcForm').onsubmit=e=>{e.preventDefault();
- const edit=$('funcModal').dataset.edit;
- const data={nome:$('funcNome').value.trim(),funcao:$('funcFuncao').value.trim(),diaria:Number($('funcDiaria').value),telefone:$('funcTelefone').value.trim()};
- if(edit){const f=func(edit);Object.assign(f,data);delete $('funcModal').dataset.edit;toast('Funcionário atualizado!')}
- else {db.funcionarios.push({id:uid(),...data});toast('Funcionário cadastrado!')}
- e.target.reset();closeModal('funcModal');save();
-};
-
-function renderEquipe(){
- $('equipeList').innerHTML=db.funcionarios.map(f=>{let qs=db.diarias.filter(x=>x.funcId===f.id).reduce((s,x)=>s+Number(x.qtd),0),tt=db.diarias.filter(x=>x.funcId===f.id).reduce((s,x)=>s+Number(x.total),0);
- return `<div class="item"><div class="item-head"><div><h3>${esc(f.nome)}</h3><p><b>${esc(f.funcao||'Função não informada')}</b> • Diária: <b>${money(f.diaria)}</b></p>${f.telefone?`<p>📞 ${esc(f.telefone)}</p>`:''}</div><span class="pill">${qs} diária(s)</span></div><p>Total lançado: <b class="blue">${money(tt)}</b></p><div class="actions"><button class="btn" onclick="openDiariaFunc('${f.id}')">+ Registrar diária</button><button class="btn secondary" onclick="editFunc('${f.id}')">Editar</button><button class="btn danger" onclick="del('funcionarios','${f.id}')">Excluir</button></div></div>`}).join('')||'<div class="empty">Nenhum funcionário cadastrado.</div>';
-}
-
-function openModal(id){populateSelects();
- if(id==='diariaModal'){$('dData').value=today;$('dQtd').value=1;calcDiaria()}
- if(id==='recebimentoModal')$('rData').value=today;
- if(id==='despesaModal')$('xData').value=today;
- if(id==='fotoModal'){$('fotoData').value=today;$('fotoArquivo').value='';$('fotoEtapa').value='';$('fotoDesc').value=''}
- if(id==='checkModal'){$('checkCategoria').value='';$('checkTitulo').value='';$('checkObs').value=''}
- $(id).classList.add('open')
-}
-
-function populateSelects(){
- const optsObras=db.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');
- ['dObra','rObra','xObra','fotoObra','checkObra'].forEach(id=>{if($(id)) $(id).innerHTML=optsObras||'<option value="">Cadastre uma obra primeiro</option>'});
- if($('fotoFiltro')) $('fotoFiltro').innerHTML='<option value="all">Todas as obras</option>'+optsObras;
- if($('checkFiltro')) $('checkFiltro').innerHTML='<option value="all">Todas as obras</option>'+optsObras;
- const optsFunc=db.funcionarios.map(f=>`<option value="${f.id}">${esc(f.nome)} — ${esc(f.funcao||'Sem função')} — ${money(f.diaria)}</option>`).join('');
- if($('dFunc')) $('dFunc').innerHTML=optsFunc||'<option value="">Cadastre um funcionário primeiro</option>';
-}
-
-$('fotoForm').onsubmit=async e=>{e.preventDefault();
- const file=$('fotoArquivo').files[0];if(!file)return toast('Selecione uma foto.');
- const data=await compressImage(file,1200,0.68);
- db.fotos.push({id:uid(),obraId:$('fotoObra').value,data:$('fotoData').value,etapa:$('fotoEtapa').value.trim(),desc:$('fotoDesc').value.trim(),src:data});
- e.target.reset();closeModal('fotoModal');save();toast('Foto adicionada ao relatório!');
-};
-function compressImage(file,max,quality){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const scale=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*scale);c.height=Math.round(im.height*scale);const ctx=c.getContext('2d');ctx.drawImage(im,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',quality))};im.onerror=reject;im.src=r.result};r.onerror=reject;r.readAsDataURL(file)})}
-
-function renderFotos(){
- const filter=$('fotoFiltro')?.value||'all';
- const arr=db.fotos.filter(x=>filter==='all'||x.obraId===filter).sort((a,b)=>b.data.localeCompare(a.data));
- const obrasCount=new Set(arr.map(x=>x.obraId)).size;
- $('fotoResumo').innerHTML=`<div class="mini-stat"><span class="small">Fotos registradas</span><br><b class="gold">${arr.length}</b></div><div class="mini-stat"><span class="small">Obras com fotos</span><br><b>${obrasCount}</b></div>`;
- $('fotosList').innerHTML=arr.length?`<div class="photo-grid">${arr.map(x=>`<div class="photo"><img src="${x.src}" alt="Foto da obra"><div class="pc"><b>${esc(obra(x.obraId)?.nome||'Obra')}</b><span class="small">${x.data}${x.etapa?' • '+esc(x.etapa):''}</span>${x.desc?`<p class="small">${esc(x.desc)}</p>`:''}<div class="actions"><button class="btn danger" onclick="del('fotos','${x.id}')">Excluir</button></div></div></div>`).join('')}</div>`:'<div class="empty">Nenhuma foto registrada. Clique em <b>+ Foto</b> para começar.</div>';
-}
-
-$('checkForm').onsubmit=e=>{e.preventDefault();
- db.checklists.push({id:uid(),obraId:$('checkObra').value,categoria:$('checkCategoria').value.trim(),titulo:$('checkTitulo').value.trim(),obs:$('checkObs').value.trim(),done:false});
- e.target.reset();closeModal('checkModal');save();toast('Item adicionado ao checklist!');
-};
-function toggleCheck(id){const x=db.checklists.find(x=>x.id===id);if(x){x.done=!x.done;save();}}
-function editCheck(id){const x=db.checklists.find(x=>x.id===id);if(!x)return;populateSelects();$('checkObra').value=x.obraId;$('checkCategoria').value=x.categoria;$('checkTitulo').value=x.titulo;$('checkObs').value=x.obs||'';$('checkModal').dataset.edit=id;$('checkModal').classList.add('open')}
-$('checkForm').onsubmit=e=>{e.preventDefault();const edit=$('checkModal').dataset.edit;const data={obraId:$('checkObra').value,categoria:$('checkCategoria').value.trim(),titulo:$('checkTitulo').value.trim(),obs:$('checkObs').value.trim()};if(edit){Object.assign(db.checklists.find(x=>x.id===edit),data);delete $('checkModal').dataset.edit;toast('Item atualizado!')}else{db.checklists.push({id:uid(),...data,done:false});toast('Item adicionado!')}e.target.reset();closeModal('checkModal');save()};
-function renderChecklist(){
- const filter=$('checkFiltro')?.value||'all';let arr=db.checklists.filter(x=>filter==='all'||x.obraId===filter);const total=arr.length,done=arr.filter(x=>x.done).length,p=total?Math.round(done/total*100):0;
- $('checkResumo').innerHTML=`<div class="mini-stat"><span class="small">Itens</span><br><b>${total}</b></div><div class="mini-stat"><span class="small">Concluídos</span><br><b class="green">${done}</b></div><div class="mini-stat"><span class="small">Pendentes</span><br><b class="gold">${total-done}</b></div><div class="mini-stat"><span class="small">Progresso</span><br><b>${p}%</b></div>`;
- $('checkList').innerHTML=arr.length?arr.map(x=>`<div class="check-item ${x.done?'done':''}"><input type="checkbox" ${x.done?'checked':''} onchange="toggleCheck('${x.id}')"><div><div class="category">${esc(x.categoria||'Geral')} • ${esc(obra(x.obraId)?.nome||'Obra')}</div><div class="ctitle">${esc(x.titulo)}</div>${x.obs?`<div class="small" style="margin-top:4px">${esc(x.obs)}</div>`:''}</div><div class="actions"><button class="iconbtn" onclick="editCheck('${x.id}')">✏️</button><button class="iconbtn" onclick="del('checklists','${x.id}')">🗑️</button></div></div>`).join(''):'<div class="empty">Nenhum item. Use <b>Adicionar checklist padrão</b> ou <b>+ Item</b>.</div>';
-}
-function addDefaultChecklist(){const id=$('checkFiltro').value;if(id==='all'||!id){if(!db.obras.length)return toast('Cadastre uma obra primeiro.');return toast('Selecione uma obra no filtro.')}ensureDefaultChecklistFor(obra(id));save();toast('Checklist padrão adicionado!')}
-function printChecklist(){window.print()}
-
-// Enhance obra cards with links to photos/checklist and initialize checklist for new works.
-const oldObraForm= $('obraForm').onsubmit;
-$('obraForm').onsubmit=e=>{e.preventDefault();
- const o={id:uid(),nome:$('obraNome').value.trim(),cliente:$('obraCliente').value.trim(),valor:Number($('obraValor').value),inicio:$('obraInicio').value,desc:$('obraDesc').value.trim()};db.obras.push(o);ensureDefaultChecklistFor(o);e.target.reset();closeModal('obraModal');save();toast('Obra cadastrada com checklist!');
-};
-function obraCard(o){
- const r=recebido(o.id),a=Math.max(0,Number(o.valor)-r),d=despesas(o.id),di=diarias(o.id),p=Number(o.valor)?Math.min(100,r/Number(o.valor)*100):0;
- return `<div class="item"><div class="item-head"><div><h3>${esc(o.nome)}</h3><p>${esc(o.cliente||'Sem cliente')}</p></div><span class="pill">${p.toFixed(0)}% recebido</span></div><div class="grid" style="margin-top:12px"><div><span class="small">Contratado</span><br><b>${money(o.valor)}</b></div><div><span class="small">Recebido</span><br><b class="green">${money(r)}</b></div><div><span class="small">A receber</span><br><b class="gold">${money(a)}</b></div><div><span class="small">Custos</span><br><b class="red">${money(d+di)}</b></div></div><div class="progress"><i style="width:${p}%"></i></div><p class="small" style="margin-top:10px">Resultado até agora: <b class="${(r-d-di)>=0?'green':'red'}">${money(r-d-di)}</b></p><div class="actions"><button class="btn" onclick="openReceb('${o.id}')">+ Recebimento</button><button class="btn secondary" onclick="openDiariaObra('${o.id}')">+ Diária</button><button class="btn secondary" onclick="openDespesaObra('${o.id}')">+ Despesa</button><button class="btn secondary" onclick="openFotoObra('${o.id}')">📸 Fotos</button><button class="btn secondary" onclick="openChecklistObra('${o.id}')">✅ Checklist</button><button class="btn danger" onclick="del('obras','${o.id}')">Excluir</button></div></div>`;
-}
-function openFotoObra(id){populateSelects();$('fotoObra').value=id;$('fotoData').value=today;openModal('fotoModal')}
-function openChecklistObra(id){populateSelects();$('checkFiltro').value=id;showPage('checklists')}
-
-// render override so new modules refresh together.
-const baseRender=render;
-render=function(){baseRender();populateSelects();renderFotos();renderChecklist();};
-
-// Initialize old data with default checklists only when explicitly opening checklist, avoiding surprise data growth.
-// Delete cascading related records when deleting a work/employee.
-const baseDel=del;
-del=function(type,id){
- if(type==='obras'){
-   if(!confirm('Excluir esta obra e todos os registros vinculados (recebimentos, despesas, diárias, fotos e checklist)?'))return;
-   db.obras=db.obras.filter(x=>x.id!==id);db.recebimentos=db.recebimentos.filter(x=>x.obraId!==id);db.despesas=db.despesas.filter(x=>x.obraId!==id);db.diarias=db.diarias.filter(x=>x.obraId!==id);db.fotos=db.fotos.filter(x=>x.obraId!==id);db.checklists=db.checklists.filter(x=>x.obraId!==id);save();toast('Obra e registros vinculados excluídos');return;
- }
- if(type==='funcionarios'){
-   if(!confirm('Excluir funcionário e suas diárias?'))return;
-   db.funcionarios=db.funcionarios.filter(x=>x.id!==id);db.diarias=db.diarias.filter(x=>x.funcId!==id);save();toast('Funcionário excluído');return;
- }
- baseDel(type,id);
-}
-
-render();
-
+function clearFuncForm(){['fNome','fFunc','fTel','fDia','fSal','fPag'].forEach(id=>$(id).value='');$('fTipo').value='diaria'}
+async function saveObra(e){e.preventDefault();const r=await ins('obras',{nome:$('oNome').value,cliente:$('oCli').value,local:$('oLoc').value,valor_contrato:Number($('oVal').value||0),status:'em_andamento',progresso:Number($('oProg').value||0),data_previsao:$('oPrazo').value||null,observacoes:$('oObs').value});if(r){D.obras.unshift(r);e.target.reset();closeM('obraM');renderAll()}}
+async function saveFunc(e){e.preventDefault();const r=await ins('funcionarios',{nome:$('fNome').value,funcao:$('fFunc').value,telefone:$('fTel').value,tipo_pagamento:$('fTipo').value,salario_mensal:Number($('fSal').value||0),dia_pagamento:Number($('fPag').value||0)});if(r){D.funcionarios.unshift(r);clearFuncForm();closeM('funcM');renderAll()}}
+async function saveDia(e){e.preventDefault();const f=D.funcionarios.find(x=>x.id==$('dFunc').value);const qtd=Number($('dQtd').value||1),v=Number($('dVal').value||f?.dia||0);const r=await ins('diarias',{funcionario_id:$('dFunc').value,obra_id:$('dObra').value||null,data:$('dData').value,quantidade:qtd,valor_unitario:v,valor_total:qtd*v,observacoes:$('dObs').value});if(r){D.diarias.unshift(r);e.target.reset();$('dData').value=today();closeM('diaM');renderAll()}}
+async function saveFin(e){e.preventDefault();const r=await ins('gastos',{obra_id:$('oFin').value||null,categoria:$('tFin').value,descricao:$('dFin').value,valor:Number($('vFin').value),data:$('dtFin').value});if(r){D.gastos.unshift(r);e.target.reset();$('dtFin').value=today();closeM('finM');renderAll()}}
+async function deleteRow(t,id){if(confirm('Excluir este registro?')&&await del(t,id)){D[t]=D[t].filter(x=>x.id!==id);renderAll()}}
+async function deleteObra(id){if(confirm('Excluir esta obra?')){if(await del('obras',id)){D.obras=D.obras.filter(x=>x.id!==id);renderAll()}}}
+function fillSelectors(){const f=$('dFunc');if(f)f.innerHTML=D.funcionarios.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join('');const o=$('dObra'),of=$('oFin');[o,of].forEach(s=>{if(s)s.innerHTML='<option value="">Sem obra</option>'+D.obras.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join('')});if($('dData'))$('dData').value=today();if($('dtFin'))$('dtFin').value=today();if($('payFunc'))$('payFunc').innerHTML='<option value="all">Todos</option>'+D.funcionarios.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join('')}
+function dateRange(){const p=$('payPeriod').value,now=new Date();let a=new Date(now),b=new Date(now);if(p==='dia'){}else if(p==='semana'){const day=now.getDay()||7;a.setDate(now.getDate()-day+1)}else if(p==='quinzena'){a.setDate(now.getDate()<=15?1:16)}else if(p==='mes'){a.setDate(1)}else{a=new Date(($('payStart').value||today())+'T00:00:00');b=new Date(($('payEnd').value||today())+'T23:59:59')}return [a.toISOString().slice(0,10),b.toISOString().slice(0,10)]}
+function renderPayroll(){if(!$('payPeriod'))return;const p=$('payPeriod').value;$('customDates').classList.toggle('hidden',p!=='custom');const [a,b]=dateRange();const fid=$('payFunc').value;let total=0,count=0;const rows=D.funcionarios.filter(f=>fid==='all'||f.id===fid).map(f=>{let val=0;if(f.tipo_pagamento==='mensal'){const month=a.slice(0,7);const exists=b>=a&&a.slice(0,7)===b.slice(0,7);if(exists)val=Number(f.salario_mensal||0)}else{val=D.diarias.filter(d=>d.funcionario_id===f.id&&d.data>=a&&d.data<=b).reduce((s,d)=>s+Number(d.valor_total||0),0)}total+=val;if(val)count++;return `<tr><td>${esc(f.nome)}</td><td>${esc(f.funcao||'')}</td><td>${esc(f.tipo_pagamento)}</td><td>${money(val)}</td></tr>`}).join('');$('payTotal').textContent=money(total);$('payCount').textContent=count;$('diaList').innerHTML=D.diarias.filter(d=>d.data>=a&&d.data<=b).map(d=>{const f=D.funcionarios.find(x=>x.id===d.funcionario_id);return `<div class="item"><div class="row"><div><b>${esc(f?.nome||'Funcionário')}</b><br><small>${d.data} • ${d.quantidade} × ${money(d.valor_unitario)}</small></div><b class="gold">${money(d.valor_total)}</b></div><button class="danger" style="margin-top:8px" onclick="deleteRow('diarias','${d.id}')">Excluir</button></div>`}).join('')||'<div class="empty">Nenhuma diária no período.</div>';if(rows) $('funcList').insertAdjacentHTML('afterend','<div class="item"><table><thead><tr><th>Funcionário</th><th>Função</th><th>Tipo</th><th>A pagar</th></tr></thead><tbody>'+rows+'</tbody></table></div>')}
+function renderChecklist(){const steps=['Planejamento e orçamento','Contrato assinado','Medição inicial','Compra de materiais','Preparação do local','Chapisco / reboco','Instalações','Pisos e revestimentos','Pintura','Acabamentos','Limpeza final','Entrega da obra'];$('checkList').innerHTML=D.obras.map(o=>{const k='edifiq_check_'+o.id;let done=JSON.parse(localStorage.getItem(k)||'[]');const pct=Math.round(done.length/steps.length*100);return `<div class="item"><b>${esc(o.nome)}</b><div class="progress"><i style="width:${pct}%"></i></div><small>${pct}% concluído</small><div style="margin-top:8px">${steps.map((s,i)=>`<label style="display:block;padding:6px 0"><input type="checkbox" ${done.includes(i)?'checked':''} onchange="toggleCheck('${o.id}',${i},this.checked)"> ${s}</label>`).join('')}</div></div>`}).join('')||'<div class="empty">Cadastre uma obra para usar o checklist.</div>'}
+function toggleCheck(id,i,on){const k='edifiq_check_'+id;let d=JSON.parse(localStorage.getItem(k)||'[]');d=on?[...new Set([...d,i])]:d.filter(x=>x!==i);localStorage.setItem(k,JSON.stringify(d));renderChecklist()}
+function snapshot(){return {version:'EDIFIQ-2026',exported_at:new Date().toISOString(),user_email:user?.email,data:D,checklists:Object.fromEntries(D.obras.map(o=>['edifiq_check_'+o.id,localStorage.getItem('edifiq_check_'+o.id)]))}}
+function download(name,text,type='application/json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
+function exportFull(){download('EDIFIQ-backup.json',JSON.stringify(snapshot(),null,2))}
+function exportModule(t){download('EDIFIQ-'+t+'.json',JSON.stringify(D[t]||[],null,2))}
+function exportExcel(){const wb=XLSX.utils.book_new();Object.entries(D).forEach(([k,v])=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(v||[]),k.slice(0,31)));XLSX.writeFile(wb,'EDIFIQ-dados.xlsx')}
+function exportAllCsv(){Object.entries(D).forEach(([k,v])=>download('EDIFIQ-'+k+'.csv',toCSV(v||[]),'text/csv;charset=utf-8'))}
+function toCSV(arr){if(!arr.length)return '';const keys=[...new Set(arr.flatMap(x=>Object.keys(x)))];return '\\ufeff'+[keys.join(';'),...arr.map(x=>keys.map(k=>`"${String(x[k]??'').replaceAll('"','""')}"`).join(';'))].join('\\n')}
+async function previewImport(e){const file=e.target.files[0];if(!file)return;const ext=file.name.split('.').pop().toLowerCase();try{let obj;if(ext==='json'){obj=JSON.parse(await file.text())}else if(ext==='xlsx'||ext==='xls'){const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});obj={data:{}};wb.SheetNames.forEach(s=>obj.data[s]=XLSX.utils.sheet_to_json(wb.Sheets[s]))}else{const text=await file.text();const lines=text.replace(/^\\ufeff/,'').split(/\\r?\\n/).filter(Boolean),h=lines.shift().split(';').map(x=>x.replace(/^"|"$/g,''));obj={data:{importados:lines.map(l=>{const c=l.split(';');return Object.fromEntries(h.map((k,i)=>[k,c[i]?.replace(/^"|"$/g,'')]))})}}}window.pendingImport=obj;$('importPreview').innerHTML='<p class="green">Arquivo lido com sucesso.</p><button class="primary" onclick="confirmImport()">Confirmar importação</button>'}catch(err){$('importPreview').innerHTML='<p class="red">Não foi possível ler o arquivo: '+esc(err.message)+'</p>'}}
+async function confirmImport(){const x=window.pendingImport;if(!x)return;const src=x.data||x;let count=0;for(const [table,rows] of Object.entries(src)){if(!Array.isArray(rows)||!['obras','funcionarios','funcionarios','diarias','gastos','pagamentos'].includes(table))continue;const target=table==='funcionarios'?'funcionarios':table;for(const raw of rows){const r={...raw};delete r.id;delete r.created_at;delete r.user_id;let insr=await ins(target,r);if(insr){D[target].unshift(insr);count++}}}alert(count+' registro(s) importado(s).');renderAll()}
 </script>
-</body>
-</html>
+</body></html>
