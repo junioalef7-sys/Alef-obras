@@ -1,3621 +1,1918 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0d10">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>EDIFIQ — Gestão de Obras</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#0b0d10;color:#f5f5f5;font-family:Arial,sans-serif}
+body{min-height:100vh}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+
 :root{
-  --bg:#090b0e;
-  --card:#11151a;
-  --card2:#171c22;
-  --line:#262d35;
-  --text:#f4f5f6;
-  --muted:#9da5af;
-  --gold:#d6ae57;
-  --gold2:#f0ce78;
-  --green:#38c878;
-  --red:#ef5d64;
-  --blue:#4c9cff;
-  --orange:#f29b38;
-  --radius:18px;
+ --bg:#0b0d10;
+ --card:#14181d;
+ --card2:#1a1f25;
+ --line:#292f36;
+ --text:#f5f5f5;
+ --muted:#9ba3ad;
+ --gold:#d6b35a;
+ --green:#49c878;
+ --red:#ef6a6a;
 }
 
-*{
-  box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
+.auth{
+ min-height:100vh;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ padding:20px;
+ background:radial-gradient(circle at top,#222933 0,#0b0d10 55%);
 }
 
-html,body{
-  margin:0;
-  padding:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+.authbox{
+ width:100%;
+ max-width:410px;
+ background:#11151a;
+ border:1px solid var(--line);
+ border-radius:22px;
+ padding:30px 22px;
+ box-shadow:0 20px 60px #0008;
 }
 
-body{
-  min-height:100vh;
+.authlogo{
+ text-align:center;
+ font-size:42px;
+ font-weight:900;
+ letter-spacing:3px;
+ color:#fff;
 }
 
-button,input,select,textarea{
-  font:inherit;
+.authlogo span{color:var(--gold)}
+
+.sub{
+ color:var(--muted);
+ font-size:13px;
+ line-height:1.5;
 }
+
+.connection{
+ text-align:center;
+ font-size:12px;
+ color:var(--gold);
+}
+
+.form{
+ display:grid;
+ gap:11px;
+}
+
+input,select,textarea{
+ width:100%;
+ border:1px solid var(--line);
+ background:#0d1014;
+ color:#fff;
+ border-radius:12px;
+ padding:13px;
+ outline:none;
+}
+
+input:focus,select:focus,textarea:focus{
+ border-color:var(--gold);
+}
+
+textarea{min-height:100px;resize:vertical}
 
 button{
-  cursor:pointer;
+ border:0;
+ border-radius:12px;
+ padding:12px 15px;
+ color:#fff;
+ background:#242a31;
 }
 
-.hidden{
-  display:none!important;
+button.primary{
+ background:var(--gold);
+ color:#101010;
+ font-weight:800;
 }
 
-/* LOGIN */
-
-#loginScreen{
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:24px;
-  background:
-    radial-gradient(circle at top,#20252d 0,#090b0e 52%);
+button.secondary{
+ background:#20252b;
 }
 
-.loginBox{
-  width:100%;
-  max-width:410px;
-  background:rgba(17,21,26,.97);
-  border:1px solid var(--line);
-  border-radius:26px;
-  padding:30px 24px;
-  box-shadow:0 20px 60px rgba(0,0,0,.45);
+button.danger{
+ background:#612a2a;
 }
 
-.logoMark{
-  width:76px;
-  height:76px;
-  border:2px solid var(--gold);
-  border-radius:22px;
-  margin:0 auto 18px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:var(--gold);
-  font-size:34px;
-  font-weight:900;
-}
-
-.brand{
-  text-align:center;
-  font-size:31px;
-  font-weight:900;
-  letter-spacing:3px;
-}
-
-.brand span{
-  color:var(--gold);
-}
-
-.subtitle{
-  text-align:center;
-  color:var(--muted);
-  margin:7px 0 28px;
-}
-
-.field{
-  margin-bottom:14px;
-}
-
-.field label{
-  display:block;
-  color:var(--muted);
-  font-size:13px;
-  margin:0 0 7px;
-}
-
-.field input,
-.field select,
-.field textarea{
-  width:100%;
-  background:#0d1115;
-  border:1px solid var(--line);
-  color:var(--text);
-  border-radius:13px;
-  padding:13px 14px;
-  outline:none;
-}
-
-.field textarea{
-  min-height:95px;
-  resize:vertical;
-}
-
-.field input:focus,
-.field select:focus,
-.field textarea:focus{
-  border-color:var(--gold);
-}
-
-.primaryBtn{
-  width:100%;
-  border:0;
-  background:var(--gold);
-  color:#111;
-  font-weight:800;
-  border-radius:13px;
-  padding:14px;
-}
-
-.primaryBtn:active{
-  transform:scale(.98);
-}
-
-.loginError{
-  color:var(--red);
-  text-align:center;
-  margin-top:14px;
-  font-size:14px;
-}
-
-/* APP */
-
-#app{
-  min-height:100vh;
-  padding-bottom:90px;
+.app{
+ min-height:100vh;
+ padding-bottom:85px;
 }
 
 .topbar{
-  position:sticky;
-  top:0;
-  z-index:20;
-  background:rgba(9,11,14,.94);
-  backdrop-filter:blur(14px);
-  border-bottom:1px solid var(--line);
-  padding:
-    calc(10px + env(safe-area-inset-top))
-    16px 10px;
+ position:sticky;
+ top:0;
+ z-index:20;
+ background:#0b0d10ee;
+ backdrop-filter:blur(14px);
+ border-bottom:1px solid var(--line);
+ padding:14px 16px;
 }
 
-.topbarInner{
-  max-width:900px;
-  margin:auto;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
+.toprow{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ gap:12px;
 }
 
-.smallBrand{
-  font-weight:900;
-  letter-spacing:2px;
-  font-size:19px;
+.brand{
+ font-weight:900;
+ letter-spacing:2px;
+ font-size:20px;
 }
 
-.smallBrand span{
-  color:var(--gold);
+.brand span{color:var(--gold)}
+
+.useremail{
+ color:var(--muted);
+ font-size:11px;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ white-space:nowrap;
+ max-width:170px;
 }
 
-.userArea{
-  display:flex;
-  align-items:center;
-  gap:8px;
+main{
+ max-width:900px;
+ margin:auto;
+ padding:18px 15px;
 }
 
-.userEmail{
-  color:var(--muted);
-  font-size:11px;
-  max-width:130px;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+.page{display:none}
+.page.active{display:block}
+
+h1{
+ font-size:28px;
+ margin:8px 0 4px;
 }
 
-.iconBtn{
-  width:38px;
-  height:38px;
-  border:1px solid var(--line);
-  background:var(--card);
-  color:var(--text);
-  border-radius:12px;
+h2{
+ font-size:20px;
+ margin:0;
 }
 
-.container{
-  max-width:900px;
-  margin:auto;
-  padding:18px 15px;
+h3{
+ font-size:16px;
 }
 
-.view{
-  display:none;
+.lead{
+ color:var(--muted);
+ margin-top:4px;
 }
 
-.view.active{
-  display:block;
+.actions{
+ display:grid;
+ gap:12px;
+ margin-top:22px;
 }
 
-.pageTitle{
-  font-size:25px;
-  font-weight:900;
-  margin:5px 0 4px;
+.action{
+ width:100%;
+ text-align:left;
+ padding:18px;
+ background:linear-gradient(145deg,#171c22,#11151a);
+ border:1px solid var(--line);
+ border-radius:18px;
 }
 
-.pageSub{
-  color:var(--muted);
-  font-size:13px;
-  margin-bottom:18px;
+.action b{
+ font-size:16px;
 }
 
-/* DASHBOARD */
+.action small{
+ color:var(--muted);
+}
 
-.dashboardGrid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:11px;
-  margin-bottom:18px;
+.toolbar{
+ display:flex;
+ gap:8px;
+ flex-wrap:wrap;
+ margin:16px 0;
+}
+
+.card{
+ background:var(--card);
+ border:1px solid var(--line);
+ border-radius:16px;
+ padding:15px;
+ margin-bottom:12px;
+}
+
+.grid{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:10px;
+}
+
+@media(max-width:600px){
+ .grid{grid-template-columns:1fr}
 }
 
 .stat{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:17px;
-  padding:15px;
+ background:var(--card);
+ border:1px solid var(--line);
+ border-radius:16px;
+ padding:14px;
 }
 
-.statLabel{
-  color:var(--muted);
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:.5px;
+.stat small{
+ color:var(--muted);
 }
 
-.statValue{
-  margin-top:7px;
-  font-size:22px;
-  font-weight:900;
-}
-
-.statValue.gold{color:var(--gold2)}
-.statValue.green{color:var(--green)}
-.statValue.red{color:var(--red)}
-.statValue.blue{color:var(--blue)}
-
-.moduleGrid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px;
-}
-
-.module{
-  border:1px solid var(--line);
-  background:var(--card);
-  border-radius:19px;
-  padding:18px 14px;
-  min-height:118px;
-  text-align:left;
-  color:var(--text);
-}
-
-.moduleIcon{
-  font-size:27px;
-  margin-bottom:10px;
-}
-
-.moduleTitle{
-  font-weight:850;
-  font-size:15px;
-}
-
-.moduleText{
-  color:var(--muted);
-  font-size:11px;
-  margin-top:4px;
-}
-
-/* CARDS */
-
-.card{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:var(--radius);
-  padding:16px;
-  margin-bottom:12px;
-}
-
-.cardHeader{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  margin-bottom:13px;
-}
-
-.cardTitle{
-  font-size:16px;
-  font-weight:850;
-}
-
-.actionBtn{
-  border:1px solid var(--line);
-  background:var(--card2);
-  color:var(--text);
-  padding:9px 11px;
-  border-radius:11px;
-  font-size:12px;
-  font-weight:700;
-}
-
-.actionBtn.gold{
-  background:var(--gold);
-  color:#111;
-  border-color:var(--gold);
-}
-
-.actionBtn.danger{
-  color:var(--red);
-}
-
-.actionBtn.green{
-  color:var(--green);
-}
-
-.actionBtn.blue{
-  color:var(--blue);
+.stat strong{
+ display:block;
+ margin-top:7px;
+ font-size:20px;
 }
 
 .row{
-  display:flex;
-  gap:9px;
-  flex-wrap:wrap;
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ gap:10px;
 }
 
-.two{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
+.gold{color:var(--gold)}
+.green{color:var(--green)}
+.red{color:var(--red)}
+.muted{color:var(--muted)}
 
-.three{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-}
-
-.badge{
-  display:inline-flex;
-  padding:5px 8px;
-  border-radius:8px;
-  background:#20262d;
-  color:var(--muted);
-  font-size:10px;
-  font-weight:800;
-}
-
-.badge.green{
-  color:var(--green);
-}
-
-.badge.red{
-  color:var(--red);
-}
-
-.badge.gold{
-  color:var(--gold2);
+.item{
+ background:#101419;
+ border:1px solid var(--line);
+ border-radius:13px;
+ padding:12px;
+ margin-top:9px;
 }
 
 .empty{
-  padding:30px 10px;
-  text-align:center;
-  color:var(--muted);
+ color:var(--muted);
+ text-align:center;
+ padding:28px 10px;
 }
-
-/* OBRAS */
-
-.workCard{
-  position:relative;
-  overflow:hidden;
-}
-
-.workName{
-  font-size:18px;
-  font-weight:900;
-}
-
-.workClient{
-  color:var(--muted);
-  font-size:12px;
-  margin-top:4px;
-}
-
-.moneyLine{
-  display:flex;
-  justify-content:space-between;
-  margin-top:15px;
-  padding-top:12px;
-  border-top:1px solid var(--line);
-}
-
-.moneyItem small{
-  display:block;
-  color:var(--muted);
-  font-size:10px;
-}
-
-.moneyItem strong{
-  display:block;
-  margin-top:3px;
-  font-size:14px;
-}
-
-/* CHECKLIST */
-
-.checkItem{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:11px 0;
-  border-bottom:1px solid var(--line);
-}
-
-.checkItem:last-child{
-  border-bottom:0;
-}
-
-.checkItem input{
-  width:20px;
-  height:20px;
-  accent-color:var(--gold);
-}
-
-.checkDone{
-  text-decoration:line-through;
-  color:var(--muted);
-}
-
-/* BOTTOM NAV */
-
-.bottomNav{
-  position:fixed;
-  left:0;
-  right:0;
-  bottom:0;
-  z-index:30;
-  padding:
-    8px 10px
-    calc(8px + env(safe-area-inset-bottom));
-  background:rgba(9,11,14,.96);
-  backdrop-filter:blur(15px);
-  border-top:1px solid var(--line);
-}
-
-.bottomInner{
-  max-width:650px;
-  margin:auto;
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-}
-
-.navBtn{
-  border:0;
-  background:transparent;
-  color:var(--muted);
-  padding:7px 2px;
-  font-size:10px;
-}
-
-.navBtn .navIcon{
-  display:block;
-  font-size:19px;
-  margin-bottom:3px;
-}
-
-.navBtn.active{
-  color:var(--gold2);
-}
-
-/* MODAL */
 
 .modal{
-  position:fixed;
-  inset:0;
-  z-index:100;
-  background:rgba(0,0,0,.72);
-  display:none;
-  align-items:flex-end;
-  justify-content:center;
+ position:fixed;
+ inset:0;
+ z-index:100;
+ display:none;
+ align-items:flex-end;
+ justify-content:center;
+ background:#0009;
 }
 
-.modal.show{
-  display:flex;
+.modal.show{display:flex}
+
+.modalbox{
+ width:100%;
+ max-width:650px;
+ max-height:92vh;
+ overflow:auto;
+ background:#12161b;
+ border:1px solid var(--line);
+ border-radius:22px 22px 0 0;
+ padding:18px;
 }
 
-.modalBox{
-  width:100%;
-  max-width:700px;
-  max-height:92vh;
-  overflow:auto;
-  background:#11151a;
-  border:1px solid var(--line);
-  border-radius:24px 24px 0 0;
-  padding:19px 16px calc(25px + env(safe-area-inset-bottom));
+.modalhead{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ margin-bottom:14px;
 }
 
-.modalHead{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:18px;
+.nav{
+ position:fixed;
+ left:0;
+ right:0;
+ bottom:0;
+ z-index:30;
+ height:72px;
+ background:#101419f5;
+ backdrop-filter:blur(16px);
+ border-top:1px solid var(--line);
+ display:flex;
+ justify-content:space-around;
 }
 
-.modalTitle{
-  font-size:19px;
-  font-weight:900;
+.nav button{
+ flex:1;
+ background:none;
+ border-radius:0;
+ color:var(--muted);
+ font-size:11px;
 }
 
-.closeBtn{
-  width:36px;
-  height:36px;
-  border-radius:10px;
-  background:var(--card2);
-  border:1px solid var(--line);
-  color:var(--text);
+.nav button.active{
+ color:var(--gold);
 }
 
-.photoPreview{
-  width:100%;
-  max-height:240px;
-  object-fit:cover;
-  border-radius:13px;
-  margin-top:10px;
+.nav .ico{
+ display:block;
+ font-size:20px;
+ margin-bottom:3px;
 }
 
-/* TABLE / SEARCH */
+.photo{
+ width:100%;
+ border-radius:12px;
+ border:1px solid var(--line);
+}
+
+hr{
+ border:0;
+ border-top:1px solid var(--line);
+ margin:15px 0;
+}
+
+table{
+ width:100%;
+ border-collapse:collapse;
+ font-size:12px;
+}
+
+th,td{
+ padding:9px;
+ border-bottom:1px solid var(--line);
+ text-align:left;
+}
 
 .search{
-  position:relative;
-  margin-bottom:13px;
+ margin-bottom:12px;
 }
 
-.search input{
-  width:100%;
-  background:var(--card);
-  color:var(--text);
-  border:1px solid var(--line);
-  border-radius:13px;
-  padding:13px 14px 13px 40px;
+.badge{
+ display:inline-block;
+ padding:5px 8px;
+ border-radius:999px;
+ background:#252b31;
+ color:var(--muted);
+ font-size:11px;
 }
 
-.search span{
-  position:absolute;
-  left:14px;
-  top:11px;
+.section-title{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ gap:10px;
+ margin:20px 0 10px;
 }
 
-/* TOAST */
-
-#toast{
-  position:fixed;
-  left:50%;
-  bottom:90px;
-  transform:translateX(-50%) translateY(20px);
-  background:#f1f1f1;
-  color:#111;
-  padding:11px 15px;
-  border-radius:12px;
-  font-size:13px;
-  font-weight:700;
-  opacity:0;
-  pointer-events:none;
-  transition:.25s;
-  z-index:200;
-  max-width:90%;
-  text-align:center;
+.check{
+ display:flex;
+ align-items:flex-start;
+ gap:10px;
+ padding:11px;
+ border-bottom:1px solid var(--line);
 }
 
-#toast.show{
-  opacity:1;
-  transform:translateX(-50%) translateY(0);
+.check input{
+ width:auto;
+ margin-top:3px;
 }
 
-.progress{
-  height:8px;
-  background:#252b32;
-  border-radius:20px;
-  overflow:hidden;
-  margin-top:9px;
-}
-
-.progressBar{
-  height:100%;
-  background:var(--gold);
-  border-radius:20px;
-}
-
-/* DESKTOP */
-
-@media(min-width:700px){
-  .dashboardGrid{
-    grid-template-columns:repeat(4,1fr);
-  }
-
-  .moduleGrid{
-    grid-template-columns:repeat(4,1fr);
-  }
-
-  .modal{
-    align-items:center;
-  }
-
-  .modalBox{
-    border-radius:24px;
-    max-height:88vh;
-  }
+.footer-note{
+ text-align:center;
+ color:#68717c;
+ font-size:11px;
+ margin:30px 0;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<section id="loginScreen">
+<div id="auth" class="auth">
+ <div class="authbox">
+  <div class="authlogo">EDIFI<span>Q</span></div>
+  <p class="sub" style="text-align:center">GESTÃO DE OBRAS</p>
+  <p id="connectionStatus" class="connection">Verificando conexão...</p>
 
-  <div class="loginBox">
-
-    <div class="logoMark">E</div>
-
-    <div class="brand">
-      EDIFI<span>Q</span>
-    </div>
-
-    <div class="subtitle">
-      Gestão de Obras e Reformas
-    </div>
-
-    <form id="loginForm">
-
-      <div class="field">
-        <label>E-mail</label>
-        <input
-          id="loginEmail"
-          type="email"
-          autocomplete="email"
-          placeholder="seu@email.com"
-          required>
-      </div>
-
-      <div class="field">
-        <label>Senha</label>
-        <input
-          id="loginPassword"
-          type="password"
-          autocomplete="current-password"
-          placeholder="Sua senha"
-          required>
-      </div>
-
-      <button class="primaryBtn" type="submit">
-        ENTRAR
-      </button>
-
-    </form>
-
-    <div id="loginError" class="loginError"></div>
-
+  <div class="form" style="margin-top:20px">
+   <input id="email" type="email" placeholder="E-mail" autocomplete="email">
+   <input id="password" type="password" placeholder="Senha" autocomplete="current-password">
+   <button class="primary" onclick="login()">Entrar</button>
+   <button class="secondary" onclick="signup()">Criar minha conta</button>
+   <button class="secondary" onclick="resetPassword()">Esqueci a senha</button>
   </div>
 
+  <p id="authMsg" class="sub"></p>
+ </div>
+</div>
+
+<div id="app" class="app hidden">
+
+<header class="topbar">
+ <div class="toprow">
+  <div class="brand">EDIFI<span>Q</span></div>
+  <div>
+   <div id="accountEmail" class="useremail"></div>
+   <div id="appConnection" class="connection"></div>
+  </div>
+ </div>
+</header>
+
+<main>
+
+<section id="home" class="page active">
+ <h1>Olá! 👋</h1>
+ <p class="lead">Gestão de obras simples e organizada.</p>
+
+ <div class="actions">
+  <button class="action" onclick="go('obras')">
+   🏗️ <b>Obras</b><br>
+   <small>Cadastrar e acompanhar obras</small>
+  </button>
+
+  <button class="action" onclick="go('equipe')">
+   👷 <b>Equipe</b><br>
+   <small>Funcionários e diárias</small>
+  </button>
+
+  <button class="action" onclick="go('financeiro')">
+   💰 <b>Financeiro</b><br>
+   <small>Orçamentos, receitas, gastos e lucro</small>
+  </button>
+
+  <button class="action" onclick="go('relatorios')">
+   📊 <b>Relatórios</b><br>
+   <small>Relatórios e backup</small>
+  </button>
+ </div>
 </section>
 
-
-<!-- APP -->
-<div id="app" class="hidden">
-
-  <header class="topbar">
-
-    <div class="topbarInner">
-
-      <div class="smallBrand">
-        EDIFI<span>Q</span>
-      </div>
-
-      <div class="userArea">
-
-        <span id="userEmail" class="userEmail"></span>
-
-        <button
-          class="iconBtn"
-          onclick="logout()"
-          title="Sair">
-          ⇥
-        </button>
-
-      </div>
-
-    </div>
-
-  </header>
-
-
-  <main class="container">
-
-    <!-- DASHBOARD -->
-    <section id="view-dashboard" class="view active">
-
-      <div class="pageTitle">Dashboard</div>
-
-      <div class="pageSub">
-        Visão geral das suas obras e do financeiro
-      </div>
-
-      <div class="dashboardGrid">
-
-        <div class="stat">
-          <div class="statLabel">Obras</div>
-          <div id="statWorks" class="statValue gold">0</div>
-        </div>
-
-        <div class="stat">
-          <div class="statLabel">Recebido</div>
-          <div id="statReceived" class="statValue green">R$ 0,00</div>
-        </div>
-
-        <div class="stat">
-          <div class="statLabel">Despesas</div>
-          <div id="statExpenses" class="statValue red">R$ 0,00</div>
-        </div>
-
-        <div class="stat">
-          <div class="statLabel">Lucro / Sobra</div>
-          <div id="statProfit" class="statValue blue">R$ 0,00</div>
-        </div>
-
-      </div>
-
-
-      <div class="moduleGrid">
-
-        <button class="module" onclick="showView('works')">
-          <div class="moduleIcon">🏗️</div>
-          <div class="moduleTitle">Obras</div>
-          <div class="moduleText">Controle de obras e serviços</div>
-        </button>
-
-        <button class="module" onclick="showView('employees')">
-          <div class="moduleIcon">👷</div>
-          <div class="moduleTitle">Funcionários</div>
-          <div class="moduleText">Diárias e pontos</div>
-        </button>
-
-        <button class="module" onclick="showView('finance')">
-          <div class="moduleIcon">💰</div>
-          <div class="moduleTitle">Financeiro</div>
-          <div class="moduleText">Entradas e despesas</div>
-        </button>
-
-        <button class="module" onclick="showView('reports')">
-          <div class="moduleIcon">📊</div>
-          <div class="moduleTitle">Relatórios</div>
-          <div class="moduleText">Resumo e resultados</div>
-        </button>
-
-      </div>
-
-
-      <div class="card" style="margin-top:15px">
-
-        <div class="cardHeader">
-
-          <div class="cardTitle">
-            Obras em andamento
-          </div>
-
-          <button
-            class="actionBtn"
-            onclick="showView('works')">
-            Ver todas
-          </button>
-
-        </div>
-
-        <div id="dashboardWorks"></div>
-
-      </div>
-
-    </section>
-
-
-    <!-- OBRAS -->
-    <section id="view-works" class="view">
-
-      <div class="pageTitle">Obras</div>
-
-      <div class="pageSub">
-        Cadastre e acompanhe todas as suas obras
-      </div>
-
-      <div class="row" style="margin-bottom:14px">
-
-        <button
-          class="actionBtn gold"
-          onclick="openWorkModal()">
-          + Nova obra
-        </button>
-
-      </div>
-
-      <div class="search">
-        <span>🔎</span>
-        <input
-          id="workSearch"
-          placeholder="Pesquisar obra, cliente..."
-          oninput="renderWorks()">
-      </div>
-
-      <div id="worksList"></div>
-
-    </section>
-
-
-    <!-- FUNCIONÁRIOS -->
-    <section id="view-employees" class="view">
-
-      <div class="pageTitle">Funcionários</div>
-
-      <div class="pageSub">
-        Controle de equipe, diárias e pagamentos
-      </div>
-
-      <button
-        class="actionBtn gold"
-        onclick="openEmployeeModal()">
-        + Funcionário
-      </button>
-
-      <div class="card" style="margin-top:14px">
-
-        <div class="cardHeader">
-
-          <div class="cardTitle">
-            Registrar diária
-          </div>
-
-        </div>
-
-        <div class="two">
-
-          <div class="field">
-            <label>Funcionário</label>
-            <select id="dailyEmployee"></select>
-          </div>
-
-          <div class="field">
-            <label>Obra</label>
-            <select id="dailyWork"></select>
-          </div>
-
-        </div>
-
-        <div class="three">
-
-          <div class="field">
-            <label>Data</label>
-            <input id="dailyDate" type="date">
-          </div>
-
-          <div class="field">
-            <label>Diária R$</label>
-            <input id="dailyValue" type="number" step="0.01">
-          </div>
-
-          <div class="field">
-            <label>Quantidade</label>
-            <input id="dailyQty" type="number" step="0.5" value="1">
-          </div>
-
-        </div>
-
-        <button
-          class="actionBtn gold"
-          onclick="saveDaily()">
-          Registrar diária
-        </button>
-
-      </div>
-
-      <div id="employeesList"></div>
-
-    </section>
-
-
-    <!-- FINANCEIRO -->
-    <section id="view-finance" class="view">
-
-      <div class="pageTitle">Financeiro</div>
-
-      <div class="pageSub">
-        Controle de entradas, despesas, lucro e sobra
-      </div>
-
-      <div class="dashboardGrid">
-
-        <div class="stat">
-          <div class="statLabel">Receitas</div>
-          <div id="financeIncome" class="statValue green">R$ 0,00</div>
-        </div>
-
-        <div class="stat">
-          <div class="statLabel">Despesas</div>
-          <div id="financeExpense" class="statValue red">R$ 0,00</div>
-        </div>
-
-        <div class="stat">
-          <div class="statLabel">Lucro</div>
-          <div id="financeProfit" class="statValue blue">R$ 0,00</div>
-        </div>
-
-        <div class="stat">
-          <div class="statLabel">Sobra</div>
-          <div id="financeBalance" class="statValue gold">R$ 0,00</div>
-        </div>
-
-      </div>
-
-
-      <div class="card">
-
-        <div class="cardHeader">
-
-          <div class="cardTitle">
-            Lançamento financeiro
-          </div>
-
-        </div>
-
-        <div class="two">
-
-          <div class="field">
-            <label>Tipo</label>
-            <select id="financeType">
-              <option value="income">Entrada / Receita</option>
-              <option value="expense">Despesa / Gasto</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Obra</label>
-            <select id="financeWork"></select>
-          </div>
-
-        </div>
-
-        <div class="two">
-
-          <div class="field">
-            <label>Descrição</label>
-            <input id="financeDescription" placeholder="Ex.: pagamento cliente">
-          </div>
-
-          <div class="field">
-            <label>Valor</label>
-            <input id="financeValue" type="number" step="0.01">
-          </div>
-
-        </div>
-
-        <div class="field">
-          <label>Data</label>
-          <input id="financeDate" type="date">
-        </div>
-
-        <button
-          class="actionBtn gold"
-          onclick="saveFinance()">
-          Salvar lançamento
-        </button>
-
-      </div>
-
-
-      <div class="card">
-
-        <div class="cardHeader">
-
-          <div class="cardTitle">
-            Últimos lançamentos
-          </div>
-
-        </div>
-
-        <div id="financeList"></div>
-
-      </div>
-
-    </section>
-
-
-    <!-- DIÁRIO -->
-    <section id="view-daily" class="view">
-
-      <div class="pageTitle">Registro Diário</div>
-
-      <div class="pageSub">
-        Registre o que foi feito em cada dia da obra
-      </div>
-
-      <div class="card">
-
-        <div class="field">
-          <label>Obra</label>
-          <select id="dailyWorkLog"></select>
-        </div>
-
-        <div class="two">
-
-          <div class="field">
-            <label>Data</label>
-            <input id="logDate" type="date">
-          </div>
-
-          <div class="field">
-            <label>Responsável</label>
-            <input id="logResponsible" placeholder="Nome">
-          </div>
-
-        </div>
-
-        <div class="field">
-          <label>Serviço realizado</label>
-          <textarea
-            id="logDescription"
-            placeholder="Descreva o trabalho realizado..."></textarea>
-        </div>
-
-        <div class="field">
-          <label>Observações</label>
-          <textarea
-            id="logNotes"
-            placeholder="Materiais, problemas, ocorrências..."></textarea>
-        </div>
-
-        <button
-          class="actionBtn gold"
-          onclick="saveDailyLog()">
-          Salvar registro
-        </button>
-
-      </div>
-
-      <div id="dailyLogsList"></div>
-
-    </section>
-
-
-    <!-- CHECKLIST -->
-    <section id="view-checklist" class="view">
-
-      <div class="pageTitle">Checklist</div>
-
-      <div class="pageSub">
-        Acompanhe as etapas de cada obra
-      </div>
-
-      <div class="card">
-
-        <div class="field">
-          <label>Obra</label>
-          <select id="checkWork" onchange="renderChecklist()"></select>
-        </div>
-
-        <div id="checklistProgress"></div>
-
-        <div id="checklistList"></div>
-
-        <div class="row" style="margin-top:14px">
-
-          <input
-            id="newCheck"
-            placeholder="Nova tarefa"
-            style="flex:1;background:#0d1115;border:1px solid var(--line);color:white;border-radius:12px;padding:12px">
-
-          <button
-            class="actionBtn gold"
-            onclick="addChecklist()">
-            + Adicionar
-          </button>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- CONTRATOS -->
-    <section id="view-contracts" class="view">
-
-      <div class="pageTitle">Contratos</div>
-
-      <div class="pageSub">
-        Controle dos contratos das obras
-      </div>
-
-      <button
-        class="actionBtn gold"
-        onclick="openContractModal()">
-        + Novo contrato
-      </button>
-
-      <div id="contractsList" style="margin-top:14px"></div>
-
-    </section>
-
-
-    <!-- FOTOS -->
-    <section id="view-photos" class="view">
-
-      <div class="pageTitle">Relatório Fotográfico</div>
-
-      <div class="pageSub">
-        Registre fotos e observações da obra
-      </div>
-
-      <div class="card">
-
-        <div class="field">
-          <label>Obra</label>
-          <select id="photoWork"></select>
-        </div>
-
-        <div class="field">
-          <label>Foto</label>
-          <input
-            id="photoInput"
-            type="file"
-            accept="image/*"
-            capture="environment">
-        </div>
-
-        <div class="field">
-          <label>Descrição</label>
-          <textarea
-            id="photoDescription"
-            placeholder="Descreva a foto..."></textarea>
-        </div>
-
-        <button
-          class="actionBtn gold"
-          onclick="savePhoto()">
-          Salvar registro fotográfico
-        </button>
-
-      </div>
-
-      <div id="photosList"></div>
-
-    </section>
-
-
-    <!-- RELATÓRIOS -->
-    <section id="view-reports" class="view">
-
-      <div class="pageTitle">Relatórios</div>
-
-      <div class="pageSub">
-        Resumo geral do negócio
-      </div>
-
-      <div id="reportsContent"></div>
-
-    </section>
-
-
-    <!-- PESQUISA -->
-    <section id="view-search" class="view">
-
-      <div class="pageTitle">Pesquisar</div>
-
-      <div class="pageSub">
-        Encontre obras, funcionários e lançamentos
-      </div>
-
-      <div class="search">
-
-        <span>🔎</span>
-
-        <input
-          id="globalSearch"
-          placeholder="Digite o que procura..."
-          oninput="globalSearch()">
-
-      </div>
-
-      <div id="searchResults"></div>
-
-    </section>
-
-  </main>
-
-
-  <!-- NAV -->
-  <nav class="bottomNav">
-
-    <div class="bottomInner">
-
-      <button class="navBtn active" onclick="showView('dashboard')">
-        <span class="navIcon">⌂</span>
-        Início
-      </button>
-
-      <button class="navBtn" onclick="showView('works')">
-        <span class="navIcon">🏗️</span>
-        Obras
-      </button>
-
-      <button class="navBtn" onclick="showView('finance')">
-        <span class="navIcon">💰</span>
-        Financeiro
-      </button>
-
-      <button class="navBtn" onclick="showView('employees')">
-        <span class="navIcon">👷</span>
-        Equipe
-      </button>
-
-      <button class="navBtn" onclick="showView('search')">
-        <span class="navIcon">🔎</span>
-        Buscar
-      </button>
-
-    </div>
-
-  </nav>
+<section id="obras" class="page">
+ <div class="row">
+  <div>
+   <h1>Obras</h1>
+   <p class="lead">Controle suas obras e serviços.</p>
+  </div>
+  <button class="primary" onclick="openObra()">+ Obra</button>
+ </div>
+
+ <input id="searchObras" class="search" placeholder="🔎 Procurar obra, cliente..." oninput="renderObras()">
+
+ <div id="obrasList"></div>
+</section>
+
+<section id="equipe" class="page">
+ <div class="row">
+  <div>
+   <h1>Equipe</h1>
+   <p class="lead">Funcionários, diárias e pagamentos.</p>
+  </div>
+  <button class="primary" onclick="openFunc()">+ Funcionário</button>
+ </div>
+
+ <input id="searchFunc" class="search" placeholder="🔎 Procurar funcionário..." oninput="renderFuncs()">
+
+ <div class="toolbar">
+  <button onclick="openDiaria()">➕ Registrar diária</button>
+ </div>
+
+ <div id="funcList"></div>
+
+ <div class="section-title">
+  <h2>Diárias</h2>
+ </div>
+ <div id="payrollList"></div>
+</section>
+
+<section id="financeiro" class="page">
+ <div class="row">
+  <div>
+   <h1>Financeiro</h1>
+   <p class="lead">Entradas, gastos, despesas, lucro e valores a receber.</p>
+  </div>
+  <button class="primary" onclick="openFinance()">+ Lançamento</button>
+ </div>
+
+ <div class="grid">
+  <div class="stat">
+   <small>Entradas</small>
+   <strong id="finEntradas">R$ 0,00</strong>
+  </div>
+  <div class="stat">
+   <small>Despesas</small>
+   <strong id="finDespesas">R$ 0,00</strong>
+  </div>
+  <div class="stat">
+   <small>Lucro / Resultado</small>
+   <strong id="finLucro">R$ 0,00</strong>
+  </div>
+  <div class="stat">
+   <small>A receber</small>
+   <strong id="finReceber">R$ 0,00</strong>
+  </div>
+ </div>
+
+ <div class="toolbar">
+  <button onclick="openOrcamento()">📋 Orçamento</button>
+  <button onclick="openServico()">🧱 Serviço</button>
+  <button onclick="openTerceirizado()">🤝 Terceirizado</button>
+ </div>
+
+ <div id="financeList"></div>
+</section>
+
+<section id="checklist" class="page">
+ <div class="row">
+  <div>
+   <h1>Checklist</h1>
+   <p class="lead">Acompanhe as tarefas das obras.</p>
+  </div>
+  <button class="primary" onclick="addCheckDef()">+ Item</button>
+ </div>
+
+ <div id="checklistList"></div>
+</section>
+
+<section id="fotos" class="page">
+ <div class="row">
+  <div>
+   <h1>Relatório fotográfico</h1>
+   <p class="lead">Registre fotos e observações das obras.</p>
+  </div>
+  <button class="primary" onclick="openFoto()">+ Foto</button>
+ </div>
+
+ <div id="fotosList"></div>
+</section>
+
+<section id="relatorios" class="page">
+ <h1>Relatórios</h1>
+ <p class="lead">Dados, relatórios e backup do sistema.</p>
+
+ <div class="actions">
+  <button class="action" onclick="exportFull()">
+   💾 <b>Backup completo</b><br>
+   <small>Salvar todos os dados em JSON</small>
+  </button>
+
+  <button class="action" onclick="exportExcel()">
+   📊 <b>Exportar Excel</b><br>
+   <small>Gerar planilha com os dados</small>
+  </button>
+
+  <button class="action" onclick="document.getElementById('importFile').click()">
+   📥 <b>Importar backup</b><br>
+   <small>Restaurar dados de JSON ou Excel</small>
+  </button>
+
+  <input id="importFile" type="file" accept=".json,.xlsx,.xls" style="display:none" onchange="previewImport(event)">
+ </div>
+
+ <div id="importPreview" class="card"></div>
+
+ <div class="card">
+  <h3>Exportar tabelas</h3>
+  <div class="toolbar">
+   <button onclick="exportTable('obras')">Obras</button>
+   <button onclick="exportTable('funcionarios')">Funcionários</button>
+   <button onclick="exportTable('diarias')">Diárias</button>
+   <button onclick="exportTable('gastos')">Gastos</button>
+   <button onclick="exportTable('pagamentos')">Pagamentos</button>
+   <button onclick="exportTable('orcamentos')">Orçamentos</button>
+  </div>
+ </div>
+</section>
+
+<section id="config" class="page">
+ <h1>Configurações</h1>
+ <p class="lead">Conta e sistema.</p>
+
+ <div class="card">
+  <h3>Conta</h3>
+  <p class="sub" id="configEmail"></p>
+  <button class="danger" onclick="logout()">Sair da conta</button>
+ </div>
+
+ <div class="card">
+  <h3>EDIFIQ</h3>
+  <p class="sub">Gestão de Obras — dados sincronizados na nuvem pelo Supabase.</p>
+ </div>
+</section>
+
+</main>
+
+<nav class="nav">
+ <button data-p="home" class="active" onclick="go('home')">
+  <span class="ico">⌂</span>Início
+ </button>
+
+ <button data-p="obras" onclick="go('obras')">
+  <span class="ico">🏗️</span>Obras
+ </button>
+
+ <button data-p="equipe" onclick="go('equipe')">
+  <span class="ico">👷</span>Equipe
+ </button>
+
+ <button data-p="financeiro" onclick="go('financeiro')">
+  <span class="ico">💰</span>Financeiro
+ </button>
+
+ <button data-p="relatorios" onclick="go('relatorios')">
+  <span class="ico">☰</span>Mais
+ </button>
+</nav>
 
 </div>
-
 
 <!-- MODAL OBRA -->
-<div id="workModal" class="modal">
-
-  <div class="modalBox">
-
-    <div class="modalHead">
-
-      <div class="modalTitle">
-        Nova obra
-      </div>
-
-      <button class="closeBtn" onclick="closeModal('workModal')">
-        ×
-      </button>
-
-    </div>
-
-    <div class="field">
-      <label>Nome da obra</label>
-      <input id="workName" placeholder="Ex.: Reforma Residência João">
-    </div>
-
-    <div class="two">
-
-      <div class="field">
-        <label>Cliente</label>
-        <input id="workClient" placeholder="Nome do cliente">
-      </div>
-
-      <div class="field">
-        <label>Status</label>
-        <select id="workStatus">
-          <option value="andamento">Em andamento</option>
-          <option value="planejamento">Planejamento</option>
-          <option value="concluida">Concluída</option>
-          <option value="pausada">Pausada</option>
-        </select>
-      </div>
-
-    </div>
-
-    <div class="two">
-
-      <div class="field">
-        <label>Valor contratado</label>
-        <input id="workContractValue" type="number" step="0.01">
-      </div>
-
-      <div class="field">
-        <label>Data de início</label>
-        <input id="workStart" type="date">
-      </div>
-
-    </div>
-
-    <div class="field">
-      <label>Endereço</label>
-      <input id="workAddress" placeholder="Endereço da obra">
-    </div>
-
-    <div class="field">
-      <label>Descrição</label>
-      <textarea id="workDescription" placeholder="Serviços contratados..."></textarea>
-    </div>
-
-    <button
-      class="primaryBtn"
-      onclick="saveWork()">
-      SALVAR OBRA
-    </button>
-
+<div id="modalObra" class="modal">
+ <div class="modalbox">
+  <div class="modalhead">
+   <h2>Nova obra</h2>
+   <button onclick="closeModal('modalObra')">✕</button>
   </div>
 
+  <div class="form">
+   <input id="obraNome" placeholder="Nome da obra">
+   <input id="obraCliente" placeholder="Nome do cliente">
+   <input id="obraEndereco" placeholder="Endereço">
+   <input id="obraValor" type="number" step="0.01" placeholder="Valor da obra">
+   <input id="obraInicio" type="date">
+   <input id="obraPrazo" placeholder="Prazo de execução">
+   <select id="obraStatus">
+    <option value="Em andamento">Em andamento</option>
+    <option value="Concluída">Concluída</option>
+    <option value="Pausada">Pausada</option>
+    <option value="Orçamento">Orçamento</option>
+   </select>
+   <textarea id="obraObs" placeholder="Observações"></textarea>
+   <button class="primary" onclick="saveObra()">Salvar obra</button>
+  </div>
+ </div>
 </div>
-
 
 <!-- MODAL FUNCIONÁRIO -->
-<div id="employeeModal" class="modal">
-
-  <div class="modalBox">
-
-    <div class="modalHead">
-
-      <div class="modalTitle">
-        Novo funcionário
-      </div>
-
-      <button class="closeBtn" onclick="closeModal('employeeModal')">
-        ×
-      </button>
-
-    </div>
-
-    <div class="field">
-      <label>Nome</label>
-      <input id="employeeName" placeholder="Nome do funcionário">
-    </div>
-
-    <div class="two">
-
-      <div class="field">
-        <label>Função</label>
-        <input id="employeeRole" placeholder="Pedreiro, pintor...">
-      </div>
-
-      <div class="field">
-        <label>Valor da diária</label>
-        <input id="employeeDaily" type="number" step="0.01">
-      </div>
-
-    </div>
-
-    <button
-      class="primaryBtn"
-      onclick="saveEmployee()">
-      SALVAR FUNCIONÁRIO
-    </button>
-
+<div id="modalFunc" class="modal">
+ <div class="modalbox">
+  <div class="modalhead">
+   <h2>Funcionário</h2>
+   <button onclick="closeModal('modalFunc')">✕</button>
   </div>
 
+  <div class="form">
+   <input id="funcNome" placeholder="Nome">
+   <input id="funcTelefone" placeholder="Telefone">
+   <input id="funcFuncao" placeholder="Função">
+   <input id="funcDiaria" type="number" step="0.01" placeholder="Valor da diária">
+   <select id="funcAtivo">
+    <option value="true">Ativo</option>
+    <option value="false">Inativo</option>
+   </select>
+   <button class="primary" onclick="saveFunc()">Salvar funcionário</button>
+  </div>
+ </div>
 </div>
 
-
-<!-- MODAL CONTRATO -->
-<div id="contractModal" class="modal">
-
-  <div class="modalBox">
-
-    <div class="modalHead">
-
-      <div class="modalTitle">
-        Novo contrato
-      </div>
-
-      <button class="closeBtn" onclick="closeModal('contractModal')">
-        ×
-      </button>
-
-    </div>
-
-    <div class="field">
-      <label>Obra</label>
-      <select id="contractWork"></select>
-    </div>
-
-    <div class="two">
-
-      <div class="field">
-        <label>Cliente</label>
-        <input id="contractClient">
-      </div>
-
-      <div class="field">
-        <label>Valor</label>
-        <input id="contractValue" type="number" step="0.01">
-      </div>
-
-    </div>
-
-    <div class="field">
-      <label>Serviços contratados</label>
-      <textarea id="contractServices"></textarea>
-    </div>
-
-    <div class="field">
-      <label>Condições de pagamento</label>
-      <textarea id="contractPayment"></textarea>
-    </div>
-
-    <button
-      class="primaryBtn"
-      onclick="saveContract()">
-      SALVAR CONTRATO
-    </button>
-
+<!-- MODAL DIÁRIA -->
+<div id="modalDiaria" class="modal">
+ <div class="modalbox">
+  <div class="modalhead">
+   <h2>Registrar diária</h2>
+   <button onclick="closeModal('modalDiaria')">✕</button>
   </div>
 
+  <div class="form">
+   <select id="diariaFunc"></select>
+   <select id="diariaObra"></select>
+   <input id="diariaData" type="date">
+   <input id="diariaQtd" type="number" step="0.5" value="1" placeholder="Quantidade">
+   <input id="diariaValor" type="number" step="0.01" placeholder="Valor da diária">
+   <textarea id="diariaObs" placeholder="Observação"></textarea>
+   <button class="primary" onclick="saveDiaria()">Registrar diária</button>
+  </div>
+ </div>
 </div>
 
+<!-- MODAL FINANCEIRO -->
+<div id="modalFinance" class="modal">
+ <div class="modalbox">
+  <div class="modalhead">
+   <h2>Lançamento financeiro</h2>
+   <button onclick="closeModal('modalFinance')">✕</button>
+  </div>
 
-<div id="toast"></div>
+  <div class="form">
+   <select id="finTipo">
+    <option value="entrada">Entrada / Receita</option>
+    <option value="despesa">Despesa / Gasto</option>
+   </select>
 
+   <select id="finObra"></select>
+
+   <input id="finDescricao" placeholder="Descrição">
+   <input id="finValor" type="number" step="0.01" placeholder="Valor">
+   <input id="finData" type="date">
+
+   <select id="finCategoria">
+    <option value="Material">Material</option>
+    <option value="Mão de obra">Mão de obra</option>
+    <option value="Transporte">Transporte</option>
+    <option value="Ferramentas">Ferramentas</option>
+    <option value="Alimentação">Alimentação</option>
+    <option value="Outros">Outros</option>
+   </select>
+
+   <textarea id="finObs" placeholder="Observações"></textarea>
+
+   <button class="primary" onclick="saveFinance()">Salvar lançamento</button>
+  </div>
+ </div>
+</div>
+
+<!-- MODAL ORÇAMENTO -->
+<div id="modalOrcamento" class="modal">
+ <div class="modalbox">
+  <div class="modalhead">
+   <h2>Orçamento</h2>
+   <button onclick="closeModal('modalOrcamento')">✕</button>
+  </div>
+
+  <div class="form">
+   <select id="orcObra"></select>
+   <input id="orcCliente" placeholder="Cliente">
+   <input id="orcDescricao" placeholder="Descrição">
+   <input id="orcValor" type="number" step="0.01" placeholder="Valor">
+   <input id="orcData" type="date">
+   <textarea id="orcObs" placeholder="Observações"></textarea>
+   <button class="primary" onclick="saveOrcamento()">Salvar orçamento</button>
+  </div>
+ </div>
+</div>
+
+<!-- MODAL SERVIÇO -->
+<div id="modalServico" class="modal">
+ <div class="modalbox">
+  <div class="modalhead">
+   <h2>Serviço</h2>
+   <button onclick="closeModal('modalServico')">✕</button>
+  </div>
+
+  <div class="form">
+   <select id="servObra"></select>
+   <input id="servNome" placeholder="Nome do serviço">
+   <input id="servQuantidade" type="number" step="0.01" placeholder="Quantidade">
+   <input id="servUnidade" placeholder="Unidade (m², m, un...)">
+   <input id="servValor" type="number" step="0.01" placeholder="Valor">
+   <textarea id="servObs" placeholder="Observações"></textarea>
+   <button class="primary" onclick="saveServico()">Salvar serviço</button>
+  </div>
+ </div>
+</div>
+
+<!-- MODAL TERCEIRIZADO -->
+<div id="modalTerceirizado" class="modal">
+ <div class="modalbox">
+  <div class="modalhead">
+   <h2>Terceirizado</h2>
+   <button onclick="closeModal('modalTerceirizado')">✕</button>
+  </div>
+
+  <div class="form">
+   <select id="tercObra"></select>
+   <input id="tercNome" placeholder="Nome / empresa">
+   <input id="tercServico" placeholder="Serviço">
+   <input id="tercValor" type="number" step="0.01" placeholder="Valor">
+   <input id="tercData" type="date">
+   <textarea id="tercObs" placeholder="Observações"></textarea>
+   <button class="primary" onclick="saveTerceirizado()">Salvar</button>
+  </div>
+ </div>
+</div>
+
+<!-- MODAL FOTO -->
+<div id="modalFoto" class="modal">
+ <div class="modalbox">
+  <div class="modalhead">
+   <h2>Relatório fotográfico</h2>
+   <button onclick="closeModal('modalFoto')">✕</button>
+  </div>
+
+  <div class="form">
+   <select id="fotoObra"></select>
+   <input id="fotoData" type="date">
+   <input id="fotoArquivo" type="file" accept="image/*" multiple>
+   <textarea id="fotoObs" placeholder="Observação da foto"></textarea>
+   <button class="primary" onclick="saveFoto()">Salvar fotos</button>
+  </div>
+ </div>
+</div>
 
 <script>
-/* ============================================================
-   CONFIGURAÇÃO SUPABASE
-   ============================================================ */
+const SUPA_URL="https://lwqntzwajjgkvtynwdjg.supabase.co";
+const SUPA_KEY="sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
 
-const SUPABASE_URL = "COLE_AQUI_A_URL_DO_SEU_SUPABASE";
-const SUPABASE_ANON_KEY = "COLE_AQUI_A_CHAVE_ANON_PUBLICA";
+const sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 
-let supabaseClient = null;
+let user=null;
 
-if(
-  SUPABASE_URL.startsWith("http") &&
-  !SUPABASE_URL.includes("COLE_AQUI") &&
-  SUPABASE_ANON_KEY &&
-  !SUPABASE_ANON_KEY.includes("COLE_AQUI")
-){
-  supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
-}
+const tables=[
+ "obras",
+ "funcionarios",
+ "diarias",
+ "gastos",
+ "pagamentos",
+ "orcamentos",
+ "servicos",
+ "terceirizados",
+ "checklist"
+];
 
-
-/* ============================================================
-   DADOS LOCAIS
-   Servem como funcionamento imediato.
-   Quando Supabase estiver configurado, os dados podem ser
-   sincronizados conforme as tabelas criadas.
-   ============================================================ */
-
-const STORAGE_KEY = "edifiq_data_v1";
-
-let data = {
-  works: [],
-  employees: [],
-  finances: [],
-  dailies: [],
-  logs: [],
-  checklists: [],
-  contracts: [],
-  photos: []
+const D={
+ obras:[],
+ funcionarios:[],
+ diarias:[],
+ gastos:[],
+ pagamentos:[],
+ orcamentos:[],
+ servicos:[],
+ terceirizados:[],
+ checklist:[]
 };
 
-let currentUser = null;
+const $=id=>document.getElementById(id);
 
-function loadLocal(){
-
-  try{
-
-    const saved = localStorage.getItem(STORAGE_KEY);
-
-    if(saved){
-
-      const parsed = JSON.parse(saved);
-
-      data = {
-        works: parsed.works || [],
-        employees: parsed.employees || [],
-        finances: parsed.finances || [],
-        dailies: parsed.dailies || [],
-        logs: parsed.logs || [],
-        checklists: parsed.checklists || [],
-        contracts: parsed.contracts || [],
-        photos: parsed.photos || []
-      };
-
-    }
-
-  }catch(e){
-
-    console.error(e);
-
-  }
-
+function money(v){
+ return Number(v||0).toLocaleString("pt-BR",{
+  style:"currency",
+  currency:"BRL"
+ });
 }
 
-function saveLocal(){
-
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(data)
-  );
-
-}
-
-
-/* ============================================================
-   UTILIDADES
-   ============================================================ */
-
-function id(){
-
-  return Date.now().toString(36) +
-    Math.random().toString(36).substring(2,8);
-
-}
-
-function money(value){
-
-  return Number(value || 0).toLocaleString(
-    "pt-BR",
-    {
-      style:"currency",
-      currency:"BRL"
-    }
-  );
-
+function esc(v){
+ return String(v??"")
+  .replaceAll("&","&amp;")
+  .replaceAll("<","&lt;")
+  .replaceAll(">","&gt;")
+  .replaceAll('"',"&quot;")
+  .replaceAll("'","&#039;");
 }
 
 function today(){
-
-  return new Date().toISOString().slice(0,10);
-
+ return new Date().toISOString().slice(0,10);
 }
 
-function escapeHtml(value){
-
-  return String(value ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-
+function toast(msg){
+ alert(msg);
 }
 
-function showToast(message){
-
-  const el = document.getElementById("toast");
-
-  el.textContent = message;
-
-  el.classList.add("show");
-
-  clearTimeout(window.toastTimer);
-
-  window.toastTimer = setTimeout(
-    ()=>el.classList.remove("show"),
-    2500
-  );
-
+function closeModal(id){
+ $(id).classList.remove("show");
 }
 
+function openModal(id){
+ $(id).classList.add("show");
+}
 
-/* ============================================================
-   LOGIN
-   ============================================================ */
+function go(p){
+ document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+ if($(p))$(p).classList.add("active");
 
-document
-  .getElementById("loginForm")
-  .addEventListener("submit", async function(e){
+ document.querySelectorAll(".nav button").forEach(x=>{
+  x.classList.toggle("active",x.dataset.p===p);
+ });
 
-    e.preventDefault();
+ renderAll();
+ window.scrollTo(0,0);
+}
 
-    const email =
-      document.getElementById("loginEmail").value.trim();
-
-    const password =
-      document.getElementById("loginPassword").value;
-
-    const error =
-      document.getElementById("loginError");
-
-    error.textContent = "";
-
-    if(!supabaseClient){
-
-      error.textContent =
-        "Configure a URL e a chave pública do Supabase no código.";
-
-      return;
-
-    }
-
-    const result =
-      await supabaseClient.auth.signInWithPassword({
-        email,
-        password
-      });
-
-    if(result.error){
-
-      error.textContent =
-        result.error.message ||
-        "E-mail ou senha inválidos.";
-
-      return;
-
-    }
-
-    currentUser = result.data.user;
-
-    enterApp();
-
-  });
-
-
-async function checkSession(){
-
-  if(!supabaseClient){
-
-    return;
-
+async function checkConnection(){
+ try{
+  const{error}=await sb.from("obras").select("id").limit(1);
+  if(error){
+   $("connectionStatus").textContent="● Supabase configurado";
+  }else{
+   $("connectionStatus").textContent="● Conexão disponível";
   }
-
-  const result =
-    await supabaseClient.auth.getSession();
-
-  if(result.data.session){
-
-    currentUser =
-      result.data.session.user;
-
-    enterApp();
-
-  }
-
+ }catch(e){
+  $("connectionStatus").textContent="● Sistema pronto";
+ }
 }
 
+async function login(){
+ const email=$("email").value.trim();
+ const password=$("password").value;
+
+ if(!email||!password)return authMsg("Informe e-mail e senha.");
+
+ authMsg("Entrando...");
+
+ const{error}=await sb.auth.signInWithPassword({
+  email,
+  password
+ });
+
+ if(error)authMsg(error.message);
+}
+
+async function signup(){
+ const email=$("email").value.trim();
+ const password=$("password").value;
+
+ if(!email)return authMsg("Informe seu e-mail.");
+
+ if(password.length<6){
+  return authMsg("A senha precisa ter pelo menos 6 caracteres.");
+ }
+
+ authMsg("Criando conta...");
+
+ const{data,error}=await sb.auth.signUp({
+  email,
+  password
+ });
+
+ if(error)return authMsg(error.message);
+
+ authMsg(
+  data.session
+   ?"Conta criada e login realizado."
+   :"Conta criada. Verifique seu e-mail para confirmar."
+ );
+}
+
+async function resetPassword(){
+ const email=$("email").value.trim();
+
+ if(!email)return authMsg("Digite seu e-mail.");
+
+ const{error}=await sb.auth.resetPasswordForEmail(
+  email,
+  {
+   redirectTo:location.origin+location.pathname
+  }
+ );
+
+ authMsg(
+  error
+   ?"Erro: "+error.message
+   :"Link de recuperação enviado para seu e-mail."
+ );
+}
 
 async function logout(){
+ await sb.auth.signOut();
+}
 
-  if(supabaseClient){
+function authMsg(msg){
+ $("authMsg").textContent=msg;
+}
 
-    await supabaseClient.auth.signOut();
+sb.auth.onAuthStateChange(async(_e,s)=>{
+ user=s?.user||null;
 
+ if(user){
+  $("auth").classList.add("hidden");
+  $("app").classList.remove("hidden");
+
+  $("accountEmail").textContent=user.email||"";
+  $("configEmail").textContent=user.email||"";
+  $("appConnection").textContent="● Sistema conectado";
+
+  await loadCloud();
+  renderAll();
+ }else{
+  $("app").classList.add("hidden");
+  $("auth").classList.remove("hidden");
+ }
+});
+
+async function loadCloud(){
+ for(const t of tables){
+  try{
+   const{data,error}=await sb
+    .from(t)
+    .select("*")
+    .order("created_at",{ascending:false});
+
+   if(error){
+    console.warn(t,error.message);
+   }else{
+    D[t].splice(0,D[t].length,...(data||[]));
+   }
+  }catch(e){
+   console.warn(t,e);
   }
-
-  currentUser = null;
-
-  document
-    .getElementById("app")
-    .classList.add("hidden");
-
-  document
-    .getElementById("loginScreen")
-    .classList.remove("hidden");
-
+ }
 }
 
+async function insertRow(table,row){
+ const payload={
+  ...row,
+  user_id:user.id
+ };
 
-/* ============================================================
-   ENTRAR NO APP
-   ============================================================ */
+ const{data,error}=await sb
+  .from(table)
+  .insert(payload)
+  .select()
+  .single();
 
-function enterApp(){
+ if(error){
+  toast("Erro ao salvar: "+error.message);
+  return null;
+ }
 
-  document
-    .getElementById("loginScreen")
-    .classList.add("hidden");
-
-  document
-    .getElementById("app")
-    .classList.remove("hidden");
-
-  document
-    .getElementById("userEmail")
-    .textContent =
-      currentUser?.email || "";
-
-  initialize();
-
+ return data;
 }
 
+async function updateRow(table,id,row){
+ const{data,error}=await sb
+  .from(table)
+  .update(row)
+  .eq("id",id)
+  .eq("user_id",user.id)
+  .select()
+  .single();
 
-/* ============================================================
-   NAVEGAÇÃO
-   ============================================================ */
+ if(error){
+  toast("Erro ao editar: "+error.message);
+  return null;
+ }
 
-function showView(name){
-
-  document
-    .querySelectorAll(".view")
-    .forEach(v=>v.classList.remove("active"));
-
-  const target =
-    document.getElementById("view-"+name);
-
-  if(target){
-
-    target.classList.add("active");
-
-  }
-
-  const navMap = {
-    dashboard:0,
-    works:1,
-    finance:2,
-    employees:3,
-    search:4
-  };
-
-  document
-    .querySelectorAll(".navBtn")
-    .forEach((btn,i)=>{
-
-      btn.classList.toggle(
-        "active",
-        i === (navMap[name] ?? -1)
-      );
-
-    });
-
-  if(name === "dashboard") renderDashboard();
-  if(name === "works") renderWorks();
-  if(name === "employees") renderEmployees();
-  if(name === "finance") renderFinance();
-  if(name === "daily") renderDailyLogs();
-  if(name === "checklist") renderChecklist();
-  if(name === "contracts") renderContracts();
-  if(name === "photos") renderPhotos();
-  if(name === "reports") renderReports();
-
+ return data;
 }
 
+async function removeRow(table,id){
+ const{error}=await sb
+  .from(table)
+  .delete()
+  .eq("id",id)
+  .eq("user_id",user.id);
 
-/* ============================================================
-   INICIALIZAÇÃO
-   ============================================================ */
+ if(error){
+  toast(error.message);
+  return false;
+ }
 
-function initialize(){
-
-  loadLocal();
-
-  document.getElementById("dailyDate").value = today();
-  document.getElementById("financeDate").value = today();
-  document.getElementById("logDate").value = today();
-
-  refreshSelectors();
-
-  renderDashboard();
-
+ return true;
 }
 
+function sums(){
+ const entradas=D.pagamentos.reduce(
+  (a,x)=>a+Number(x.valor||0),0
+ );
 
-/* ============================================================
-   OBRAS
-   ============================================================ */
+ const gastos=D.gastos.reduce(
+  (a,x)=>a+Number(x.valor||0),0
+ );
 
-function openWorkModal(){
+ const diarias=D.diarias.reduce(
+  (a,x)=>a+Number(x.total||x.valor_total||x.valor||0),0
+ );
 
-  document.getElementById("workName").value="";
-  document.getElementById("workClient").value="";
-  document.getElementById("workContractValue").value="";
-  document.getElementById("workStart").value=today();
-  document.getElementById("workAddress").value="";
-  document.getElementById("workDescription").value="";
+ const despesas=gastos+diarias;
 
-  document
-    .getElementById("workModal")
-    .classList.add("show");
-
+ return{
+  entradas,
+  gastos,
+  diarias,
+  despesas,
+  lucro:entradas-despesas
+ };
 }
 
-function saveWork(){
+function renderAll(){
+ const s=sums();
+ const contratos=D.obras.reduce(
+  (a,x)=>a+Number(x.valor||0),0
+ );
 
-  const name =
-    document.getElementById("workName").value.trim();
+ if($("kObras"))$("kObras").textContent=D.obras.length;
+ if($("kFunc"))$("kFunc").textContent=D.funcionarios.filter(f=>f.ativo!==false).length;
+ if($("kEntradas"))$("kEntradas").textContent=money(s.entradas);
+ if($("kDespesas"))$("kDespesas").textContent=money(s.despesas);
+ if($("kResultado"))$("kResultado").textContent=money(s.lucro);
+ if($("kReceber"))$("kReceber").textContent=money(
+  Math.max(0,contratos-s.entradas)
+ );
 
-  if(!name){
-
-    showToast("Digite o nome da obra.");
-
-    return;
-
-  }
-
-  const work = {
-
-    id:id(),
-
-    name,
-
-    client:
-      document.getElementById("workClient").value.trim(),
-
-    status:
-      document.getElementById("workStatus").value,
-
-    contractValue:
-      Number(document.getElementById("workContractValue").value || 0),
-
-    start:
-      document.getElementById("workStart").value,
-
-    address:
-      document.getElementById("workAddress").value.trim(),
-
-    description:
-      document.getElementById("workDescription").value.trim(),
-
-    createdAt:Date.now()
-
-  };
-
-  data.works.unshift(work);
-
-  createDefaultChecklist(work.id);
-
-  saveLocal();
-
-  closeModal("workModal");
-
-  refreshSelectors();
-
-  renderWorks();
-
-  renderDashboard();
-
-  showToast("Obra cadastrada.");
-
-}
-
-function renderWorks(){
-
-  const list =
-    document.getElementById("worksList");
-
-  const search =
-    (document.getElementById("workSearch")?.value || "")
-      .toLowerCase();
-
-  const works =
-    data.works.filter(w=>
-      `${w.name} ${w.client} ${w.address}`
-      .toLowerCase()
-      .includes(search)
-    );
-
-  if(!works.length){
-
-    list.innerHTML =
-      `<div class="empty">
-        Nenhuma obra cadastrada.
-      </div>`;
-
-    return;
-
-  }
-
-  list.innerHTML =
-    works.map(w=>{
-
-      const received =
-        data.finances
-          .filter(f=>f.workId===w.id && f.type==="income")
-          .reduce((s,f)=>s+Number(f.value||0),0);
-
-      const expenses =
-        data.finances
-          .filter(f=>f.workId===w.id && f.type==="expense")
-          .reduce((s,f)=>s+Number(f.value||0),0);
-
-      const profit =
-        received-expenses;
-
-      const statusText = {
-        andamento:"Em andamento",
-        planejamento:"Planejamento",
-        concluida:"Concluída",
-        pausada:"Pausada"
-      }[w.status] || w.status;
-
-      return `
-
-      <div class="card workCard">
-
-        <div class="cardHeader">
-
-          <div>
-            <div class="workName">
-              ${escapeHtml(w.name)}
-            </div>
-
-            <div class="workClient">
-              ${escapeHtml(w.client || "Sem cliente")}
-            </div>
-          </div>
-
-          <span class="badge gold">
-            ${statusText}
-          </span>
-
-        </div>
-
-        <div class="row">
-
-          <button
-            class="actionBtn"
-            onclick="openWorkDetails('${w.id}')">
-            Abrir obra
-          </button>
-
-          <button
-            class="actionBtn"
-            onclick="showWorkChecklist('${w.id}')">
-            Checklist
-          </button>
-
-          <button
-            class="actionBtn"
-            onclick="showWorkDaily('${w.id}')">
-            Diário
-          </button>
-
-          <button
-            class="actionBtn"
-            onclick="deleteWork('${w.id}')">
-            Excluir
-          </button>
-
-        </div>
-
-        <div class="moneyLine">
-
-          <div class="moneyItem">
-            <small>Contratado</small>
-            <strong>${money(w.contractValue)}</strong>
-          </div>
-
-          <div class="moneyItem">
-            <small>Recebido</small>
-            <strong style="color:var(--green)">
-              ${money(received)}
-            </strong>
-          </div>
-
-          <div class="moneyItem">
-            <small>Gastos</small>
-            <strong style="color:var(--red)">
-              ${money(expenses)}
-            </strong>
-          </div>
-
-          <div class="moneyItem">
-            <small>Sobra</small>
-            <strong style="color:var(--gold2)">
-              ${money(profit)}
-            </strong>
-          </div>
-
-        </div>
-
+ if($("recentes")){
+  $("recentes").innerHTML=
+   D.obras.slice(0,4).map(o=>`
+    <div class="item">
+     <div class="row">
+      <div>
+       <b>${esc(o.nome)}</b><br>
+       <small>${esc(o.cliente||"Cliente não informado")}</small>
       </div>
+      <b class="gold">${money(o.valor)}</b>
+     </div>
+    </div>
+   `).join("")
+   ||
+   '<div class="empty">Nenhuma obra cadastrada.</div>';
+ }
 
-      `;
+ renderObras();
+ renderFuncs();
+ renderFinance();
+ renderPayroll();
+ renderChecklist();
+ renderFotos();
+ fillSelectors();
 
-    }).join("");
-
+ if($("finEntradas"))$("finEntradas").textContent=money(s.entradas);
+ if($("finDespesas"))$("finDespesas").textContent=money(s.despesas);
+ if($("finLucro"))$("finLucro").textContent=money(s.lucro);
+ if($("finReceber"))$("finReceber").textContent=money(
+  Math.max(0,contratos-s.entradas)
+ );
 }
 
+function renderObras(){
+ const q=($("searchObras")?.value||"").toLowerCase();
 
-function deleteWork(workId){
+ const rows=D.obras.filter(o=>
+  String(o.nome||"").toLowerCase().includes(q)||
+  String(o.cliente||"").toLowerCase().includes(q)||
+  String(o.endereco||"").toLowerCase().includes(q)
+ );
 
-  if(!confirm("Excluir esta obra e seus registros?")) return;
+ $("obrasList").innerHTML=
+ rows.map(o=>`
+  <div class="card">
+   <div class="row">
+    <div>
+     <h3>${esc(o.nome)}</h3>
+     <span class="badge">${esc(o.status||"Em andamento")}</span>
+    </div>
+    <b class="gold">${money(o.valor)}</b>
+   </div>
 
-  data.works =
-    data.works.filter(w=>w.id!==workId);
+   <p class="sub">
+    Cliente: ${esc(o.cliente||"Não informado")}<br>
+    ${esc(o.endereco||"")}
+   </p>
 
-  data.finances =
-    data.finances.filter(f=>f.workId!==workId);
-
-  data.logs =
-    data.logs.filter(l=>l.workId!==workId);
-
-  data.dailies =
-    data.dailies.filter(d=>d.workId!==workId);
-
-  data.checklists =
-    data.checklists.filter(c=>c.workId!==workId);
-
-  data.contracts =
-    data.contracts.filter(c=>c.workId!==workId);
-
-  data.photos =
-    data.photos.filter(p=>p.workId!==workId);
-
-  saveLocal();
-
-  refreshSelectors();
-  renderWorks();
-  renderDashboard();
-
-  showToast("Obra excluída.");
-
+   <div class="toolbar">
+    <button onclick="editObra('${o.id}')">Editar</button>
+    <button class="danger" onclick="deleteObra('${o.id}')">Excluir</button>
+   </div>
+  </div>
+ `).join("")
+ ||
+ '<div class="empty">Nenhuma obra cadastrada.</div>';
 }
 
+function openObra(){
+ $("obraNome").value="";
+ $("obraCliente").value="";
+ $("obraEndereco").value="";
+ $("obraValor").value="";
+ $("obraInicio").value=today();
+ $("obraPrazo").value="";
+ $("obraStatus").value="Em andamento";
+ $("obraObs").value="";
+ $("modalObra").dataset.id="";
+ openModal("modalObra");
+}
 
-function openWorkDetails(workId){
+async function saveObra(){
+ const row={
+  nome:$("obraNome").value.trim(),
+  cliente:$("obraCliente").value.trim(),
+  endereco:$("obraEndereco").value.trim(),
+  valor:Number($("obraValor").value||0),
+  inicio:$("obraInicio").value||null,
+  prazo:$("obraPrazo").value.trim(),
+  status:$("obraStatus").value,
+  observacoes:$("obraObs").value.trim()
+ };
 
-  const w =
-    data.works.find(x=>x.id===workId);
+ if(!row.nome)return toast("Informe o nome da obra.");
 
-  if(!w) return;
+ const id=$("modalObra").dataset.id;
 
-  const received =
-    data.finances
-      .filter(f=>f.workId===w.id && f.type==="income")
-      .reduce((s,f)=>s+Number(f.value||0),0);
+ if(id){
+  const x=await updateRow("obras",id,row);
+  if(x){
+   const i=D.obras.findIndex(o=>o.id===id);
+   if(i>=0)D.obras[i]=x;
+  }
+ }else{
+  const x=await insertRow("obras",row);
+  if(x)D.obras.unshift(x);
+ }
 
-  const expenses =
-    data.finances
-      .filter(f=>f.workId===w.id && f.type==="expense")
-      .reduce((s,f)=>s+Number(f.value||0),0);
+ closeModal("modalObra");
+ renderAll();
+}
 
-  alert(
-`OBRA: ${w.name}
+function editObra(id){
+ const o=D.obras.find(x=>x.id===id);
+ if(!o)return;
 
-Cliente: ${w.client || "-"}
-Status: ${w.status}
-Endereço: ${w.address || "-"}
-Valor contratado: ${money(w.contractValue)}
+ $("obraNome").value=o.nome||"";
+ $("obraCliente").value=o.cliente||"";
+ $("obraEndereco").value=o.endereco||"";
+ $("obraValor").value=o.valor||"";
+ $("obraInicio").value=o.inicio||"";
+ $("obraPrazo").value=o.prazo||"";
+ $("obraStatus").value=o.status||"Em andamento";
+ $("obraObs").value=o.observacoes||"";
+ $("modalObra").dataset.id=id;
 
-Recebido: ${money(received)}
-Despesas: ${money(expenses)}
-Lucro / Sobra: ${money(received-expenses)}
+ openModal("modalObra");
+}
 
-${w.description || ""}`
+async function deleteObra(id){
+ if(!confirm("Excluir esta obra?"))return;
+
+ if(await removeRow("obras",id)){
+  D.obras.splice(
+   D.obras.findIndex(x=>x.id===id),
+   1
   );
 
+  renderAll();
+ }
 }
 
+function renderFuncs(){
+ const q=($("searchFunc")?.value||"").toLowerCase();
 
-/* ============================================================
-   CHECKLIST
-   ============================================================ */
+ const rows=D.funcionarios.filter(f=>
+  String(f.nome||"").toLowerCase().includes(q)||
+  String(f.funcao||"").toLowerCase().includes(q)
+ );
 
-function createDefaultChecklist(workId){
-
-  const items = [
-    "Preparação da obra",
-    "Compra / conferência de materiais",
-    "Demolição / preparação",
-    "Chapisco",
-    "Reboco",
-    "Reparos de paredes",
-    "Instalações",
-    "Pintura",
-    "Piso / revestimento",
-    "Acabamento",
-    "Limpeza final",
-    "Entrega da obra"
-  ];
-
-  items.forEach(text=>{
-
-    data.checklists.push({
-
-      id:id(),
-      workId,
-      text,
-      done:false
-
-    });
-
-  });
-
-}
-
-
-function showWorkChecklist(workId){
-
-  document.getElementById("checkWork").value=workId;
-
-  showView("checklist");
-
-  renderChecklist();
-
-}
-
-
-function addChecklist(){
-
-  const workId =
-    document.getElementById("checkWork").value;
-
-  const input =
-    document.getElementById("newCheck");
-
-  const text =
-    input.value.trim();
-
-  if(!workId || !text){
-
-    showToast("Escolha uma obra e digite a tarefa.");
-
-    return;
-
-  }
-
-  data.checklists.push({
-
-    id:id(),
-    workId,
-    text,
-    done:false
-
-  });
-
-  input.value="";
-
-  saveLocal();
-
-  renderChecklist();
-
-}
-
-
-function toggleChecklist(checkId){
-
-  const item =
-    data.checklists.find(c=>c.id===checkId);
-
-  if(!item) return;
-
-  item.done=!item.done;
-
-  saveLocal();
-
-  renderChecklist();
-
-}
-
-
-function renderChecklist(){
-
-  const select =
-    document.getElementById("checkWork");
-
-  if(!select) return;
-
-  const workId=select.value;
-
-  const list =
-    document.getElementById("checklistList");
-
-  const progress =
-    document.getElementById("checklistProgress");
-
-  if(!workId){
-
-    list.innerHTML=
-      `<div class="empty">Selecione uma obra.</div>`;
-
-    progress.innerHTML="";
-
-    return;
-
-  }
-
-  const items =
-    data.checklists.filter(c=>c.workId===workId);
-
-  const done =
-    items.filter(c=>c.done).length;
-
-  const percent =
-    items.length
-      ? Math.round(done/items.length*100)
-      : 0;
-
-  progress.innerHTML = `
-
-    <div style="display:flex;justify-content:space-between">
-
-      <span style="color:var(--muted);font-size:12px">
-        Progresso
-      </span>
-
-      <strong>${percent}%</strong>
-
+ $("funcList").innerHTML=
+ rows.map(f=>`
+  <div class="card">
+   <div class="row">
+    <div>
+     <h3>${esc(f.nome)}</h3>
+     <span class="badge">${esc(f.funcao||"Funcionário")}</span>
     </div>
+    <b class="gold">${money(f.diaria)}</b>
+   </div>
 
-    <div class="progress">
-      <div
-        class="progressBar"
-        style="width:${percent}%">
-      </div>
+   <p class="sub">
+    ${esc(f.telefone||"Sem telefone")} ·
+    ${f.ativo===false?"Inativo":"Ativo"}
+   </p>
+
+   <div class="toolbar">
+    <button onclick="editFunc('${f.id}')">Editar</button>
+    <button class="danger" onclick="deleteFunc('${f.id}')">Excluir</button>
+   </div>
+  </div>
+ `).join("")
+ ||
+ '<div class="empty">Nenhum funcionário cadastrado.</div>';
+}
+
+function openFunc(){
+ $("funcNome").value="";
+ $("funcTelefone").value="";
+ $("funcFuncao").value="";
+ $("funcDiaria").value="";
+ $("funcAtivo").value="true";
+ $("modalFunc").dataset.id="";
+ openModal("modalFunc");
+}
+
+async function saveFunc(){
+ const row={
+  nome:$("funcNome").value.trim(),
+  telefone:$("funcTelefone").value.trim(),
+  funcao:$("funcFuncao").value.trim(),
+  diaria:Number($("funcDiaria").value||0),
+  ativo:$("funcAtivo").value==="true"
+ };
+
+ if(!row.nome)return toast("Informe o nome.");
+
+ const id=$("modalFunc").dataset.id;
+
+ if(id){
+  const x=await updateRow("funcionarios",id,row);
+  if(x){
+   const i=D.funcionarios.findIndex(f=>f.id===id);
+   if(i>=0)D.funcionarios[i]=x;
+  }
+ }else{
+  const x=await insertRow("funcionarios",row);
+  if(x)D.funcionarios.unshift(x);
+ }
+
+ closeModal("modalFunc");
+ renderAll();
+}
+
+function editFunc(id){
+ const f=D.funcionarios.find(x=>x.id===id);
+ if(!f)return;
+
+ $("funcNome").value=f.nome||"";
+ $("funcTelefone").value=f.telefone||"";
+ $("funcFuncao").value=f.funcao||"";
+ $("funcDiaria").value=f.diaria||"";
+ $("funcAtivo").value=f.ativo===false?"false":"true";
+ $("modalFunc").dataset.id=id;
+
+ openModal("modalFunc");
+}
+
+async function deleteFunc(id){
+ if(!confirm("Excluir funcionário?"))return;
+
+ if(await removeRow("funcionarios",id)){
+  D.funcionarios.splice(
+   D.funcionarios.findIndex(x=>x.id===id),
+   1
+  );
+  renderAll();
+ }
+}
+
+function openDiaria(){
+ if(!D.funcionarios.length){
+  return toast("Cadastre um funcionário primeiro.");
+ }
+
+ $("diariaData").value=today();
+ $("diariaQtd").value=1;
+ $("diariaValor").value="";
+ $("diariaObs").value="";
+ openModal("modalDiaria");
+}
+
+async function saveDiaria(){
+ const func=D.funcionarios.find(
+  x=>x.id===$("diariaFunc").value
+ );
+
+ const qtd=Number($("diariaQtd").value||1);
+ const valor=Number(
+  $("diariaValor").value||func?.diaria||0
+ );
+
+ const row={
+  funcionario_id:$("diariaFunc").value,
+  obra_id:$("diariaObra").value||null,
+  data:$("diariaData").value||today(),
+  quantidade:qtd,
+  valor,
+  total:qtd*valor,
+  observacoes:$("diariaObs").value.trim()
+ };
+
+ if(!row.funcionario_id)return toast("Selecione o funcionário.");
+
+ const x=await insertRow("diarias",row);
+
+ if(x)D.diarias.unshift(x);
+
+ closeModal("modalDiaria");
+ renderAll();
+}
+
+function renderPayroll(){
+ const rows=D.diarias.slice(0,50);
+
+ $("payrollList").innerHTML=
+ rows.map(d=>{
+  const f=D.funcionarios.find(x=>x.id===d.funcionario_id);
+  const o=D.obras.find(x=>x.id===d.obra_id);
+
+  return`
+   <div class="item">
+    <div class="row">
+     <div>
+      <b>${esc(f?.nome||"Funcionário")}</b><br>
+      <small>
+       ${esc(o?.nome||"Sem obra")} ·
+       ${esc(d.data||"")}
+      </small>
+     </div>
+     <b class="gold">${money(d.total||d.valor)}</b>
     </div>
-
+   </div>
   `;
-
-  list.innerHTML =
-    items.map(c=>`
-
-      <div class="checkItem">
-
-        <input
-          type="checkbox"
-          ${c.done ? "checked":""}
-          onchange="toggleChecklist('${c.id}')">
-
-        <span class="${c.done ? "checkDone":""}">
-          ${escapeHtml(c.text)}
-        </span>
-
-      </div>
-
-    `).join("");
-
+ }).join("")
+ ||
+ '<div class="empty">Nenhuma diária registrada.</div>';
 }
-
-
-/* ============================================================
-   FUNCIONÁRIOS
-   ============================================================ */
-
-function openEmployeeModal(){
-
-  document.getElementById("employeeName").value="";
-  document.getElementById("employeeRole").value="";
-  document.getElementById("employeeDaily").value="";
-
-  document
-    .getElementById("employeeModal")
-    .classList.add("show");
-
-}
-
-
-function saveEmployee(){
-
-  const name =
-    document.getElementById("employeeName")
-      .value.trim();
-
-  if(!name){
-
-    showToast("Digite o nome.");
-
-    return;
-
-  }
-
-  data.employees.push({
-
-    id:id(),
-    name,
-    role:
-      document.getElementById("employeeRole").value.trim(),
-    daily:
-      Number(document.getElementById("employeeDaily").value || 0)
-
-  });
-
-  saveLocal();
-
-  closeModal("employeeModal");
-
-  refreshSelectors();
-  renderEmployees();
-
-  showToast("Funcionário cadastrado.");
-
-}
-
-
-function saveDaily(){
-
-  const employeeId =
-    document.getElementById("dailyEmployee").value;
-
-  const workId =
-    document.getElementById("dailyWork").value;
-
-  const date =
-    document.getElementById("dailyDate").value;
-
-  const value =
-    Number(document.getElementById("dailyValue").value || 0);
-
-  const qty =
-    Number(document.getElementById("dailyQty").value || 1);
-
-  if(!employeeId || !workId || !date || !value){
-
-    showToast("Preencha os dados da diária.");
-
-    return;
-
-  }
-
-  data.dailies.unshift({
-
-    id:id(),
-    employeeId,
-    workId,
-    date,
-    value,
-    qty,
-    total:value*qty
-
-  });
-
-  saveLocal();
-
-  renderEmployees();
-
-  showToast("Diária registrada.");
-
-}
-
-
-function renderEmployees(){
-
-  const list =
-    document.getElementById("employeesList");
-
-  if(!data.employees.length){
-
-    list.innerHTML=
-      `<div class="empty">
-        Nenhum funcionário cadastrado.
-      </div>`;
-
-    return;
-
-  }
-
-  list.innerHTML =
-    data.employees.map(e=>{
-
-      const total =
-        data.dailies
-          .filter(d=>d.employeeId===e.id)
-          .reduce((s,d)=>s+Number(d.total||0),0);
-
-      const days =
-        data.dailies
-          .filter(d=>d.employeeId===e.id)
-          .reduce((s,d)=>s+Number(d.qty||0),0);
-
-      return `
-
-      <div class="card">
-
-        <div class="cardHeader">
-
-          <div>
-
-            <div class="cardTitle">
-              ${escapeHtml(e.name)}
-            </div>
-
-            <div style="color:var(--muted);font-size:12px">
-              ${escapeHtml(e.role || "Funcionário")}
-            </div>
-
-          </div>
-
-          <button
-            class="actionBtn danger"
-            onclick="deleteEmployee('${e.id}')">
-            Excluir
-          </button>
-
-        </div>
-
-        <div class="moneyLine">
-
-          <div class="moneyItem">
-            <small>Diária padrão</small>
-            <strong>${money(e.daily)}</strong>
-          </div>
-
-          <div class="moneyItem">
-            <small>Total de dias</small>
-            <strong>${days}</strong>
-          </div>
-
-          <div class="moneyItem">
-            <small>Total pago</small>
-            <strong style="color:var(--gold2)">
-              ${money(total)}
-            </strong>
-          </div>
-
-        </div>
-
-      </div>
-
-      `;
-
-    }).join("");
-
-}
-
-
-function deleteEmployee(employeeId){
-
-  if(!confirm("Excluir funcionário?")) return;
-
-  data.employees =
-    data.employees.filter(e=>e.id!==employeeId);
-
-  data.dailies =
-    data.dailies.filter(d=>d.employeeId!==employeeId);
-
-  saveLocal();
-
-  refreshSelectors();
-  renderEmployees();
-
-}
-
-
-/* ============================================================
-   FINANCEIRO
-   ============================================================ */
-
-function saveFinance(){
-
-  const type =
-    document.getElementById("financeType").value;
-
-  const workId =
-    document.getElementById("financeWork").value;
-
-  const description =
-    document.getElementById("financeDescription")
-      .value.trim();
-
-  const value =
-    Number(document.getElementById("financeValue").value || 0);
-
-  const date =
-    document.getElementById("financeDate").value;
-
-  if(!description || !value){
-
-    showToast("Informe descrição e valor.");
-
-    return;
-
-  }
-
-  data.finances.unshift({
-
-    id:id(),
-    type,
-    workId,
-    description,
-    value,
-    date
-
-  });
-
-  saveLocal();
-
-  document.getElementById("financeDescription").value="";
-  document.getElementById("financeValue").value="";
-
-  renderFinance();
-  renderDashboard();
-  renderWorks();
-
-  showToast("Lançamento salvo.");
-
-}
-
 
 function renderFinance(){
-
-  const income =
-    data.finances
-      .filter(f=>f.type==="income")
-      .reduce((s,f)=>s+Number(f.value||0),0);
-
-  const expense =
-    data.finances
-      .filter(f=>f.type==="expense")
-      .reduce((s,f)=>s+Number(f.value||0),0);
-
-  const profit =
-    income-expense;
-
-  document.getElementById("financeIncome").textContent=
-    money(income);
-
-  document.getElementById("financeExpense").textContent=
-    money(expense);
-
-  document.getElementById("financeProfit").textContent=
-    money(profit);
-
-  document.getElementById("financeBalance").textContent=
-    money(profit);
-
-  const list =
-    document.getElementById("financeList");
-
-  if(!data.finances.length){
-
-    list.innerHTML=
-      `<div class="empty">
-        Nenhum lançamento.
-      </div>`;
-
-    return;
-
-  }
-
-  list.innerHTML =
-    data.finances.slice(0,50).map(f=>{
-
-      const work =
-        data.works.find(w=>w.id===f.workId);
-
-      return `
-
-      <div
-        style="padding:12px 0;border-bottom:1px solid var(--line)">
-
-        <div style="display:flex;justify-content:space-between;gap:10px">
-
-          <div>
-
-            <strong>
-              ${escapeHtml(f.description)}
-            </strong>
-
-            <div style="color:var(--muted);font-size:11px;margin-top:4px">
-              ${escapeHtml(work?.name || "Sem obra")}
-              · ${f.date || ""}
-            </div>
-
-          </div>
-
-          <div style="
-            font-weight:900;
-            color:${f.type==="income" ? "var(--green)" : "var(--red)"};
-            white-space:nowrap">
-
-            ${f.type==="income" ? "+" : "-"}
-            ${money(f.value)}
-
-          </div>
-
-        </div>
-
-      </div>
-
-      `;
-
-    }).join("");
-
-}
-
-
-/* ============================================================
-   REGISTRO DIÁRIO
-   ============================================================ */
-
-function showWorkDaily(workId){
-
-  document.getElementById("dailyWorkLog").value=workId;
-
-  showView("daily");
-
-  renderDailyLogs();
-
-}
-
-
-function saveDailyLog(){
-
-  const workId =
-    document.getElementById("dailyWorkLog").value;
-
-  const date =
-    document.getElementById("logDate").value;
-
-  const responsible =
-    document.getElementById("logResponsible").value.trim();
-
-  const description =
-    document.getElementById("logDescription").value.trim();
-
-  const notes =
-    document.getElementById("logNotes").value.trim();
-
-  if(!workId || !description){
-
-    showToast("Selecione a obra e descreva o serviço.");
-
-    return;
-
-  }
-
-  data.logs.unshift({
-
-    id:id(),
-    workId,
-    date,
-    responsible,
-    description,
-    notes
-
-  });
-
-  saveLocal();
-
-  document.getElementById("logDescription").value="";
-  document.getElementById("logNotes").value="";
-
-  renderDailyLogs();
-
-  showToast("Registro diário salvo.");
-
-}
-
-
-function renderDailyLogs(){
-
-  const list =
-    document.getElementById("dailyLogsList");
-
-  if(!list) return;
-
-  const workId =
-    document.getElementById("dailyWorkLog").value;
-
-  let logs=data.logs;
-
-  if(workId){
-
-    logs=logs.filter(l=>l.workId===workId);
-
-  }
-
-  if(!logs.length){
-
-    list.innerHTML=
-      `<div class="empty">
-        Nenhum registro diário.
-      </div>`;
-
-    return;
-
-  }
-
-  list.innerHTML =
-    logs.map(l=>{
-
-      const work =
-        data.works.find(w=>w.id===l.workId);
-
-      return `
-
-      <div class="card">
-
-        <div class="cardHeader">
-
-          <div class="cardTitle">
-            ${l.date || ""}
-          </div>
-
-          <span class="badge">
-            ${escapeHtml(work?.name || "")}
-          </span>
-
-        </div>
-
-        <strong>
-          ${escapeHtml(l.description)}
-        </strong>
-
-        <div style="color:var(--muted);font-size:12px;margin-top:7px">
-          Responsável:
-          ${escapeHtml(l.responsible || "-")}
-        </div>
-
-        ${
-          l.notes
-          ? `<div style="margin-top:10px;font-size:12px">
-              ${escapeHtml(l.notes)}
-             </div>`
-          : ""
-        }
-
-      </div>
-
-      `;
-
-    }).join("");
-
-}
-
-
-/* ============================================================
-   CONTRATOS
-   ============================================================ */
-
-function openContractModal(){
-
-  refreshSelectors();
-
-  document.getElementById("contractClient").value="";
-  document.getElementById("contractValue").value="";
-  document.getElementById("contractServices").value="";
-  document.getElementById("contractPayment").value="";
-
-  document
-    .getElementById("contractModal")
-    .classList.add("show");
-
-}
-
-
-function saveContract(){
-
-  const workId =
-    document.getElementById("contractWork").value;
-
-  const client =
-    document.getElementById("contractClient").value.trim();
-
-  const value =
-    Number(document.getElementById("contractValue").value || 0);
-
-  const services =
-    document.getElementById("contractServices").value.trim();
-
-  const payment =
-    document.getElementById("contractPayment").value.trim();
-
-  if(!workId || !client){
-
-    showToast("Informe obra e cliente.");
-
-    return;
-
-  }
-
-  data.contracts.unshift({
-
-    id:id(),
-    workId,
-    client,
-    value,
-    services,
-    payment,
-    date:today()
-
-  });
-
-  saveLocal();
-
-  closeModal("contractModal");
-
-  renderContracts();
-
-  showToast("Contrato registrado.");
-
-}
-
-
-function renderContracts(){
-
-  const list =
-    document.getElementById("contractsList");
-
-  if(!data.contracts.length){
-
-    list.innerHTML=
-      `<div class="empty">
-        Nenhum contrato cadastrado.
-      </div>`;
-
-    return;
-
-  }
-
-  list.innerHTML =
-    data.contracts.map(c=>{
-
-      const work =
-        data.works.find(w=>w.id===c.workId);
-
-      return `
-
-      <div class="card">
-
-        <div class="cardHeader">
-
-          <div>
-
-            <div class="cardTitle">
-              ${escapeHtml(work?.name || "Obra")}
-            </div>
-
-            <div style="color:var(--muted);font-size:12px">
-              Cliente: ${escapeHtml(c.client)}
-            </div>
-
-          </div>
-
-          <strong style="color:var(--gold2)">
-            ${money(c.value)}
-          </strong>
-
-        </div>
-
-        <div style="font-size:12px">
-
-          <strong>Serviços:</strong><br>
-          ${escapeHtml(c.services || "-")}
-
-        </div>
-
-        <div style="font-size:12px;margin-top:10px">
-
-          <strong>Pagamento:</strong><br>
-          ${escapeHtml(c.payment || "-")}
-
-        </div>
-
-      </div>
-
-      `;
-
-    }).join("");
-
-}
-
-
-/* ============================================================
-   RELATÓRIO FOTOGRÁFICO
-   ============================================================ */
-
-async function savePhoto(){
-
-  const workId =
-    document.getElementById("photoWork").value;
-
-  const file =
-    document.getElementById("photoInput").files[0];
-
-  const description =
-    document.getElementById("photoDescription").value.trim();
-
-  if(!workId || !file){
-
-    showToast("Selecione a obra e uma foto.");
-
-    return;
-
-  }
-
-  /*
-    Para não depender do Storage do Supabase,
-    a foto é armazenada localmente como DataURL.
-    Para produção com muitas fotos, recomendamos
-    criar um bucket Storage no Supabase.
-  */
-
-  const reader =
-    new FileReader();
-
-  reader.onload = function(){
-
-    data.photos.unshift({
-
-      id:id(),
-      workId,
-      description,
-      date:today(),
-      image:reader.result
-
-    });
-
-    saveLocal();
-
-    document.getElementById("photoInput").value="";
-    document.getElementById("photoDescription").value="";
-
-    renderPhotos();
-
-    showToast("Foto registrada.");
-
-  };
-
-  reader.readAsDataURL(file);
-
-}
-
-
-function renderPhotos(){
-
-  const list =
-    document.getElementById("photosList");
-
-  if(!list) return;
-
-  if(!data.photos.length){
-
-    list.innerHTML=
-      `<div class="empty">
-        Nenhuma foto registrada.
-      </div>`;
-
-    return;
-
-  }
-
-  list.innerHTML =
-    data.photos.map(p=>{
-
-      const work =
-        data.works.find(w=>w.id===p.workId);
-
-      return `
-
-      <div class="card">
-
-        <div class="cardHeader">
-
-          <div class="cardTitle">
-            ${escapeHtml(work?.name || "")}
-          </div>
-
-          <span class="badge">
-            ${p.date}
-          </span>
-
-        </div>
-
-        <img
-          class="photoPreview"
-          src="${p.image}"
-          alt="Foto da obra">
-
-        ${
-          p.description
-          ? `<div style="margin-top:9px;font-size:12px">
-              ${escapeHtml(p.description)}
-             </div>`
-          : ""
-        }
-
-      </div>
-
-      `;
-
-    }).join("");
-
-}
-
-
-/* ============================================================
-   DASHBOARD
-   ============================================================ */
-
-function renderDashboard(){
-
-  const income =
-    data.finances
-      .filter(f=>f.type==="income")
-      .reduce((s,f)=>s+Number(f.value||0),0);
-
-  const expense =
-    data.finances
-      .filter(f=>f.type==="expense")
-      .reduce((s,f)=>s+Number(f.value||0),0);
-
-  document.getElementById("statWorks").textContent =
-    data.works.length;
-
-  document.getElementById("statReceived").textContent =
-    money(income);
-
-  document.getElementById("statExpenses").textContent =
-    money(expense);
-
-  document.getElementById("statProfit").textContent =
-    money(income-expense);
-
-  const list =
-    document.getElementById("dashboardWorks");
-
-  const works =
-    data.works
-      .filter(w=>w.status==="andamento")
-      .slice(0,5);
-
-  if(!works.length){
-
-    list.innerHTML=
-      `<div class="empty">
-        Nenhuma obra em andamento.
-      </div>`;
-
-    return;
-
-  }
-
-  list.innerHTML =
-    works.map(w=>`
-
-      <div style="
-        padding:11px 0;
-        border-bottom:1px solid var(--line);
-        display:flex;
-        justify-content:space-between;
-        gap:10px">
-
-        <div>
-
-          <strong>
-            ${escapeHtml(w.name)}
-          </strong>
-
-          <div style="
-            color:var(--muted);
-            font-size:11px;
-            margin-top:3px">
-
-            ${escapeHtml(w.client || "")}
-
-          </div>
-
-        </div>
-
-        <button
-          class="actionBtn"
-          onclick="openWorkDetails('${w.id}')">
-          Abrir
-        </button>
-
-      </div>
-
-    `).join("");
-
-}
-
-
-/* ============================================================
-   RELATÓRIOS
-   ============================================================ */
-
-function renderReports(){
-
-  const income =
-    data.finances
-      .filter(f=>f.type==="income")
-      .reduce((s,f)=>s+Number(f.value||0),0);
-
-  const expense =
-    data.finances
-      .filter(f=>f.type==="expense")
-      .reduce((s,f)=>s+Number(f.value||0),0);
-
-  const payroll =
-    data.dailies
-      .reduce((s,d)=>s+Number(d.total||0),0);
-
-  const profit =
-    income-expense;
-
-  const completed =
-    data.works.filter(w=>w.status==="concluida").length;
-
-  document.getElementById("reportsContent").innerHTML = `
-
-    <div class="dashboardGrid">
-
-      <div class="stat">
-        <div class="statLabel">Total de obras</div>
-        <div class="statValue gold">
-          ${data.works.length}
-        </div>
-      </div>
-
-      <div class="stat">
-        <div class="statLabel">Concluídas</div>
-        <div class="statValue green">
-          ${completed}
-        </div>
-      </div>
-
-      <div class="stat">
-        <div class="statLabel">Folha / diárias</div>
-        <div class="statValue red">
-          ${money(payroll)}
-        </div>
-      </div>
-
-      <div class="stat">
-        <div class="statLabel">Resultado</div>
-        <div class="statValue blue">
-          ${money(profit)}
-        </div>
-      </div>
-
+ const rows=[
+  ...D.pagamentos.map(x=>({...x,_tipo:"entrada"})),
+  ...D.gastos.map(x=>({...x,_tipo:"despesa"}))
+ ].sort((a,b)=>
+  String(b.data||b.created_at||"")
+   .localeCompare(String(a.data||a.created_at||""))
+ );
+
+ $("financeList").innerHTML=
+ rows.slice(0,100).map(x=>{
+  const o=D.obras.find(y=>y.id===x.obra_id);
+
+  return`
+   <div class="item">
+    <div class="row">
+     <div>
+      <b>${esc(x.descricao||"Lançamento")}</b><br>
+      <small>${esc(o?.nome||"Sem obra")} · ${esc(x.data||"")}</small>
+     </div>
+
+     <b class="${x._tipo==="entrada"?"green":"red"}">
+      ${x._tipo==="entrada"?"+":"-"} ${money(x.valor)}
+     </b>
     </div>
-
-
-    <div class="card">
-
-      <div class="cardTitle">
-        Resumo financeiro
-      </div>
-
-      <div class="moneyLine">
-
-        <div class="moneyItem">
-          <small>Entradas</small>
-          <strong style="color:var(--green)">
-            ${money(income)}
-          </strong>
-        </div>
-
-        <div class="moneyItem">
-          <small>Saídas</small>
-          <strong style="color:var(--red)">
-            ${money(expense)}
-          </strong>
-        </div>
-
-        <div class="moneyItem">
-          <small>Sobra</small>
-          <strong style="color:var(--gold2)">
-            ${money(profit)}
-          </strong>
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <div class="card">
-
-      <div class="cardTitle">
-        Quantidade de registros
-      </div>
-
-      <div style="margin-top:12px;color:var(--muted);line-height:2">
-
-        🏗️ Obras: <strong>${data.works.length}</strong><br>
-
-        👷 Funcionários: <strong>${data.employees.length}</strong><br>
-
-        💰 Lançamentos: <strong>${data.finances.length}</strong><br>
-
-        📋 Registros diários: <strong>${data.logs.length}</strong><br>
-
-        ✅ Itens de checklist: <strong>${data.checklists.length}</strong><br>
-
-        📑 Contratos: <strong>${data.contracts.length}</strong><br>
-
-        📸 Fotos: <strong>${data.photos.length}</strong>
-
-      </div>
-
-    </div>
-
+   </div>
   `;
-
+ }).join("")
+ ||
+ '<div class="empty">Nenhum lançamento financeiro.</div>';
 }
 
-
-/* ============================================================
-   PESQUISA GERAL
-   ============================================================ */
-
-function globalSearch(){
-
-  const q =
-    document.getElementById("globalSearch")
-      .value.trim()
-      .toLowerCase();
-
-  const result =
-    document.getElementById("searchResults");
-
-  if(!q){
-
-    result.innerHTML=
-      `<div class="empty">
-        Digite algo para pesquisar.
-      </div>`;
-
-    return;
-
-  }
-
-  const works =
-    data.works.filter(w=>
-      `${w.name} ${w.client} ${w.address}`
-      .toLowerCase()
-      .includes(q)
-    );
-
-  const employees =
-    data.employees.filter(e=>
-      `${e.name} ${e.role}`
-      .toLowerCase()
-      .includes(q)
-    );
-
-  const finances =
-    data.finances.filter(f=>
-      `${f.description}`
-      .toLowerCase()
-      .includes(q)
-    );
-
-  let html="";
-
-  if(works.length){
-
-    html+=`
-
-      <div class="card">
-
-        <div class="cardTitle">
-          🏗️ Obras (${works.length})
-        </div>
-
-        <div style="margin-top:10px">
-
-          ${works.map(w=>`
-
-            <div style="
-              padding:10px 0;
-              border-bottom:1px solid var(--line)">
-
-              <strong>${escapeHtml(w.name)}</strong>
-
-              <div style="color:var(--muted);font-size:11px">
-                ${escapeHtml(w.client || "")}
-              </div>
-
-            </div>
-
-          `).join("")}
-
-        </div>
-
-      </div>
-
-    `;
-
-  }
-
-  if(employees.length){
-
-    html+=`
-
-      <div class="card">
-
-        <div class="cardTitle">
-          👷 Funcionários (${employees.length})
-        </div>
-
-        <div style="margin-top:10px">
-
-          ${employees.map(e=>`
-
-            <div style="
-              padding:10px 0;
-              border-bottom:1px solid var(--line)">
-
-              <strong>${escapeHtml(e.name)}</strong>
-
-              <div style="color:var(--muted);font-size:11px">
-                ${escapeHtml(e.role || "")}
-              </div>
-
-            </div>
-
-          `).join("")}
-
-        </div>
-
-      </div>
-
-    `;
-
-  }
-
-  if(finances.length){
-
-    html+=`
-
-      <div class="card">
-
-        <div class="cardTitle">
-          💰 Financeiro (${finances.length})
-        </div>
-
-        <div style="margin-top:10px">
-
-          ${finances.slice(0,20).map(f=>`
-
-            <div style="
-              padding:10px 0;
-              border-bottom:1px solid var(--line)">
-
-              <strong>${escapeHtml(f.description)}</strong>
-
-              <div style="
-                color:${f.type==="income"?"var(--green)":"var(--red)"};
-                font-size:12px">
-
-                ${money(f.value)}
-
-              </div>
-
-            </div>
-
-          `).join("")}
-
-        </div>
-
-      </div>
-
-    `;
-
-  }
-
-  if(!html){
-
-    html=
-      `<div class="empty">
-        Nenhum resultado encontrado.
-      </div>`;
-
-  }
-
-  result.innerHTML=html;
-
+function openFinance(){
+ $("finTipo").value="entrada";
+ $("finDescricao").value="";
+ $("finValor").value="";
+ $("finData").value=today();
+ $("finCategoria").value="Outros";
+ $("finObs").value="";
+ openModal("modalFinance");
 }
 
+async function saveFinance(){
+ const tipo=$("finTipo").value;
 
-/* ============================================================
-   SELECTS
-   ============================================================ */
+ const row={
+  obra_id:$("finObra").value||null,
+  descricao:$("finDescricao").value.trim(),
+  valor:Number($("finValor").value||0),
+  data:$("finData").value||today(),
+  categoria:$("finCategoria").value,
+  observacoes:$("finObs").value.trim()
+ };
 
-function refreshSelectors(){
+ if(!row.descricao)return toast("Informe a descrição.");
+ if(!row.valor)return toast("Informe o valor.");
 
-  const workOptions =
-    `<option value="">Selecione a obra</option>` +
-    data.works.map(w=>
-      `<option value="${w.id}">
-        ${escapeHtml(w.name)}
-      </option>`
-    ).join("");
+ const table=tipo==="entrada"?"pagamentos":"gastos";
 
-  [
-    "dailyWork",
-    "financeWork",
-    "dailyWorkLog",
-    "checkWork",
-    "contractWork",
-    "photoWork"
-  ].forEach(idName=>{
+ const x=await insertRow(table,row);
 
-    const el =
-      document.getElementById(idName);
+ if(x)D[table].unshift(x);
 
-    if(!el) return;
+ closeModal("modalFinance");
+ renderAll();
+}
 
-    const previous=el.value;
+function openOrcamento(){
+ $("orcCliente").value="";
+ $("orcDescricao").value="";
+ $("orcValor").value="";
+ $("orcData").value=today();
+ $("orcObs").value="";
+ openModal("modalOrcamento");
+}
 
-    el.innerHTML=workOptions;
+async function saveOrcamento(){
+ const row={
+  obra_id:$("orcObra").value||null,
+  cliente:$("orcCliente").value.trim(),
+  descricao:$("orcDescricao").value.trim(),
+  valor:Number($("orcValor").value||0),
+  data:$("orcData").value||today(),
+  observacoes:$("orcObs").value.trim()
+ };
 
-    if(
-      previous &&
-      data.works.some(w=>w.id===previous)
-    ){
+ if(!row.descricao)return toast("Informe a descrição.");
 
-      el.value=previous;
+ const x=await insertRow("orcamentos",row);
 
-    }
+ if(x)D.orcamentos.unshift(x);
 
+ closeModal("modalOrcamento");
+ renderAll();
+}
+
+function openServico(){
+ $("servNome").value="";
+ $("servQuantidade").value="";
+ $("servUnidade").value="";
+ $("servValor").value="";
+ $("servObs").value="";
+ openModal("modalServico");
+}
+
+async function saveServico(){
+ const row={
+  obra_id:$("servObra").value||null,
+  nome:$("servNome").value.trim(),
+  quantidade:Number($("servQuantidade").value||0),
+  unidade:$("servUnidade").value.trim(),
+  valor:Number($("servValor").value||0),
+  observacoes:$("servObs").value.trim()
+ };
+
+ if(!row.nome)return toast("Informe o serviço.");
+
+ const x=await insertRow("servicos",row);
+
+ if(x)D.servicos.unshift(x);
+
+ closeModal("modalServico");
+ renderAll();
+}
+
+function openTerceirizado(){
+ $("tercNome").value="";
+ $("tercServico").value="";
+ $("tercValor").value="";
+ $("tercData").value=today();
+ $("tercObs").value="";
+ openModal("modalTerceirizado");
+}
+
+async function saveTerceirizado(){
+ const row={
+  obra_id:$("tercObra").value||null,
+  nome:$("tercNome").value.trim(),
+  servico:$("tercServico").value.trim(),
+  valor:Number($("tercValor").value||0),
+  data:$("tercData").value||today(),
+  observacoes:$("tercObs").value.trim()
+ };
+
+ if(!row.nome)return toast("Informe o nome.");
+
+ const x=await insertRow("terceirizados",row);
+
+ if(x)D.terceirizados.unshift(x);
+
+ closeModal("modalTerceirizado");
+ renderAll();
+}
+
+function fillSelectors(){
+ const obraOptions=
+  '<option value="">Selecione a obra</option>'+
+  D.obras.map(o=>
+   `<option value="${o.id}">${esc(o.nome)}</option>`
+  ).join("");
+
+ ["diariaObra","finObra","orcObra","servObra","tercObra","fotoObra"]
+  .forEach(id=>{
+   if($(id))$(id).innerHTML=obraOptions;
   });
 
-
-  const employeeOptions =
-    `<option value="">Selecione</option>` +
-    data.employees.map(e=>
-      `<option value="${e.id}">
-        ${escapeHtml(e.name)}
-      </option>`
-    ).join("");
-
-  const employeeSelect =
-    document.getElementById("dailyEmployee");
-
-  if(employeeSelect){
-
-    const previous=employeeSelect.value;
-
-    employeeSelect.innerHTML=employeeOptions;
-
-    if(
-      previous &&
-      data.employees.some(e=>e.id===previous)
-    ){
-
-      employeeSelect.value=previous;
-
-    }
-
-  }
-
+ if($("diariaFunc")){
+  $("diariaFunc").innerHTML=
+   '<option value="">Selecione o funcionário</option>'+
+   D.funcionarios.map(f=>
+    `<option value="${f.id}">${esc(f.nome)}</option>`
+   ).join("");
+ }
 }
 
-
-/* ============================================================
-   MODAL
-   ============================================================ */
-
-function closeModal(idName){
-
-  document
-    .getElementById(idName)
-    .classList.remove("show");
-
+function getCheckDefs(){
+ try{
+  return JSON.parse(localStorage.getItem("edifiq_check_defs")||"[]");
+ }catch{
+  return [];
+ }
 }
 
+function saveCheckDefs(v){
+ localStorage.setItem(
+  "edifiq_check_defs",
+  JSON.stringify(v||[])
+ );
+}
 
-/* ============================================================
-   ATALHOS DE MÓDULOS
-   ============================================================ */
+function renderChecklist(){
+ const defs=getCheckDefs();
 
-document.addEventListener("click",function(e){
+ if(!defs.length){
+  $("checklistList").innerHTML=
+   '<div class="empty">Nenhum item no checklist. Clique em + Item.</div>';
+  return;
+ }
 
-  const moduleButton =
-    e.target.closest(".module");
+ $("checklistList").innerHTML=
+  defs.map((d,i)=>`
+   <div class="check">
+    <input type="checkbox"
+     ${d.done?"checked":""}
+     onchange="toggleCheck(${i},this.checked)">
+    <div style="flex:1">
+     <b>${esc(d.nome)}</b>
+     ${d.obs?`<div class="sub">${esc(d.obs)}</div>`:""}
+    </div>
+    <button onclick="deleteCheck(${i})">✕</button>
+   </div>
+  `).join("");
+}
 
-});
+function addCheckDef(){
+ const nome=prompt("Nome da tarefa:");
 
+ if(!nome)return;
 
-/* ============================================================
-   MENU EXTRA:
-   permite acessar módulos sem poluir a tela inicial
-   ============================================================ */
+ const defs=getCheckDefs();
 
-function openExtraMenu(){
+ defs.push({
+  nome:nome.trim(),
+  done:false,
+  obs:""
+ });
 
-  const options = [
-    ["Registro Diário","daily"],
-    ["Checklist","checklist"],
-    ["Contratos","contracts"],
-    ["Relatório Fotográfico","photos"],
-    ["Relatórios","reports"]
-  ];
+ saveCheckDefs(defs);
+ renderChecklist();
+}
 
-  const text =
-    options
-      .map((x,i)=>`${i+1} - ${x[0]}`)
-      .join("\n");
+function toggleCheck(i,v){
+ const defs=getCheckDefs();
 
-  const answer =
-    prompt(
-      "EDIFIQ — Módulos\n\n"+
-      text+
-      "\n\nDigite o número:"
+ if(defs[i]){
+  defs[i].done=v;
+  saveCheckDefs(defs);
+ }
+}
+
+function deleteCheck(i){
+ const defs=getCheckDefs();
+
+ defs.splice(i,1);
+
+ saveCheckDefs(defs);
+ renderChecklist();
+}
+
+function getPhotos(){
+ try{
+  return JSON.parse(localStorage.getItem("edifiq_photos")||"[]");
+ }catch{
+  return [];
+ }
+}
+
+function savePhotos(v){
+ localStorage.setItem(
+  "edifiq_photos",
+  JSON.stringify(v||[])
+ );
+}
+
+function renderFotos(){
+ const photos=getPhotos();
+
+ $("fotosList").innerHTML=
+  photos.map((p,i)=>{
+   const o=D.obras.find(x=>x.id===p.obra_id);
+
+   return`
+    <div class="card">
+     <div class="row">
+      <b>${esc(o?.nome||"Obra")}</b>
+      <small>${esc(p.data||"")}</small>
+     </div>
+
+     ${p.src?`<img class="photo" src="${p.src}">`:""}
+
+     <p class="sub">${esc(p.obs||"")}</p>
+
+     <button class="danger" onclick="deleteFoto(${i})">
+      Excluir
+     </button>
+    </div>
+   `;
+  }).join("")
+ ||
+ '<div class="empty">Nenhuma foto registrada.</div>';
+}
+
+function openFoto(){
+ $("fotoData").value=today();
+ $("fotoArquivo").value="";
+ $("fotoObs").value="";
+ openModal("modalFoto");
+}
+
+async function saveFoto(){
+ const files=$("fotoArquivo").files;
+
+ if(!files.length)return toast("Selecione uma foto.");
+
+ const obra_id=$("fotoObra").value||null;
+ const data=$("fotoData").value||today();
+ const obs=$("fotoObs").value.trim();
+
+ const photos=getPhotos();
+
+ for(const file of files){
+  const src=await new Promise((resolve,reject)=>{
+   const reader=new FileReader();
+
+   reader.onload=()=>resolve(reader.result);
+   reader.onerror=reject;
+
+   reader.readAsDataURL(file);
+  });
+
+  photos.unshift({
+   id:crypto.randomUUID(),
+   obra_id,
+   data,
+   obs,
+   src
+  });
+ }
+
+ savePhotos(photos);
+
+ closeModal("modalFoto");
+ renderFotos();
+}
+
+function deleteFoto(i){
+ const photos=getPhotos();
+
+ photos.splice(i,1);
+
+ savePhotos(photos);
+ renderFotos();
+}
+
+function snapshot(){
+ return{
+  version:"EDIFIQ-2026-09",
+  exported_at:new Date().toISOString(),
+  user_email:user?.email,
+  data:D,
+  checklist_defs:getCheckDefs(),
+  photos:getPhotos()
+ };
+}
+
+function download(name,text,type="application/json"){
+ const a=document.createElement("a");
+
+ a.href=URL.createObjectURL(
+  new Blob([text],{type})
+ );
+
+ a.download=name;
+
+ document.body.appendChild(a);
+ a.click();
+ a.remove();
+
+ setTimeout(
+  ()=>URL.revokeObjectURL(a.href),
+  500
+ );
+}
+
+function exportFull(){
+ download(
+  "EDIFIQ-backup.json",
+  JSON.stringify(snapshot(),null,2)
+ );
+}
+
+function exportTable(t){
+ download(
+  "EDIFIQ-"+t+".json",
+  JSON.stringify(D[t]||[],null,2)
+ );
+}
+
+function exportExcel(){
+ const wb=XLSX.utils.book_new();
+
+ Object.entries(D).forEach(([k,v])=>{
+  XLSX.utils.book_append_sheet(
+   wb,
+   XLSX.utils.json_to_sheet(v||[]),
+   k.slice(0,31)
+  );
+ });
+
+ XLSX.writeFile(
+  wb,
+  "EDIFIQ-dados.xlsx"
+ );
+}
+
+async function previewImport(e){
+ const file=e.target.files[0];
+
+ if(!file)return;
+
+ try{
+  const ext=file.name.split(".").pop().toLowerCase();
+
+  let obj;
+
+  if(ext==="json"){
+   obj=JSON.parse(await file.text());
+  }else{
+   const wb=XLSX.read(
+    await file.arrayBuffer(),
+    {type:"array"}
+   );
+
+   obj={data:{}};
+
+   wb.SheetNames.forEach(s=>{
+    obj.data[s]=XLSX.utils.sheet_to_json(
+     wb.Sheets[s]
     );
-
-  const index =
-    Number(answer)-1;
-
-  if(options[index]){
-
-    showView(options[index][1]);
-
+   });
   }
 
+  window.pendingImport=obj;
+
+  $("importPreview").innerHTML=
+   '<p class="green">Arquivo lido com sucesso.</p>'+
+   '<button class="primary" onclick="confirmImport()">Confirmar importação</button>';
+
+ }catch(err){
+  $("importPreview").innerHTML=
+   `<p class="red">Erro: ${esc(err.message)}</p>`;
+ }
 }
 
+async function confirmImport(){
+ const src=
+  window.pendingImport?.data||
+  window.pendingImport||
+  {};
 
-/* ============================================================
-   SWIPE / FECHAR MODAL
-   ============================================================ */
+ let count=0;
 
-document.querySelectorAll(".modal").forEach(modal=>{
+ for(const[table,rows]of Object.entries(src)){
+  if(!Array.isArray(rows)||!tables.includes(table))continue;
 
-  modal.addEventListener("click",function(e){
+  for(const raw of rows){
+   const r={...raw};
 
-    if(e.target===modal){
+   ["id","created_at","legacy_id","user_id"]
+    .forEach(k=>delete r[k]);
 
-      modal.classList.remove("show");
+   const x=await insertRow(table,r);
 
-    }
+   if(x){
+    D[table].unshift(x);
+    count++;
+   }
+  }
+ }
 
-  });
+ if(window.pendingImport?.checklist_defs){
+  saveCheckDefs(
+   window.pendingImport.checklist_defs
+  );
+ }
 
-});
+ if(window.pendingImport?.photos){
+  savePhotos(
+   window.pendingImport.photos
+  );
+ }
 
+ window.pendingImport=null;
 
-/* ============================================================
-   SUPABASE — PREPARAÇÃO DE SINCRONIZAÇÃO
-   ============================================================ */
+ toast(count+" registro(s) importado(s).");
 
-/*
-  O login já usa o Supabase Auth.
+ renderAll();
+}
 
-  Para salvar cada módulo diretamente no banco, as tabelas
-  precisam existir no Supabase.
-
-  O aplicativo continua funcionando localmente até essas
-  tabelas serem configuradas.
-
-  Tabelas recomendadas:
-
-  works
-  employees
-  finances
-  dailies
-  daily_logs
-  checklists
-  contracts
-  photos
-
-  IMPORTANTE:
-  Não use a service_role key neste HTML.
-*/
-
-
-/* ============================================================
-   AJUSTE AUTOMÁTICO DA DIÁRIA
-   ============================================================ */
-
-document
-  .getElementById("dailyEmployee")
-  ?.addEventListener("change",function(){
-
-    const employee =
-      data.employees.find(
-        e=>e.id===this.value
-      );
-
-    if(employee){
-
-      document.getElementById("dailyValue").value =
-        employee.daily || "";
-
-    }
-
-  });
-
-
-/* ============================================================
-   INÍCIO
-   ============================================================ */
-
-loadLocal();
-
-checkSession();
-
+checkConnection();
 </script>
 
 </body>
