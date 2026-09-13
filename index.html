@@ -1,4 +1,346 @@
-<!doctype html>
+<!<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ObraPro - Gestão Avançada de Obras</title>
+  
+  <!-- React & ReactDOM (CDNs) -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel para interpretar JSX diretamente no navegador -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-100 font-sans">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('overview');
+      const [filterStatus, setFilterStatus] = useState('Todos');
+
+      // Re-inicializa ícones ao mudar abas
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }, [activeTab, filterStatus]);
+
+      // Estado inicial do aplicativo
+      const [summary, setSummary] = useState({
+        activeProjects: 3,
+        totalBudget: 520000,
+        spentBudget: 295000,
+        activeWorkers: 24,
+      });
+
+      const [projects, setProjects] = useState([
+        { id: 1, name: "Residencial Alphaville", client: "João Silva", progress: 65, budget: 180000, spent: 110000, status: "Em Andamento", teamCount: 8 },
+        { id: 2, name: "Reforma Comercial Centro", client: "Empresa X", progress: 30, budget: 90000, spent: 35000, status: "Em Andamento", teamCount: 5 },
+        { id: 3, name: "Casa de Praia - Lote 12", client: "Maria Santos", progress: 95, budget: 250000, spent: 250000, status: "Fase Final", teamCount: 11 }
+      ]);
+
+      const [workers, setWorkers] = useState([
+        { id: 1, name: "Carlos Eduardo", role: "Mestre de Obra", rate: 250, daysWorked: 22, project: "Residencial Alphaville" },
+        { id: 2, name: "Antônio Silva", role: "Pedreiro", rate: 180, daysWorked: 20, project: "Residencial Alphaville" },
+        { id: 3, name: "Lucas Mendes", role: "Servente", rate: 120, daysWorked: 18, project: "Reforma Comercial Centro" },
+        { id: 4, name: "Marcos Souza", role: "Eletricista", rate: 220, daysWorked: 15, project: "Casa de Praia - Lote 12" }
+      ]);
+
+      const filteredProjects = filterStatus === 'Todos' 
+        ? projects 
+        : projects.filter(p => p.status === filterStatus);
+
+      return (
+        <div className="flex h-screen overflow-hidden">
+          {/* Menu Lateral */}
+          <aside className="w-64 bg-slate-900 text-white flex flex-col justify-between p-6">
+            <div>
+              <div className="flex items-center gap-3 mb-8">
+                <div className="p-2 bg-amber-500 rounded-lg text-slate-950">
+                  <i data-lucide="building-2" className="w-6 h-6"></i>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold tracking-wide leading-none">OBRA<span className="text-amber-500">PRO</span></h1>
+                  <span className="text-xs text-slate-400">Gestão de Canteiros</span>
+                </div>
+              </div>
+
+              <nav className="space-y-1">
+                {[
+                  { id: 'overview', label: 'Visão Geral', icon: 'layout-dashboard' },
+                  { id: 'projects', label: 'Obras', icon: 'building' },
+                  { id: 'finances', label: 'Financeiro', icon: 'wallet' },
+                  { id: 'team', label: 'Equipe & Diárias', icon: 'users' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      activeTab === item.id 
+                        ? 'bg-amber-500 text-slate-950 font-semibold shadow-lg shadow-amber-500/20' 
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <i data-lucide={item.icon} className="w-5 h-5"></i>
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            <div className="border-t border-slate-800 pt-4 flex items-center justify-between text-xs text-slate-500">
+              <span>Status Sistema</span>
+              <span className="flex items-center gap-1 text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online
+              </span>
+            </div>
+          </aside>
+
+          {/* Painel Conteúdo */}
+          <main className="flex-1 overflow-y-auto p-8 bg-slate-50">
+            {/* Topbar */}
+            <header className="flex justify-between items-center mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">
+                  {activeTab === 'overview' && 'Visão Geral da Empresa'}
+                  {activeTab === 'projects' && 'Gestão de Obras'}
+                  {activeTab === 'finances' && 'Controle Financeiro'}
+                  {activeTab === 'team' && 'Equipe e Apontamento de Diárias'}
+                </h2>
+                <p className="text-slate-500 text-sm">Acompanhe métricas, pagamentos e cronogramas</p>
+              </div>
+
+              <button 
+                onClick={() => alert("Função para criar novo registro.")}
+                className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2.5 rounded-xl font-semibold shadow-sm transition-all"
+              >
+                <i data-lucide="plus" className="w-5 h-5"></i>
+                Novo Registro
+              </button>
+            </header>
+
+            {/* ABA: VISÃO GERAL */}
+            {activeTab === 'overview' && (
+              <div className="space-y-8">
+                {/* Metricas */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div className="flex justify-between items-center text-slate-500 mb-2">
+                      <span className="text-sm font-medium">Obras Ativas</span>
+                      <i data-lucide="hard-hat" className="w-5 h-5 text-amber-500"></i>
+                    </div>
+                    <span className="text-3xl font-bold text-slate-900">{summary.activeProjects}</span>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div className="flex justify-between items-center text-slate-500 mb-2">
+                      <span className="text-sm font-medium">Orçamento Total</span>
+                      <i data-lucide="dollar-sign" className="w-5 h-5 text-slate-400"></i>
+                    </div>
+                    <span className="text-3xl font-bold text-slate-900">R$ {summary.totalBudget.toLocaleString()}</span>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div className="flex justify-between items-center text-slate-500 mb-2">
+                      <span className="text-sm font-medium">Gasto Realizado</span>
+                      <i data-lucide="trending-up" className="w-5 h-5 text-emerald-500"></i>
+                    </div>
+                    <span className="text-3xl font-bold text-emerald-600">R$ {summary.spentBudget.toLocaleString()}</span>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div className="flex justify-between items-center text-slate-500 mb-2">
+                      <span className="text-sm font-medium">Trabalhadores</span>
+                      <i data-lucide="users" className="w-5 h-5 text-blue-500"></i>
+                    </div>
+                    <span className="text-3xl font-bold text-slate-900">{summary.activeWorkers}</span>
+                  </div>
+                </div>
+
+                {/* Tabela Resumo */}
+                <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
+                  <h3 className="text-lg font-bold text-slate-900 mb-4">Progresso dos Canteiros</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-slate-400 text-xs uppercase font-semibold">
+                          <th className="pb-3">Obra</th>
+                          <th className="pb-3">Cliente</th>
+                          <th className="pb-3">Progresso</th>
+                          <th className="pb-3">Gasto / Orçamento</th>
+                          <th className="pb-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {projects.map((p) => (
+                          <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-4 font-semibold text-slate-900">{p.name}</td>
+                            <td className="py-4 text-slate-600">{p.client}</td>
+                            <td className="py-4 w-48">
+                              <div className="flex items-center gap-3">
+                                <div className="w-full bg-slate-100 rounded-full h-2">
+                                  <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${p.progress}%` }}></div>
+                                </div>
+                                <span className="text-xs font-semibold text-slate-700">{p.progress}%</span>
+                              </div>
+                            </td>
+                            <td className="py-4 text-slate-600 text-sm font-medium">
+                              R$ {p.spent.toLocaleString()} / <span className="text-slate-400">R$ {p.budget.toLocaleString()}</span>
+                            </td>
+                            <td className="py-4">
+                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                p.status === 'Fase Final' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {p.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ABA: OBRAS */}
+            {activeTab === 'projects' && (
+              <div className="space-y-6">
+                <div className="flex gap-2 mb-4">
+                  {['Todos', 'Em Andamento', 'Fase Final'].map((status) => (
+                    <button 
+                      key={status}
+                      onClick={() => setFilterStatus(status)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        filterStatus === status 
+                          ? 'bg-slate-900 text-white' 
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {filteredProjects.map((p) => (
+                    <div key={p.id} className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-bold text-slate-900 text-lg">{p.name}</h4>
+                          <span className="p-1.5 bg-slate-100 rounded-lg text-slate-500">
+                            <i data-lucide="building-2" className="w-4 h-4"></i>
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-500 mb-4">Cliente: {p.client}</p>
+
+                        <div className="space-y-3 mb-6">
+                          <div>
+                            <div className="flex justify-between text-xs text-slate-600 font-medium mb-1">
+                              <span>Conclusão</span>
+                              <span>{p.progress}%</span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-2">
+                              <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${p.progress}%` }}></div>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between text-xs text-slate-600 border-t border-slate-100 pt-3">
+                            <span>Equipe alocada:</span>
+                            <span className="font-bold text-slate-800">{p.teamCount} trabalhadores</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-xl text-sm transition-colors">
+                        Gerenciar Canteiro
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ABA: EQUIPE & DIÁRIAS */}
+            {activeTab === 'team' && (
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-slate-900">Apontamento de Diárias e Folha</h3>
+                  <button 
+                    onClick={() => alert("Apontamento registrado com sucesso!")}
+                    className="px-4 py-2 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-slate-800 transition-colors"
+                  >
+                    Registrar Diária
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-400 text-xs uppercase font-semibold">
+                        <th className="pb-3">Trabalhador</th>
+                        <th className="pb-3">Função</th>
+                        <th className="pb-3">Obra Atual</th>
+                        <th className="pb-3">Valor Diária</th>
+                        <th className="pb-3">Diárias Trabalhadas</th>
+                        <th className="pb-3">Total a Pagar</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {workers.map((w) => (
+                        <tr key={w.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-4 font-semibold text-slate-900">{w.name}</td>
+                          <td className="py-4 text-slate-600 text-sm">{w.role}</td>
+                          <td className="py-4 text-slate-600 text-sm">{w.project}</td>
+                          <td className="py-4 text-slate-600 text-sm">R$ {w.rate.toFixed(2)}</td>
+                          <td className="py-4 font-semibold text-slate-800">{w.daysWorked} dias</td>
+                          <td className="py-4 font-bold text-emerald-600">R$ {(w.rate * w.daysWorked).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ABA: FINANCEIRO */}
+            {activeTab === 'finances' && (
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 text-center py-12">
+                <i data-lucide="receipt" className="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
+                <h3 className="text-lg font-bold text-slate-800">Módulo Financeiro Avançado</h3>
+                <p className="text-slate-500 text-sm max-w-md mx-auto mt-1 mb-6">
+                  Integração com fluxo de caixa, pagamentos de fornecedores, notas fiscais e balanço consolidado por obra.
+                </p>
+                <button 
+                  onClick={() => alert("Módulo pronto para receber integração com APIs bancárias.")}
+                  className="px-4 py-2 bg-amber-500 text-slate-950 font-semibold rounded-xl text-sm hover:bg-amber-600 transition-colors"
+                >
+                  Exportar Relatório Geral
+                </button>
+              </div>
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    // Renderização no DOM
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
+doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
