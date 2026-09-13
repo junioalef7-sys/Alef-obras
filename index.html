@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <title>EDIFIQ — Gestão de Obras</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -85,21 +85,11 @@ th{color:var(--muted)}
 .sectionTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:18px}
 .listActions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
 .note{background:#171d23;border-left:3px solid var(--gold);padding:10px;border-radius:8px;color:#d7dce1;font-size:13px}
-.reportGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.chip{display:inline-block;padding:5px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;color:var(--muted)}
-.docGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.fileRow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
-.checkActions{display:flex;gap:5px}
-.selectedBox{background:#171d23;border:1px solid var(--line);padding:10px;border-radius:12px}
-.reportTable{overflow:auto}
-.reportTable table{min-width:650px}
 @media(max-width:700px){
 .grid4{grid-template-columns:1fr 1fr}
 .grid3{grid-template-columns:1fr 1fr}
 .three{grid-template-columns:1fr 1fr}
 .photoGrid{grid-template-columns:repeat(3,1fr)}
-.reportGrid{grid-template-columns:1fr 1fr}
-.docGrid{grid-template-columns:1fr}
 }
 @media(max-width:450px){
 .grid,.grid3,.grid4,.two,.three{grid-template-columns:1fr}
@@ -211,11 +201,6 @@ th{color:var(--muted)}
 <small>Fotos por obra</small>
 </button>
 
-<button class="action" onclick="go('documentos')">
-📁 <b>Documentos</b><br>
-<small>Contratos, projetos e arquivos</small>
-</button>
-
 <button class="action" onclick="go('relatorios')">
 📊 <b>Relatórios</b><br>
 <small>Exportação e backup</small>
@@ -244,7 +229,7 @@ th{color:var(--muted)}
 </div>
 
 <div class="search">
-<input id="obraSearch" placeholder="Pesquisar obra ou cliente..." oninput="renderObras()">
+<input id="obraSearch" placeholder="Pesquisar obra ou cliente..." oninput="renderObras">
 </div>
 
 <div id="obrasList"></div>
@@ -256,71 +241,54 @@ th{color:var(--muted)}
 <div class="sectionTitle">
 <div>
 <h1>Funcionários</h1>
-<p class="lead">Equipe, diárias e situação dos funcionários.</p>
+<p class="lead">Equipe, valores, diárias e status.</p>
 </div>
 
-<button class="primary" onclick="openFunc()">＋ Funcionário</button>
+<button class="primary" onclick="openFunc()">＋ Novo</button>
 </div>
 
 <div class="toolbar">
-<select id="funcFilter" onchange="renderPayroll()">
-<option value="all">Todos</option>
+
+<select id="funcFilter" onchange="renderFuncs()">
+<option value="todos">Todos</option>
 <option value="ativos">Ativos</option>
 <option value="inativos">Inativos</option>
 </select>
 
-<input id="funcSearch" placeholder="Pesquisar funcionário..." oninput="renderPayroll()">
-</div>
-
-<div class="card">
-
-<div class="sectionTitle">
-<h2>Controle de diárias</h2>
-</div>
-
-<div class="toolbar">
-
 <select id="payPeriod" onchange="renderPayroll()">
 <option value="dia">Hoje</option>
-<option value="semana">Esta semana</option>
-<option value="quinzena">Esta quinzena</option>
-<option value="mes" selected>Este mês</option>
-<option value="custom">Período personalizado</option>
+<option value="semana" selected>Esta semana</option>
+<option value="quinzena">Quinzena</option>
+<option value="mes">Este mês</option>
+<option value="custom">Personalizado</option>
 </select>
 
-<div id="customDates" class="hidden two">
+</div>
+
+<div id="customDates" class="toolbar hidden">
 <input id="payStart" type="date" onchange="renderPayroll()">
 <input id="payEnd" type="date" onchange="renderPayroll()">
 </div>
 
-</div>
-
-<div class="grid3">
+<div class="grid">
 
 <div class="card">
-<div class="label">Total de diárias</div>
+<div class="label">A pagar no período</div>
 <div class="stat gold" id="payTotal">R$ 0,00</div>
 </div>
 
 <div class="card">
-<div class="label">Funcionários</div>
+<div class="label">Funcionários com valor</div>
 <div class="stat" id="payCount">0</div>
-</div>
-
-<div class="card">
-<div class="label">Período</div>
-<div class="stat blue">Atual</div>
 </div>
 
 </div>
 
 <div id="funcList"></div>
 
-</div>
-
 <div class="sectionTitle">
-<h2>Diárias lançadas</h2>
-<button class="primary" onclick="openDiaria()">＋ Diária</button>
+<h2>Diárias</h2>
+<button class="secondary" onclick="openDia()">＋ Registrar</button>
 </div>
 
 <div id="diaList"></div>
@@ -332,41 +300,49 @@ th{color:var(--muted)}
 <div class="sectionTitle">
 <div>
 <h1>Financeiro</h1>
-<p class="lead">Receitas, despesas, materiais, mão de obra e lucro.</p>
+<p class="lead">Recebimentos, despesas e resultado.</p>
 </div>
 
 <button class="primary" onclick="openFin()">＋ Lançamento</button>
+</div>
+
+<div class="toolbar">
+
+<select id="finObraFilter" onchange="renderFinance()">
+<option value="all">Todas as obras</option>
+</select>
+
+<select id="finTipoFilter" onchange="renderFinance()">
+<option value="all">Todos os lançamentos</option>
+<option value="entrada">Receitas / recebimentos</option>
+<option value="despesa">Despesas</option>
+</select>
+
 </div>
 
 <div class="grid3">
 
 <div class="card">
 <div class="label">Receitas</div>
-<div class="stat green" id="finEntradas">R$ 0,00</div>
+<div class="stat green" id="finEnt">R$ 0,00</div>
 </div>
 
 <div class="card">
 <div class="label">Despesas</div>
-<div class="stat red" id="finDespesas">R$ 0,00</div>
+<div class="stat red" id="finDesp">R$ 0,00</div>
 </div>
 
 <div class="card">
 <div class="label">Lucro</div>
-<div class="stat gold" id="finResultado">R$ 0,00</div>
+<div class="stat gold" id="finRes">R$ 0,00</div>
 </div>
 
 </div>
 
-<div class="toolbar">
-<select id="finObraFilter" onchange="renderFinanceiro()">
-<option value="all">Todas as obras</option>
-</select>
-
-<select id="finTipoFilter" onchange="renderFinanceiro()">
-<option value="all">Todos os lançamentos</option>
-<option value="entrada">Receitas</option>
-<option value="saida">Despesas</option>
-</select>
+<div class="card">
+<b>Resumo por obra</b><br>
+<small>Receitas − despesas</small>
+<div id="obraFinanceResumo"></div>
 </div>
 
 <div id="finList"></div>
@@ -378,16 +354,14 @@ th{color:var(--muted)}
 <div class="sectionTitle">
 <div>
 <h1>Checklist</h1>
-<p class="lead">Checklist personalizado por obra.</p>
+<p class="lead">Adicione, edite, conclua ou exclua serviços.</p>
 </div>
 
-<button class="primary" onclick="openCheckDef()">＋ Item</button>
+<button class="primary" onclick="openCheck()">＋ Serviço</button>
 </div>
 
-<div class="toolbar">
-<select id="checkObraFilter" onchange="renderChecklist()">
-<option value="all">Todas as obras</option>
-</select>
+<div class="note">
+Os serviços personalizados ficam salvos neste dispositivo. Os registros de conclusão continuam sincronizados com o banco.
 </div>
 
 <div id="checkList"></div>
@@ -399,167 +373,79 @@ th{color:var(--muted)}
 <div class="sectionTitle">
 <div>
 <h1>Relatório fotográfico</h1>
-<p class="lead">Fotos organizadas por obra.</p>
+<p class="lead">Fotos organizadas por obra e data.</p>
 </div>
 
-<button class="primary" onclick="openFoto()">＋ Foto</button>
+<button class="primary" onclick="openFoto()">＋ Adicionar fotos</button>
 </div>
 
-<div class="toolbar">
-<select id="fotoObraFilter" onchange="renderFotos()">
-<option value="all">Todas as obras</option>
-</select>
+<div class="note">
+As fotos são mantidas no armazenamento deste aparelho.
 </div>
 
 <div id="fotoList"></div>
 
 </section>
 
-<section id="documentos" class="page">
-
-<div class="sectionTitle">
-<div>
-<h1>Documentos</h1>
-<p class="lead">Contratos, projetos, orçamentos, medições e arquivos.</p>
-</div>
-
-<button class="primary" onclick="openDoc()">＋ Documento</button>
-</div>
-
-<div class="toolbar">
-
-<select id="docObraFilter" onchange="renderDocs()">
-<option value="all">Todas as obras</option>
-</select>
-
-<select id="docTipoFilter" onchange="renderDocs()">
-<option value="all">Todos os tipos</option>
-<option value="Contrato">Contratos</option>
-<option value="Projeto">Projetos</option>
-<option value="Orçamento">Orçamentos</option>
-<option value="Medição">Medições</option>
-<option value="Nota fiscal">Notas fiscais</option>
-<option value="Outro">Outros</option>
-</select>
-
-</div>
-
-<div id="docList"></div>
-
-</section>
-
 <section id="relatorios" class="page">
 
-<div class="sectionTitle">
-<div>
-<h1>Relatórios</h1>
-<p class="lead">Visão geral das obras, funcionários e financeiro.</p>
-</div>
-</div>
-
-<div class="toolbar">
-
-<select id="repObra" onchange="renderReports()">
-<option value="all">Todas as obras</option>
-</select>
-
-<select id="repFunc" onchange="renderReports()">
-<option value="all">Todos os funcionários</option>
-</select>
-
-<select id="repTipo" onchange="renderReports()">
-<option value="all">Tudo</option>
-<option value="entrada">Receitas</option>
-<option value="saida">Despesas</option>
-</select>
-
-<select id="repPeriodo" onchange="renderReports()">
-<option value="all">Todo período</option>
-<option value="dia">Hoje</option>
-<option value="mes">Este mês</option>
-<option value="ano">Este ano</option>
-</select>
-
-</div>
-
-<div class="reportGrid">
-
-<div class="card">
-<div class="label">Receitas filtradas</div>
-<div class="stat green" id="repReceitas">R$ 0,00</div>
-</div>
-
-<div class="card">
-<div class="label">Despesas filtradas</div>
-<div class="stat red" id="repDespesas">R$ 0,00</div>
-</div>
-
-<div class="card">
-<div class="label">Lucro filtrado</div>
-<div class="stat gold" id="repLucro">R$ 0,00</div>
-</div>
-
-<div class="card">
-<div class="label">Obras</div>
-<div class="stat blue" id="repObrasCount">0</div>
-</div>
-
-</div>
-
-<div class="card">
-
-<h2>Resultado por obra</h2>
-
-<div class="reportTable">
-<table>
-<thead>
-<tr>
-<th>Obra</th>
-<th>Receitas</th>
-<th>Material</th>
-<th>Mão de obra</th>
-<th>Lucro</th>
-</tr>
-</thead>
-<tbody id="repObras"></tbody>
-</table>
-</div>
-
-</div>
-
-<div class="card">
-
-<h2>Despesas por categoria</h2>
-
-<div id="repCategorias"></div>
-
-</div>
-
-<div class="card">
-
-<h2>Backup e transferência de dados</h2>
-
-<p class="sub">
-Faça backup dos dados para guardar ou transferir para outro aparelho.
-</p>
+<h1>Relatórios e dados</h1>
+<p class="lead">Backup, importação e exportação.</p>
 
 <div class="actions">
 
-<button class="secondary" onclick="exportJSON()">
+<button class="action" onclick="exportTable('obras')">
+🏗️ Obras
+</button>
+
+<button class="action" onclick="exportTable('funcionarios')">
+👷 Equipe
+</button>
+
+<button class="action" onclick="exportTable('diarias')">
+💵 Diárias
+</button>
+
+<button class="action" onclick="exportTable('gastos')">
+💰 Financeiro
+</button>
+
+<button class="action" onclick="exportFull()">
 💾 Fazer backup
 </button>
 
-<button class="secondary" onclick="document.getElementById('importFile').click()">
-📥 Importar backup
+<button class="action" onclick="restoreBackup()">
+♻️ Restaurar backup
 </button>
 
-<button class="secondary" onclick="exportXLSX()">
-📊 Exportar Excel
+<button class="action" onclick="exportExcel()">
+📊 Excel
 </button>
 
 </div>
 
-<input id="importFile" type="file" accept=".json,.xlsx,.xls,.csv" class="hidden" onchange="previewImport(event)">
+<div class="card">
+
+<b>Importar dados</b>
+
+<p class="sub">
+JSON ou Excel exportado pelo EDIFIQ.
+</p>
+
+<input
+id="importFile"
+type="file"
+accept=".json,.xlsx,.xls"
+onchange="previewImport(event)"
+>
+
+<input
+id="backupFile"
+type="file"
+accept=".json,application/json"
+class="hidden"
+onchange="handleBackupRestore(event)"
+>
 
 <div id="importPreview"></div>
 
@@ -571,10 +457,14 @@ Faça backup dos dados para guardar ou transferir para outro aparelho.
 
 <h1>Configurações</h1>
 
-<div class="card">
-<h2>Conta</h2>
-<p id="accountEmail" class="sub"></p>
-<button class="danger" onclick="logout()">Sair da conta</button>
+<div class="item">
+<b>Conta</b><br>
+<small id="accountEmail"></small>
+</div>
+
+<div class="item">
+<b>EDIFIQ</b><br>
+<small>Gestão de Obras</small>
 </div>
 
 </section>
@@ -583,24 +473,31 @@ Faça backup dos dados para guardar ou transferir para outro aparelho.
 
 <nav class="bottom">
 
-<button class="nav active" onclick="go('home')">🏠<br><small>Início</small></button>
+<button class="nav active" data-p="home" onclick="go('home')">
+⌂<br>Início
+</button>
 
-<button class="nav" onclick="go('obras')">🏗️<br><small>Obras</small></button>
+<button class="nav" data-p="obras" onclick="go('obras')">
+🏗<br>Obras
+</button>
 
-<button class="nav" onclick="go('equipe')">👷<br><small>Equipe</small></button>
+<button class="nav" data-p="equipe" onclick="go('equipe')">
+👷<br>Equipe
+</button>
 
-<button class="nav" onclick="go('financeiro')">💰<br><small>Financeiro</small></button>
+<button class="nav" data-p="financeiro" onclick="go('financeiro')">
+R$<br>Financeiro
+</button>
 
-<button class="nav" onclick="go('relatorios')">📊<br><small>Relatórios</small></button>
+<button class="nav" data-p="relatorios" onclick="go('relatorios')">
+☷<br>Mais
+</button>
 
 </nav>
 
 </div>
 
-<div id="toast" class="toast"></div>
-
-<!-- MODAL OBRA -->
-<div id="obraM" class="modal">
+<div class="modal" id="obraM">
 <div class="sheet">
 
 <button class="close" onclick="closeM('obraM')">×</button>
@@ -609,27 +506,22 @@ Faça backup dos dados para guardar ou transferir para outro aparelho.
 
 <form class="form" onsubmit="saveObra(event)">
 
-<input type="hidden" id="obraId">
+<input id="oNome" required placeholder="Nome da obra">
+<input id="oCli" placeholder="Cliente">
+<input id="oLoc" placeholder="Endereço">
+<input id="oVal" type="number" step=".01" required placeholder="Valor do contrato">
 
-<input id="obraNome" required placeholder="Nome da obra">
-
-<input id="obraCliente" placeholder="Nome do cliente">
-
-<input id="obraEndereco" placeholder="Endereço da obra">
-
-<div class="two">
-<input id="obraValor" type="number" step="0.01" placeholder="Valor contratado">
-<input id="obraInicio" type="date">
-</div>
-
-<select id="obraStatus">
-<option value="andamento">Em andamento</option>
-<option value="planejamento">Planejamento</option>
+<select id="oStatus">
+<option value="em_andamento">Em andamento</option>
+<option value="planejada">Planejada</option>
 <option value="concluida">Concluída</option>
 <option value="pausada">Pausada</option>
 </select>
 
-<textarea id="obraDesc" placeholder="Descrição da obra"></textarea>
+<input id="oIni" type="date">
+<input id="oFim" type="date">
+<input id="oTipo" placeholder="Tipo de serviço">
+<textarea id="oObs" placeholder="Observações"></textarea>
 
 <button class="primary">Salvar obra</button>
 
@@ -638,40 +530,33 @@ Faça backup dos dados para guardar ou transferir para outro aparelho.
 </div>
 </div>
 
-<!-- MODAL FUNCIONÁRIO -->
-<div id="funcM" class="modal">
+<div class="modal" id="funcM">
 <div class="sheet">
 
 <button class="close" onclick="closeM('funcM')">×</button>
 
-<h2>Funcionário</h2>
+<h2 id="funcTitle">Novo funcionário</h2>
 
 <form class="form" onsubmit="saveFunc(event)">
 
-<input type="hidden" id="funcId">
+<input id="fNome" required placeholder="Nome">
+<input id="fFunc" placeholder="Função / cargo">
+<input id="fTel" placeholder="Telefone">
 
-<input id="funcNome" required placeholder="Nome completo">
-
-<input id="funcTelefone" placeholder="Telefone">
-
-<input id="funcCargo" placeholder="Função / cargo">
-
-<div class="two">
-
-<input id="funcDiaria" type="number" step="0.01" placeholder="Valor da diária">
-
-<select id="funcPagamento">
+<select id="fTipo">
 <option value="diaria">Diária</option>
 <option value="semanal">Semanal</option>
 <option value="quinzenal">Quinzenal</option>
 <option value="mensal">Mensal</option>
 </select>
 
-</div>
+<input id="fDia" type="number" step=".01" placeholder="Valor da diária">
+<input id="fSal" type="number" step=".01" placeholder="Salário mensal">
+<input id="fPag" type="number" min="1" max="31" placeholder="Dia do pagamento">
 
-<select id="funcAtivo">
-<option value="true">Ativo</option>
-<option value="false">Inativo</option>
+<select id="fAtivo">
+<option value="true">Funcionário ativo</option>
+<option value="false">Funcionário inativo</option>
 </select>
 
 <button class="primary">Salvar funcionário</button>
@@ -681,29 +566,25 @@ Faça backup dos dados para guardar ou transferir para outro aparelho.
 </div>
 </div>
 
-<!-- MODAL DIÁRIA -->
-<div id="diaM" class="modal">
+<div class="modal" id="diaM">
 <div class="sheet">
 
 <button class="close" onclick="closeM('diaM')">×</button>
 
-<h2>Lançar diária</h2>
+<h2>Registrar diária</h2>
 
-<form class="form" onsubmit="saveDiaria(event)">
+<form class="form" onsubmit="saveDia(event)">
 
 <select id="dFunc" required></select>
-
-<select id="dObra" required></select>
-
+<select id="dObra"></select>
 <input id="dData" type="date" required>
+<input id="dQtd" type="number" step=".25" value="1" required placeholder="Quantidade">
+<input id="dVal" type="number" step=".01" required placeholder="Valor da diária">
 
-<div class="two">
-
-<input id="dQtd" type="number" min="0.5" step="0.5" value="1" placeholder="Quantidade">
-
-<input id="dValor" type="number" step="0.01" placeholder="Valor da diária">
-
-</div>
+<select id="dStatus">
+<option value="pendente">Pendente</option>
+<option value="pago">Pago</option>
+</select>
 
 <textarea id="dObs" placeholder="Observação"></textarea>
 
@@ -714,36 +595,26 @@ Faça backup dos dados para guardar ou transferir para outro aparelho.
 </div>
 </div>
 
-<!-- MODAL FINANCEIRO -->
-<div id="finM" class="modal">
+<div class="modal" id="finM">
 <div class="sheet">
 
 <button class="close" onclick="closeM('finM')">×</button>
 
-<h2>Lançamento financeiro</h2>
+<h2>Novo lançamento</h2>
 
 <form class="form" onsubmit="saveFin(event)">
 
-<select id="oFin"></select>
-
 <select id="tFin">
-<option value="entrada">Receita</option>
-<option value="saida">Despesa</option>
-</select>
-
-<select id="catFin">
-<option value="material">Material</option>
-<option value="mao_de_obra">Mão de obra</option>
-<option value="outros">Outros</option>
+<option value="entrada">Entrada / recebimento</option>
+<option value="despesa">Despesa</option>
 </select>
 
 <input id="dFin" required placeholder="Descrição">
-
-<input id="vFin" type="number" step="0.01" required placeholder="Valor">
-
-<input id="dtFin" type="date">
-
+<input id="vFin" required type="number" step=".01" placeholder="Valor">
+<input id="dtFin" type="date" required>
 <input id="forFin" placeholder="Fornecedor / cliente">
+
+<select id="oFin"></select>
 
 <textarea id="obsFin" placeholder="Observação"></textarea>
 
@@ -754,120 +625,65 @@ Faça backup dos dados para guardar ou transferir para outro aparelho.
 </div>
 </div>
 
-<!-- MODAL FOTO -->
-<div id="fotoM" class="modal">
+<div class="modal" id="checkM">
+<div class="sheet">
+
+<button class="close" onclick="closeM('checkM')">×</button>
+
+<h2 id="checkTitle">Novo serviço do checklist</h2>
+
+<form class="form" onsubmit="saveCheckDef(event)">
+
+<input id="checkId" type="hidden">
+
+<input id="checkDesc" required placeholder="Nome do serviço / etapa">
+
+<select id="checkObra">
+<option value="all">Aplicar em todas as obras</option>
+</select>
+
+<button class="primary">Salvar serviço</button>
+
+</form>
+
+</div>
+</div>
+
+<div class="modal" id="fotoM">
 <div class="sheet">
 
 <button class="close" onclick="closeM('fotoM')">×</button>
 
-<h2>Adicionar foto</h2>
+<h2>Adicionar fotos</h2>
 
-<form class="form" onsubmit="saveFoto(event)">
+<form class="form" onsubmit="saveFotos(event)">
 
-<select id="fObra" required></select>
+<select id="fotoObra" required></select>
+<input id="fotoData" type="date" required>
+<input id="fotoTitulo" placeholder="Título / etapa">
+<textarea id="fotoObs" placeholder="Observação"></textarea>
+<input id="fotoFiles" type="file" accept="image/*" multiple required>
 
-<input id="fTitulo" placeholder="Título / etapa">
-
-<input id="fData" type="date">
-
-<input id="fFile" type="file" accept="image/*" capture="environment" required>
-
-<textarea id="fObs" placeholder="Observação"></textarea>
-
-<button class="primary">Salvar foto</button>
+<button class="primary">Salvar fotos</button>
 
 </form>
 
 </div>
 </div>
 
-<!-- MODAL CHECKLIST -->
-<div id="checkDefM" class="modal">
-<div class="sheet">
-
-<button class="close" onclick="closeM('checkDefM')">×</button>
-
-<h2>Item do checklist</h2>
-
-<form class="form" onsubmit="saveCheckDef(event)">
-
-<input type="hidden" id="checkDefId">
-
-<input id="checkDefNome" required placeholder="Ex.: Pintura das paredes">
-
-<input id="checkDefOrdem" type="number" value="1" placeholder="Ordem">
-
-<button class="primary">Salvar item</button>
-
-</form>
-
-</div>
-</div>
-
-<!-- MODAL DOCUMENTO -->
-<div id="docM" class="modal">
-<div class="sheet">
-
-<button class="close" onclick="closeM('docM')">×</button>
-
-<h2>Adicionar documento</h2>
-
-<form class="form" onsubmit="saveDoc(event)">
-
-<select id="docObra" required></select>
-
-<select id="docTipo">
-<option value="Contrato">Contrato</option>
-<option value="Projeto">Projeto</option>
-<option value="Orçamento">Orçamento</option>
-<option value="Medição">Medição</option>
-<option value="Nota fiscal">Nota fiscal</option>
-<option value="Outro">Outro</option>
-</select>
-
-<input id="docTitulo" required placeholder="Nome do documento">
-
-<input id="docNumero" placeholder="Número / referência">
-
-<textarea id="docObs" placeholder="Observações"></textarea>
-
-<input id="docFile" type="file">
-
-<button class="primary">Salvar documento</button>
-
-</form>
-
-</div>
-</div>
+<div id="toast" class="toast"></div>
 
 <script>
+"use strict";
+
+/* EDIFIQ — núcleo da aplicação */
 
 const SUPA_URL="https://lwqntzwajjgkvtynwdjg.supabase.co";
 const SUPA_KEY="sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
 
-let sb=null;
+const sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 
-try{
-if(window.supabase && typeof window.supabase.createClient==="function"){
-sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
-}
-}catch(e){
-console.error("Supabase init:",e);
-}
-
-let user=null;
-
-const tables=[
-"obras",
-"funcionarios",
-"diarias",
-"gastos",
-"pagamentos",
-"orcamentos",
-"servicos",
-"terceirizados",
-"checklist"
-];
+let user=null,editObraId=null,editFuncId=null;
 
 const D={
 obras:[],
@@ -881,1540 +697,900 @@ terceirizados:[],
 checklist:[]
 };
 
+const tables=[
+'obras',
+'funcionarios',
+'diarias',
+'gastos',
+'pagamentos',
+'orcamentos',
+'servicos',
+'terceirizados',
+'checklist'
+];
+
 const $=id=>document.getElementById(id);
 
-function esc(v){
-return String(v??"")
-.replace(/&/g,"&amp;")
-.replace(/</g,"&lt;")
-.replace(/>/g,"&gt;")
-.replace(/"/g,"&quot;")
-.replace(/'/g,"&#039;");
+const money=v=>Number(v||0).toLocaleString('pt-BR',{
+style:'currency',
+currency:'BRL'
+});
+
+const today=()=>new Date().toISOString().slice(0,10);
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({
+'&':'&amp;',
+'<':'&lt;',
+'>':'&gt;',
+'"':'&quot;',
+"'":'&#39;'
+}[m]));
+
+async function checkConnection(){
+
+const el=$('connectionStatus');
+
+try{
+
+const{error}=await sb.auth.getSession();
+
+if(error)throw error;
+
+el.textContent='● Sistema conectado';
+el.className='connection ok';
+
+}catch(e){
+
+console.error(e);
+
+el.textContent='● Erro de conexão';
+el.className='connection error';
+
 }
 
-function money(v){
-return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 }
 
-function today(){
-return new Date().toISOString().slice(0,10);
+function toast(s){
+
+const x=$('toast');
+
+x.textContent=s;
+x.classList.add('show');
+
+setTimeout(
+()=>x.classList.remove('show'),
+3500
+);
+
 }
 
-function toast(msg){
-const t=$("toast");
-if(!t)return;
-t.textContent=msg;
-t.classList.add("show");
-setTimeout(()=>t.classList.remove("show"),3000);
+function authMsg(s){
+$('authMsg').textContent=s||'';
 }
 
-function go(page){
-document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
-const p=$(page);
-if(p)p.classList.add("active");
+function go(p){
 
-document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));
+document.querySelectorAll('.page')
+.forEach(x=>x.classList.remove('active'));
 
-if(page==="home")document.querySelectorAll(".nav")[0]?.classList.add("active");
-if(page==="obras")document.querySelectorAll(".nav")[1]?.classList.add("active");
-if(page==="equipe")document.querySelectorAll(".nav")[2]?.classList.add("active");
-if(page==="financeiro")document.querySelectorAll(".nav")[3]?.classList.add("active");
-if(page==="relatorios")document.querySelectorAll(".nav")[4]?.classList.add("active");
+if($(p))$(p).classList.add('active');
+
+document.querySelectorAll('.nav')
+.forEach(x=>x.classList.toggle(
+'active',
+x.dataset.p===p
+));
 
 renderAll();
+
 }
 
 function openM(id){
-$(id)?.classList.add("open");
+
+$(id).classList.add('open');
+fillSelectors();
+
 }
 
 function closeM(id){
-$(id)?.classList.remove("open");
+$(id).classList.remove('open');
 }
 
-function checkConnection(){
-const el=$("connectionStatus");
+function openObra(id=null){
 
-if(!sb){
-el.textContent="● Erro de conexão";
-el.className="connection error";
-return;
+editObraId=id;
+
+$('obraTitle').textContent=id?'Editar obra':'Nova obra';
+
+if(id){
+
+const o=D.obras.find(x=>x.id===id);
+
+if(!o)return;
+
+$('oNome').value=o.nome||'';
+$('oCli').value=o.cliente||'';
+$('oLoc').value=o.endereco||'';
+$('oVal').value=o.valor||0;
+$('oStatus').value=o.status||'em_andamento';
+$('oIni').value=o.data_inicio||'';
+$('oFim').value=o.data_fim||'';
+$('oTipo').value=o.tipo_servico||'';
+$('oObs').value=o.observacoes||'';
+
+}else{
+
+$('obraM').querySelector('form').reset();
+
 }
 
-sb.auth.getSession()
-.then(()=>{
-el.textContent="● Sistema conectado";
-el.className="connection ok";
-})
-.catch(e=>{
-console.error(e);
-el.textContent="● Erro de conexão";
-el.className="connection error";
-});
+openM('obraM');
+
+}
+
+function openFunc(id=null){
+
+editFuncId=id;
+
+$('funcTitle').textContent=id?'Editar funcionário':'Novo funcionário';
+
+if(id){
+
+const f=D.funcionarios.find(x=>x.id===id);
+
+if(!f)return;
+
+$('fNome').value=f.nome||'';
+$('fFunc').value=f.funcao||'';
+$('fTel').value=f.telefone||'';
+$('fTipo').value=f.tipo_pagamento||'diaria';
+$('fDia').value=f.valor_diaria||'';
+$('fSal').value=f.salario_mensal||'';
+$('fPag').value=f.dia_pagamento||'';
+$('fAtivo').value=String(f.ativo!==false);
+
+}else{
+
+clearFuncForm();
+
+}
+
+openM('funcM');
+
+}
+
+function clearFuncForm(){
+
+[
+'fNome',
+'fFunc',
+'fTel',
+'fDia',
+'fSal',
+'fPag'
+].forEach(id=>$(id).value='');
+
+$('fTipo').value='diaria';
+$('fAtivo').value='true';
+
+}
+
+function openDia(){
+
+openM('diaM');
+
+$('dData').value=today();
+$('dQtd').value=1;
+
+const f=D.funcionarios.find(x=>x.ativo!==false);
+
+if(f){
+
+$('dFunc').value=f.id;
+$('dVal').value=f.valor_diaria||'';
+
+}
+
+}
+
+function openFin(){
+
+openM('finM');
+$('dtFin').value=today();
+
+}
+
+function openCheck(id=null){
+
+$('checkId').value=id||'';
+
+$('checkTitle').textContent=
+id?'Editar serviço do checklist':
+'Novo serviço do checklist';
+
+const defs=getCheckDefs();
+
+const d=defs.find(x=>x.id===id);
+
+$('checkDesc').value=d?.desc||'';
+$('checkObra').value=d?.obraId||'all';
+
+openM('checkM');
+
+}
+
+function openFoto(){
+
+openM('fotoM');
+$('fotoData').value=today();
+
 }
 
 async function login(){
 
-if(!sb){
-$("authMsg").textContent="Supabase não carregou. Verifique a conexão com a internet.";
-return;
-}
+const email=$('email').value.trim();
+const password=$('password').value;
 
-const email=$("email").value.trim();
-const password=$("password").value;
+if(!email||!password)
+return authMsg('Informe e-mail e senha.');
 
-if(!email||!password){
-$("authMsg").textContent="Digite seu e-mail e sua senha.";
-return;
-}
+authMsg('Entrando...');
 
-$("authMsg").textContent="Entrando...";
-
-const {error}=await sb.auth.signInWithPassword({
+const{error}=await sb.auth.signInWithPassword({
 email,
 password
 });
 
-if(error){
-$("authMsg").textContent=error.message;
-}else{
-$("authMsg").textContent="Login realizado.";
-}
+if(error)authMsg(error.message);
+
 }
 
 async function signup(){
 
-if(!sb){
-$("authMsg").textContent="Supabase não carregou.";
-return;
-}
+const email=$('email').value.trim();
+const password=$('password').value;
 
-const email=$("email").value.trim();
-const password=$("password").value;
+if(!email)
+return authMsg('Informe seu e-mail.');
 
-if(!email||!password){
-$("authMsg").textContent="Digite e-mail e senha.";
-return;
-}
+if(password.length<6)
+return authMsg('A senha precisa ter pelo menos 6 caracteres.');
 
-if(password.length<6){
-$("authMsg").textContent="A senha precisa ter pelo menos 6 caracteres.";
-return;
-}
+authMsg('Criando conta...');
 
-$("authMsg").textContent="Criando conta...";
-
-const {error}=await sb.auth.signUp({
+const{data,error}=await sb.auth.signUp({
 email,
 password
 });
 
-if(error){
-$("authMsg").textContent=error.message;
-}else{
-$("authMsg").textContent="Conta criada. Verifique seu e-mail se for solicitado.";
-}
+if(error)
+return authMsg(error.message);
+
+authMsg(
+data.session?
+'Conta criada e login realizado.':
+'Conta criada. Verifique seu e-mail para confirmar.'
+);
+
 }
 
 async function resetPassword(){
 
-if(!sb){
-$("authMsg").textContent="Supabase não carregou.";
-return;
+const email=$('email').value.trim();
+
+if(!email)
+return authMsg('Digite seu e-mail.');
+
+const{error}=await sb.auth.resetPasswordForEmail(
+email,
+{
+redirectTo:location.origin+location.pathname
 }
+);
 
-const email=$("email").value.trim();
+authMsg(
+error?
+'Erro: '+error.message:
+'Link de recuperação enviado para seu e-mail.'
+);
 
-if(!email){
-$("authMsg").textContent="Digite seu e-mail primeiro.";
-return;
-}
-
-const {error}=await sb.auth.resetPasswordForEmail(email,{
-redirectTo:location.href
-});
-
-$("authMsg").textContent=error?error.message:"Link de recuperação enviado.";
 }
 
 async function logout(){
-
-if(sb){
 await sb.auth.signOut();
 }
 
-user=null;
+sb.auth.onAuthStateChange(
+async(_e,s)=>{
 
-$("app")?.classList.add("hidden");
-$("auth")?.classList.remove("hidden");
+user=s?.user||null;
+
+if(user){
+
+$('auth').classList.add('hidden');
+$('app').classList.remove('hidden');
+
+$('accountEmail').textContent=user.email||'';
+$('appConnection').textContent='● Sistema conectado';
+
+await loadCloud();
+
+renderAll();
+
+}else{
+
+$('app').classList.add('hidden');
+$('auth').classList.remove('hidden');
+
 }
+
+}
+);
 
 async function loadCloud(){
 
-if(!sb||!user)return;
-
-for(const table of tables){
+for(const t of tables){
 
 try{
 
-const {data,error}=await sb
-.from(table)
-.select("*")
-.order("id",{ascending:false});
+const{
+data,
+error
+}=await sb
+.from(t)
+.select('*')
+.order(
+'created_at',
+{ascending:false}
+);
 
-if(error){
-console.warn(table,error.message);
-D[table]=[];
-}else{
-D[table]=data||[];
-}
+if(error)
+console.warn(t,error.message);
+
+else
+D[t].splice(
+0,
+D[t].length,
+...(data||[])
+);
 
 }catch(e){
-console.warn(table,e);
-D[table]=[];
-}
+
+console.warn(t,e);
 
 }
 
-renderAll();
+}
+
 }
 
 async function insertRow(table,row){
-
-if(!sb||!user)return null;
 
 const payload={
 ...row,
 user_id:user.id
 };
 
-const {data,error}=await sb
+const{
+data,
+error
+}=await sb
 .from(table)
 .insert(payload)
 .select()
 .single();
 
 if(error){
-console.error(error);
-toast(error.message);
+
+toast('Erro ao salvar: '+error.message);
 return null;
+
 }
 
 return data;
+
 }
 
 async function updateRow(table,id,row){
 
-if(!sb||!user)return null;
-
-const {data,error}=await sb
+const{
+data,
+error
+}=await sb
 .from(table)
 .update(row)
-.eq("id",id)
-.eq("user_id",user.id)
+.eq('id',id)
+.eq('user_id',user.id)
 .select()
 .single();
 
 if(error){
-console.error(error);
-toast(error.message);
+
+toast('Erro ao editar: '+error.message);
 return null;
+
 }
 
 return data;
+
 }
 
-async function deleteRow(table,id){
+async function removeRow(table,id){
 
-if(!sb||!user)return;
-
-const {error}=await sb
+const{error}=await sb
 .from(table)
 .delete()
-.eq("id",id)
-.eq("user_id",user.id);
+.eq('id',id)
+.eq('user_id',user.id);
 
 if(error){
+
 toast(error.message);
-return;
-}
-
-D[table]=(D[table]||[]).filter(x=>String(x.id)!==String(id));
-
-renderAll();
-toast("Registro excluído.");
-}
-
-function delItem(table,id){
-if(confirm("Excluir este registro?"))deleteRow(table,id);
-}
-
-function fillSelectors(){
-
-const obraSelects=[
-"oFin",
-"dObra",
-"fObra",
-"checkObraFilter",
-"fotoObraFilter",
-"finObraFilter"
-];
-
-obraSelects.forEach(id=>{
-const el=$(id);
-if(!el)return;
-
-const cur=el.value;
-
-if(id==="checkObraFilter"||id==="fotoObraFilter"||id==="finObraFilter"){
-el.innerHTML='<option value="all">Todas as obras</option>';
-}else{
-el.innerHTML='<option value="">Selecione a obra</option>';
-}
-
-D.obras.forEach(o=>{
-el.innerHTML+=`<option value="${o.id}">${esc(o.nome)}</option>`;
-});
-
-if([...el.options].some(o=>o.value===cur))el.value=cur;
-});
-
-const df=$("dFunc");
-
-if(df){
-
-const cur=df.value;
-
-df.innerHTML='<option value="">Selecione o funcionário</option>';
-
-D.funcionarios
-.filter(f=>f.ativo!==false)
-.forEach(f=>{
-df.innerHTML+=`<option value="${f.id}">${esc(f.nome)}</option>`;
-});
-
-if([...df.options].some(o=>o.value===cur))df.value=cur;
-}
+return false;
 
 }
-
-function renderAll(){
-
-fillSelectors();
-renderHome();
-renderObras();
-renderFinanceiro();
-renderChecklist();
-renderFotos();
-
-if(typeof renderPayroll==="function")renderPayroll();
-if(typeof renderDocs==="function")renderDocs();
-if(typeof renderReports==="function")renderReports();
-
-if(user&&$("accountEmail"))$("accountEmail").textContent=user.email||"";
-}
-
-function renderHome(){
-
-$("kObras").textContent=D.obras.length;
-
-$("kFunc").textContent=D.funcionarios.filter(x=>x.ativo!==false).length;
-
-const entradas=D.gastos
-.filter(x=>x.categoria==="entrada")
-.reduce((s,x)=>s+Number(x.valor||0),0);
-
-const despesas=D.gastos
-.filter(x=>x.categoria!=="entrada")
-.reduce((s,x)=>s+Number(x.valor||0),0);
-
-const diarias=D.diarias
-.reduce((s,x)=>s+Number(x.valor_pago||x.qtd*x.valor_diaria||0),0);
-
-$("kEntradas").textContent=money(entradas);
-$("kDespesas").textContent=money(despesas+diarias);
-$("kResultado").textContent=money(entradas-despesas-diarias);
-
-const receber=D.obras.reduce((s,o)=>{
-const recebido=D.gastos
-.filter(x=>String(x.obra_id)===String(o.id)&&x.categoria==="entrada")
-.reduce((a,x)=>a+Number(x.valor||0),0);
-
-return s+Math.max(0,Number(o.valor||0)-recebido);
-},0);
-
-$("kReceber").textContent=money(receber);
-
-const recentes=D.obras.slice(0,5);
-
-$("recentes").innerHTML=recentes.map(o=>`
-
-<div class="item">
-
-<div class="row">
-
-<div>
-<b>${esc(o.nome)}</b>
-<br>
-<small>${esc(o.cliente||"Sem cliente")}</small>
-</div>
-
-<span class="badge ${o.status==="concluida"?"on":""}">
-${esc(o.status||"andamento")}
-</span>
-
-</div>
-
-<div class="listActions">
-<button class="mini" onclick="openObra(${o.id})">✏️ Editar</button>
-<button class="mini" onclick="go('fotos');setTimeout(()=>openFoto(${o.id}),100)">📸 Fotos</button>
-<button class="mini" onclick="go('documentos')">📁 Documentos</button>
-</div>
-
-</div>
-
-`).join("")||'<div class="empty">Nenhuma obra cadastrada.</div>';
-
-}
-
-function renderObras(){
-
-const q=($("obraSearch")?.value||"").toLowerCase();
-
-const arr=D.obras.filter(o=>
-String(o.nome||"").toLowerCase().includes(q)||
-String(o.cliente||"").toLowerCase().includes(q)
-);
-
-$("obrasList").innerHTML=arr.map(o=>{
-
-const entradas=D.gastos
-.filter(x=>String(x.obra_id)===String(o.id)&&x.categoria==="entrada")
-.reduce((s,x)=>s+Number(x.valor||0),0);
-
-const despesas=D.gastos
-.filter(x=>String(x.obra_id)===String(o.id)&&x.categoria!=="entrada")
-.reduce((s,x)=>s+Number(x.valor||0),0);
-
-const mao=D.diarias
-.filter(x=>String(x.obra_id)===String(o.id))
-.reduce((s,x)=>s+Number(x.valor_pago||x.qtd*x.valor_diaria||0),0);
-
-const lucro=entradas-despesas-mao;
-
-return `
-
-<div class="card">
-
-<div class="row">
-
-<div>
-<h2>${esc(o.nome)}</h2>
-<div class="sub">${esc(o.cliente||"Sem cliente")}</div>
-</div>
-
-<span class="badge ${o.status==="concluida"?"on":""}">
-${esc(o.status||"andamento")}
-</span>
-
-</div>
-
-${o.endereco?`<p class="sub">📍 ${esc(o.endereco)}</p>`:""}
-
-${o.desc?`<p>${esc(o.desc)}</p>`:""}
-
-<div class="grid3">
-
-<div>
-<small>Contrato</small>
-<br>
-<b>${money(o.valor)}</b>
-</div>
-
-<div>
-<small>Receitas</small>
-<br>
-<b class="green">${money(entradas)}</b>
-</div>
-
-<div>
-<small>Lucro</small>
-<br>
-<b class="${lucro>=0?"gold":"red"}">${money(lucro)}</b>
-</div>
-
-</div>
-
-<div class="listActions">
-
-<button class="mini" onclick="openObra(${o.id})">✏️ Editar</button>
-
-<button class="mini" onclick="openDiaria(${o.id})">👷 Diária</button>
-
-<button class="mini" onclick="openFin(${o.id})">💰 Financeiro</button>
-
-<button class="mini" onclick="go('checklist');setTimeout(()=>{if($('checkObraFilter')){$('checkObraFilter').value='${o.id}';renderChecklist()}},100)">☑️ Checklist</button>
-
-<button class="mini" onclick="go('fotos');setTimeout(()=>openFoto(${o.id}),100)">📸 Fotos</button>
-
-<button class="mini" onclick="go('documentos')">📁 Documentos</button>
-
-<button class="danger mini" onclick="delItem('obras',${o.id})">Excluir</button>
-
-</div>
-
-</div>
-
-`;
-
-}).join("")||'<div class="empty">Nenhuma obra encontrada.</div>';
-
-}
-
-function openObra(id=null){
-
-$("obraId").value=id||"";
-
-$("obraTitle").textContent=id?"Editar obra":"Nova obra";
-
-if(id){
-
-const o=D.obras.find(x=>String(x.id)===String(id));
-
-if(!o)return;
-
-$("obraNome").value=o.nome||"";
-$("obraCliente").value=o.cliente||"";
-$("obraEndereco").value=o.endereco||"";
-$("obraValor").value=o.valor||"";
-$("obraInicio").value=o.inicio||"";
-$("obraStatus").value=o.status||"andamento";
-$("obraDesc").value=o.desc||"";
-
-}else{
-
-$("obraNome").value="";
-$("obraCliente").value="";
-$("obraEndereco").value="";
-$("obraValor").value="";
-$("obraInicio").value=today();
-$("obraStatus").value="andamento";
-$("obraDesc").value="";
-
-}
-
-openM("obraM");
-}
-
-async function saveObra(e){
-
-e.preventDefault();
-
-const id=$("obraId").value;
-
-const row={
-nome:$("obraNome").value.trim(),
-cliente:$("obraCliente").value.trim(),
-endereco:$("obraEndereco").value.trim(),
-valor:Number($("obraValor").value||0),
-inicio:$("obraInicio").value,
-status:$("obraStatus").value,
-desc:$("obraDesc").value.trim()
-};
-
-if(id){
-
-const r=await updateRow("obras",id,row);
-
-if(r){
-const i=D.obras.findIndex(x=>String(x.id)===String(id));
-if(i>=0)D.obras[i]=r;
-toast("Obra atualizada.");
-}
-
-}else{
-
-const r=await insertRow("obras",row);
-
-if(r){
-D.obras.unshift(r);
-toast("Obra cadastrada.");
-}
-
-}
-
-closeM("obraM");
-renderAll();
-}
-
-function openFunc(id=null){
-
-$("funcId").value=id||"";
-
-if(id){
-
-const f=D.funcionarios.find(x=>String(x.id)===String(id));
-
-if(!f)return;
-
-$("funcNome").value=f.nome||"";
-$("funcTelefone").value=f.telefone||"";
-$("funcCargo").value=f.cargo||"";
-$("funcDiaria").value=f.valor_diaria||"";
-$("funcPagamento").value=f.tipo_pagamento||"diaria";
-$("funcAtivo").value=String(f.ativo!==false);
-
-}else{
-
-$("funcNome").value="";
-$("funcTelefone").value="";
-$("funcCargo").value="";
-$("funcDiaria").value="";
-$("funcPagamento").value="diaria";
-$("funcAtivo").value="true";
-
-}
-
-openM("funcM");
-}
-
-async function saveFunc(e){
-
-e.preventDefault();
-
-const id=$("funcId").value;
-
-const row={
-nome:$("funcNome").value.trim(),
-telefone:$("funcTelefone").value.trim(),
-cargo:$("funcCargo").value.trim(),
-valor_diaria:Number($("funcDiaria").value||0),
-tipo_pagamento:$("funcPagamento").value,
-ativo:$("funcAtivo").value==="true"
-};
-
-if(id){
-
-const r=await updateRow("funcionarios",id,row);
-
-if(r){
-const i=D.funcionarios.findIndex(x=>String(x.id)===String(id));
-if(i>=0)D.funcionarios[i]=r;
-toast("Funcionário atualizado.");
-}
-
-}else{
-
-const r=await insertRow("funcionarios",row);
-
-if(r){
-D.funcionarios.unshift(r);
-toast("Funcionário cadastrado.");
-}
-
-}
-
-closeM("funcM");
-renderAll();
-}
-
-async function toggleFunc(id){
-
-const f=D.funcionarios.find(x=>String(x.id)===String(id));
-
-if(!f)return;
-
-const r=await updateRow("funcionarios",id,{
-ativo:f.ativo===false
-});
-
-if(r){
-
-const i=D.funcionarios.findIndex(x=>String(x.id)===String(id));
-
-if(i>=0)D.funcionarios[i]=r;
-
-renderAll();
-toast(r.ativo?"Funcionário ativado.":"Funcionário inativado.");
-}
-
-}
-
-function openDiaria(obraId=null){
-
-fillSelectors();
-
-$("dData").value=today();
-$("dQtd").value=1;
-$("dValor").value="";
-
-if(obraId)$("dObra").value=String(obraId);
-
-const f=D.funcionarios.find(x=>x.ativo!==false);
-
-if(f){
-$("dFunc").value=String(f.id);
-$("dValor").value=f.valor_diaria||"";
-}
-
-openM("diaM");
-}
-
-$("dFunc")?.addEventListener("change",()=>{
-const f=D.funcionarios.find(x=>String(x.id)===String($("dFunc").value));
-if(f)$("dValor").value=f.valor_diaria||"";
-});
-
-async function saveDiaria(e){
-
-e.preventDefault();
-
-const qtd=Number($("dQtd").value||1);
-const valor=Number($("dValor").value||0);
-
-const r=await insertRow("diarias",{
-funcionario_id:Number($("dFunc").value),
-obra_id:Number($("dObra").value),
-data:$("dData").value,
-qtd,
-valor_diaria:valor,
-valor_pago:qtd*valor,
-observacao:$("dObs").value.trim()
-});
-
-if(r){
-
-D.diarias.unshift(r);
-
-closeM("diaM");
-
-renderAll();
-
-toast("Diária registrada.");
-}
-
-}
-
-function openFin(obraId=null){
-
-fillSelectors();
-
-$("dtFin").value=today();
-
-$("tFin").value="entrada";
-
-$("catFin").value="outros";
-
-$("dFin").value="";
-$("vFin").value="";
-$("forFin").value="";
-$("obsFin").value="";
-
-if(obraId)$("oFin").value=String(obraId);
-
-openM("finM");
-}
-
-function renderFinanceiro(){
-
-const obra=$("finObraFilter")?.value||"all";
-const tipo=$("finTipoFilter")?.value||"all";
-
-const rows=D.gastos.filter(x=>
-(obra==="all"||String(x.obra_id)===String(obra))&&
-(tipo==="all"||x.categoria===tipo)
-);
-
-const entradas=rows
-.filter(x=>x.categoria==="entrada")
-.reduce((s,x)=>s+Number(x.valor||0),0);
-
-const despesas=rows
-.filter(x=>x.categoria!=="entrada")
-.reduce((s,x)=>s+Number(x.valor||0),0);
-
-$("finEntradas").textContent=money(entradas);
-$("finDespesas").textContent=money(despesas);
-$("finResultado").textContent=money(entradas-despesas);
-
-$("finList").innerHTML=rows.map(x=>{
-
-const o=D.obras.find(y=>String(y.id)===String(x.obra_id));
-
-return `
-
-<div class="item">
-
-<div class="row">
-
-<div>
-<b>${esc(x.descricao||"Lançamento")}</b>
-<br>
-<small>
-${esc(o?.nome||"Sem obra")} •
-${esc(x.data||"")} •
-${x.categoria==="entrada"?"Receita":"Despesa"}
-</small>
-</div>
-
-<b class="${x.categoria==="entrada"?"green":"red"}">
-${money(x.valor)}
-</b>
-
-</div>
-
-<div class="listActions">
-<span class="chip">${esc(x.subcategoria||"outros")}</span>
-${x.fornecedor?`<span class="chip">${esc(x.fornecedor)}</span>`:""}
-<button class="danger mini" onclick="delItem('gastos',${x.id})">Excluir</button>
-</div>
-
-</div>
-
-`;
-
-}).join("")||'<div class="empty">Nenhum lançamento.</div>';
-
-}
-
-async function saveFin(e){
-
-e.preventDefault();
-
-const r=await insertRow("gastos",{
-
-obra_id:$("oFin").value?Number($("oFin").value):null,
-
-categoria:$("tFin").value,
-
-subcategoria:$("catFin").value,
-
-descricao:$("dFin").value.trim(),
-
-valor:Number($("vFin").value),
-
-data:$("dtFin").value||today(),
-
-fornecedor:$("forFin").value.trim(),
-
-observacao:$("obsFin").value.trim()
-
-});
-
-if(r){
-
-D.gastos.unshift(r);
-
-e.target.reset();
-
-closeM("finM");
-
-renderAll();
-
-toast("Lançamento salvo com sucesso.");
-
-}
-
-}
-
-let checkDefs=[];
-
-function loadCheckDefs(){
-
-try{
-checkDefs=JSON.parse(localStorage.getItem("edifiq_check_defs_"+(user?.id||""))||"[]");
-}catch{
-checkDefs=[];
-}
-
-}
-
-function saveCheckDefs(v){
-
-checkDefs=v||[];
-
-localStorage.setItem(
-"edifiq_check_defs_"+(user?.id||""),
-JSON.stringify(checkDefs)
-);
-
-}
-
-function openCheckDef(id=null){
-
-const d=checkDefs.find(x=>String(x.id)===String(id));
-
-$("checkDefId").value=id||"";
-$("checkDefNome").value=d?.nome||"";
-$("checkDefOrdem").value=d?.ordem||1;
-
-openM("checkDefM");
-}
-
-function saveCheckDef(e){
-
-e.preventDefault();
-
-const id=$("checkDefId").value;
-
-const item={
-id:id||"c_"+Date.now(),
-nome:$("checkDefNome").value.trim(),
-ordem:Number($("checkDefOrdem").value||1)
-};
-
-if(id){
-
-const i=checkDefs.findIndex(x=>String(x.id)===String(id));
-
-if(i>=0)checkDefs[i]=item;
-
-}else{
-
-checkDefs.push(item);
-
-}
-
-saveCheckDefs(checkDefs);
-
-closeM("checkDefM");
-
-renderChecklist();
-
-toast("Item do checklist salvo.");
-}
-
-function renderChecklist(){
-
-const obra=$("checkObraFilter")?.value||"all";
-
-const defs=checkDefs
-.slice()
-.sort((a,b)=>Number(a.ordem)-Number(b.ordem));
-
-const storedKey="edifiq_check_state_"+(user?.id||"");
-
-let state={};
-
-try{
-state=JSON.parse(localStorage.getItem(storedKey)||"{}");
-}catch{}
-
-$("checkList").innerHTML=defs.map(d=>{
-
-const key=(obra==="all"?"all":obra)+"_"+d.id;
-
-const done=!!state[key];
-
-return `
-
-<div class="item">
-
-<div class="row">
-
-<label style="flex:1">
-
-<input
-type="checkbox"
-${done?"checked":""}
-onchange="toggleCheck('${esc(key)}',this.checked)"
->
-
-<b>${esc(d.nome)}</b>
-
-</label>
-
-<div class="checkActions">
-
-<button class="mini" onclick="openCheckDef('${d.id}')">✏️</button>
-
-<button class="danger mini" onclick="deleteCheckDef('${d.id}')">×</button>
-
-</div>
-
-</div>
-
-</div>
-
-`;
-
-}).join("")||'<div class="empty">Nenhum item criado. Clique em ＋ Item para personalizar.</div>';
-
-}
-
-function toggleCheck(key,on){
-
-const k="edifiq_check_state_"+(user?.id||"");
-
-let s={};
-
-try{
-s=JSON.parse(localStorage.getItem(k)||"{}");
-}catch{}
-
-s[key]=on;
-
-localStorage.setItem(k,JSON.stringify(s));
-
-}
-
-function deleteCheckDef(id){
-
-if(!confirm("Excluir este item do checklist?"))return;
-
-checkDefs=checkDefs.filter(x=>String(x.id)!==String(id));
-
-saveCheckDefs(checkDefs);
-
-renderChecklist();
-
-}
-
-let photos=[];
-
-function loadPhotos(){
-
-try{
-photos=JSON.parse(localStorage.getItem("edifiq_photos_"+(user?.id||""))||"[]");
-}catch{
-photos=[];
-}
-
-}
-
-function savePhotos(v){
-
-photos=v||[];
-
-localStorage.setItem(
-"edifiq_photos_"+(user?.id||""),
-JSON.stringify(photos)
-);
-
-}
-
-function fileToDataURL(file){
-
-return new Promise((resolve,reject)=>{
-
-const r=new FileReader();
-
-r.onload=()=>resolve(r.result);
-r.onerror=reject;
-
-r.readAsDataURL(file);
-
-});
-
-}
-
-function openFoto(obraId=null){
-
-fillSelectors();
-
-$("fData").value=today();
-
-$("fTitulo").value="";
-$("fObs").value="";
-$("fFile").value="";
-
-if(obraId)$("fObra").value=String(obraId);
-
-openM("fotoM");
-}
-
-async function saveFoto(e){
-
-e.preventDefault();
-
-const file=$("fFile").files[0];
-
-if(!file)return;
-
-const data=await fileToDataURL(file);
-
-photos.push({
-
-id:"photo_"+Date.now(),
-
-obraId:$("fObra").value,
-
-titulo:$("fTitulo").value.trim(),
-
-data,
-
-date:$("fData").value||today(),
-
-obs:$("fObs").value.trim()
-
-});
-
-savePhotos(photos);
-
-closeM("fotoM");
-
-renderFotos();
-
-toast("Foto adicionada.");
-}
-
-function renderFotos(){
-
-const obra=$("fotoObraFilter")?.value||"all";
-
-const arr=photos.filter(x=>
-obra==="all"||String(x.obraId)===String(obra)
-);
-
-$("fotoList").innerHTML=arr.slice().reverse().map(p=>{
-
-const o=D.obras.find(x=>String(x.id)===String(p.obraId));
-
-return `
-
-<div class="item">
-
-<div class="row">
-
-<div>
-<b>${esc(p.titulo||"Registro fotográfico")}</b>
-<br>
-<small>${esc(o?.nome||"Obra")} • ${esc(p.date)}</small>
-</div>
-
-<button class="danger mini" onclick="deleteFoto('${p.id}')">Excluir</button>
-
-</div>
-
-<img
-src="${p.data}"
-style="width:100%;max-height:500px;object-fit:contain;border-radius:12px;margin-top:10px"
->
-
-${p.obs?`<p class="sub">${esc(p.obs)}</p>`:""}
-
-</div>
-
-`;
-
-}).join("")||'<div class="empty">Nenhuma foto encontrada.</div>';
-
-}
-
-function deleteFoto(id){
-
-if(!confirm("Excluir esta foto?"))return;
-
-photos=photos.filter(x=>x.id!==id);
-
-savePhotos(photos);
-
-renderFotos();
-
-}
-
-const DOC_KEY=()=> "edifiq_docs_"+(user?.id||"");
-
-function getDocs(){
-
-try{
-return JSON.parse(localStorage.getItem(DOC_KEY())||"[]");
-}catch{
-return[];
-}
-
-}
-
-function saveDocs(v){
-
-localStorage.setItem(
-DOC_KEY(),
-JSON.stringify(v)
-);
-
-}
-
-function openDoc(){
-
-openM("docM");
-
-fillSelectors();
-
-$("docObra").innerHTML=
-'<option value="" disabled selected>Selecione a obra</option>'+
-D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join("");
-
-}
-
-async function saveDoc(e){
-
-e.preventDefault();
-
-const f=$("docFile").files[0];
-
-let data=null;
-
-if(f)data=await fileToDataURL(f);
-
-const a=getDocs();
-
-a.push({
-
-id:"doc_"+Date.now(),
-
-obraId:$("docObra").value,
-
-tipo:$("docTipo").value,
-
-titulo:$("docTitulo").value.trim(),
-
-numero:$("docNumero").value.trim(),
-
-obs:$("docObs").value.trim(),
-
-fileName:f?.name||"",
-
-fileData:data,
-
-date:today()
-
-});
-
-saveDocs(a);
-
-e.target.reset();
-
-closeM("docM");
-
-renderDocs();
-
-toast("Documento salvo.");
-
-}
-
-function renderDocs(){
-
-const of=$("docObraFilter")?.value||"all";
-const tf=$("docTipoFilter")?.value||"all";
-
-const a=getDocs().filter(d=>
-(of==="all"||String(d.obraId)===String(of))&&
-(tf==="all"||d.tipo===tf)
-);
-
-$("docList").innerHTML=a.slice().reverse().map(d=>{
-
-const o=D.obras.find(x=>String(x.id)===String(d.obraId));
-
-return `
-
-<div class="item">
-
-<div class="row">
-
-<div>
-
-<b>${esc(d.titulo)}</b>
-<br>
-
-<span class="chip">${esc(d.tipo)}</span>
-
-<small>
-${esc(o?.nome||"Obra")} • ${d.date}
-</small>
-
-</div>
-
-<button class="danger mini" onclick="deleteDoc('${d.id}')">
-Excluir
-</button>
-
-</div>
-
-${d.numero?`<small>Ref.: ${esc(d.numero)}</small>`:""}
-
-${d.obs?`<p class="sub">${esc(d.obs)}</p>`:""}
-
-${d.fileName?
-d.fileData?
-`<div class="fileRow">
-<span>📎 ${esc(d.fileName)}</span>
-<a class="mini" href="${d.fileData}" download="${esc(d.fileName)}">Abrir</a>
-</div>`
-:
-`<small>📎 ${esc(d.fileName)}</small>`
-:""}
-
-</div>
-
-`;
-
-}).join("")||'<div class="empty">Nenhum documento encontrado.</div>';
-
-}
-
-function deleteDoc(id){
-
-if(!confirm("Excluir este documento?"))return;
-
-saveDocs(getDocs().filter(x=>x.id!==id));
-
-renderDocs();
-
-}
-
-function fillReportSelectors(){
-
-const o=$("repObra");
-const f=$("repFunc");
-
-if(o){
-
-const cur=o.value;
-
-o.innerHTML=
-'<option value="all">Todas as obras</option>'+
-D.obras.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join("");
-
-if([...o.options].some(x=>x.value===cur))o.value=cur;
-
-}
-
-if(f){
-
-const cur=f.value;
-
-f.innerHTML=
-'<option value="all">Todos os funcionários</option>'+
-D.funcionarios.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join("");
-
-if([...f.options].some(x=>x.value===cur))f.value=cur;
-
-}
-
-const df=$("docObraFilter");
-
-if(df){
-
-const cur=df.value;
-
-df.innerHTML=
-'<option value="all">Todas as obras</option>'+
-D.obras.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join("");
-
-if([...df.options].some(x=>x.value===cur))df.value=cur;
-
-}
-
-}
-
-function dateInPeriod(dt,p){
-
-if(p==="all")return true;
-
-const d=new Date((dt||today())+"T12:00:00");
-
-const n=new Date();
-
-if(p==="dia")return dt===today();
-
-if(p==="mes")
-return d.getMonth()===n.getMonth()&&
-d.getFullYear()===n.getFullYear();
-
-if(p==="ano")
-return d.getFullYear()===n.getFullYear();
 
 return true;
 
 }
 
-function renderReports(){
+function sums(obra='all'){
 
-fillReportSelectors();
-
-const of=$("repObra")?.value||"all";
-const ff=$("repFunc")?.value||"all";
-const tf=$("repTipo")?.value||"all";
-const pf=$("repPeriodo")?.value||"all";
-
-let rows=D.gastos.filter(x=>
-(of==="all"||String(x.obra_id)===String(of))&&
-(tf==="all"||x.categoria===tf)&&
-dateInPeriod(x.data,pf)
-);
-
-let ent=rows
-.filter(x=>x.categoria==="entrada")
-.reduce((a,x)=>a+Number(x.valor||0),0);
-
-let des=rows
-.filter(x=>x.categoria!=="entrada")
-.reduce((a,x)=>a+Number(x.valor||0),0);
-
-let dias=D.diarias.filter(x=>
-(of==="all"||String(x.obra_id)===String(of))&&
-(ff==="all"||String(x.funcionario_id)===String(ff))&&
-dateInPeriod(x.data,pf)
-);
-
-const diaTotal=dias.reduce(
-(a,x)=>a+Number(x.valor_pago||x.qtd*x.valor_diaria||0),
+let entradas=
+D.gastos
+.filter(x=>
+x.categoria==='entrada' &&
+(obra==='all'||String(x.obra_id)===String(obra))
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+)
++
+D.pagamentos
+.filter(x=>
+obra==='all'||
+String(x.obra_id)===String(obra)
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
 0
 );
 
-if(tf!=="entrada")des+=diaTotal;
-
-$("repReceitas").textContent=money(ent);
-$("repDespesas").textContent=money(des);
-$("repLucro").textContent=money(ent-des);
-$("repObrasCount").textContent=D.obras.length;
-
-$("repObras").innerHTML=D.obras.map(o=>{
-
-const g=rows.filter(x=>String(x.obra_id)===String(o.id));
-
-const e=g
-.filter(x=>x.categoria==="entrada")
-.reduce((a,x)=>a+Number(x.valor||0),0);
-
-const material=g
+let despesas=
+D.gastos
 .filter(x=>
-x.categoria!=="entrada"&&
-x.subcategoria==="material"
+x.categoria!=='entrada' &&
+(obra==='all'||String(x.obra_id)===String(obra))
 )
-.reduce((a,x)=>a+Number(x.valor||0),0);
-
-const mao=g
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+)
++
+D.diarias
 .filter(x=>
-x.categoria!=="entrada"&&
-x.subcategoria==="mao_de_obra"
+obra==='all'||
+String(x.obra_id)===String(obra)
 )
-.reduce((a,x)=>a+Number(x.valor||0),0)
-+
-dias
-.filter(x=>String(x.obra_id)===String(o.id))
-.reduce((a,x)=>a+Number(x.valor_pago||x.qtd*x.valor_diaria||0),0);
+.reduce(
+(a,x)=>a+Number(
+x.valor_pago||
+x.qtd*x.valor_diaria||
+0
+),
+0
+);
 
-const lucro=e-material-mao;
-
-return `
-
-<tr>
-
-<td><b>${esc(o.nome)}</b></td>
-
-<td class="green">${money(e)}</td>
-
-<td>${money(material)}</td>
-
-<td>${money(mao)}</td>
-
-<td class="${lucro>=0?"gold":"red"}">${money(lucro)}</td>
-
-</tr>
-
-`;
-
-}).join("")||`<tr><td colspan="5">Nenhuma obra.</td></tr>`;
-
-const mat=rows
-.filter(x=>x.subcategoria==="material"&&x.categoria!=="entrada")
-.reduce((a,x)=>a+Number(x.valor||0),0);
-
-const mo=rows
-.filter(x=>x.subcategoria==="mao_de_obra"&&x.categoria!=="entrada")
-.reduce((a,x)=>a+Number(x.valor||0),0)
-+
-dias.reduce((a,x)=>a+Number(x.valor_pago||x.qtd*x.valor_diaria||0),0);
-
-const ou=des-mat-mo;
-
-$("repCategorias").innerHTML=`
-
-<div class="row">
-<span>🧱 Materiais</span>
-<b>${money(mat)}</b>
-</div>
-
-<div class="row">
-<span>👷 Mão de obra</span>
-<b>${money(mo)}</b>
-</div>
-
-<div class="row">
-<span>Outros</span>
-<b>${money(Math.max(0,ou))}</b>
-</div>
-
-`;
+return{
+entradas,
+despesas,
+lucro:entradas-despesas
+};
 
 }
 
-let payrollSelected=new Set();
+function renderAll(){
 
-function setPayrollSelected(id,on){
+const s=sums();
 
-if(on)payrollSelected.add(String(id));
-else payrollSelected.delete(String(id));
+const contratos=
+D.obras.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
 
+$('kObras').textContent=D.obras.length;
+
+$('kFunc').textContent=
+D.funcionarios.filter(
+f=>f.ativo!==false
+).length;
+
+$('kEntradas').textContent=money(s.entradas);
+$('kDespesas').textContent=money(s.despesas);
+$('kResultado').textContent=money(s.lucro);
+
+$('kReceber').textContent=
+money(
+Math.max(
+0,
+contratos-s.entradas
+)
+);
+
+$('recentes').innerHTML=
+D.obras.slice(0,4)
+.map(o=>`
+<div class="item">
+<div class="row">
+<div>
+<b>${esc(o.nome)}</b><br>
+<small>${esc(o.cliente||'Cliente não informado')}</small>
+</div>
+<b class="gold">${money(o.valor)}</b>
+</div>
+</div>
+`)
+.join('')||
+'<div class="empty">Nenhuma obra cadastrada.</div>';
+
+renderObras();
+renderFuncs();
+renderFinance();
 renderPayroll();
+renderChecklist();
+renderFotos();
+fillSelectors();
+
+}
+
+function statusLabel(s){
+
+return({
+em_andamento:'Em andamento',
+planejada:'Planejada',
+concluida:'Concluída',
+pausada:'Pausada'
+})[s]||s||'';
+
+}
+
+function renderObras(){
+
+const q=(
+$('obraSearch')?.value||''
+).toLowerCase();
+
+const list=D.obras.filter(
+o=>
+!q||
+`${o.nome} ${o.cliente||''}`
+.toLowerCase()
+.includes(q)
+);
+
+$('obrasList').innerHTML=
+list.map(o=>{
+
+const fs=sums(o.id);
+
+const pct=
+o.status==='concluida'?100:
+o.status==='em_andamento'?50:
+o.status==='pausada'?25:
+10;
+
+return`
+<div class="item">
+
+<div class="row">
+
+<div>
+<b>${esc(o.nome)}</b><br>
+<small>
+${esc(o.cliente||'')} •
+${esc(o.endereco||'')}
+</small>
+</div>
+
+<span class="badge">
+${statusLabel(o.status)}
+</span>
+
+</div>
+
+<div class="progress">
+<i style="width:${pct}%"></i>
+</div>
+
+<div class="three">
+
+<div>
+<small>Contrato</small><br>
+<b>${money(o.valor)}</b>
+</div>
+
+<div>
+<small>Receitas</small><br>
+<b class="green">${money(fs.entradas)}</b>
+</div>
+
+<div>
+<small>Lucro</small><br>
+<b class="gold">${money(fs.lucro)}</b>
+</div>
+
+</div>
+
+<div class="listActions">
+
+<button class="mini"
+onclick="openObra(${o.id})">
+✏️ Editar
+</button>
+
+<button class="mini"
+onclick="openFotoFor(${o.id})">
+📸 Fotos
+</button>
+
+<button class="mini"
+onclick="go('financeiro');setTimeout(()=>{
+$('finObraFilter').value='${o.id}';
+renderFinance()
+},0)">
+💰 Financeiro
+</button>
+
+<button class="danger mini"
+onclick="delItem('obras',${o.id})">
+Excluir
+</button>
+
+</div>
+
+</div>
+`;
+
+}).join('')||
+'<div class="empty">Nenhuma obra encontrada.</div>';
+
+}
+
+function renderFuncs(){
+
+const filter=
+$('funcFilter')?.value||'todos';
+
+const list=D.funcionarios.filter(
+f=>
+filter==='todos'||
+(filter==='ativos'&&f.ativo!==false)||
+(filter==='inativos'&&f.ativo===false)
+);
+
+$('funcList').innerHTML=
+list.map(f=>`
+
+<div class="item">
+
+<div class="row">
+
+<div>
+<b>${esc(f.nome)}</b><br>
+<small>
+${esc(f.funcao||'')} •
+${esc(f.telefone||'')}
+</small>
+</div>
+
+<span class="badge ${f.ativo!==false?'on':'off'}">
+${f.ativo!==false?'Ativo':'Inativo'}
+</span>
+
+</div>
+
+<small>
+${esc(f.tipo_pagamento||'diaria')}
+•
+Diária: ${money(f.valor_diaria)}
+•
+Mensal: ${money(f.salario_mensal)}
+</small>
+
+<div class="listActions">
+
+<button class="mini"
+onclick="openFunc(${f.id})">
+✏️ Editar
+</button>
+
+<button class="mini"
+onclick="toggleFunc(${f.id})">
+${f.ativo!==false?'⏸ Inativar':'▶️ Ativar'}
+</button>
+
+<button class="danger mini"
+onclick="delItem('funcionarios',${f.id})">
+Excluir
+</button>
+
+</div>
+
+</div>
+
+`).join('')||
+'<div class="empty">Nenhum funcionário nesta categoria.</div>';
+
+}
+
+async function toggleFunc(id){
+
+const f=D.funcionarios.find(x=>x.id===id);
+
+if(!f)return;
+
+const r=await updateRow(
+'funcionarios',
+id,
+{ativo:f.ativo===false}
+);
+
+if(r){
+
+Object.assign(f,r);
+
+renderAll();
+
+toast(
+f.ativo===false?
+'Funcionário inativado.':
+'Funcionário ativado.'
+);
+
+}
+
+}
+
+function renderFinance(){
+
+const obra=
+$('finObraFilter')?.value||'all';
+
+const tipo=
+$('finTipoFilter')?.value||'all';
+
+const s=sums(obra);
+
+$('finEnt').textContent=money(s.entradas);
+$('finDesp').textContent=money(s.despesas);
+$('finRes').textContent=money(s.lucro);
+
+const rows=D.gastos.filter(
+x=>
+(obra==='all'||String(x.obra_id)===String(obra))&&
+(tipo==='all'||x.categoria===tipo)
+);
+
+$('finList').innerHTML=
+rows.map(x=>{
+
+const o=D.obras.find(
+y=>y.id===x.obra_id
+);
+
+return`
+
+<div class="item">
+
+<div class="row">
+
+<div>
+<b>${esc(x.descricao||'Lançamento')}</b><br>
+<small>
+${x.data||''} •
+${esc(o?.nome||'Geral')} •
+${esc(x.fornecedor||'')}
+</small>
+</div>
+
+<b class="${x.categoria==='entrada'?'green':'red'}">
+${x.categoria==='entrada'?'+':'−'}${money(x.valor)}
+</b>
+
+</div>
+
+<div class="listActions">
+
+<button class="danger mini"
+onclick="delItem('gastos',${x.id})">
+Excluir
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}).join('')||
+'<div class="empty">Nenhum lançamento encontrado.</div>';
+
+let resumo=D.obras.map(o=>{
+
+const z=sums(o.id);
+
+return`
+<div class="row"
+style="padding:8px 0;border-bottom:1px solid var(--line)">
+
+<span>${esc(o.nome)}</span>
+
+<span>
+<span class="green">${money(z.entradas)}</span>
+/
+<span class="red">${money(z.despesas)}</span>
+/
+<b class="gold">${money(z.lucro)}</b>
+</span>
+
+</div>
+`;
+
+}).join('');
+
+$('obraFinanceResumo').innerHTML=
+resumo||
+'<div class="empty">Cadastre uma obra.</div>';
 
 }
 
 function renderPayroll(){
 
-if(!$("payPeriod"))return;
+if(!$('payPeriod'))return;
 
-const p=$("payPeriod").value;
+const p=$('payPeriod').value;
 
-$("customDates").classList.toggle(
-"hidden",
-p!=="custom"
+$('customDates')
+.classList.toggle(
+'hidden',
+p!=='custom'
 );
 
 const now=new Date();
 
-let a=new Date(now);
-let b=new Date(now);
-
-if(p==="dia"){
-
-a=new Date(now);
+let a=new Date(now),
 b=new Date(now);
 
-}
-
-else if(p==="semana"){
+if(p==='semana'){
 
 const d=now.getDay()||7;
 
-a.setDate(now.getDate()-d+1);
+a.setDate(
+now.getDate()-d+1
+);
 
-}
+}else if(p==='quinzena'){
 
-else if(p==="quinzena"){
+a.setDate(
+now.getDate()<=15?1:16
+);
 
-a.setDate(now.getDate()<=15?1:16);
-
-}
-
-else if(p==="mes"){
+}else if(p==='mes'){
 
 a.setDate(1);
 
-}
-
-else if(p==="custom"){
+}else if(p==='custom'){
 
 a=new Date(
-($("payStart").value||today())+
-"T00:00:00"
+($('payStart').value||today())+
+'T00:00:00'
 );
 
 b=new Date(
-($("payEnd").value||today())+
-"T23:59:59"
+($('payEnd').value||today())+
+'T23:59:59'
 );
 
 }
@@ -2422,163 +1598,68 @@ b=new Date(
 const A=a.toISOString().slice(0,10);
 const B=b.toISOString().slice(0,10);
 
-let ds=D.diarias.filter(d=>
-d.data>=A&&d.data<=B
-);
+let total=0,
+count=0;
 
-const selected=[...document.querySelectorAll(".paySel:checked")]
-.map(x=>String(x.value));
+D.funcionarios.forEach(f=>{
 
-let use=selected.length
-?ds.filter(d=>selected.includes(String(d.funcionario_id)))
-:ds;
-
-const total=use.reduce(
-(s,d)=>s+Number(d.valor_pago||d.qtd*d.valor_diaria||0),
+let val=
+f.tipo_pagamento==='mensal'?
+Number(f.salario_mensal||0):
+D.diarias
+.filter(
+d=>
+String(d.funcionario_id)===String(f.id)&&
+d.data>=A&&
+d.data<=B
+)
+.reduce(
+(s,d)=>
+s+
+Number(
+d.valor_pago||
+d.qtd*d.valor_diaria||
+0
+),
 0
 );
 
-$("payTotal").textContent=money(total);
+if(val)count++;
 
-$("payCount").textContent=
-new Set(use.map(d=>d.funcionario_id)).size;
-
-let search=($("funcSearch")?.value||"").toLowerCase();
-
-let filter=$("funcFilter")?.value||"all";
-
-let funcs=D.funcionarios.filter(f=>{
-
-if(filter==="ativos"&&f.ativo===false)return false;
-
-if(filter==="inativos"&&f.ativo!==false)return false;
-
-if(search&&!String(f.nome||"").toLowerCase().includes(search))
-return false;
-
-return true;
+total+=val;
 
 });
 
-let controls=`
+$('payTotal').textContent=money(total);
+$('payCount').textContent=count;
 
-<div class="selectedBox">
-
-<b>Funcionários para somar</b>
-
-<br>
-
-<small>
-Marque um ou vários. Sem seleção = todos.
-</small>
-
-<div class="listActions">
-
-${funcs.map(f=>`
-
-<label class="chip">
-
-<input
-class="paySel"
-type="checkbox"
-value="${f.id}"
-${payrollSelected.has(String(f.id))?"checked":""}
-onchange="setPayrollSelected(this.value,this.checked)"
->
-
-${esc(f.nome)}
-
-</label>
-
-`).join("")}
-
-</div>
-
-</div>
-`;
-
-$("funcList").innerHTML=
-controls+
-funcs.map(f=>{
-
-const val=ds
-.filter(d=>String(d.funcionario_id)===String(f.id))
-.reduce(
-(s,d)=>s+Number(d.valor_pago||d.qtd*d.valor_diaria||0),
-0
+const ds=D.diarias.filter(
+d=>d.data>=A&&d.data<=B
 );
 
-return `
-
-<div class="item">
-
-<div class="row">
-
-<div>
-
-<b>${esc(f.nome)}</b>
-
-<br>
-
-<small>
-${f.ativo!==false?"Ativo":"Inativo"}
-•
-${esc(f.tipo_pagamento||"diaria")}
-</small>
-
-</div>
-
-<b class="gold">${money(val)}</b>
-
-</div>
-
-<div class="listActions">
-
-<button class="mini" onclick="openFunc(${f.id})">
-✏️ Editar
-</button>
-
-<button class="mini" onclick="toggleFunc(${f.id})">
-${f.ativo!==false?"⏸ Inativar":"▶️ Ativar"}
-</button>
-
-</div>
-
-</div>
-
-`;
-
-}).join("")||'<div class="empty">Nenhum funcionário.</div>';
-
-$("diaList").innerHTML=
-
-use.map(d=>{
+$('diaList').innerHTML=
+ds.map(d=>{
 
 const f=D.funcionarios.find(
-x=>String(x.id)===String(d.funcionario_id)
+x=>x.id===d.funcionario_id
 );
 
 const o=D.obras.find(
-x=>String(x.id)===String(d.obra_id)
+x=>x.id===d.obra_id
 );
 
-return `
+return`
 
 <div class="item">
 
 <div class="row">
 
 <div>
-
-<b>${esc(f?.nome||"Funcionário")}</b>
-
-<br>
+<b>${esc(f?.nome||'Funcionário')}</b><br>
 
 <small>
-${d.data}
-•
-${esc(o?.nome||"Sem obra")}
-•
+${d.data} •
+${esc(o?.nome||'Sem obra')} •
 ${d.qtd} × ${money(d.valor_diaria)}
 </small>
 
@@ -2590,7 +1671,8 @@ ${money(d.valor_pago||d.qtd*d.valor_diaria)}
 
 </div>
 
-<button class="danger mini" onclick="delItem('diarias',${d.id})">
+<button class="danger mini"
+onclick="delItem('diarias',${d.id})">
 Excluir
 </button>
 
@@ -2598,132 +1680,1165 @@ Excluir
 
 `;
 
-}).join("")||'<div class="empty">Nenhuma diária no período.</div>';
+}).join('')||
+'<div class="empty">Nenhuma diária no período.</div>';
 
 }
 
-function exportJSON(){
+function getCheckDefs(){
 
-const backup={
+try{
 
-version:1,
+return JSON.parse(
+localStorage.getItem(
+'edifiq_check_defs_'+(user?.id||'')
+)||'[]'
+);
 
-date:new Date().toISOString(),
+}catch{
 
-data:D,
+return[];
 
-checklist_defs:checkDefs,
+}
 
-photos,
+}
 
-documents:getDocs()
+function saveCheckDefs(v){
 
+localStorage.setItem(
+'edifiq_check_defs_'+user.id,
+JSON.stringify(v)
+);
+
+}
+
+function renderChecklist(){
+
+const defaults=[
+'Planejamento e orçamento',
+'Contrato assinado',
+'Medição inicial',
+'Compra de materiais',
+'Preparação do local',
+'Chapisco / reboco',
+'Instalações',
+'Pisos e revestimentos',
+'Pintura',
+'Acabamentos',
+'Limpeza final',
+'Entrega da obra'
+];
+
+let defs=getCheckDefs();
+
+if(!defs.length){
+
+defs=defaults.map(
+(x,i)=>({
+id:'default_'+i,
+desc:x,
+obraId:'all'
+})
+);
+
+saveCheckDefs(defs);
+
+}
+
+$('checkList').innerHTML=
+D.obras.map(o=>{
+
+const applicable=defs.filter(
+d=>
+d.obraId==='all'||
+String(d.obraId)===String(o.id)
+);
+
+const saved=D.checklist.filter(
+c=>c.obra_id===o.id
+);
+
+const done=applicable.filter(
+d=>
+saved.find(
+c=>c.tarefa===d.desc
+)?.concluida
+).length;
+
+return`
+
+<div class="item">
+
+<div class="row">
+<b>${esc(o.nome)}</b>
+<span class="badge">
+${done}/${applicable.length}
+</span>
+</div>
+
+<div class="progress">
+<i style="width:${
+applicable.length?
+Math.round(done/applicable.length*100):
+0
+}%"></i>
+</div>
+
+${applicable.map(d=>{
+
+const c=saved.find(
+x=>x.tarefa===d.desc
+);
+
+return`
+
+<div class="row"
+style="padding:6px 0">
+
+<label>
+
+<input
+type="checkbox"
+${c?.concluida?'checked':''}
+onchange="toggleCheck(
+${o.id},
+${JSON.stringify(d.desc)},
+this.checked
+)">
+
+${esc(d.desc)}
+
+</label>
+
+<span>
+
+<button
+class="mini"
+onclick="openCheck('${d.id}')">
+✏️
+</button>
+
+<button
+class="danger mini"
+onclick="deleteCheckDef('${d.id}')">
+×
+</button>
+
+</span>
+
+</div>
+
+`;
+
+}).join('')}
+
+</div>
+
+`;
+
+}).join('')||
+'<div class="empty">Cadastre uma obra primeiro.</div>';
+
+}
+
+async function toggleCheck(
+obra,
+tarefa,
+on
+){
+
+const old=D.checklist.find(
+x=>
+String(x.obra_id)===String(obra)&&
+x.tarefa===tarefa
+);
+
+if(old){
+
+const r=await updateRow(
+'checklist',
+old.id,
+{
+concluida:on,
+progresso:on?100:0
+}
+);
+
+if(r)Object.assign(old,r);
+
+}else{
+
+const r=await insertRow(
+'checklist',
+{
+obra_id:obra,
+tarefa,
+concluida:on,
+progresso:on?100:0
+}
+);
+
+if(r)D.checklist.unshift(r);
+
+}
+
+renderChecklist();
+
+}
+
+function saveCheckDef(e){
+
+e.preventDefault();
+
+let defs=getCheckDefs();
+
+let id=
+$('checkId').value||
+('c_'+Date.now());
+
+let val={
+id,
+desc:$('checkDesc').value.trim(),
+obraId:$('checkObra').value||'all'
 };
 
-const blob=new Blob(
-[JSON.stringify(backup,null,2)],
-{type:"application/json"}
+let i=defs.findIndex(
+x=>x.id===id
 );
 
-const a=document.createElement("a");
+if(i>=0)
+defs[i]=val;
+else
+defs.push(val);
 
-a.href=URL.createObjectURL(blob);
+saveCheckDefs(defs);
 
-a.download="EDIFIQ-backup.json";
+closeM('checkM');
 
-a.click();
+renderChecklist();
 
-URL.revokeObjectURL(a.href);
-
-toast("Backup gerado.");
+toast('Checklist atualizado.');
 
 }
 
-function exportXLSX(){
+function deleteCheckDef(id){
 
-if(typeof XLSX==="undefined"){
-toast("Exportação Excel indisponível.");
-return;
+if(!confirm(
+'Excluir este serviço do checklist?'
+))return;
+
+saveCheckDefs(
+getCheckDefs().filter(
+x=>x.id!==id
+)
+);
+
+renderChecklist();
+
+toast('Serviço excluído.');
+
 }
 
-const wb=XLSX.utils.book_new();
+function renderFotos(){
 
-Object.entries(D).forEach(([k,v])=>{
+const data=getPhotos();
 
-const data=Array.isArray(v)?v:[];
+$('fotoList').innerHTML=
+data.length?
+data.slice().reverse().map(g=>{
 
-XLSX.utils.book_append_sheet(
-wb,
-XLSX.utils.json_to_sheet(data),
-k.slice(0,31)
+const o=D.obras.find(
+x=>String(x.id)===String(g.obraId)
 );
+
+return`
+
+<div class="item">
+
+<div class="row">
+
+<div>
+<b>${esc(g.titulo||'Relatório fotográfico')}</b><br>
+
+<small>
+${esc(o?.nome||'Obra')} •
+${g.data||''}
+</small>
+
+</div>
+
+<button
+class="danger mini"
+onclick="deletePhotoGroup('${g.id}')">
+Excluir
+</button>
+
+</div>
+
+${g.obs?
+`<p class="sub">${esc(g.obs)}</p>`:
+''}
+
+<div class="photoGrid">
+
+${g.photos.map(
+(p,i)=>
+`<img src="${p}" alt="Foto ${i+1}">`
+).join('')}
+
+</div>
+
+</div>
+
+`;
+
+}).join(''):
+'<div class="empty">Nenhuma foto adicionada.</div>';
+
+}
+
+function getPhotos(){
+
+try{
+
+return JSON.parse(
+localStorage.getItem(
+'edifiq_photos_'+(user?.id||'')
+)||'[]'
+);
+
+}catch{
+
+return[];
+
+}
+
+}
+
+function savePhotos(v){
+
+localStorage.setItem(
+'edifiq_photos_'+user.id,
+JSON.stringify(v)
+);
+
+}
+
+function openFotoFor(id){
+
+go('fotos');
+
+setTimeout(
+()=>{
+openFoto();
+$('fotoObra').value=id;
+},
+0
+);
+
+}
+
+async function saveFotos(e){
+
+e.preventDefault();
+
+const files=[
+...$('fotoFiles').files
+];
+
+if(!files.length)return;
+
+const photos=[];
+
+for(const f of files)
+photos.push(
+await fileToDataURL(f)
+);
+
+const arr=getPhotos();
+
+arr.push({
+id:'p_'+Date.now(),
+obraId:$('fotoObra').value,
+data:$('fotoData').value,
+titulo:$('fotoTitulo').value,
+obs:$('fotoObs').value,
+photos
+});
+
+savePhotos(arr);
+
+e.target.reset();
+
+closeM('fotoM');
+
+renderFotos();
+
+toast(
+photos.length+
+' foto(s) adicionada(s).'
+);
+
+}
+
+function fileToDataURL(file){
+
+return new Promise(
+(res,rej)=>{
+
+const r=new FileReader();
+
+r.onload=()=>res(r.result);
+r.onerror=rej;
+
+r.readAsDataURL(file);
+
+}
+);
+
+}
+
+function deletePhotoGroup(id){
+
+if(!confirm(
+'Excluir este relatório fotográfico?'
+))return;
+
+savePhotos(
+getPhotos().filter(
+x=>x.id!==id
+)
+);
+
+renderFotos();
+
+}
+
+function fillSelectors(){
+
+const opts=
+'<option value="">Sem obra</option>'+
+D.obras.map(
+o=>
+`<option value="${o.id}">
+${esc(o.nome)}
+</option>`
+).join('');
+
+[
+'dObra',
+'oFin'
+].forEach(id=>{
+
+if($(id))
+$(id).innerHTML=opts;
 
 });
 
-XLSX.writeFile(
-wb,
-"EDIFIQ-dados.xlsx"
-);
+if($('fotoObra'))
 
-toast("Excel exportado.");
+$('fotoObra').innerHTML=
+'<option value="" disabled selected>'+
+'Selecione a obra'+
+'</option>'+
+D.obras.map(
+o=>
+`<option value="${o.id}">
+${esc(o.nome)}
+</option>`
+).join('');
+
+if($('checkObra'))
+
+$('checkObra').innerHTML=
+'<option value="all">
+Aplicar em todas as obras
+</option>'+
+D.obras.map(
+o=>
+`<option value="${o.id}">
+${esc(o.nome)}
+</option>`
+).join('');
+
+if($('dFunc'))
+
+$('dFunc').innerHTML=
+D.funcionarios
+.filter(
+f=>f.ativo!==false
+)
+.map(
+f=>
+`<option value="${f.id}">
+${esc(f.nome)}
+</option>`
+)
+.join('');
+
+if($('finObraFilter')){
+
+const cur=$('finObraFilter').value;
+
+$('finObraFilter').innerHTML=
+'<option value="all">Todas as obras</option>'+
+D.obras.map(
+o=>
+`<option value="${o.id}">
+${esc(o.nome)}
+</option>`
+).join('');
+
+$('finObraFilter').value=
+cur||'all';
 
 }
 
-async function previewImport(e){
+}
 
-const file=e.target.files[0];
+async function saveObra(e){
+
+e.preventDefault();
+
+const row={
+nome:$('oNome').value.trim(),
+cliente:$('oCli').value.trim(),
+endereco:$('oLoc').value.trim(),
+valor:Number($('oVal').value||0),
+status:$('oStatus').value,
+data_inicio:$('oIni').value||null,
+data_fim:$('oFim').value||null,
+tipo_servico:$('oTipo').value.trim(),
+observacoes:$('oObs').value.trim()
+};
+
+let r=editObraId?
+await updateRow(
+'obras',
+editObraId,
+row
+):
+await insertRow(
+'obras',
+row
+);
+
+if(r){
+
+if(editObraId){
+
+const o=D.obras.find(
+x=>x.id===editObraId
+);
+
+Object.assign(o,r);
+
+}else{
+
+D.obras.unshift(r);
+
+}
+
+editObraId=null;
+
+e.target.reset();
+
+closeM('obraM');
+
+renderAll();
+
+toast('Obra salva com sucesso.');
+
+}
+
+}
+
+async function saveFunc(e){
+
+e.preventDefault();
+
+const row={
+nome:$('fNome').value.trim(),
+funcao:$('fFunc').value.trim(),
+telefone:$('fTel').value.trim(),
+valor_diaria:Number($('fDia').value||0),
+tipo_pagamento:$('fTipo').value,
+salario_mensal:Number($('fSal').value||0),
+dia_pagamento:Number($('fPag').value||0),
+ativo:$('fAtivo').value==='true'
+};
+
+let r=editFuncId?
+await updateRow(
+'funcionarios',
+editFuncId,
+row
+):
+await insertRow(
+'funcionarios',
+row
+);
+
+if(r){
+
+if(editFuncId){
+
+const f=D.funcionarios.find(
+x=>x.id===editFuncId
+);
+
+Object.assign(f,r);
+
+}else{
+
+D.funcionarios.unshift(r);
+
+}
+
+editFuncId=null;
+
+clearFuncForm();
+
+e.target.reset();
+
+closeM('funcM');
+
+renderAll();
+
+toast(
+'Funcionário salvo e formulário limpo.'
+);
+
+}
+
+}
+
+async function saveDia(e){
+
+e.preventDefault();
+
+const qtd=Number(
+$('dQtd').value
+);
+
+const v=Number(
+$('dVal').value
+);
+
+const r=await insertRow(
+'diarias',
+{
+funcionario_id:Number(
+$('dFunc').value
+),
+obra_id:$('dObra').value?
+Number($('dObra').value):
+null,
+data:$('dData').value,
+qtd,
+valor_diaria:v,
+valor_pago:qtd*v,
+status:$('dStatus').value,
+observacao:$('dObs').value
+}
+);
+
+if(r){
+
+D.diarias.unshift(r);
+
+e.target.reset();
+
+closeM('diaM');
+
+renderAll();
+
+toast('Diária registrada.');
+
+}
+
+}
+
+async function saveFin(e){
+
+e.preventDefault();
+
+const r=await insertRow(
+'gastos',
+{
+obra_id:$('oFin').value?
+Number($('oFin').value):
+null,
+categoria:$('tFin').value,
+descricao:$('dFin').value.trim(),
+valor:Number($('vFin').value),
+data:$('dtFin').value,
+fornecedor:$('forFin').value.trim(),
+observacao:$('obsFin').value.trim()
+}
+);
+
+if(r){
+
+D.gastos.unshift(r);
+
+e.target.reset();
+
+closeM('finM');
+
+renderAll();
+
+toast(
+'Recebimento/despesa salvo com sucesso.'
+);
+
+}
+
+}
+
+async function delItem(t,id){
+
+if(!confirm(
+'Excluir este registro?'
+))return;
+
+if(
+await removeRow(t,id)
+){
+
+const i=D[t].findIndex(
+x=>x.id===id
+);
+
+if(i>=0)
+D[t].splice(i,1);
+
+renderAll();
+
+toast('Registro excluído.');
+
+}
+
+}
+
+/* =====================================================
+   BACKUP
+   ===================================================== */
+
+function snapshot(){
+
+return{
+version:'EDIFIQ-2026-09',
+exported_at:new Date().toISOString(),
+user_email:user?.email,
+data:D,
+checklist_defs:getCheckDefs(),
+photos:getPhotos()
+};
+
+}
+
+function download(
+name,
+text,
+type='application/json'
+){
+
+const a=document.createElement('a');
+
+a.href=URL.createObjectURL(
+new Blob(
+[text],
+{type}
+)
+);
+
+a.download=name;
+
+document.body.appendChild(a);
+
+a.click();
+
+a.remove();
+
+setTimeout(
+()=>URL.revokeObjectURL(a.href),
+500
+);
+
+}
+
+/*
+   NOVO BACKUP:
+
+   No iPhone tenta abrir diretamente
+   a tela de compartilhamento do sistema.
+
+   Assim você pode escolher:
+   - Salvar em Arquivos
+   - iCloud Drive
+   - WhatsApp
+   - Mensagens
+   - AirDrop
+   - etc.
+*/
+
+async function exportFull(){
+
+const text=
+JSON.stringify(
+snapshot(),
+null,
+2
+);
+
+const name=
+'EDIFIQ-backup.json';
+
+try{
+
+const file=new File(
+[text],
+name,
+{
+type:'application/json'
+}
+);
+
+if(
+navigator.share &&
+navigator.canShare &&
+navigator.canShare({
+files:[file]
+})
+){
+
+await navigator.share({
+
+title:'Backup EDIFIQ',
+
+text:'Backup completo do EDIFIQ',
+
+files:[file]
+
+});
+
+toast(
+'Backup pronto para salvar ou compartilhar.'
+);
+
+return;
+
+}
+
+}catch(e){
+
+if(e.name==='AbortError')
+return;
+
+console.warn(e);
+
+}
+
+/*
+   Se o navegador não permitir
+   compartilhamento direto,
+   usa o método antigo.
+*/
+
+download(
+name,
+text,
+'application/json'
+);
+
+toast(
+'Backup criado. Salve o arquivo pelo menu do iPhone.'
+);
+
+}
+
+/*
+   RESTAURAR BACKUP
+*/
+
+function restoreBackup(){
+
+$('backupFile').value='';
+
+$('backupFile').click();
+
+}
+
+/*
+   Ler o arquivo JSON escolhido
+*/
+
+async function handleBackupRestore(e){
+
+const file=e.target.files?.[0];
 
 if(!file)return;
 
 try{
 
-const ext=file.name.split(".").pop().toLowerCase();
+const obj=
+JSON.parse(
+await file.text()
+);
+
+const src=
+obj?.data||obj;
+
+if(
+!src||
+typeof src!=='object'
+){
+
+throw new Error(
+'Backup inválido.'
+);
+
+}
+
+const validTables=
+tables.filter(
+t=>Array.isArray(src[t])
+);
+
+const total=
+validTables.reduce(
+(n,t)=>n+src[t].length,
+0
+);
+
+if(!total){
+
+throw new Error(
+'Nenhum dado do EDIFIQ foi encontrado neste backup.'
+);
+
+}
+
+const confirmar=confirm(
+
+'Restaurar este backup?\n\n'+
+
+'Foram encontrados '+
+total+
+' registros.\n\n'+
+
+'Os dados atuais NÃO serão apagados.'
+
+);
+
+if(!confirmar)
+return;
+
+let count=0;
+
+/*
+   Os registros são inseridos novamente
+   no usuário atualmente conectado.
+
+   ID antigo e user_id antigo não são
+   reutilizados para evitar conflito.
+*/
+
+for(
+const table of validTables
+){
+
+for(
+const raw of src[table]
+){
+
+const r={
+...raw
+};
+
+/*
+   Remove campos controlados
+   pelo banco.
+*/
+
+[
+'id',
+'created_at',
+'legacy_id',
+'user_id'
+].forEach(
+k=>delete r[k]
+);
+
+const x=
+await insertRow(
+table,
+r
+);
+
+if(x){
+
+D[table].unshift(x);
+
+count++;
+
+}
+
+}
+
+}
+
+/*
+   Restaurar checklist personalizado
+*/
+
+if(
+obj.checklist_defs
+){
+
+saveCheckDefs(
+obj.checklist_defs
+);
+
+}
+
+/*
+   Restaurar relatório fotográfico
+*/
+
+if(
+obj.photos
+){
+
+savePhotos(
+obj.photos
+);
+
+}
+
+renderAll();
+
+toast(
+count+
+' registro(s) restaurado(s).'
+);
+
+}catch(err){
+
+console.error(err);
+
+toast(
+'Erro ao restaurar: '+
+err.message
+);
+
+}
+
+}
+
+/* =====================================================
+   EXPORTAÇÕES
+   ===================================================== */
+
+function exportTable(t){
+
+download(
+'EDIFIQ-'+t+'.json',
+JSON.stringify(
+D[t]||[],
+null,
+2
+)
+);
+
+}
+
+function exportExcel(){
+
+const wb=
+XLSX.utils.book_new();
+
+Object.entries(D)
+.forEach(
+([k,v])=>
+
+XLSX.utils.book_append_sheet(
+wb,
+XLSX.utils.json_to_sheet(v||[]),
+k.slice(0,31)
+)
+
+);
+
+XLSX.writeFile(
+wb,
+'EDIFIQ-dados.xlsx'
+);
+
+}
+
+/* =====================================================
+   IMPORTAÇÃO ANTIGA — MANTIDA
+   ===================================================== */
+
+async function previewImport(e){
+
+const file=
+e.target.files[0];
+
+if(!file)return;
+
+try{
+
+const ext=
+file.name
+.split('.')
+.pop()
+.toLowerCase();
 
 let obj;
 
-if(ext==="json"){
+if(ext==='json'){
 
-obj=JSON.parse(await file.text());
+obj=
+JSON.parse(
+await file.text()
+);
 
 }else{
 
-if(typeof XLSX==="undefined")
-throw new Error("Biblioteca Excel não carregou.");
-
-const wb=XLSX.read(
+const wb=
+XLSX.read(
 await file.arrayBuffer(),
-{type:"array"}
+{type:'array'}
 );
 
-obj={data:{}};
+obj={
+data:{}
+};
 
-wb.SheetNames.forEach(s=>{
-
-obj.data[s]=XLSX.utils.sheet_to_json(
+wb.SheetNames.forEach(
+s=>
+obj.data[s]=
+XLSX.utils.sheet_to_json(
 wb.Sheets[s]
+)
 );
-
-});
 
 }
 
 window.pendingImport=obj;
 
-$("importPreview").innerHTML=`
-
-<p class="green">
-Arquivo lido com sucesso.
-</p>
-
-<button class="primary" onclick="confirmImport()">
-Confirmar importação
-</button>
-
-`;
+$('importPreview').innerHTML=
+'<p class="green">Arquivo lido com sucesso.</p>'+
+'<button class="primary" onclick="confirmImport()">'+
+'Confirmar importação'+
+'</button>';
 
 }catch(err){
 
-$("importPreview").innerHTML=
+$('importPreview').innerHTML=
 `<p class="red">Erro: ${esc(err.message)}</p>`;
 
 }
@@ -2739,23 +2854,38 @@ window.pendingImport||
 
 let count=0;
 
-for(const[table,rows]of Object.entries(src)){
+for(
+const[table,rows]
+of Object.entries(src)
+){
 
-if(!Array.isArray(rows)||!tables.includes(table))
-continue;
+if(
+!Array.isArray(rows)||
+!tables.includes(table)
+)continue;
 
-for(const raw of rows){
+for(
+const raw of rows
+){
 
-const r={...raw};
+const r={
+...raw
+};
 
 [
-"id",
-"created_at",
-"legacy_id",
-"user_id"
-].forEach(k=>delete r[k]);
+'id',
+'created_at',
+'legacy_id',
+'user_id'
+].forEach(
+k=>delete r[k]
+);
 
-const x=await insertRow(table,r);
+const x=
+await insertRow(
+table,
+r
+);
 
 if(x){
 
@@ -2769,52 +2899,34 @@ count++;
 
 }
 
-if(window.pendingImport?.checklist_defs)
-saveCheckDefs(window.pendingImport.checklist_defs);
+if(
+window.pendingImport?.checklist_defs
+){
 
-if(window.pendingImport?.photos)
-savePhotos(window.pendingImport.photos);
+saveCheckDefs(
+window.pendingImport.checklist_defs
+);
 
-if(window.pendingImport?.documents)
-saveDocs(window.pendingImport.documents);
+}
+
+if(
+window.pendingImport?.photos
+){
+
+savePhotos(
+window.pendingImport.photos
+);
+
+}
 
 window.pendingImport=null;
 
-toast(count+" registro(s) importado(s).");
+toast(
+count+
+' registro(s) importado(s).'
+);
 
 renderAll();
-
-}
-
-loadCheckDefs();
-loadPhotos();
-
-if(sb){
-
-sb.auth.onAuthStateChange(async(_e,s)=>{
-
-if(s?.user){
-
-user=s.user;
-
-$("auth").classList.add("hidden");
-$("app").classList.remove("hidden");
-
-$("appConnection").textContent="● Sistema conectado";
-$("appConnection").className="connection ok";
-
-await loadCloud();
-
-}else{
-
-user=null;
-
-$("app").classList.add("hidden");
-$("auth").classList.remove("hidden");
-
-}
-
-});
 
 }
 
