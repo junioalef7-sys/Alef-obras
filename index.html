@@ -3,14 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
 <meta name="theme-color" content="#0b0d10">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="EDIFIQ">
+
 <title>EDIFIQ — Gestão de Obras</title>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
 :root{
   --bg:#0b0d10;
   --card:#14181e;
@@ -23,542 +32,1367 @@
   --red:#e74c3c;
   --blue:#3498db;
 }
+
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
   background:var(--bg);
   color:var(--text);
   min-height:100vh;
 }
-button,input,select,textarea{font:inherit}
-button{cursor:pointer}
-.app{max-width:720px;margin:auto;min-height:100vh;padding-bottom:90px}
+
+button,input,select,textarea{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+.hidden{
+  display:none!important;
+}
+
+/* LOGIN */
+
+#loginScreen{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:
+    radial-gradient(circle at top,#242b35 0,#0b0d10 55%);
+}
+
+.login-box{
+  width:100%;
+  max-width:420px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:25px;
+  padding:28px;
+  box-shadow:0 20px 60px rgba(0,0,0,.4);
+}
+
+.login-logo{
+  width:72px;
+  height:72px;
+  border:2px solid var(--gold);
+  border-radius:20px;
+  display:grid;
+  place-items:center;
+  margin:0 auto 18px;
+  color:var(--gold);
+  font-size:30px;
+  font-weight:900;
+}
+
+.login-box h1{
+  text-align:center;
+  font-size:27px;
+}
+
+.login-box .subtitle{
+  text-align:center;
+  color:var(--muted);
+  margin:7px 0 25px;
+  font-size:13px;
+}
+
+.form-group{
+  margin-bottom:14px;
+}
+
+.form-group label{
+  display:block;
+  color:var(--muted);
+  font-size:13px;
+  margin-bottom:7px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea{
+  width:100%;
+  background:#0e1115;
+  border:1px solid var(--line);
+  color:white;
+  border-radius:12px;
+  padding:13px;
+  outline:none;
+}
+
+.form-group textarea{
+  min-height:90px;
+  resize:vertical;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus{
+  border-color:var(--gold);
+}
+
+.login-btn{
+  width:100%;
+  border:0;
+  background:var(--gold);
+  color:#111;
+  padding:14px;
+  border-radius:12px;
+  font-weight:800;
+  margin-top:5px;
+}
+
+.login-switch{
+  text-align:center;
+  margin-top:17px;
+  color:var(--muted);
+  font-size:13px;
+}
+
+.login-switch button{
+  border:0;
+  background:none;
+  color:var(--gold);
+  font-weight:700;
+}
+
+/* APP */
+
+.app{
+  max-width:720px;
+  margin:auto;
+  min-height:100vh;
+  padding-bottom:90px;
+}
 
 header{
-  position:sticky;top:0;z-index:20;
+  position:sticky;
+  top:0;
+  z-index:20;
   background:rgba(11,13,16,.96);
   backdrop-filter:blur(15px);
   border-bottom:1px solid var(--line);
-  padding:18px 18px 14px;
+  padding:16px 18px 14px;
 }
-.header-top{display:flex;align-items:center;justify-content:space-between}
-.brand{display:flex;align-items:center;gap:12px}
+
+.header-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
 .logo{
-  width:46px;height:46px;border:2px solid var(--gold);
-  border-radius:14px;display:grid;place-items:center;
-  font-weight:900;font-size:20px;color:var(--gold);
+  width:46px;
+  height:46px;
+  border:2px solid var(--gold);
+  border-radius:14px;
+  display:grid;
+  place-items:center;
+  font-weight:900;
+  font-size:20px;
+  color:var(--gold);
 }
-.brand h1{font-size:21px;letter-spacing:.5px}
-.brand p{font-size:11px;color:var(--muted);margin-top:2px}
+
+.brand h1{
+  font-size:21px;
+  letter-spacing:.5px;
+}
+
+.brand p{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:2px;
+}
+
 .menu{
-  width:42px;height:42px;border:1px solid var(--line);
-  border-radius:12px;background:var(--card);color:white;font-size:21px
+  width:42px;
+  height:42px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--card);
+  color:white;
+  font-size:20px;
 }
 
-main{padding:18px}
+main{
+  padding:18px;
+}
 
-.page{display:none}
-.page.active{display:block}
+.page{
+  display:none;
+}
+
+.page.active{
+  display:block;
+}
 
 .hero{
   background:linear-gradient(145deg,#171c22,#101318);
   border:1px solid var(--line);
-  border-radius:22px;padding:22px;margin-bottom:18px;
+  border-radius:22px;
+  padding:22px;
+  margin-bottom:18px;
 }
-.hero h2{font-size:25px;margin-bottom:7px}
-.hero p{color:var(--muted);line-height:1.5}
+
+.hero h2{
+  font-size:25px;
+  margin-bottom:7px;
+}
+
+.hero p{
+  color:var(--muted);
+  line-height:1.5;
+}
 
 .stats{
-  display:grid;grid-template-columns:repeat(2,1fr);gap:12px;
-  margin-bottom:18px
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+  margin-bottom:18px;
 }
+
 .stat{
-  background:var(--card);border:1px solid var(--line);
-  border-radius:17px;padding:16px
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:17px;
+  padding:16px;
 }
-.stat small{color:var(--muted);display:block;margin-bottom:8px}
-.stat strong{font-size:23px}
-.gold{color:var(--gold)}
-.green{color:#42d681}
-.red{color:#ff6d60}
+
+.stat small{
+  color:var(--muted);
+  display:block;
+  margin-bottom:8px;
+}
+
+.stat strong{
+  font-size:21px;
+}
+
+.gold{
+  color:var(--gold);
+}
+
+.green{
+  color:#42d681;
+}
+
+.red{
+  color:#ff6d60;
+}
 
 .grid{
-  display:grid;grid-template-columns:repeat(2,1fr);gap:12px
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
 }
+
 .module{
-  background:var(--card);border:1px solid var(--line);
-  border-radius:18px;padding:20px 15px;min-height:125px;
-  text-align:left;color:white;transition:.15s
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:20px 15px;
+  min-height:125px;
+  text-align:left;
+  color:white;
+  transition:.15s;
 }
-.module:active{transform:scale(.97)}
-.module .icon{font-size:28px;margin-bottom:12px}
-.module strong{display:block;font-size:16px}
-.module span{font-size:12px;color:var(--muted);display:block;margin-top:5px}
+
+.module:active{
+  transform:scale(.97);
+}
+
+.module .icon{
+  font-size:28px;
+  margin-bottom:12px;
+}
+
+.module strong{
+  display:block;
+  font-size:16px;
+}
+
+.module span{
+  font-size:12px;
+  color:var(--muted);
+  display:block;
+  margin-top:5px;
+}
 
 .section-title{
-  display:flex;justify-content:space-between;align-items:center;
-  margin:4px 0 15px
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin:4px 0 15px;
 }
-.section-title h2{font-size:21px}
+
+.section-title h2{
+  font-size:21px;
+}
+
 .add{
-  background:var(--gold);color:#111;border:0;
-  padding:10px 14px;border-radius:12px;font-weight:800
+  background:var(--gold);
+  color:#111;
+  border:0;
+  padding:10px 14px;
+  border-radius:12px;
+  font-weight:800;
 }
 
 .card{
-  background:var(--card);border:1px solid var(--line);
-  border-radius:17px;padding:17px;margin-bottom:12px
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:17px;
+  padding:17px;
+  margin-bottom:12px;
 }
-.card-head{display:flex;justify-content:space-between;gap:10px}
-.card h3{font-size:17px}
-.card p{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.5}
+
+.card-head{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.card h3{
+  font-size:17px;
+}
+
+.card p{
+  color:var(--muted);
+  font-size:13px;
+  margin-top:6px;
+  line-height:1.5;
+}
 
 .badge{
-  padding:5px 9px;border-radius:20px;font-size:11px;
-  background:#193d29;color:#6ee49b;white-space:nowrap;height:max-content
+  padding:5px 9px;
+  border-radius:20px;
+  font-size:11px;
+  background:#193d29;
+  color:#6ee49b;
+  white-space:nowrap;
+  height:max-content;
 }
-.badge.off{background:#302f30;color:#aaa}
-.actions{display:flex;gap:8px;margin-top:14px}
+
+.badge.off{
+  background:#302f30;
+  color:#aaa;
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+  margin-top:14px;
+  flex-wrap:wrap;
+}
+
 .btn{
-  border:1px solid var(--line);background:var(--card2);
-  color:white;border-radius:10px;padding:9px 12px
+  border:1px solid var(--line);
+  background:var(--card2);
+  color:white;
+  border-radius:10px;
+  padding:9px 12px;
 }
-.btn.danger{color:#ff8177}
-.btn.primary{background:var(--gold);color:#111;border-color:var(--gold);font-weight:700}
+
+.btn.danger{
+  color:#ff8177;
+}
+
+.btn.primary{
+  background:var(--gold);
+  color:#111;
+  border-color:var(--gold);
+  font-weight:700;
+}
 
 .empty{
-  text-align:center;color:var(--muted);padding:45px 20px;
-  border:1px dashed var(--line);border-radius:17px
+  text-align:center;
+  color:var(--muted);
+  padding:45px 20px;
+  border:1px dashed var(--line);
+  border-radius:17px;
 }
 
 .finance-grid{
-  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-bottom:15px;
 }
+
 .finance-box{
-  background:var(--card);border:1px solid var(--line);
-  border-radius:17px;padding:16px
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:17px;
+  padding:16px;
 }
-.finance-box small{color:var(--muted)}
-.finance-box strong{display:block;font-size:20px;margin-top:8px}
 
-.form-group{margin-bottom:14px}
-.form-group label{
-  display:block;font-size:13px;color:var(--muted);margin-bottom:7px
+.finance-box small{
+  color:var(--muted);
 }
-.form-group input,
-.form-group select,
-.form-group textarea{
-  width:100%;background:#0e1115;border:1px solid var(--line);
-  color:white;border-radius:12px;padding:13px;outline:none
-}
-.form-group textarea{min-height:90px;resize:vertical}
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus{border-color:var(--gold)}
 
-.modal{
-  position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.75);
-  display:none;align-items:flex-end;justify-content:center
+.finance-box strong{
+  display:block;
+  font-size:20px;
+  margin-top:8px;
 }
-.modal.show{display:flex}
-.modal-box{
-  width:min(720px,100%);max-height:92vh;overflow:auto;
-  background:#12161b;border:1px solid var(--line);
-  border-radius:24px 24px 0 0;padding:22px
-}
-.modal-head{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:20px
-}
-.close{
-  width:38px;height:38px;border-radius:50%;
-  border:1px solid var(--line);background:var(--card);
-  color:white;font-size:20px
-}
-.modal-actions{display:flex;gap:10px;margin-top:18px}
-.modal-actions button{flex:1}
-
-.bottom{
-  position:fixed;bottom:0;left:0;right:0;z-index:30;
-  background:rgba(15,18,22,.97);border-top:1px solid var(--line);
-  backdrop-filter:blur(15px)
-}
-.bottom-inner{
-  max-width:720px;margin:auto;display:grid;
-  grid-template-columns:repeat(4,1fr)
-}
-.nav{
-  border:0;background:none;color:#7f8995;padding:11px 4px 10px;
-  font-size:11px
-}
-.nav div{font-size:21px;margin-bottom:3px}
-.nav.active{color:var(--gold)}
-
-.toast{
-  position:fixed;left:50%;bottom:90px;z-index:100;
-  transform:translateX(-50%) translateY(20px);
-  background:#20262e;border:1px solid var(--line);
-  padding:12px 17px;border-radius:12px;
-  opacity:0;pointer-events:none;transition:.25s;
-  white-space:nowrap
-}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 .report-item{
-  border:1px solid var(--line);border-radius:14px;
-  padding:14px;margin-bottom:10px;background:#101419
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:10px;
+  background:#101419;
 }
-.report-item strong{display:block}
-.report-item span{display:block;color:var(--muted);font-size:12px;margin-top:5px}
+
+.report-item strong{
+  display:block;
+}
+
+.report-item span{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+  margin-top:5px;
+}
+
+/* BOTTOM */
+
+.bottom{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  z-index:30;
+  background:rgba(15,18,22,.97);
+  border-top:1px solid var(--line);
+  backdrop-filter:blur(15px);
+}
+
+.bottom-inner{
+  max-width:720px;
+  margin:auto;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+}
+
+.nav{
+  border:0;
+  background:none;
+  color:#7f8995;
+  padding:11px 4px 10px;
+  font-size:11px;
+}
+
+.nav div{
+  font-size:21px;
+  margin-bottom:3px;
+}
+
+.nav.active{
+  color:var(--gold);
+}
+
+/* MODAL */
+
+.modal{
+  position:fixed;
+  inset:0;
+  z-index:50;
+  background:rgba(0,0,0,.75);
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+}
+
+.modal.show{
+  display:flex;
+}
+
+.modal-box{
+  width:min(720px,100%);
+  max-height:92vh;
+  overflow:auto;
+  background:#12161b;
+  border:1px solid var(--line);
+  border-radius:24px 24px 0 0;
+  padding:22px;
+}
+
+.modal-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+
+.close{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  border:1px solid var(--line);
+  background:var(--card);
+  color:white;
+  font-size:20px;
+}
+
+.modal-actions{
+  display:flex;
+  gap:10px;
+  margin-top:18px;
+}
+
+.modal-actions button{
+  flex:1;
+}
+
+/* TOAST */
+
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:90px;
+  z-index:100;
+  transform:translateX(-50%) translateY(20px);
+  background:#20262e;
+  border:1px solid var(--line);
+  padding:12px 17px;
+  border-radius:12px;
+  opacity:0;
+  pointer-events:none;
+  transition:.25s;
+  white-space:nowrap;
+}
+
+.toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
 
 @media(min-width:650px){
-  .stats{grid-template-columns:repeat(4,1fr)}
-  .grid{grid-template-columns:repeat(4,1fr)}
+  .stats{
+    grid-template-columns:repeat(4,1fr);
+  }
+
+  .grid{
+    grid-template-columns:repeat(4,1fr);
+  }
 }
 </style>
 </head>
 
 <body>
 
-<div class="app">
+<!-- ================= LOGIN ================= -->
+
+<div id="loginScreen">
+
+  <div class="login-box">
+
+    <div class="login-logo">E</div>
+
+    <h1>EDIFIQ</h1>
+
+    <p class="subtitle">
+      Gestão profissional de obras
+    </p>
+
+    <div class="form-group">
+      <label>E-mail</label>
+      <input
+        id="loginEmail"
+        type="email"
+        placeholder="seu@email.com"
+      >
+    </div>
+
+    <div class="form-group">
+      <label>Senha</label>
+      <input
+        id="loginPassword"
+        type="password"
+        placeholder="Sua senha"
+      >
+    </div>
+
+    <button
+      class="login-btn"
+      onclick="entrar()"
+      id="loginButton"
+    >
+      Entrar
+    </button>
+
+    <div class="login-switch">
+      <span id="loginText">Ainda não tem conta?</span>
+
+      <button onclick="alternarCadastro()" id="switchButton">
+        Criar conta
+      </button>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ================= APLICATIVO ================= -->
+
+<div class="app hidden" id="app">
 
 <header>
+
   <div class="header-top">
+
     <div class="brand">
+
       <div class="logo">E</div>
+
       <div>
         <h1>EDIFIQ</h1>
         <p>GESTÃO DE OBRAS</p>
       </div>
+
     </div>
-    <button class="menu" onclick="showPage('inicio')">⌂</button>
+
+    <button
+      class="menu"
+      onclick="sair()"
+      title="Sair"
+    >
+      ⇥
+    </button>
+
   </div>
+
 </header>
+
 
 <main>
 
-<!-- INÍCIO -->
+<!-- ================= INÍCIO ================= -->
+
 <section id="inicio" class="page active">
 
   <div class="hero">
-    <h2>Olá! 👋</h2>
-    <p>Controle suas obras, funcionários, financeiro e relatórios em um só lugar.</p>
+
+    <h2>Olá!</h2>
+
+    <p>
+      Controle suas obras, funcionários,
+      financeiro e relatórios em um só lugar.
+    </p>
+
   </div>
 
+
   <div class="stats">
+
     <div class="stat">
       <small>Obras</small>
       <strong id="statObras">0</strong>
     </div>
+
     <div class="stat">
       <small>Funcionários</small>
       <strong id="statFuncionarios">0</strong>
     </div>
+
     <div class="stat">
       <small>Receitas</small>
-      <strong class="green" id="statReceitas">R$ 0,00</strong>
+      <strong class="green" id="statReceitas">
+        R$ 0,00
+      </strong>
     </div>
+
     <div class="stat">
       <small>Despesas</small>
-      <strong class="red" id="statDespesas">R$ 0,00</strong>
+      <strong class="red" id="statDespesas">
+        R$ 0,00
+      </strong>
     </div>
+
   </div>
 
+
   <div class="grid">
-    <button class="module" onclick="showPage('obras')">
+
+    <button
+      class="module"
+      onclick="showPage('obras')"
+    >
       <div class="icon">🏗️</div>
       <strong>Obras</strong>
       <span>Gerenciar obras</span>
     </button>
 
-    <button class="module" onclick="showPage('funcionarios')">
+
+    <button
+      class="module"
+      onclick="showPage('funcionarios')"
+    >
       <div class="icon">👷</div>
       <strong>Funcionários</strong>
       <span>Equipe e diárias</span>
     </button>
 
-    <button class="module" onclick="showPage('financeiro')">
+
+    <button
+      class="module"
+      onclick="showPage('financeiro')"
+    >
       <div class="icon">💰</div>
       <strong>Financeiro</strong>
       <span>Receitas e despesas</span>
     </button>
 
-    <button class="module" onclick="showPage('relatorios')">
+
+    <button
+      class="module"
+      onclick="showPage('relatorios')"
+    >
       <div class="icon">📊</div>
       <strong>Relatórios</strong>
       <span>Resumo geral</span>
     </button>
+
   </div>
 
 </section>
 
-<!-- OBRAS -->
+
+<!-- ================= OBRAS ================= -->
+
 <section id="obras" class="page">
 
   <div class="section-title">
+
     <h2>Obras</h2>
-    <button class="add" onclick="abrirObra()">+ Nova obra</button>
+
+    <button
+      class="add"
+      onclick="abrirObra()"
+    >
+      + Nova obra
+    </button>
+
   </div>
 
   <div id="listaObras"></div>
 
 </section>
 
-<!-- FUNCIONÁRIOS -->
+
+<!-- ================= FUNCIONÁRIOS ================= -->
+
 <section id="funcionarios" class="page">
 
   <div class="section-title">
+
     <h2>Funcionários</h2>
-    <button class="add" onclick="abrirFuncionario()">+ Funcionário</button>
+
+    <button
+      class="add"
+      onclick="abrirFuncionario()"
+    >
+      + Funcionário
+    </button>
+
   </div>
 
   <div id="listaFuncionarios"></div>
 
 </section>
 
-<!-- FINANCEIRO -->
+
+<!-- ================= FINANCEIRO ================= -->
+
 <section id="financeiro" class="page">
 
   <div class="section-title">
+
     <h2>Financeiro</h2>
-    <button class="add" onclick="abrirLancamento()">+ Lançamento</button>
+
+    <button
+      class="add"
+      onclick="abrirLancamento()"
+    >
+      + Lançamento
+    </button>
+
   </div>
 
+
   <div class="finance-grid">
+
     <div class="finance-box">
       <small>Receitas</small>
-      <strong class="green" id="finReceitas">R$ 0,00</strong>
+      <strong class="green" id="finReceitas">
+        R$ 0,00
+      </strong>
     </div>
 
     <div class="finance-box">
       <small>Despesas</small>
-      <strong class="red" id="finDespesas">R$ 0,00</strong>
+      <strong class="red" id="finDespesas">
+        R$ 0,00
+      </strong>
     </div>
 
     <div class="finance-box">
       <small>Lucro</small>
-      <strong class="gold" id="finLucro">R$ 0,00</strong>
+      <strong class="gold" id="finLucro">
+        R$ 0,00
+      </strong>
     </div>
 
     <div class="finance-box">
       <small>Lançamentos</small>
       <strong id="finQuantidade">0</strong>
     </div>
+
   </div>
+
 
   <div id="listaFinanceiro"></div>
 
 </section>
 
-<!-- RELATÓRIOS -->
+
+<!-- ================= RELATÓRIOS ================= -->
+
 <section id="relatorios" class="page">
 
   <div class="section-title">
     <h2>Relatórios</h2>
   </div>
 
+
   <div class="card">
+
     <h3>Resumo geral</h3>
-    <p>Veja o resultado de todas as suas obras.</p>
+
+    <p>
+      Veja o resultado de todas as suas obras.
+    </p>
 
     <div style="margin-top:18px">
-      <p><b>Obras cadastradas:</b> <span id="repObras">0</span></p>
-      <p><b>Obras em andamento:</b> <span id="repAndamento">0</span></p>
-      <p><b>Funcionários ativos:</b> <span id="repFuncionarios">0</span></p>
-      <p><b>Total recebido:</b> <span id="repReceitas" class="green">R$ 0,00</span></p>
-      <p><b>Total gasto:</b> <span id="repDespesas" class="red">R$ 0,00</span></p>
-      <p><b>Lucro:</b> <span id="repLucro" class="gold">R$ 0,00</span></p>
+
+      <p>
+        <b>Obras cadastradas:</b>
+        <span id="repObras">0</span>
+      </p>
+
+      <p>
+        <b>Obras em andamento:</b>
+        <span id="repAndamento">0</span>
+      </p>
+
+      <p>
+        <b>Funcionários ativos:</b>
+        <span id="repFuncionarios">0</span>
+      </p>
+
+      <p>
+        <b>Total recebido:</b>
+        <span
+          id="repReceitas"
+          class="green"
+        >
+          R$ 0,00
+        </span>
+      </p>
+
+      <p>
+        <b>Total gasto:</b>
+        <span
+          id="repDespesas"
+          class="red"
+        >
+          R$ 0,00
+        </span>
+      </p>
+
+      <p>
+        <b>Lucro:</b>
+        <span
+          id="repLucro"
+          class="gold"
+        >
+          R$ 0,00
+        </span>
+      </p>
+
     </div>
+
   </div>
 
+
   <div class="card">
+
     <h3>Atividades recentes</h3>
+
     <div id="atividades"></div>
+
   </div>
 
 </section>
 
 </main>
+
 </div>
 
-<!-- NAVEGAÇÃO -->
-<nav class="bottom">
+
+<!-- ================= NAVEGAÇÃO ================= -->
+
+<nav class="bottom hidden" id="bottomNav">
+
   <div class="bottom-inner">
 
-    <button class="nav active" data-page="inicio" onclick="showPage('inicio')">
-      <div>⌂</div>Início
+    <button
+      class="nav active"
+      data-page="inicio"
+      onclick="showPage('inicio')"
+    >
+      <div>⌂</div>
+      Início
     </button>
 
-    <button class="nav" data-page="obras" onclick="showPage('obras')">
-      <div>🏗️</div>Obras
+
+    <button
+      class="nav"
+      data-page="obras"
+      onclick="showPage('obras')"
+    >
+      <div>🏗️</div>
+      Obras
     </button>
 
-    <button class="nav" data-page="funcionarios" onclick="showPage('funcionarios')">
-      <div>👷</div>Equipe
+
+    <button
+      class="nav"
+      data-page="funcionarios"
+      onclick="showPage('funcionarios')"
+    >
+      <div>👷</div>
+      Equipe
     </button>
 
-    <button class="nav" data-page="financeiro" onclick="showPage('financeiro')">
-      <div>💰</div>Financeiro
+
+    <button
+      class="nav"
+      data-page="financeiro"
+      onclick="showPage('financeiro')"
+    >
+      <div>💰</div>
+      Financeiro
     </button>
 
   </div>
+
 </nav>
 
-<!-- MODAL OBRA -->
+
+<!-- ================= MODAL OBRA ================= -->
+
 <div class="modal" id="modalObra">
-<div class="modal-box">
 
-  <div class="modal-head">
-    <h2 id="tituloModalObra">Nova obra</h2>
-    <button class="close" onclick="fecharModal('modalObra')">×</button>
-  </div>
+  <div class="modal-box">
 
-  <input type="hidden" id="obraId">
+    <div class="modal-head">
 
-  <div class="form-group">
-    <label>Nome da obra</label>
-    <input id="obraNome" placeholder="Ex.: Casa do Evandro">
-  </div>
+      <h2 id="tituloModalObra">
+        Nova obra
+      </h2>
 
-  <div class="form-group">
-    <label>Cliente</label>
-    <input id="obraCliente" placeholder="Nome do cliente">
-  </div>
+      <button
+        class="close"
+        onclick="fecharModal('modalObra')"
+      >
+        ×
+      </button>
 
-  <div class="form-group">
-    <label>Endereço</label>
-    <input id="obraEndereco" placeholder="Endereço da obra">
-  </div>
+    </div>
 
-  <div class="form-group">
-    <label>Valor contratado</label>
-    <input id="obraValor" type="number" step="0.01" placeholder="0,00">
-  </div>
 
-  <div class="form-group">
-    <label>Status</label>
-    <select id="obraStatus">
-      <option value="andamento">Em andamento</option>
-      <option value="concluida">Concluída</option>
-      <option value="pausada">Pausada</option>
-    </select>
-  </div>
+    <input
+      type="hidden"
+      id="obraId"
+    >
 
-  <div class="form-group">
-    <label>Observações</label>
-    <textarea id="obraObs" placeholder="Informações da obra"></textarea>
-  </div>
 
-  <div class="modal-actions">
-    <button class="btn" onclick="fecharModal('modalObra')">Cancelar</button>
-    <button class="btn primary" onclick="salvarObra()">Salvar obra</button>
+    <div class="form-group">
+      <label>Nome da obra</label>
+
+      <input
+        id="obraNome"
+        placeholder="Ex.: Casa do Evandro"
+      >
+    </div>
+
+
+    <div class="form-group">
+      <label>Cliente</label>
+
+      <input
+        id="obraCliente"
+        placeholder="Nome do cliente"
+      >
+    </div>
+
+
+    <div class="form-group">
+      <label>Endereço</label>
+
+      <input
+        id="obraEndereco"
+        placeholder="Endereço da obra"
+      >
+    </div>
+
+
+    <div class="form-group">
+      <label>Valor contratado</label>
+
+      <input
+        id="obraValor"
+        type="number"
+        step="0.01"
+        placeholder="0,00"
+      >
+    </div>
+
+
+    <div class="form-group">
+      <label>Status</label>
+
+      <select id="obraStatus">
+
+        <option value="andamento">
+          Em andamento
+        </option>
+
+        <option value="concluida">
+          Concluída
+        </option>
+
+        <option value="pausada">
+          Pausada
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div class="form-group">
+      <label>Observações</label>
+
+      <textarea
+        id="obraObs"
+        placeholder="Informações da obra"
+      ></textarea>
+
+    </div>
+
+
+    <div class="modal-actions">
+
+      <button
+        class="btn"
+        onclick="fecharModal('modalObra')"
+      >
+        Cancelar
+      </button>
+
+      <button
+        class="btn primary"
+        onclick="salvarObra()"
+      >
+        Salvar obra
+      </button>
+
+    </div>
+
   </div>
 
 </div>
-</div>
 
-<!-- MODAL FUNCIONÁRIO -->
+
+<!-- ================= MODAL FUNCIONÁRIO ================= -->
+
 <div class="modal" id="modalFuncionario">
-<div class="modal-box">
 
-  <div class="modal-head">
-    <h2 id="tituloModalFuncionario">Novo funcionário</h2>
-    <button class="close" onclick="fecharModal('modalFuncionario')">×</button>
-  </div>
+  <div class="modal-box">
 
-  <input type="hidden" id="funcId">
+    <div class="modal-head">
 
-  <div class="form-group">
-    <label>Nome</label>
-    <input id="funcNome" placeholder="Nome do funcionário">
-  </div>
+      <h2 id="tituloModalFuncionario">
+        Novo funcionário
+      </h2>
 
-  <div class="form-group">
-    <label>Função</label>
-    <input id="funcFuncao" placeholder="Ex.: Pedreiro">
-  </div>
+      <button
+        class="close"
+        onclick="fecharModal('modalFuncionario')"
+      >
+        ×
+      </button>
 
-  <div class="form-group">
-    <label>Valor da diária</label>
-    <input id="funcDiaria" type="number" step="0.01" placeholder="0,00">
-  </div>
+    </div>
 
-  <div class="form-group">
-    <label>Status</label>
-    <select id="funcStatus">
-      <option value="ativo">Ativo</option>
-      <option value="inativo">Inativo</option>
-    </select>
-  </div>
 
-  <div class="modal-actions">
-    <button class="btn" onclick="fecharModal('modalFuncionario')">Cancelar</button>
-    <button class="btn primary" onclick="salvarFuncionario()">Salvar</button>
+    <input
+      type="hidden"
+      id="funcId"
+    >
+
+
+    <div class="form-group">
+
+      <label>Nome</label>
+
+      <input
+        id="funcNome"
+        placeholder="Nome do funcionário"
+      >
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>Função</label>
+
+      <input
+        id="funcFuncao"
+        placeholder="Ex.: Pedreiro"
+      >
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>Valor da diária</label>
+
+      <input
+        id="funcDiaria"
+        type="number"
+        step="0.01"
+        placeholder="0,00"
+      >
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>Status</label>
+
+      <select id="funcStatus">
+
+        <option value="ativo">
+          Ativo
+        </option>
+
+        <option value="inativo">
+          Inativo
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div class="modal-actions">
+
+      <button
+        class="btn"
+        onclick="fecharModal('modalFuncionario')"
+      >
+        Cancelar
+      </button>
+
+      <button
+        class="btn primary"
+        onclick="salvarFuncionario()"
+      >
+        Salvar
+      </button>
+
+    </div>
+
   </div>
 
 </div>
-</div>
 
-<!-- MODAL FINANCEIRO -->
+
+<!-- ================= MODAL FINANCEIRO ================= -->
+
 <div class="modal" id="modalFinanceiro">
-<div class="modal-box">
 
-  <div class="modal-head">
-    <h2>Novo lançamento</h2>
-    <button class="close" onclick="fecharModal('modalFinanceiro')">×</button>
-  </div>
+  <div class="modal-box">
 
-  <div class="form-group">
-    <label>Tipo</label>
-    <select id="finTipo">
-      <option value="receita">Recebimento / Receita</option>
-      <option value="despesa">Despesa</option>
-    </select>
-  </div>
+    <div class="modal-head">
 
-  <div class="form-group">
-    <label>Descrição</label>
-    <input id="finDescricao" placeholder="Ex.: Pagamento do cliente">
-  </div>
+      <h2>Novo lançamento</h2>
 
-  <div class="form-group">
-    <label>Valor</label>
-    <input id="finValor" type="number" step="0.01" placeholder="0,00">
-  </div>
+      <button
+        class="close"
+        onclick="fecharModal('modalFinanceiro')"
+      >
+        ×
+      </button>
 
-  <div class="form-group">
-    <label>Obra</label>
-    <select id="finObra">
-      <option value="">Geral</option>
-    </select>
-  </div>
+    </div>
 
-  <div class="form-group">
-    <label>Data</label>
-    <input id="finData" type="date">
-  </div>
 
-  <div class="form-group">
-    <label>Observação</label>
-    <textarea id="finObs" placeholder="Observações"></textarea>
-  </div>
+    <div class="form-group">
 
-  <div class="modal-actions">
-    <button class="btn" onclick="fecharModal('modalFinanceiro')">Cancelar</button>
-    <button class="btn primary" onclick="salvarLancamento()">Salvar</button>
+      <label>Tipo</label>
+
+      <select id="finTipo">
+
+        <option value="receita">
+          Recebimento / Receita
+        </option>
+
+        <option value="despesa">
+          Despesa
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>Descrição</label>
+
+      <input
+        id="finDescricao"
+        placeholder="Ex.: Pagamento do cliente"
+      >
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>Valor</label>
+
+      <input
+        id="finValor"
+        type="number"
+        step="0.01"
+        placeholder="0,00"
+      >
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>Obra</label>
+
+      <select id="finObra">
+
+        <option value="">
+          Geral
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>Data</label>
+
+      <input
+        id="finData"
+        type="date"
+      >
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>Observação</label>
+
+      <textarea
+        id="finObs"
+        placeholder="Observações"
+      ></textarea>
+
+    </div>
+
+
+    <div class="modal-actions">
+
+      <button
+        class="btn"
+        onclick="fecharModal('modalFinanceiro')"
+      >
+        Cancelar
+      </button>
+
+      <button
+        class="btn primary"
+        onclick="salvarLancamento()"
+      >
+        Salvar
+      </button>
+
+    </div>
+
   </div>
 
 </div>
-</div>
 
-<div class="toast" id="toast"></div>
+
+<div
+  class="toast"
+  id="toast"
+></div>
+
 
 <script>
+
 /* =========================================================
-   EDIFIQ — SISTEMA DE GESTÃO
-   Os dados ficam armazenados no navegador.
+   EDIFIQ
+   SUPABASE
    ========================================================= */
 
-const DB_KEY = "edifiq_dados_v1";
+
+/* =========================================================
+   COLOQUE AQUI OS DADOS DO SEU SUPABASE
+   ========================================================= */
+
+const SUPABASE_URL = "COLE_AQUI_A_URL_DO_SEU_SUPABASE";
+
+const SUPABASE_ANON_KEY = "COLE_AQUI_A_CHAVE_ANON_DO_SEU_SUPABASE";
+
+
+/* NÃO ALTERE ABAIXO */
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
+
 
 let db = {
   obras: [],
@@ -567,108 +1401,463 @@ let db = {
   atividades: []
 };
 
-function carregar(){
-  try{
-    const salvo = localStorage.getItem(DB_KEY);
-    if(salvo){
-      const dados = JSON.parse(salvo);
-      db = {
-        obras: dados.obras || [],
-        funcionarios: dados.funcionarios || [],
-        financeiro: dados.financeiro || [],
-        atividades: dados.atividades || []
-      };
-    }
-  }catch(e){
-    console.log("Erro ao carregar dados",e);
-  }
 
-  atualizarTudo();
-}
+let modoCadastro = false;
 
-function salvar(){
-  localStorage.setItem(DB_KEY,JSON.stringify(db));
-  atualizarTudo();
-}
 
-function id(){
-  return Date.now().toString(36)+Math.random().toString(36).substr(2,7);
-}
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
 
 function moeda(valor){
-  return Number(valor||0).toLocaleString("pt-BR",{
-    style:"currency",
-    currency:"BRL"
-  });
+
+  return Number(valor || 0).toLocaleString(
+    "pt-BR",
+    {
+      style:"currency",
+      currency:"BRL"
+    }
+  );
+
 }
 
-function dataBR(data){
-  if(!data)return "";
-  const partes=data.split("-");
-  if(partes.length===3)return `${partes[2]}/${partes[1]}/${partes[0]}`;
-  return data;
-}
 
 function escapeHTML(text){
-  return String(text??"")
+
+  return String(text ?? "")
     .replace(/&/g,"&amp;")
     .replace(/</g,"&lt;")
     .replace(/>/g,"&gt;")
     .replace(/"/g,"&quot;")
     .replace(/'/g,"&#039;");
+
 }
 
-function atividade(texto){
-  db.atividades.unshift({
-    id:id(),
-    texto:texto,
-    data:new Date().toLocaleString("pt-BR")
-  });
 
-  if(db.atividades.length>30){
-    db.atividades=db.atividades.slice(0,30);
+function hoje(){
+
+  return new Date()
+    .toISOString()
+    .slice(0,10);
+
+}
+
+
+function dataBR(data){
+
+  if(!data) return "";
+
+  const p = data.split("-");
+
+  if(p.length === 3){
+
+    return `${p[2]}/${p[1]}/${p[0]}`;
+
   }
+
+  return data;
+
 }
 
-/* NAVEGAÇÃO */
+
+function toast(msg){
+
+  const el =
+    document.getElementById("toast");
+
+  el.textContent = msg;
+
+  el.classList.add("show");
+
+  setTimeout(
+    ()=>el.classList.remove("show"),
+    2500
+  );
+
+}
+
+
+/* =========================================================
+   LOGIN / CADASTRO
+   ========================================================= */
+
+function alternarCadastro(){
+
+  modoCadastro = !modoCadastro;
+
+  const button =
+    document.getElementById("loginButton");
+
+  const text =
+    document.getElementById("loginText");
+
+  const switchButton =
+    document.getElementById("switchButton");
+
+
+  if(modoCadastro){
+
+    button.textContent = "Criar conta";
+
+    text.textContent =
+      "Já possui uma conta?";
+
+    switchButton.textContent =
+      "Entrar";
+
+  }else{
+
+    button.textContent = "Entrar";
+
+    text.textContent =
+      "Ainda não tem conta?";
+
+    switchButton.textContent =
+      "Criar conta";
+
+  }
+
+}
+
+
+async function entrar(){
+
+  const email =
+    document.getElementById("loginEmail")
+      .value.trim();
+
+  const password =
+    document.getElementById("loginPassword")
+      .value;
+
+
+  if(!email || !password){
+
+    toast("Informe e-mail e senha.");
+
+    return;
+
+  }
+
+
+  const button =
+    document.getElementById("loginButton");
+
+  button.disabled = true;
+
+  button.textContent =
+    modoCadastro
+      ? "Criando..."
+      : "Entrando...";
+
+
+  try{
+
+    let resultado;
+
+
+    if(modoCadastro){
+
+      resultado =
+        await supabaseClient.auth.signUp({
+          email,
+          password
+        });
+
+    }else{
+
+      resultado =
+        await supabaseClient.auth.signInWithPassword({
+          email,
+          password
+        });
+
+    }
+
+
+    if(resultado.error){
+
+      throw resultado.error;
+
+    }
+
+
+    if(modoCadastro){
+
+      toast(
+        "Conta criada. Verifique seu e-mail se solicitado."
+      );
+
+    }else{
+
+      await iniciarAplicativo();
+
+    }
+
+
+  }catch(error){
+
+    console.error(error);
+
+    toast(
+      error.message ||
+      "Erro ao acessar sua conta."
+    );
+
+  }finally{
+
+    button.disabled = false;
+
+    button.textContent =
+      modoCadastro
+        ? "Criar conta"
+        : "Entrar";
+
+  }
+
+}
+
+
+async function sair(){
+
+  await supabaseClient.auth.signOut();
+
+  document
+    .getElementById("app")
+    .classList.add("hidden");
+
+  document
+    .getElementById("bottomNav")
+    .classList.add("hidden");
+
+  document
+    .getElementById("loginScreen")
+    .classList.remove("hidden");
+
+}
+
+
+/* =========================================================
+   INICIALIZAÇÃO
+   ========================================================= */
+
+async function iniciar(){
+
+  const {
+    data
+  } = await supabaseClient.auth.getSession();
+
+
+  if(data.session){
+
+    await iniciarAplicativo();
+
+  }
+
+}
+
+
+async function iniciarAplicativo(){
+
+  document
+    .getElementById("loginScreen")
+    .classList.add("hidden");
+
+  document
+    .getElementById("app")
+    .classList.remove("hidden");
+
+  document
+    .getElementById("bottomNav")
+    .classList.remove("hidden");
+
+
+  await carregarDados();
+
+}
+
+
+supabaseClient.auth.onAuthStateChange(
+  async(event,session)=>{
+
+    if(session){
+
+      await iniciarAplicativo();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   BANCO DE DADOS
+   ========================================================= */
+
+async function carregarDados(){
+
+  try{
+
+    const obras =
+      await supabaseClient
+        .from("obras")
+        .select("*")
+        .order("created_at",{ascending:false});
+
+
+    const funcionarios =
+      await supabaseClient
+        .from("funcionarios")
+        .select("*")
+        .order("created_at",{ascending:false});
+
+
+    const financeiro =
+      await supabaseClient
+        .from("financeiro")
+        .select("*")
+        .order("data",{ascending:false});
+
+
+    const atividades =
+      await supabaseClient
+        .from("atividades")
+        .select("*")
+        .order("created_at",{ascending:false})
+        .limit(30);
+
+
+    if(obras.error)
+      throw obras.error;
+
+    if(funcionarios.error)
+      throw funcionarios.error;
+
+    if(financeiro.error)
+      throw financeiro.error;
+
+    if(atividades.error)
+      throw atividades.error;
+
+
+    db.obras =
+      obras.data || [];
+
+    db.funcionarios =
+      funcionarios.data || [];
+
+    db.financeiro =
+      financeiro.data || [];
+
+    db.atividades =
+      atividades.data || [];
+
+
+    atualizarTudo();
+
+
+  }catch(error){
+
+    console.error(error);
+
+    toast(
+      "Não foi possível carregar os dados."
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   NAVEGAÇÃO
+   ========================================================= */
 
 function showPage(page){
 
-  document.querySelectorAll(".page").forEach(p=>{
-    p.classList.remove("active");
-  });
+  document
+    .querySelectorAll(".page")
+    .forEach(p=>{
+      p.classList.remove("active");
+    });
 
-  const destino=document.getElementById(page);
+
+  const destino =
+    document.getElementById(page);
+
 
   if(destino){
+
     destino.classList.add("active");
+
   }
 
-  document.querySelectorAll(".nav").forEach(n=>{
-    n.classList.toggle("active",n.dataset.page===page);
+
+  document
+    .querySelectorAll(".nav")
+    .forEach(n=>{
+
+      n.classList.toggle(
+        "active",
+        n.dataset.page === page
+      );
+
+    });
+
+
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
   });
 
-  window.scrollTo({top:0,behavior:"smooth"});
-  atualizarTudo();
 }
 
-/* MODAIS */
+
+/* =========================================================
+   MODAIS
+   ========================================================= */
 
 function abrirModal(id){
-  document.getElementById(id).classList.add("show");
+
+  document
+    .getElementById(id)
+    .classList.add("show");
+
 }
+
 
 function fecharModal(id){
-  document.getElementById(id).classList.remove("show");
+
+  document
+    .getElementById(id)
+    .classList.remove("show");
+
 }
 
-document.querySelectorAll(".modal").forEach(modal=>{
-  modal.addEventListener("click",e=>{
-    if(e.target===modal) modal.classList.remove("show");
-  });
-});
 
-/* OBRAS */
+document
+  .querySelectorAll(".modal")
+  .forEach(modal=>{
+
+    modal.addEventListener(
+      "click",
+      e=>{
+
+        if(e.target === modal){
+
+          modal.classList.remove("show");
+
+        }
+
+      }
+    );
+
+  });
+
+
+/* =========================================================
+   OBRAS
+   ========================================================= */
 
 function abrirObra(idObra=null){
 
@@ -679,138 +1868,240 @@ function abrirObra(idObra=null){
   document.getElementById("obraValor").value="";
   document.getElementById("obraStatus").value="andamento";
   document.getElementById("obraObs").value="";
-  document.getElementById("tituloModalObra").textContent="Nova obra";
+
+
+  document.getElementById(
+    "tituloModalObra"
+  ).textContent="Nova obra";
+
 
   if(idObra){
-    const obra=db.obras.find(o=>o.id===idObra);
-    if(!obra)return;
 
-    document.getElementById("tituloModalObra").textContent="Editar obra";
-    document.getElementById("obraId").value=obra.id;
-    document.getElementById("obraNome").value=obra.nome||"";
-    document.getElementById("obraCliente").value=obra.cliente||"";
-    document.getElementById("obraEndereco").value=obra.endereco||"";
-    document.getElementById("obraValor").value=obra.valor||"";
-    document.getElementById("obraStatus").value=obra.status||"andamento";
-    document.getElementById("obraObs").value=obra.obs||"";
+    const obra =
+      db.obras.find(
+        o=>o.id === idObra
+      );
+
+
+    if(!obra) return;
+
+
+    document.getElementById(
+      "tituloModalObra"
+    ).textContent="Editar obra";
+
+
+    document.getElementById(
+      "obraId"
+    ).value=obra.id;
+
+
+    document.getElementById(
+      "obraNome"
+    ).value=obra.nome || "";
+
+
+    document.getElementById(
+      "obraCliente"
+    ).value=obra.cliente || "";
+
+
+    document.getElementById(
+      "obraEndereco"
+    ).value=obra.endereco || "";
+
+
+    document.getElementById(
+      "obraValor"
+    ).value=obra.valor || "";
+
+
+    document.getElementById(
+      "obraStatus"
+    ).value=obra.status || "andamento";
+
+
+    document.getElementById(
+      "obraObs"
+    ).value=obra.obs || "";
+
   }
+
 
   abrirModal("modalObra");
+
 }
 
-function salvarObra(){
 
-  const nome=document.getElementById("obraNome").value.trim();
+async function salvarObra(){
+
+  const nome =
+    document.getElementById("obraNome")
+      .value.trim();
+
 
   if(!nome){
-    aviso("Informe o nome da obra.");
+
+    toast("Informe o nome da obra.");
+
     return;
+
   }
 
-  const idExistente=document.getElementById("obraId").value;
 
-  const dados={
-    nome:nome,
-    cliente:document.getElementById("obraCliente").value.trim(),
-    endereco:document.getElementById("obraEndereco").value.trim(),
-    valor:Number(document.getElementById("obraValor").value||0),
-    status:document.getElementById("obraStatus").value,
-    obs:document.getElementById("obraObs").value.trim()
+  const {
+    data:{user}
+  } =
+    await supabaseClient.auth.getUser();
+
+
+  if(!user){
+
+    toast("Faça login novamente.");
+
+    return;
+
+  }
+
+
+  const id =
+    document.getElementById("obraId")
+      .value;
+
+
+  const dados = {
+
+    user_id:user.id,
+
+    nome,
+
+    cliente:
+      document.getElementById("obraCliente")
+        .value.trim(),
+
+    endereco:
+      document.getElementById("obraEndereco")
+        .value.trim(),
+
+    valor:
+      Number(
+        document.getElementById("obraValor")
+          .value || 0
+      ),
+
+    status:
+      document.getElementById("obraStatus")
+        .value,
+
+    obs:
+      document.getElementById("obraObs")
+        .value.trim()
+
   };
 
-  if(idExistente){
 
-    const obra=db.obras.find(o=>o.id===idExistente);
+  try{
 
-    if(obra){
-      Object.assign(obra,dados);
-      atividade("Obra atualizada: "+nome);
+    let resultado;
+
+
+    if(id){
+
+      resultado =
+        await supabaseClient
+          .from("obras")
+          .update(dados)
+          .eq("id",id)
+          .select()
+          .single();
+
+    }else{
+
+      resultado =
+        await supabaseClient
+          .from("obras")
+          .insert(dados)
+          .select()
+          .single();
+
     }
 
-  }else{
 
-    db.obras.push({
-      id:id(),
-      ...dados,
-      criadoEm:new Date().toISOString()
-    });
+    if(resultado.error)
+      throw resultado.error;
 
-    atividade("Nova obra cadastrada: "+nome);
+
+    await registrarAtividade(
+      id
+        ? "Obra atualizada"
+        : `Nova obra cadastrada: ${nome}`
+    );
+
+
+    fecharModal("modalObra");
+
+    toast("Obra salva com sucesso.");
+
+    await carregarDados();
+
+
+  }catch(error){
+
+    console.error(error);
+
+    toast(
+      "Erro ao salvar obra: " +
+      error.message
+    );
+
   }
 
-  salvar();
-  fecharModal("modalObra");
-  aviso("Obra salva com sucesso.");
 }
 
-function excluirObra(idObra){
 
-  const obra=db.obras.find(o=>o.id===idObra);
-  if(!obra)return;
+async function excluirObra(id){
 
-  if(!confirm("Excluir a obra '"+obra.nome+"'?"))return;
-
-  db.obras=db.obras.filter(o=>o.id!==idObra);
-  atividade("Obra excluída: "+obra.nome);
-  salvar();
-  aviso("Obra excluída.");
-}
-
-function renderObras(){
-
-  const el=document.getElementById("listaObras");
-
-  if(!db.obras.length){
-    el.innerHTML=`
-      <div class="empty">
-        <div style="font-size:35px;margin-bottom:12px">🏗️</div>
-        <b>Nenhuma obra cadastrada</b>
-        <p style="margin-top:7px">Toque em “+ Nova obra” para começar.</p>
-      </div>`;
+  if(!confirm("Excluir esta obra?"))
     return;
+
+
+  try{
+
+    const resultado =
+      await supabaseClient
+        .from("obras")
+        .delete()
+        .eq("id",id);
+
+
+    if(resultado.error)
+      throw resultado.error;
+
+
+    await registrarAtividade(
+      "Obra excluída"
+    );
+
+
+    toast("Obra excluída.");
+
+    await carregarDados();
+
+
+  }catch(error){
+
+    console.error(error);
+
+    toast("Erro ao excluir obra.");
+
   }
 
-  el.innerHTML=db.obras.map(o=>{
-
-    const statusTexto={
-      andamento:"Em andamento",
-      concluida:"Concluída",
-      pausada:"Pausada"
-    }[o.status]||o.status;
-
-    return `
-    <div class="card">
-
-      <div class="card-head">
-        <div>
-          <h3>${escapeHTML(o.nome)}</h3>
-          <p>${escapeHTML(o.cliente||"Cliente não informado")}</p>
-        </div>
-
-        <span class="badge ${o.status!=="andamento"?"off":""}">
-          ${statusTexto}
-        </span>
-      </div>
-
-      ${o.endereco?`<p>📍 ${escapeHTML(o.endereco)}</p>`:""}
-
-      <p>
-        <b style="color:white">Valor:</b>
-        ${moeda(o.valor)}
-      </p>
-
-      ${o.obs?`<p>${escapeHTML(o.obs)}</p>`:""}
-
-      <div class="actions">
-        <button class="btn primary" onclick="abrirObra('${o.id}')">Editar</button>
-        <button class="btn danger" onclick="excluirObra('${o.id}')">Excluir</button>
-      </div>
-
-    </div>`;
-  }).join("");
 }
 
-/* FUNCIONÁRIOS */
+
+/* =========================================================
+   FUNCIONÁRIOS
+   ========================================================= */
 
 function abrirFuncionario(idFuncionario=null){
 
@@ -819,360 +2110,968 @@ function abrirFuncionario(idFuncionario=null){
   document.getElementById("funcFuncao").value="";
   document.getElementById("funcDiaria").value="";
   document.getElementById("funcStatus").value="ativo";
-  document.getElementById("tituloModalFuncionario").textContent="Novo funcionário";
+
+
+  document.getElementById(
+    "tituloModalFuncionario"
+  ).textContent="Novo funcionário";
+
 
   if(idFuncionario){
 
-    const f=db.funcionarios.find(x=>x.id===idFuncionario);
-    if(!f)return;
+    const funcionario =
+      db.funcionarios.find(
+        f=>f.id === idFuncionario
+      );
 
-    document.getElementById("tituloModalFuncionario").textContent="Editar funcionário";
-    document.getElementById("funcId").value=f.id;
-    document.getElementById("funcNome").value=f.nome||"";
-    document.getElementById("funcFuncao").value=f.funcao||"";
-    document.getElementById("funcDiaria").value=f.diaria||"";
-    document.getElementById("funcStatus").value=f.status||"ativo";
+
+    if(!funcionario) return;
+
+
+    document.getElementById(
+      "tituloModalFuncionario"
+    ).textContent="Editar funcionário";
+
+
+    document.getElementById(
+      "funcId"
+    ).value=funcionario.id;
+
+
+    document.getElementById(
+      "funcNome"
+    ).value=funcionario.nome || "";
+
+
+    document.getElementById(
+      "funcFuncao"
+    ).value=funcionario.funcao || "";
+
+
+    document.getElementById(
+      "funcDiaria"
+    ).value=funcionario.diaria || "";
+
+
+    document.getElementById(
+      "funcStatus"
+    ).value=funcionario.status || "ativo";
+
   }
+
 
   abrirModal("modalFuncionario");
+
 }
 
-function salvarFuncionario(){
 
-  const nome=document.getElementById("funcNome").value.trim();
+async function salvarFuncionario(){
+
+  const nome =
+    document.getElementById("funcNome")
+      .value.trim();
+
 
   if(!nome){
-    aviso("Informe o nome do funcionário.");
+
+    toast("Informe o nome.");
+
     return;
+
   }
 
-  const existente=document.getElementById("funcId").value;
 
-  const dados={
+  const {
+    data:{user}
+  } =
+    await supabaseClient.auth.getUser();
+
+
+  const id =
+    document.getElementById("funcId")
+      .value;
+
+
+  const dados = {
+
+    user_id:user.id,
+
     nome,
-    funcao:document.getElementById("funcFuncao").value.trim(),
-    diaria:Number(document.getElementById("funcDiaria").value||0),
-    status:document.getElementById("funcStatus").value
+
+    funcao:
+      document.getElementById("funcFuncao")
+        .value.trim(),
+
+    diaria:
+      Number(
+        document.getElementById("funcDiaria")
+          .value || 0
+      ),
+
+    status:
+      document.getElementById("funcStatus")
+        .value
+
   };
 
-  if(existente){
 
-    const f=db.funcionarios.find(x=>x.id===existente);
+  try{
 
-    if(f){
-      Object.assign(f,dados);
-      atividade("Funcionário atualizado: "+nome);
+    let resultado;
+
+
+    if(id){
+
+      resultado =
+        await supabaseClient
+          .from("funcionarios")
+          .update(dados)
+          .eq("id",id)
+          .select()
+          .single();
+
+    }else{
+
+      resultado =
+        await supabaseClient
+          .from("funcionarios")
+          .insert(dados)
+          .select()
+          .single();
+
     }
 
-  }else{
 
-    db.funcionarios.push({
-      id:id(),
-      ...dados,
-      criadoEm:new Date().toISOString()
-    });
+    if(resultado.error)
+      throw resultado.error;
 
-    atividade("Funcionário cadastrado: "+nome);
+
+    await registrarAtividade(
+      id
+        ? "Funcionário atualizado"
+        : `Funcionário cadastrado: ${nome}`
+    );
+
+
+    fecharModal("modalFuncionario");
+
+    toast("Funcionário salvo.");
+
+    await carregarDados();
+
+
+  }catch(error){
+
+    console.error(error);
+
+    toast(
+      "Erro ao salvar funcionário."
+    );
+
   }
 
-  salvar();
-  fecharModal("modalFuncionario");
-  aviso("Funcionário salvo.");
 }
 
-function excluirFuncionario(idFuncionario){
 
-  const f=db.funcionarios.find(x=>x.id===idFuncionario);
-  if(!f)return;
+async function excluirFuncionario(id){
 
-  if(!confirm("Excluir '"+f.nome+"'?"))return;
-
-  db.funcionarios=db.funcionarios.filter(x=>x.id!==idFuncionario);
-  atividade("Funcionário excluído: "+f.nome);
-  salvar();
-  aviso("Funcionário excluído.");
-}
-
-function renderFuncionarios(){
-
-  const el=document.getElementById("listaFuncionarios");
-
-  if(!db.funcionarios.length){
-
-    el.innerHTML=`
-    <div class="empty">
-      <div style="font-size:35px;margin-bottom:12px">👷</div>
-      <b>Nenhum funcionário cadastrado</b>
-      <p style="margin-top:7px">Cadastre sua equipe para controlar as diárias.</p>
-    </div>`;
-
+  if(!confirm("Excluir este funcionário?"))
     return;
+
+
+  try{
+
+    const resultado =
+      await supabaseClient
+        .from("funcionarios")
+        .delete()
+        .eq("id",id);
+
+
+    if(resultado.error)
+      throw resultado.error;
+
+
+    await registrarAtividade(
+      "Funcionário excluído"
+    );
+
+
+    toast("Funcionário excluído.");
+
+    await carregarDados();
+
+
+  }catch(error){
+
+    console.error(error);
+
+    toast("Erro ao excluir funcionário.");
+
   }
 
-  el.innerHTML=db.funcionarios.map(f=>`
-
-    <div class="card">
-
-      <div class="card-head">
-
-        <div>
-          <h3>${escapeHTML(f.nome)}</h3>
-          <p>${escapeHTML(f.funcao||"Função não informada")}</p>
-        </div>
-
-        <span class="badge ${f.status==="ativo"?"":"off"}">
-          ${f.status==="ativo"?"Ativo":"Inativo"}
-        </span>
-
-      </div>
-
-      <p>
-        <b style="color:white">Diária:</b>
-        ${moeda(f.diaria)}
-      </p>
-
-      <div class="actions">
-        <button class="btn primary" onclick="abrirFuncionario('${f.id}')">Editar</button>
-        <button class="btn danger" onclick="excluirFuncionario('${f.id}')">Excluir</button>
-      </div>
-
-    </div>
-
-  `).join("");
 }
 
-/* FINANCEIRO */
+
+/* =========================================================
+   FINANCEIRO
+   ========================================================= */
 
 function abrirLancamento(){
 
   document.getElementById("finTipo").value="receita";
   document.getElementById("finDescricao").value="";
   document.getElementById("finValor").value="";
-  document.getElementById("finData").value=new Date().toISOString().slice(0,10);
+  document.getElementById("finData").value=hoje();
   document.getElementById("finObs").value="";
 
-  preencherObrasFinanceiro();
 
-  abrirModal("modalFinanceiro");
-}
+  const select =
+    document.getElementById("finObra");
 
-function preencherObrasFinanceiro(){
 
-  const select=document.getElementById("finObra");
+  select.innerHTML =
+    `<option value="">Geral</option>`;
 
-  select.innerHTML=
-    `<option value="">Geral</option>`+
-    db.obras.map(o=>
-      `<option value="${o.id}">${escapeHTML(o.nome)}</option>`
-    ).join("");
-}
 
-function salvarLancamento(){
+  db.obras.forEach(obra=>{
 
-  const descricao=document.getElementById("finDescricao").value.trim();
-  const valor=Number(document.getElementById("finValor").value||0);
+    select.innerHTML += `
+      <option value="${obra.id}">
+        ${escapeHTML(obra.nome)}
+      </option>
+    `;
 
-  if(!descricao){
-    aviso("Informe a descrição.");
-    return;
-  }
-
-  if(valor<=0){
-    aviso("Informe um valor maior que zero.");
-    return;
-  }
-
-  const tipo=document.getElementById("finTipo").value;
-  const obraId=document.getElementById("finObra").value;
-
-  db.financeiro.push({
-    id:id(),
-    tipo,
-    descricao,
-    valor,
-    obraId,
-    data:document.getElementById("finData").value,
-    obs:document.getElementById("finObs").value.trim(),
-    criadoEm:new Date().toISOString()
   });
 
-  atividade(
-    (tipo==="receita"?"Recebimento: ":"Despesa: ")+
-    descricao+" — "+moeda(valor)
-  );
 
-  salvar();
-  fecharModal("modalFinanceiro");
-  aviso("Lançamento salvo.");
+  abrirModal("modalFinanceiro");
+
 }
 
-function excluirLancamento(idLancamento){
 
-  const l=db.financeiro.find(x=>x.id===idLancamento);
-  if(!l)return;
+async function salvarLancamento(){
 
-  if(!confirm("Excluir este lançamento?"))return;
+  const descricao =
+    document.getElementById("finDescricao")
+      .value.trim();
 
-  db.financeiro=db.financeiro.filter(x=>x.id!==idLancamento);
 
-  atividade("Lançamento excluído: "+l.descricao);
+  const valor =
+    Number(
+      document.getElementById("finValor")
+        .value || 0
+    );
 
-  salvar();
-  aviso("Lançamento excluído.");
-}
 
-function renderFinanceiro(){
+  if(!descricao || valor <= 0){
 
-  const receitas=db.financeiro
-    .filter(x=>x.tipo==="receita")
-    .reduce((s,x)=>s+Number(x.valor||0),0);
-
-  const despesas=db.financeiro
-    .filter(x=>x.tipo==="despesa")
-    .reduce((s,x)=>s+Number(x.valor||0),0);
-
-  document.getElementById("finReceitas").textContent=moeda(receitas);
-  document.getElementById("finDespesas").textContent=moeda(despesas);
-  document.getElementById("finLucro").textContent=moeda(receitas-despesas);
-  document.getElementById("finQuantidade").textContent=db.financeiro.length;
-
-  const el=document.getElementById("listaFinanceiro");
-
-  if(!db.financeiro.length){
-
-    el.innerHTML=`
-    <div class="empty">
-      <div style="font-size:35px;margin-bottom:12px">💰</div>
-      <b>Nenhum lançamento</b>
-      <p style="margin-top:7px">Cadastre recebimentos e despesas.</p>
-    </div>`;
+    toast(
+      "Informe descrição e valor."
+    );
 
     return;
+
   }
 
-  const lista=[...db.financeiro].reverse();
 
-  el.innerHTML=lista.map(l=>{
+  const {
+    data:{user}
+  } =
+    await supabaseClient.auth.getUser();
 
-    const obra=db.obras.find(o=>o.id===l.obraId);
 
-    return `
-    <div class="card">
+  const dados = {
 
-      <div class="card-head">
+    user_id:user.id,
 
-        <div>
-          <h3>${escapeHTML(l.descricao)}</h3>
-          <p>${dataBR(l.data)} ${obra?"• "+escapeHTML(obra.nome):"• Geral"}</p>
-        </div>
+    tipo:
+      document.getElementById("finTipo")
+        .value,
 
-        <strong class="${l.tipo==="receita"?"green":"red"}">
-          ${l.tipo==="receita"?"+":"-"} ${moeda(l.valor)}
-        </strong>
+    descricao,
 
-      </div>
+    valor,
 
-      ${l.obs?`<p>${escapeHTML(l.obs)}</p>`:""}
+    obra_id:
+      document.getElementById("finObra")
+        .value || null,
 
-      <div class="actions">
-        <button class="btn danger" onclick="excluirLancamento('${l.id}')">
-          Excluir
-        </button>
-      </div>
+    data:
+      document.getElementById("finData")
+        .value || hoje(),
 
-    </div>`;
-  }).join("");
-}
+    obs:
+      document.getElementById("finObs")
+        .value.trim()
 
-/* DASHBOARD */
+  };
 
-function atualizarDashboard(){
 
-  const receitas=db.financeiro
-    .filter(x=>x.tipo==="receita")
-    .reduce((s,x)=>s+Number(x.valor||0),0);
+  try{
 
-  const despesas=db.financeiro
-    .filter(x=>x.tipo==="despesa")
-    .reduce((s,x)=>s+Number(x.valor||0),0);
+    const resultado =
+      await supabaseClient
+        .from("financeiro")
+        .insert(dados)
+        .select()
+        .single();
 
-  document.getElementById("statObras").textContent=db.obras.length;
 
-  document.getElementById("statFuncionarios").textContent=
-    db.funcionarios.filter(x=>x.status==="ativo").length;
+    if(resultado.error)
+      throw resultado.error;
 
-  document.getElementById("statReceitas").textContent=moeda(receitas);
-  document.getElementById("statDespesas").textContent=moeda(despesas);
 
-  document.getElementById("repObras").textContent=db.obras.length;
+    await registrarAtividade(
+      dados.tipo === "receita"
+        ? `Receita registrada: ${moeda(valor)}`
+        : `Despesa registrada: ${moeda(valor)}`
+    );
 
-  document.getElementById("repAndamento").textContent=
-    db.obras.filter(x=>x.status==="andamento").length;
 
-  document.getElementById("repFuncionarios").textContent=
-    db.funcionarios.filter(x=>x.status==="ativo").length;
+    fecharModal("modalFinanceiro");
 
-  document.getElementById("repReceitas").textContent=moeda(receitas);
-  document.getElementById("repDespesas").textContent=moeda(despesas);
-  document.getElementById("repLucro").textContent=moeda(receitas-despesas);
+    toast("Lançamento salvo.");
 
-  const atividades=document.getElementById("atividades");
+    await carregarDados();
 
-  if(!db.atividades.length){
 
-    atividades.innerHTML=
-      `<p style="color:var(--muted)">Nenhuma atividade registrada ainda.</p>`;
+  }catch(error){
 
-  }else{
+    console.error(error);
 
-    atividades.innerHTML=db.atividades.slice(0,10).map(a=>`
-      <div class="report-item">
-        <strong>${escapeHTML(a.texto)}</strong>
-        <span>${escapeHTML(a.data)}</span>
-      </div>
-    `).join("");
+    toast(
+      "Erro ao salvar lançamento."
+    );
+
   }
+
 }
+
+
+async function excluirLancamento(id){
+
+  if(!confirm("Excluir este lançamento?"))
+    return;
+
+
+  try{
+
+    const resultado =
+      await supabaseClient
+        .from("financeiro")
+        .delete()
+        .eq("id",id);
+
+
+    if(resultado.error)
+      throw resultado.error;
+
+
+    await registrarAtividade(
+      "Lançamento financeiro excluído"
+    );
+
+
+    toast("Lançamento excluído.");
+
+    await carregarDados();
+
+
+  }catch(error){
+
+    console.error(error);
+
+    toast("Erro ao excluir lançamento.");
+
+  }
+
+}
+
+
+/* =========================================================
+   ATIVIDADES
+   ========================================================= */
+
+async function registrarAtividade(texto){
+
+  try{
+
+    const {
+      data:{user}
+    } =
+      await supabaseClient.auth.getUser();
+
+
+    if(!user) return;
+
+
+    await supabaseClient
+      .from("atividades")
+      .insert({
+
+        user_id:user.id,
+
+        texto
+
+      });
+
+  }catch(error){
+
+    console.error(
+      "Erro atividade:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   ATUALIZAÇÃO DA INTERFACE
+   ========================================================= */
 
 function atualizarTudo(){
 
   renderObras();
+
   renderFuncionarios();
+
   renderFinanceiro();
+
+  renderRelatorios();
+
   atualizarDashboard();
+
 }
 
-function aviso(texto){
 
-  const el=document.getElementById("toast");
+/* =========================================================
+   OBRAS NA TELA
+   ========================================================= */
 
-  el.textContent=texto;
-  el.classList.add("show");
+function renderObras(){
 
-  setTimeout(()=>{
-    el.classList.remove("show");
-  },2200);
-}
+  const el =
+    document.getElementById("listaObras");
 
-/* INICIALIZAÇÃO */
 
-document.addEventListener("DOMContentLoaded",()=>{
+  if(!db.obras.length){
 
-  carregar();
+    el.innerHTML = `
+      <div class="empty">
+        <div style="font-size:35px">🏗️</div>
+        <p style="margin-top:10px">
+          Nenhuma obra cadastrada.
+        </p>
+      </div>
+    `;
 
-  document.getElementById("finData").value=
-    new Date().toISOString().slice(0,10);
+    return;
 
-});
-
-/* Fechar modal com ESC */
-document.addEventListener("keydown",e=>{
-  if(e.key==="Escape"){
-    document.querySelectorAll(".modal").forEach(m=>{
-      m.classList.remove("show");
-    });
   }
-});
+
+
+  el.innerHTML =
+    db.obras.map(obra=>{
+
+      const statusTexto =
+        obra.status === "andamento"
+          ? "Em andamento"
+          : obra.status === "concluida"
+            ? "Concluída"
+            : "Pausada";
+
+
+      return `
+
+        <div class="card">
+
+          <div class="card-head">
+
+            <div>
+
+              <h3>
+                ${escapeHTML(obra.nome)}
+              </h3>
+
+              <p>
+                Cliente:
+                ${escapeHTML(obra.cliente || "-")}
+              </p>
+
+            </div>
+
+            <span
+              class="badge ${
+                obra.status === "concluida"
+                ? "off"
+                : ""
+              }"
+            >
+              ${statusTexto}
+            </span>
+
+          </div>
+
+
+          <p>
+            📍 ${escapeHTML(obra.endereco || "-")}
+          </p>
+
+          <p>
+            💰 ${moeda(obra.valor)}
+          </p>
+
+
+          ${
+            obra.obs
+              ? `
+                <p>
+                  ${escapeHTML(obra.obs)}
+                </p>
+              `
+              : ""
+          }
+
+
+          <div class="actions">
+
+            <button
+              class="btn"
+              onclick="abrirObra('${obra.id}')"
+            >
+              Editar
+            </button>
+
+            <button
+              class="btn danger"
+              onclick="excluirObra('${obra.id}')"
+            >
+              Excluir
+            </button>
+
+          </div>
+
+        </div>
+
+      `;
+
+    }).join("");
+
+}
+
+
+/* =========================================================
+   FUNCIONÁRIOS NA TELA
+   ========================================================= */
+
+function renderFuncionarios(){
+
+  const el =
+    document.getElementById(
+      "listaFuncionarios"
+    );
+
+
+  if(!db.funcionarios.length){
+
+    el.innerHTML = `
+      <div class="empty">
+        <div style="font-size:35px">👷</div>
+        <p style="margin-top:10px">
+          Nenhum funcionário cadastrado.
+        </p>
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  el.innerHTML =
+    db.funcionarios.map(func=>{
+
+      return `
+
+        <div class="card">
+
+          <div class="card-head">
+
+            <div>
+
+              <h3>
+                ${escapeHTML(func.nome)}
+              </h3>
+
+              <p>
+                ${escapeHTML(func.funcao || "-")}
+              </p>
+
+            </div>
+
+            <span
+              class="badge ${
+                func.status === "inativo"
+                ? "off"
+                : ""
+              }"
+            >
+              ${
+                func.status === "ativo"
+                  ? "Ativo"
+                  : "Inativo"
+              }
+            </span>
+
+          </div>
+
+
+          <p>
+            💵 Diária:
+            ${moeda(func.diaria)}
+          </p>
+
+
+          <div class="actions">
+
+            <button
+              class="btn"
+              onclick="abrirFuncionario('${func.id}')"
+            >
+              Editar
+            </button>
+
+            <button
+              class="btn danger"
+              onclick="excluirFuncionario('${func.id}')"
+            >
+              Excluir
+            </button>
+
+          </div>
+
+        </div>
+
+      `;
+
+    }).join("");
+
+}
+
+
+/* =========================================================
+   FINANCEIRO NA TELA
+   ========================================================= */
+
+function renderFinanceiro(){
+
+  let receitas = 0;
+
+  let despesas = 0;
+
+
+  db.financeiro.forEach(item=>{
+
+    if(item.tipo === "receita"){
+
+      receitas += Number(item.valor || 0);
+
+    }else{
+
+      despesas += Number(item.valor || 0);
+
+    }
+
+  });
+
+
+  const lucro =
+    receitas - despesas;
+
+
+  document.getElementById(
+    "finReceitas"
+  ).textContent = moeda(receitas);
+
+
+  document.getElementById(
+    "finDespesas"
+  ).textContent = moeda(despesas);
+
+
+  document.getElementById(
+    "finLucro"
+  ).textContent = moeda(lucro);
+
+
+  document.getElementById(
+    "finQuantidade"
+  ).textContent =
+    db.financeiro.length;
+
+
+  document.getElementById(
+    "statReceitas"
+  ).textContent = moeda(receitas);
+
+
+  document.getElementById(
+    "statDespesas"
+  ).textContent = moeda(despesas);
+
+
+  const el =
+    document.getElementById(
+      "listaFinanceiro"
+    );
+
+
+  if(!db.financeiro.length){
+
+    el.innerHTML = `
+      <div class="empty">
+        <div style="font-size:35px">💰</div>
+        <p style="margin-top:10px">
+          Nenhum lançamento.
+        </p>
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  el.innerHTML =
+    db.financeiro.map(item=>{
+
+      const obra =
+        db.obras.find(
+          o=>o.id === item.obra_id
+        );
+
+
+      const receita =
+        item.tipo === "receita";
+
+
+      return `
+
+        <div class="card">
+
+          <div class="card-head">
+
+            <div>
+
+              <h3>
+                ${escapeHTML(item.descricao)}
+              </h3>
+
+              <p>
+                ${dataBR(item.data)}
+                ${
+                  obra
+                    ? " • " +
+                      escapeHTML(obra.nome)
+                    : ""
+                }
+              </p>
+
+            </div>
+
+            <strong
+              class="${
+                receita
+                  ? "green"
+                  : "red"
+              }"
+            >
+              ${
+                receita
+                  ? "+"
+                  : "-"
+              }
+              ${moeda(item.valor)}
+            </strong>
+
+          </div>
+
+
+          ${
+            item.obs
+              ? `
+                <p>
+                  ${escapeHTML(item.obs)}
+                </p>
+              `
+              : ""
+          }
+
+
+          <div class="actions">
+
+            <button
+              class="btn danger"
+              onclick="excluirLancamento('${item.id}')"
+            >
+              Excluir
+            </button>
+
+          </div>
+
+        </div>
+
+      `;
+
+    }).join("");
+
+}
+
+
+/* =========================================================
+   RELATÓRIOS
+   ========================================================= */
+
+function renderRelatorios(){
+
+  const receitas =
+    db.financeiro
+      .filter(x=>x.tipo==="receita")
+      .reduce(
+        (total,x)=>
+          total + Number(x.valor || 0),
+        0
+      );
+
+
+  const despesas =
+    db.financeiro
+      .filter(x=>x.tipo==="despesa")
+      .reduce(
+        (total,x)=>
+          total + Number(x.valor || 0),
+        0
+      );
+
+
+  document.getElementById(
+    "repObras"
+  ).textContent =
+    db.obras.length;
+
+
+  document.getElementById(
+    "repAndamento"
+  ).textContent =
+    db.obras.filter(
+      x=>x.status==="andamento"
+    ).length;
+
+
+  document.getElementById(
+    "repFuncionarios"
+  ).textContent =
+    db.funcionarios.filter(
+      x=>x.status==="ativo"
+    ).length;
+
+
+  document.getElementById(
+    "repReceitas"
+  ).textContent =
+    moeda(receitas);
+
+
+  document.getElementById(
+    "repDespesas"
+  ).textContent =
+    moeda(despesas);
+
+
+  document.getElementById(
+    "repLucro"
+  ).textContent =
+    moeda(receitas-despesas);
+
+
+  const el =
+    document.getElementById(
+      "atividades"
+    );
+
+
+  if(!db.atividades.length){
+
+    el.innerHTML = `
+      <p style="color:var(--muted)">
+        Nenhuma atividade registrada.
+      </p>
+    `;
+
+    return;
+
+  }
+
+
+  el.innerHTML =
+    db.atividades
+      .slice(0,10)
+      .map(item=>`
+
+        <div class="report-item">
+
+          <strong>
+            ${escapeHTML(item.texto)}
+          </strong>
+
+          <span>
+            ${new Date(item.created_at)
+              .toLocaleString("pt-BR")}
+          </span>
+
+        </div>
+
+      `)
+      .join("");
+
+}
+
+
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+
+function atualizarDashboard(){
+
+  document.getElementById(
+    "statObras"
+  ).textContent =
+    db.obras.length;
+
+
+  document.getElementById(
+    "statFuncionarios"
+  ).textContent =
+    db.funcionarios.filter(
+      x=>x.status==="ativo"
+    ).length;
+
+}
+
+
+/* =========================================================
+   INICIAR
+   ========================================================= */
+
+document.getElementById(
+  "finData"
+).value = hoje();
+
+
+iniciar();
 
 </script>
 
