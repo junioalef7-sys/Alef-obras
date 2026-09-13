@@ -10,123 +10,358 @@
 <title>EDIFIQ — Gestão de Obras</title>
 
 <script>
-window.__supabaseReady = new Promise((resolve,reject)=>{
-  const urls=[
-    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
-    'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js'
+window.__supabaseReady=new Promise(function(resolve,reject){
+  var urls=[
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js",
+    "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"
   ];
-  function load(i){
+  var i=0;
+  function load(){
+    if(window.supabase&&typeof window.supabase.createClient==="function"){
+      resolve(window.supabase);return;
+    }
     if(i>=urls.length){
-      reject(new Error('Biblioteca do Supabase não carregou.'));
+      reject(new Error("Biblioteca do Supabase não carregou."));
       return;
     }
-    const sc=document.createElement('script');
-    sc.src=urls[i];
-    sc.onload=()=>window.supabase?resolve(window.supabase):load(i+1);
-    sc.onerror=()=>load(i+1);
+    var sc=document.createElement("script");
+    sc.src=urls[i++];
+    sc.onload=function(){
+      if(window.supabase&&typeof window.supabase.createClient==="function")
+        resolve(window.supabase);
+      else load();
+    };
+    sc.onerror=load;
     document.head.appendChild(sc);
   }
-  load(0);
+  load();
 });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
 <style>
-:root{--bg:#090b0e;--panel:#12161b;--panel2:#181d23;--gold:#d8ad45;--text:#f4f4f4;--muted:#9da5ae;--green:#36c98f;--red:#ef6670;--blue:#64a8ff;--line:#2a3038}
+:root{
+ --bg:#090b0e;
+ --panel:#12161b;
+ --panel2:#181d23;
+ --gold:#d8ad45;
+ --text:#f4f4f4;
+ --muted:#9da5ae;
+ --green:#36c98f;
+ --red:#ef6670;
+ --blue:#64a8ff;
+ --line:#2a3038;
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+html,body{
+ margin:0;
+ padding:0;
+ background:var(--bg);
+ color:var(--text);
+ font-family:Arial,Helvetica,sans-serif;
+}
+body{min-height:100vh}
 button,input,select,textarea{font:inherit}
-button{cursor:pointer;border:0}
+button{cursor:pointer}
 .hidden{display:none!important}
-header{position:sticky;top:0;z-index:5;background:#0b0d10ee;backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
-.logo{font-weight:900;letter-spacing:2px}
-.logo span,.gold{color:var(--gold)}
-.sub,.label,small{font-size:12px;color:var(--muted)}
-main{max-width:1050px;margin:auto;padding:18px 16px 105px}
-.page{display:none}
-.page.active{display:block}
-h1{margin:5px 0}
-.lead{color:var(--muted);margin-top:4px}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.card,.item,.authbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px;margin:10px 0}
-.stat{font-size:23px;font-weight:800;margin-top:6px}
-.green{color:var(--green)}
-.red{color:var(--red)}
-.blue{color:var(--blue)}
-.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.action,.primary,.secondary,.danger,.mini{border-radius:12px;padding:12px 14px;font-weight:700}
-.action{background:var(--panel2);border:1px solid var(--line);color:var(--text);text-align:left}
-.primary{background:var(--gold);color:#15110a}
-.secondary{background:#20262d;color:var(--text);border:1px solid var(--line)}
-.danger{background:#32191c;color:#ff9ca3;border:1px solid #653038}
-.mini{padding:7px 9px;background:#20262d;color:#fff;border:1px solid var(--line);font-size:12px}
-.form{display:grid;gap:10px}
-.form input,.form select,.form textarea,.toolbar input,.toolbar select{width:100%;background:#0e1216;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px}
-.form textarea{min-height:85px}
-.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.row.wrap{flex-wrap:wrap}
-.badge{background:#242b33;border-radius:999px;padding:5px 9px;font-size:12px}
-.badge.on{color:#8ff0c5;background:#15382c}
-.badge.off{color:#ffb0b5;background:#3b1c20}
-.progress{height:7px;background:#252b32;border-radius:9px;overflow:hidden;margin:10px 0}
-.progress i{display:block;height:100%;background:var(--gold)}
-.bottom{position:fixed;bottom:0;left:0;right:0;background:#0b0d10f5;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px env(safe-area-inset-right) calc(7px + env(safe-area-inset-bottom)) env(safe-area-inset-left);z-index:6}
-.nav{background:none;color:var(--muted);padding:7px}
-.nav.active{color:var(--gold)}
-.modal{position:fixed;inset:0;background:#000b;z-index:20;display:none;align-items:end}
-.modal.open{display:flex}
-.sheet{background:#11151a;border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-height:94vh;overflow:auto;padding:18px}
-.close{float:right;background:none;color:var(--muted);font-size:28px}
-.auth{min-height:100vh;display:grid;place-items:center;padding:20px}
-.authbox{width:min(440px,100%);padding:25px}
-.authlogo{text-align:center;font-size:30px;font-weight:900;letter-spacing:4px}
+.auth{
+ min-height:100vh;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ padding:20px;
+ background:
+ radial-gradient(circle at top,#20252c 0,#090b0e 55%);
+}
+.authbox{
+ width:100%;
+ max-width:420px;
+ background:var(--panel);
+ border:1px solid var(--line);
+ border-radius:22px;
+ padding:28px;
+ box-shadow:0 20px 60px #0008;
+}
+.authlogo{
+ text-align:center;
+ font-size:42px;
+ font-weight:900;
+ letter-spacing:-2px;
+}
 .authlogo span{color:var(--gold)}
-.connection{text-align:center;margin-top:12px;font-size:12px;color:var(--muted)}
+.sub{
+ color:var(--muted);
+ font-size:13px;
+}
+.connection{
+ text-align:center;
+ margin:12px 0;
+ color:var(--gold);
+}
 .connection.ok{color:var(--green)}
 .connection.error{color:var(--red)}
-.toolbar{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
-th{color:var(--muted)}
-.toast{position:fixed;right:15px;bottom:80px;z-index:50;background:#20262d;border:1px solid var(--line);padding:12px 15px;border-radius:12px;display:none;max-width:90vw}
-.toast.show{display:block}
-.photoGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.photoGrid img{width:100%;aspect-ratio:1;border-radius:10px;object-fit:cover;border:1px solid var(--line)}
-.divider{height:1px;background:var(--line);margin:14px 0}
-.empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
-.search{margin:10px 0}
-.search input{width:100%;background:#0e1216;color:#fff;border:1px solid var(--line);border-radius:10px;padding:11px}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.kpi{min-height:92px}
-.sectionTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:18px}
-.listActions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
-.note{background:#171d23;border-left:3px solid var(--gold);padding:10px;border-radius:8px;color:#d7dce1;font-size:13px}
-@media(max-width:700px){
-.grid4{grid-template-columns:1fr 1fr}
-.grid3{grid-template-columns:1fr 1fr}
-.three{grid-template-columns:1fr 1fr}
-.photoGrid{grid-template-columns:repeat(3,1fr)}
+.form{
+ display:grid;
+ gap:10px;
 }
-@media(max-width:450px){
-.grid,.grid3,.grid4,.two,.three{grid-template-columns:1fr}
-.actions{grid-template-columns:1fr 1fr}
-.stat{font-size:20px}
+input,select,textarea{
+ width:100%;
+ background:#0d1115;
+ border:1px solid var(--line);
+ color:var(--text);
+ border-radius:12px;
+ padding:13px;
+ outline:none;
 }
-.reportGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.chip{display:inline-block;padding:5px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;color:var(--muted)}
-.docGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.fileRow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
-.checkActions{display:flex;gap:5px}
-.selectedBox{background:#171d23;border:1px solid var(--line);padding:10px;border-radius:12px}
-.reportTable{overflow:auto}
-.reportTable table{min-width:650px}
+textarea{min-height:90px;resize:vertical}
+input:focus,select:focus,textarea:focus{
+ border-color:var(--gold);
+}
+.primary,.secondary,.danger{
+ border:0;
+ border-radius:12px;
+ padding:13px 15px;
+ font-weight:800;
+}
+.primary{
+ background:var(--gold);
+ color:#111;
+}
+.secondary{
+ background:#222830;
+ color:var(--text);
+}
+.danger{
+ background:#482127;
+ color:#ff9aa1;
+}
+#app{min-height:100vh}
+.top{
+ position:sticky;
+ top:0;
+ z-index:20;
+ background:#090b0ef2;
+ backdrop-filter:blur(14px);
+ border-bottom:1px solid var(--line);
+ padding:14px 16px;
+}
+.toprow{
+ max-width:1100px;
+ margin:auto;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:12px;
+}
+.logo{
+ font-size:23px;
+ font-weight:900;
+}
+.logo span{color:var(--gold)}
+.page{
+ max-width:1100px;
+ margin:auto;
+ padding:18px 16px 100px;
+}
+.pageTitle{
+ font-size:27px;
+ font-weight:900;
+ margin:5px 0 16px;
+}
+.actions{
+ display:grid;
+ grid-template-columns:repeat(2,1fr);
+ gap:12px;
+ margin-bottom:18px;
+}
+.action{
+ min-height:105px;
+ text-align:left;
+ border:1px solid var(--line);
+ border-radius:18px;
+ padding:18px;
+ background:linear-gradient(145deg,#171c22,#101419);
+ color:var(--text);
+ box-shadow:0 8px 25px #0003;
+}
+.action b{
+ font-size:17px;
+}
+.action small{
+ color:var(--muted);
+ line-height:1.5;
+}
+.grid2{
+ display:grid;
+ grid-template-columns:repeat(2,1fr);
+ gap:12px;
+}
+.grid4{
+ display:grid;
+ grid-template-columns:repeat(4,1fr);
+ gap:10px;
+}
+.three{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:10px;
+}
+.card{
+ background:var(--panel);
+ border:1px solid var(--line);
+ border-radius:16px;
+ padding:15px;
+}
+.label{
+ color:var(--muted);
+ font-size:12px;
+}
+.stat{
+ font-size:22px;
+ font-weight:900;
+ margin-top:5px;
+}
+.green{color:var(--green)}
+.red{color:var(--red)}
+.gold{color:var(--gold)}
+.blue{color:var(--blue)}
+.item{
+ background:var(--panel);
+ border:1px solid var(--line);
+ border-radius:16px;
+ padding:15px;
+ margin-bottom:12px;
+}
+.row{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:10px;
+}
+.badge{
+ padding:5px 9px;
+ border-radius:20px;
+ background:#262c34;
+ color:var(--muted);
+ font-size:11px;
+}
+.progress{
+ height:7px;
+ background:#252b32;
+ border-radius:20px;
+ overflow:hidden;
+ margin:12px 0;
+}
+.progress i{
+ display:block;
+ height:100%;
+ background:var(--gold);
+}
+.listActions{
+ display:flex;
+ flex-wrap:wrap;
+ gap:7px;
+ margin-top:12px;
+}
+.mini{
+ border:1px solid var(--line);
+ background:#20262d;
+ color:var(--text);
+ border-radius:9px;
+ padding:8px 10px;
+ font-size:12px;
+}
+.sectionHead{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ gap:10px;
+ margin:20px 0 10px;
+}
+.sectionHead h3{margin:0}
+.empty{
+ text-align:center;
+ color:var(--muted);
+ padding:30px 10px;
+}
+.bottom{
+ position:fixed;
+ left:0;
+ right:0;
+ bottom:0;
+ z-index:30;
+ background:#101419f5;
+ backdrop-filter:blur(15px);
+ border-top:1px solid var(--line);
+ padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+ display:flex;
+ justify-content:center;
+}
+.bottomInner{
+ width:100%;
+ max-width:700px;
+ display:grid;
+ grid-template-columns:repeat(5,1fr);
+ gap:5px;
+}
+.navbtn{
+ border:0;
+ background:transparent;
+ color:var(--muted);
+ padding:8px 4px;
+ font-size:11px;
+ border-radius:10px;
+}
+.navbtn.active{
+ color:var(--gold);
+ background:#1b2026;
+}
+.modal{
+ position:fixed;
+ inset:0;
+ z-index:100;
+ background:#000b;
+ display:none;
+ align-items:flex-end;
+}
+.modal.open{display:flex}
+.sheet{
+ width:100%;
+ max-height:92vh;
+ overflow:auto;
+ background:#11161b;
+ border-radius:22px 22px 0 0;
+ border:1px solid var(--line);
+ padding:20px;
+}
+.close{
+ float:right;
+ width:38px;
+ height:38px;
+ border:0;
+ border-radius:50%;
+ background:#242a31;
+ color:#fff;
+ font-size:22px;
+}
+.sheet h2{margin-top:5px}
+.toast{
+ position:fixed;
+ left:50%;
+ bottom:90px;
+ transform:translateX(-50%);
+ background:#222830;
+ color:#fff;
+ padding:12px 17px;
+ border-radius:12px;
+ z-index:200;
+ box-shadow:0 10px 30px #0008;
+}
 @media(max-width:700px){
-.reportGrid{grid-template-columns:1fr 1fr}
-.docGrid{grid-template-columns:1fr}
+ .grid4{grid-template-columns:repeat(2,1fr)}
+ .three{grid-template-columns:1fr}
+}
+@media(min-width:800px){
+ .actions{grid-template-columns:repeat(4,1fr)}
 }
 </style>
 </head>
@@ -134,4455 +369,1486 @@ th{color:var(--muted)}
 <body>
 
 <div id="auth" class="auth">
-<div class="authbox">
+ <div class="authbox">
+  <div class="authlogo">EDIFI<span>Q</span></div>
+  <p class="sub" style="text-align:center">GESTÃO DE OBRAS</p>
 
-<div class="authlogo">EDIFI<span>Q</span></div>
-<p class="sub" style="text-align:center">GESTÃO DE OBRAS</p>
+  <p id="connectionStatus" class="connection">
+   Verificando conexão...
+  </p>
 
-<p id="connectionStatus" class="connection">Verificando conexão...</p>
+  <div class="form" style="margin-top:20px">
+   <input id="email" type="email" placeholder="E-mail" autocomplete="email">
+   <input id="password" type="password" placeholder="Senha" autocomplete="current-password">
+   <button class="primary" onclick="login()">Entrar</button>
+   <button class="secondary" onclick="signup()">Criar minha conta</button>
+   <button class="secondary" onclick="resetPassword()">Esqueci a senha</button>
+  </div>
 
-<div class="form" style="margin-top:20px">
-<input id="email" type="email" placeholder="E-mail" autocomplete="email">
-<input id="password" type="password" placeholder="Senha" autocomplete="current-password">
-
-<button class="primary" onclick="login()">Entrar</button>
-<button class="secondary" onclick="signup()">Criar minha conta</button>
-<button class="secondary" onclick="resetPassword()">Esqueci a senha</button>
-</div>
-
-<p id="authMsg" class="sub"></p>
-
-</div>
+  <p id="authMsg" class="sub"></p>
+ </div>
 </div>
 
 <div id="app" class="hidden">
 
-<header>
-<div>
-<div class="logo">EDIFI<span>Q</span></div>
-<div class="sub">Gestão de Obras</div>
-</div>
-
-<div style="display:flex;align-items:center;gap:10px">
-<span id="appConnection" class="connection ok">● Sistema conectado</span>
-<button class="secondary" onclick="logout()">Sair</button>
-</div>
+<header class="top">
+ <div class="toprow">
+  <div class="logo">EDIFI<span>Q</span></div>
+  <div>
+   <small id="accountEmail" class="sub"></small>
+  </div>
+ </div>
 </header>
 
-<main>
+<main class="page">
 
-<section id="home" class="page active">
+<section id="home" class="screen">
+ <div class="pageTitle">Início</div>
 
-<h1>Olá! 👋</h1>
-<p class="lead">Seu painel de controle.</p>
+ <div class="actions">
+  <button class="action" onclick="go('obras')">
+   🏗️ <b>Obras</b><br>
+   <small>Custos, materiais e lucro</small>
+  </button>
 
-<div class="grid3">
+  <button class="action" onclick="go('financeiro')">
+   💰 <b>Financeiro</b><br>
+   <small>Receitas e despesas</small>
+  </button>
 
-<div class="card kpi">
-<div class="label">Obras</div>
-<div class="stat gold" id="kObras">0</div>
-</div>
+  <button class="action" onclick="go('equipe')">
+   👷 <b>Equipe</b><br>
+   <small>Funcionários e diárias</small>
+  </button>
 
-<div class="card kpi">
-<div class="label">Funcionários ativos</div>
-<div class="stat" id="kFunc">0</div>
-</div>
+  <button class="action" onclick="go('relatorios')">
+   📊 <b>Relatórios</b><br>
+   <small>Resumo e backup</small>
+  </button>
+ </div>
 
-<div class="card kpi">
-<div class="label">A receber</div>
-<div class="stat green" id="kReceber">R$ 0,00</div>
-</div>
-
-</div>
-
-<div class="grid3">
-
-<div class="card kpi">
-<div class="label">Receitas</div>
-<div class="stat green" id="kEntradas">R$ 0,00</div>
-</div>
-
-<div class="card kpi">
-<div class="label">Despesas</div>
-<div class="stat red" id="kDespesas">R$ 0,00</div>
-</div>
-
-<div class="card kpi">
-<div class="label">Lucro</div>
-<div class="stat gold" id="kResultado">R$ 0,00</div>
-</div>
-
-</div>
-
-<!-- SOMENTE 4 BOTÕES NA INICIAL -->
-<div class="actions">
-
-<button class="action" onclick="go('obras')">
-🏗️ <b>Obras</b><br>
-<small>Custos, materiais e lucro</small>
-</button>
-
-<button class="action" onclick="go('financeiro')">
-💰 <b>Financeiro</b><br>
-<small>Receitas e despesas</small>
-</button>
-
-<button class="action" onclick="go('equipe')">
-👷 <b>Equipe</b><br>
-<small>Funcionários e diárias</small>
-</button>
-
-<button class="action" onclick="go('relatorios')">
-📊 <b>Relatórios</b><br>
-<small>Resumo e backup</small>
-</button>
-
-</div>
-
-<div class="sectionTitle">
-<h2>Obras recentes</h2>
-<button class="mini" onclick="openObra()">＋ Nova</button>
-</div>
-
-<div id="recentes"></div>
-
+ <div class="grid2">
+  <div class="card">
+   <div class="label">Obras</div>
+   <div id="homeObras" class="stat">0</div>
+  </div>
+  <div class="card">
+   <div class="label">Funcionários</div>
+   <div id="homeFuncs" class="stat">0</div>
+  </div>
+  <div class="card">
+   <div class="label">Receitas</div>
+   <div id="homeReceitas" class="stat green">R$ 0,00</div>
+  </div>
+  <div class="card">
+   <div class="label">Despesas</div>
+   <div id="homeDespesas" class="stat red">R$ 0,00</div>
+  </div>
+ </div>
 </section>
 
-<section id="obras" class="page">
+<section id="obras" class="screen hidden">
+ <div class="pageTitle">Obras</div>
 
-<div class="sectionTitle">
+ <div class="sectionHead">
+  <h3>Minhas obras</h3>
+  <button class="primary" onclick="openObra()">+ Nova obra</button>
+ </div>
 
-<div>
-<h1>Obras</h1>
-<p class="lead">Cadastre, edite e acompanhe seus projetos.</p>
-</div>
+ <input id="obraSearch" placeholder="Pesquisar obra..." oninput="renderObras()">
 
-<button class="primary" onclick="openObra()">＋ Nova obra</button>
-
-</div>
-
-<div class="search">
-<input id="obraSearch" placeholder="Pesquisar obra ou cliente..." oninput="renderObras()">
-</div>
-
-<div id="obrasList"></div>
-
+ <div id="obrasList" style="margin-top:12px"></div>
 </section>
 
-<section id="equipe" class="page">
+<section id="equipe" class="screen hidden">
+ <div class="pageTitle">Equipe</div>
 
-<div class="sectionTitle">
+ <div class="sectionHead">
+  <h3>Funcionários</h3>
+  <button class="primary" onclick="openFunc()">+ Funcionário</button>
+ </div>
 
-<div>
-<h1>Funcionários</h1>
-<p class="lead">Equipe, valores, diárias e status.</p>
-</div>
+ <div id="funcList"></div>
 
-<button class="primary" onclick="openFunc()">＋ Novo</button>
+ <div class="sectionHead">
+  <h3>Controle de diárias</h3>
+  <button class="primary" onclick="openDia()">+ Diária</button>
+ </div>
 
-</div>
+ <div class="card">
+  <select id="payPeriod" onchange="renderPayroll()">
+   <option value="dia">Hoje</option>
+   <option value="semana">Semana</option>
+   <option value="quinzena">Quinzena</option>
+   <option value="mes">Mês</option>
+   <option value="custom">Personalizado</option>
+  </select>
 
-<div class="toolbar">
+  <div id="customDates" class="grid2 hidden" style="margin-top:10px">
+   <input id="payStart" type="date" onchange="renderPayroll()">
+   <input id="payEnd" type="date" onchange="renderPayroll()">
+  </div>
 
-<select id="funcFilter" onchange="renderFuncs()">
-<option value="todos">Todos</option>
-<option value="ativos">Ativos</option>
-<option value="inativos">Inativos</option>
-</select>
+  <div class="grid2" style="margin-top:12px">
+   <div>
+    <div class="label">Total das diárias</div>
+    <div id="payTotal" class="stat gold">R$ 0,00</div>
+   </div>
+   <div>
+    <div class="label">Funcionários com registro</div>
+    <div id="payCount" class="stat">0</div>
+   </div>
+  </div>
+ </div>
 
-<select id="payPeriod" onchange="renderPayroll()">
-<option value="dia">Hoje</option>
-<option value="semana" selected>Esta semana</option>
-<option value="quinzena">Quinzena</option>
-<option value="mes">Este mês</option>
-<option value="custom">Personalizado</option>
-</select>
-
-</div>
-
-<div id="customDates" class="toolbar hidden">
-<input id="payStart" type="date" onchange="renderPayroll()">
-<input id="payEnd" type="date" onchange="renderPayroll()">
-</div>
-
-<div class="grid">
-
-<div class="card">
-<div class="label">A pagar no período</div>
-<div class="stat gold" id="payTotal">R$ 0,00</div>
-</div>
-
-<div class="card">
-<div class="label">Funcionários com valor</div>
-<div class="stat" id="payCount">0</div>
-</div>
-
-</div>
-
-<div id="funcList"></div>
-
-<div class="sectionTitle">
-<h2>Diárias</h2>
-<button class="secondary" onclick="openDia()">＋ Registrar</button>
-</div>
-
-<div id="diaList"></div>
-
+ <div id="payrollList" style="margin-top:12px"></div>
 </section>
 
-<section id="financeiro" class="page">
+<section id="financeiro" class="screen hidden">
+ <div class="pageTitle">Financeiro</div>
 
-<div class="sectionTitle">
+ <div class="sectionHead">
+  <h3>Lançamentos</h3>
+  <button class="primary" onclick="openFin()">+ Lançamento</button>
+ </div>
 
-<div>
-<h1>Financeiro</h1>
-<p class="lead">Recebimentos, despesas e resultado.</p>
-</div>
+ <div class="grid2">
+  <div class="card">
+   <div class="label">Receitas</div>
+   <div id="finEntradas" class="stat green">R$ 0,00</div>
+  </div>
+  <div class="card">
+   <div class="label">Despesas</div>
+   <div id="finSaidas" class="stat red">R$ 0,00</div>
+  </div>
+ </div>
 
-<button class="primary" onclick="openFin()">＋ Lançamento</button>
+ <div class="card" style="margin-top:12px">
+  <select id="finObraFilter" onchange="renderFinance()">
+   <option value="">Todas as obras</option>
+  </select>
+ </div>
 
-</div>
-
-<div class="toolbar">
-
-<select id="finObraFilter" onchange="renderFinance()">
-<option value="all">Todas as obras</option>
-</select>
-
-<select id="finTipoFilter" onchange="renderFinance()">
-<option value="all">Todos os lançamentos</option>
-<option value="entrada">Receitas / recebimentos</option>
-<option value="despesa">Despesas</option>
-</select>
-
-</div>
-
-<div class="grid3">
-
-<div class="card">
-<div class="label">Receitas</div>
-<div class="stat green" id="finEnt">R$ 0,00</div>
-</div>
-
-<div class="card">
-<div class="label">Despesas</div>
-<div class="stat red" id="finDesp">R$ 0,00</div>
-</div>
-
-<div class="card">
-<div class="label">Lucro</div>
-<div class="stat gold" id="finRes">R$ 0,00</div>
-</div>
-
-</div>
-
-<div class="card">
-<b>Resumo por obra</b>
-<br>
-<small>Receitas − despesas</small>
-<div id="obraFinanceResumo"></div>
-</div>
-
-<div id="finList"></div>
-
+ <div id="financeList" style="margin-top:12px"></div>
 </section>
 
-<section id="checklist" class="page">
+<section id="relatorios" class="screen hidden">
+ <div class="pageTitle">Relatórios</div>
 
-<div class="sectionTitle">
+ <div class="grid2">
+  <div class="card">
+   <div class="label">Obras</div>
+   <div id="reportObras" class="stat">0</div>
+  </div>
+  <div class="card">
+   <div class="label">Equipe</div>
+   <div id="reportEquipe" class="stat">0</div>
+  </div>
+  <div class="card">
+   <div class="label">Receitas</div>
+   <div id="reportReceitas" class="stat green">R$ 0,00</div>
+  </div>
+  <div class="card">
+   <div class="label">Despesas</div>
+   <div id="reportDespesas" class="stat red">R$ 0,00</div>
+  </div>
+ </div>
 
-<div>
-<h1>Checklist</h1>
-<p class="lead">Adicione, edite, conclua ou exclua serviços.</p>
-</div>
-
-<button class="primary" onclick="openCheck()">＋ Serviço</button>
-
-</div>
-
-<div class="note">
-Os serviços personalizados ficam salvos neste dispositivo. Os registros de conclusão continuam sincronizados com o banco.
-</div>
-
-<div id="checkList"></div>
-
-</section>
-
-<section id="fotos" class="page">
-
-<div class="sectionTitle">
-
-<div>
-<h1>Relatório fotográfico</h1>
-<p class="lead">Fotos organizadas por obra e data.</p>
-</div>
-
-<button class="primary" onclick="openFoto()">＋ Adicionar fotos</button>
-
-</div>
-
-<div class="note">
-As fotos são mantidas no armazenamento deste aparelho.
-</div>
-
-<div id="fotoList"></div>
-
-</section>
-
-<section id="documentos" class="page">
-
-<div class="sectionTitle">
-
-<div>
-<h1>Documentos das obras</h1>
-<p class="lead">Contratos, projetos, medições, notas e outros documentos.</p>
-</div>
-
-<button class="primary" onclick="openDoc()">＋ Documento</button>
-
-</div>
-
-<div class="toolbar">
-
-<select id="docObraFilter" onchange="renderDocs()">
-<option value="all">Todas as obras</option>
-</select>
-
-<select id="docTipoFilter" onchange="renderDocs()">
-<option value="all">Todos os tipos</option>
-<option>Contrato</option>
-<option>Projeto</option>
-<option>Orçamento</option>
-<option>Medição</option>
-<option>Nota fiscal</option>
-<option>Outro</option>
-</select>
-
-</div>
-
-<div id="docList"></div>
-
-</section>
-
-<section id="relatorios" class="page">
-
-<h1>Relatórios completos</h1>
-
-<p class="lead">
-Filtre obras, funcionários, receitas, despesas, mão de obra, materiais, lucro e documentos.
-</p>
-
-<div class="reportGrid">
-
-<select id="repObra" onchange="renderReports()">
-<option value="all">Todas as obras</option>
-</select>
-
-<select id="repFunc" onchange="renderReports()">
-<option value="all">Todos os funcionários</option>
-</select>
-
-<select id="repTipo" onchange="renderReports()">
-<option value="all">Tudo</option>
-<option value="entrada">Receitas</option>
-<option value="despesa">Despesas</option>
-</select>
-
-<select id="repPeriodo" onchange="renderReports()">
-<option value="all">Todo período</option>
-<option value="dia">Hoje</option>
-<option value="mes">Este mês</option>
-<option value="ano">Este ano</option>
-</select>
-
-</div>
-
-<div class="grid3">
-
-<div class="card">
-<div class="label">Receitas filtradas</div>
-<div class="stat green" id="repReceitas">R$ 0,00</div>
-</div>
-
-<div class="card">
-<div class="label">Despesas filtradas</div>
-<div class="stat red" id="repDespesas">R$ 0,00</div>
-</div>
-
-<div class="card">
-<div class="label">Lucro filtrado</div>
-<div class="stat gold" id="repLucro">R$ 0,00</div>
-</div>
-
-</div>
-
-<div class="card">
-<b>Resumo por obra</b>
-<div id="repObras"></div>
-</div>
-
-<div class="card">
-<b>Resumo de mão de obra x materiais</b>
-<div id="repCategorias"></div>
-</div>
-
-<div class="actions">
-
-<button class="action" onclick="exportTable('obras')">
-🏗️ Obras
-</button>
-
-<button class="action" onclick="exportTable('funcionarios')">
-👷 Equipe
-</button>
-
-<button class="action" onclick="exportTable('diarias')">
-💵 Diárias
-</button>
-
-<button class="action" onclick="exportTable('gastos')">
-💰 Financeiro
-</button>
-
-<button class="action" onclick="exportFull()">
-💾 Backup completo
-</button>
-
-<button class="action" onclick="exportExcel()">
-📊 Excel
-</button>
-
-</div>
-
-<div class="card">
-
-<b>Importar dados</b>
-
-<p class="sub">
-JSON ou Excel exportado pelo EDIFIQ.
-</p>
-
-<input id="importFile" type="file" accept=".json,.xlsx,.xls" onchange="previewImport(event)">
-
-<div id="importPreview"></div>
-
-</div>
-
-</section>
-
-<section id="config" class="page">
-
-<h1>Configurações</h1>
-
-<div class="item">
-<b>Conta</b>
-<br>
-<small id="accountEmail"></small>
-</div>
-
-<div class="item">
-<b>EDIFIQ</b>
-<br>
-<small>Gestão de Obras</small>
-</div>
-
+ <div id="reportContent" style="margin-top:12px"></div>
 </section>
 
 </main>
 
-<nav class="bottom">
-
-<button class="nav active" data-p="home" onclick="go('home')">
-⌂<br>Início
-</button>
-
-<button class="nav" data-p="obras" onclick="go('obras')">
-🏗<br>Obras
-</button>
-
-<button class="nav" data-p="equipe" onclick="go('equipe')">
-👷<br>Equipe
-</button>
-
-<button class="nav" data-p="financeiro" onclick="go('financeiro')">
-R$<br>Financeiro
-</button>
-
-<button class="nav" data-p="relatorios" onclick="go('relatorios')">
-☷<br>Mais
-</button>
-
-</nav>
+<div class="bottom">
+ <div class="bottomInner">
+  <button class="navbtn active" onclick="go('home')">⌂<br>Início</button>
+  <button class="navbtn" onclick="go('obras')">🏗️<br>Obras</button>
+  <button class="navbtn" onclick="go('equipe')">👷<br>Equipe</button>
+  <button class="navbtn" onclick="go('financeiro')">💰<br>Financeiro</button>
+  <button class="navbtn" onclick="go('relatorios')">📊<br>Mais</button>
+ </div>
+</div>
 
 </div>
 
-<!-- MODAL OBRA -->
-
+<!-- OBRA -->
 <div class="modal" id="obraM">
+ <div class="sheet">
+  <button class="close" onclick="closeM('obraM')">×</button>
+  <h2>Cadastro da obra</h2>
 
-<div class="sheet">
-
-<button class="close" onclick="closeM('obraM')">×</button>
-
-<h2 id="obraTitle">Nova obra</h2>
-
-<form class="form" onsubmit="saveObra(event)">
-
-<input id="oNome" required placeholder="Nome da obra">
-
-<input id="oCli" placeholder="Cliente">
-
-<input id="oLoc" placeholder="Endereço">
-
-<input id="oVal" type="number" step=".01" required placeholder="Valor do contrato">
-
-<select id="oStatus">
-<option value="em_andamento">Em andamento</option>
-<option value="planejada">Planejada</option>
-<option value="concluida">Concluída</option>
-<option value="pausada">Pausada</option>
-</select>
-
-<input id="oIni" type="date">
-
-<input id="oFim" type="date">
-
-<input id="oTipo" placeholder="Tipo de serviço">
-
-<textarea id="oObs" placeholder="Observações"></textarea>
-
-<button class="primary">
-Salvar obra
-</button>
-
-</form>
-
-</div>
+  <form class="form" onsubmit="saveObra(event)">
+   <input id="oId" type="hidden">
+   <input id="oNome" required placeholder="Nome da obra">
+   <input id="oCliente" placeholder="Cliente">
+   <input id="oEndereco" placeholder="Endereço">
+   <input id="oValor" type="number" step=".01" placeholder="Valor do contrato">
+   <select id="oStatus">
+    <option value="planejamento">Planejamento</option>
+    <option value="em_andamento">Em andamento</option>
+    <option value="pausada">Pausada</option>
+    <option value="concluida">Concluída</option>
+   </select>
+   <textarea id="oObs" placeholder="Observações"></textarea>
+   <button class="primary">Salvar obra</button>
+  </form>
+ </div>
 </div>
 
-<!-- MODAL FUNCIONÁRIO -->
-
+<!-- FUNCIONARIO -->
 <div class="modal" id="funcM">
+ <div class="sheet">
+  <button class="close" onclick="closeM('funcM')">×</button>
+  <h2>Funcionário</h2>
 
-<div class="sheet">
-
-<button class="close" onclick="closeM('funcM')">×</button>
-
-<h2 id="funcTitle">Novo funcionário</h2>
-
-<form class="form" onsubmit="saveFunc(event)">
-
-<input id="fNome" required placeholder="Nome">
-
-<input id="fFunc" placeholder="Função / cargo">
-
-<input id="fTel" placeholder="Telefone">
-
-<select id="fTipo">
-<option value="diaria">Diária</option>
-<option value="semanal">Semanal</option>
-<option value="quinzenal">Quinzenal</option>
-<option value="mensal">Mensal</option>
-</select>
-
-<input id="fDia" type="number" step=".01" placeholder="Valor da diária">
-
-<input id="fSal" type="number" step=".01" placeholder="Salário mensal">
-
-<input id="fPag" type="number" min="1" max="31" placeholder="Dia do pagamento">
-
-<select id="fAtivo">
-<option value="true">Funcionário ativo</option>
-<option value="false">Funcionário inativo</option>
-</select>
-
-<button class="primary">
-Salvar funcionário
-</button>
-
-</form>
-
-</div>
+  <form class="form" onsubmit="saveFunc(event)">
+   <input id="fId" type="hidden">
+   <input id="fNome" required placeholder="Nome completo">
+   <input id="fTelefone" placeholder="Telefone">
+   <input id="fCargo" placeholder="Cargo / função">
+   <input id="fDiaria" type="number" step=".01" placeholder="Valor da diária">
+   <input id="fSalario" type="number" step=".01" placeholder="Salário mensal">
+   <select id="fTipo">
+    <option value="diaria">Diária</option>
+    <option value="mensal">Mensal</option>
+   </select>
+   <select id="fAtivo">
+    <option value="true">Ativo</option>
+    <option value="false">Inativo</option>
+   </select>
+   <button class="primary">Salvar funcionário</button>
+  </form>
+ </div>
 </div>
 
-<!-- MODAL DIÁRIA -->
-
+<!-- DIARIA -->
 <div class="modal" id="diaM">
+ <div class="sheet">
+  <button class="close" onclick="closeM('diaM')">×</button>
+  <h2>Registrar diária</h2>
 
-<div class="sheet">
+  <form class="form" onsubmit="saveDia(event)">
+   <select id="dFunc" required></select>
+   <select id="dObra"></select>
+   <input id="dData" type="date" required>
+   <input id="dQtd" type="number" step=".25" value="1" required placeholder="Quantidade">
+   <input id="dVal" type="number" step=".01" required placeholder="Valor da diária">
 
-<button class="close" onclick="closeM('diaM')">×</button>
+   <select id="dStatus">
+    <option value="pendente">Pendente</option>
+    <option value="pago">Pago</option>
+   </select>
 
-<h2>Registrar diária</h2>
+   <textarea id="dObs" placeholder="Observação"></textarea>
 
-<form class="form" onsubmit="saveDia(event)">
-
-<select id="dFunc" required></select>
-
-<select id="dObra"></select>
-
-<input id="dData" type="date" required>
-
-<input id="dQtd" type="number" step=".25" value="1" required placeholder="Quantidade">
-
-<input id="dVal" type="number" step=".01" required placeholder="Valor da diária">
-
-<select id="dStatus">
-<option value="pendente">Pendente</option>
-<option value="pago">Pago</option>
-</select>
-
-<textarea id="dObs" placeholder="Observação"></textarea>
-
-<button class="primary">
-Salvar diária
-</button>
-
-</form>
-
-</div>
+   <button class="primary">Salvar diária</button>
+  </form>
+ </div>
 </div>
 
-<!-- MODAL FINANCEIRO -->
-
+<!-- FINANCEIRO -->
 <div class="modal" id="finM">
+ <div class="sheet">
+  <button class="close" onclick="closeM('finM')">×</button>
+  <h2>Lançamento financeiro</h2>
 
-<div class="sheet">
+  <form class="form" onsubmit="saveFin(event)">
+   <select id="tFin">
+    <option value="saida">Despesa</option>
+    <option value="entrada">Entrada</option>
+   </select>
 
-<button class="close" onclick="closeM('finM')">×</button>
+   <select id="catFin">
+    <option value="material">Material</option>
+    <option value="mao_de_obra">Mão de obra</option>
+    <option value="outros">Outros gastos</option>
+    <option value="terceirizados">Terceirizados</option>
+   </select>
 
-<h2>Novo lançamento</h2>
+   <select id="oFin"></select>
 
-<form class="form" onsubmit="saveFin(event)">
+   <input id="dFin" required placeholder="Descrição">
+   <input id="vFin" type="number" step=".01" required placeholder="Valor">
+   <input id="dtFin" type="date" required>
+   <input id="forFin" placeholder="Fornecedor">
+   <textarea id="obsFin" placeholder="Observação"></textarea>
 
-<select id="tFin">
-<option value="entrada">Entrada / recebimento</option>
-<option value="despesa">Despesa</option>
-</select>
-
-<input id="dFin" required placeholder="Descrição">
-
-<input id="vFin" required type="number" step=".01" placeholder="Valor">
-
-<input id="dtFin" type="date" required>
-
-<input id="forFin" placeholder="Fornecedor / cliente">
-
-<select id="catFin">
-
-<option value="material">
-Material
-</option>
-
-<option value="mao_de_obra">
-Mão de obra
-</option>
-
-<option value="outros">
-Outros gastos
-</option>
-
-<option value="terceirizados">
-Terceirizados
-</option>
-
-</select>
-
-<select id="oFin"></select>
-
-<textarea id="obsFin" placeholder="Observação"></textarea>
-
-<button class="primary">
-Salvar lançamento
-</button>
-
-</form>
-
+   <button class="primary">Salvar lançamento</button>
+  </form>
+ </div>
 </div>
-</div>
-
-<!-- MODAL CHECKLIST -->
-
-<div class="modal" id="checkM">
-
-<div class="sheet">
-
-<button class="close" onclick="closeM('checkM')">×</button>
-
-<h2 id="checkTitle">Novo serviço do checklist</h2>
-
-<form class="form" onsubmit="saveCheckDef(event)">
-
-<input id="checkId" type="hidden">
-
-<input id="checkDesc" required placeholder="Nome do serviço / etapa">
-
-<select id="checkObra">
-<option value="all">Aplicar em todas as obras</option>
-</select>
-
-<button class="primary">
-Salvar serviço
-</button>
-
-</form>
-
-</div>
-</div>
-
-<!-- MODAL FOTOS -->
-
-<div class="modal" id="fotoM">
-
-<div class="sheet">
-
-<button class="close" onclick="closeM('fotoM')">×</button>
-
-<h2>Adicionar fotos</h2>
-
-<form class="form" onsubmit="saveFotos(event)">
-
-<select id="fotoObra" required></select>
-
-<input id="fotoData" type="date" required>
-
-<input id="fotoTitulo" placeholder="Título / etapa">
-
-<textarea id="fotoObs" placeholder="Observação"></textarea>
-
-<input id="fotoFiles" type="file" accept="image/*" multiple required>
-
-<button class="primary">
-Salvar fotos
-</button>
-
-</form>
-
-</div>
-</div>
-
-<!-- MODAL DOCUMENTO -->
-
-<div class="modal" id="docM">
-
-<div class="sheet">
-
-<button class="close" onclick="closeM('docM')">×</button>
-
-<h2>Novo documento</h2>
-
-<form class="form" onsubmit="saveDoc(event)">
-
-<select id="docObra" required></select>
-
-<select id="docTipo">
-<option>Contrato</option>
-<option>Projeto</option>
-<option>Orçamento</option>
-<option>Medição</option>
-<option>Nota fiscal</option>
-<option>Outro</option>
-</select>
-
-<input id="docTitulo" required placeholder="Nome do documento">
-
-<input id="docNumero" placeholder="Número / referência">
-
-<textarea id="docObs" placeholder="Observações"></textarea>
-
-<input id="docFile" type="file">
-
-<button class="primary">
-Salvar documento
-</button>
-
-</form>
-
-</div>
-</div>
-
-<div id="toast" class="toast"></div>
 
 <script>
-"use strict";
-
-/* ================================
-   SUPABASE
-================================ */
-
 const SUPA_URL="https://lwqntzwajjgkvtynwdjg.supabase.co";
-
 const SUPA_KEY="sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
 
 let sb=null;
-
-async function initSupabase(){
-
-try{
-
-const api=await Promise.race([
-
-window.__supabaseReady,
-
-new Promise((_,rej)=>
-setTimeout(
-()=>rej(new Error("Tempo limite ao carregar o Supabase.")),
-12000
-)
-)
-
-]);
-
-if(!api || typeof api.createClient!=="function")
-throw new Error("Biblioteca do Supabase indisponível.");
-
-sb=api.createClient(
-SUPA_URL,
-SUPA_KEY,
-{
-auth:{
-persistSession:true,
-autoRefreshToken:true,
-detectSessionInUrl:true
-}
-}
-);
-
-return true;
-
-}catch(e){
-
-console.error("Supabase init:",e);
-
-setConnection(
-"● Não foi possível conectar",
-false
-);
-
-return false;
-
-}
-
-}
-
 let user=null;
-let editObraId=null;
-let editFuncId=null;
 
 const D={
-obras:[],
-funcionarios:[],
-diarias:[],
-gastos:[],
-pagamentos:[],
-orcamentos:[],
-servicos:[],
-terceirizados:[],
-checklist:[]
+ obras:[],
+ funcionarios:[],
+ diarias:[],
+ gastos:[],
+ pagamentos:[],
+ orcamentos:[],
+ servicos:[],
+ terceirizados:[],
+ checklist:[]
 };
-
-const tables=[
-'obras',
-'funcionarios',
-'diarias',
-'gastos',
-'pagamentos',
-'orcamentos',
-'servicos',
-'terceirizados',
-'checklist'
-];
 
 const $=id=>document.getElementById(id);
 
-const money=v=>
-Number(v||0).toLocaleString(
-'pt-BR',
-{
-style:'currency',
-currency:'BRL'
+function money(v){
+ return Number(v||0).toLocaleString("pt-BR",{
+  style:"currency",
+  currency:"BRL"
+ });
 }
-);
+
+function esc(v){
+ return String(v??"")
+  .replace(/&/g,"&amp;")
+  .replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;");
+}
 
 function today(){
-
-const d=new Date();
-
-return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-
+ const d=new Date();
+ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
-const esc=s=>
-String(s??'').replace(
-/[&<>"']/g,
-m=>({
-'&':'&amp;',
-'<':'&lt;',
-'>':'&gt;',
-'"':'&quot;',
-"'":'&#39;'
-}[m])
-);
+function authMsg(t){
+ $("authMsg").textContent=t||"";
+}
 
-/* ================================
-   CONEXÃO CORRIGIDA
-================================ */
+function setConnection(text,ok){
+ const el=$("connectionStatus");
+ if(!el)return;
+ el.textContent=text;
+ el.className="connection "+(ok?"ok":"error");
+}
 
-function setConnection(text,ok=false){
+async function initSupabase(){
+ try{
+  const api=await Promise.race([
+   window.__supabaseReady,
+   new Promise((_,rej)=>
+    setTimeout(()=>rej(new Error("Tempo limite ao carregar o Supabase.")),15000)
+   )
+  ]);
 
-const el=$('connectionStatus');
+  if(!api||typeof api.createClient!=="function"){
+   throw new Error("Biblioteca do Supabase indisponível.");
+  }
 
-if(!el)return;
+  sb=api.createClient(
+   SUPA_URL,
+   SUPA_KEY,
+   {
+    auth:{
+     persistSession:true,
+     autoRefreshToken:true,
+     detectSessionInUrl:true
+    }
+   }
+  );
 
-el.textContent=text;
+  setConnection("● Supabase carregado",true);
+  return true;
 
-el.className=ok
-?'connection ok'
-:'connection error';
-
+ }catch(e){
+  console.error("Supabase:",e);
+  setConnection("● Erro ao carregar conexão",false);
+  authMsg("Não foi possível carregar a conexão. Verifique sua internet e recarregue.");
+  return false;
+ }
 }
 
 async function checkConnection(){
+ const el=$("connectionStatus");
+ if(!el)return false;
 
-const el=$('connectionStatus');
+ el.textContent="Verificando conexão...";
+ el.className="connection";
 
-if(!el)return false;
+ try{
+  if(!sb)throw new Error("Supabase não inicializado.");
 
-el.textContent='Verificando conexão...';
+  const result=await Promise.race([
+   sb.auth.getSession(),
+   new Promise((_,rej)=>
+    setTimeout(()=>rej(new Error("Tempo limite da conexão.")),10000)
+   )
+  ]);
 
-el.className='connection';
+  if(result?.error)throw result.error;
 
-try{
+  el.textContent="● Sistema conectado";
+  el.className="connection ok";
+  return true;
 
-if(!sb)
-throw new Error('Supabase não inicializado.');
-
-const result=await Promise.race([
-
-sb.auth.getSession(),
-
-new Promise((_,rej)=>
-setTimeout(
-()=>rej(new Error('Tempo limite da conexão.')),
-10000
-)
-)
-
-]);
-
-if(result?.error)
-throw result.error;
-
-el.textContent='● Sistema conectado';
-
-el.className='connection ok';
-
-return true;
-
-}catch(e){
-
-console.error('Conexão:',e);
-
-el.textContent='● Erro de conexão';
-
-el.className='connection error';
-
-return false;
-
+ }catch(e){
+  console.error("Conexão:",e);
+  el.textContent="● Erro de conexão";
+  el.className="connection error";
+  return false;
+ }
 }
-
-}
-
-function toast(s){
-
-const x=$('toast');
-
-x.textContent=s;
-
-x.classList.add('show');
-
-setTimeout(
-()=>x.classList.remove('show'),
-3500
-);
-
-}
-
-function authMsg(s){
-
-$('authMsg').textContent=s||'';
-
-}
-
-function go(p){
-
-document
-.querySelectorAll('.page')
-.forEach(x=>x.classList.remove('active'));
-
-if($(p))
-$(p).classList.add('active');
-
-document
-.querySelectorAll('.nav')
-.forEach(x=>
-x.classList.toggle(
-'active',
-x.dataset.p===p
-)
-);
-
-renderAll();
-
-}
-
-function openM(id){
-
-$(id).classList.add('open');
-
-fillSelectors();
-
-}
-
-function closeM(id){
-
-$(id).classList.remove('open');
-
-}
-
-/* ================================
-   FORMULÁRIOS
-================================ */
-
-function openObra(id=null){
-
-editObraId=id;
-
-$('obraTitle').textContent=
-id?'Editar obra':'Nova obra';
-
-if(id){
-
-const o=D.obras.find(x=>x.id===id);
-
-if(!o)return;
-
-$('oNome').value=o.nome||'';
-$('oCli').value=o.cliente||'';
-$('oLoc').value=o.endereco||'';
-$('oVal').value=o.valor||0;
-$('oStatus').value=o.status||'em_andamento';
-$('oIni').value=o.data_inicio||'';
-$('oFim').value=o.data_fim||'';
-$('oTipo').value=o.tipo_servico||'';
-$('oObs').value=o.observacoes||'';
-
-}else{
-
-$('obraM')
-.querySelector('form')
-.reset();
-
-}
-
-openM('obraM');
-
-}
-
-function openFunc(id=null){
-
-editFuncId=id;
-
-$('funcTitle').textContent=
-id?'Editar funcionário':'Novo funcionário';
-
-if(id){
-
-const f=D.funcionarios.find(x=>x.id===id);
-
-if(!f)return;
-
-$('fNome').value=f.nome||'';
-$('fFunc').value=f.funcao||'';
-$('fTel').value=f.telefone||'';
-$('fTipo').value=f.tipo_pagamento||'diaria';
-$('fDia').value=f.valor_diaria||'';
-$('fSal').value=f.salario_mensal||'';
-$('fPag').value=f.dia_pagamento||'';
-$('fAtivo').value=
-String(f.ativo!==false);
-
-}else{
-
-clearFuncForm();
-
-}
-
-openM('funcM');
-
-}
-
-function clearFuncForm(){
-
-[
-'fNome',
-'fFunc',
-'fTel',
-'fDia',
-'fSal',
-'fPag'
-].forEach(id=>$(id).value='');
-
-$('fTipo').value='diaria';
-
-$('fAtivo').value='true';
-
-}
-
-function openDia(){
-
-openM('diaM');
-
-$('dData').value=today();
-
-$('dQtd').value=1;
-
-const f=D.funcionarios.find(
-x=>x.ativo!==false
-);
-
-if(f){
-
-$('dFunc').value=f.id;
-
-$('dVal').value=f.valor_diaria||'';
-
-}
-
-}
-
-function openFin(){
-
-openM('finM');
-
-$('dtFin').value=today();
-
-}
-
-function openCheck(id=null){
-
-$('checkId').value=id||'';
-
-$('checkTitle').textContent=
-id
-?'Editar serviço do checklist'
-:'Novo serviço do checklist';
-
-const defs=getCheckDefs();
-
-const d=defs.find(x=>x.id===id);
-
-$('checkDesc').value=d?.desc||'';
-
-$('checkObra').value=
-d?.obraId||'all';
-
-openM('checkM');
-
-}
-
-function openFoto(){
-
-openM('fotoM');
-
-$('fotoData').value=today();
-
-}
-
-/* ================================
-   LOGIN
-================================ */
 
 async function login(){
+ if(!sb){
+  authMsg("Conexão ainda não disponível. Aguarde ou recarregue.");
+  return;
+ }
 
-if(!sb)
-return authMsg(
-'Não foi possível conectar ao Supabase. Recarregue a página.'
-);
+ const email=$("email").value.trim();
+ const password=$("password").value;
 
-const email=$('email').value.trim();
+ if(!email||!password){
+  authMsg("Informe e-mail e senha.");
+  return;
+ }
 
-const password=$('password').value;
+ authMsg("Entrando...");
 
-if(!email||!password)
-return authMsg(
-'Informe e-mail e senha.'
-);
+ const {error}=await sb.auth.signInWithPassword({
+  email,
+  password
+ });
 
-authMsg('Entrando...');
-
-const{error}=
-await sb.auth.signInWithPassword({
-email,
-password
-});
-
-if(error)
-authMsg(error.message);
-
+ if(error)authMsg(error.message);
 }
 
 async function signup(){
+ if(!sb){
+  authMsg("Conexão ainda não disponível.");
+  return;
+ }
 
-if(!sb)
-return authMsg(
-'Não foi possível conectar ao Supabase. Recarregue a página.'
-);
+ const email=$("email").value.trim();
+ const password=$("password").value;
 
-const email=$('email').value.trim();
+ if(!email){
+  authMsg("Informe seu e-mail.");
+  return;
+ }
 
-const password=$('password').value;
+ if(password.length<6){
+  authMsg("A senha precisa ter pelo menos 6 caracteres.");
+  return;
+ }
 
-if(!email)
-return authMsg('Informe seu e-mail.');
+ authMsg("Criando conta...");
 
-if(password.length<6)
-return authMsg(
-'A senha precisa ter pelo menos 6 caracteres.'
-);
+ const {data,error}=await sb.auth.signUp({
+  email,
+  password
+ });
 
-authMsg('Criando conta...');
+ if(error){
+  authMsg(error.message);
+  return;
+ }
 
-const{data,error}=
-await sb.auth.signUp({
-email,
-password
-});
-
-if(error)
-return authMsg(error.message);
-
-authMsg(
-data.session
-?'Conta criada e login realizado.'
-:'Conta criada. Verifique seu e-mail para confirmar.'
-);
-
+ authMsg(
+  data.session
+   ?"Conta criada e login realizado."
+   :"Conta criada. Verifique seu e-mail para confirmar."
+ );
 }
 
 async function resetPassword(){
+ if(!sb){
+  authMsg("Conexão ainda não disponível.");
+  return;
+ }
 
-if(!sb)
-return authMsg(
-'Não foi possível conectar ao Supabase. Recarregue a página.'
-);
+ const email=$("email").value.trim();
 
-const email=$('email').value.trim();
+ if(!email){
+  authMsg("Digite seu e-mail.");
+  return;
+ }
 
-if(!email)
-return authMsg(
-'Digite seu e-mail.'
-);
+ const {error}=await sb.auth.resetPasswordForEmail(
+  email,
+  {
+   redirectTo:location.origin+location.pathname
+  }
+ );
 
-const{error}=
-await sb.auth.resetPasswordForEmail(
-email,
-{
-redirectTo:
-location.origin+location.pathname
-}
-);
-
-authMsg(
-error
-?'Erro: '+error.message
-:'Link de recuperação enviado para seu e-mail.'
-);
-
+ authMsg(
+  error
+   ?"Erro: "+error.message
+   :"Link de recuperação enviado para seu e-mail."
+ );
 }
 
-async function logout(){
+function go(page){
+ document.querySelectorAll(".screen")
+  .forEach(x=>x.classList.add("hidden"));
 
-if(sb)
-await sb.auth.signOut();
+ const target=$(page);
+ if(target)target.classList.remove("hidden");
 
+ document.querySelectorAll(".navbtn")
+  .forEach(x=>x.classList.remove("active"));
+
+ const map={
+  home:0,
+  obras:1,
+  equipe:2,
+  financeiro:3,
+  relatorios:4
+ };
+
+ const buttons=document.querySelectorAll(".navbtn");
+ if(buttons[map[page]])buttons[map[page]].classList.add("active");
+
+ if(page==="obras")renderObras();
+ if(page==="equipe"){
+  renderFuncs();
+  renderPayroll();
+ }
+ if(page==="financeiro")renderFinance();
+ if(page==="relatorios")renderReports();
 }
 
-/* ================================
-   INICIALIZAÇÃO
-================================ */
-
-async function startApp(){
-
-const ok=await initSupabase();
-
-if(!ok)return;
-
-await checkConnection();
-
-sb.auth.onAuthStateChange(
-async(_e,s)=>{
-
-user=s?.user||null;
-
-if(user){
-
-$('auth').classList.add('hidden');
-
-$('app').classList.remove('hidden');
-
-$('accountEmail').textContent=
-user.email||'';
-
-$('appConnection').textContent=
-'● Sistema conectado';
-
-await loadCloud();
-
-renderAll();
-
-}else{
-
-$('app').classList.add('hidden');
-
-$('auth').classList.remove('hidden');
-
+function openM(id){
+ $(id).classList.add("open");
 }
 
-});
-
-const sessionResult=
-await sb.auth.getSession();
-
-const session=
-sessionResult?.data?.session;
-
-if(session && session.user){
-
-user=session.user;
-
-$('auth').classList.add('hidden');
-
-$('app').classList.remove('hidden');
-
-$('accountEmail').textContent=
-user.email||'';
-
-await loadCloud();
-
-renderAll();
-
+function closeM(id){
+ $(id).classList.remove("open");
 }
 
+function toast(msg){
+ const old=document.querySelector(".toast");
+ if(old)old.remove();
+
+ const el=document.createElement("div");
+ el.className="toast";
+ el.textContent=msg;
+ document.body.appendChild(el);
+
+ setTimeout(()=>el.remove(),2500);
 }
 
-/* ================================
-   BANCO
-================================ */
+async function loadTable(table){
+ try{
+  const {data,error}=await sb
+   .from(table)
+   .select("*")
+   .order("id",{ascending:false});
+
+  if(error){
+   console.warn(table,error.message);
+   return [];
+  }
+
+  return data||[];
+ }catch(e){
+  console.warn(table,e);
+  return [];
+ }
+}
 
 async function loadCloud(){
+ if(!sb)return;
 
-for(const t of tables){
+ const tables=[
+  "obras",
+  "funcionarios",
+  "diarias",
+  "gastos",
+  "pagamentos",
+  "orcamentos",
+  "servicos",
+  "terceirizados",
+  "checklist"
+ ];
 
-try{
+ const results=await Promise.all(
+  tables.map(t=>loadTable(t))
+ );
 
-const{data,error}=
-await sb
-.from(t)
-.select('*')
-.order(
-'created_at',
-{ascending:false}
-);
+ tables.forEach((t,i)=>{
+  D[t]=results[i]||[];
+ });
 
-if(error)
-console.warn(
-t,
-error.message
-);
-
-else{
-
-D[t].splice(
-0,
-D[t].length,
-...(data||[])
-);
-
-}
-
-}catch(e){
-
-console.warn(t,e);
-
-}
-
-}
-
+ renderAll();
 }
 
 async function insertRow(table,row){
+ if(!sb){
+  toast("Supabase não conectado.");
+  return null;
+ }
 
-const payload={
-...row,
-user_id:user.id
-};
+ const {data,error}=await sb
+  .from(table)
+  .insert(row)
+  .select()
+  .single();
 
-const{data,error}=
-await sb
-.from(table)
-.insert(payload)
-.select()
-.single();
+ if(error){
+  console.error(error);
+  toast("Erro: "+error.message);
+  return null;
+ }
 
-if(error){
-
-toast(
-'Erro ao salvar: '+error.message
-);
-
-return null;
-
-}
-
-return data;
-
+ return data;
 }
 
 async function updateRow(table,id,row){
+ if(!sb)return null;
 
-const{data,error}=
-await sb
-.from(table)
-.update(row)
-.eq('id',id)
-.eq('user_id',user.id)
-.select()
-.single();
+ const {data,error}=await sb
+  .from(table)
+  .update(row)
+  .eq("id",id)
+  .select()
+  .single();
 
-if(error){
+ if(error){
+  console.error(error);
+  toast("Erro: "+error.message);
+  return null;
+ }
 
-toast(
-'Erro ao editar: '+error.message
-);
-
-return null;
-
+ return data;
 }
 
-return data;
+async function delItem(table,id){
+ if(!confirm("Excluir este registro?"))return;
 
+ const {error}=await sb
+  .from(table)
+  .delete()
+  .eq("id",id);
+
+ if(error){
+  toast("Erro: "+error.message);
+  return;
+ }
+
+ if(D[table]){
+  D[table]=D[table].filter(x=>String(x.id)!==String(id));
+ }
+
+ renderAll();
+ toast("Registro excluído.");
 }
-
-async function removeRow(table,id){
-
-const{error}=
-await sb
-.from(table)
-.delete()
-.eq('id',id)
-.eq('user_id',user.id);
-
-if(error){
-
-toast(error.message);
-
-return false;
-
-}
-
-return true;
-
-}
-
-/* ================================
-   FINANCEIRO
-================================ */
-
-function sums(obra='all'){
-
-let entradas=
-
-D.gastos
-.filter(x=>
-x.categoria==='entrada' &&
-(obra==='all'||
-String(x.obra_id)===String(obra))
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-)
-
-+
-
-D.pagamentos
-.filter(x=>
-obra==='all'||
-String(x.obra_id)===String(obra)
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-let despesas=
-
-D.gastos
-.filter(x=>
-x.categoria!=='entrada' &&
-(obra==='all'||
-String(x.obra_id)===String(obra))
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-)
-
-+
-
-D.diarias
-.filter(x=>
-obra==='all'||
-String(x.obra_id)===String(obra)
-)
-.reduce(
-(a,x)=>
-a+
-Number(
-x.valor_pago||
-x.qtd*x.valor_diaria||
-0
-),
-0
-);
-
-return{
-entradas,
-despesas,
-lucro:entradas-despesas
-};
-
-}
-
-/* ================================
-   DASHBOARD
-================================ */
-
-function renderAll(){
-
-const s=sums();
-
-const contratos=
-D.obras.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-$('kObras').textContent=
-D.obras.length;
-
-$('kFunc').textContent=
-D.funcionarios.filter(
-f=>f.ativo!==false
-).length;
-
-$('kEntradas').textContent=
-money(s.entradas);
-
-$('kDespesas').textContent=
-money(s.despesas);
-
-$('kResultado').textContent=
-money(s.lucro);
-
-$('kReceber').textContent=
-money(
-Math.max(
-0,
-contratos-s.entradas
-)
-);
-
-$('recentes').innerHTML=
-D.obras
-.slice(0,4)
-.map(o=>
-`<div class="item">
-<div class="row">
-<div>
-<b>${esc(o.nome)}</b><br>
-<small>${esc(o.cliente||'Cliente não informado')}</small>
-</div>
-<b class="gold">${money(o.valor)}</b>
-</div>
-</div>`
-)
-.join('')
-||
-'<div class="empty">Nenhuma obra cadastrada.</div>';
-
-renderObras();
-renderFuncs();
-renderFinance();
-renderPayroll();
-renderChecklist();
-renderFotos();
-fillSelectors();
-
-}
-
-/* ================================
-   OBRAS + CATEGORIAS + LUCRO
-================================ */
 
 function statusLabel(s){
+ return ({
+  planejamento:"Planejamento",
+  em_andamento:"Em andamento",
+  pausada:"Pausada",
+  concluida:"Concluída"
+ })[s]||s||"—";
+}
 
-return({
-em_andamento:'Em andamento',
-planejada:'Planejada',
-concluida:'Concluída',
-pausada:'Pausada'
-})[s]||s||'';
+function sums(obraId){
+ const id=String(obraId);
 
+ const entradas=
+  D.gastos
+   .filter(x=>String(x.obra_id)===id&&x.categoria==="entrada")
+   .reduce((a,x)=>a+Number(x.valor||0),0)
+  +
+  D.pagamentos
+   .filter(x=>String(x.obra_id)===id)
+   .reduce((a,x)=>a+Number(x.valor||0),0);
+
+ const saidas=
+  D.gastos
+   .filter(x=>String(x.obra_id)===id&&x.categoria!=="entrada")
+   .reduce((a,x)=>a+Number(x.valor||0),0);
+
+ return{
+  entradas,
+  saidas,
+  saldo:entradas-saidas
+ };
 }
 
 function obraMetrics(obraId){
+ const id=String(obraId);
 
-const id=String(obraId);
+ const gastos=D.gastos.filter(x=>
+  String(x.obra_id)===id &&
+  x.categoria!=="entrada"
+ );
 
-const gastos=
-D.gastos.filter(
-x=>
-String(x.obra_id)===id &&
-x.categoria!=='entrada'
-);
+ const material=gastos
+  .filter(x=>x.subcategoria==="material")
+  .reduce((a,x)=>a+Number(x.valor||0),0);
 
-const material=
-gastos
-.filter(x=>x.subcategoria==='material')
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
+ const maoGastos=gastos
+  .filter(x=>x.subcategoria==="mao_de_obra")
+  .reduce((a,x)=>a+Number(x.valor||0),0);
 
-const maoGastos=
-gastos
-.filter(x=>x.subcategoria==='mao_de_obra')
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
+ const maoDiarias=D.diarias
+  .filter(x=>String(x.obra_id)===id)
+  .reduce(
+   (a,x)=>a+Number(
+    x.valor_pago||
+    Number(x.qtd||0)*Number(x.valor_diaria||0)
+   ),
+   0
+  );
 
-const maoDiarias=
-D.diarias
-.filter(
-x=>String(x.obra_id)===id
-)
-.reduce(
-(a,x)=>
-a+
-Number(
-x.valor_pago||
-x.qtd*x.valor_diaria||
-0
-),
-0
-);
+ const outros=gastos
+  .filter(x=>x.subcategoria==="outros"||!x.subcategoria)
+  .reduce((a,x)=>a+Number(x.valor||0),0);
 
-const outros=
-gastos
-.filter(
-x=>
-x.subcategoria==='outros'||
-!x.subcategoria
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
+ const terceirizados=gastos
+  .filter(x=>x.subcategoria==="terceirizados")
+  .reduce((a,x)=>a+Number(x.valor||0),0);
 
-const terceirizados=
-gastos
-.filter(
-x=>x.subcategoria==='terceirizados'
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
+ const mao=maoGastos+maoDiarias;
 
-const mao=
-maoGastos+maoDiarias;
+ const totalCustos=
+  material+
+  mao+
+  outros+
+  terceirizados;
 
-const totalCustos=
-material+
-mao+
-outros+
-terceirizados;
+ const obra=D.obras.find(
+  x=>String(x.id)===id
+ );
 
-const obra=
-D.obras.find(
-x=>String(x.id)===id
-);
+ const contrato=Number(obra?.valor||0);
 
-const contrato=
-Number(obra?.valor||0);
+ const receitas=
+  D.gastos
+   .filter(x=>String(x.obra_id)===id&&x.categoria==="entrada")
+   .reduce((a,x)=>a+Number(x.valor||0),0)
+  +
+  D.pagamentos
+   .filter(x=>String(x.obra_id)===id)
+   .reduce((a,x)=>a+Number(x.valor||0),0);
 
-const receitas=
-D.gastos
-.filter(
-x=>
-String(x.obra_id)===id &&
-x.categoria==='entrada'
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-)
+ const base=contrato>0?contrato:receitas;
+ const lucro=base-totalCustos;
 
-+
+ const pct=v=>base>0?(v/base*100):0;
 
-D.pagamentos
-.filter(
-x=>String(x.obra_id)===id
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const base=
-contrato>0
-?contrato
-:receitas;
-
-const lucro=
-base-totalCustos;
-
-const pct=
-v=>
-base>0
-?(v/base*100)
-:0;
-
-return{
-material,
-mao,
-outros,
-terceirizados,
-totalCustos,
-contrato,
-receitas,
-lucro,
-pct
-};
-
+ return{
+  material,
+  mao,
+  outros,
+  terceirizados,
+  totalCustos,
+  contrato,
+  receitas,
+  lucro,
+  pct
+ };
 }
 
-function categoryCard(
-label,
-value,
-pct,
-cls=''
-){
-
-return`
-<div class="card" style="margin:0">
-<div class="label">${label}</div>
-<div class="stat ${cls}">
-${money(value)}
-</div>
-<small>${pct.toFixed(1)}%</small>
-</div>
-`;
-
+function categoryCard(label,value,pct){
+ return `
+  <div class="card" style="margin:0">
+   <div class="label">${label}</div>
+   <div class="stat">${money(value)}</div>
+   <small>${pct.toFixed(1)}%</small>
+  </div>
+ `;
 }
 
 function renderObras(){
+ const q=($("obraSearch")?.value||"").toLowerCase();
 
-const q=
-($('obraSearch')?.value||'')
-.toLowerCase();
+ const list=D.obras.filter(o=>
+  !q ||
+  `${o.nome||""} ${o.cliente||""}`
+   .toLowerCase()
+   .includes(q)
+ );
 
-const list=
-D.obras.filter(
-o=>
-!q||
-`${o.nome} ${o.cliente||''}`
-.toLowerCase()
-.includes(q)
-);
+ $("obrasList").innerHTML=list.map(o=>{
+  const fs=sums(o.id);
+  const m=obraMetrics(o.id);
 
-$('obrasList').innerHTML=
-list
-.map(o=>{
+  const pctProg=
+   o.status==="concluida"?100:
+   o.status==="em_andamento"?50:
+   o.status==="pausada"?25:10;
 
-const fs=sums(o.id);
+  return `
+   <div class="item">
 
-const m=obraMetrics(o.id);
+    <div class="row">
+     <div>
+      <b>${esc(o.nome)}</b><br>
+      <small class="sub">
+       ${esc(o.cliente||"")} • ${esc(o.endereco||"")}
+      </small>
+     </div>
+     <span class="badge">${statusLabel(o.status)}</span>
+    </div>
 
-const pctProg=
-o.status==='concluida'
-?100
-:o.status==='em_andamento'
-?50
-:o.status==='pausada'
-?25
-:10;
+    <div class="progress">
+     <i style="width:${pctProg}%"></i>
+    </div>
 
-return`
+    <div class="three">
+     <div>
+      <small>Contrato</small><br>
+      <b>${money(o.valor)}</b>
+     </div>
 
-<div class="item">
+     <div>
+      <small>Receitas</small><br>
+      <b class="green">${money(fs.entradas)}</b>
+     </div>
 
-<div class="row">
+     <div>
+      <small>Lucro total</small><br>
+      <b class="${m.lucro>=0?"gold":"red"}">
+       ${money(m.lucro)}
+      </b>
+     </div>
+    </div>
 
-<div>
-<b>${esc(o.nome)}</b><br>
-<small>
-${esc(o.cliente||'')}
-•
-${esc(o.endereco||'')}
-</small>
-</div>
+    <div class="grid4" style="margin-top:10px">
+     ${categoryCard("🧱 Material",m.material,m.pct(m.material))}
+     ${categoryCard("👷 Mão de obra",m.mao,m.pct(m.mao))}
+     ${categoryCard("📦 Outros gastos",m.outros,m.pct(m.outros))}
+     ${categoryCard("🤝 Terceirizados",m.terceirizados,m.pct(m.terceirizados))}
+    </div>
 
-<span class="badge">
-${statusLabel(o.status)}
-</span>
+    <div class="card" style="margin:10px 0 0;background:#171d23">
+     <div class="row">
+      <span><b>Lucro total</b></span>
+      <b class="${m.lucro>=0?"gold":"red"}">
+       ${money(m.lucro)}
+      </b>
+     </div>
 
-</div>
+     <small>
+      ${m.pct(m.lucro).toFixed(1)}% do valor da obra
+      • Custos totais: ${money(m.totalCustos)}
+     </small>
+    </div>
 
-<div class="progress">
-<i style="width:${pctProg}%"></i>
-</div>
+    <div class="listActions">
+     <button class="mini" onclick="openObra(${o.id})">
+      ✏️ Editar
+     </button>
 
-<div class="three">
+     <button class="mini"
+      onclick="go('financeiro');setTimeout(()=>{
+       $('finObraFilter').value='${o.id}';
+       renderFinance()
+      },0)">
+      💰 Financeiro
+     </button>
 
-<div>
-<small>Contrato</small><br>
-<b>${money(o.valor)}</b>
-</div>
+     <button class="danger mini"
+      onclick="delItem('obras',${o.id})">
+      Excluir
+     </button>
+    </div>
 
-<div>
-<small>Receitas</small><br>
-<b class="green">
-${money(fs.entradas)}
-</b>
-</div>
-
-<div>
-<small>Lucro total</small><br>
-<b class="${m.lucro>=0?'gold':'red'}">
-${money(m.lucro)}
-</b>
-</div>
-
-</div>
-
-<div class="grid4" style="margin-top:10px">
-
-${categoryCard(
-'🧱 Material',
-m.material,
-m.pct(m.material)
-)}
-
-${categoryCard(
-'👷 Mão de obra',
-m.mao,
-m.pct(m.mao)
-)}
-
-${categoryCard(
-'📦 Outros gastos',
-m.outros,
-m.pct(m.outros)
-)}
-
-${categoryCard(
-'🤝 Terceirizados',
-m.terceirizados,
-m.pct(m.terceirizados)
-)}
-
-</div>
-
-<div class="card"
-style="margin:10px 0 0;background:#171d23">
-
-<div class="row">
-
-<span>
-<b>Lucro total</b>
-</span>
-
-<b class="${m.lucro>=0?'gold':'red'}">
-${money(m.lucro)}
-</b>
-
-</div>
-
-<small>
-${m.pct(m.lucro).toFixed(1)}%
-do valor da obra
-•
-Custos totais:
-${money(m.totalCustos)}
-</small>
-
-</div>
-
-<div class="listActions">
-
-<button
-class="mini"
-onclick="openObra(${o.id})">
-✏️ Editar
-</button>
-
-<button
-class="mini"
-onclick="openFotoFor(${o.id})">
-📸 Fotos
-</button>
-
-<button
-class="mini"
-onclick="go('financeiro');setTimeout(()=>{$('finObraFilter').value='${o.id}';renderFinance()},0)">
-💰 Financeiro
-</button>
-
-<button
-class="danger mini"
-onclick="delItem('obras',${o.id})">
-Excluir
-</button>
-
-</div>
-
-</div>
-
-`;
-
-})
-.join('')
-||
-'<div class="empty">Nenhuma obra encontrada.</div>';
-
+   </div>
+  `;
+ }).join("")||
+ '<div class="empty">Nenhuma obra encontrada.</div>';
 }
 
-/* ================================
-   FUNCIONÁRIOS
-================================ */
+function openObra(id){
+ const o=D.obras.find(x=>String(x.id)===String(id));
+
+ $("oId").value=o?.id||"";
+ $("oNome").value=o?.nome||"";
+ $("oCliente").value=o?.cliente||"";
+ $("oEndereco").value=o?.endereco||"";
+ $("oValor").value=o?.valor||"";
+ $("oStatus").value=o?.status||"planejamento";
+ $("oObs").value=o?.observacao||"";
+
+ openM("obraM");
+}
+
+async function saveObra(e){
+ e.preventDefault();
+
+ const id=$("oId").value;
+
+ const row={
+  nome:$("oNome").value.trim(),
+  cliente:$("oCliente").value.trim(),
+  endereco:$("oEndereco").value.trim(),
+  valor:Number($("oValor").value||0),
+  status:$("oStatus").value,
+  observacao:$("oObs").value.trim()
+ };
+
+ let r;
+
+ if(id){
+  r=await updateRow("obras",id,row);
+
+  if(r){
+   const i=D.obras.findIndex(x=>String(x.id)===String(id));
+   if(i>=0)D.obras[i]=r;
+  }
+ }else{
+  r=await insertRow("obras",row);
+  if(r)D.obras.unshift(r);
+ }
+
+ if(r){
+  e.target.reset();
+  closeM("obraM");
+  renderAll();
+  toast("Obra salva.");
+ }
+}
 
 function renderFuncs(){
+ $("funcList").innerHTML=
+  D.funcionarios.map(f=>`
+   <div class="item">
+    <div class="row">
+     <div>
+      <b>${esc(f.nome)}</b><br>
+      <small class="sub">
+       ${esc(f.cargo||"")} •
+       ${f.ativo===false?"Inativo":"Ativo"}
+      </small>
+     </div>
+     <b class="gold">
+      ${money(f.valor_diaria||f.diaria||0)}
+     </b>
+    </div>
 
-const filter=
-$('funcFilter')?.value||
-'todos';
-
-const list=
-D.funcionarios.filter(
-f=>
-filter==='todos'||
-(filter==='ativos'&&f.ativo!==false)||
-(filter==='inativos'&&f.ativo===false)
-);
-
-$('funcList').innerHTML=
-list
-.map(f=>
-`<div class="item">
-
-<div class="row">
-
-<div>
-<b>${esc(f.nome)}</b><br>
-<small>
-${esc(f.funcao||'')}
-•
-${esc(f.telefone||'')}
-</small>
-</div>
-
-<span class="badge ${f.ativo!==false?'on':'off'}">
-${f.ativo!==false?'Ativo':'Inativo'}
-</span>
-
-</div>
-
-<small>
-${esc(f.tipo_pagamento||'diaria')}
-•
-Diária:
-${money(f.valor_diaria)}
-•
-Mensal:
-${money(f.salario_mensal)}
-</small>
-
-<div class="listActions">
-
-<button
-class="mini"
-onclick="openFunc(${f.id})">
-✏️ Editar
-</button>
-
-<button
-class="mini"
-onclick="toggleFunc(${f.id})">
-${f.ativo!==false?'⏸ Inativar':'▶️ Ativar'}
-</button>
-
-<button
-class="danger mini"
-onclick="delItem('funcionarios',${f.id})">
-Excluir
-</button>
-
-</div>
-
-</div>`
-)
-.join('')
-||
-'<div class="empty">Nenhum funcionário nesta categoria.</div>';
-
+    <div class="listActions">
+     <button class="mini" onclick="openFunc(${f.id})">
+      ✏️ Editar
+     </button>
+     <button class="danger mini" onclick="delItem('funcionarios',${f.id})">
+      Excluir
+     </button>
+    </div>
+   </div>
+  `).join("")||
+  '<div class="empty">Nenhum funcionário cadastrado.</div>';
 }
 
-async function toggleFunc(id){
+function openFunc(id){
+ const f=D.funcionarios.find(x=>String(x.id)===String(id));
 
-const f=
-D.funcionarios.find(
-x=>x.id===id
-);
+ $("fId").value=f?.id||"";
+ $("fNome").value=f?.nome||"";
+ $("fTelefone").value=f?.telefone||"";
+ $("fCargo").value=f?.cargo||"";
+ $("fDiaria").value=f?.valor_diaria||f?.diaria||"";
+ $("fSalario").value=f?.salario_mensal||"";
+ $("fTipo").value=f?.tipo_pagamento||"diaria";
+ $("fAtivo").value=String(f?.ativo!==false);
 
-if(!f)return;
-
-const r=
-await updateRow(
-'funcionarios',
-id,
-{
-ativo:f.ativo===false
-}
-);
-
-if(r){
-
-Object.assign(f,r);
-
-renderAll();
-
-toast(
-f.ativo===false
-?'Funcionário inativado.'
-:'Funcionário ativado.'
-);
-
+ openM("funcM");
 }
 
+async function saveFunc(e){
+ e.preventDefault();
+
+ const id=$("fId").value;
+
+ const row={
+  nome:$("fNome").value.trim(),
+  telefone:$("fTelefone").value.trim(),
+  cargo:$("fCargo").value.trim(),
+  valor_diaria:Number($("fDiaria").value||0),
+  salario_mensal:Number($("fSalario").value||0),
+  tipo_pagamento:$("fTipo").value,
+  ativo:$("fAtivo").value==="true"
+ };
+
+ let r;
+
+ if(id){
+  r=await updateRow("funcionarios",id,row);
+
+  if(r){
+   const i=D.funcionarios.findIndex(x=>String(x.id)===String(id));
+   if(i>=0)D.funcionarios[i]=r;
+  }
+ }else{
+  r=await insertRow("funcionarios",row);
+  if(r)D.funcionarios.unshift(r);
+ }
+
+ if(r){
+  e.target.reset();
+  closeM("funcM");
+  renderAll();
+  toast("Funcionário salvo.");
+ }
 }
 
-/* ================================
-   FINANCEIRO
-================================ */
+function fillDiaSelectors(){
+ $("dFunc").innerHTML=
+  '<option value="">Funcionário</option>'+
+  D.funcionarios
+   .filter(f=>f.ativo!==false)
+   .map(f=>`
+    <option value="${f.id}">
+     ${esc(f.nome)}
+    </option>
+   `).join("");
 
-function renderFinance(){
-
-const obra=
-$('finObraFilter')?.value||
-'all';
-
-const tipo=
-$('finTipoFilter')?.value||
-'all';
-
-const s=sums(obra);
-
-$('finEnt').textContent=
-money(s.entradas);
-
-$('finDesp').textContent=
-money(s.despesas);
-
-$('finRes').textContent=
-money(s.lucro);
-
-const rows=
-D.gastos.filter(
-x=>
-(obra==='all'||
-String(x.obra_id)===String(obra))
-&&
-(tipo==='all'||
-x.categoria===tipo)
-);
-
-$('finList').innerHTML=
-rows
-.map(x=>{
-
-const o=
-D.obras.find(
-y=>y.id===x.obra_id
-);
-
-return`
-
-<div class="item">
-
-<div class="row">
-
-<div>
-<b>${esc(x.descricao||'Lançamento')}</b><br>
-
-<small>
-${x.data||''}
-•
-${esc(o?.nome||'Geral')}
-•
-${esc(x.fornecedor||'')}
-</small>
-
-</div>
-
-<b class="${x.categoria==='entrada'?'green':'red'}">
-
-${x.categoria==='entrada'?'+':'−'}
-${money(x.valor)}
-
-</b>
-
-</div>
-
-<div class="listActions">
-
-<button
-class="danger mini"
-onclick="delItem('gastos',${x.id})">
-Excluir
-</button>
-
-</div>
-
-</div>
-
-`;
-
-})
-.join('')
-||
-'<div class="empty">Nenhum lançamento encontrado.</div>';
-
-let resumo=
-D.obras
-.map(o=>{
-
-const z=sums(o.id);
-
-return`
-
-<div class="row"
-style="padding:8px 0;border-bottom:1px solid var(--line)">
-
-<span>
-${esc(o.nome)}
-</span>
-
-<span>
-
-<span class="green">
-${money(z.entradas)}
-</span>
-
-/
-
-<span class="red">
-${money(z.despesas)}
-</span>
-
-/
-
-<b class="gold">
-${money(z.lucro)}
-</b>
-
-</span>
-
-</div>
-
-`;
-
-})
-.join('');
-
-$('obraFinanceResumo').innerHTML=
-resumo||
-'<div class="empty">Cadastre uma obra.</div>';
-
+ $("dObra").innerHTML=
+  '<option value="">Sem obra</option>'+
+  D.obras.map(o=>`
+   <option value="${o.id}">
+    ${esc(o.nome)}
+   </option>
+  `).join("");
 }
 
-/* ================================
-   DIÁRIAS — CORREÇÃO
-================================ */
+function openDia(){
+ fillDiaSelectors();
 
-let payrollSelected=new Set();
+ $("dData").value=today();
+ $("dQtd").value=1;
+ $("dVal").value="";
 
-function setPayrollSelected(id,on){
+ openM("diaM");
+}
 
-if(on)
-payrollSelected.add(String(id));
-else
-payrollSelected.delete(String(id));
+async function saveDia(e){
+ e.preventDefault();
 
-renderPayroll();
+ const qtd=Number($("dQtd").value);
+ const v=Number($("dVal").value);
 
+ const r=await insertRow(
+  "diarias",
+  {
+   funcionario_id:Number($("dFunc").value),
+   obra_id:$("dObra").value
+    ?Number($("dObra").value)
+    :null,
+   data:$("dData").value,
+   qtd,
+   valor_diaria:v,
+   valor_pago:qtd*v,
+   status:$("dStatus").value,
+   observacao:$("dObs").value
+  }
+ );
+
+ if(r){
+  D.diarias.unshift(r);
+  e.target.reset();
+  closeM("diaM");
+  renderAll();
+  toast("Diária registrada.");
+ }
 }
 
 function localDateFromYMD(ymd){
-
-const[y,m,d]=
-String(ymd)
-.split('-')
-.map(Number);
-
-return new Date(
-y,
-(m||1)-1,
-d||1,
-12,
-0,
-0,
-0
-);
-
+ const [y,m,d]=String(ymd).split("-").map(Number);
+ return new Date(
+  y,
+  (m||1)-1,
+  d||1,
+  12,0,0,0
+ );
 }
 
 function periodRange(period){
+ const now=localDateFromYMD(today());
 
-const now=
-localDateFromYMD(today());
+ let a=new Date(now);
+ let b=new Date(now);
 
-let a=new Date(now);
+ if(period==="semana"){
+  const day=now.getDay()||7;
+  a.setDate(now.getDate()-day+1);
+ }else if(period==="quinzena"){
+  a.setDate(now.getDate()<=15?1:16);
+ }else if(period==="mes"){
+  a.setDate(1);
+ }else if(period==="custom"){
+  a=localDateFromYMD(
+   $("payStart").value||today()
+  );
 
-let b=new Date(now);
+  b=localDateFromYMD(
+   $("payEnd").value||today()
+  );
+ }
 
-if(period==='semana'){
+ const fmt=d=>
+  `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 
-const day=
-now.getDay()||7;
-
-a.setDate(
-now.getDate()-day+1
-);
-
-}else if(period==='quinzena'){
-
-a.setDate(
-now.getDate()<=15
-?1
-:16
-);
-
-}else if(period==='mes'){
-
-a.setDate(1);
-
-}else if(period==='custom'){
-
-a=
-localDateFromYMD(
-$('payStart').value||today()
-);
-
-b=
-localDateFromYMD(
-$('payEnd').value||today()
-);
-
-}
-
-const fmt=d=>
-`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-
-return[
-fmt(a),
-fmt(b)
-];
-
+ return[fmt(a),fmt(b)];
 }
 
 function renderPayroll(){
-
-if(!$('payPeriod'))
-return;
-
-const p=
-$('payPeriod').value;
-
-$('customDates')
-.classList.toggle(
-'hidden',
-p!=='custom'
-);
-
-const[A,B]=
-periodRange(p);
-
-/*
- SOMENTE DIÁRIAS
- REALMENTE REGISTRADAS
- DENTRO DO PERÍODO.
-*/
-
-const ds=
-D.diarias.filter(
-d=>
-String(d.data||'')>=A &&
-String(d.data||'')<=B
-);
-
-const selected=
-[
-...document.querySelectorAll('.paySel:checked')
-]
-.map(
-x=>String(x.value)
-);
-
-const use=
-selected.length
-?ds.filter(
-d=>
-selected.includes(
-String(d.funcionario_id)
-)
-)
-:ds;
-
-/*
- TOTAL ZERO SE NÃO EXISTIR
- NENHUMA DIÁRIA REGISTRADA.
-*/
-
-const total=
-use.reduce(
-(s,d)=>
-s+
-Number(
-d.valor_pago||
-d.qtd*d.valor_diaria||
-0
-),
-0
-);
-
-$('payTotal').textContent=
-money(total);
-
-$('payCount').textContent=
-new Set(
-use.map(
-d=>String(d.funcionario_id)
-)
-).size;
-
-const controls=
-`<div class="selectedBox">
-
-<b>Funcionários para somar</b>
-
-<br>
-
-<small>
-Marque um ou vários.
-Sem seleção = todos.
-</small>
-
-<div class="listActions">
-
-${D.funcionarios
-.map(f=>{
-
-const checked=
-payrollSelected.has(
-String(f.id)
-);
-
-return`
-
-<label class="chip">
-
-<input
-class="paySel"
-type="checkbox"
-value="${f.id}"
-${checked?'checked':''}
-onchange="setPayrollSelected(this.value,this.checked)">
-
-${esc(f.nome)}
-
-</label>
-
-`;
-
-})
-.join('')}
-
-</div>
-
-</div>`;
-
-$('funcList').innerHTML=
-controls+
-
-D.funcionarios
-.map(f=>{
-
-const val=
-ds
-.filter(
-d=>
-String(d.funcionario_id)===
-String(f.id)
-)
-.reduce(
-(s,d)=>
-s+
-Number(
-d.valor_pago||
-d.qtd*d.valor_diaria||
-0
-),
-0
-);
-
-const qtd=
-ds.filter(
-d=>
-String(d.funcionario_id)===
-String(f.id)
-).length;
-
-return`
-
-<div class="item">
-
-<div class="row">
-
-<div>
-
-<b>${esc(f.nome)}</b><br>
-
-<small>
-${f.ativo!==false?'Ativo':'Inativo'}
-•
-${esc(f.tipo_pagamento||'diaria')}
-</small>
-
-</div>
-
-<b class="gold">
-${money(val)}
-</b>
-
-</div>
-
-<small>
-Diárias registradas no período:
-${qtd}
-</small>
-
-<div class="listActions">
-
-<button
-class="mini"
-onclick="openFunc(${f.id})">
-✏️ Editar
-</button>
-
-<button
-class="mini"
-onclick="toggleFunc(${f.id})">
-${f.ativo!==false?'⏸ Inativar':'▶️ Ativar'}
-</button>
-
-</div>
-
-</div>
-
-`;
-
-})
-.join('')
-||
-'<div class="empty">Nenhum funcionário cadastrado.</div>';
-
-$('diaList').innerHTML=
-use
-.map(d=>{
-
-const f=
-D.funcionarios.find(
-x=>
-String(x.id)===
-String(d.funcionario_id)
-);
-
-const o=
-D.obras.find(
-x=>
-String(x.id)===
-String(d.obra_id)
-);
-
-return`
-
-<div class="item">
-
-<div class="row">
-
-<div>
-
-<b>
-${esc(f?.nome||'Funcionário')}
-</b>
-
-<br>
-
-<small>
-${d.data}
-•
-${esc(o?.nome||'Sem obra')}
-•
-${d.qtd}
-×
-${money(d.valor_diaria)}
-</small>
-
-</div>
-
-<b class="gold">
-${money(
-d.valor_pago||
-d.qtd*d.valor_diaria
-)}
-</b>
-
-</div>
-
-<button
-class="danger mini"
-onclick="delItem('diarias',${d.id})">
-Excluir
-</button>
-
-</div>
-
-`;
-
-})
-.join('')
-||
-'<div class="empty">Nenhuma diária registrada neste período. Total: R$ 0,00.</div>';
-
+ if(!$("payPeriod"))return;
+
+ const p=$("payPeriod").value;
+
+ $("customDates").classList.toggle(
+  "hidden",
+  p!=="custom"
+ );
+
+ if(p==="custom"){
+  if(!$("payStart").value)$("payStart").value=today();
+  if(!$("payEnd").value)$("payEnd").value=today();
+ }
+
+ const [A,B]=periodRange(p);
+
+ const ds=D.diarias.filter(d=>{
+  const data=String(d.data||"");
+  return data>=A&&data<=B;
+ });
+
+ const total=ds.reduce(
+  (s,d)=>s+
+   Number(
+    d.valor_pago||
+    Number(d.qtd||0)*Number(d.valor_diaria||0)
+   ),
+  0
+ );
+
+ $("payTotal").textContent=money(total);
+
+ $("payCount").textContent=
+  new Set(
+   ds.map(d=>String(d.funcionario_id))
+  ).size;
+
+ $("payrollList").innerHTML=
+  D.funcionarios.map(f=>{
+   const rows=ds.filter(
+    d=>String(d.funcionario_id)===String(f.id)
+   );
+
+   const val=rows.reduce(
+    (s,d)=>s+
+     Number(
+      d.valor_pago||
+      Number(d.qtd||0)*Number(d.valor_diaria||0)
+     ),
+    0
+   );
+
+   return `
+    <div class="item">
+     <div class="row">
+      <div>
+       <b>${esc(f.nome)}</b><br>
+       <small class="sub">
+        ${rows.length} diária(s) no período
+       </small>
+      </div>
+
+      <b class="${val>0?"gold":""}">
+       ${money(val)}
+      </b>
+     </div>
+
+     ${
+      rows.length
+      ?rows.map(d=>`
+       <div class="card" style="margin-top:8px">
+        <div class="row">
+         <small>${esc(d.data||"")}</small>
+         <b>${money(
+          d.valor_pago||
+          Number(d.qtd||0)*Number(d.valor_diaria||0)
+         )}</b>
+        </div>
+       </div>
+      `).join("")
+      :`
+       <div class="sub" style="margin-top:8px">
+        Nenhuma diária registrada neste período.
+       </div>
+      `
+     }
+    </div>
+   `;
+  }).join("")||
+  '<div class="empty">Nenhum funcionário.</div>';
 }
 
-/* ================================
-   CHECKLIST
-================================ */
+function openFin(){
+ $("oFin").innerHTML=
+  '<option value="">Sem obra</option>'+
+  D.obras.map(o=>`
+   <option value="${o.id}">
+    ${esc(o.nome)}
+   </option>
+  `).join("");
 
-function getCheckDefs(){
+ $("dtFin").value=today();
 
-try{
-
-return JSON.parse(
-localStorage.getItem(
-'edifiq_check_defs_'+
-(user?.id||'')
-)||'[]'
-);
-
-}catch{
-
-return[];
-
+ openM("finM");
 }
-
-}
-
-function saveCheckDefs(v){
-
-localStorage.setItem(
-'edifiq_check_defs_'+user.id,
-JSON.stringify(v)
-);
-
-}
-
-function renderChecklist(){
-
-const defaults=[
-'Planejamento e orçamento',
-'Contrato assinado',
-'Medição inicial',
-'Compra de materiais',
-'Preparação do local',
-'Chapisco / reboco',
-'Instalações',
-'Pisos e revestimentos',
-'Pintura',
-'Acabamentos',
-'Limpeza final',
-'Entrega da obra'
-];
-
-let defs=getCheckDefs();
-
-if(!defs.length){
-
-defs=
-defaults.map(
-(x,i)=>({
-id:'default_'+i,
-desc:x,
-obraId:'all'
-})
-);
-
-saveCheckDefs(defs);
-
-}
-
-$('checkList').innerHTML=
-D.obras
-.map(o=>{
-
-const applicable=
-defs.filter(
-d=>
-d.obraId==='all'||
-String(d.obraId)===
-String(o.id)
-);
-
-const saved=
-D.checklist.filter(
-c=>c.obra_id===o.id
-);
-
-const done=
-applicable.filter(
-d=>
-saved.find(
-c=>c.tarefa===d.desc
-)?.concluida
-).length;
-
-return`
-
-<div class="item">
-
-<div class="row">
-
-<b>${esc(o.nome)}</b>
-
-<span class="badge">
-${done}/${applicable.length}
-</span>
-
-</div>
-
-<div class="progress">
-
-<i style="width:${
-applicable.length
-?Math.round(
-done/applicable.length*100
-)
-:0
-}%"></i>
-
-</div>
-
-${applicable.map(d=>{
-
-const c=
-saved.find(
-x=>x.tarefa===d.desc
-);
-
-return`
-
-<div
-class="row"
-style="padding:6px 0">
-
-<label>
-
-<input
-type="checkbox"
-${c?.concluida?'checked':''}
-onchange="toggleCheck(${o.id},${JSON.stringify(d.desc)},this.checked)">
-
-${esc(d.desc)}
-
-</label>
-
-<span>
-
-<button
-class="mini"
-onclick="openCheck('${d.id}')">
-✏️
-</button>
-
-<button
-class="danger mini"
-onclick="deleteCheckDef('${d.id}')">
-×
-</button>
-
-</span>
-
-</div>
-
-`;
-
-}).join('')}
-
-</div>
-
-`;
-
-})
-.join('')
-||
-'<div class="empty">Cadastre uma obra primeiro.</div>';
-
-}
-
-async function toggleCheck(
-obra,
-tarefa,
-on
-){
-
-const old=
-D.checklist.find(
-x=>
-String(x.obra_id)===
-String(obra)&&
-x.tarefa===tarefa
-);
-
-if(old){
-
-const r=
-await updateRow(
-'checklist',
-old.id,
-{
-concluida:on,
-progresso:on?100:0
-}
-);
-
-if(r)
-Object.assign(old,r);
-
-}else{
-
-const r=
-await insertRow(
-'checklist',
-{
-obra_id:obra,
-tarefa,
-concluida:on,
-progresso:on?100:0
-}
-);
-
-if(r)
-D.checklist.unshift(r);
-
-}
-
-renderChecklist();
-
-}
-
-function saveCheckDef(e){
-
-e.preventDefault();
-
-let defs=getCheckDefs();
-
-let id=
-$('checkId').value||
-('c_'+Date.now());
-
-let val={
-id,
-desc:$('checkDesc').value.trim(),
-obraId:$('checkObra').value||'all'
-};
-
-let i=
-defs.findIndex(
-x=>x.id===id
-);
-
-if(i>=0)
-defs[i]=val;
-else
-defs.push(val);
-
-saveCheckDefs(defs);
-
-closeM('checkM');
-
-renderChecklist();
-
-toast(
-'Checklist atualizado.'
-);
-
-}
-
-function deleteCheckDef(id){
-
-if(!confirm(
-'Excluir este serviço do checklist?'
-))
-return;
-
-saveCheckDefs(
-getCheckDefs().filter(
-x=>x.id!==id
-)
-);
-
-renderChecklist();
-
-toast(
-'Serviço excluído.'
-);
-
-}
-
-/* ================================
-   FOTOS
-================================ */
-
-function renderFotos(){
-
-const data=getPhotos();
-
-$('fotoList').innerHTML=
-data.length
-?data
-.slice()
-.reverse()
-.map(g=>{
-
-const o=
-D.obras.find(
-x=>
-String(x.id)===
-String(g.obraId)
-);
-
-return`
-
-<div class="item">
-
-<div class="row">
-
-<div>
-
-<b>
-${esc(
-g.titulo||
-'Relatório fotográfico'
-)}
-</b>
-
-<br>
-
-<small>
-${esc(o?.nome||'Obra')}
-•
-${g.data||''}
-</small>
-
-</div>
-
-<button
-class="danger mini"
-onclick="deletePhotoGroup('${g.id}')">
-Excluir
-</button>
-
-</div>
-
-${g.obs?
-`<p class="sub">
-${esc(g.obs)}
-</p>`
-:''}
-
-<div class="photoGrid">
-
-${g.photos
-.map(
-(p,i)=>
-`<img
-src="${p}"
-alt="Foto ${i+1}">`
-)
-.join('')}
-
-</div>
-
-</div>
-
-`;
-
-})
-.join('')
-:
-'<div class="empty">Nenhuma foto adicionada.</div>';
-
-}
-
-function getPhotos(){
-
-try{
-
-return JSON.parse(
-localStorage.getItem(
-'edifiq_photos_'+
-(user?.id||'')
-)||'[]'
-);
-
-}catch{
-
-return[];
-
-}
-
-}
-
-function savePhotos(v){
-
-localStorage.setItem(
-'edifiq_photos_'+user.id,
-JSON.stringify(v)
-);
-
-}
-
-function openFotoFor(id){
-
-go('fotos');
-
-setTimeout(
-()=>{
-openFoto();
-$('fotoObra').value=id;
-},
-0
-);
-
-}
-
-async function saveFotos(e){
-
-e.preventDefault();
-
-const files=
-[...$('fotoFiles').files];
-
-if(!files.length)
-return;
-
-const photos=[];
-
-for(const f of files)
-photos.push(
-await fileToDataURL(f)
-);
-
-const arr=getPhotos();
-
-arr.push({
-id:'p_'+Date.now(),
-obraId:$('fotoObra').value,
-data:$('fotoData').value,
-titulo:$('fotoTitulo').value,
-obs:$('fotoObs').value,
-photos
-});
-
-savePhotos(arr);
-
-e.target.reset();
-
-closeM('fotoM');
-
-renderFotos();
-
-toast(
-photos.length+
-' foto(s) adicionada(s).'
-);
-
-}
-
-function fileToDataURL(file){
-
-return new Promise(
-(res,rej)=>{
-
-const r=new FileReader();
-
-r.onload=()=>res(r.result);
-
-r.onerror=rej;
-
-r.readAsDataURL(file);
-
-}
-);
-
-}
-
-function deletePhotoGroup(id){
-
-if(!confirm(
-'Excluir este relatório fotográfico?'
-))
-return;
-
-savePhotos(
-getPhotos().filter(
-x=>x.id!==id
-)
-);
-
-renderFotos();
-
-}
-
-/* ================================
-   SELECTS
-================================ */
-
-function fillSelectors(){
-
-const opts=
-'<option value="">Sem obra</option>'+
-D.obras
-.map(
-o=>
-`<option value="${o.id}">
-${esc(o.nome)}
-</option>`
-)
-.join('');
-
-['dObra','oFin']
-.forEach(id=>{
-
-if($(id))
-$(id).innerHTML=opts;
-
-});
-
-if($('fotoObra'))
-
-$('fotoObra').innerHTML=
-'<option value="" disabled selected>Selecione a obra</option>'+
-D.obras
-.map(
-o=>
-`<option value="${o.id}">
-${esc(o.nome)}
-</option>`
-)
-.join('');
-
-if($('checkObra'))
-
-$('checkObra').innerHTML=
-'<option value="all">
-Aplicar em todas as obras
-</option>'+
-D.obras
-.map(
-o=>
-`<option value="${o.id}">
-${esc(o.nome)}
-</option>`
-)
-.join('');
-
-if($('dFunc'))
-
-$('dFunc').innerHTML=
-D.funcionarios
-.filter(
-f=>f.ativo!==false
-)
-.map(
-f=>
-`<option value="${f.id}">
-${esc(f.nome)}
-</option>`
-)
-.join('');
-
-if($('finObraFilter')){
-
-const cur=
-$('finObraFilter').value;
-
-$('finObraFilter').innerHTML=
-'<option value="all">
-Todas as obras
-</option>'+
-D.obras
-.map(
-o=>
-`<option value="${o.id}">
-${esc(o.nome)}
-</option>`
-)
-.join('');
-
-$('finObraFilter').value=
-cur||'all';
-
-}
-
-}
-
-/* ================================
-   SALVAR OBRA
-================================ */
-
-async function saveObra(e){
-
-e.preventDefault();
-
-const row={
-
-nome:$('oNome').value.trim(),
-
-cliente:$('oCli').value.trim(),
-
-endereco:$('oLoc').value.trim(),
-
-valor:Number(
-$('oVal').value||0
-),
-
-status:$('oStatus').value,
-
-data_inicio:
-$('oIni').value||null,
-
-data_fim:
-$('oFim').value||null,
-
-tipo_servico:
-$('oTipo').value.trim(),
-
-observacoes:
-$('oObs').value.trim()
-
-};
-
-let r=
-editObraId
-?await updateRow(
-'obras',
-editObraId,
-row
-)
-:await insertRow(
-'obras',
-row
-);
-
-if(r){
-
-if(editObraId){
-
-const o=
-D.obras.find(
-x=>x.id===editObraId
-);
-
-Object.assign(o,r);
-
-}else{
-
-D.obras.unshift(r);
-
-}
-
-editObraId=null;
-
-e.target.reset();
-
-closeM('obraM');
-
-renderAll();
-
-toast(
-'Obra salva com sucesso.'
-);
-
-}
-
-}
-
-/* ================================
-   SALVAR FUNCIONÁRIO
-================================ */
-
-async function saveFunc(e){
-
-e.preventDefault();
-
-const row={
-
-nome:$('fNome').value.trim(),
-
-funcao:$('fFunc').value.trim(),
-
-telefone:$('fTel').value.trim(),
-
-valor_diaria:Number(
-$('fDia').value||0
-),
-
-tipo_pagamento:
-$('fTipo').value,
-
-salario_mensal:Number(
-$('fSal').value||0
-),
-
-dia_pagamento:Number(
-$('fPag').value||0
-),
-
-ativo:
-$('fAtivo').value==='true'
-
-};
-
-let r=
-editFuncId
-?await updateRow(
-'funcionarios',
-editFuncId,
-row
-)
-:await insertRow(
-'funcionarios',
-row
-);
-
-if(r){
-
-if(editFuncId){
-
-const f=
-D.funcionarios.find(
-x=>x.id===editFuncId
-);
-
-Object.assign(f,r);
-
-}else{
-
-D.funcionarios.unshift(r);
-
-}
-
-editFuncId=null;
-
-clearFuncForm();
-
-e.target.reset();
-
-closeM('funcM');
-
-renderAll();
-
-toast(
-'Funcionário salvo e formulário limpo.'
-);
-
-}
-
-}
-
-/* ================================
-   SALVAR DIÁRIA
-================================ */
-
-async function saveDia(e){
-
-e.preventDefault();
-
-const qtd=
-Number(
-$('dQtd').value
-);
-
-const v=
-Number(
-$('dVal').value
-);
-
-const r=
-await insertRow(
-'diarias',
-{
-
-funcionario_id:
-Number(
-$('dFunc').value
-),
-
-obra_id:
-$('dObra').value
-?Number(
-$('dObra').value
-)
-:null,
-
-data:
-$('dData').value,
-
-qtd,
-
-valor_diaria:v,
-
-valor_pago:
-qtd*v,
-
-status:
-$('dStatus').value,
-
-observacao:
-$('dObs').value
-
-}
-);
-
-if(r){
-
-D.diarias.unshift(r);
-
-e.target.reset();
-
-closeM('diaM');
-
-renderAll();
-
-toast(
-'Diária registrada.'
-);
-
-}
-
-}
-
-/* ================================
-   SALVAR FINANCEIRO
-================================ */
 
 async function saveFin(e){
+ e.preventDefault();
 
-e.preventDefault();
+ const tipo=$("tFin").value;
+ const sub=
+  tipo==="entrada"
+   ?"entrada"
+   :$("catFin").value;
 
-const tipo=
-$('tFin').value;
+ const r=await insertRow(
+  "gastos",
+  {
+   obra_id:$("oFin").value
+    ?Number($("oFin").value)
+    :null,
+   categoria:tipo,
+   subcategoria:sub,
+   descricao:$("dFin").value.trim(),
+   valor:Number($("vFin").value||0),
+   data:$("dtFin").value,
+   fornecedor:$("forFin").value.trim(),
+   observacao:$("obsFin").value.trim()
+  }
+ );
 
-const sub=
-tipo==='entrada'
-?'entrada'
-:$('catFin').value;
-
-const r=
-await insertRow(
-'gastos',
-{
-
-obra_id:
-$('oFin').value
-?Number(
-$('oFin').value
-)
-:null,
-
-categoria:tipo,
-
-subcategoria:sub,
-
-descricao:
-$('dFin').value.trim(),
-
-valor:
-Number(
-$('vFin').value||0
-),
-
-data:
-$('dtFin').value,
-
-fornecedor:
-$('forFin').value.trim(),
-
-observacao:
-$('obsFin').value.trim()
-
-}
-);
-
-if(r){
-
-D.gastos.unshift(r);
-
-e.target.reset();
-
-closeM('finM');
-
-renderAll();
-
-toast(
-'Lançamento salvo com sucesso.'
-);
-
+ if(r){
+  D.gastos.unshift(r);
+  e.target.reset();
+  closeM("finM");
+  renderAll();
+  toast("Lançamento salvo com sucesso.");
+ }
 }
 
-}
-
-/* ================================
-   EXCLUSÃO
-================================ */
-
-async function delItem(t,id){
-
-if(!confirm(
-'Excluir este registro?'
-))
-return;
-
-if(
-await removeRow(t,id)
-){
-
-const i=
-D[t].findIndex(
-x=>x.id===id
-);
-
-if(i>=0)
-D[t].splice(i,1);
-
-renderAll();
-
-toast(
-'Registro excluído.'
-);
-
-}
-
-}
-
-/* ================================
-   BACKUP
-================================ */
-
-function snapshot(){
-
-return{
-
-version:'EDIFIQ-2026-09',
-
-exported_at:
-new Date().toISOString(),
-
-user_email:
-user?.email,
-
-data:D,
-
-checklist_defs:
-getCheckDefs(),
-
-photos:
-getPhotos()
-
-};
-
-}
-
-function download(
-name,
-text,
-type='application/json'
-){
-
-const a=
-document.createElement('a');
-
-a.href=
-URL.createObjectURL(
-new Blob(
-[text],
-{type}
-)
-);
-
-a.download=name;
-
-document.body.appendChild(a);
-
-a.click();
-
-a.remove();
-
-setTimeout(
-()=>URL.revokeObjectURL(a.href),
-500
-);
-
-}
-
-function exportFull(){
-
-download(
-'EDIFIQ-backup.json',
-JSON.stringify(
-snapshot(),
-null,
-2
-)
-);
-
-}
-
-function exportTable(t){
-
-download(
-'EDIFIQ-'+t+'.json',
-JSON.stringify(
-D[t]||[],
-null,
-2
-)
-);
-
-}
-
-function exportExcel(){
-
-const wb=
-XLSX.utils.book_new();
-
-Object.entries(D)
-.forEach(
-([k,v])=>
-XLSX.utils.book_append_sheet(
-wb,
-XLSX.utils.json_to_sheet(v||[]),
-k.slice(0,31)
-)
-);
-
-XLSX.writeFile(
-wb,
-'EDIFIQ-dados.xlsx'
-);
-
-}
-
-async function previewImport(e){
-
-const file=
-e.target.files[0];
-
-if(!file)return;
-
-try{
-
-const ext=
-file.name
-.split('.')
-.pop()
-.toLowerCase();
-
-let obj;
-
-if(ext==='json'){
-
-obj=
-JSON.parse(
-await file.text()
-);
-
-}else{
-
-const wb=
-XLSX.read(
-await file.arrayBuffer(),
-{type:'array'}
-);
-
-obj={data:{}};
-
-wb.SheetNames
-.forEach(
-s=>
-obj.data[s]=
-XLSX.utils.sheet_to_json(
-wb.Sheets[s]
-)
-);
-
-}
-
-window.pendingImport=obj;
-
-$('importPreview').innerHTML=
-'<p class="green">Arquivo lido com sucesso.</p>'+
-'<button class="primary" onclick="confirmImport()">Confirmar importação</button>';
-
-}catch(err){
-
-$('importPreview').innerHTML=
-`<p class="red">
-Erro: ${esc(err.message)}
-</p>`;
-
-}
-
-}
-
-async function confirmImport(){
-
-const src=
-window.pendingImport?.data||
-window.pendingImport||
-{};
-
-let count=0;
-
-for(
-const[table,rows]
-of Object.entries(src)
-){
-
-if(
-!Array.isArray(rows)||
-!tables.includes(table)
-)
-continue;
-
-for(
-const raw of rows
-){
-
-const r={...raw};
-
-[
-'id',
-'created_at',
-'legacy_id',
-'user_id'
-]
-.forEach(
-k=>delete r[k]
-);
-
-const x=
-await insertRow(
-table,
-r
-);
-
-if(x){
-
-D[table].unshift(x);
-
-count++;
-
-}
-
-}
-
-}
-
-if(
-window.pendingImport?.checklist_defs
-)
-saveCheckDefs(
-window.pendingImport.checklist_defs
-);
-
-if(
-window.pendingImport?.photos
-)
-savePhotos(
-window.pendingImport.photos
-);
-
-window.pendingImport=null;
-
-toast(
-count+
-' registro(s) importado(s).'
-);
-
-renderAll();
-
-}
-
-startApp();
-
-</script>
-
-<script>
-
-/* ================================
-   DOCUMENTOS
-================================ */
-
-const DOC_KEY=()=>
-"edifiq_docs_"+(user?.id||"");
-
-function getDocs(){
-
-try{
-
-return JSON.parse(
-localStorage.getItem(
-DOC_KEY()
-)||"[]"
-);
-
-}catch{
-
-return[];
-
-}
-
-}
-
-function saveDocs(v){
-
-localStorage.setItem(
-DOC_KEY(),
-JSON.stringify(v)
-);
-
-}
-
-function openDoc(){
-
-openM("docM");
-
-fillSelectors();
-
-$("docObra").innerHTML=
-'<option value="" disabled selected>Selecione a obra</option>'+
-D.obras
-.map(
-o=>
-`<option value="${o.id}">
-${esc(o.nome)}
-</option>`
-)
-.join("");
-
-}
-
-async function saveDoc(e){
-
-e.preventDefault();
-
-const f=
-$("docFile").files[0];
-
-let data=null;
-
-if(f)
-data=
-await fileToDataURL(f);
-
-const a=getDocs();
-
-a.push({
-
-id:"doc_"+Date.now(),
-
-obraId:
-$('docObra').value,
-
-tipo:
-$('docTipo').value,
-
-titulo:
-$('docTitulo').value.trim(),
-
-numero:
-$('docNumero').value.trim(),
-
-obs:
-$('docObs').value.trim(),
-
-fileName:
-f?.name||"",
-
-fileData:data,
-
-date:today()
-
-});
-
-saveDocs(a);
-
-e.target.reset();
-
-closeM("docM");
-
-renderDocs();
-
-toast(
-"Documento salvo."
-);
-
-}
-
-function renderDocs(){
-
-const of=
-$("docObraFilter")?.value||
-"all";
-
-const tf=
-$("docTipoFilter")?.value||
-"all";
-
-const a=
-getDocs()
-.filter(
-d=>
-(of==='all'||
-String(d.obraId)===
-String(of))
-&&
-(tf==='all'||
-d.tipo===tf)
-);
-
-$("docList").innerHTML=
-a
-.slice()
-.reverse()
-.map(d=>{
-
-const o=
-D.obras.find(
-x=>
-String(x.id)===
-String(d.obraId)
-);
-
-return`
-
-<div class="item">
-
-<div class="row">
-
-<div>
-
-<b>
-${esc(d.titulo)}
-</b>
-
-<br>
-
-<span class="chip">
-${esc(d.tipo)}
-</span>
-
-<small>
-${esc(o?.nome||'Obra')}
-•
-${d.date}
-</small>
-
-</div>
-
-<button
-class="danger mini"
-onclick="deleteDoc('${d.id}')">
-Excluir
-</button>
-
-</div>
-
-${d.numero?
-`<small>
-Ref.: ${esc(d.numero)}
-</small>`
-:''}
-
-${d.obs?
-`<p class="sub">
-${esc(d.obs)}
-</p>`
-:''}
-
-${d.fileName?
-(
-d.fileData
-?
-`<div class="fileRow">
-<span>
-📎 ${esc(d.fileName)}
-</span>
-
-<a
-class="mini"
-href="${d.fileData}"
-download="${esc(d.fileName)}">
-Abrir
-</a>
-
-</div>`
-:
-`<small>
-📎 ${esc(d.fileName)}
-</small>`
-)
-:''}
-
-</div>
-
-`;
-
-})
-.join('')
-||
-'<div class="empty">Nenhum documento encontrado.</div>';
-
-}
-
-function deleteDoc(id){
-
-if(!confirm(
-'Excluir este documento?'
-))
-return;
-
-saveDocs(
-getDocs().filter(
-x=>x.id!==id
-)
-);
-
-renderDocs();
-
-}
-
-/* ================================
-   RELATÓRIOS
-================================ */
-
-function fillReportSelectors(){
-
-const o=$('repObra');
-
-const f=$('repFunc');
-
-if(o){
-
-const cur=o.value;
-
-o.innerHTML=
-'<option value="all">Todas as obras</option>'+
-D.obras
-.map(
-x=>
-`<option value="${x.id}">
-${esc(x.nome)}
-</option>`
-)
-.join('');
-
-o.value=
-cur||'all';
-
-}
-
-if(f){
-
-const cur=f.value;
-
-f.innerHTML=
-'<option value="all">Todos os funcionários</option>'+
-D.funcionarios
-.map(
-x=>
-`<option value="${x.id}">
-${esc(x.nome)}
-</option>`
-)
-.join('');
-
-f.value=
-cur||'all';
-
-}
-
-const df=
-$('docObraFilter');
-
-if(df){
-
-const cur=df.value;
-
-df.innerHTML=
-'<option value="all">Todas as obras</option>'+
-D.obras
-.map(
-x=>
-`<option value="${x.id}">
-${esc(x.nome)}
-</option>`
-)
-.join('');
-
-df.value=
-cur||'all';
-
-}
-
-}
-
-function dateInPeriod(dt,p){
-
-if(p==='all')
-return true;
-
-const d=
-new Date(
-(dt||today())+
-'T12:00:00'
-);
-
-const n=new Date();
-
-if(p==='dia')
-return dt===today();
-
-if(p==='mes')
-return
-d.getMonth()===n.getMonth()&&
-d.getFullYear()===n.getFullYear();
-
-if(p==='ano')
-return
-d.getFullYear()===
-n.getFullYear();
-
-return true;
-
+function renderFinance(){
+ const filter=$("finObraFilter")?.value||"";
+
+ $("finObraFilter").innerHTML=
+  '<option value="">Todas as obras</option>'+
+  D.obras.map(o=>`
+   <option value="${o.id}">
+    ${esc(o.nome)}
+   </option>
+  `).join("");
+
+ $("finObraFilter").value=filter;
+
+ const rows=D.gastos.filter(x=>
+  !filter||
+  String(x.obra_id)===String(filter)
+ );
+
+ const entradas=rows
+  .filter(x=>x.categoria==="entrada")
+  .reduce((a,x)=>a+Number(x.valor||0),0);
+
+ const saidas=rows
+  .filter(x=>x.categoria!=="entrada")
+  .reduce((a,x)=>a+Number(x.valor||0),0);
+
+ $("finEntradas").textContent=money(entradas);
+ $("finSaidas").textContent=money(saidas);
+
+ $("financeList").innerHTML=
+  rows.map(x=>{
+   const obra=D.obras.find(
+    o=>String(o.id)===String(x.obra_id)
+   );
+
+   const categoria={
+    material:"Material",
+    mao_de_obra:"Mão de obra",
+    outros:"Outros gastos",
+    terceirizados:"Terceirizados",
+    entrada:"Entrada"
+   }[x.subcategoria||x.categoria]||
+   x.subcategoria||
+   x.categoria||
+   "";
+
+   return `
+    <div class="item">
+     <div class="row">
+      <div>
+       <b>${esc(x.descricao||"Lançamento")}</b><br>
+       <small class="sub">
+        ${esc(x.data||"")} •
+        ${esc(obra?.nome||"Sem obra")} •
+        ${esc(categoria)}
+       </small>
+      </div>
+
+      <b class="${x.categoria==="entrada"?"green":"red"}">
+       ${money(x.valor)}
+      </b>
+     </div>
+
+     ${
+      x.fornecedor
+       ?`<small class="sub">
+          Fornecedor: ${esc(x.fornecedor)}
+         </small>`
+       :""
+     }
+    </div>
+   `;
+  }).join("")||
+  '<div class="empty">Nenhum lançamento encontrado.</div>';
 }
 
 function renderReports(){
-
-fillReportSelectors();
-
-const of=
-$('repObra')?.value||
-'all';
-
-const ff=
-$('repFunc')?.value||
-'all';
-
-const tf=
-$('repTipo')?.value||
-'all';
-
-const pf=
-$('repPeriodo')?.value||
-'all';
-
-let rows=
-D.gastos.filter(
-x=>
-(of==='all'||
-String(x.obra_id)===
-String(of))
-&&
-(tf==='all'||
-x.categoria===tf)
-&&
-dateInPeriod(
-x.data,
-pf
-)
-);
-
-let ent=
-rows
-.filter(
-x=>x.categoria==='entrada'
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-let des=
-rows
-.filter(
-x=>x.categoria!=='entrada'
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-let dias=
-D.diarias.filter(
-x=>
-(of==='all'||
-String(x.obra_id)===
-String(of))
-&&
-(ff==='all'||
-String(x.funcionario_id)===
-String(ff))
-&&
-dateInPeriod(
-x.data,
-pf
-)
-);
-
-des+=
-dias.reduce(
-(a,x)=>
-a+
-Number(
-x.valor_pago||
-x.qtd*x.valor_diaria||
-0
-),
-0
-);
-
-$('repReceitas').textContent=
-money(ent);
-
-$('repDespesas').textContent=
-money(des);
-
-$('repLucro').textContent=
-money(ent-des);
-
-$('repObras').innerHTML=
-D.obras
-.map(o=>{
-
-const m=
-obraMetrics(o.id);
-
-return`
-
-<div
-class="card"
-style="margin:8px 0">
-
-<div class="row">
-
-<b>
-${esc(o.nome)}
-</b>
-
-<b
-class="${m.lucro>=0?'gold':'red'}">
-
-${money(m.lucro)}
-
-</b>
-
-</div>
-
-<div
-class="three"
-style="margin-top:8px">
-
-<div>
-
-🧱
-${money(m.material)}
-
-<br>
-
-<small>
-${m.pct(m.material).toFixed(1)}%
-</small>
-
-</div>
-
-<div>
-
-👷
-${money(m.mao)}
-
-<br>
-
-<small>
-${m.pct(m.mao).toFixed(1)}%
-</small>
-
-</div>
-
-<div>
-
-📦
-${money(m.outros)}
-
-<br>
-
-<small>
-${m.pct(m.outros).toFixed(1)}%
-</small>
-
-</div>
-
-</div>
-
-<div
-class="row"
-style="margin-top:8px">
-
-<span>
-
-🤝 Terceirizados
-
-${money(m.terceirizados)}
-
-(${m.pct(m.terceirizados).toFixed(1)}%)
-
-</span>
-
-<b>
-Lucro
-${m.pct(m.lucro).toFixed(1)}%
-</b>
-
-</div>
-
-</div>
-
-`;
-
-})
-.join('')
-||
-'<div class="empty">Nenhuma obra.</div>';
-
-const mat=
-rows
-.filter(
-x=>
-x.subcategoria==='material'&&
-x.categoria!=='entrada'
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const mo=
-rows
-.filter(
-x=>
-x.subcategoria==='mao_de_obra'&&
-x.categoria!=='entrada'
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-)
-
-+
-
-dias.reduce(
-(a,x)=>
-a+
-Number(
-x.valor_pago||
-x.qtd*x.valor_diaria||
-0
-),
-0
-);
-
-const ter=
-rows
-.filter(
-x=>
-x.subcategoria==='terceirizados'&&
-x.categoria!=='entrada'
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const ou=
-rows
-.filter(
-x=>
-x.subcategoria==='outros'&&
-x.categoria!=='entrada'
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const base=
-ent||
-D.obras
-.filter(
-o=>
-of==='all'||
-String(o.id)===
-String(of)
-)
-.reduce(
-(a,o)=>a+Number(o.valor||0),
-0
-);
-
-const pct=
-v=>
-base>0
-?v/base*100
-:0;
-
-$('repCategorias').innerHTML=`
-
-<div class="row">
-
-<span>
-🧱 Materiais
-</span>
-
-<b>
-${money(mat)}
-(${pct(mat).toFixed(1)}%)
-</b>
-
-</div>
-
-<div class="row">
-
-<span>
-👷 Mão de obra
-</span>
-
-<b>
-${money(mo)}
-(${pct(mo).toFixed(1)}%)
-</b>
-
-</div>
-
-<div class="row">
-
-<span>
-📦 Outros gastos
-</span>
-
-<b>
-${money(ou)}
-(${pct(ou).toFixed(1)}%)
-</b>
-
-</div>
-
-<div class="row">
-
-<span>
-🤝 Terceirizados
-</span>
-
-<b>
-${money(ter)}
-(${pct(ter).toFixed(1)}%)
-</b>
-
-</div>
-
-<div class="row">
-
-<span>
-💰 Lucro
-</span>
-
-<b class="${ent-des>=0?'gold':'red'}">
-
-${money(ent-des)}
-(${pct(ent-des).toFixed(1)}%)
-
-</b>
-
-</div>
-
-`;
-
+ const receitas=D.gastos
+  .filter(x=>x.categoria==="entrada")
+  .reduce((a,x)=>a+Number(x.valor||0),0)
+  +
+  D.pagamentos.reduce(
+   (a,x)=>a+Number(x.valor||0),
+   0
+  );
+
+ const despesas=D.gastos
+  .filter(x=>x.categoria!=="entrada")
+  .reduce((a,x)=>a+Number(x.valor||0),0);
+
+ $("reportObras").textContent=D.obras.length;
+ $("reportEquipe").textContent=D.funcionarios.length;
+ $("reportReceitas").textContent=money(receitas);
+ $("reportDespesas").textContent=money(despesas);
+
+ $("reportContent").innerHTML=
+  D.obras.map(o=>{
+   const m=obraMetrics(o.id);
+
+   return `
+    <div class="item">
+     <div class="row">
+      <b>${esc(o.nome)}</b>
+      <b class="${m.lucro>=0?"gold":"red"}">
+       ${money(m.lucro)}
+      </b>
+     </div>
+
+     <div class="grid4" style="margin-top:10px">
+      ${categoryCard(
+       "Material",
+       m.material,
+       m.pct(m.material)
+      )}
+
+      ${categoryCard(
+       "Mão de obra",
+       m.mao,
+       m.pct(m.mao)
+      )}
+
+      ${categoryCard(
+       "Outros",
+       m.outros,
+       m.pct(m.outros)
+      )}
+
+      ${categoryCard(
+       "Terceirizados",
+       m.terceirizados,
+       m.pct(m.terceirizados)
+      )}
+     </div>
+    </div>
+   `;
+  }).join("")||
+  '<div class="empty">Nenhuma obra cadastrada.</div>';
 }
 
-/* ================================
-   REDEFINIÇÃO DO RENDER
-================================ */
+function renderHome(){
+ const receitas=D.gastos
+  .filter(x=>x.categoria==="entrada")
+  .reduce((a,x)=>a+Number(x.valor||0),0)
+  +
+  D.pagamentos.reduce(
+   (a,x)=>a+Number(x.valor||0),
+   0
+  );
 
-const oldRenderAll=renderAll;
+ const despesas=D.gastos
+  .filter(x=>x.categoria!=="entrada")
+  .reduce((a,x)=>a+Number(x.valor||0),0);
 
-renderAll=function(){
+ $("homeObras").textContent=D.obras.length;
+ $("homeFuncs").textContent=D.funcionarios.length;
+ $("homeReceitas").textContent=money(receitas);
+ $("homeDespesas").textContent=money(despesas);
+}
 
-oldRenderAll();
+function renderAll(){
+ renderHome();
+ renderObras();
+ renderFuncs();
+ fillDiaSelectors();
+ renderPayroll();
+ renderFinance();
+ renderReports();
+}
 
-fillReportSelectors();
+async function startApp(){
+ const ok=await initSupabase();
 
-renderDocs();
+ if(!ok)return;
 
-renderReports();
+ await checkConnection();
 
-};
+ sb.auth.onAuthStateChange(
+  async function(_event,session){
+   user=session?.user||null;
 
+   if(user){
+    $("auth").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    $("accountEmail").textContent=user.email||"";
+
+    await loadCloud();
+    renderAll();
+
+   }else{
+    $("app").classList.add("hidden");
+    $("auth").classList.remove("hidden");
+   }
+  }
+ );
+
+ try{
+  const result=await sb.auth.getSession();
+  const session=result?.data?.session;
+
+  if(session&&session.user){
+   user=session.user;
+
+   $("auth").classList.add("hidden");
+   $("app").classList.remove("hidden");
+   $("accountEmail").textContent=user.email||"";
+
+   await loadCloud();
+   renderAll();
+  }
+ }catch(e){
+  console.error(e);
+ }
+}
+
+startApp();
 </script>
 
 </body>
