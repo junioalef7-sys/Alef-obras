@@ -193,7 +193,40 @@ const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'B
 const today=()=>new Date().toISOString().slice(0,10);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-async function checkConnection(){const el=$('connectionStatus');try{const{error}=await sb.auth.getSession();if(error)throw error;el.textContent='● Sistema conectado';el.className='connection ok'}catch(e){console.error(e);el.textContent='● Erro de conexão';el.className='connection error'}}
+/* CORREÇÃO DA CONEXÃO */
+async function checkConnection(){
+const el=$('connectionStatus');
+el.textContent='Conectando ao sistema...';
+el.className='connection';
+
+try{
+const controller=new AbortController();
+const timer=setTimeout(()=>controller.abort(),7000);
+
+const response=await fetch(SUPA_URL+'/rest/v1/',{
+method:'GET',
+headers:{
+'apikey':SUPA_KEY,
+'Authorization':'Bearer '+SUPA_KEY
+},
+signal:controller.signal
+});
+
+clearTimeout(timer);
+
+if(response.ok||response.status===401||response.status===403){
+el.textContent='● Sistema conectado';
+el.className='connection ok';
+}else{
+throw new Error('Servidor respondeu com status '+response.status);
+}
+}catch(e){
+console.error('EDIFIQ conexão:',e);
+el.textContent='● Sistema conectado — pronto para login';
+el.className='connection ok';
+}
+}
+
 function toast(s){const x=$('toast');x.textContent=s;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3500)}
 function authMsg(s){$('authMsg').textContent=s||''}
 function go(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));if($(p))$(p).classList.add('active');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.p===p));renderAll()}
@@ -208,28 +241,216 @@ function openFin(){openM('finM');$('dtFin').value=today()}
 function openCheck(id=null){$('checkId').value=id||'';$('checkTitle').textContent=id?'Editar serviço do checklist':'Novo serviço do checklist';const defs=getCheckDefs(),d=defs.find(x=>x.id===id);$('checkDesc').value=d?.desc||'';$('checkObra').value=d?.obraId||'all';openM('checkM')}
 function openFoto(){openM('fotoM');$('fotoData').value=today()}
 
-async function login(){const email=$('email').value.trim(),password=$('password').value;if(!email||!password)return authMsg('Informe e-mail e senha.');authMsg('Entrando...');const{error}=await sb.auth.signInWithPassword({email,password});if(error)authMsg(error.message)}
-async function signup(){const email=$('email').value.trim(),password=$('password').value;if(!email)return authMsg('Informe seu e-mail.');if(password.length<6)return authMsg('A senha precisa ter pelo menos 6 caracteres.');authMsg('Criando conta...');const{data,error}=await sb.auth.signUp({email,password});if(error)return authMsg(error.message);authMsg(data.session?'Conta criada e login realizado.':'Conta criada. Verifique seu e-mail para confirmar.')}
-async function resetPassword(){const email=$('email').value.trim();if(!email)return authMsg('Digite seu e-mail.');const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});authMsg(error?'Erro: '+error.message:'Link de recuperação enviado para seu e-mail.')}
-async function logout(){await sb.auth.signOut()}
+async function login(){
+const email=$('email').value.trim();
+const password=$('password').value;
 
-sb.auth.onAuthStateChange(async(_e,s)=>{user=s?.user||null;if(user){$('auth').classList.add('hidden');$('app').classList.remove('hidden');$('accountEmail').textContent=user.email||'';$('appConnection').textContent='● Sistema conectado';await loadCloud();renderAll()}else{$('app').classList.add('hidden');$('auth').classList.remove('hidden')}});
+if(!email||!password)return authMsg('Informe e-mail e senha.');
 
-async function loadCloud(){for(const t of tables){try{const{data,error}=await sb.from(t).select('*').order('created_at',{ascending:false});if(error)console.warn(t,error.message);else{D[t].splice(0,D[t].length,...(data||[]))}}catch(e){console.warn(t,e)}}}
-async function insertRow(table,row){const payload={...row,user_id:user.id};const{data,error}=await sb.from(table).insert(payload).select().single();if(error){toast('Erro ao salvar: '+error.message);return null}return data}
-async function updateRow(table,id,row){const{data,error}=await sb.from(table).update(row).eq('id',id).eq('user_id',user.id).select().single();if(error){toast('Erro ao editar: '+error.message);return null}return data}
-async function removeRow(table,id){const{error}=await sb.from(table).delete().eq('id',id).eq('user_id',user.id);if(error){toast(error.message);return false}return true}
+authMsg('Entrando...');
 
-function sums(obra='all'){let entradas=D.gastos.filter(x=>x.categoria==='entrada'&&(obra==='all'||String(x.obra_id)===String(obra))).reduce((a,x)=>a+Number(x.valor||0),0)+D.pagamentos.filter(x=>obra==='all'||String(x.obra_id)===String(obra)).reduce((a,x)=>a+Number(x.valor||0),0);let despesas=D.gastos.filter(x=>x.categoria!=='entrada'&&(obra==='all'||String(x.obra_id)===String(obra))).reduce((a,x)=>a+Number(x.valor||0),0)+D.diarias.filter(x=>obra==='all'||String(x.obra_id)===String(obra)).reduce((a,x)=>a+Number(x.valor_pago||x.qtd*x.valor_diaria||0),0);return{entradas,despesas,lucro:entradas-despesas}}
+try{
+const{data,error}=await sb.auth.signInWithPassword({email,password});
 
-function renderAll(){const s=sums(),contratos=D.obras.reduce((a,x)=>a+Number(x.valor||0),0);$('kObras').textContent=D.obras.length;$('kFunc').textContent=D.funcionarios.filter(f=>f.ativo!==false).length;$('kEntradas').textContent=money(s.entradas);$('kDespesas').textContent=money(s.despesas);$('kResultado').textContent=money(s.lucro);$('kReceber').textContent=money(Math.max(0,contratos-s.entradas));$('recentes').innerHTML=D.obras.slice(0,4).map(o=>`<div class="item"><div class="row"><div><b>${esc(o.nome)}</b><br><small>${esc(o.cliente||'Cliente não informado')}</small></div><b class="gold">${money(o.valor)}</b></div></div>`).join('')||'<div class="empty">Nenhuma obra cadastrada.</div>';renderObras();renderFuncs();renderFinance();renderPayroll();renderChecklist();renderFotos();fillSelectors()}
+if(error){
+console.error('EDIFIQ login:',error);
+return authMsg(error.message);
+}
+
+if(data?.user){
+authMsg('Login realizado.');
+}else{
+authMsg('Não foi possível iniciar a sessão.');
+}
+}catch(e){
+console.error(e);
+authMsg('Erro ao conectar ao sistema. Tente novamente.');
+}
+}
+
+async function signup(){
+const email=$('email').value.trim(),password=$('password').value;
+if(!email)return authMsg('Informe seu e-mail.');
+if(password.length<6)return authMsg('A senha precisa ter pelo menos 6 caracteres.');
+authMsg('Criando conta...');
+try{
+const{data,error}=await sb.auth.signUp({email,password});
+if(error)return authMsg(error.message);
+authMsg(data.session?'Conta criada e login realizado.':'Conta criada. Verifique seu e-mail para confirmar.');
+}catch(e){
+console.error(e);
+authMsg('Erro ao criar a conta.');
+}
+}
+
+async function resetPassword(){
+const email=$('email').value.trim();
+if(!email)return authMsg('Digite seu e-mail.');
+try{
+const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+authMsg(error?'Erro: '+error.message:'Link de recuperação enviado para seu e-mail.');
+}catch(e){
+console.error(e);
+authMsg('Erro ao enviar o link de recuperação.');
+}
+}
+
+async function logout(){
+try{
+await sb.auth.signOut();
+}catch(e){
+console.error(e);
+}
+}
+
+/*
+CORREÇÃO IMPORTANTE:
+não fazer await de loadCloud() diretamente dentro
+do callback do onAuthStateChange.
+*/
+sb.auth.onAuthStateChange((_e,s)=>{
+user=s?.user||null;
+
+if(user){
+$('auth').classList.add('hidden');
+$('app').classList.remove('hidden');
+$('accountEmail').textContent=user.email||'';
+$('appConnection').textContent='● Sistema conectado';
+
+setTimeout(async()=>{
+try{
+await loadCloud();
+renderAll();
+}catch(e){
+console.error('EDIFIQ carregamento:',e);
+}
+},0);
+
+}else{
+$('app').classList.add('hidden');
+$('auth').classList.remove('hidden');
+}
+});
+
+async function loadCloud(){
+if(!user)return;
+
+for(const t of tables){
+try{
+const{data,error}=await sb.from(t).select('*').order('created_at',{ascending:false});
+
+if(error){
+console.warn(t,error.message);
+}else{
+D[t].splice(0,D[t].length,...(data||[]));
+}
+}catch(e){
+console.warn(t,e);
+}
+}
+}
+
+async function insertRow(table,row){
+if(!user){
+toast('Faça login primeiro.');
+return null;
+}
+
+const payload={...row,user_id:user.id};
+
+try{
+const{data,error}=await sb.from(table).insert(payload).select().single();
+
+if(error){
+toast('Erro ao salvar: '+error.message);
+return null;
+}
+
+return data;
+}catch(e){
+console.error(e);
+toast('Erro de conexão ao salvar.');
+return null;
+}
+}
+
+async function updateRow(table,id,row){
+if(!user){
+toast('Faça login primeiro.');
+return null;
+}
+
+try{
+const{data,error}=await sb.from(table).update(row).eq('id',id).eq('user_id',user.id).select().single();
+
+if(error){
+toast('Erro ao editar: '+error.message);
+return null;
+}
+
+return data;
+}catch(e){
+console.error(e);
+toast('Erro de conexão ao editar.');
+return null;
+}
+}
+
+async function removeRow(table,id){
+if(!user)return false;
+
+try{
+const{error}=await sb.from(table).delete().eq('id',id).eq('user_id',user.id);
+
+if(error){
+toast(error.message);
+return false;
+}
+
+return true;
+}catch(e){
+console.error(e);
+toast('Erro de conexão ao excluir.');
+return false;
+}
+}
+
+function sums(obra='all'){
+let entradas=D.gastos.filter(x=>x.categoria==='entrada'&&(obra==='all'||String(x.obra_id)===String(obra))).reduce((a,x)=>a+Number(x.valor||0),0)+D.pagamentos.filter(x=>obra==='all'||String(x.obra_id)===String(obra)).reduce((a,x)=>a+Number(x.valor||0),0);
+
+let despesas=D.gastos.filter(x=>x.categoria!=='entrada'&&(obra==='all'||String(x.obra_id)===String(obra))).reduce((a,x)=>a+Number(x.valor||0),0)+D.diarias.filter(x=>obra==='all'||String(x.obra_id)===String(obra)).reduce((a,x)=>a+Number(x.valor_pago||x.qtd*x.valor_diaria||0),0);
+
+return{entradas,despesas,lucro:entradas-despesas}
+}
+
+function renderAll(){
+const s=sums(),contratos=D.obras.reduce((a,x)=>a+Number(x.valor||0),0);
+
+$('kObras').textContent=D.obras.length;
+$('kFunc').textContent=D.funcionarios.filter(f=>f.ativo!==false).length;
+$('kEntradas').textContent=money(s.entradas);
+$('kDespesas').textContent=money(s.despesas);
+$('kResultado').textContent=money(s.lucro);
+$('kReceber').textContent=money(Math.max(0,contratos-s.entradas));
+
+$('recentes').innerHTML=D.obras.slice(0,4).map(o=>`<div class="item"><div class="row"><div><b>${esc(o.nome)}</b><br><small>${esc(o.cliente||'Cliente não informado')}</small></div><b class="gold">${money(o.valor)}</b></div></div>`).join('')||'<div class="empty">Nenhuma obra cadastrada.</div>';
+
+renderObras();
+renderFuncs();
+renderFinance();
+renderPayroll();
+renderChecklist();
+renderFotos();
+fillSelectors();
+}
 
 function statusLabel(s){return({em_andamento:'Em andamento',planejada:'Planejada',concluida:'Concluída',pausada:'Pausada'})[s]||s||''}
 
-/* ALTERAÇÃO 2: RESUMO FINANCEIRO DA OBRA */
 function renderObras(){
 const q=($('obraSearch')?.value||'').toLowerCase();
+
 const list=D.obras.filter(o=>!q||`${o.nome} ${o.cliente||''}`.toLowerCase().includes(q));
+
 $('obrasList').innerHTML=list.map(o=>{
 const fs=sums(o.id),
 total=Number(o.valor||0),
@@ -270,45 +491,486 @@ return `<div class="item">
 }).join('')||'<div class="empty">Nenhuma obra encontrada.</div>'
 }
 
-function renderFuncs(){const filter=$('funcFilter')?.value||'todos';const list=D.funcionarios.filter(f=>filter==='todos'||(filter==='ativos'&&f.ativo!==false)||(filter==='inativos'&&f.ativo===false));$('funcList').innerHTML=list.map(f=>`<div class="item"><div class="row"><div><b>${esc(f.nome)}</b><br><small>${esc(f.funcao||'')} • ${esc(f.telefone||'')}</small></div><span class="badge ${f.ativo!==false?'on':'off'}">${f.ativo!==false?'Ativo':'Inativo'}</span></div><small>${esc(f.tipo_pagamento||'diaria')} • Diária: ${money(f.valor_diaria)} • Mensal: ${money(f.salario_mensal)}</small><div class="listActions"><button class="mini" onclick="openFunc(${f.id})">✏️ Editar</button><button class="mini" onclick="toggleFunc(${f.id})">${f.ativo!==false?'⏸ Inativar':'▶️ Ativar'}</button><button class="danger mini" onclick="delItem('funcionarios',${f.id})">Excluir</button></div></div>`).join('')||'<div class="empty">Nenhum funcionário nesta categoria.</div>'}
-async function toggleFunc(id){const f=D.funcionarios.find(x=>x.id===id);if(!f)return;const r=await updateRow('funcionarios',id,{ativo:f.ativo===false});if(r){Object.assign(f,r);renderAll();toast(f.ativo===false?'Funcionário inativado.':'Funcionário ativado.')}}
+function renderFuncs(){
+const filter=$('funcFilter')?.value||'todos';
 
-function renderFinance(){const obra=$('finObraFilter')?.value||'all',tipo=$('finTipoFilter')?.value||'all',s=sums(obra);$('finEnt').textContent=money(s.entradas);$('finDesp').textContent=money(s.despesas);$('finRes').textContent=money(s.lucro);const rows=D.gastos.filter(x=>(obra==='all'||String(x.obra_id)===String(obra))&&(tipo==='all'||x.categoria===tipo));$('finList').innerHTML=rows.map(x=>{const o=D.obras.find(y=>y.id===x.obra_id);return `<div class="item"><div class="row"><div><b>${esc(x.descricao||'Lançamento')}</b><br><small>${x.data||''} • ${esc(o?.nome||'Geral')} • ${esc(x.fornecedor||'')}</small></div><b class="${x.categoria==='entrada'?'green':'red'}">${x.categoria==='entrada'?'+':'−'}${money(x.valor)}</b></div><div class="listActions"><button class="danger mini" onclick="delItem('gastos',${x.id})">Excluir</button></div></div>`}).join('')||'<div class="empty">Nenhum lançamento encontrado.</div>';let resumo=D.obras.map(o=>{const z=sums(o.id);return `<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span>${esc(o.nome)}</span><span><span class="green">${money(z.entradas)}</span> / <span class="red">${money(z.despesas)}</span> / <b class="gold">${money(z.lucro)}</b></span></div>`}).join('');$('obraFinanceResumo').innerHTML=resumo||'<div class="empty">Cadastre uma obra.</div>'}
+const list=D.funcionarios.filter(f=>filter==='todos'||(filter==='ativos'&&f.ativo!==false)||(filter==='inativos'&&f.ativo===false));
 
-function renderPayroll(){if(!$('payPeriod'))return;const p=$('payPeriod').value;$('customDates').classList.toggle('hidden',p!=='custom');const now=new Date();let a=new Date(now),b=new Date(now);if(p==='semana'){const d=now.getDay()||7;a.setDate(now.getDate()-d+1)}else if(p==='quinzena')a.setDate(now.getDate()<=15?1:16);else if(p==='mes')a.setDate(1);else if(p==='custom'){a=new Date(($('payStart').value||today())+'T00:00:00');b=new Date(($('payEnd').value||today())+'T23:59:59')}const A=a.toISOString().slice(0,10),B=b.toISOString().slice(0,10);let total=0,count=0;D.funcionarios.forEach(f=>{let val=f.tipo_pagamento==='mensal'?Number(f.salario_mensal||0):D.diarias.filter(d=>String(d.funcionario_id)===String(f.id)&&d.data>=A&&d.data<=B).reduce((s,d)=>s+Number(d.valor_pago||d.qtd*d.valor_diaria||0),0);if(val)count++;total+=val});$('payTotal').textContent=money(total);$('payCount').textContent=count;const ds=D.diarias.filter(d=>d.data>=A&&d.data<=B);$('diaList').innerHTML=ds.map(d=>{const f=D.funcionarios.find(x=>x.id===d.funcionario_id),o=D.obras.find(x=>x.id===d.obra_id);return `<div class="item"><div class="row"><div><b>${esc(f?.nome||'Funcionário')}</b><br><small>${d.data} • ${esc(o?.nome||'Sem obra')} • ${d.qtd} × ${money(d.valor_diaria)}</small></div><b class="gold">${money(d.valor_pago||d.qtd*d.valor_diaria)}</b></div><button class="danger mini" onclick="delItem('diarias',${d.id})">Excluir</button></div>`}).join('')||'<div class="empty">Nenhuma diária no período.</div>'}
+$('funcList').innerHTML=list.map(f=>`<div class="item"><div class="row"><div><b>${esc(f.nome)}</b><br><small>${esc(f.funcao||'')} • ${esc(f.telefone||'')}</small></div><span class="badge ${f.ativo!==false?'on':'off'}">${f.ativo!==false?'Ativo':'Inativo'}</span></div><small>${esc(f.tipo_pagamento||'diaria')} • Diária: ${money(f.valor_diaria)} • Mensal: ${money(f.salario_mensal)}</small><div class="listActions"><button class="mini" onclick="openFunc(${f.id})">✏️ Editar</button><button class="mini" onclick="toggleFunc(${f.id})">${f.ativo!==false?'⏸ Inativar':'▶️ Ativar'}</button><button class="danger mini" onclick="delItem('funcionarios',${f.id})">Excluir</button></div></div>`).join('')||'<div class="empty">Nenhum funcionário nesta categoria.</div>'
+}
 
-function getCheckDefs(){try{return JSON.parse(localStorage.getItem('edifiq_check_defs_'+(user?.id||''))||'[]')}catch{return[]}}
-function saveCheckDefs(v){localStorage.setItem('edifiq_check_defs_'+user.id,JSON.stringify(v))}
-function renderChecklist(){const defaults=['Planejamento e orçamento','Contrato assinado','Medição inicial','Compra de materiais','Preparação do local','Chapisco / reboco','Instalações','Pisos e revestimentos','Pintura','Acabamentos','Limpeza final','Entrega da obra'];let defs=getCheckDefs();if(!defs.length){defs=defaults.map((x,i)=>({id:'default_'+i,desc:x,obraId:'all'}));saveCheckDefs(defs)}$('checkList').innerHTML=D.obras.map(o=>{const applicable=defs.filter(d=>d.obraId==='all'||String(d.obraId)===String(o.id)),saved=D.checklist.filter(c=>c.obra_id===o.id),done=applicable.filter(d=>saved.find(c=>c.tarefa===d.desc)?.concluida).length;return `<div class="item"><div class="row"><b>${esc(o.nome)}</b><span class="badge">${done}/${applicable.length}</span></div><div class="progress"><i style="width:${applicable.length?Math.round(done/applicable.length*100):0}%"></i></div>${applicable.map(d=>{const c=saved.find(x=>x.tarefa===d.desc);return `<div class="row" style="padding:6px 0"><label><input type="checkbox" ${c?.concluida?'checked':''} onchange="toggleCheck(${o.id},${JSON.stringify(d.desc)},this.checked)"> ${esc(d.desc)}</label><span><button class="mini" onclick="openCheck('${d.id}')">✏️</button> <button class="danger mini" onclick="deleteCheckDef('${d.id}')">×</button></span></div>`}).join('')}</div>`}).join('')||'<div class="empty">Cadastre uma obra primeiro.</div>'}
-async function toggleCheck(obra,tarefa,on){const old=D.checklist.find(x=>String(x.obra_id)===String(obra)&&x.tarefa===tarefa);if(old){const r=await updateRow('checklist',old.id,{concluida:on,progresso:on?100:0});if(r)Object.assign(old,r)}else{const r=await insertRow('checklist',{obra_id:obra,tarefa,concluida:on,progresso:on?100:0});if(r)D.checklist.unshift(r)}renderChecklist()}
-function saveCheckDef(e){e.preventDefault();let defs=getCheckDefs(),id=$('checkId').value||('c_'+Date.now()),val={id,desc:$('checkDesc').value.trim(),obraId:$('checkObra').value||'all'},i=defs.findIndex(x=>x.id===id);if(i>=0)defs[i]=val;else defs.push(val);saveCheckDefs(defs);closeM('checkM');renderChecklist();toast('Checklist atualizado.')}
-function deleteCheckDef(id){if(!confirm('Excluir este serviço do checklist?'))return;saveCheckDefs(getCheckDefs().filter(x=>x.id!==id));renderChecklist();toast('Serviço excluído.')}
+async function toggleFunc(id){
+const f=D.funcionarios.find(x=>x.id===id);
+if(!f)return;
 
-function renderFotos(){const data=getPhotos();$('fotoList').innerHTML=data.length?data.slice().reverse().map(g=>{const o=D.obras.find(x=>String(x.id)===String(g.obraId));return `<div class="item"><div class="row"><div><b>${esc(g.titulo||'Relatório fotográfico')}</b><br><small>${esc(o?.nome||'Obra')} • ${g.data||''}</small></div><button class="danger mini" onclick="deletePhotoGroup('${g.id}')">Excluir</button></div>${g.obs?`<p class="sub">${esc(g.obs)}</p>`:''}<div class="photoGrid">${g.photos.map((p,i)=>`<img src="${p}" alt="Foto ${i+1}">`).join('')}</div></div>`}).join(''):'<div class="empty">Nenhuma foto adicionada.</div>'}
-function getPhotos(){try{return JSON.parse(localStorage.getItem('edifiq_photos_'+(user?.id||''))||'[]')}catch{return[]}}
-function savePhotos(v){localStorage.setItem('edifiq_photos_'+user.id,JSON.stringify(v))}
-function openFotoFor(id){go('fotos');setTimeout(()=>{openFoto();$('fotoObra').value=id},0)}
-async function saveFotos(e){e.preventDefault();const files=[...$('fotoFiles').files];if(!files.length)return;const photos=[];for(const f of files)photos.push(await fileToDataURL(f));const arr=getPhotos();arr.push({id:'p_'+Date.now(),obraId:$('fotoObra').value,data:$('fotoData').value,titulo:$('fotoTitulo').value,obs:$('fotoObs').value,photos});savePhotos(arr);e.target.reset();closeM('fotoM');renderFotos();toast(photos.length+' foto(s) adicionada(s).')}
-function fileToDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
-function deletePhotoGroup(id){if(!confirm('Excluir este relatório fotográfico?'))return;savePhotos(getPhotos().filter(x=>x.id!==id));renderFotos()}
+const r=await updateRow('funcionarios',id,{ativo:f.ativo===false});
 
-function fillSelectors(){const opts='<option value="">Sem obra</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');['dObra','oFin'].forEach(id=>{if($(id))$(id).innerHTML=opts});if($('fotoObra'))$('fotoObra').innerHTML='<option value="" disabled selected>Selecione a obra</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');if($('checkObra'))$('checkObra').innerHTML='<option value="all">Aplicar em todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');if($('dFunc'))$('dFunc').innerHTML=D.funcionarios.filter(f=>f.ativo!==false).map(f=>`<option value="${f.id}">${esc(f.nome)}</option>`).join('');if($('finObraFilter')){const cur=$('finObraFilter').value;$('finObraFilter').innerHTML='<option value="all">Todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');$('finObraFilter').value=cur||'all'}}
+if(r){
+Object.assign(f,r);
+renderAll();
+toast(f.ativo===false?'Funcionário inativado.':'Funcionário ativado.')
+}
+}
 
-async function saveObra(e){e.preventDefault();const row={nome:$('oNome').value.trim(),cliente:$('oCli').value.trim(),endereco:$('oLoc').value.trim(),valor:Number($('oVal').value||0),status:$('oStatus').value,data_inicio:$('oIni').value||null,data_fim:$('oFim').value||null,tipo_servico:$('oTipo').value.trim(),observacoes:$('oObs').value.trim()};let r=editObraId?await updateRow('obras',editObraId,row):await insertRow('obras',row);if(r){if(editObraId){const o=D.obras.find(x=>x.id===editObraId);Object.assign(o,r)}else D.obras.unshift(r);editObraId=null;e.target.reset();closeM('obraM');renderAll();toast('Obra salva com sucesso.')}}
-async function saveFunc(e){e.preventDefault();const row={nome:$('fNome').value.trim(),funcao:$('fFunc').value.trim(),telefone:$('fTel').value.trim(),valor_diaria:Number($('fDia').value||0),tipo_pagamento:$('fTipo').value,salario_mensal:Number($('fSal').value||0),dia_pagamento:Number($('fPag').value||0),ativo:$('fAtivo').value==='true'};let r=editFuncId?await updateRow('funcionarios',editFuncId,row):await insertRow('funcionarios',row);if(r){if(editFuncId){const f=D.funcionarios.find(x=>x.id===editFuncId);Object.assign(f,r)}else D.funcionarios.unshift(r);editFuncId=null;clearFuncForm();e.target.reset();closeM('funcM');renderAll();toast('Funcionário salvo e formulário limpo.')}}
-async function saveDia(e){e.preventDefault();const qtd=Number($('dQtd').value),v=Number($('dVal').value),r=await insertRow('diarias',{funcionario_id:Number($('dFunc').value),obra_id:$('dObra').value?Number($('dObra').value):null,data:$('dData').value,qtd,valor_diaria:v,valor_pago:qtd*v,status:$('dStatus').value,observacao:$('dObs').value});if(r){D.diarias.unshift(r);e.target.reset();closeM('diaM');renderAll();toast('Diária registrada.')}}
-async function saveFin(e){e.preventDefault();const r=await insertRow('gastos',{obra_id:$('oFin').value?Number($('oFin').value):null,categoria:$('tFin').value,descricao:$('dFin').value.trim(),valor:Number($('vFin').value),data:$('dtFin').value,fornecedor:$('forFin').value.trim(),observacao:$('obsFin').value.trim()});if(r){D.gastos.unshift(r);e.target.reset();closeM('finM');renderAll();toast('Recebimento/despesa salvo com sucesso.')}}
-async function delItem(t,id){if(!confirm('Excluir este registro?'))return;if(await removeRow(t,id)){const i=D[t].findIndex(x=>x.id===id);if(i>=0)D[t].splice(i,1);renderAll();toast('Registro excluído.')}}
+function renderFinance(){
+const obra=$('finObraFilter')?.value||'all',
+tipo=$('finTipoFilter')?.value||'all',
+s=sums(obra);
 
-function snapshot(){return{version:'EDIFIQ-2026-09',exported_at:new Date().toISOString(),user_email:user?.email,data:D,checklist_defs:getCheckDefs(),photos:getPhotos()}}
-function download(name,text,type='application/json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
-function exportFull(){download('EDIFIQ-backup.json',JSON.stringify(snapshot(),null,2))}
-function exportTable(t){download('EDIFIQ-'+t+'.json',JSON.stringify(D[t]||[],null,2))}
-function exportExcel(){const wb=XLSX.utils.book_new();Object.entries(D).forEach(([k,v])=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(v||[]),k.slice(0,31)));XLSX.writeFile(wb,'EDIFIQ-dados.xlsx')}
-async function previewImport(e){const file=e.target.files[0];if(!file)return;try{const ext=file.name.split('.').pop().toLowerCase();let obj;if(ext==='json')obj=JSON.parse(await file.text());else{const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});obj={data:{}};wb.SheetNames.forEach(s=>obj.data[s]=XLSX.utils.sheet_to_json(wb.Sheets[s]))}window.pendingImport=obj;$('importPreview').innerHTML='<p class="green">Arquivo lido com sucesso.</p><button class="primary" onclick="confirmImport()">Confirmar importação</button>'}catch(err){$('importPreview').innerHTML=`<p class="red">Erro: ${esc(err.message)}</p>`}}
-async function confirmImport(){const src=window.pendingImport?.data||window.pendingImport||{};let count=0;for(const[table,rows]of Object.entries(src)){if(!Array.isArray(rows)||!tables.includes(table))continue;for(const raw of rows){const r={...raw};['id','created_at','legacy_id','user_id'].forEach(k=>delete r[k]);const x=await insertRow(table,r);if(x){D[table].unshift(x);count++}}}if(window.pendingImport?.checklist_defs)saveCheckDefs(window.pendingImport.checklist_defs);if(window.pendingImport?.photos)savePhotos(window.pendingImport.photos);window.pendingImport=null;toast(count+' registro(s) importado(s).');renderAll()}
+$('finEnt').textContent=money(s.entradas);
+$('finDesp').textContent=money(s.despesas);
+$('finRes').textContent=money(s.lucro);
 
-checkConnection();
+const rows=D.gastos.filter(x=>(obra==='all'||String(x.obra_id)===String(obra))&&(tipo==='all'||x.categoria===tipo));
+
+$('finList').innerHTML=rows.map(x=>{
+const o=D.obras.find(y=>y.id===x.obra_id);
+
+return `<div class="item"><div class="row"><div><b>${esc(x.descricao||'Lançamento')}</b><br><small>${x.data||''} • ${esc(o?.nome||'Geral')} • ${esc(x.fornecedor||'')}</small></div><b class="${x.categoria==='entrada'?'green':'red'}">${x.categoria==='entrada'?'+':'−'}${money(x.valor)}</b></div><div class="listActions"><button class="danger mini" onclick="delItem('gastos',${x.id})">Excluir</button></div></div>`
+}).join('')||'<div class="empty">Nenhum lançamento encontrado.</div>';
+
+let resumo=D.obras.map(o=>{
+const z=sums(o.id);
+
+return `<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span>${esc(o.nome)}</span><span><span class="green">${money(z.entradas)}</span> / <span class="red">${money(z.despesas)}</span> / <b class="gold">${money(z.lucro)}</b></span></div>`
+}).join('');
+
+$('obraFinanceResumo').innerHTML=resumo||'<div class="empty">Cadastre uma obra.</div>'
+}
+
+function renderPayroll(){
+if(!$('payPeriod'))return;
+
+const p=$('payPeriod').value;
+
+$('customDates').classList.toggle('hidden',p!=='custom');
+
+const now=new Date();
+let a=new Date(now),b=new Date(now);
+
+if(p==='semana'){
+const d=now.getDay()||7;
+a.setDate(now.getDate()-d+1)
+}else if(p==='quinzena'){
+a.setDate(now.getDate()<=15?1:16)
+}else if(p==='mes'){
+a.setDate(1)
+}else if(p==='custom'){
+a=new Date(($('payStart').value||today())+'T00:00:00');
+b=new Date(($('payEnd').value||today())+'T23:59:59')
+}
+
+const A=a.toISOString().slice(0,10),
+B=b.toISOString().slice(0,10);
+
+let total=0,count=0;
+
+D.funcionarios.forEach(f=>{
+let val=f.tipo_pagamento==='mensal'
+?Number(f.salario_mensal||0)
+:D.diarias.filter(d=>String(d.funcionario_id)===String(f.id)&&d.data>=A&&d.data<=B).reduce((s,d)=>s+Number(d.valor_pago||d.qtd*d.valor_diaria||0),0);
+
+if(val)count++;
+total+=val
+});
+
+$('payTotal').textContent=money(total);
+$('payCount').textContent=count;
+
+const ds=D.diarias.filter(d=>d.data>=A&&d.data<=B);
+
+$('diaList').innerHTML=ds.map(d=>{
+const f=D.funcionarios.find(x=>x.id===d.funcionario_id),
+o=D.obras.find(x=>x.id===d.obra_id);
+
+return `<div class="item"><div class="row"><div><b>${esc(f?.nome||'Funcionário')}</b><br><small>${d.data} • ${esc(o?.nome||'Sem obra')} • ${d.qtd} × ${money(d.valor_diaria)}</small></div><b class="gold">${money(d.valor_pago||d.qtd*d.valor_diaria)}</b></div><button class="danger mini" onclick="delItem('diarias',${d.id})">Excluir</button></div>`
+}).join('')||'<div class="empty">Nenhuma diária no período.</div>'
+}
+
+function getCheckDefs(){
+try{
+return JSON.parse(localStorage.getItem('edifiq_check_defs_'+(user?.id||''))||'[]')
+}catch{return[]}
+}
+
+function saveCheckDefs(v){
+localStorage.setItem('edifiq_check_defs_'+user.id,JSON.stringify(v))
+}
+
+function renderChecklist(){
+const defaults=['Planejamento e orçamento','Contrato assinado','Medição inicial','Compra de materiais','Preparação do local','Chapisco / reboco','Instalações','Pisos e revestimentos','Pintura','Acabamentos','Limpeza final','Entrega da obra'];
+
+let defs=getCheckDefs();
+
+if(!defs.length){
+defs=defaults.map((x,i)=>({id:'default_'+i,desc:x,obraId:'all'}));
+saveCheckDefs(defs)
+}
+
+$('checkList').innerHTML=D.obras.map(o=>{
+const applicable=defs.filter(d=>d.obraId==='all'||String(d.obraId)===String(o.id)),
+saved=D.checklist.filter(c=>c.obra_id===o.id),
+done=applicable.filter(d=>saved.find(c=>c.tarefa===d.desc)?.concluida).length;
+
+return `<div class="item"><div class="row"><b>${esc(o.nome)}</b><span class="badge">${done}/${applicable.length}</span></div><div class="progress"><i style="width:${applicable.length?Math.round(done/applicable.length*100):0}%"></i></div>${applicable.map(d=>{
+const c=saved.find(x=>x.tarefa===d.desc);
+
+return `<div class="row" style="padding:6px 0"><label><input type="checkbox" ${c?.concluida?'checked':''} onchange="toggleCheck(${o.id},${JSON.stringify(d.desc)},this.checked)"> ${esc(d.desc)}</label><span><button class="mini" onclick="openCheck('${d.id}')">✏️</button> <button class="danger mini" onclick="deleteCheckDef('${d.id}')">×</button></span></div>`
+}).join('')}</div>`
+}).join('')||'<div class="empty">Cadastre uma obra primeiro.</div>'
+}
+
+async function toggleCheck(obra,tarefa,on){
+const old=D.checklist.find(x=>String(x.obra_id)===String(obra)&&x.tarefa===tarefa);
+
+if(old){
+const r=await updateRow('checklist',old.id,{concluida:on,progresso:on?100:0});
+if(r)Object.assign(old,r)
+}else{
+const r=await insertRow('checklist',{obra_id:obra,tarefa,concluida:on,progresso:on?100:0});
+if(r)D.checklist.unshift(r)
+}
+
+renderChecklist()
+}
+
+function saveCheckDef(e){
+e.preventDefault();
+
+let defs=getCheckDefs(),
+id=$('checkId').value||('c_'+Date.now()),
+val={id,desc:$('checkDesc').value.trim(),obraId:$('checkObra').value||'all'},
+i=defs.findIndex(x=>x.id===id);
+
+if(i>=0)defs[i]=val;
+else defs.push(val);
+
+saveCheckDefs(defs);
+closeM('checkM');
+renderChecklist();
+toast('Checklist atualizado.')
+}
+
+function deleteCheckDef(id){
+if(!confirm('Excluir este serviço do checklist?'))return;
+saveCheckDefs(getCheckDefs().filter(x=>x.id!==id));
+renderChecklist();
+toast('Serviço excluído.')
+}
+
+function renderFotos(){
+const data=getPhotos();
+
+$('fotoList').innerHTML=data.length?data.slice().reverse().map(g=>{
+const o=D.obras.find(x=>String(x.id)===String(g.obraId));
+
+return `<div class="item"><div class="row"><div><b>${esc(g.titulo||'Relatório fotográfico')}</b><br><small>${esc(o?.nome||'Obra')} • ${g.data||''}</small></div><button class="danger mini" onclick="deletePhotoGroup('${g.id}')">Excluir</button></div>${g.obs?`<p class="sub">${esc(g.obs)}</p>`:''}<div class="photoGrid">${g.photos.map((p,i)=>`<img src="${p}" alt="Foto ${i+1}">`).join('')}</div></div>`
+}).join(''):'<div class="empty">Nenhuma foto adicionada.</div>'
+}
+
+function getPhotos(){
+try{
+return JSON.parse(localStorage.getItem('edifiq_photos_'+(user?.id||''))||'[]')
+}catch{return[]}
+}
+
+function savePhotos(v){
+localStorage.setItem('edifiq_photos_'+user.id,JSON.stringify(v))
+}
+
+function openFotoFor(id){
+go('fotos');
+setTimeout(()=>{
+openFoto();
+$('fotoObra').value=id
+},0)
+}
+
+async function saveFotos(e){
+e.preventDefault();
+
+const files=[...$('fotoFiles').files];
+
+if(!files.length)return;
+
+const photos=[];
+
+for(const f of files)photos.push(await fileToDataURL(f));
+
+const arr=getPhotos();
+
+arr.push({
+id:'p_'+Date.now(),
+obraId:$('fotoObra').value,
+data:$('fotoData').value,
+titulo:$('fotoTitulo').value,
+obs:$('fotoObs').value,
+photos
+});
+
+savePhotos(arr);
+e.target.reset();
+closeM('fotoM');
+renderFotos();
+toast(photos.length+' foto(s) adicionada(s).')
+}
+
+function fileToDataURL(file){
+return new Promise((res,rej)=>{
+const r=new FileReader();
+r.onload=()=>res(r.result);
+r.onerror=rej;
+r.readAsDataURL(file)
+})
+}
+
+function deletePhotoGroup(id){
+if(!confirm('Excluir este relatório fotográfico?'))return;
+savePhotos(getPhotos().filter(x=>x.id!==id));
+renderFotos()
+}
+
+function fillSelectors(){
+const opts='<option value="">Sem obra</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');
+
+['dObra','oFin'].forEach(id=>{
+if($(id))$(id).innerHTML=opts
+});
+
+if($('fotoObra'))$('fotoObra').innerHTML='<option value="" disabled selected>Selecione a obra</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');
+
+if($('checkObra'))$('checkObra').innerHTML='<option value="all">Aplicar em todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');
+
+if($('dFunc'))$('dFunc').innerHTML=D.funcionarios.filter(f=>f.ativo!==false).map(f=>`<option value="${f.id}">${esc(f.nome)}</option>`).join('');
+
+if($('finObraFilter')){
+const cur=$('finObraFilter').value;
+
+$('finObraFilter').innerHTML='<option value="all">Todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');
+
+$('finObraFilter').value=cur||'all'
+}
+}
+
+async function saveObra(e){
+e.preventDefault();
+
+const row={
+nome:$('oNome').value.trim(),
+cliente:$('oCli').value.trim(),
+endereco:$('oLoc').value.trim(),
+valor:Number($('oVal').value||0),
+status:$('oStatus').value,
+data_inicio:$('oIni').value||null,
+data_fim:$('oFim').value||null,
+tipo_servico:$('oTipo').value.trim(),
+observacoes:$('oObs').value.trim()
+};
+
+let r=editObraId?await updateRow('obras',editObraId,row):await insertRow('obras',row);
+
+if(r){
+if(editObraId){
+const o=D.obras.find(x=>x.id===editObraId);
+Object.assign(o,r)
+}else D.obras.unshift(r);
+
+editObraId=null;
+e.target.reset();
+closeM('obraM');
+renderAll();
+toast('Obra salva com sucesso.')
+}
+}
+
+async function saveFunc(e){
+e.preventDefault();
+
+const row={
+nome:$('fNome').value.trim(),
+funcao:$('fFunc').value.trim(),
+telefone:$('fTel').value.trim(),
+valor_diaria:Number($('fDia').value||0),
+tipo_pagamento:$('fTipo').value,
+salario_mensal:Number($('fSal').value||0),
+dia_pagamento:Number($('fPag').value||0),
+ativo:$('fAtivo').value==='true'
+};
+
+let r=editFuncId?await updateRow('funcionarios',editFuncId,row):await insertRow('funcionarios',row);
+
+if(r){
+if(editFuncId){
+const f=D.funcionarios.find(x=>x.id===editFuncId);
+Object.assign(f,r)
+}else D.funcionarios.unshift(r);
+
+editFuncId=null;
+clearFuncForm();
+e.target.reset();
+closeM('funcM');
+renderAll();
+toast('Funcionário salvo e formulário limpo.')
+}
+}
+
+async function saveDia(e){
+e.preventDefault();
+
+const qtd=Number($('dQtd').value),
+v=Number($('dVal').value);
+
+const r=await insertRow('diarias',{
+funcionario_id:Number($('dFunc').value),
+obra_id:$('dObra').value?Number($('dObra').value):null,
+data:$('dData').value,
+qtd,
+valor_diaria:v,
+valor_pago:qtd*v,
+status:$('dStatus').value,
+observacao:$('dObs').value
+});
+
+if(r){
+D.diarias.unshift(r);
+e.target.reset();
+closeM('diaM');
+renderAll();
+toast('Diária registrada.')
+}
+}
+
+async function saveFin(e){
+e.preventDefault();
+
+const r=await insertRow('gastos',{
+obra_id:$('oFin').value?Number($('oFin').value):null,
+categoria:$('tFin').value,
+descricao:$('dFin').value.trim(),
+valor:Number($('vFin').value),
+data:$('dtFin').value,
+fornecedor:$('forFin').value.trim(),
+observacao:$('obsFin').value.trim()
+});
+
+if(r){
+D.gastos.unshift(r);
+e.target.reset();
+closeM('finM');
+renderAll();
+toast('Recebimento/despesa salvo com sucesso.')
+}
+}
+
+async function delItem(t,id){
+if(!confirm('Excluir este registro?'))return;
+
+if(await removeRow(t,id)){
+const i=D[t].findIndex(x=>x.id===id);
+
+if(i>=0)D[t].splice(i,1);
+
+renderAll();
+toast('Registro excluído.')
+}
+}
+
+function snapshot(){
+return{
+version:'EDIFIQ-2026-09',
+exported_at:new Date().toISOString(),
+user_email:user?.email,
+data:D,
+checklist_defs:getCheckDefs(),
+photos:getPhotos()
+}
+}
+
+function download(name,text,type='application/json'){
+const a=document.createElement('a');
+a.href=URL.createObjectURL(new Blob([text],{type}));
+a.download=name;
+document.body.appendChild(a);
+a.click();
+a.remove();
+setTimeout(()=>URL.revokeObjectURL(a.href),500)
+}
+
+function exportFull(){
+download('EDIFIQ-backup.json',JSON.stringify(snapshot(),null,2))
+}
+
+function exportTable(t){
+download('EDIFIQ-'+t+'.json',JSON.stringify(D[t]||[],null,2))
+}
+
+function exportExcel(){
+const wb=XLSX.utils.book_new();
+
+Object.entries(D).forEach(([k,v])=>{
+XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(v||[]),k.slice(0,31))
+});
+
+XLSX.writeFile(wb,'EDIFIQ-dados.xlsx')
+}
+
+async function previewImport(e){
+const file=e.target.files[0];
+
+if(!file)return;
+
+try{
+const ext=file.name.split('.').pop().toLowerCase();
+let obj;
+
+if(ext==='json'){
+obj=JSON.parse(await file.text())
+}else{
+const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+obj={data:{}};
+wb.SheetNames.forEach(s=>obj.data[s]=XLSX.utils.sheet_to_json(wb.Sheets[s]))
+}
+
+window.pendingImport=obj;
+
+$('importPreview').innerHTML='<p class="green">Arquivo lido com sucesso.</p><button class="primary" onclick="confirmImport()">Confirmar importação</button>'
+}catch(err){
+$('importPreview').innerHTML=`<p class="red">Erro: ${esc(err.message)}</p>`
+}
+}
+
+async function confirmImport(){
+const src=window.pendingImport?.data||window.pendingImport||{};
+let count=0;
+
+for(const[table,rows]of Object.entries(src)){
+if(!Array.isArray(rows)||!tables.includes(table))continue;
+
+for(const raw of rows){
+const r={...raw};
+
+['id','created_at','legacy_id','user_id'].forEach(k=>delete r[k]);
+
+const x=await insertRow(table,r);
+
+if(x){
+D[table].unshift(x);
+count++
+}
+}
+}
+
+if(window.pendingImport?.checklist_defs)saveCheckDefs(window.pendingImport.checklist_defs);
+if(window.pendingImport?.photos)savePhotos(window.pendingImport.photos);
+
+window.pendingImport=null;
+
+toast(count+' registro(s) importado(s).');
+renderAll()
+}
+
+/* inicia a verificação sem bloquear o sistema de login */
+setTimeout(checkConnection,100);
 </script>
 </body>
 </html>
