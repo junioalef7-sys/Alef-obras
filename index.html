@@ -89,9 +89,8 @@ th{color:var(--muted)}
 .profitBox{background:#0e1216;border:1px solid var(--line);border-radius:10px;padding:10px}
 .profitBox b{display:block;margin-top:4px}
 .profitPct{font-size:12px;color:var(--muted)}
-.selectedBox{background:#171d23;border:1px solid var(--line);padding:10px;border-radius:12px}
-.chip{display:inline-flex;align-items:center;gap:5px;background:#20262d;border:1px solid var(--line);border-radius:999px;padding:7px 9px;font-size:12px}
-.chip input{accent-color:var(--gold)}
+.paySelect{display:flex;align-items:center;gap:8px;padding:8px 0}
+.paySelect input{width:18px;height:18px}
 @media(max-width:700px){
 .grid4{grid-template-columns:1fr 1fr}
 .grid3{grid-template-columns:1fr 1fr}
@@ -113,14 +112,16 @@ th{color:var(--muted)}
 <div class="authbox">
 <div class="authlogo">EDIFI<span>Q</span></div>
 <p class="sub" style="text-align:center">GESTÃO DE OBRAS</p>
-<p id="connectionStatus" class="connection">Verificando conexão...</p>
+<p id="connectionStatus" class="connection">Carregando conexão...</p>
+
 <div class="form" style="margin-top:20px">
 <input id="email" type="email" placeholder="E-mail" autocomplete="email">
 <input id="password" type="password" placeholder="Senha" autocomplete="current-password">
 <button class="primary" onclick="login()">Entrar</button>
-<button class="secondary" onclick="signup()">Criar conta</button>
+<button class="secondary" onclick="signup()">Criar minha conta</button>
 <button class="secondary" onclick="resetPassword()">Esqueci a senha</button>
 </div>
+
 <p id="authMsg" class="sub"></p>
 </div>
 </div>
@@ -132,6 +133,7 @@ th{color:var(--muted)}
 <div class="logo">EDIFI<span>Q</span></div>
 <div class="sub">Gestão de Obras</div>
 </div>
+
 <div style="display:flex;align-items:center;gap:10px">
 <span id="appConnection" class="connection ok">● Sistema conectado</span>
 <button class="secondary" onclick="logout()">Sair</button>
@@ -141,20 +143,41 @@ th{color:var(--muted)}
 <main>
 
 <section id="home" class="page active">
-
 <h1>Olá! 👋</h1>
 <p class="lead">Seu painel de controle.</p>
 
 <div class="grid3">
-<div class="card"><div class="label">Obras</div><div class="stat gold" id="kObras">0</div></div>
-<div class="card"><div class="label">Funcionários ativos</div><div class="stat" id="kFunc">0</div></div>
-<div class="card"><div class="label">A receber</div><div class="stat green" id="kReceber">R$ 0,00</div></div>
+<div class="card kpi">
+<div class="label">Obras</div>
+<div class="stat gold" id="kObras">0</div>
+</div>
+
+<div class="card kpi">
+<div class="label">Funcionários ativos</div>
+<div class="stat" id="kFunc">0</div>
+</div>
+
+<div class="card kpi">
+<div class="label">A receber</div>
+<div class="stat green" id="kReceber">R$ 0,00</div>
+</div>
 </div>
 
 <div class="grid3">
-<div class="card"><div class="label">Receitas</div><div class="stat green" id="kEntradas">R$ 0,00</div></div>
-<div class="card"><div class="label">Despesas</div><div class="stat red" id="kDespesas">R$ 0,00</div></div>
-<div class="card"><div class="label">Lucro</div><div class="stat gold" id="kResultado">R$ 0,00</div></div>
+<div class="card kpi">
+<div class="label">Receitas</div>
+<div class="stat green" id="kEntradas">R$ 0,00</div>
+</div>
+
+<div class="card kpi">
+<div class="label">Despesas</div>
+<div class="stat red" id="kDespesas">R$ 0,00</div>
+</div>
+
+<div class="card kpi">
+<div class="label">Lucro</div>
+<div class="stat gold" id="kResultado">R$ 0,00</div>
+</div>
 </div>
 
 <div class="actions">
@@ -165,18 +188,18 @@ th{color:var(--muted)}
 </button>
 
 <button class="action" onclick="go('equipe')">
-👷 <b>Funcionários</b><br>
+👷 <b>Equipe / Funcionários</b><br>
 <small>Equipe, ativos e diárias</small>
 </button>
 
 <button class="action" onclick="go('financeiro')">
 💰 <b>Financeiro</b><br>
-<small>Receitas e despesas</small>
+<small>Receitas, materiais e mão de obra</small>
 </button>
 
 <button class="action" onclick="go('relatorios')">
 📊 <b>Relatórios</b><br>
-<small>Relatórios e dados</small>
+<small>Backup, fotos e controle</small>
 </button>
 
 </div>
@@ -189,7 +212,6 @@ th{color:var(--muted)}
 <div id="recentes"></div>
 
 </section>
-
 
 <section id="obras" class="page">
 
@@ -209,7 +231,6 @@ th{color:var(--muted)}
 
 </section>
 
-
 <section id="equipe" class="page">
 
 <div class="sectionTitle">
@@ -221,7 +242,6 @@ th{color:var(--muted)}
 </div>
 
 <div class="toolbar">
-
 <select id="funcFilter" onchange="renderFuncs()">
 <option value="todos">Todos</option>
 <option value="ativos">Ativos</option>
@@ -230,12 +250,11 @@ th{color:var(--muted)}
 
 <select id="payPeriod" onchange="renderPayroll()">
 <option value="dia">Hoje</option>
-<option value="semana" selected>Esta semana</option>
+<option value="semana">Esta semana</option>
 <option value="quinzena">Quinzena</option>
 <option value="mes">Este mês</option>
 <option value="custom">Personalizado</option>
 </select>
-
 </div>
 
 <div id="customDates" class="toolbar hidden">
@@ -243,10 +262,21 @@ th{color:var(--muted)}
 <input id="payEnd" type="date" onchange="renderPayroll()">
 </div>
 
-<div class="grid">
-
 <div class="card">
-<div class="label">Total de diárias no período</div>
+<div class="row">
+<div>
+<b>Selecionar funcionários para somar</b><br>
+<small>Se nenhum for selecionado, soma todos os registros do período.</small>
+</div>
+<button class="mini" onclick="clearPayrollSelection()">Limpar seleção</button>
+</div>
+
+<div id="payEmployeeSelect"></div>
+</div>
+
+<div class="grid">
+<div class="card">
+<div class="label">A pagar no período</div>
 <div class="stat gold" id="payTotal">R$ 0,00</div>
 </div>
 
@@ -254,7 +284,6 @@ th{color:var(--muted)}
 <div class="label">Funcionários com valor</div>
 <div class="stat" id="payCount">0</div>
 </div>
-
 </div>
 
 <div id="funcList"></div>
@@ -267,7 +296,6 @@ th{color:var(--muted)}
 <div id="diaList"></div>
 
 </section>
-
 
 <section id="financeiro" class="page">
 
@@ -286,9 +314,11 @@ th{color:var(--muted)}
 </select>
 
 <select id="finTipoFilter" onchange="renderFinance()">
-<option value="all">Todos</option>
+<option value="all">Todos os lançamentos</option>
 <option value="entrada">Receitas / recebimentos</option>
-<option value="despesa">Despesas</option>
+<option value="material">Material</option>
+<option value="mao_obra">Mão de obra</option>
+<option value="despesa">Outras despesas</option>
 </select>
 
 </div>
@@ -301,7 +331,7 @@ th{color:var(--muted)}
 </div>
 
 <div class="card">
-<div class="label">Despesas</div>
+<div class="label">Despesas totais</div>
 <div class="stat red" id="finDesp">R$ 0,00</div>
 </div>
 
@@ -337,6 +367,16 @@ th{color:var(--muted)}
 </div>
 
 <div class="profitBox">
+<small>Despesas totais</small>
+<b id="finTotalExpense">R$ 0,00</b>
+<span class="profitPct" id="finExpensePct">0%</span>
+</div>
+
+</div>
+
+<div class="profitGrid">
+
+<div class="profitBox">
 <small>Lucro</small>
 <b class="gold" id="finProfit">R$ 0,00</b>
 <span class="profitPct" id="finProfitPct">0%</span>
@@ -347,14 +387,14 @@ th{color:var(--muted)}
 </div>
 
 <div class="card">
-<b>Resumo por obra</b>
+<b>Resumo por obra</b><br>
+<small>Receitas − despesas</small>
 <div id="obraFinanceResumo"></div>
 </div>
 
 <div id="finList"></div>
 
 </section>
-
 
 <section id="checklist" class="page">
 
@@ -363,17 +403,17 @@ th{color:var(--muted)}
 <h1>Checklist</h1>
 <p class="lead">Adicione, edite, conclua ou exclua serviços.</p>
 </div>
+
 <button class="primary" onclick="openCheck()">＋ Serviço</button>
 </div>
 
 <div class="note">
-Os serviços personalizados ficam salvos neste dispositivo.
+Os serviços personalizados ficam salvos neste dispositivo. Os registros de conclusão continuam sincronizados com o banco.
 </div>
 
 <div id="checkList"></div>
 
 </section>
-
 
 <section id="fotos" class="page">
 
@@ -382,6 +422,7 @@ Os serviços personalizados ficam salvos neste dispositivo.
 <h1>Relatório fotográfico</h1>
 <p class="lead">Fotos organizadas por obra e data.</p>
 </div>
+
 <button class="primary" onclick="openFoto()">＋ Adicionar fotos</button>
 </div>
 
@@ -393,7 +434,6 @@ As fotos são mantidas no armazenamento deste aparelho.
 
 </section>
 
-
 <section id="relatorios" class="page">
 
 <h1>Relatórios e dados</h1>
@@ -402,18 +442,25 @@ As fotos são mantidas no armazenamento deste aparelho.
 <div class="actions">
 
 <button class="action" onclick="exportTable('obras')">🏗️ Obras</button>
+
 <button class="action" onclick="exportTable('funcionarios')">👷 Equipe</button>
+
 <button class="action" onclick="exportTable('diarias')">💵 Diárias</button>
+
 <button class="action" onclick="exportTable('gastos')">💰 Financeiro</button>
+
 <button class="action" onclick="exportFull()">💾 Backup completo</button>
+
 <button class="action" onclick="exportExcel()">📊 Excel</button>
+
+<button class="action" onclick="go('checklist')">☑️ Checklist</button>
+
+<button class="action" onclick="go('fotos')">📸 Fotos</button>
 
 </div>
 
 <div class="card">
-
 <b>Importar dados</b>
-
 <p class="sub">JSON ou Excel exportado pelo EDIFIQ.</p>
 
 <input id="importFile" type="file" accept=".json,.xlsx,.xls" onchange="previewImport(event)">
@@ -423,7 +470,6 @@ As fotos são mantidas no armazenamento deste aparelho.
 </div>
 
 </section>
-
 
 <section id="config" class="page">
 
@@ -443,19 +489,31 @@ As fotos são mantidas no armazenamento deste aparelho.
 
 </main>
 
-
 <nav class="bottom">
 
-<button class="nav active" data-p="home" onclick="go('home')">⌂<br>Início</button>
-<button class="nav" data-p="obras" onclick="go('obras')">🏗<br>Obras</button>
-<button class="nav" data-p="equipe" onclick="go('equipe')">👷<br>Equipe</button>
-<button class="nav" data-p="financeiro" onclick="go('financeiro')">R$<br>Financeiro</button>
-<button class="nav" data-p="relatorios" onclick="go('relatorios')">☷<br>Mais</button>
+<button class="nav active" data-p="home" onclick="go('home')">
+⌂<br>Início
+</button>
+
+<button class="nav" data-p="obras" onclick="go('obras')">
+🏗<br>Obras
+</button>
+
+<button class="nav" data-p="equipe" onclick="go('equipe')">
+👷<br>Equipe
+</button>
+
+<button class="nav" data-p="financeiro" onclick="go('financeiro')">
+R$<br>Financeiro
+</button>
+
+<button class="nav" data-p="relatorios" onclick="go('relatorios')">
+☷<br>Mais
+</button>
 
 </nav>
 
 </div>
-
 
 <div class="modal" id="obraM">
 
@@ -495,9 +553,7 @@ As fotos são mantidas no armazenamento deste aparelho.
 </form>
 
 </div>
-
 </div>
-
 
 <div class="modal" id="funcM">
 
@@ -538,9 +594,7 @@ As fotos são mantidas no armazenamento deste aparelho.
 </form>
 
 </div>
-
 </div>
-
 
 <div class="modal" id="diaM">
 
@@ -574,9 +628,7 @@ As fotos são mantidas no armazenamento deste aparelho.
 </form>
 
 </div>
-
 </div>
-
 
 <div class="modal" id="finM">
 
@@ -589,10 +641,15 @@ As fotos são mantidas no armazenamento deste aparelho.
 <form class="form" onsubmit="saveFin(event)">
 
 <select id="tFin">
+
 <option value="entrada">Entrada / recebimento</option>
+
 <option value="material">Material</option>
+
 <option value="mao_obra">Mão de obra</option>
+
 <option value="despesa">Outra despesa</option>
+
 </select>
 
 <input id="dFin" required placeholder="Descrição">
@@ -612,9 +669,7 @@ As fotos são mantidas no armazenamento deste aparelho.
 </form>
 
 </div>
-
 </div>
-
 
 <div class="modal" id="checkM">
 
@@ -639,9 +694,7 @@ As fotos são mantidas no armazenamento deste aparelho.
 </form>
 
 </div>
-
 </div>
-
 
 <div class="modal" id="fotoM">
 
@@ -668,17 +721,18 @@ As fotos são mantidas no armazenamento deste aparelho.
 </form>
 
 </div>
-
 </div>
 
-
 <div id="toast" class="toast"></div>
-
 
 <script>
 "use strict";
 
-/* NÃO ALTERAR — CONEXÃO SUPABASE QUE JÁ ESTAVA FUNCIONANDO */
+/* =========================================================
+   EDIFIQ — CONEXÃO SUPABASE
+   NÃO ALTERAR
+========================================================= */
+
 const SUPA_URL="https://lwqntzwajjgkvtynwdjg.supabase.co";
 const SUPA_KEY="sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
 
@@ -695,8 +749,7 @@ function initSupabase(){
 
 try{
 
-if(!window.supabase||
-typeof window.supabase.createClient!=="function")
+if(!window.supabase||typeof window.supabase.createClient!=="function")
 throw new Error("Biblioteca do Supabase não carregou.");
 
 sb=window.supabase.createClient(
@@ -753,8 +806,7 @@ const tables=[
 
 const $=id=>document.getElementById(id);
 
-const money=v=>
-Number(v||0).toLocaleString(
+const money=v=>Number(v||0).toLocaleString(
 'pt-BR',
 {
 style:'currency',
@@ -762,22 +814,16 @@ currency:'BRL'
 }
 );
 
-/* DATA LOCAL — NÃO USA UTC */
+/* DATA LOCAL */
 const today=()=>{
 
 const d=new Date();
 
-return `${d.getFullYear()}-${String(
-d.getMonth()+1
-).padStart(2,'0')}-${String(
-d.getDate()
-).padStart(2,'0')}`;
+return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
 };
 
-const esc=s=>
-String(s??'')
-.replace(
+const esc=s=>String(s??'').replace(
 /[&<>"']/g,
 m=>({
 '&':'&amp;',
@@ -788,42 +834,36 @@ m=>({
 }[m])
 );
 
+/* =========================================================
+   CONEXÃO
+========================================================= */
 
 async function checkConnection(){
 
 if(!sb){
+
 setConnection(
 '● Supabase não inicializado',
 false
 );
-return false;
-}
 
-setConnection(
-'Verificando conexão...',
-false
-);
+return false;
+
+}
 
 try{
 
-const result=
-await Promise.race([
+const result=await Promise.race([
 sb.auth.getSession(),
-new Promise(
-(_,rej)=>
+new Promise((_,rej)=>
 setTimeout(
-()=>rej(
-new Error(
-'Tempo limite da conexão.'
-)
-),
+()=>rej(new Error('Tempo limite da conexão.')),
 8000
 )
 )
 ]);
 
-if(result?.error)
-throw result.error;
+if(result?.error)throw result.error;
 
 setConnection(
 '● Sistema conectado',
@@ -850,7 +890,6 @@ return false;
 
 }
 
-
 function toast(s){
 
 const x=$('toast');
@@ -866,21 +905,17 @@ setTimeout(
 
 }
 
-
 function authMsg(s){
 
 $('authMsg').textContent=s||'';
 
 }
 
-
 function go(p){
 
 document
 .querySelectorAll('.page')
-.forEach(
-x=>x.classList.remove('active')
-);
+.forEach(x=>x.classList.remove('active'));
 
 if($(p))
 $(p).classList.add('active');
@@ -888,8 +923,7 @@ $(p).classList.add('active');
 document
 .querySelectorAll('.nav')
 .forEach(
-x=>
-x.classList.toggle(
+x=>x.classList.toggle(
 'active',
 x.dataset.p===p
 )
@@ -899,7 +933,6 @@ renderAll();
 
 }
 
-
 function openM(id){
 
 $(id).classList.add('open');
@@ -908,13 +941,15 @@ fillSelectors();
 
 }
 
-
 function closeM(id){
 
 $(id).classList.remove('open');
 
 }
 
+/* =========================================================
+   OBRAS
+========================================================= */
 
 function openObra(id=null){
 
@@ -925,9 +960,8 @@ id?'Editar obra':'Nova obra';
 
 if(id){
 
-const o=
-D.obras.find(
-x=>x.id===id
+const o=D.obras.find(
+x=>String(x.id)===String(id)
 );
 
 if(!o)return;
@@ -936,16 +970,11 @@ $('oNome').value=o.nome||'';
 $('oCli').value=o.cliente||'';
 $('oLoc').value=o.endereco||'';
 $('oVal').value=o.valor||0;
-$('oStatus').value=
-o.status||'em_andamento';
-$('oIni').value=
-o.data_inicio||'';
-$('oFim').value=
-o.data_fim||'';
-$('oTipo').value=
-o.tipo_servico||'';
-$('oObs').value=
-o.observacoes||'';
+$('oStatus').value=o.status||'em_andamento';
+$('oIni').value=o.data_inicio||'';
+$('oFim').value=o.data_fim||'';
+$('oTipo').value=o.tipo_servico||'';
+$('oObs').value=o.observacoes||'';
 
 }else{
 
@@ -959,20 +988,21 @@ openM('obraM');
 
 }
 
+/* =========================================================
+   FUNCIONÁRIOS
+========================================================= */
 
 function openFunc(id=null){
 
 editFuncId=id;
 
 $('funcTitle').textContent=
-id?'Editar funcionário':
-'Novo funcionário';
+id?'Editar funcionário':'Novo funcionário';
 
 if(id){
 
-const f=
-D.funcionarios.find(
-x=>x.id===id
+const f=D.funcionarios.find(
+x=>String(x.id)===String(id)
 );
 
 if(!f)return;
@@ -980,16 +1010,13 @@ if(!f)return;
 $('fNome').value=f.nome||'';
 $('fFunc').value=f.funcao||'';
 $('fTel').value=f.telefone||'';
-$('fTipo').value=
-f.tipo_pagamento||'diaria';
-$('fDia').value=
-f.valor_diaria||'';
-$('fSal').value=
-f.salario_mensal||'';
-$('fPag').value=
-f.dia_pagamento||'';
-$('fAtivo').value=
-String(f.ativo!==false);
+$('fTipo').value=f.tipo_pagamento||'diaria';
+$('fDia').value=f.valor_diaria||'';
+$('fSal').value=f.salario_mensal||'';
+$('fPag').value=f.dia_pagamento||'';
+$('fAtivo').value=String(
+f.ativo!==false
+);
 
 }else{
 
@@ -1000,7 +1027,6 @@ clearFuncForm();
 openM('funcM');
 
 }
-
 
 function clearFuncForm(){
 
@@ -1016,33 +1042,33 @@ id=>$(id).value=''
 );
 
 $('fTipo').value='diaria';
+
 $('fAtivo').value='true';
 
 }
-
 
 function openDia(){
 
 openM('diaM');
 
 $('dData').value=today();
+
 $('dQtd').value=1;
 
-const f=
-D.funcionarios.find(
+const f=D.funcionarios.find(
 x=>x.ativo!==false
 );
 
 if(f){
 
 $('dFunc').value=f.id;
+
 $('dVal').value=
 f.valor_diaria||'';
 
 }
 
 }
-
 
 function openFin(){
 
@@ -1052,33 +1078,28 @@ $('dtFin').value=today();
 
 }
 
-
 function openCheck(id=null){
 
 $('checkId').value=id||'';
 
 $('checkTitle').textContent=
-id
-?'Editar serviço do checklist'
-:'Novo serviço do checklist';
+id?
+'Editar serviço do checklist':
+'Novo serviço do checklist';
 
 const defs=getCheckDefs();
 
-const d=
-defs.find(
+const d=defs.find(
 x=>x.id===id
 );
 
-$('checkDesc').value=
-d?.desc||'';
+$('checkDesc').value=d?.desc||'';
 
-$('checkObra').value=
-d?.obraId||'all';
+$('checkObra').value=d?.obraId||'all';
 
 openM('checkM');
 
 }
-
 
 function openFoto(){
 
@@ -1088,6 +1109,9 @@ $('fotoData').value=today();
 
 }
 
+/* =========================================================
+   LOGIN
+========================================================= */
 
 async function login(){
 
@@ -1096,11 +1120,9 @@ return authMsg(
 'Sistema ainda não conectado. Aguarde e tente novamente.'
 );
 
-const email=
-$('email').value.trim();
+const email=$('email').value.trim();
 
-const password=
-$('password').value;
+const password=$('password').value;
 
 if(!email||!password)
 return authMsg(
@@ -1110,18 +1132,15 @@ return authMsg(
 authMsg('Entrando...');
 
 const{error}=
-await sb.auth.signInWithPassword(
-{
+await sb.auth.signInWithPassword({
 email,
 password
-}
-);
+});
 
 if(error)
 authMsg(error.message);
 
 }
-
 
 async function signup(){
 
@@ -1130,16 +1149,12 @@ return authMsg(
 'Sistema ainda não conectado. Aguarde e tente novamente.'
 );
 
-const email=
-$('email').value.trim();
+const email=$('email').value.trim();
 
-const password=
-$('password').value;
+const password=$('password').value;
 
 if(!email)
-return authMsg(
-'Informe seu e-mail.'
-);
+return authMsg('Informe seu e-mail.');
 
 if(password.length<6)
 return authMsg(
@@ -1149,24 +1164,21 @@ return authMsg(
 authMsg('Criando conta...');
 
 const{data,error}=
-await sb.auth.signUp(
-{
+await sb.auth.signUp({
 email,
 password
-}
-);
+});
 
 if(error)
 return authMsg(error.message);
 
 authMsg(
-data.session
-?'Conta criada e login realizado.'
-:'Conta criada. Verifique seu e-mail para confirmar.'
+data.session?
+'Conta criada e login realizado.':
+'Conta criada. Verifique seu e-mail para confirmar.'
 );
 
 }
-
 
 async function resetPassword(){
 
@@ -1175,8 +1187,7 @@ return authMsg(
 'Sistema ainda não conectado. Aguarde e tente novamente.'
 );
 
-const email=
-$('email').value.trim();
+const email=$('email').value.trim();
 
 if(!email)
 return authMsg(
@@ -1194,13 +1205,12 @@ location.pathname
 );
 
 authMsg(
-error
-?'Erro: '+error.message
-:'Link de recuperação enviado para seu e-mail.'
+error?
+'Erro: '+error.message:
+'Link de recuperação enviado para seu e-mail.'
 );
 
 }
-
 
 async function logout(){
 
@@ -1209,6 +1219,9 @@ await sb.auth.signOut();
 
 }
 
+/* =========================================================
+   AUTENTICAÇÃO
+========================================================= */
 
 function startAuth(){
 
@@ -1222,6 +1235,7 @@ user=s?.user||null;
 if(user){
 
 $('auth').classList.add('hidden');
+
 $('app').classList.remove('hidden');
 
 $('accountEmail').textContent=
@@ -1237,6 +1251,7 @@ renderAll();
 }else{
 
 $('app').classList.add('hidden');
+
 $('auth').classList.remove('hidden');
 
 }
@@ -1246,20 +1261,20 @@ $('auth').classList.remove('hidden');
 
 }
 
+/* =========================================================
+   CLOUD
+========================================================= */
 
 async function loadCloud(){
 
-for(
-const t of tables
-){
+for(const t of tables){
 
 try{
 
 const{
 data,
 error
-}=
-await sb
+}=await sb
 .from(t)
 .select('*')
 .order(
@@ -1267,14 +1282,13 @@ await sb
 {ascending:false}
 );
 
-if(error){
-
+if(error)
 console.warn(
 t,
 error.message
 );
 
-}else{
+else{
 
 D[t].splice(
 0,
@@ -1294,7 +1308,6 @@ console.warn(t,e);
 
 }
 
-
 async function insertRow(
 table,
 row
@@ -1308,8 +1321,7 @@ user_id:user.id
 const{
 data,
 error
-}=
-await sb
+}=await sb
 .from(table)
 .insert(payload)
 .select()
@@ -1330,7 +1342,6 @@ return data;
 
 }
 
-
 async function updateRow(
 table,
 id,
@@ -1340,8 +1351,7 @@ row
 const{
 data,
 error
-}=
-await sb
+}=await sb
 .from(table)
 .update(row)
 .eq('id',id)
@@ -1364,14 +1374,12 @@ return data;
 
 }
 
-
 async function removeRow(
 table,
 id
 ){
 
-const{error}=
-await sb
+const{error}=await sb
 .from(table)
 .delete()
 .eq('id',id)
@@ -1389,67 +1397,56 @@ return true;
 
 }
 
-
-/* FINANCEIRO */
+/* =========================================================
+   CÁLCULO FINANCEIRO DAS OBRAS
+========================================================= */
 
 function sums(obra='all'){
 
-const match=
-x=>
+const match=x=>
 obra==='all'||
 String(x.obra_id)===String(obra);
 
+/* RECEITAS */
 const entradas=
 D.gastos
 .filter(
-x=>
-x.categoria==='entrada'&&
-match(x)
+x=>x.categoria==='entrada'&&match(x)
 )
 .reduce(
-(a,x)=>
-a+
-Number(x.valor||0),
+(a,x)=>a+Number(x.valor||0),
 0
-)
-+
+)+
 D.pagamentos
 .filter(match)
 .reduce(
-(a,x)=>
-a+
-Number(x.valor||0),
+(a,x)=>a+Number(x.valor||0),
 0
 );
 
+/* MATERIAL */
 const material=
 D.gastos
 .filter(
-x=>
-x.categoria==='material'&&
-match(x)
+x=>x.categoria==='material'&&match(x)
 )
 .reduce(
-(a,x)=>
-a+
-Number(x.valor||0),
+(a,x)=>a+Number(x.valor||0),
 0
 );
 
+/* MÃO DE OBRA LANÇADA */
 const maoObraLanc=
 D.gastos
 .filter(
-x=>
-x.categoria==='mao_obra'&&
-match(x)
+x=>x.categoria==='mao_obra'&&match(x)
 )
 .reduce(
-(a,x)=>
-a+
-Number(x.valor||0),
+(a,x)=>a+Number(x.valor||0),
 0
 );
 
+/* DIÁRIAS */
 const diarias=
 D.diarias
 .filter(match)
@@ -1468,6 +1465,7 @@ const labor=
 maoObraLanc+
 diarias;
 
+/* OUTRAS DESPESAS */
 const outras=
 D.gastos
 .filter(
@@ -1478,9 +1476,7 @@ x.categoria!=='mao_obra'&&
 match(x)
 )
 .reduce(
-(a,x)=>
-a+
-Number(x.valor||0),
+(a,x)=>a+Number(x.valor||0),
 0
 );
 
@@ -1493,32 +1489,28 @@ const lucro=
 entradas-
 despesas;
 
+/* CONTRATO */
 const contrato=
 obra==='all'
 ?
 D.obras.reduce(
-(a,x)=>
-a+
-Number(x.valor||0),
+(a,x)=>a+Number(x.valor||0),
 0
 )
 :
 Number(
 D.obras.find(
-x=>
-String(x.id)===String(obra)
+x=>String(x.id)===String(obra)
 )?.valor||0
 );
 
-const pct=
-v=>
-contrato>0
-?
-(v/contrato*100)
-:
+const pct=v=>
+contrato>0?
+(v/contrato*100):
 0;
 
 return{
+
 entradas,
 despesas,
 lucro,
@@ -1526,14 +1518,24 @@ material,
 labor,
 outras,
 contrato,
+
 materialPct:pct(material),
+
 laborPct:pct(labor),
+
 otherPct:pct(outras),
+
+expensePct:pct(despesas),
+
 profitPct:pct(lucro)
+
 };
 
 }
 
+/* =========================================================
+   RENDER PRINCIPAL
+========================================================= */
 
 function renderAll(){
 
@@ -1541,9 +1543,7 @@ const s=sums();
 
 const contratos=
 D.obras.reduce(
-(a,x)=>
-a+
-Number(x.valor||0),
+(a,x)=>a+Number(x.valor||0),
 0
 );
 
@@ -1551,11 +1551,9 @@ $('kObras').textContent=
 D.obras.length;
 
 $('kFunc').textContent=
-D.funcionarios
-.filter(
+D.funcionarios.filter(
 f=>f.ativo!==false
-)
-.length;
+).length;
 
 $('kEntradas').textContent=
 money(s.entradas);
@@ -1570,8 +1568,7 @@ $('kReceber').textContent=
 money(
 Math.max(
 0,
-contratos-
-s.entradas
+contratos-s.entradas
 )
 );
 
@@ -1579,45 +1576,41 @@ $('recentes').innerHTML=
 D.obras
 .slice(0,4)
 .map(
-o=>
-`
+o=>`
 <div class="item">
-
 <div class="row">
-
 <div>
-<b>${esc(o.nome)}</b>
-<br>
-<small>
-${esc(
-o.cliente||
-'Cliente não informado'
-)}
-</small>
+<b>${esc(o.nome)}</b><br>
+<small>${esc(o.cliente||'Cliente não informado')}</small>
 </div>
-
-<b class="gold">
-${money(o.valor)}
-</b>
-
+<b class="gold">${money(o.valor)}</b>
 </div>
-
 </div>
 `
 )
-.join('')||
+.join('')
+||
 '<div class="empty">Nenhuma obra cadastrada.</div>';
 
 renderObras();
+
 renderFuncs();
+
 renderFinance();
+
 renderPayroll();
+
 renderChecklist();
+
 renderFotos();
+
 fillSelectors();
 
 }
 
+/* =========================================================
+   OBRAS
+========================================================= */
 
 function statusLabel(s){
 
@@ -1629,7 +1622,6 @@ pausada:'Pausada'
 })[s]||s||'';
 
 }
-
 
 function renderObras(){
 
@@ -1648,20 +1640,18 @@ o=>
 
 $('obrasList').innerHTML=
 list
-.map(
-o=>{
+.map(o=>{
 
-const fs=
-sums(o.id);
+const fs=sums(o.id);
 
 const pct=
-o.status==='concluida'
-?100
-:o.status==='em_andamento'
-?50
-:o.status==='pausada'
-?25
-:10;
+o.status==='concluida'?
+100:
+o.status==='em_andamento'?
+50:
+o.status==='pausada'?
+25:
+10;
 
 return`
 
@@ -1670,13 +1660,15 @@ return`
 <div class="row">
 
 <div>
-<b>${esc(o.nome)}</b>
-<br>
+
+<b>${esc(o.nome)}</b><br>
+
 <small>
 ${esc(o.cliente||'')}
 •
 ${esc(o.endereco||'')}
 </small>
+
 </div>
 
 <span class="badge">
@@ -1692,20 +1684,17 @@ ${statusLabel(o.status)}
 <div class="three">
 
 <div>
-<small>Contrato</small>
-<br>
+<small>Contrato</small><br>
 <b>${money(o.valor)}</b>
 </div>
 
 <div>
-<small>Receitas</small>
-<br>
+<small>Receitas</small><br>
 <b class="green">${money(fs.entradas)}</b>
 </div>
 
 <div>
-<small>Despesas</small>
-<br>
+<small>Despesas totais</small><br>
 <b class="red">${money(fs.despesas)}</b>
 </div>
 
@@ -1714,57 +1703,97 @@ ${statusLabel(o.status)}
 <div class="profitGrid">
 
 <div class="profitBox">
+
 <small>Material</small>
+
 <b>${money(fs.material)}</b>
+
 <span class="profitPct">
 ${fs.materialPct.toFixed(1)}% do contrato
 </span>
+
 </div>
 
 <div class="profitBox">
+
 <small>Mão de obra</small>
+
 <b>${money(fs.labor)}</b>
+
 <span class="profitPct">
 ${fs.laborPct.toFixed(1)}% do contrato
 </span>
+
 </div>
 
 <div class="profitBox">
+
 <small>Outras despesas</small>
+
 <b>${money(fs.outras)}</b>
+
 <span class="profitPct">
 ${fs.otherPct.toFixed(1)}% do contrato
 </span>
+
 </div>
 
 <div class="profitBox">
+
+<small>Despesas totais</small>
+
+<b class="red">
+${money(fs.despesas)}
+</b>
+
+<span class="profitPct">
+${fs.expensePct.toFixed(1)}% do contrato
+</span>
+
+</div>
+
+</div>
+
+<div class="profitGrid">
+
+<div class="profitBox">
+
 <small>Lucro</small>
-<b class="gold">${money(fs.lucro)}</b>
+
+<b class="gold">
+${money(fs.lucro)}
+</b>
+
 <span class="profitPct">
 ${fs.profitPct.toFixed(1)}% do contrato
 </span>
+
 </div>
 
 </div>
 
 <div class="listActions">
 
-<button class="mini"
+<button
+class="mini"
 onclick="openObra(${o.id})">
 ✏️ Editar
 </button>
 
-<button class="mini"
+<button
+class="mini"
 onclick="openFotoFor(${o.id})">
 📸 Fotos
 </button>
 
-<button class="mini"
+<button
+class="mini"
 onclick="go('financeiro');setTimeout(()=>{$('finObraFilter').value='${o.id}';renderFinance()},0)">
 💰 Financeiro
 </button>
 
-<button class="danger mini"
+<button
+class="danger mini"
 onclick="delItem('obras',${o.id})">
 Excluir
 </button>
@@ -1775,13 +1804,16 @@ Excluir
 
 `;
 
-}
-)
-.join('')||
+})
+.join('')
+||
 '<div class="empty">Nenhuma obra encontrada.</div>';
 
 }
 
+/* =========================================================
+   FUNCIONÁRIOS
+========================================================= */
 
 function renderFuncs(){
 
@@ -1806,25 +1838,25 @@ f.ativo===false
 $('funcList').innerHTML=
 list
 .map(
-f=>
-`
+f=>`
+
 <div class="item">
 
 <div class="row">
 
 <div>
-<b>${esc(f.nome)}</b>
-<br>
+
+<b>${esc(f.nome)}</b><br>
+
 <small>
 ${esc(f.funcao||'')}
 •
 ${esc(f.telefone||'')}
 </small>
+
 </div>
 
-<span class="badge ${
-f.ativo!==false?'on':'off'
-}">
+<span class="badge ${f.ativo!==false?'on':'off'}">
 ${f.ativo!==false?'Ativo':'Inativo'}
 </span>
 
@@ -1840,17 +1872,20 @@ Mensal: ${money(f.salario_mensal)}
 
 <div class="listActions">
 
-<button class="mini"
+<button
+class="mini"
 onclick="openFunc(${f.id})">
 ✏️ Editar
 </button>
 
-<button class="mini"
+<button
+class="mini"
 onclick="toggleFunc(${f.id})">
 ${f.ativo!==false?'⏸ Inativar':'▶️ Ativar'}
 </button>
 
-<button class="danger mini"
+<button
+class="danger mini"
 onclick="delItem('funcionarios',${f.id})">
 Excluir
 </button>
@@ -1858,19 +1893,20 @@ Excluir
 </div>
 
 </div>
+
 `
 )
-.join('')||
+.join('')
+||
 '<div class="empty">Nenhum funcionário nesta categoria.</div>';
 
 }
-
 
 async function toggleFunc(id){
 
 const f=
 D.funcionarios.find(
-x=>x.id===id
+x=>String(x.id)===String(id)
 );
 
 if(!f)return;
@@ -1891,17 +1927,317 @@ Object.assign(f,r);
 renderAll();
 
 toast(
-f.ativo===false
-?'Funcionário inativado.'
-:'Funcionário ativado.'
+f.ativo===false?
+'Funcionário inativado.':
+'Funcionário ativado.'
 );
 
 }
 
 }
 
+/* =========================================================
+   SELEÇÃO DE FUNCIONÁRIOS
+========================================================= */
 
-/* FINANCEIRO */
+let payrollSelected=new Set();
+
+function setPayrollSelected(id,on){
+
+id=String(id);
+
+if(on)
+payrollSelected.add(id);
+else
+payrollSelected.delete(id);
+
+renderPayroll();
+
+}
+
+function clearPayrollSelection(){
+
+payrollSelected.clear();
+
+renderPayroll();
+
+}
+
+function renderPayrollEmployeeSelect(){
+
+const box=$('payEmployeeSelect');
+
+if(!box)return;
+
+if(!D.funcionarios.length){
+
+box.innerHTML=
+'<div class="empty">Nenhum funcionário cadastrado.</div>';
+
+return;
+
+}
+
+box.innerHTML=
+D.funcionarios
+.filter(f=>f.ativo!==false)
+.map(
+f=>`
+
+<label class="paySelect">
+
+<input
+type="checkbox"
+${payrollSelected.has(String(f.id))?'checked':''}
+onchange="setPayrollSelected('${f.id}',this.checked)"
+>
+
+<span>
+<b>${esc(f.nome)}</b>
+<br>
+<small>
+Diária: ${money(f.valor_diaria)}
+</small>
+</span>
+
+</label>
+
+`
+)
+.join('');
+
+}
+
+/* =========================================================
+   CÁLCULO DE DIÁRIAS
+========================================================= */
+
+function renderPayroll(){
+
+if(!$('payPeriod'))return;
+
+const p=
+$('payPeriod').value;
+
+$('customDates')
+.classList.toggle(
+'hidden',
+p!=='custom'
+);
+
+let A;
+let B;
+
+if(p==='custom'){
+
+A=
+$('payStart').value||
+today();
+
+B=
+$('payEnd').value||
+today();
+
+}else{
+
+const now=new Date();
+
+let a=
+new Date(
+now.getFullYear(),
+now.getMonth(),
+now.getDate()
+);
+
+let b=
+new Date(
+now.getFullYear(),
+now.getMonth(),
+now.getDate()
+);
+
+if(p==='dia'){
+
+/* Hoje = somente hoje */
+
+}
+
+else if(p==='semana'){
+
+const d=
+a.getDay()||7;
+
+a.setDate(
+a.getDate()-d+1
+);
+
+}
+
+else if(p==='quinzena'){
+
+a.setDate(
+a.getDate()<=15?
+1:
+16
+);
+
+}
+
+else if(p==='mes'){
+
+a.setDate(1);
+
+}
+
+const fmt=d=>
+`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+A=fmt(a);
+B=fmt(b);
+
+}
+
+/* =========================================================
+   SOMENTE DIÁRIAS
+   NÃO SOMA SALÁRIO MENSAL AUTOMATICAMENTE
+========================================================= */
+
+let registros=
+D.diarias.filter(
+d=>
+String(d.data||'')>=A&&
+String(d.data||'')<=B
+);
+
+/* Se houver funcionários selecionados,
+   usa somente os selecionados */
+
+if(payrollSelected.size){
+
+registros=
+registros.filter(
+d=>
+payrollSelected.has(
+String(d.funcionario_id)
+)
+);
+
+}
+
+let total=0;
+
+const funcionariosComValor=new Set();
+
+registros.forEach(d=>{
+
+const valor=
+Number(
+d.valor_pago||
+(
+Number(d.qtd||0)*
+Number(d.valor_diaria||0)
+)||
+0
+);
+
+total+=valor;
+
+if(valor){
+
+funcionariosComValor.add(
+String(d.funcionario_id)
+);
+
+}
+
+});
+
+$('payTotal').textContent=
+money(total);
+
+$('payCount').textContent=
+funcionariosComValor.size;
+
+renderPayrollEmployeeSelect();
+
+/* LISTA DE DIÁRIAS */
+
+$('diaList').innerHTML=
+registros
+.slice()
+.reverse()
+.map(
+d=>{
+
+const f=
+D.funcionarios.find(
+x=>String(x.id)===
+String(d.funcionario_id)
+);
+
+const o=
+D.obras.find(
+x=>String(x.id)===
+String(d.obra_id)
+);
+
+const valor=
+Number(
+d.valor_pago||
+(
+Number(d.qtd||0)*
+Number(d.valor_diaria||0)
+)||
+0
+);
+
+return`
+
+<div class="item">
+
+<div class="row">
+
+<div>
+
+<b>${esc(f?.nome||'Funcionário')}</b><br>
+
+<small>
+${d.data}
+•
+${esc(o?.nome||'Sem obra')}
+•
+${d.qtd||0} × ${money(d.valor_diaria)}
+</small>
+
+</div>
+
+<b class="gold">
+${money(valor)}
+</b>
+
+</div>
+
+<button
+class="danger mini"
+onclick="delItem('diarias',${d.id})">
+Excluir
+</button>
+
+</div>
+
+`;
+
+}
+)
+.join('')
+||
+'<div class="empty">Nenhuma diária no período.</div>';
+
+}
+
+/* =========================================================
+   FINANCEIRO
+========================================================= */
 
 function renderFinance(){
 
@@ -1925,6 +2261,8 @@ money(s.despesas);
 $('finRes').textContent=
 money(s.lucro);
 
+if($('finMaterial')){
+
 $('finMaterial').textContent=
 money(s.material);
 
@@ -1946,6 +2284,13 @@ $('finOtherPct').textContent=
 s.otherPct.toFixed(1)+
 '% do contrato';
 
+$('finTotalExpense').textContent=
+money(s.despesas);
+
+$('finExpensePct').textContent=
+s.expensePct.toFixed(1)+
+'% do contrato';
+
 $('finProfit').textContent=
 money(s.lucro);
 
@@ -1953,22 +2298,33 @@ $('finProfitPct').textContent=
 s.profitPct.toFixed(1)+
 '% do contrato';
 
+}
 
 const rows=
 D.gastos.filter(
 x=>
 (
 obra==='all'||
-String(x.obra_id)===String(obra)
+String(x.obra_id)===
+String(obra)
 )&&
 (
 tipo==='all'||
 (
-tipo==='entrada'
-?
+tipo==='entrada'&&
 x.categoria==='entrada'
-:
-x.categoria!=='entrada'
+)||
+(
+tipo==='material'&&
+x.categoria==='material'
+)||
+(
+tipo==='mao_obra'&&
+x.categoria==='mao_obra'
+)||
+(
+tipo==='despesa'&&
+x.categoria==='despesa'
 )
 )
 );
@@ -1980,17 +2336,18 @@ x=>{
 
 const o=
 D.obras.find(
-y=>y.id===x.obra_id
+y=>String(y.id)===
+String(x.obra_id)
 );
 
 const label=
-x.categoria==='entrada'
-?'Receita'
-:x.categoria==='material'
-?'Material'
-:x.categoria==='mao_obra'
-?'Mão de obra'
-:'Despesa';
+x.categoria==='entrada'?
+'Receita':
+x.categoria==='material'?
+'Material':
+x.categoria==='mao_obra'?
+'Mão de obra':
+'Despesa';
 
 return`
 
@@ -2000,14 +2357,7 @@ return`
 
 <div>
 
-<b>
-${esc(
-x.descricao||
-'Lançamento'
-)}
-</b>
-
-<br>
+<b>${esc(x.descricao||'Lançamento')}</b><br>
 
 <small>
 ${x.data||''}
@@ -2021,11 +2371,7 @@ ${esc(x.fornecedor||'')}
 
 </div>
 
-<b class="${
-x.categoria==='entrada'
-?'green'
-:'red'
-}">
+<b class="${x.categoria==='entrada'?'green':'red'}">
 ${x.categoria==='entrada'?'+':'−'}
 ${money(x.valor)}
 </b>
@@ -2034,7 +2380,8 @@ ${money(x.valor)}
 
 <div class="listActions">
 
-<button class="danger mini"
+<button
+class="danger mini"
 onclick="delItem('gastos',${x.id})">
 Excluir
 </button>
@@ -2047,7 +2394,8 @@ Excluir
 
 }
 )
-.join('')||
+.join('')
+||
 '<div class="empty">Nenhum lançamento encontrado.</div>';
 
 let resumo=
@@ -2090,11 +2438,19 @@ ${money(z.lucro)}
 </div>
 
 <div class="profitBox">
+<small>Despesas totais</small>
+<b>${z.expensePct.toFixed(1)}%</b>
+</div>
+
+</div>
+
+<div class="profitBox" style="margin-top:8px">
+
 <small>Lucro</small>
+
 <b class="gold">
 ${z.profitPct.toFixed(1)}%
 </b>
-</div>
 
 </div>
 
@@ -2112,390 +2468,9 @@ resumo||
 
 }
 
-
-/* CÁLCULO DAS DIÁRIAS — CORRIGIDO */
-
-let payrollSelected=new Set();
-
-
-function setPayrollSelected(id,on){
-
-if(on)
-payrollSelected.add(String(id));
-else
-payrollSelected.delete(String(id));
-
-renderPayroll();
-
-}
-
-
-function periodDates(p){
-
-const now=new Date();
-
-let a=
-new Date(
-now.getFullYear(),
-now.getMonth(),
-now.getDate()
-);
-
-let b=
-new Date(
-now.getFullYear(),
-now.getMonth(),
-now.getDate()
-);
-
-if(p==='semana'){
-
-const d=a.getDay()||7;
-
-a.setDate(
-a.getDate()-d+1
-);
-
-}else if(p==='quinzena'){
-
-a.setDate(
-a.getDate()<=15
-?1
-:16
-);
-
-}else if(p==='mes'){
-
-a.setDate(1);
-
-}else if(p==='custom'){
-
-return[
-$('payStart').value||today(),
-$('payEnd').value||today()
-];
-
-}
-
-const localDate=
-d=>
-`${d.getFullYear()}-${String(
-d.getMonth()+1
-).padStart(2,'0')}-${String(
-d.getDate()
-).padStart(2,'0')}`;
-
-return[
-localDate(a),
-localDate(b)
-];
-
-}
-
-
-function renderPayroll(){
-
-if(!$('payPeriod'))return;
-
-const p=
-$('payPeriod').value;
-
-$('customDates')
-.classList
-.toggle(
-'hidden',
-p!=='custom'
-);
-
-const[A,B]=
-periodDates(p);
-
-const ds=
-D.diarias.filter(
-d=>
-d.data>=A&&
-d.data<=B
-);
-
-
-/*
-REGRA CORRIGIDA:
-
-1. Mensal NÃO gera salário automaticamente.
-2. Hoje sem diária = R$ 0,00.
-3. Se selecionar funcionários,
-   calcula somente os selecionados.
-4. Se nenhum for selecionado,
-   calcula todas as diárias do período.
-*/
-
-const validSelected=
-[...payrollSelected]
-.filter(
-id=>
-D.funcionarios.some(
-f=>String(f.id)===id
-)
-);
-
-payrollSelected=
-new Set(validSelected);
-
-const use=
-validSelected.length
-?
-ds.filter(
-d=>
-validSelected.includes(
-String(d.funcionario_id)
-)
-)
-:
-ds;
-
-const total=
-use.reduce(
-(s,d)=>
-s+
-Number(
-d.valor_pago||
-d.qtd*d.valor_diaria||
-0
-),
-0
-);
-
-$('payTotal').textContent=
-money(total);
-
-$('payCount').textContent=
-new Set(
-use.map(
-d=>String(d.funcionario_id)
-)
-).size;
-
-
-/* SELEÇÃO DE FUNCIONÁRIOS */
-
-const controls=`
-
-<div class="selectedBox">
-
-<b>Funcionários para somar</b>
-
-<br>
-
-<small>
-Marque um ou vários funcionários.
-Se nenhum estiver marcado,
-serão somadas todas as diárias do período.
-</small>
-
-<div class="listActions">
-
-${D.funcionarios.map(
-f=>
-`
-
-<label class="chip">
-
-<input
-type="checkbox"
-value="${f.id}"
-${
-payrollSelected.has(
-String(f.id)
-)
-?'checked':''
-}
-onchange="
-setPayrollSelected(
-this.value,
-this.checked
-)
-">
-
-${esc(f.nome)}
-
-</label>
-
-`
-).join('')}
-
-</div>
-
-</div>
-
-`;
-
-
-$('funcList').innerHTML=
-controls+
-D.funcionarios
-.map(
-f=>{
-
-const val=
-use
-.filter(
-d=>
-String(
-d.funcionario_id
-)===
-String(f.id)
-)
-.reduce(
-(s,d)=>
-s+
-Number(
-d.valor_pago||
-d.qtd*d.valor_diaria||
-0
-),
-0
-);
-
-return`
-
-<div class="item">
-
-<div class="row">
-
-<div>
-
-<b>${esc(f.nome)}</b>
-
-<br>
-
-<small>
-${f.ativo!==false
-?'Ativo'
-:'Inativo'}
-•
-${esc(
-f.tipo_pagamento||
-'diaria'
-)}
-</small>
-
-</div>
-
-<b class="gold">
-${money(val)}
-</b>
-
-</div>
-
-<div class="listActions">
-
-<button
-class="mini"
-onclick="openFunc(${f.id})">
-✏️ Editar
-</button>
-
-<button
-class="mini"
-onclick="toggleFunc(${f.id})">
-${
-f.ativo!==false
-?'⏸ Inativar'
-:'▶️ Ativar'
-}
-</button>
-
-</div>
-
-</div>
-
-`;
-
-}
-)
-.join('');
-
-
-$('diaList').innerHTML=
-use
-.map(
-d=>{
-
-const f=
-D.funcionarios.find(
-x=>
-x.id===d.funcionario_id
-);
-
-const o=
-D.obras.find(
-x=>
-x.id===d.obra_id
-);
-
-return`
-
-<div class="item">
-
-<div class="row">
-
-<div>
-
-<b>
-${esc(
-f?.nome||
-'Funcionário'
-)}
-</b>
-
-<br>
-
-<small>
-${d.data}
-•
-${esc(
-o?.nome||
-'Sem obra'
-)}
-•
-${d.qtd}
-×
-${money(d.valor_diaria)}
-</small>
-
-</div>
-
-<b class="gold">
-${money(
-d.valor_pago||
-d.qtd*d.valor_diaria
-)}
-</b>
-
-</div>
-
-<button
-class="danger mini"
-onclick="delItem(
-'diarias',
-${d.id}
-)">
-Excluir
-</button>
-
-</div>
-
-`;
-
-}
-)
-.join('')||
-'<div class="empty">Nenhuma diária no período.</div>';
-
-}
-
-
-/* CHECKLIST */
+/* =========================================================
+   CHECKLIST
+========================================================= */
 
 function getCheckDefs(){
 
@@ -2505,7 +2480,8 @@ return JSON.parse(
 localStorage.getItem(
 'edifiq_check_defs_'+
 (user?.id||'')
-)||'[]'
+)||
+'[]'
 );
 
 }catch{
@@ -2516,7 +2492,6 @@ return[];
 
 }
 
-
 function saveCheckDefs(v){
 
 localStorage.setItem(
@@ -2526,7 +2501,6 @@ JSON.stringify(v)
 );
 
 }
-
 
 function renderChecklist(){
 
@@ -2545,8 +2519,7 @@ const defaults=[
 'Entrega da obra'
 ];
 
-let defs=
-getCheckDefs();
+let defs=getCheckDefs();
 
 if(!defs.length){
 
@@ -2578,14 +2551,17 @@ String(o.id)
 
 const saved=
 D.checklist.filter(
-c=>c.obra_id===o.id
+c=>
+String(c.obra_id)===
+String(o.id)
 );
 
 const done=
 applicable.filter(
 d=>
 saved.find(
-c=>c.tarefa===d.desc
+c=>
+c.tarefa===d.desc
 )?.concluida
 ).length;
 
@@ -2604,14 +2580,15 @@ ${done}/${applicable.length}
 </div>
 
 <div class="progress">
+
 <i style="width:${
-applicable.length
-?
+applicable.length?
 Math.round(
 done/applicable.length*100
-)
-:0
+):
+0
 }%"></i>
+
 </div>
 
 ${applicable.map(
@@ -2632,17 +2609,13 @@ style="padding:6px 0">
 
 <input
 type="checkbox"
-${
-c?.concluida
-?'checked'
-:''
-}
-onchange="
-toggleCheck(
+${c?.concluida?'checked':''}
+onchange="toggleCheck(
 ${o.id},
 ${JSON.stringify(d.desc)},
 this.checked
-)">
+)"
+>
 
 ${esc(d.desc)}
 
@@ -2652,19 +2625,13 @@ ${esc(d.desc)}
 
 <button
 class="mini"
-onclick="
-openCheck(
-'${d.id}'
-)">
+onclick="openCheck('${d.id}')">
 ✏️
 </button>
 
 <button
 class="danger mini"
-onclick="
-deleteCheckDef(
-'${d.id}'
-)">
+onclick="deleteCheckDef('${d.id}')">
 ×
 </button>
 
@@ -2683,11 +2650,11 @@ deleteCheckDef(
 
 }
 )
-.join('')||
+.join('')
+||
 '<div class="empty">Cadastre uma obra primeiro.</div>';
 
 }
-
 
 async function toggleCheck(
 obra,
@@ -2740,24 +2707,20 @@ renderChecklist();
 
 }
 
-
 function saveCheckDef(e){
 
 e.preventDefault();
 
-let defs=
-getCheckDefs();
+let defs=getCheckDefs();
 
 let id=
 $('checkId').value||
-'c_'+Date.now();
+('c_'+Date.now());
 
 let val={
 id,
 desc:$('checkDesc').value.trim(),
-obraId:
-$('checkObra').value||
-'all'
+obraId:$('checkObra').value||'all'
 };
 
 let i=
@@ -2782,16 +2745,17 @@ toast(
 
 }
 
-
 function deleteCheckDef(id){
 
-if(!confirm(
+if(
+!confirm(
 'Excluir este serviço do checklist?'
-))
-return;
+)
+)return;
 
 saveCheckDefs(
-getCheckDefs().filter(
+getCheckDefs()
+.filter(
 x=>x.id!==id
 )
 );
@@ -2804,17 +2768,16 @@ toast(
 
 }
 
-
-/* FOTOS */
+/* =========================================================
+   FOTOS
+========================================================= */
 
 function renderFotos(){
 
-const data=
-getPhotos();
+const data=getPhotos();
 
 $('fotoList').innerHTML=
-data.length
-?
+data.length?
 data
 .slice()
 .reverse()
@@ -2823,8 +2786,7 @@ g=>{
 
 const o=
 D.obras.find(
-x=>
-String(x.id)===
+x=>String(x.id)===
 String(g.obraId)
 );
 
@@ -2841,15 +2803,10 @@ ${esc(
 g.titulo||
 'Relatório fotográfico'
 )}
-</b>
-
-<br>
+</b><br>
 
 <small>
-${esc(
-o?.nome||
-'Obra'
-)}
+${esc(o?.nome||'Obra')}
 •
 ${g.data||''}
 </small>
@@ -2858,21 +2815,15 @@ ${g.data||''}
 
 <button
 class="danger mini"
-onclick="
-deletePhotoGroup(
-'${g.id}'
-)">
+onclick="deletePhotoGroup('${g.id}')">
 Excluir
 </button>
 
 </div>
 
-${
-g.obs
-?
-`<p class="sub">${esc(g.obs)}</p>`
-:''
-}
+${g.obs?
+`<p class="sub">${esc(g.obs)}</p>`:
+''}
 
 <div class="photoGrid">
 
@@ -2881,7 +2832,8 @@ ${g.photos.map(
 `
 <img
 src="${p}"
-alt="Foto ${i+1}">
+alt="Foto ${i+1}"
+>
 `
 ).join('')}
 
@@ -2899,7 +2851,6 @@ alt="Foto ${i+1}">
 
 }
 
-
 function getPhotos(){
 
 try{
@@ -2908,7 +2859,8 @@ return JSON.parse(
 localStorage.getItem(
 'edifiq_photos_'+
 (user?.id||'')
-)||'[]'
+)||
+'[]'
 );
 
 }catch{
@@ -2918,7 +2870,6 @@ return[];
 }
 
 }
-
 
 function savePhotos(v){
 
@@ -2930,21 +2881,22 @@ JSON.stringify(v)
 
 }
 
-
 function openFotoFor(id){
 
 go('fotos');
 
 setTimeout(
 ()=>{
+
 openFoto();
+
 $('fotoObra').value=id;
+
 },
 0
 );
 
 }
-
 
 async function saveFotos(e){
 
@@ -2957,15 +2909,12 @@ if(!files.length)return;
 
 const photos=[];
 
-for(
-const f of files
-)
+for(const f of files)
 photos.push(
 await fileToDataURL(f)
 );
 
-const arr=
-getPhotos();
+const arr=getPhotos();
 
 arr.push({
 id:'p_'+Date.now(),
@@ -2991,14 +2940,12 @@ photos.length+
 
 }
 
-
 function fileToDataURL(file){
 
 return new Promise(
 (res,rej)=>{
 
-const r=
-new FileReader();
+const r=new FileReader();
 
 r.onload=
 ()=>res(r.result);
@@ -3012,13 +2959,13 @@ r.readAsDataURL(file);
 
 }
 
-
 function deletePhotoGroup(id){
 
-if(!confirm(
+if(
+!confirm(
 'Excluir este relatório fotográfico?'
-))
-return;
+)
+)return;
 
 savePhotos(
 getPhotos().filter(
@@ -3030,8 +2977,9 @@ renderFotos();
 
 }
 
-
-/* SELECTS */
+/* =========================================================
+   SELECTS
+========================================================= */
 
 function fillSelectors(){
 
@@ -3049,11 +2997,12 @@ ${esc(o.nome)}
 [
 'dObra',
 'oFin'
-]
-.forEach(
+].forEach(
 id=>{
+
 if($(id))
 $(id).innerHTML=opts;
+
 }
 );
 
@@ -3075,7 +3024,9 @@ ${esc(o.nome)}
 if($('checkObra')){
 
 $('checkObra').innerHTML=
-'<option value="all">Aplicar em todas as obras</option>'+
+'<option value="all">
+Aplicar em todas as obras
+</option>'+
 D.obras
 .map(
 o=>
@@ -3127,8 +3078,9 @@ cur||'all';
 
 }
 
-
-/* SALVAR OBRA */
+/* =========================================================
+   SALVAR OBRA
+========================================================= */
 
 async function saveObra(e){
 
@@ -3163,14 +3115,12 @@ $('oObs').value.trim()
 };
 
 let r=
-editObraId
-?
+editObraId?
 await updateRow(
 'obras',
 editObraId,
 row
-)
-:
+):
 await insertRow(
 'obras',
 row
@@ -3182,7 +3132,8 @@ if(editObraId){
 
 const o=
 D.obras.find(
-x=>x.id===editObraId
+x=>String(x.id)===
+String(editObraId)
 );
 
 Object.assign(o,r);
@@ -3209,8 +3160,9 @@ toast(
 
 }
 
-
-/* SALVAR FUNCIONÁRIO */
+/* =========================================================
+   SALVAR FUNCIONÁRIO
+========================================================= */
 
 async function saveFunc(e){
 
@@ -3245,14 +3197,12 @@ $('fAtivo').value==='true'
 };
 
 let r=
-editFuncId
-?
+editFuncId?
 await updateRow(
 'funcionarios',
 editFuncId,
 row
-)
-:
+):
 await insertRow(
 'funcionarios',
 row
@@ -3264,7 +3214,8 @@ if(editFuncId){
 
 const f=
 D.funcionarios.find(
-x=>x.id===editFuncId
+x=>String(x.id)===
+String(editFuncId)
 );
 
 Object.assign(f,r);
@@ -3286,15 +3237,16 @@ closeM('funcM');
 renderAll();
 
 toast(
-'Funcionário salvo.'
+'Funcionário salvo e formulário limpo.'
 );
 
 }
 
 }
 
-
-/* SALVAR DIÁRIA */
+/* =========================================================
+   SALVAR DIÁRIA
+========================================================= */
 
 async function saveDia(e){
 
@@ -3310,14 +3262,14 @@ const r=
 await insertRow(
 'diarias',
 {
+
 funcionario_id:
 Number($('dFunc').value),
 
 obra_id:
-$('dObra').value
-?
-Number($('dObra').value)
-:null,
+$('dObra').value?
+Number($('dObra').value):
+null,
 
 data:
 $('dData').value,
@@ -3334,6 +3286,7 @@ $('dStatus').value,
 
 observacao:
 $('dObs').value
+
 }
 );
 
@@ -3355,32 +3308,26 @@ toast(
 
 }
 
-
-/* SALVAR FINANCEIRO */
+/* =========================================================
+   SALVAR FINANCEIRO
+========================================================= */
 
 async function saveFin(e){
 
 e.preventDefault();
 
-const tipo=
-$('tFin').value;
-
-const categoria=
-tipo==='entrada'
-?'entrada'
-:tipo;
-
 const r=
 await insertRow(
 'gastos',
 {
-obra_id:
-$('oFin').value
-?
-Number($('oFin').value)
-:null,
 
-categoria,
+obra_id:
+$('oFin').value?
+Number($('oFin').value):
+null,
+
+categoria:
+$('tFin').value,
 
 descricao:
 $('dFin').value.trim(),
@@ -3396,6 +3343,7 @@ $('forFin').value.trim(),
 
 observacao:
 $('obsFin').value.trim()
+
 }
 );
 
@@ -3410,36 +3358,33 @@ closeM('finM');
 renderAll();
 
 toast(
-'Recebimento/despesa salvo.'
+'Recebimento/despesa salvo com sucesso.'
 );
 
 }
 
 }
 
+/* =========================================================
+   EXCLUIR
+========================================================= */
 
-/* EXCLUIR */
-
-async function delItem(
-t,
-id
-){
-
-if(!confirm(
-'Excluir este registro?'
-))
-return;
+async function delItem(t,id){
 
 if(
-await removeRow(
-t,
-id
+!confirm(
+'Excluir este registro?'
 )
+)return;
+
+if(
+await removeRow(t,id)
 ){
 
 const i=
 D[t].findIndex(
-x=>x.id===id
+x=>String(x.id)===
+String(id)
 );
 
 if(i>=0)
@@ -3455,15 +3400,15 @@ toast(
 
 }
 
-
-/* BACKUP */
+/* =========================================================
+   BACKUP
+========================================================= */
 
 function snapshot(){
 
 return{
 
-version:
-'EDIFIQ-2026-09',
+version:'EDIFIQ-2026-09',
 
 exported_at:
 new Date().toISOString(),
@@ -3482,7 +3427,6 @@ getPhotos()
 };
 
 }
-
 
 function download(
 name,
@@ -3503,22 +3447,20 @@ new Blob(
 
 a.download=name;
 
-document.body.appendChild(a);
+document
+.body
+.appendChild(a);
 
 a.click();
 
 a.remove();
 
 setTimeout(
-()=>
-URL.revokeObjectURL(
-a.href
-),
+()=>URL.revokeObjectURL(a.href),
 500
 );
 
 }
-
 
 function exportFull(){
 
@@ -3533,7 +3475,6 @@ null,
 
 }
 
-
 function exportTable(t){
 
 download(
@@ -3546,7 +3487,6 @@ null,
 );
 
 }
-
 
 function exportExcel(){
 
@@ -3572,6 +3512,9 @@ wb,
 
 }
 
+/* =========================================================
+   IMPORTAÇÃO
+========================================================= */
 
 async function previewImport(e){
 
@@ -3620,18 +3563,30 @@ wb.Sheets[s]
 window.pendingImport=obj;
 
 $('importPreview').innerHTML=
-'<p class="green">Arquivo lido com sucesso.</p>'+
-'<button class="primary" onclick="confirmImport()">Confirmar importação</button>';
+`
+<p class="green">
+Arquivo lido com sucesso.
+</p>
+
+<button
+class="primary"
+onclick="confirmImport()">
+Confirmar importação
+</button>
+`;
 
 }catch(err){
 
 $('importPreview').innerHTML=
-`<p class="red">Erro: ${esc(err.message)}</p>`;
+`
+<p class="red">
+Erro: ${esc(err.message)}
+</p>
+`;
 
 }
 
 }
-
 
 async function confirmImport(){
 
@@ -3643,10 +3598,7 @@ window.pendingImport||
 let count=0;
 
 for(
-const[
-table,
-rows
-]
+const[table,rows]
 of Object.entries(src)
 ){
 
@@ -3657,7 +3609,8 @@ if(
 continue;
 
 for(
-const raw of rows
+const raw
+of rows
 ){
 
 const r={...raw};
@@ -3715,8 +3668,9 @@ renderAll();
 
 }
 
-
-/* INICIALIZAÇÃO — MANTIDA */
+/* =========================================================
+   BOOT
+========================================================= */
 
 (async function boot(){
 
@@ -3730,7 +3684,11 @@ initSupabase();
 
 if(!ok)return;
 
-await checkConnection();
+/*
+  Não bloqueia a abertura do login esperando
+  a verificação de conexão.
+*/
+checkConnection();
 
 startAuth();
 
