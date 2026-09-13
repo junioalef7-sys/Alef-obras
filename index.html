@@ -1,3077 +1,3801 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-
 <meta name="theme-color" content="#0b0d10">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="EDIFIQ">
-
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>EDIFIQ — Gestão de Obras</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
-*{
-  box-sizing:border-box;
-  margin:0;
-  padding:0;
+:root{
+--bg:#090b0e;
+--panel:#12161b;
+--panel2:#181d23;
+--gold:#d8ad45;
+--text:#f4f4f4;
+--muted:#9da5ae;
+--green:#36c98f;
+--red:#ef6670;
+--blue:#64a8ff;
+--line:#2a3038
 }
 
-:root{
-  --bg:#0b0d10;
-  --card:#14181e;
-  --card2:#191e25;
-  --line:#29313b;
-  --text:#f5f7fa;
-  --muted:#9ca6b2;
-  --gold:#d6aa52;
-  --green:#27ae60;
-  --red:#e74c3c;
-  --blue:#3498db;
-}
+*{box-sizing:border-box}
 
 body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
+margin:0;
+background:var(--bg);
+color:var(--text);
+font:15px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
 }
 
-button,input,select,textarea{
-  font:inherit;
-}
-
-button{
-  cursor:pointer;
-}
-
-.hidden{
-  display:none!important;
-}
-
-/* LOGIN */
-
-#loginScreen{
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
-  background:
-    radial-gradient(circle at top,#242b35 0,#0b0d10 55%);
-}
-
-.login-box{
-  width:100%;
-  max-width:420px;
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:25px;
-  padding:28px;
-  box-shadow:0 20px 60px rgba(0,0,0,.4);
-}
-
-.login-logo{
-  width:72px;
-  height:72px;
-  border:2px solid var(--gold);
-  border-radius:20px;
-  display:grid;
-  place-items:center;
-  margin:0 auto 18px;
-  color:var(--gold);
-  font-size:30px;
-  font-weight:900;
-}
-
-.login-box h1{
-  text-align:center;
-  font-size:27px;
-}
-
-.login-box .subtitle{
-  text-align:center;
-  color:var(--muted);
-  margin:7px 0 25px;
-  font-size:13px;
-}
-
-.form-group{
-  margin-bottom:14px;
-}
-
-.form-group label{
-  display:block;
-  color:var(--muted);
-  font-size:13px;
-  margin-bottom:7px;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea{
-  width:100%;
-  background:#0e1115;
-  border:1px solid var(--line);
-  color:white;
-  border-radius:12px;
-  padding:13px;
-  outline:none;
-}
-
-.form-group textarea{
-  min-height:90px;
-  resize:vertical;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus{
-  border-color:var(--gold);
-}
-
-.login-btn{
-  width:100%;
-  border:0;
-  background:var(--gold);
-  color:#111;
-  padding:14px;
-  border-radius:12px;
-  font-weight:800;
-  margin-top:5px;
-}
-
-.login-switch{
-  text-align:center;
-  margin-top:17px;
-  color:var(--muted);
-  font-size:13px;
-}
-
-.login-switch button{
-  border:0;
-  background:none;
-  color:var(--gold);
-  font-weight:700;
-}
-
-/* APP */
-
-.app{
-  max-width:720px;
-  margin:auto;
-  min-height:100vh;
-  padding-bottom:90px;
-}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer;border:0}
+.hidden{display:none!important}
 
 header{
-  position:sticky;
-  top:0;
-  z-index:20;
-  background:rgba(11,13,16,.96);
-  backdrop-filter:blur(15px);
-  border-bottom:1px solid var(--line);
-  padding:16px 18px 14px;
-}
-
-.header-top{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
-
-.brand{
-  display:flex;
-  align-items:center;
-  gap:12px;
+position:sticky;
+top:0;
+z-index:5;
+background:#0b0d10ee;
+backdrop-filter:blur(10px);
+border-bottom:1px solid var(--line);
+padding:14px 16px;
+display:flex;
+align-items:center;
+justify-content:space-between
 }
 
 .logo{
-  width:46px;
-  height:46px;
-  border:2px solid var(--gold);
-  border-radius:14px;
-  display:grid;
-  place-items:center;
-  font-weight:900;
-  font-size:20px;
-  color:var(--gold);
+font-weight:900;
+letter-spacing:2px
 }
 
-.brand h1{
-  font-size:21px;
-  letter-spacing:.5px;
-}
+.logo span,.gold{color:var(--gold)}
 
-.brand p{
-  font-size:11px;
-  color:var(--muted);
-  margin-top:2px;
-}
-
-.menu{
-  width:42px;
-  height:42px;
-  border:1px solid var(--line);
-  border-radius:12px;
-  background:var(--card);
-  color:white;
-  font-size:20px;
+.sub,.label,small{
+font-size:12px;
+color:var(--muted)
 }
 
 main{
-  padding:18px;
+max-width:1050px;
+margin:auto;
+padding:18px 16px 105px
 }
 
-.page{
-  display:none;
+.page{display:none}
+.page.active{display:block}
+
+h1{margin:5px 0}
+.lead{color:var(--muted);margin-top:4px}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:10px
 }
 
-.page.active{
-  display:block;
+.grid3{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px
 }
 
-.hero{
-  background:linear-gradient(145deg,#171c22,#101318);
-  border:1px solid var(--line);
-  border-radius:22px;
-  padding:22px;
-  margin-bottom:18px;
+.grid4{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:10px
 }
 
-.hero h2{
-  font-size:25px;
-  margin-bottom:7px;
-}
-
-.hero p{
-  color:var(--muted);
-  line-height:1.5;
-}
-
-.stats{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px;
-  margin-bottom:18px;
+.card,.item,.authbox{
+background:var(--panel);
+border:1px solid var(--line);
+border-radius:16px;
+padding:15px;
+margin:10px 0
 }
 
 .stat{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:17px;
-  padding:16px;
+font-size:23px;
+font-weight:800;
+margin-top:6px
 }
 
-.stat small{
-  color:var(--muted);
-  display:block;
-  margin-bottom:8px;
+.green{color:var(--green)}
+.red{color:var(--red)}
+.blue{color:var(--blue)}
+
+.actions{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:10px
 }
 
-.stat strong{
-  font-size:21px;
+.action,.primary,.secondary,.danger,.mini{
+border-radius:12px;
+padding:12px 14px;
+font-weight:700
 }
 
-.gold{
-  color:var(--gold);
+.action{
+background:var(--panel2);
+border:1px solid var(--line);
+color:var(--text);
+text-align:left
 }
 
-.green{
-  color:#42d681;
+.primary{
+background:var(--gold);
+color:#15110a
 }
 
-.red{
-  color:#ff6d60;
+.secondary{
+background:#20262d;
+color:var(--text);
+border:1px solid var(--line)
 }
 
-.grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px;
+.danger{
+background:#32191c;
+color:#ff9ca3;
+border:1px solid #653038
 }
 
-.module{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:18px;
-  padding:20px 15px;
-  min-height:125px;
-  text-align:left;
-  color:white;
-  transition:.15s;
+.mini{
+padding:7px 9px;
+background:#20262d;
+color:#fff;
+border:1px solid var(--line);
+font-size:12px
 }
 
-.module:active{
-  transform:scale(.97);
+.form{
+display:grid;
+gap:10px
 }
 
-.module .icon{
-  font-size:28px;
-  margin-bottom:12px;
+.form input,
+.form select,
+.form textarea,
+.toolbar input,
+.toolbar select{
+width:100%;
+background:#0e1216;
+color:var(--text);
+border:1px solid var(--line);
+border-radius:10px;
+padding:11px
 }
 
-.module strong{
-  display:block;
-  font-size:16px;
+.form textarea{min-height:85px}
+
+.row{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:10px
 }
 
-.module span{
-  font-size:12px;
-  color:var(--muted);
-  display:block;
-  margin-top:5px;
-}
-
-.section-title{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  margin:4px 0 15px;
-}
-
-.section-title h2{
-  font-size:21px;
-}
-
-.add{
-  background:var(--gold);
-  color:#111;
-  border:0;
-  padding:10px 14px;
-  border-radius:12px;
-  font-weight:800;
-}
-
-.card{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:17px;
-  padding:17px;
-  margin-bottom:12px;
-}
-
-.card-head{
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-}
-
-.card h3{
-  font-size:17px;
-}
-
-.card p{
-  color:var(--muted);
-  font-size:13px;
-  margin-top:6px;
-  line-height:1.5;
-}
+.row.wrap{flex-wrap:wrap}
 
 .badge{
-  padding:5px 9px;
-  border-radius:20px;
-  font-size:11px;
-  background:#193d29;
-  color:#6ee49b;
-  white-space:nowrap;
-  height:max-content;
+background:#242b33;
+border-radius:999px;
+padding:5px 9px;
+font-size:12px
+}
+
+.badge.on{
+color:#8ff0c5;
+background:#15382c
 }
 
 .badge.off{
-  background:#302f30;
-  color:#aaa;
+color:#ffb0b5;
+background:#3b1c20
 }
 
-.actions{
-  display:flex;
-  gap:8px;
-  margin-top:14px;
-  flex-wrap:wrap;
+.progress{
+height:7px;
+background:#252b32;
+border-radius:9px;
+overflow:hidden;
+margin:10px 0
 }
 
-.btn{
-  border:1px solid var(--line);
-  background:var(--card2);
-  color:white;
-  border-radius:10px;
-  padding:9px 12px;
+.progress i{
+display:block;
+height:100%;
+background:var(--gold)
 }
-
-.btn.danger{
-  color:#ff8177;
-}
-
-.btn.primary{
-  background:var(--gold);
-  color:#111;
-  border-color:var(--gold);
-  font-weight:700;
-}
-
-.empty{
-  text-align:center;
-  color:var(--muted);
-  padding:45px 20px;
-  border:1px dashed var(--line);
-  border-radius:17px;
-}
-
-.finance-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  margin-bottom:15px;
-}
-
-.finance-box{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:17px;
-  padding:16px;
-}
-
-.finance-box small{
-  color:var(--muted);
-}
-
-.finance-box strong{
-  display:block;
-  font-size:20px;
-  margin-top:8px;
-}
-
-.report-item{
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:14px;
-  margin-bottom:10px;
-  background:#101419;
-}
-
-.report-item strong{
-  display:block;
-}
-
-.report-item span{
-  display:block;
-  color:var(--muted);
-  font-size:12px;
-  margin-top:5px;
-}
-
-/* BOTTOM */
 
 .bottom{
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-  z-index:30;
-  background:rgba(15,18,22,.97);
-  border-top:1px solid var(--line);
-  backdrop-filter:blur(15px);
-}
-
-.bottom-inner{
-  max-width:720px;
-  margin:auto;
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+background:#0b0d10f5;
+border-top:1px solid var(--line);
+display:grid;
+grid-template-columns:repeat(5,1fr);
+padding:7px env(safe-area-inset-right) calc(7px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
+z-index:6
 }
 
 .nav{
-  border:0;
-  background:none;
-  color:#7f8995;
-  padding:11px 4px 10px;
-  font-size:11px;
+background:none;
+color:var(--muted);
+padding:7px
 }
 
-.nav div{
-  font-size:21px;
-  margin-bottom:3px;
-}
-
-.nav.active{
-  color:var(--gold);
-}
-
-/* MODAL */
+.nav.active{color:var(--gold)}
 
 .modal{
-  position:fixed;
-  inset:0;
-  z-index:50;
-  background:rgba(0,0,0,.75);
-  display:none;
-  align-items:flex-end;
-  justify-content:center;
+position:fixed;
+inset:0;
+background:#000b;
+z-index:20;
+display:none;
+align-items:end
 }
 
-.modal.show{
-  display:flex;
-}
+.modal.open{display:flex}
 
-.modal-box{
-  width:min(720px,100%);
-  max-height:92vh;
-  overflow:auto;
-  background:#12161b;
-  border:1px solid var(--line);
-  border-radius:24px 24px 0 0;
-  padding:22px;
-}
-
-.modal-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:20px;
+.sheet{
+background:#11151a;
+border:1px solid var(--line);
+border-radius:20px 20px 0 0;
+width:100%;
+max-height:94vh;
+overflow:auto;
+padding:18px
 }
 
 .close{
-  width:38px;
-  height:38px;
-  border-radius:50%;
-  border:1px solid var(--line);
-  background:var(--card);
-  color:white;
-  font-size:20px;
+float:right;
+background:none;
+color:var(--muted);
+font-size:28px
 }
 
-.modal-actions{
-  display:flex;
-  gap:10px;
-  margin-top:18px;
+.auth{
+min-height:100vh;
+display:grid;
+place-items:center;
+padding:20px
 }
 
-.modal-actions button{
-  flex:1;
+.authbox{
+width:min(440px,100%);
+padding:25px
 }
 
-/* TOAST */
+.authlogo{
+text-align:center;
+font-size:30px;
+font-weight:900;
+letter-spacing:4px
+}
+
+.authlogo span{color:var(--gold)}
+
+.connection{
+text-align:center;
+margin-top:12px;
+font-size:12px;
+color:var(--muted)
+}
+
+.connection.ok{color:var(--green)}
+.connection.error{color:var(--red)}
+
+.toolbar{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:8px;
+margin:10px 0
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+font-size:13px
+}
+
+th,td{
+padding:8px;
+border-bottom:1px solid var(--line);
+text-align:left
+}
+
+th{color:var(--muted)}
 
 .toast{
-  position:fixed;
-  left:50%;
-  bottom:90px;
-  z-index:100;
-  transform:translateX(-50%) translateY(20px);
-  background:#20262e;
-  border:1px solid var(--line);
-  padding:12px 17px;
-  border-radius:12px;
-  opacity:0;
-  pointer-events:none;
-  transition:.25s;
-  white-space:nowrap;
+position:fixed;
+right:15px;
+bottom:80px;
+z-index:50;
+background:#20262d;
+border:1px solid var(--line);
+padding:12px 15px;
+border-radius:12px;
+display:none;
+max-width:90vw
 }
 
-.toast.show{
-  opacity:1;
-  transform:translateX(-50%) translateY(0);
+.toast.show{display:block}
+
+.photoGrid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:8px
 }
 
-@media(min-width:650px){
-  .stats{
-    grid-template-columns:repeat(4,1fr);
-  }
+.photoGrid img{
+width:100%;
+aspect-ratio:1;
+border-radius:10px;
+object-fit:cover;
+border:1px solid var(--line)
+}
 
-  .grid{
-    grid-template-columns:repeat(4,1fr);
-  }
+.divider{
+height:1px;
+background:var(--line);
+margin:14px 0
+}
+
+.empty{
+padding:18px;
+text-align:center;
+color:var(--muted);
+border:1px dashed var(--line);
+border-radius:12px
+}
+
+.search{margin:10px 0}
+
+.search input{
+width:100%;
+background:#0e1216;
+color:#fff;
+border:1px solid var(--line);
+border-radius:10px;
+padding:11px
+}
+
+.two{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:8px
+}
+
+.three{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:8px
+}
+
+.kpi{min-height:92px}
+
+.sectionTitle{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:8px;
+margin-top:18px
+}
+
+.listActions{
+display:flex;
+gap:6px;
+flex-wrap:wrap;
+margin-top:9px
+}
+
+.note{
+background:#171d23;
+border-left:3px solid var(--gold);
+padding:10px;
+border-radius:8px;
+color:#d7dce1;
+font-size:13px
+}
+
+@media(max-width:700px){
+.grid4{grid-template-columns:1fr 1fr}
+.grid3{grid-template-columns:1fr 1fr}
+.three{grid-template-columns:1fr 1fr}
+.photoGrid{grid-template-columns:repeat(3,1fr)}
+}
+
+@media(max-width:450px){
+.grid,.grid3,.grid4,.two,.three{grid-template-columns:1fr}
+.actions{grid-template-columns:1fr 1fr}
+.stat{font-size:20px}
 }
 </style>
 </head>
 
 <body>
 
-<!-- ================= LOGIN ================= -->
+<div id="auth" class="auth">
 
-<div id="loginScreen">
+<div class="authbox">
 
-  <div class="login-box">
+<div class="authlogo">
+EDIFI<span>Q</span>
+</div>
 
-    <div class="login-logo">E</div>
+<p class="sub" style="text-align:center">
+GESTÃO DE OBRAS
+</p>
 
-    <h1>EDIFIQ</h1>
+<p id="connectionStatus" class="connection">
+Verificando conexão...
+</p>
 
-    <p class="subtitle">
-      Gestão profissional de obras
-    </p>
+<div class="form" style="margin-top:20px">
 
-    <div class="form-group">
-      <label>E-mail</label>
-      <input
-        id="loginEmail"
-        type="email"
-        placeholder="seu@email.com"
-      >
-    </div>
+<input
+id="email"
+type="email"
+placeholder="E-mail"
+autocomplete="email"
+>
 
-    <div class="form-group">
-      <label>Senha</label>
-      <input
-        id="loginPassword"
-        type="password"
-        placeholder="Sua senha"
-      >
-    </div>
+<input
+id="password"
+type="password"
+placeholder="Senha"
+autocomplete="current-password"
+>
 
-    <button
-      class="login-btn"
-      onclick="entrar()"
-      id="loginButton"
-    >
-      Entrar
-    </button>
+<button class="primary" onclick="login()">
+Entrar
+</button>
 
-    <div class="login-switch">
-      <span id="loginText">Ainda não tem conta?</span>
+<button class="secondary" onclick="signup()">
+Criar minha conta
+</button>
 
-      <button onclick="alternarCadastro()" id="switchButton">
-        Criar conta
-      </button>
-    </div>
-
-  </div>
+<button class="secondary" onclick="resetPassword()">
+Esqueci a senha
+</button>
 
 </div>
 
+<p id="authMsg" class="sub"></p>
 
-<!-- ================= APLICATIVO ================= -->
+</div>
+</div>
 
-<div class="app hidden" id="app">
+
+<div id="app" class="hidden">
 
 <header>
 
-  <div class="header-top">
+<div>
+<div class="logo">
+EDIFI<span>Q</span>
+</div>
+<div class="sub">
+Gestão de Obras
+</div>
+</div>
 
-    <div class="brand">
+<div style="display:flex;align-items:center;gap:10px">
 
-      <div class="logo">E</div>
+<span id="appConnection" class="connection ok">
+● Sistema conectado
+</span>
 
-      <div>
-        <h1>EDIFIQ</h1>
-        <p>GESTÃO DE OBRAS</p>
-      </div>
+<button class="secondary" onclick="logout()">
+Sair
+</button>
 
-    </div>
-
-    <button
-      class="menu"
-      onclick="sair()"
-      title="Sair"
-    >
-      ⇥
-    </button>
-
-  </div>
-
+</div>
 </header>
 
 
 <main>
 
-<!-- ================= INÍCIO ================= -->
+<section id="home" class="page active">
 
-<section id="inicio" class="page active">
+<h1>Olá! 👋</h1>
 
-  <div class="hero">
-
-    <h2>Olá!</h2>
-
-    <p>
-      Controle suas obras, funcionários,
-      financeiro e relatórios em um só lugar.
-    </p>
-
-  </div>
+<p class="lead">
+Seu painel de controle.
+</p>
 
 
-  <div class="stats">
+<div class="grid3">
 
-    <div class="stat">
-      <small>Obras</small>
-      <strong id="statObras">0</strong>
-    </div>
+<div class="card kpi">
+<div class="label">Total de obras</div>
+<div class="stat gold" id="kObras">0</div>
+</div>
 
-    <div class="stat">
-      <small>Funcionários</small>
-      <strong id="statFuncionarios">0</strong>
-    </div>
+<div class="card kpi">
+<div class="label">Obras em andamento</div>
+<div class="stat" id="kAndamento">0</div>
+</div>
 
-    <div class="stat">
-      <small>Receitas</small>
-      <strong class="green" id="statReceitas">
-        R$ 0,00
-      </strong>
-    </div>
+<div class="card kpi">
+<div class="label">Obras concluídas</div>
+<div class="stat green" id="kConcluidas">0</div>
+</div>
 
-    <div class="stat">
-      <small>Despesas</small>
-      <strong class="red" id="statDespesas">
-        R$ 0,00
-      </strong>
-    </div>
-
-  </div>
+</div>
 
 
-  <div class="grid">
+<div class="grid3">
 
-    <button
-      class="module"
-      onclick="showPage('obras')"
-    >
-      <div class="icon">🏗️</div>
-      <strong>Obras</strong>
-      <span>Gerenciar obras</span>
-    </button>
+<div class="card kpi">
+<div class="label">Funcionários ativos</div>
+<div class="stat" id="kFunc">0</div>
+</div>
 
+<div class="card kpi">
+<div class="label">A receber</div>
+<div class="stat green" id="kReceber">
+R$ 0,00
+</div>
+</div>
 
-    <button
-      class="module"
-      onclick="showPage('funcionarios')"
-    >
-      <div class="icon">👷</div>
-      <strong>Funcionários</strong>
-      <span>Equipe e diárias</span>
-    </button>
+<div class="card kpi">
+<div class="label">Custo da equipe</div>
+<div class="stat red" id="kEquipeCusto">
+R$ 0,00
+</div>
+</div>
 
-
-    <button
-      class="module"
-      onclick="showPage('financeiro')"
-    >
-      <div class="icon">💰</div>
-      <strong>Financeiro</strong>
-      <span>Receitas e despesas</span>
-    </button>
+</div>
 
 
-    <button
-      class="module"
-      onclick="showPage('relatorios')"
-    >
-      <div class="icon">📊</div>
-      <strong>Relatórios</strong>
-      <span>Resumo geral</span>
-    </button>
+<div class="grid3">
 
-  </div>
+<div class="card kpi">
+<div class="label">Receitas</div>
+<div class="stat green" id="kEntradas">
+R$ 0,00
+</div>
+</div>
+
+<div class="card kpi">
+<div class="label">Despesas e gastos</div>
+<div class="stat red" id="kDespesas">
+R$ 0,00
+</div>
+</div>
+
+<div class="card kpi">
+<div class="label">Lucro líquido</div>
+<div class="stat gold" id="kResultado">
+R$ 0,00
+</div>
+</div>
+
+</div>
+
+
+<div class="grid3">
+
+<div class="card kpi">
+<div class="label">Saldo disponível</div>
+<div class="stat green" id="kSaldo">
+R$ 0,00
+</div>
+</div>
+
+<div class="card kpi">
+<div class="label">Sobra após os gastos</div>
+<div class="stat gold" id="kSobra">
+R$ 0,00
+</div>
+</div>
+
+<div class="card kpi">
+<div class="label">Diárias lançadas</div>
+<div class="stat" id="kDiarias">
+0
+</div>
+</div>
+
+</div>
+
+
+<div class="actions">
+
+<button class="action" onclick="go('obras')">
+🏗️ <b>Obras</b><br>
+<small>Projetos e andamento</small>
+</button>
+
+<button class="action" onclick="go('equipe')">
+👷 <b>Funcionários</b><br>
+<small>Equipe, ativos e inativos</small>
+</button>
+
+<button class="action" onclick="go('financeiro')">
+💰 <b>Financeiro</b><br>
+<small>Receitas, despesas e lucro</small>
+</button>
+
+<button class="action" onclick="go('checklist')">
+☑️ <b>Checklist</b><br>
+<small>Serviços editáveis</small>
+</button>
+
+<button class="action" onclick="go('fotos')">
+📸 <b>Relatório fotográfico</b><br>
+<small>Fotos por obra</small>
+</button>
+
+<button class="action" onclick="go('relatorios')">
+📊 <b>Relatórios</b><br>
+<small>Exportação e backup</small>
+</button>
+
+</div>
+
+
+<div class="sectionTitle">
+
+<h2>Obras recentes</h2>
+
+<button class="mini" onclick="openObra()">
+＋ Nova
+</button>
+
+</div>
+
+<div id="recentes"></div>
 
 </section>
 
-
-<!-- ================= OBRAS ================= -->
 
 <section id="obras" class="page">
 
-  <div class="section-title">
+<div class="sectionTitle">
 
-    <h2>Obras</h2>
+<div>
+<h1>Obras</h1>
+<p class="lead">
+Cadastre, edite e acompanhe seus projetos.
+</p>
+</div>
 
-    <button
-      class="add"
-      onclick="abrirObra()"
-    >
-      + Nova obra
-    </button>
+<button class="primary" onclick="openObra()">
+＋ Nova obra
+</button>
 
-  </div>
+</div>
 
-  <div id="listaObras"></div>
+<div class="search">
 
-</section>
+<input
+id="obraSearch"
+placeholder="Pesquisar obra ou cliente..."
+oninput="renderObras()"
+>
 
+</div>
 
-<!-- ================= FUNCIONÁRIOS ================= -->
-
-<section id="funcionarios" class="page">
-
-  <div class="section-title">
-
-    <h2>Funcionários</h2>
-
-    <button
-      class="add"
-      onclick="abrirFuncionario()"
-    >
-      + Funcionário
-    </button>
-
-  </div>
-
-  <div id="listaFuncionarios"></div>
+<div id="obrasList"></div>
 
 </section>
 
 
-<!-- ================= FINANCEIRO ================= -->
+<section id="equipe" class="page">
+
+<div class="sectionTitle">
+
+<div>
+<h1>Funcionários</h1>
+<p class="lead">
+Equipe, valores, diárias e status.
+</p>
+</div>
+
+<button class="primary" onclick="openFunc()">
+＋ Novo
+</button>
+
+</div>
+
+<div class="toolbar">
+
+<select id="funcStatus" onchange="renderEquipe()">
+<option value="all">Todos</option>
+<option value="on">Ativos</option>
+<option value="off">Inativos</option>
+</select>
+
+<input
+id="funcSearch"
+placeholder="Pesquisar funcionário..."
+oninput="renderEquipe()"
+>
+
+</div>
+
+<div id="funcList"></div>
+
+</section>
+
 
 <section id="financeiro" class="page">
 
-  <div class="section-title">
+<div class="sectionTitle">
 
-    <h2>Financeiro</h2>
+<div>
+<h1>Financeiro</h1>
 
-    <button
-      class="add"
-      onclick="abrirLancamento()"
-    >
-      + Lançamento
-    </button>
+<p class="lead">
+Receitas, despesas, gastos e lucro.
+</p>
 
-  </div>
+</div>
 
+<button class="primary" onclick="openFin()">
+＋ Lançar
+</button>
 
-  <div class="finance-grid">
-
-    <div class="finance-box">
-      <small>Receitas</small>
-      <strong class="green" id="finReceitas">
-        R$ 0,00
-      </strong>
-    </div>
-
-    <div class="finance-box">
-      <small>Despesas</small>
-      <strong class="red" id="finDespesas">
-        R$ 0,00
-      </strong>
-    </div>
-
-    <div class="finance-box">
-      <small>Lucro</small>
-      <strong class="gold" id="finLucro">
-        R$ 0,00
-      </strong>
-    </div>
-
-    <div class="finance-box">
-      <small>Lançamentos</small>
-      <strong id="finQuantidade">0</strong>
-    </div>
-
-  </div>
+</div>
 
 
-  <div id="listaFinanceiro"></div>
+<div class="grid3">
+
+<div class="card">
+<div class="label">Receitas</div>
+<div class="stat green" id="finReceitas">
+R$ 0,00
+</div>
+</div>
+
+<div class="card">
+<div class="label">Despesas</div>
+<div class="stat red" id="finDespesas">
+R$ 0,00
+</div>
+</div>
+
+<div class="card">
+<div class="label">Lucro líquido</div>
+<div class="stat gold" id="finLucro">
+R$ 0,00
+</div>
+</div>
+
+</div>
+
+
+<div class="grid3">
+
+<div class="card">
+<div class="label">Saldo disponível</div>
+<div class="stat green" id="finSaldo">
+R$ 0,00
+</div>
+</div>
+
+<div class="card">
+<div class="label">Sobra do lucro</div>
+<div class="stat gold" id="finSobra">
+R$ 0,00
+</div>
+</div>
+
+<div class="card">
+<div class="label">Custo com diárias</div>
+<div class="stat red" id="finDiarias">
+R$ 0,00
+</div>
+</div>
+
+</div>
+
+
+<div class="toolbar">
+
+<select id="finObraFilter" onchange="renderFinanceiro()">
+<option value="all">Todas as obras</option>
+</select>
+
+<select id="finTipoFilter" onchange="renderFinanceiro()">
+<option value="all">Todos os lançamentos</option>
+<option value="entrada">Receitas</option>
+<option value="saida">Despesas</option>
+</select>
+
+</div>
+
+<div id="financeList"></div>
 
 </section>
 
 
-<!-- ================= RELATÓRIOS ================= -->
+<section id="diarias" class="page">
+
+<div class="sectionTitle">
+
+<div>
+
+<h1>Diárias</h1>
+
+<p class="lead">
+Registre as diárias e o pagamento da equipe.
+</p>
+
+</div>
+
+<button class="primary" onclick="openDia()">
+＋ Registrar diária
+</button>
+
+</div>
+
+<div class="grid3">
+
+<div class="card">
+<div class="label">Diárias lançadas</div>
+<div class="stat" id="diaQtd">
+0
+</div>
+</div>
+
+<div class="card">
+<div class="label">Total da equipe</div>
+<div class="stat red" id="diaTotal">
+R$ 0,00
+</div>
+</div>
+
+<div class="card">
+<div class="label">Funcionários</div>
+<div class="stat" id="diaFunc">
+0
+</div>
+</div>
+
+</div>
+
+<div id="diariasList"></div>
+
+</section>
+
+
+<section id="checklist" class="page">
+
+<div class="sectionTitle">
+
+<div>
+<h1>Checklist</h1>
+
+<p class="lead">
+Acompanhe cada etapa da obra.
+</p>
+
+</div>
+
+<button class="primary" onclick="openCheck()">
+＋ Novo serviço
+</button>
+
+</div>
+
+<div id="checkList"></div>
+
+</section>
+
+
+<section id="fotos" class="page">
+
+<div class="sectionTitle">
+
+<div>
+
+<h1>Relatório fotográfico</h1>
+
+<p class="lead">
+Registre fotos por obra.
+</p>
+
+</div>
+
+<button class="primary" onclick="openFoto()">
+＋ Novo relatório
+</button>
+
+</div>
+
+<div id="fotoList"></div>
+
+</section>
+
 
 <section id="relatorios" class="page">
 
-  <div class="section-title">
-    <h2>Relatórios</h2>
-  </div>
+<div class="sectionTitle">
+
+<div>
+
+<h1>Relatórios</h1>
+
+<p class="lead">
+Backup, exportação e controle dos dados.
+</p>
+
+</div>
+
+</div>
 
 
-  <div class="card">
+<div class="card">
 
-    <h3>Resumo geral</h3>
+<h3>Backup completo</h3>
 
-    <p>
-      Veja o resultado de todas as suas obras.
-    </p>
+<p class="sub">
+Salve todos os dados cadastrados.
+</p>
 
-    <div style="margin-top:18px">
+<button class="primary" onclick="exportFull()">
+⬇️ Baixar backup completo
+</button>
 
-      <p>
-        <b>Obras cadastradas:</b>
-        <span id="repObras">0</span>
-      </p>
-
-      <p>
-        <b>Obras em andamento:</b>
-        <span id="repAndamento">0</span>
-      </p>
-
-      <p>
-        <b>Funcionários ativos:</b>
-        <span id="repFuncionarios">0</span>
-      </p>
-
-      <p>
-        <b>Total recebido:</b>
-        <span
-          id="repReceitas"
-          class="green"
-        >
-          R$ 0,00
-        </span>
-      </p>
-
-      <p>
-        <b>Total gasto:</b>
-        <span
-          id="repDespesas"
-          class="red"
-        >
-          R$ 0,00
-        </span>
-      </p>
-
-      <p>
-        <b>Lucro:</b>
-        <span
-          id="repLucro"
-          class="gold"
-        >
-          R$ 0,00
-        </span>
-      </p>
-
-    </div>
-
-  </div>
+</div>
 
 
-  <div class="card">
+<div class="card">
 
-    <h3>Atividades recentes</h3>
+<h3>Excel</h3>
 
-    <div id="atividades"></div>
+<p class="sub">
+Exportar os dados para Excel.
+</p>
 
-  </div>
+<button class="primary" onclick="exportExcel()">
+📊 Exportar Excel
+</button>
+
+</div>
+
+
+<div class="card">
+
+<h3>Importar dados</h3>
+
+<input
+type="file"
+id="importFile"
+accept=".json,.xlsx,.xls"
+onchange="previewImport(event)"
+>
+
+<div id="importPreview"></div>
+
+</div>
 
 </section>
 
 </main>
 
-</div>
 
+<nav class="bottom">
 
-<!-- ================= NAVEGAÇÃO ================= -->
+<button class="nav active" onclick="go('home')">
+🏠<br><small>Início</small>
+</button>
 
-<nav class="bottom hidden" id="bottomNav">
+<button class="nav" onclick="go('obras')">
+🏗️<br><small>Obras</small>
+</button>
 
-  <div class="bottom-inner">
+<button class="nav" onclick="go('equipe')">
+👷<br><small>Equipe</small>
+</button>
 
-    <button
-      class="nav active"
-      data-page="inicio"
-      onclick="showPage('inicio')"
-    >
-      <div>⌂</div>
-      Início
-    </button>
+<button class="nav" onclick="go('financeiro')">
+💰<br><small>Financeiro</small>
+</button>
 
-
-    <button
-      class="nav"
-      data-page="obras"
-      onclick="showPage('obras')"
-    >
-      <div>🏗️</div>
-      Obras
-    </button>
-
-
-    <button
-      class="nav"
-      data-page="funcionarios"
-      onclick="showPage('funcionarios')"
-    >
-      <div>👷</div>
-      Equipe
-    </button>
-
-
-    <button
-      class="nav"
-      data-page="financeiro"
-      onclick="showPage('financeiro')"
-    >
-      <div>💰</div>
-      Financeiro
-    </button>
-
-  </div>
+<button class="nav" onclick="go('relatorios')">
+📊<br><small>Relatórios</small>
+</button>
 
 </nav>
 
-
-<!-- ================= MODAL OBRA ================= -->
-
-<div class="modal" id="modalObra">
-
-  <div class="modal-box">
-
-    <div class="modal-head">
-
-      <h2 id="tituloModalObra">
-        Nova obra
-      </h2>
-
-      <button
-        class="close"
-        onclick="fecharModal('modalObra')"
-      >
-        ×
-      </button>
-
-    </div>
+</div>
 
 
-    <input
-      type="hidden"
-      id="obraId"
-    >
+<!-- MODAL OBRA -->
 
+<div id="obraM" class="modal">
 
-    <div class="form-group">
-      <label>Nome da obra</label>
+<div class="sheet">
 
-      <input
-        id="obraNome"
-        placeholder="Ex.: Casa do Evandro"
-      >
-    </div>
+<button class="close" onclick="closeM('obraM')">
+×
+</button>
 
+<h2>Nova obra</h2>
 
-    <div class="form-group">
-      <label>Cliente</label>
+<form class="form" onsubmit="saveObra(event)">
 
-      <input
-        id="obraCliente"
-        placeholder="Nome do cliente"
-      >
-    </div>
+<input id="oNome" placeholder="Nome da obra" required>
 
+<input id="oCli" placeholder="Nome do cliente">
 
-    <div class="form-group">
-      <label>Endereço</label>
+<input id="oLoc" placeholder="Endereço da obra">
 
-      <input
-        id="obraEndereco"
-        placeholder="Endereço da obra"
-      >
-    </div>
+<input id="oVal" type="number" step="0.01" placeholder="Valor da obra">
 
+<select id="oStatus">
 
-    <div class="form-group">
-      <label>Valor contratado</label>
+<option value="andamento">
+Em andamento
+</option>
 
-      <input
-        id="obraValor"
-        type="number"
-        step="0.01"
-        placeholder="0,00"
-      >
-    </div>
+<option value="concluida">
+Concluída
+</option>
 
+<option value="pausada">
+Pausada
+</option>
 
-    <div class="form-group">
-      <label>Status</label>
+</select>
 
-      <select id="obraStatus">
+<div class="two">
 
-        <option value="andamento">
-          Em andamento
-        </option>
+<input id="oIni" type="date">
 
-        <option value="concluida">
-          Concluída
-        </option>
+<input id="oFim" type="date">
 
-        <option value="pausada">
-          Pausada
-        </option>
+</div>
 
-      </select>
+<input id="oTipo" placeholder="Tipo de serviço">
 
-    </div>
+<textarea id="oObs" placeholder="Observações"></textarea>
 
+<button class="primary">
+Salvar obra
+</button>
 
-    <div class="form-group">
-      <label>Observações</label>
+</form>
 
-      <textarea
-        id="obraObs"
-        placeholder="Informações da obra"
-      ></textarea>
-
-    </div>
-
-
-    <div class="modal-actions">
-
-      <button
-        class="btn"
-        onclick="fecharModal('modalObra')"
-      >
-        Cancelar
-      </button>
-
-      <button
-        class="btn primary"
-        onclick="salvarObra()"
-      >
-        Salvar obra
-      </button>
-
-    </div>
-
-  </div>
+</div>
 
 </div>
 
 
-<!-- ================= MODAL FUNCIONÁRIO ================= -->
+<!-- MODAL FUNCIONÁRIO -->
 
-<div class="modal" id="modalFuncionario">
+<div id="funcM" class="modal">
 
-  <div class="modal-box">
+<div class="sheet">
 
-    <div class="modal-head">
+<button class="close" onclick="closeM('funcM')">
+×
+</button>
 
-      <h2 id="tituloModalFuncionario">
-        Novo funcionário
-      </h2>
+<h2>Funcionário</h2>
 
-      <button
-        class="close"
-        onclick="fecharModal('modalFuncionario')"
-      >
-        ×
-      </button>
+<form class="form" onsubmit="saveFunc(event)">
 
-    </div>
+<input id="fNome" placeholder="Nome" required>
 
+<input id="fFunc" placeholder="Função">
 
-    <input
-      type="hidden"
-      id="funcId"
-    >
+<input id="fTel" placeholder="Telefone">
 
+<input id="fDia" type="number" step="0.01" placeholder="Valor da diária">
 
-    <div class="form-group">
+<select id="fTipo">
 
-      <label>Nome</label>
+<option value="diaria">
+Diária
+</option>
 
-      <input
-        id="funcNome"
-        placeholder="Nome do funcionário"
-      >
+<option value="mensal">
+Mensal
+</option>
 
-    </div>
+</select>
 
+<input id="fSal" type="number" step="0.01" placeholder="Salário mensal">
 
-    <div class="form-group">
+<input id="fPag" type="number" placeholder="Dia do pagamento">
 
-      <label>Função</label>
+<select id="fAtivo">
 
-      <input
-        id="funcFuncao"
-        placeholder="Ex.: Pedreiro"
-      >
+<option value="true">
+Ativo
+</option>
 
-    </div>
+<option value="false">
+Inativo
+</option>
 
+</select>
 
-    <div class="form-group">
+<button class="primary">
+Salvar funcionário
+</button>
 
-      <label>Valor da diária</label>
+</form>
 
-      <input
-        id="funcDiaria"
-        type="number"
-        step="0.01"
-        placeholder="0,00"
-      >
-
-    </div>
-
-
-    <div class="form-group">
-
-      <label>Status</label>
-
-      <select id="funcStatus">
-
-        <option value="ativo">
-          Ativo
-        </option>
-
-        <option value="inativo">
-          Inativo
-        </option>
-
-      </select>
-
-    </div>
-
-
-    <div class="modal-actions">
-
-      <button
-        class="btn"
-        onclick="fecharModal('modalFuncionario')"
-      >
-        Cancelar
-      </button>
-
-      <button
-        class="btn primary"
-        onclick="salvarFuncionario()"
-      >
-        Salvar
-      </button>
-
-    </div>
-
-  </div>
+</div>
 
 </div>
 
 
-<!-- ================= MODAL FINANCEIRO ================= -->
+<!-- MODAL DIÁRIA -->
 
-<div class="modal" id="modalFinanceiro">
+<div id="diaM" class="modal">
 
-  <div class="modal-box">
+<div class="sheet">
 
-    <div class="modal-head">
+<button class="close" onclick="closeM('diaM')">
+×
+</button>
 
-      <h2>Novo lançamento</h2>
+<h2>Registrar diária</h2>
 
-      <button
-        class="close"
-        onclick="fecharModal('modalFinanceiro')"
-      >
-        ×
-      </button>
+<form class="form" onsubmit="saveDia(event)">
 
-    </div>
+<select id="dFunc" required>
+<option value="">
+Selecione o funcionário
+</option>
+</select>
 
+<select id="dObra">
+<option value="">
+Sem obra
+</option>
+</select>
 
-    <div class="form-group">
+<input id="dData" type="date" required>
 
-      <label>Tipo</label>
+<input id="dQtd" type="number" step="0.5" value="1" placeholder="Quantidade">
 
-      <select id="finTipo">
+<input id="dVal" type="number" step="0.01" placeholder="Valor da diária">
 
-        <option value="receita">
-          Recebimento / Receita
-        </option>
+<select id="dStatus">
 
-        <option value="despesa">
-          Despesa
-        </option>
+<option value="pendente">
+Pendente
+</option>
 
-      </select>
+<option value="pago">
+Pago
+</option>
 
-    </div>
+</select>
 
+<textarea id="dObs" placeholder="Observação"></textarea>
 
-    <div class="form-group">
+<button class="primary">
+Registrar diária
+</button>
 
-      <label>Descrição</label>
+</form>
 
-      <input
-        id="finDescricao"
-        placeholder="Ex.: Pagamento do cliente"
-      >
-
-    </div>
-
-
-    <div class="form-group">
-
-      <label>Valor</label>
-
-      <input
-        id="finValor"
-        type="number"
-        step="0.01"
-        placeholder="0,00"
-      >
-
-    </div>
-
-
-    <div class="form-group">
-
-      <label>Obra</label>
-
-      <select id="finObra">
-
-        <option value="">
-          Geral
-        </option>
-
-      </select>
-
-    </div>
-
-
-    <div class="form-group">
-
-      <label>Data</label>
-
-      <input
-        id="finData"
-        type="date"
-      >
-
-    </div>
-
-
-    <div class="form-group">
-
-      <label>Observação</label>
-
-      <textarea
-        id="finObs"
-        placeholder="Observações"
-      ></textarea>
-
-    </div>
-
-
-    <div class="modal-actions">
-
-      <button
-        class="btn"
-        onclick="fecharModal('modalFinanceiro')"
-      >
-        Cancelar
-      </button>
-
-      <button
-        class="btn primary"
-        onclick="salvarLancamento()"
-      >
-        Salvar
-      </button>
-
-    </div>
-
-  </div>
+</div>
 
 </div>
 
 
-<div
-  class="toast"
-  id="toast"
-></div>
+<!-- MODAL FINANCEIRO -->
+
+<div id="finM" class="modal">
+
+<div class="sheet">
+
+<button class="close" onclick="closeM('finM')">
+×
+</button>
+
+<h2>Lançamento financeiro</h2>
+
+<form class="form" onsubmit="saveFin(event)">
+
+<select id="oFin">
+<option value="">
+Sem obra
+</option>
+</select>
+
+<select id="tFin">
+
+<option value="entrada">
+Receita / Entrada
+</option>
+
+<option value="saida">
+Despesa / Gasto
+</option>
+
+</select>
+
+<input id="dFin" placeholder="Descrição" required>
+
+<input id="vFin" type="number" step="0.01" placeholder="Valor" required>
+
+<input id="dtFin" type="date" required>
+
+<input id="forFin" placeholder="Fornecedor / Cliente">
+
+<textarea id="obsFin" placeholder="Observação"></textarea>
+
+<button class="primary">
+Salvar lançamento
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+
+<!-- MODAL CHECKLIST -->
+
+<div id="checkM" class="modal">
+
+<div class="sheet">
+
+<button class="close" onclick="closeM('checkM')">
+×
+</button>
+
+<h2>Serviço do checklist</h2>
+
+<form class="form" onsubmit="saveCheckDef(event)">
+
+<input id="checkId" type="hidden">
+
+<input
+id="checkDesc"
+placeholder="Nome do serviço"
+required
+>
+
+<select id="checkObra">
+<option value="all">
+Aplicar em todas as obras
+</option>
+</select>
+
+<button class="primary">
+Salvar serviço
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+
+<!-- MODAL FOTOS -->
+
+<div id="fotoM" class="modal">
+
+<div class="sheet">
+
+<button class="close" onclick="closeM('fotoM')">
+×
+</button>
+
+<h2>Relatório fotográfico</h2>
+
+<form class="form" onsubmit="saveFotos(event)">
+
+<select id="fotoObra" required>
+<option value="">
+Selecione a obra
+</option>
+</select>
+
+<input
+id="fotoData"
+type="date"
+required
+>
+
+<input
+id="fotoTitulo"
+placeholder="Título do relatório"
+>
+
+<textarea
+id="fotoObs"
+placeholder="Observações"
+></textarea>
+
+<input
+id="fotoFiles"
+type="file"
+accept="image/*"
+multiple
+required
+>
+
+<button class="primary">
+Salvar relatório
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+
+<div id="toast" class="toast"></div>
 
 
 <script>
 
-/* =========================================================
-   EDIFIQ
-   SUPABASE
-   ========================================================= */
+const SUPA_URL="https://lwqntzwajjgkvtynwdjg.supabase.co";
+
+const SUPA_KEY="sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
+
+const sb=window.supabase.createClient(
+SUPA_URL,
+SUPA_KEY
+);
 
 
-/* =========================================================
-   COLOQUE AQUI OS DADOS DO SEU SUPABASE
-   ========================================================= */
-
-const SUPABASE_URL = "COLE_AQUI_A_URL_DO_SEU_SUPABASE";
-
-const SUPABASE_ANON_KEY = "COLE_AQUI_A_CHAVE_ANON_DO_SEU_SUPABASE";
-
-
-/* NÃO ALTERE ABAIXO */
-
-const supabaseClient =
-  window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
+const tables=[
+'obras',
+'funcionarios',
+'diarias',
+'gastos',
+'pagamentos',
+'orcamentos',
+'servicos',
+'terceirizados',
+'checklist'
+];
 
 
-let db = {
-  obras: [],
-  funcionarios: [],
-  financeiro: [],
-  atividades: []
+const D={
+obras:[],
+funcionarios:[],
+diarias:[],
+gastos:[],
+pagamentos:[],
+orcamentos:[],
+servicos:[],
+terceirizados:[],
+checklist:[]
 };
 
 
-let modoCadastro = false;
+let user=null;
+
+let editObraId=null;
+let editFuncId=null;
 
 
-/* =========================================================
-   UTILIDADES
-   ========================================================= */
-
-function moeda(valor){
-
-  return Number(valor || 0).toLocaleString(
-    "pt-BR",
-    {
-      style:"currency",
-      currency:"BRL"
-    }
-  );
-
+function $(id){
+return document.getElementById(id);
 }
 
 
-function escapeHTML(text){
-
-  return String(text ?? "")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#039;");
-
+function esc(v){
+return String(v??'')
+.replace(/&/g,'&amp;')
+.replace(/</g,'&lt;')
+.replace(/>/g,'&gt;')
+.replace(/"/g,'&quot;')
+.replace(/'/g,'&#039;');
 }
 
 
-function hoje(){
-
-  return new Date()
-    .toISOString()
-    .slice(0,10);
-
+function money(v){
+return Number(v||0).toLocaleString(
+'pt-BR',
+{
+style:'currency',
+currency:'BRL'
 }
-
-
-function dataBR(data){
-
-  if(!data) return "";
-
-  const p = data.split("-");
-
-  if(p.length === 3){
-
-    return `${p[2]}/${p[1]}/${p[0]}`;
-
-  }
-
-  return data;
-
+);
 }
 
 
 function toast(msg){
 
-  const el =
-    document.getElementById("toast");
+const t=$('toast');
 
-  el.textContent = msg;
+t.textContent=msg;
 
-  el.classList.add("show");
+t.classList.add('show');
 
-  setTimeout(
-    ()=>el.classList.remove("show"),
-    2500
-  );
+setTimeout(()=>{
+t.classList.remove('show');
+},2800);
 
 }
 
 
-/* =========================================================
-   LOGIN / CADASTRO
-   ========================================================= */
+function go(page){
 
-function alternarCadastro(){
+document.querySelectorAll('.page')
+.forEach(x=>x.classList.remove('active'));
 
-  modoCadastro = !modoCadastro;
+const el=$(page);
 
-  const button =
-    document.getElementById("loginButton");
+if(el)el.classList.add('active');
 
-  const text =
-    document.getElementById("loginText");
+document.querySelectorAll('.nav')
+.forEach(x=>x.classList.remove('active'));
 
-  const switchButton =
-    document.getElementById("switchButton");
+const map={
+home:0,
+obras:1,
+equipe:2,
+financeiro:3,
+relatorios:4
+};
 
+if(map[page]!==undefined){
+document.querySelectorAll('.nav')[map[page]]
+?.classList.add('active');
+}
 
-  if(modoCadastro){
+renderAll();
 
-    button.textContent = "Criar conta";
-
-    text.textContent =
-      "Já possui uma conta?";
-
-    switchButton.textContent =
-      "Entrar";
-
-  }else{
-
-    button.textContent = "Entrar";
-
-    text.textContent =
-      "Ainda não tem conta?";
-
-    switchButton.textContent =
-      "Criar conta";
-
-  }
+window.scrollTo({
+top:0,
+behavior:'smooth'
+});
 
 }
 
 
-async function entrar(){
-
-  const email =
-    document.getElementById("loginEmail")
-      .value.trim();
-
-  const password =
-    document.getElementById("loginPassword")
-      .value;
+function openM(id){
+$(id).classList.add('open');
+}
 
 
-  if(!email || !password){
-
-    toast("Informe e-mail e senha.");
-
-    return;
-
-  }
+function closeM(id){
+$(id).classList.remove('open');
+}
 
 
-  const button =
-    document.getElementById("loginButton");
+async function checkConnection(){
 
-  button.disabled = true;
+try{
 
-  button.textContent =
-    modoCadastro
-      ? "Criando..."
-      : "Entrando...";
+const {error}=await sb
+.from('obras')
+.select('id')
+.limit(1);
 
+if(error){
 
-  try{
+$('connectionStatus').textContent=
+'● Supabase conectado. Faça login.';
 
-    let resultado;
+$('connectionStatus').className=
+'connection ok';
 
+}else{
 
-    if(modoCadastro){
+$('connectionStatus').textContent=
+'● Sistema conectado';
 
-      resultado =
-        await supabaseClient.auth.signUp({
-          email,
-          password
-        });
+$('connectionStatus').className=
+'connection ok';
 
-    }else{
+}
 
-      resultado =
-        await supabaseClient.auth.signInWithPassword({
-          email,
-          password
-        });
+}catch(e){
 
-    }
+$('connectionStatus').textContent=
+'● Verifique a conexão';
 
+$('connectionStatus').className=
+'connection error';
 
-    if(resultado.error){
-
-      throw resultado.error;
-
-    }
-
-
-    if(modoCadastro){
-
-      toast(
-        "Conta criada. Verifique seu e-mail se solicitado."
-      );
-
-    }else{
-
-      await iniciarAplicativo();
-
-    }
-
-
-  }catch(error){
-
-    console.error(error);
-
-    toast(
-      error.message ||
-      "Erro ao acessar sua conta."
-    );
-
-  }finally{
-
-    button.disabled = false;
-
-    button.textContent =
-      modoCadastro
-        ? "Criar conta"
-        : "Entrar";
-
-  }
+}
 
 }
 
 
-async function sair(){
+async function signup(){
 
-  await supabaseClient.auth.signOut();
+const email=$('email').value.trim();
+const password=$('password').value;
 
-  document
-    .getElementById("app")
-    .classList.add("hidden");
+if(!email||!password){
 
-  document
-    .getElementById("bottomNav")
-    .classList.add("hidden");
+$('authMsg').textContent=
+'Informe e-mail e senha.';
 
-  document
-    .getElementById("loginScreen")
-    .classList.remove("hidden");
+return;
+
+}
+
+const {error}=await sb.auth.signUp({
+email,
+password
+});
+
+if(error){
+
+$('authMsg').textContent=error.message;
+
+}else{
+
+$('authMsg').textContent=
+'Conta criada. Verifique seu e-mail se solicitado.';
+
+}
 
 }
 
 
-/* =========================================================
-   INICIALIZAÇÃO
-   ========================================================= */
+async function login(){
 
-async function iniciar(){
+const email=$('email').value.trim();
+const password=$('password').value;
 
-  const {
-    data
-  } = await supabaseClient.auth.getSession();
+if(!email||!password){
 
+$('authMsg').textContent=
+'Informe e-mail e senha.';
 
-  if(data.session){
+return;
 
-    await iniciarAplicativo();
+}
 
-  }
+$('authMsg').textContent='Entrando...';
+
+const {data,error}=await sb.auth.signInWithPassword({
+email,
+password
+});
+
+if(error){
+
+$('authMsg').textContent=error.message;
+
+return;
+
+}
+
+user=data.user;
+
+await startApp();
 
 }
 
 
-async function iniciarAplicativo(){
+async function resetPassword(){
 
-  document
-    .getElementById("loginScreen")
-    .classList.add("hidden");
+const email=$('email').value.trim();
 
-  document
-    .getElementById("app")
-    .classList.remove("hidden");
+if(!email){
 
-  document
-    .getElementById("bottomNav")
-    .classList.remove("hidden");
+$('authMsg').textContent=
+'Informe seu e-mail primeiro.';
 
-
-  await carregarDados();
+return;
 
 }
 
-
-supabaseClient.auth.onAuthStateChange(
-  async(event,session)=>{
-
-    if(session){
-
-      await iniciarAplicativo();
-
-    }
-
-  }
+const {error}=await sb.auth.resetPasswordForEmail(
+email,
+{
+redirectTo:window.location.origin
+}
 );
 
-
-/* =========================================================
-   BANCO DE DADOS
-   ========================================================= */
-
-async function carregarDados(){
-
-  try{
-
-    const obras =
-      await supabaseClient
-        .from("obras")
-        .select("*")
-        .order("created_at",{ascending:false});
-
-
-    const funcionarios =
-      await supabaseClient
-        .from("funcionarios")
-        .select("*")
-        .order("created_at",{ascending:false});
-
-
-    const financeiro =
-      await supabaseClient
-        .from("financeiro")
-        .select("*")
-        .order("data",{ascending:false});
-
-
-    const atividades =
-      await supabaseClient
-        .from("atividades")
-        .select("*")
-        .order("created_at",{ascending:false})
-        .limit(30);
-
-
-    if(obras.error)
-      throw obras.error;
-
-    if(funcionarios.error)
-      throw funcionarios.error;
-
-    if(financeiro.error)
-      throw financeiro.error;
-
-    if(atividades.error)
-      throw atividades.error;
-
-
-    db.obras =
-      obras.data || [];
-
-    db.funcionarios =
-      funcionarios.data || [];
-
-    db.financeiro =
-      financeiro.data || [];
-
-    db.atividades =
-      atividades.data || [];
-
-
-    atualizarTudo();
-
-
-  }catch(error){
-
-    console.error(error);
-
-    toast(
-      "Não foi possível carregar os dados."
-    );
-
-  }
+$('authMsg').textContent=
+error?error.message:
+'E-mail de recuperação enviado.';
 
 }
 
 
-/* =========================================================
-   NAVEGAÇÃO
-   ========================================================= */
+async function logout(){
 
-function showPage(page){
+await sb.auth.signOut();
 
-  document
-    .querySelectorAll(".page")
-    .forEach(p=>{
-      p.classList.remove("active");
-    });
+user=null;
 
-
-  const destino =
-    document.getElementById(page);
-
-
-  if(destino){
-
-    destino.classList.add("active");
-
-  }
-
-
-  document
-    .querySelectorAll(".nav")
-    .forEach(n=>{
-
-      n.classList.toggle(
-        "active",
-        n.dataset.page === page
-      );
-
-    });
-
-
-  window.scrollTo({
-    top:0,
-    behavior:"smooth"
-  });
+$('app').classList.add('hidden');
+$('auth').classList.remove('hidden');
 
 }
 
 
-/* =========================================================
-   MODAIS
-   ========================================================= */
+async function startApp(){
 
-function abrirModal(id){
+$('auth').classList.add('hidden');
+$('app').classList.remove('hidden');
 
-  document
-    .getElementById(id)
-    .classList.add("show");
+$('appConnection').textContent=
+'● Sistema conectado';
 
-}
+await loadCloud();
 
-
-function fecharModal(id){
-
-  document
-    .getElementById(id)
-    .classList.remove("show");
+renderAll();
 
 }
 
 
-document
-  .querySelectorAll(".modal")
-  .forEach(modal=>{
+async function loadCloud(){
 
-    modal.addEventListener(
-      "click",
-      e=>{
+for(const t of tables){
 
-        if(e.target === modal){
+try{
 
-          modal.classList.remove("show");
+const {
+data,
+error
+}=await sb
+.from(t)
+.select('*')
+.eq('user_id',user.id)
+.order('created_at',{
+ascending:false
+});
 
-        }
+if(error){
 
-      }
-    );
+console.warn(
+t,
+error.message
+);
 
-  });
+}else{
 
+D[t].splice(
+0,
+D[t].length,
+...(data||[])
+);
 
-/* =========================================================
-   OBRAS
-   ========================================================= */
+}
 
-function abrirObra(idObra=null){
+}catch(e){
 
-  document.getElementById("obraId").value="";
-  document.getElementById("obraNome").value="";
-  document.getElementById("obraCliente").value="";
-  document.getElementById("obraEndereco").value="";
-  document.getElementById("obraValor").value="";
-  document.getElementById("obraStatus").value="andamento";
-  document.getElementById("obraObs").value="";
+console.warn(t,e);
 
+}
 
-  document.getElementById(
-    "tituloModalObra"
-  ).textContent="Nova obra";
-
-
-  if(idObra){
-
-    const obra =
-      db.obras.find(
-        o=>o.id === idObra
-      );
-
-
-    if(!obra) return;
-
-
-    document.getElementById(
-      "tituloModalObra"
-    ).textContent="Editar obra";
-
-
-    document.getElementById(
-      "obraId"
-    ).value=obra.id;
-
-
-    document.getElementById(
-      "obraNome"
-    ).value=obra.nome || "";
-
-
-    document.getElementById(
-      "obraCliente"
-    ).value=obra.cliente || "";
-
-
-    document.getElementById(
-      "obraEndereco"
-    ).value=obra.endereco || "";
-
-
-    document.getElementById(
-      "obraValor"
-    ).value=obra.valor || "";
-
-
-    document.getElementById(
-      "obraStatus"
-    ).value=obra.status || "andamento";
-
-
-    document.getElementById(
-      "obraObs"
-    ).value=obra.obs || "";
-
-  }
-
-
-  abrirModal("modalObra");
+}
 
 }
 
 
-async function salvarObra(){
+async function insertRow(table,row){
 
-  const nome =
-    document.getElementById("obraNome")
-      .value.trim();
+const payload={
+...row,
+user_id:user.id
+};
 
+const {
+data,
+error
+}=await sb
+.from(table)
+.insert(payload)
+.select()
+.single();
 
-  if(!nome){
+if(error){
 
-    toast("Informe o nome da obra.");
+toast(
+'Erro ao salvar: '+error.message
+);
 
-    return;
+console.error(error);
 
-  }
+return null;
 
+}
 
-  const {
-    data:{user}
-  } =
-    await supabaseClient.auth.getUser();
-
-
-  if(!user){
-
-    toast("Faça login novamente.");
-
-    return;
-
-  }
-
-
-  const id =
-    document.getElementById("obraId")
-      .value;
-
-
-  const dados = {
-
-    user_id:user.id,
-
-    nome,
-
-    cliente:
-      document.getElementById("obraCliente")
-        .value.trim(),
-
-    endereco:
-      document.getElementById("obraEndereco")
-        .value.trim(),
-
-    valor:
-      Number(
-        document.getElementById("obraValor")
-          .value || 0
-      ),
-
-    status:
-      document.getElementById("obraStatus")
-        .value,
-
-    obs:
-      document.getElementById("obraObs")
-        .value.trim()
-
-  };
-
-
-  try{
-
-    let resultado;
-
-
-    if(id){
-
-      resultado =
-        await supabaseClient
-          .from("obras")
-          .update(dados)
-          .eq("id",id)
-          .select()
-          .single();
-
-    }else{
-
-      resultado =
-        await supabaseClient
-          .from("obras")
-          .insert(dados)
-          .select()
-          .single();
-
-    }
-
-
-    if(resultado.error)
-      throw resultado.error;
-
-
-    await registrarAtividade(
-      id
-        ? "Obra atualizada"
-        : `Nova obra cadastrada: ${nome}`
-    );
-
-
-    fecharModal("modalObra");
-
-    toast("Obra salva com sucesso.");
-
-    await carregarDados();
-
-
-  }catch(error){
-
-    console.error(error);
-
-    toast(
-      "Erro ao salvar obra: " +
-      error.message
-    );
-
-  }
+return data;
 
 }
 
 
-async function excluirObra(id){
+async function updateRow(table,id,row){
 
-  if(!confirm("Excluir esta obra?"))
-    return;
+const {
+data,
+error
+}=await sb
+.from(table)
+.update(row)
+.eq('id',id)
+.eq('user_id',user.id)
+.select()
+.single();
 
+if(error){
 
-  try{
+toast(
+'Erro ao atualizar: '+error.message
+);
 
-    const resultado =
-      await supabaseClient
-        .from("obras")
-        .delete()
-        .eq("id",id);
+return null;
 
+}
 
-    if(resultado.error)
-      throw resultado.error;
-
-
-    await registrarAtividade(
-      "Obra excluída"
-    );
-
-
-    toast("Obra excluída.");
-
-    await carregarDados();
-
-
-  }catch(error){
-
-    console.error(error);
-
-    toast("Erro ao excluir obra.");
-
-  }
+return data;
 
 }
 
 
-/* =========================================================
-   FUNCIONÁRIOS
-   ========================================================= */
+async function removeRow(table,id){
 
-function abrirFuncionario(idFuncionario=null){
+const {
+error
+}=await sb
+.from(table)
+.delete()
+.eq('id',id)
+.eq('user_id',user.id);
 
-  document.getElementById("funcId").value="";
-  document.getElementById("funcNome").value="";
-  document.getElementById("funcFuncao").value="";
-  document.getElementById("funcDiaria").value="";
-  document.getElementById("funcStatus").value="ativo";
+if(error){
 
+toast(
+'Erro ao excluir: '+error.message
+);
 
-  document.getElementById(
-    "tituloModalFuncionario"
-  ).textContent="Novo funcionário";
+return false;
 
+}
 
-  if(idFuncionario){
-
-    const funcionario =
-      db.funcionarios.find(
-        f=>f.id === idFuncionario
-      );
-
-
-    if(!funcionario) return;
-
-
-    document.getElementById(
-      "tituloModalFuncionario"
-    ).textContent="Editar funcionário";
-
-
-    document.getElementById(
-      "funcId"
-    ).value=funcionario.id;
-
-
-    document.getElementById(
-      "funcNome"
-    ).value=funcionario.nome || "";
-
-
-    document.getElementById(
-      "funcFuncao"
-    ).value=funcionario.funcao || "";
-
-
-    document.getElementById(
-      "funcDiaria"
-    ).value=funcionario.diaria || "";
-
-
-    document.getElementById(
-      "funcStatus"
-    ).value=funcionario.status || "ativo";
-
-  }
-
-
-  abrirModal("modalFuncionario");
+return true;
 
 }
 
 
-async function salvarFuncionario(){
+function sums(obra='all'){
 
-  const nome =
-    document.getElementById("funcNome")
-      .value.trim();
+const gastos=D.gastos.filter(g=>
+obra==='all' ||
+String(g.obra_id)===String(obra)
+);
 
+const diarias=D.diarias.filter(d=>
+obra==='all' ||
+String(d.obra_id)===String(obra)
+);
 
-  if(!nome){
+const entradas=
+gastos
+.filter(g=>g.categoria==='entrada')
+.reduce((a,g)=>a+Number(g.valor||0),0)
++
+D.pagamentos
+.filter(p=>
+obra==='all' ||
+String(p.obra_id)===String(obra)
+)
+.reduce((a,p)=>a+Number(p.valor||0),0);
 
-    toast("Informe o nome.");
+const despesas=
+gastos
+.filter(g=>g.categoria!=='entrada')
+.reduce((a,g)=>a+Number(g.valor||0),0);
 
-    return;
+const custoDiarias=
+diarias.reduce(
+(a,d)=>
+a+Number(
+d.valor_pago||
+(Number(d.qtd||0)*Number(d.valor_diaria||0))
+),
+0
+);
 
-  }
+const totalDespesas=
+despesas+custoDiarias;
 
+const lucro=
+entradas-totalDespesas;
 
-  const {
-    data:{user}
-  } =
-    await supabaseClient.auth.getUser();
-
-
-  const id =
-    document.getElementById("funcId")
-      .value;
-
-
-  const dados = {
-
-    user_id:user.id,
-
-    nome,
-
-    funcao:
-      document.getElementById("funcFuncao")
-        .value.trim(),
-
-    diaria:
-      Number(
-        document.getElementById("funcDiaria")
-          .value || 0
-      ),
-
-    status:
-      document.getElementById("funcStatus")
-        .value
-
-  };
-
-
-  try{
-
-    let resultado;
-
-
-    if(id){
-
-      resultado =
-        await supabaseClient
-          .from("funcionarios")
-          .update(dados)
-          .eq("id",id)
-          .select()
-          .single();
-
-    }else{
-
-      resultado =
-        await supabaseClient
-          .from("funcionarios")
-          .insert(dados)
-          .select()
-          .single();
-
-    }
-
-
-    if(resultado.error)
-      throw resultado.error;
-
-
-    await registrarAtividade(
-      id
-        ? "Funcionário atualizado"
-        : `Funcionário cadastrado: ${nome}`
-    );
-
-
-    fecharModal("modalFuncionario");
-
-    toast("Funcionário salvo.");
-
-    await carregarDados();
-
-
-  }catch(error){
-
-    console.error(error);
-
-    toast(
-      "Erro ao salvar funcionário."
-    );
-
-  }
+return{
+entradas,
+despesas,
+custoDiarias,
+totalDespesas,
+lucro
+};
 
 }
 
 
-async function excluirFuncionario(id){
+function renderAll(){
 
-  if(!confirm("Excluir este funcionário?"))
-    return;
-
-
-  try{
-
-    const resultado =
-      await supabaseClient
-        .from("funcionarios")
-        .delete()
-        .eq("id",id);
-
-
-    if(resultado.error)
-      throw resultado.error;
-
-
-    await registrarAtividade(
-      "Funcionário excluído"
-    );
-
-
-    toast("Funcionário excluído.");
-
-    await carregarDados();
-
-
-  }catch(error){
-
-    console.error(error);
-
-    toast("Erro ao excluir funcionário.");
-
-  }
+renderDashboard();
+renderObras();
+renderEquipe();
+renderFinanceiro();
+renderDiarias();
+renderChecklist();
+renderFotos();
+fillSelectors();
 
 }
 
 
-/* =========================================================
-   FINANCEIRO
-   ========================================================= */
+function renderDashboard(){
 
-function abrirLancamento(){
+const s=sums();
 
-  document.getElementById("finTipo").value="receita";
-  document.getElementById("finDescricao").value="";
-  document.getElementById("finValor").value="";
-  document.getElementById("finData").value=hoje();
-  document.getElementById("finObs").value="";
+const totalObras=D.obras.length;
+
+const andamento=
+D.obras.filter(o=>
+String(o.status||'')
+.toLowerCase()
+.includes('andamento')
+).length;
+
+const concluidas=
+D.obras.filter(o=>
+String(o.status||'')
+.toLowerCase()
+.includes('concl')
+).length;
+
+const funcs=
+D.funcionarios.filter(
+f=>f.ativo!==false
+).length;
+
+const receber=
+D.obras.reduce(
+(a,o)=>a+Math.max(
+0,
+Number(o.valor||0)-
+D.pagamentos
+.filter(p=>String(p.obra_id)===String(o.id))
+.reduce((x,p)=>x+Number(p.valor||0),0)
+),
+0
+);
+
+$('kObras').textContent=totalObras;
+
+$('kAndamento').textContent=andamento;
+
+$('kConcluidas').textContent=concluidas;
+
+$('kFunc').textContent=funcs;
+
+$('kReceber').textContent=money(receber);
+
+$('kEquipeCusto').textContent=money(
+s.custoDiarias
+);
+
+$('kEntradas').textContent=
+money(s.entradas);
+
+$('kDespesas').textContent=
+money(s.totalDespesas);
+
+$('kResultado').textContent=
+money(s.lucro);
+
+$('kSaldo').textContent=
+money(s.entradas-s.totalDespesas);
+
+$('kSobra').textContent=
+money(Math.max(0,s.lucro));
+
+$('kDiarias').textContent=
+D.diarias.length;
 
 
-  const select =
-    document.getElementById("finObra");
+$('finReceitas').textContent=
+money(s.entradas);
+
+$('finDespesas').textContent=
+money(s.totalDespesas);
+
+$('finLucro').textContent=
+money(s.lucro);
+
+$('finSaldo').textContent=
+money(s.entradas-s.totalDespesas);
+
+$('finSobra').textContent=
+money(Math.max(0,s.lucro));
+
+$('finDiarias').textContent=
+money(s.custoDiarias);
 
 
-  select.innerHTML =
-    `<option value="">Geral</option>`;
+const recentes=
+D.obras.slice(0,5);
 
+$('recentes').innerHTML=
+recentes.length?
 
-  db.obras.forEach(obra=>{
+recentes.map(o=>`
 
-    select.innerHTML += `
-      <option value="${obra.id}">
-        ${escapeHTML(obra.nome)}
-      </option>
-    `;
+<div class="item">
 
-  });
+<div class="row">
 
+<div>
 
-  abrirModal("modalFinanceiro");
+<b>${esc(o.nome)}</b>
+
+<br>
+
+<small>
+${esc(o.cliente||'Sem cliente')}
+</small>
+
+</div>
+
+<span class="badge">
+${esc(o.status||'andamento')}
+</span>
+
+</div>
+
+<div class="listActions">
+
+<button class="mini"
+onclick="openObra(${o.id})">
+✏️ Editar
+</button>
+
+<button class="mini"
+onclick="openFotoFor(${o.id})">
+📸 Fotos
+</button>
+
+<button class="danger mini"
+onclick="delItem('obras',${o.id})">
+Excluir
+</button>
+
+</div>
+
+</div>
+
+`).join(''):
+
+'<div class="empty">Nenhuma obra cadastrada.</div>';
 
 }
 
-
-async function salvarLancamento(){
-
-  const descricao =
-    document.getElementById("finDescricao")
-      .value.trim();
-
-
-  const valor =
-    Number(
-      document.getElementById("finValor")
-        .value || 0
-    );
-
-
-  if(!descricao || valor <= 0){
-
-    toast(
-      "Informe descrição e valor."
-    );
-
-    return;
-
-  }
-
-
-  const {
-    data:{user}
-  } =
-    await supabaseClient.auth.getUser();
-
-
-  const dados = {
-
-    user_id:user.id,
-
-    tipo:
-      document.getElementById("finTipo")
-        .value,
-
-    descricao,
-
-    valor,
-
-    obra_id:
-      document.getElementById("finObra")
-        .value || null,
-
-    data:
-      document.getElementById("finData")
-        .value || hoje(),
-
-    obs:
-      document.getElementById("finObs")
-        .value.trim()
-
-  };
-
-
-  try{
-
-    const resultado =
-      await supabaseClient
-        .from("financeiro")
-        .insert(dados)
-        .select()
-        .single();
-
-
-    if(resultado.error)
-      throw resultado.error;
-
-
-    await registrarAtividade(
-      dados.tipo === "receita"
-        ? `Receita registrada: ${moeda(valor)}`
-        : `Despesa registrada: ${moeda(valor)}`
-    );
-
-
-    fecharModal("modalFinanceiro");
-
-    toast("Lançamento salvo.");
-
-    await carregarDados();
-
-
-  }catch(error){
-
-    console.error(error);
-
-    toast(
-      "Erro ao salvar lançamento."
-    );
-
-  }
-
-}
-
-
-async function excluirLancamento(id){
-
-  if(!confirm("Excluir este lançamento?"))
-    return;
-
-
-  try{
-
-    const resultado =
-      await supabaseClient
-        .from("financeiro")
-        .delete()
-        .eq("id",id);
-
-
-    if(resultado.error)
-      throw resultado.error;
-
-
-    await registrarAtividade(
-      "Lançamento financeiro excluído"
-    );
-
-
-    toast("Lançamento excluído.");
-
-    await carregarDados();
-
-
-  }catch(error){
-
-    console.error(error);
-
-    toast("Erro ao excluir lançamento.");
-
-  }
-
-}
-
-
-/* =========================================================
-   ATIVIDADES
-   ========================================================= */
-
-async function registrarAtividade(texto){
-
-  try{
-
-    const {
-      data:{user}
-    } =
-      await supabaseClient.auth.getUser();
-
-
-    if(!user) return;
-
-
-    await supabaseClient
-      .from("atividades")
-      .insert({
-
-        user_id:user.id,
-
-        texto
-
-      });
-
-  }catch(error){
-
-    console.error(
-      "Erro atividade:",
-      error
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   ATUALIZAÇÃO DA INTERFACE
-   ========================================================= */
-
-function atualizarTudo(){
-
-  renderObras();
-
-  renderFuncionarios();
-
-  renderFinanceiro();
-
-  renderRelatorios();
-
-  atualizarDashboard();
-
-}
-
-
-/* =========================================================
-   OBRAS NA TELA
-   ========================================================= */
 
 function renderObras(){
 
-  const el =
-    document.getElementById("listaObras");
+const q=
+($('obraSearch')?.value||'')
+.toLowerCase()
+.trim();
+
+const list=
+D.obras.filter(o=>
+!q ||
+String(o.nome||'')
+.toLowerCase()
+.includes(q) ||
+String(o.cliente||'')
+.toLowerCase()
+.includes(q)
+);
+
+$('obrasList').innerHTML=
+list.length?
+
+list.map(o=>{
+
+const pago=
+D.pagamentos
+.filter(p=>
+String(p.obra_id)===String(o.id)
+)
+.reduce(
+(a,p)=>a+Number(p.valor||0),
+0
+);
+
+const restante=
+Math.max(
+0,
+Number(o.valor||0)-pago
+);
+
+return `
+
+<div class="item">
+
+<div class="row">
+
+<div>
+
+<h3 style="margin:0">
+${esc(o.nome)}
+</h3>
+
+<small>
+Cliente: ${esc(o.cliente||'Não informado')}
+</small>
+
+<br>
+
+<small>
+${esc(o.endereco||'')}
+</small>
+
+</div>
+
+<span class="badge">
+${esc(o.status||'andamento')}
+</span>
+
+</div>
 
 
-  if(!db.obras.length){
+<div class="grid3">
 
-    el.innerHTML = `
-      <div class="empty">
-        <div style="font-size:35px">🏗️</div>
-        <p style="margin-top:10px">
-          Nenhuma obra cadastrada.
-        </p>
-      </div>
-    `;
+<div>
 
-    return;
+<div class="label">
+Valor da obra
+</div>
 
-  }
+<b>
+${money(o.valor)}
+</b>
 
+</div>
 
-  el.innerHTML =
-    db.obras.map(obra=>{
+<div>
 
-      const statusTexto =
-        obra.status === "andamento"
-          ? "Em andamento"
-          : obra.status === "concluida"
-            ? "Concluída"
-            : "Pausada";
+<div class="label">
+Recebido
+</div>
 
+<b class="green">
+${money(pago)}
+</b>
 
-      return `
+</div>
 
-        <div class="card">
+<div>
 
-          <div class="card-head">
+<div class="label">
+A receber
+</div>
 
-            <div>
+<b class="gold">
+${money(restante)}
+</b>
 
-              <h3>
-                ${escapeHTML(obra.nome)}
-              </h3>
+</div>
 
-              <p>
-                Cliente:
-                ${escapeHTML(obra.cliente || "-")}
-              </p>
-
-            </div>
-
-            <span
-              class="badge ${
-                obra.status === "concluida"
-                ? "off"
-                : ""
-              }"
-            >
-              ${statusTexto}
-            </span>
-
-          </div>
+</div>
 
 
-          <p>
-            📍 ${escapeHTML(obra.endereco || "-")}
-          </p>
+<div class="listActions">
 
-          <p>
-            💰 ${moeda(obra.valor)}
-          </p>
+<button class="mini"
+onclick="openObra(${o.id})">
+✏️ Editar
+</button>
 
+<button class="mini"
+onclick="openFotoFor(${o.id})">
+📸 Fotos
+</button>
 
-          ${
-            obra.obs
-              ? `
-                <p>
-                  ${escapeHTML(obra.obs)}
-                </p>
-              `
-              : ""
-          }
+<button class="mini"
+onclick="go('checklist')">
+☑️ Checklist
+</button>
 
+<button class="danger mini"
+onclick="delItem('obras',${o.id})">
+Excluir
+</button>
 
-          <div class="actions">
+</div>
 
-            <button
-              class="btn"
-              onclick="abrirObra('${obra.id}')"
-            >
-              Editar
-            </button>
+</div>
 
-            <button
-              class="btn danger"
-              onclick="excluirObra('${obra.id}')"
-            >
-              Excluir
-            </button>
+`;
 
-          </div>
+}).join(''):
 
-        </div>
-
-      `;
-
-    }).join("");
-
-}
-
-
-/* =========================================================
-   FUNCIONÁRIOS NA TELA
-   ========================================================= */
-
-function renderFuncionarios(){
-
-  const el =
-    document.getElementById(
-      "listaFuncionarios"
-    );
-
-
-  if(!db.funcionarios.length){
-
-    el.innerHTML = `
-      <div class="empty">
-        <div style="font-size:35px">👷</div>
-        <p style="margin-top:10px">
-          Nenhum funcionário cadastrado.
-        </p>
-      </div>
-    `;
-
-    return;
-
-  }
-
-
-  el.innerHTML =
-    db.funcionarios.map(func=>{
-
-      return `
-
-        <div class="card">
-
-          <div class="card-head">
-
-            <div>
-
-              <h3>
-                ${escapeHTML(func.nome)}
-              </h3>
-
-              <p>
-                ${escapeHTML(func.funcao || "-")}
-              </p>
-
-            </div>
-
-            <span
-              class="badge ${
-                func.status === "inativo"
-                ? "off"
-                : ""
-              }"
-            >
-              ${
-                func.status === "ativo"
-                  ? "Ativo"
-                  : "Inativo"
-              }
-            </span>
-
-          </div>
-
-
-          <p>
-            💵 Diária:
-            ${moeda(func.diaria)}
-          </p>
-
-
-          <div class="actions">
-
-            <button
-              class="btn"
-              onclick="abrirFuncionario('${func.id}')"
-            >
-              Editar
-            </button>
-
-            <button
-              class="btn danger"
-              onclick="excluirFuncionario('${func.id}')"
-            >
-              Excluir
-            </button>
-
-          </div>
-
-        </div>
-
-      `;
-
-    }).join("");
+'<div class="empty">Nenhuma obra encontrada.</div>';
 
 }
 
 
-/* =========================================================
-   FINANCEIRO NA TELA
-   ========================================================= */
+function renderEquipe(){
+
+const status=
+$('funcStatus')?.value||'all';
+
+const q=
+($('funcSearch')?.value||'')
+.toLowerCase()
+.trim();
+
+const list=
+D.funcionarios.filter(f=>{
+
+const okStatus=
+status==='all' ||
+(status==='on'&&f.ativo!==false) ||
+(status==='off'&&f.ativo===false);
+
+const okSearch=
+!q ||
+String(f.nome||'')
+.toLowerCase()
+.includes(q);
+
+return okStatus&&okSearch;
+
+});
+
+$('funcList').innerHTML=
+list.length?
+
+list.map(f=>`
+
+<div class="item">
+
+<div class="row">
+
+<div>
+
+<b>${esc(f.nome)}</b>
+
+<br>
+
+<small>
+${esc(f.funcao||'Função não informada')}
+</small>
+
+</div>
+
+<span class="badge ${f.ativo!==false?'on':'off'}">
+${f.ativo!==false?'Ativo':'Inativo'}
+</span>
+
+</div>
+
+
+<div class="grid3">
+
+<div>
+
+<div class="label">
+Diária
+</div>
+
+<b>
+${money(f.valor_diaria)}
+</b>
+
+</div>
+
+<div>
+
+<div class="label">
+Tipo
+</div>
+
+<b>
+${esc(f.tipo_pagamento||'diária')}
+</b>
+
+</div>
+
+<div>
+
+<div class="label">
+Telefone
+</div>
+
+<b>
+${esc(f.telefone||'-')}
+</b>
+
+</div>
+
+</div>
+
+
+<div class="listActions">
+
+<button class="mini"
+onclick="openFunc(${f.id})">
+✏️ Editar
+</button>
+
+<button class="mini"
+onclick="openDia(${f.id})">
+＋ Registrar diária
+</button>
+
+<button class="danger mini"
+onclick="delItem('funcionarios',${f.id})">
+Excluir
+</button>
+
+</div>
+
+</div>
+
+`).join(''):
+
+'<div class="empty">Nenhum funcionário encontrado.</div>';
+
+}
+
 
 function renderFinanceiro(){
 
-  let receitas = 0;
+const obra=
+$('finObraFilter')?.value||'all';
 
-  let despesas = 0;
+const tipo=
+$('finTipoFilter')?.value||'all';
 
+let list=D.gastos.filter(g=>
+obra==='all' ||
+String(g.obra_id)===String(obra)
+);
 
-  db.financeiro.forEach(item=>{
+if(tipo!=='all'){
+list=list.filter(g=>
+g.categoria===tipo
+);
+}
 
-    if(item.tipo === "receita"){
+$('financeList').innerHTML=
+list.length?
 
-      receitas += Number(item.valor || 0);
+list.map(g=>`
 
-    }else{
+<div class="item">
 
-      despesas += Number(item.valor || 0);
+<div class="row">
 
-    }
+<div>
 
-  });
+<b>
+${esc(g.descricao)}
+</b>
 
+<br>
 
-  const lucro =
-    receitas - despesas;
+<small>
+${esc(g.data||'')} •
+${esc(g.fornecedor||'')}
+</small>
 
+</div>
 
-  document.getElementById(
-    "finReceitas"
-  ).textContent = moeda(receitas);
+<b class="${g.categoria==='entrada'?'green':'red'}">
 
+${g.categoria==='entrada'?'+':'-'}
+${money(g.valor)}
 
-  document.getElementById(
-    "finDespesas"
-  ).textContent = moeda(despesas);
+</b>
 
+</div>
 
-  document.getElementById(
-    "finLucro"
-  ).textContent = moeda(lucro);
+<div class="listActions">
 
+<button class="danger mini"
+onclick="delItem('gastos',${g.id})">
+Excluir
+</button>
 
-  document.getElementById(
-    "finQuantidade"
-  ).textContent =
-    db.financeiro.length;
+</div>
 
+</div>
 
-  document.getElementById(
-    "statReceitas"
-  ).textContent = moeda(receitas);
+`).join(''):
 
-
-  document.getElementById(
-    "statDespesas"
-  ).textContent = moeda(despesas);
-
-
-  const el =
-    document.getElementById(
-      "listaFinanceiro"
-    );
-
-
-  if(!db.financeiro.length){
-
-    el.innerHTML = `
-      <div class="empty">
-        <div style="font-size:35px">💰</div>
-        <p style="margin-top:10px">
-          Nenhum lançamento.
-        </p>
-      </div>
-    `;
-
-    return;
-
-  }
-
-
-  el.innerHTML =
-    db.financeiro.map(item=>{
-
-      const obra =
-        db.obras.find(
-          o=>o.id === item.obra_id
-        );
-
-
-      const receita =
-        item.tipo === "receita";
-
-
-      return `
-
-        <div class="card">
-
-          <div class="card-head">
-
-            <div>
-
-              <h3>
-                ${escapeHTML(item.descricao)}
-              </h3>
-
-              <p>
-                ${dataBR(item.data)}
-                ${
-                  obra
-                    ? " • " +
-                      escapeHTML(obra.nome)
-                    : ""
-                }
-              </p>
-
-            </div>
-
-            <strong
-              class="${
-                receita
-                  ? "green"
-                  : "red"
-              }"
-            >
-              ${
-                receita
-                  ? "+"
-                  : "-"
-              }
-              ${moeda(item.valor)}
-            </strong>
-
-          </div>
-
-
-          ${
-            item.obs
-              ? `
-                <p>
-                  ${escapeHTML(item.obs)}
-                </p>
-              `
-              : ""
-          }
-
-
-          <div class="actions">
-
-            <button
-              class="btn danger"
-              onclick="excluirLancamento('${item.id}')"
-            >
-              Excluir
-            </button>
-
-          </div>
-
-        </div>
-
-      `;
-
-    }).join("");
+'<div class="empty">Nenhum lançamento encontrado.</div>';
 
 }
 
 
-/* =========================================================
-   RELATÓRIOS
-   ========================================================= */
+function renderDiarias(){
 
-function renderRelatorios(){
+const total=
+D.diarias.reduce(
+(a,d)=>
+a+Number(
+d.valor_pago||
+(Number(d.qtd||0)*Number(d.valor_diaria||0))
+),
+0
+);
 
-  const receitas =
-    db.financeiro
-      .filter(x=>x.tipo==="receita")
-      .reduce(
-        (total,x)=>
-          total + Number(x.valor || 0),
-        0
-      );
+$('diaQtd').textContent=
+D.diarias.length;
 
+$('diaTotal').textContent=
+money(total);
 
-  const despesas =
-    db.financeiro
-      .filter(x=>x.tipo==="despesa")
-      .reduce(
-        (total,x)=>
-          total + Number(x.valor || 0),
-        0
-      );
+$('diaFunc').textContent=
+new Set(
+D.diarias.map(d=>d.funcionario_id)
+).size;
 
+$('diariasList').innerHTML=
+D.diarias.length?
 
-  document.getElementById(
-    "repObras"
-  ).textContent =
-    db.obras.length;
+D.diarias.map(d=>{
 
+const f=
+D.funcionarios.find(
+x=>String(x.id)===String(d.funcionario_id)
+);
 
-  document.getElementById(
-    "repAndamento"
-  ).textContent =
-    db.obras.filter(
-      x=>x.status==="andamento"
-    ).length;
+const o=
+D.obras.find(
+x=>String(x.id)===String(d.obra_id)
+);
 
+return `
 
-  document.getElementById(
-    "repFuncionarios"
-  ).textContent =
-    db.funcionarios.filter(
-      x=>x.status==="ativo"
-    ).length;
+<div class="item">
 
+<div class="row">
 
-  document.getElementById(
-    "repReceitas"
-  ).textContent =
-    moeda(receitas);
+<div>
 
+<b>
+${esc(f?.nome||'Funcionário')}
+</b>
 
-  document.getElementById(
-    "repDespesas"
-  ).textContent =
-    moeda(despesas);
+<br>
 
+<small>
+${esc(d.data||'')} •
+${esc(o?.nome||'Sem obra')}
+•
+${d.qtd} × ${money(d.valor_diaria)}
+</small>
 
-  document.getElementById(
-    "repLucro"
-  ).textContent =
-    moeda(receitas-despesas);
+</div>
 
+<b class="gold">
+${money(
+d.valor_pago||
+d.qtd*d.valor_diaria
+)}
+</b>
 
-  const el =
-    document.getElementById(
-      "atividades"
-    );
+</div>
 
+<div class="listActions">
 
-  if(!db.atividades.length){
+<span class="badge">
+${esc(d.status||'pendente')}
+</span>
 
-    el.innerHTML = `
-      <p style="color:var(--muted)">
-        Nenhuma atividade registrada.
-      </p>
-    `;
+<button class="danger mini"
+onclick="delItem('diarias',${d.id})">
+Excluir
+</button>
 
-    return;
+</div>
 
-  }
+</div>
 
+`;
 
-  el.innerHTML =
-    db.atividades
-      .slice(0,10)
-      .map(item=>`
+}).join(''):
 
-        <div class="report-item">
-
-          <strong>
-            ${escapeHTML(item.texto)}
-          </strong>
-
-          <span>
-            ${new Date(item.created_at)
-              .toLocaleString("pt-BR")}
-          </span>
-
-        </div>
-
-      `)
-      .join("");
+'<div class="empty">Nenhuma diária registrada.</div>';
 
 }
 
 
-/* =========================================================
-   DASHBOARD
-   ========================================================= */
+function getCheckDefs(){
 
-function atualizarDashboard(){
+try{
 
-  document.getElementById(
-    "statObras"
-  ).textContent =
-    db.obras.length;
+return JSON.parse(
+localStorage.getItem(
+'edifiq_check_defs_'+(user?.id||'')
+)||'[]'
+);
 
+}catch{
 
-  document.getElementById(
-    "statFuncionarios"
-  ).textContent =
-    db.funcionarios.filter(
-      x=>x.status==="ativo"
-    ).length;
+return [];
+
+}
 
 }
 
 
-/* =========================================================
-   INICIAR
-   ========================================================= */
+function saveCheckDefs(v){
 
-document.getElementById(
-  "finData"
-).value = hoje();
+localStorage.setItem(
+'edifiq_check_defs_'+user.id,
+JSON.stringify(v)
+);
+
+}
 
 
-iniciar();
+function renderChecklist(){
+
+const defaults=[
+'Planejamento e orçamento',
+'Contrato assinado',
+'Medição inicial',
+'Compra de materiais',
+'Preparação do local',
+'Chapisco / reboco',
+'Instalações',
+'Pisos e revestimentos',
+'Pintura',
+'Acabamentos',
+'Limpeza final',
+'Entrega da obra'
+];
+
+let defs=getCheckDefs();
+
+if(!defs.length){
+
+defs=defaults.map(
+(x,i)=>({
+id:'default_'+i,
+desc:x,
+obraId:'all'
+})
+);
+
+saveCheckDefs(defs);
+
+}
+
+
+$('checkList').innerHTML=
+
+D.obras.map(o=>{
+
+const applicable=
+defs.filter(d=>
+d.obraId==='all' ||
+String(d.obraId)===String(o.id)
+);
+
+const saved=
+D.checklist.filter(
+c=>c.obra_id===o.id
+);
+
+const done=
+applicable.filter(
+d=>
+saved.find(
+c=>c.tarefa===d.desc
+)?.concluida
+).length;
+
+return `
+
+<div class="item">
+
+<div class="row">
+
+<b>
+${esc(o.nome)}
+</b>
+
+<span class="badge">
+${done}/${applicable.length}
+</span>
+
+</div>
+
+<div class="progress">
+
+<i style="
+width:${
+applicable.length
+?Math.round(done/applicable.length*100)
+:0
+}%
+"></i>
+
+</div>
+
+${applicable.map(d=>{
+
+const c=
+saved.find(
+x=>x.tarefa===d.desc
+);
+
+return `
+
+<div class="row" style="padding:6px 0">
+
+<label>
+
+<input
+type="checkbox"
+${c?.concluida?'checked':''}
+onchange="toggleCheck(
+${o.id},
+${JSON.stringify(d.desc)},
+this.checked
+)"
+>
+
+${esc(d.desc)}
+
+</label>
+
+<span>
+
+<button class="mini"
+onclick="openCheck('${d.id}')">
+✏️
+</button>
+
+<button class="danger mini"
+onclick="deleteCheckDef('${d.id}')">
+×
+</button>
+
+</span>
+
+</div>
+
+`;
+
+}).join('')}
+
+</div>
+
+`;
+
+}).join('') ||
+
+'<div class="empty">Cadastre uma obra primeiro.</div>';
+
+}
+
+
+async function toggleCheck(obra,tarefa,on){
+
+const old=
+D.checklist.find(
+x=>
+String(x.obra_id)===String(obra) &&
+x.tarefa===tarefa
+);
+
+if(old){
+
+const r=
+await updateRow(
+'checklist',
+old.id,
+{
+concluida:on,
+progresso:on?100:0
+}
+);
+
+if(r)
+Object.assign(old,r);
+
+}else{
+
+const r=
+await insertRow(
+'checklist',
+{
+obra_id:obra,
+tarefa,
+concluida:on,
+progresso:on?100:0
+}
+);
+
+if(r)
+D.checklist.unshift(r);
+
+}
+
+renderChecklist();
+
+}
+
+
+function saveCheckDef(e){
+
+e.preventDefault();
+
+let defs=getCheckDefs();
+
+let id=
+$('checkId').value ||
+('c_'+Date.now());
+
+let val={
+id,
+desc:$('checkDesc').value.trim(),
+obraId:$('checkObra').value||'all'
+};
+
+let i=
+defs.findIndex(
+x=>x.id===id
+);
+
+if(i>=0)
+defs[i]=val;
+else
+defs.push(val);
+
+saveCheckDefs(defs);
+
+closeM('checkM');
+
+renderChecklist();
+
+toast(
+'Checklist atualizado.'
+);
+
+}
+
+
+function deleteCheckDef(id){
+
+if(!confirm(
+'Excluir este serviço do checklist?'
+))
+return;
+
+saveCheckDefs(
+getCheckDefs()
+.filter(x=>x.id!==id)
+);
+
+renderChecklist();
+
+toast(
+'Serviço excluído.'
+);
+
+}
+
+
+function renderFotos(){
+
+const data=getPhotos();
+
+$('fotoList').innerHTML=
+data.length?
+
+data
+.slice()
+.reverse()
+.map(g=>{
+
+const o=
+D.obras.find(
+x=>String(x.id)===String(g.obraId)
+);
+
+return `
+
+<div class="item">
+
+<div class="row">
+
+<div>
+
+<b>
+${esc(
+g.titulo||
+'Relatório fotográfico'
+)}
+</b>
+
+<br>
+
+<small>
+${esc(o?.nome||'Obra')}
+•
+${g.data||''}
+</small>
+
+</div>
+
+<button
+class="danger mini"
+onclick="deletePhotoGroup('${g.id}')"
+>
+Excluir
+</button>
+
+</div>
+
+${g.obs?
+`<p class="sub">
+${esc(g.obs)}
+</p>`:''
+}
+
+<div class="photoGrid">
+
+${g.photos.map(
+(p,i)=>
+`<img
+src="${p}"
+alt="Foto ${i+1}"
+>`
+).join('')}
+
+</div>
+
+</div>
+
+`;
+
+}).join(''):
+
+'<div class="empty">Nenhuma foto adicionada.</div>';
+
+}
+
+
+function getPhotos(){
+
+try{
+
+return JSON.parse(
+localStorage.getItem(
+'edifiq_photos_'+(user?.id||'')
+)||'[]'
+);
+
+}catch{
+
+return [];
+
+}
+
+}
+
+
+function savePhotos(v){
+
+localStorage.setItem(
+'edifiq_photos_'+user.id,
+JSON.stringify(v)
+);
+
+}
+
+
+function openFotoFor(id){
+
+go('fotos');
+
+setTimeout(()=>{
+
+openFoto();
+
+$('fotoObra').value=id;
+
+},0);
+
+}
+
+
+async function saveFotos(e){
+
+e.preventDefault();
+
+const files=[
+...$('fotoFiles').files
+];
+
+if(!files.length)
+return;
+
+const photos=[];
+
+for(const f of files){
+
+photos.push(
+await fileToDataURL(f)
+);
+
+}
+
+const arr=getPhotos();
+
+arr.push({
+
+id:'p_'+Date.now(),
+
+obraId:$('fotoObra').value,
+
+data:$('fotoData').value,
+
+titulo:$('fotoTitulo').value,
+
+obs:$('fotoObs').value,
+
+photos
+
+});
+
+savePhotos(arr);
+
+e.target.reset();
+
+closeM('fotoM');
+
+renderFotos();
+
+toast(
+photos.length+
+' foto(s) adicionada(s).'
+);
+
+}
+
+
+function fileToDataURL(file){
+
+return new Promise(
+(res,rej)=>{
+
+const r=
+new FileReader();
+
+r.onload=()=>
+res(r.result);
+
+r.onerror=rej;
+
+r.readAsDataURL(file);
+
+}
+);
+
+}
+
+
+function deletePhotoGroup(id){
+
+if(!confirm(
+'Excluir este relatório fotográfico?'
+))
+return;
+
+savePhotos(
+getPhotos()
+.filter(x=>x.id!==id)
+);
+
+renderFotos();
+
+}
+
+
+function fillSelectors(){
+
+const opts=
+'<option value="">Sem obra</option>'+
+D.obras.map(
+o=>
+`<option value="${o.id}">
+${esc(o.nome)}
+</option>`
+).join('');
+
+['dObra','oFin'].forEach(id=>{
+
+if($(id))
+$(id).innerHTML=opts;
+
+});
+
+
+if($('fotoObra'))
+
+$('fotoObra').innerHTML=
+'<option value="" disabled selected>'+
+'Selecione a obra'+
+'</option>'+
+D.obras.map(
+o=>
+`<option value="${o.id}">
+${esc(o.nome)}
+</option>`
+).join('');
+
+
+if($('checkObra'))
+
+$('checkObra').innerHTML=
+'<option value="all">'+
+'Aplicar em todas as obras'+
+'</option>'+
+D.obras.map(
+o=>
+`<option value="${o.id}">
+${esc(o.nome)}
+</option>`
+).join('');
+
+
+if($('dFunc'))
+
+$('dFunc').innerHTML=
+D.funcionarios
+.filter(f=>f.ativo!==false)
+.map(
+f=>
+`<option value="${f.id}">
+${esc(f.nome)}
+</option>`
+).join('');
+
+
+if($('finObraFilter')){
+
+const cur=
+$('finObraFilter').value;
+
+$('finObraFilter').innerHTML=
+'<option value="all">Todas as obras</option>'+
+D.obras.map(
+o=>
+`<option value="${o.id}">
+${esc(o.nome)}
+</option>`
+).join('');
+
+$('finObraFilter').value=
+cur||'all';
+
+}
+
+}
+
+
+function openObra(id=null){
+
+editObraId=id||null;
+
+if(id){
+
+const o=
+D.obras.find(
+x=>String(x.id)===String(id)
+);
+
+if(!o)return;
+
+$('oNome').value=o.nome||'';
+$('oCli').value=o.cliente||'';
+$('oLoc').value=o.endereco||'';
+$('oVal').value=o.valor||0;
+$('oStatus').value=o.status||'andamento';
+$('oIni').value=o.data_inicio||'';
+$('oFim').value=o.data_fim||'';
+$('oTipo').value=o.tipo_servico||'';
+$('oObs').value=o.observacoes||'';
+
+}
+
+else{
+
+$('oNome').value='';
+$('oCli').value='';
+$('oLoc').value='';
+$('oVal').value='';
+$('oStatus').value='andamento';
+$('oIni').value='';
+$('oFim').value='';
+$('oTipo').value='';
+$('oObs').value='';
+
+}
+
+openM('obraM');
+
+}
+
+
+function openFunc(id=null){
+
+editFuncId=id||null;
+
+if(id){
+
+const f=
+D.funcionarios.find(
+x=>String(x.id)===String(id)
+);
+
+if(!f)return;
+
+$('fNome').value=f.nome||'';
+$('fFunc').value=f.funcao||'';
+$('fTel').value=f.telefone||'';
+$('fDia').value=f.valor_diaria||0;
+$('fTipo').value=f.tipo_pagamento||'diaria';
+$('fSal').value=f.salario_mensal||0;
+$('fPag').value=f.dia_pagamento||0;
+$('fAtivo').value=
+f.ativo!==false?'true':'false';
+
+}else{
+
+clearFuncForm();
+
+}
+
+openM('funcM');
+
+}
+
+
+function clearFuncForm(){
+
+$('fNome').value='';
+$('fFunc').value='';
+$('fTel').value='';
+$('fDia').value='';
+$('fTipo').value='diaria';
+$('fSal').value='';
+$('fPag').value='';
+$('fAtivo').value='true';
+
+}
+
+
+function openDia(){
+
+fillSelectors();
+
+$('dData').value=
+new Date().toISOString().slice(0,10);
+
+$('dQtd').value=1;
+
+$('dVal').value='';
+
+$('dStatus').value='pendente';
+
+$('dObs').value='';
+
+openM('diaM');
+
+}
+
+
+function openFin(){
+
+fillSelectors();
+
+$('dtFin').value=
+new Date().toISOString().slice(0,10);
+
+$('tFin').value='entrada';
+
+$('dFin').value='';
+
+$('vFin').value='';
+
+$('forFin').value='';
+
+$('obsFin').value='';
+
+openM('finM');
+
+}
+
+
+function openCheck(id=null){
+
+$('checkId').value=id||'';
+
+if(id){
+
+const d=
+getCheckDefs().find(
+x=>x.id===id
+);
+
+if(d){
+
+$('checkDesc').value=d.desc||'';
+
+$('checkObra').value=
+d.obraId||'all';
+
+}
+
+}else{
+
+$('checkDesc').value='';
+
+$('checkObra').value='all';
+
+}
+
+fillSelectors();
+
+openM('checkM');
+
+}
+
+
+function openFoto(){
+
+fillSelectors();
+
+$('fotoData').value=
+new Date().toISOString().slice(0,10);
+
+$('fotoTitulo').value='';
+
+$('fotoObs').value='';
+
+$('fotoFiles').value='';
+
+openM('fotoM');
+
+}
+
+
+async function saveObra(e){
+
+e.preventDefault();
+
+const row={
+
+nome:$('oNome').value.trim(),
+
+cliente:$('oCli').value.trim(),
+
+endereco:$('oLoc').value.trim(),
+
+valor:Number(
+$('oVal').value||0
+),
+
+status:$('oStatus').value,
+
+data_inicio:
+$('oIni').value||null,
+
+data_fim:
+$('oFim').value||null,
+
+tipo_servico:
+$('oTipo').value.trim(),
+
+observacoes:
+$('oObs').value.trim()
+
+};
+
+let r;
+
+if(editObraId){
+
+r=await updateRow(
+'obras',
+editObraId,
+row
+);
+
+}else{
+
+r=await insertRow(
+'obras',
+row
+);
+
+}
+
+if(r){
+
+if(editObraId){
+
+const o=
+D.obras.find(
+x=>x.id===editObraId
+);
+
+if(o)
+Object.assign(o,r);
+
+}else{
+
+D.obras.unshift(r);
+
+}
+
+editObraId=null;
+
+e.target.reset();
+
+closeM('obraM');
+
+renderAll();
+
+toast(
+'Obra salva com sucesso.'
+);
+
+}
+
+}
+
+
+async function saveFunc(e){
+
+e.preventDefault();
+
+const row={
+
+nome:
+$('fNome').value.trim(),
+
+funcao:
+$('fFunc').value.trim(),
+
+telefone:
+$('fTel').value.trim(),
+
+valor_diaria:
+Number(
+$('fDia').value||0
+),
+
+tipo_pagamento:
+$('fTipo').value,
+
+salario_mensal:
+Number(
+$('fSal').value||0
+),
+
+dia_pagamento:
+Number(
+$('fPag').value||0
+),
+
+ativo:
+$('fAtivo').value==='true'
+
+};
+
+let r;
+
+if(editFuncId){
+
+r=await updateRow(
+'funcionarios',
+editFuncId,
+row
+);
+
+}else{
+
+r=await insertRow(
+'funcionarios',
+row
+);
+
+}
+
+if(r){
+
+if(editFuncId){
+
+const f=
+D.funcionarios.find(
+x=>x.id===editFuncId
+);
+
+if(f)
+Object.assign(f,r);
+
+}else{
+
+D.funcionarios.unshift(r);
+
+}
+
+editFuncId=null;
+
+clearFuncForm();
+
+e.target.reset();
+
+closeM('funcM');
+
+renderAll();
+
+toast(
+'Funcionário salvo e formulário limpo.'
+);
+
+}
+
+}
+
+
+async function saveDia(e){
+
+e.preventDefault();
+
+const qtd=
+Number($('dQtd').value);
+
+const v=
+Number($('dVal').value);
+
+const r=
+await insertRow(
+'diarias',
+{
+
+funcionario_id:
+Number($('dFunc').value),
+
+obra_id:
+$('dObra').value?
+Number($('dObra').value):
+null,
+
+data:
+$('dData').value,
+
+qtd,
+
+valor_diaria:v,
+
+valor_pago:
+qtd*v,
+
+status:
+$('dStatus').value,
+
+observacao:
+$('dObs').value
+
+}
+);
+
+if(r){
+
+D.diarias.unshift(r);
+
+e.target.reset();
+
+closeM('diaM');
+
+renderAll();
+
+toast(
+'Diária registrada.'
+);
+
+}
+
+}
+
+
+async function saveFin(e){
+
+e.preventDefault();
+
+const r=
+await insertRow(
+'gastos',
+{
+
+obra_id:
+$('oFin').value?
+Number($('oFin').value):
+null,
+
+categoria:
+$('tFin').value,
+
+descricao:
+$('dFin').value.trim(),
+
+valor:
+Number($('vFin').value),
+
+data:
+$('dtFin').value,
+
+fornecedor:
+$('forFin').value.trim(),
+
+observacao:
+$('obsFin').value.trim()
+
+}
+);
+
+if(r){
+
+D.gastos.unshift(r);
+
+e.target.reset();
+
+closeM('finM');
+
+renderAll();
+
+toast(
+'Recebimento/despesa salvo com sucesso.'
+);
+
+}
+
+}
+
+
+async function delItem(t,id){
+
+if(!confirm(
+'Excluir este registro?'
+))
+return;
+
+if(
+await removeRow(t,id)
+){
+
+const i=
+D[t].findIndex(
+x=>x.id===id
+);
+
+if(i>=0)
+D[t].splice(i,1);
+
+renderAll();
+
+toast(
+'Registro excluído.'
+);
+
+}
+
+}
+
+
+function snapshot(){
+
+return{
+
+version:
+'EDIFIQ-2026-09',
+
+exported_at:
+new Date().toISOString(),
+
+user_email:
+user?.email,
+
+data:D,
+
+checklist_defs:
+getCheckDefs(),
+
+photos:
+getPhotos()
+
+};
+
+}
+
+
+function download(
+name,
+text,
+type='application/json'
+){
+
+const a=
+document.createElement('a');
+
+a.href=
+URL.createObjectURL(
+new Blob(
+[text],
+{type}
+)
+);
+
+a.download=name;
+
+document.body.appendChild(a);
+
+a.click();
+
+a.remove();
+
+setTimeout(
+()=>URL.revokeObjectURL(a.href),
+500
+);
+
+}
+
+
+function exportFull(){
+
+download(
+'EDIFIQ-backup.json',
+JSON.stringify(
+snapshot(),
+null,
+2
+)
+);
+
+}
+
+
+function exportTable(t){
+
+download(
+'EDIFIQ-'+t+'.json',
+JSON.stringify(
+D[t]||[],
+null,
+2
+)
+);
+
+}
+
+
+function exportExcel(){
+
+const wb=
+XLSX.utils.book_new();
+
+Object.entries(D)
+.forEach(([k,v])=>{
+
+XLSX.utils.book_append_sheet(
+wb,
+XLSX.utils.json_to_sheet(v||[]),
+k.slice(0,31)
+);
+
+});
+
+XLSX.writeFile(
+wb,
+'EDIFIQ-dados.xlsx'
+);
+
+}
+
+
+async function previewImport(e){
+
+const file=
+e.target.files[0];
+
+if(!file)return;
+
+try{
+
+const ext=
+file.name
+.split('.')
+.pop()
+.toLowerCase();
+
+let obj;
+
+if(ext==='json'){
+
+obj=
+JSON.parse(
+await file.text()
+);
+
+}else{
+
+const wb=
+XLSX.read(
+await file.arrayBuffer(),
+{type:'array'}
+);
+
+obj={
+data:{}
+};
+
+wb.SheetNames.forEach(
+s=>
+obj.data[s]=
+XLSX.utils.sheet_to_json(
+wb.Sheets[s]
+)
+);
+
+}
+
+window.pendingImport=obj;
+
+$('importPreview').innerHTML=
+
+'<p class="green">'+
+'Arquivo lido com sucesso.'+
+'</p>'+
+'<button class="primary" onclick="confirmImport()">'+
+'Confirmar importação'+
+'</button>';
+
+}catch(err){
+
+$('importPreview').innerHTML=
+`<p class="red">
+Erro: ${esc(err.message)}
+</p>`;
+
+}
+
+}
+
+
+async function confirmImport(){
+
+const src=
+window.pendingImport?.data||
+window.pendingImport||
+{};
+
+let count=0;
+
+for(
+const[table,rows]
+of Object.entries(src)
+){
+
+if(
+!Array.isArray(rows)||
+!tables.includes(table)
+)
+continue;
+
+for(
+const raw of rows
+){
+
+const r={...raw};
+
+[
+'id',
+'created_at',
+'legacy_id',
+'user_id'
+]
+.forEach(
+k=>delete r[k]
+);
+
+const x=
+await insertRow(
+table,
+r
+);
+
+if(x){
+
+D[table].unshift(x);
+
+count++;
+
+}
+
+}
+
+}
+
+
+if(
+window.pendingImport?.checklist_defs
+)
+saveCheckDefs(
+window.pendingImport.checklist_defs
+);
+
+
+if(
+window.pendingImport?.photos
+)
+savePhotos(
+window.pendingImport.photos
+);
+
+
+window.pendingImport=null;
+
+toast(
+count+
+' registro(s) importado(s).'
+);
+
+renderAll();
+
+}
+
+
+sb.auth.onAuthStateChange(
+async(event,session)=>{
+
+if(session?.user){
+
+user=session.user;
+
+await startApp();
+
+}else{
+
+user=null;
+
+$('app').classList.add('hidden');
+$('auth').classList.remove('hidden');
+
+}
+
+});
+
+
+checkConnection();
 
 </script>
 
