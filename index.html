@@ -8,183 +8,1314 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-:root{--bg:#090b0e;--panel:#12161b;--panel2:#181d23;--gold:#d8ad45;--text:#f4f4f4;--muted:#9da5ae;--green:#36c98f;--red:#ef6670;--line:#2a3038}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}.hidden{display:none!important}
-header{position:sticky;top:0;z-index:5;background:#0b0d10ee;backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
-.logo{font-weight:900;letter-spacing:2px}.logo span,.gold{color:var(--gold)}.sub,.label,small{font-size:12px;color:var(--muted)}
-main{max-width:1050px;margin:auto;padding:18px 16px 100px}.page{display:none}.page.active{display:block}
-h1{margin:5px 0}.lead{color:var(--muted);margin-top:4px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.card,.item,.authbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px;margin:10px 0}.stat{font-size:23px;font-weight:800;margin-top:6px}.green{color:var(--green)}.red{color:var(--red)}
-.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.action,.primary,.secondary,.danger{border-radius:12px;padding:12px 14px;font-weight:700}.action{background:var(--panel2);border:1px solid var(--line);color:var(--text);text-align:left}.primary{background:var(--gold);color:#15110a}.secondary{background:#20262d;color:var(--text);border:1px solid var(--line)}.danger{background:#32191c;color:#ff9ca3;border:1px solid #653038}
-.form{display:grid;gap:10px}.form input,.form select,.form textarea,.toolbar input,.toolbar select{width:100%;background:#0e1216;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px}.form textarea{min-height:80px}
-.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.badge{background:#242b33;border-radius:999px;padding:5px 9px;font-size:12px}.progress{height:7px;background:#252b32;border-radius:9px;overflow:hidden;margin:10px 0}.progress i{display:block;height:100%;background:var(--gold)}
-.bottom{position:fixed;bottom:0;left:0;right:0;background:#0b0d10f5;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px env(safe-area-inset-right) calc(7px + env(safe-area-inset-bottom)) env(safe-area-inset-left);z-index:6}.nav{background:none;color:var(--muted);padding:7px}.nav.active{color:var(--gold)}
-.modal{position:fixed;inset:0;background:#000b;z-index:20;display:none;align-items:end}.modal.open{display:flex}.sheet{background:#11151a;border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow:auto;padding:18px}.close{float:right;background:none;color:var(--muted);font-size:28px}
-.auth{min-height:100vh;display:grid;place-items:center;padding:20px}.authbox{width:min(440px,100%);padding:25px}.authlogo{text-align:center;font-size:30px;font-weight:900;letter-spacing:4px}.authlogo span{color:var(--gold)}
-.toolbar{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--muted)}
-.toast{position:fixed;right:15px;bottom:80px;z-index:50;background:#20262d;border:1px solid var(--line);padding:12px 15px;border-radius:12px;display:none}.toast.show{display:block}
-@media(max-width:600px){.grid3{grid-template-columns:1fr 1fr}.actions{grid-template-columns:1fr 1fr}.bottom{grid-template-columns:repeat(5,1fr)}}
+:root{--bg:#090b0e;--panel:#12161b;--panel2:#181d23;--gold:#d8ad45;--text:#f4f4f4;--muted:#9da5ae;--green:#36c98f;--red:#ef6670;--blue:#64a8ff;--line:#2a3038}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}.hidden{display:none!important}
+header{position:sticky;top:0;z-index:5;background:#0b0d10ee;backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;justify-content:space-between}.logo{font-weight:900;letter-spacing:2px}.logo span,.gold{color:var(--gold)}.sub,.label,small{font-size:12px;color:var(--muted)}main{max-width:1050px;margin:auto;padding:18px 16px 105px}.page{display:none}.page.active{display:block}h1{margin:5px 0}.lead{color:var(--muted);margin-top:4px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.card,.item,.authbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px;margin:10px 0}.stat{font-size:23px;font-weight:800;margin-top:6px}.green{color:var(--green)}.red{color:var(--red)}.blue{color:var(--blue)}.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.action,.primary,.secondary,.danger,.mini{border-radius:12px;padding:12px 14px;font-weight:700}.action{background:var(--panel2);border:1px solid var(--line);color:var(--text);text-align:left}.primary{background:var(--gold);color:#15110a}.secondary{background:#20262d;color:var(--text);border:1px solid var(--line)}.danger{background:#32191c;color:#ff9ca3;border:1px solid #653038}.mini{padding:7px 9px;background:#20262d;color:#fff;border:1px solid var(--line);font-size:12px}.form{display:grid;gap:10px}.form input,.form select,.form textarea,.toolbar input,.toolbar select{width:100%;background:#0e1216;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px}.form textarea{min-height:85px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.row.wrap{flex-wrap:wrap}.badge{background:#242b33;border-radius:999px;padding:5px 9px;font-size:12px}.badge.on{color:#8ff0c5;background:#15382c}.badge.off{color:#ffb0b5;background:#3b1c20}.progress{height:7px;background:#252b32;border-radius:9px;overflow:hidden;margin:10px 0}.progress i{display:block;height:100%;background:var(--gold)}.bottom{position:fixed;bottom:0;left:0;right:0;background:#0b0d10f5;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px env(safe-area-inset-right) calc(7px + env(safe-area-inset-bottom)) env(safe-area-inset-left);z-index:6}.nav{background:none;color:var(--muted);padding:7px}.nav.active{color:var(--gold)}.modal{position:fixed;inset:0;background:#000b;z-index:20;display:none;align-items:end}.modal.open{display:flex}.sheet{background:#11151a;border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-height:94vh;overflow:auto;padding:18px}.close{float:right;background:none;color:var(--muted);font-size:28px}.auth{min-height:100vh;display:grid;place-items:center;padding:20px}.authbox{width:min(440px,100%);padding:25px}.authlogo{text-align:center;font-size:30px;font-weight:900;letter-spacing:4px}.authlogo span{color:var(--gold)}.toolbar{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--muted)}.toast{position:fixed;right:15px;bottom:80px;z-index:50;background:#20262d;border:1px solid var(--line);padding:12px 15px;border-radius:12px;display:none;max-width:90vw}.toast.show{display:block}.photoGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.photoGrid img{width:100%;aspect-ratio:1;border-radius:10px;object-fit:cover;border:1px solid var(--line)}.divider{height:1px;background:var(--line);margin:14px 0}.empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}.search{margin:10px 0}.search input{width:100%;background:#0e1216;color:#fff;border:1px solid var(--line);border-radius:10px;padding:11px}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.kpi{min-height:92px}.sectionTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:18px}.listActions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.note{background:#171d23;border-left:3px solid var(--gold);padding:10px;border-radius:8px;color:#d7dce1;font-size:13px}
+@media(max-width:700px){.grid4{grid-template-columns:1fr 1fr}.grid3{grid-template-columns:1fr 1fr}.three{grid-template-columns:1fr 1fr}.photoGrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:450px){.grid,.grid3,.grid4,.two,.three{grid-template-columns:1fr}.actions{grid-template-columns:1fr 1fr}.stat{font-size:20px}}
 </style>
 </head>
 <body>
-
-<div id="auth" class="auth">
- <div class="authbox">
-  <div class="authlogo">EDIFI<span>Q</span></div>
-  <p class="sub" style="text-align:center">GESTÃO DE OBRAS E REFORMAS</p>
-  <div class="form" style="margin-top:20px">
-   <input id="email" type="email" placeholder="E-mail" autocomplete="email">
-   <input id="password" type="password" placeholder="Senha" autocomplete="current-password">
-   <button class="primary" onclick="login()">Entrar</button>
-   <button class="secondary" onclick="signup()">Criar minha conta</button>
-   <button class="secondary" onclick="resetPassword()">Esqueci a senha</button>
-  </div>
-  <p id="authMsg" class="sub"></p>
- </div>
-</div>
-
+<div id="auth" class="auth"><div class="authbox"><div class="authlogo">EDIFI<span>Q</span></div><p class="sub" style="text-align:center">GESTÃO DE OBRAS E REFORMAS</p><div class="form" style="margin-top:20px"><input id="email" type="email" placeholder="E-mail" autocomplete="email"><input id="password" type="password" placeholder="Senha" autocomplete="current-password"><button class="primary" onclick="login()">Entrar</button><button class="secondary" onclick="signup()">Criar minha conta</button><button class="secondary" onclick="resetPassword()">Esqueci a senha</button></div><p id="authMsg" class="sub"></p></div></div>
 <div id="app" class="hidden">
 <header><div><div class="logo">EDIFI<span>Q</span></div><div class="sub">Gestão de Obras e Reformas</div></div><button class="secondary" onclick="logout()">Sair</button></header>
 <main>
-
-<section id="home" class="page active">
-<h1>Olá! 👋</h1><p class="lead">Seu painel de controle.</p>
-<div class="grid3">
- <div class="card"><div class="label">Obras</div><div class="stat gold" id="kObras">0</div></div>
- <div class="card"><div class="label">Funcionários</div><div class="stat" id="kFunc">0</div></div>
- <div class="card"><div class="label">A receber</div><div class="stat green" id="kReceber">R$ 0,00</div></div>
-</div>
-<div class="grid3">
- <div class="card"><div class="label">Entradas</div><div class="stat green" id="kEntradas">R$ 0,00</div></div>
- <div class="card"><div class="label">Despesas</div><div class="stat red" id="kDespesas">R$ 0,00</div></div>
- <div class="card"><div class="label">Resultado</div><div class="stat gold" id="kResultado">R$ 0,00</div></div>
-</div>
-<div class="actions">
- <button class="action" onclick="go('obras')">🏗️ <b>Obras</b><br><small>Projetos e andamento</small></button>
- <button class="action" onclick="go('equipe')">👷 <b>Funcionários</b><br><small>Equipe e diárias</small></button>
- <button class="action" onclick="go('financeiro')">💰 <b>Financeiro</b><br><small>Entradas e despesas</small></button>
- <button class="action" onclick="go('orcamentos')">📋 <b>Orçamentos</b><br><small>Propostas para clientes</small></button>
- <button class="action" onclick="go('servicos')">🛠️ <b>Serviços</b><br><small>Serviços das obras</small></button>
- <button class="action" onclick="go('terceirizados')">🤝 <b>Terceirizados</b><br><small>Controle de terceiros</small></button>
- <button class="action" onclick="go('checklist')">☑️ <b>Checklist</b><br><small>Etapas das obras</small></button>
- <button class="action" onclick="go('relatorios')">📊 <b>Relatórios</b><br><small>Exportação e backup</small></button>
-</div>
-<div><h2>Obras recentes</h2><div id="recentes"></div></div>
-</section>
-
-<section id="obras" class="page"><h1>Obras</h1><p class="lead">Cadastre e acompanhe seus projetos.</p><button class="primary" onclick="openM('obraM')">＋ Nova obra</button><div id="obrasList"></div></section>
-
-<section id="equipe" class="page"><h1>Funcionários</h1><p class="lead">Equipe, valores e diárias.</p><button class="primary" onclick="openM('funcM')">＋ Novo funcionário</button><div class="toolbar"><select id="payPeriod" onchange="renderPayroll()"><option value="dia">Hoje</option><option value="semana" selected>Esta semana</option><option value="quinzena">Quinzena</option><option value="mes">Este mês</option><option value="custom">Personalizado</option></select><select id="payFunc" onchange="renderPayroll()"><option value="all">Todos</option></select></div><div id="customDates" class="toolbar hidden"><input id="payStart" type="date" onchange="renderPayroll()"><input id="payEnd" type="date" onchange="renderPayroll()"></div><div class="grid"><div class="card"><div class="label">A pagar no período</div><div class="stat gold" id="payTotal">R$ 0,00</div></div><div class="card"><div class="label">Funcionários</div><div class="stat" id="payCount">0</div></div></div><div id="funcList"></div><h2>Diárias</h2><button class="secondary" onclick="openM('diaM')">＋ Registrar diária</button><div id="diaList"></div></section>
-
-<section id="financeiro" class="page"><h1>Financeiro</h1><p class="lead">Recebimentos, despesas e resultado.</p><div class="grid"><div class="card"><div class="label">Entradas</div><div class="stat green" id="finEnt">R$ 0,00</div></div><div class="card"><div class="label">Despesas</div><div class="stat red" id="finDesp">R$ 0,00</div></div></div><div class="card"><div class="label">Resultado</div><div class="stat gold" id="finRes">R$ 0,00</div></div><button class="primary" onclick="openM('finM')">＋ Novo lançamento</button><div id="finList"></div></section>
-
-<section id="orcamentos" class="page"><h1>Orçamentos</h1><p class="lead">Crie e acompanhe propostas para clientes.</p><button class="primary" onclick="openM('orcM')">＋ Novo orçamento</button><div id="orcList"></div></section>
-
-<section id="servicos" class="page"><h1>Serviços</h1><p class="lead">Serviços vinculados às obras.</p><button class="primary" onclick="openM('servM')">＋ Novo serviço</button><div id="servList"></div></section>
-
-<section id="terceirizados" class="page"><h1>Terceirizados</h1><p class="lead">Controle de profissionais e pagamentos externos.</p><button class="primary" onclick="openM('tercM')">＋ Novo terceirizado</button><div id="tercList"></div></section>
-
-<section id="checklist" class="page"><h1>Checklist</h1><p class="lead">Acompanhe as etapas de cada obra.</p><div id="checkList"></div></section>
-
-<section id="relatorios" class="page"><h1>Relatórios</h1><p class="lead">Exporte e faça backup dos dados.</p><div class="actions">
-<button class="action" onclick="exportTable('obras')">🏗️ Obras</button><button class="action" onclick="exportTable('funcionarios')">👷 Equipe</button><button class="action" onclick="exportTable('diarias')">💵 Diárias</button><button class="action" onclick="exportTable('gastos')">💰 Gastos</button><button class="action" onclick="exportTable('orcamentos')">📋 Orçamentos</button><button class="action" onclick="exportTable('servicos')">🛠️ Serviços</button><button class="action" onclick="exportTable('terceirizados')">🤝 Terceirizados</button><button class="action" onclick="exportFull()">💾 Backup completo</button></div>
-</section>
-
-<section id="importar" class="page"><h1>Importar / Exportar</h1><p class="lead">Transfira dados entre aplicativos.</p><div class="item"><b>Importar</b><p class="sub">JSON, CSV ou Excel.</p><input id="importFile" type="file" accept=".json,.csv,.xlsx,.xls" onchange="previewImport(event)"><div id="importPreview"></div></div><div class="item"><b>Exportar</b><div class="actions"><button class="action" onclick="exportFull()">💾 JSON</button><button class="action" onclick="exportExcel()">📊 Excel</button><button class="action" onclick="exportAllCsv()">📄 CSV</button></div></div></section>
-
+<section id="home" class="page active"><h1>Olá! 👋</h1><p class="lead">Seu painel de controle.</p><div class="grid3"><div class="card kpi"><div class="label">Obras</div><div class="stat gold" id="kObras">0</div></div><div class="card kpi"><div class="label">Funcionários ativos</div><div class="stat" id="kFunc">0</div></div><div class="card kpi"><div class="label">A receber</div><div class="stat green" id="kReceber">R$ 0,00</div></div></div><div class="grid3"><div class="card kpi"><div class="label">Receitas</div><div class="stat green" id="kEntradas">R$ 0,00</div></div><div class="card kpi"><div class="label">Despesas</div><div class="stat red" id="kDespesas">R$ 0,00</div></div><div class="card kpi"><div class="label">Lucro</div><div class="stat gold" id="kResultado">R$ 0,00</div></div></div><div class="actions"><button class="action" onclick="go('obras')">🏗️ <b>Obras</b><br><small>Projetos e andamento</small></button><button class="action" onclick="go('equipe')">👷 <b>Funcionários</b><br><small>Equipe, ativos e inativos</small></button><button class="action" onclick="go('financeiro')">💰 <b>Financeiro</b><br><small>Receitas, despesas e lucro</small></button><button class="action" onclick="go('checklist')">☑️ <b>Checklist</b><br><small>Serviços editáveis</small></button><button class="action" onclick="go('fotos')">📸 <b>Relatório fotográfico</b><br><small>Fotos por obra</small></button><button class="action" onclick="go('relatorios')">📊 <b>Relatórios</b><br><small>Exportação e backup</small></button></div><div class="sectionTitle"><h2>Obras recentes</h2><button class="mini" onclick="openObra()">＋ Nova</button></div><div id="recentes"></div></section>
+<section id="obras" class="page"><div class="sectionTitle"><div><h1>Obras</h1><p class="lead">Cadastre, edite e acompanhe seus projetos.</p></div><button class="primary" onclick="openObra()">＋ Nova obra</button></div><div class="search"><input id="obraSearch" placeholder="Pesquisar obra ou cliente..." oninput="renderObras()"></div><div id="obrasList"></div></section>
+<section id="equipe" class="page"><div class="sectionTitle"><div><h1>Funcionários</h1><p class="lead">Equipe, valores, diárias e status.</p></div><button class="primary" onclick="openFunc()">＋ Novo</button></div><div class="toolbar"><select id="funcFilter" onchange="renderFuncs()"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select><select id="payPeriod" onchange="renderPayroll()"><option value="dia">Hoje</option><option value="semana" selected>Esta semana</option><option value="quinzena">Quinzena</option><option value="mes">Este mês</option><option value="custom">Personalizado</option></select></div><div id="customDates" class="toolbar hidden"><input id="payStart" type="date" onchange="renderPayroll()"><input id="payEnd" type="date" onchange="renderPayroll()"></div><div class="grid"><div class="card"><div class="label">A pagar no período</div><div class="stat gold" id="payTotal">R$ 0,00</div></div><div class="card"><div class="label">Funcionários com valor</div><div class="stat" id="payCount">0</div></div></div><div id="funcList"></div><div class="sectionTitle"><h2>Diárias</h2><button class="secondary" onclick="openDia()">＋ Registrar</button></div><div id="diaList"></div></section>
+<section id="financeiro" class="page"><div class="sectionTitle"><div><h1>Financeiro</h1><p class="lead">Recebimentos, despesas e resultado geral ou por obra.</p></div><button class="primary" onclick="openFin()">＋ Lançamento</button></div><div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Todos os lançamentos</option><option value="entrada">Recebimentos</option><option value="despesa">Despesas</option></select></div><div class="grid3"><div class="card"><div class="label">Receitas</div><div class="stat green" id="finEnt">R$ 0,00</div></div><div class="card"><div class="label">Despesas</div><div class="stat red" id="finDesp">R$ 0,00</div></div><div class="card"><div class="label">Lucro</div><div class="stat gold" id="finRes">R$ 0,00</div></div></div><div class="card"><div class="row"><div><b>Resumo por obra</b><br><small>Receitas − despesas</small></div></div><div id="obraFinanceResumo"></div></div><div id="finList"></div></section>
+<section id="checklist" class="page"><div class="sectionTitle"><div><h1>Checklist</h1><p class="lead">Adicione, edite, conclua ou exclua serviços do checklist.</p></div><button class="primary" onclick="openCheck()">＋ Serviço</button></div><div class="note">Os serviços personalizados do checklist ficam salvos neste dispositivo. Os registros de conclusão da obra continuam sincronizados com o banco.</div><div id="checkList"></div></section>
+<section id="fotos" class="page"><div class="sectionTitle"><div><h1>Relatório fotográfico</h1><p class="lead">Fotos organizadas por obra e data.</p></div><button class="primary" onclick="openFoto()">＋ Adicionar fotos</button></div><div class="note">As fotos são mantidas no armazenamento do navegador deste aparelho. Use o relatório/backup para transferi-las.</div><div id="fotoList"></div></section>
+<section id="relatorios" class="page"><h1>Relatórios e dados</h1><p class="lead">Backup, importação e exportação.</p><div class="actions"><button class="action" onclick="exportTable('obras')">🏗️ Obras</button><button class="action" onclick="exportTable('funcionarios')">👷 Equipe</button><button class="action" onclick="exportTable('diarias')">💵 Diárias</button><button class="action" onclick="exportTable('gastos')">💰 Financeiro</button><button class="action" onclick="exportTable('orcamentos')">📋 Orçamentos</button><button class="action" onclick="exportTable('servicos')">🛠️ Serviços</button><button class="action" onclick="exportTable('terceirizados')">🤝 Terceirizados</button><button class="action" onclick="exportFull()">💾 Backup completo</button><button class="action" onclick="exportExcel()">📊 Excel</button></div><div class="card"><b>Importar dados</b><p class="sub">JSON ou Excel exportado pelo EDIFIQ.</p><input id="importFile" type="file" accept=".json,.xlsx,.xls" onchange="previewImport(event)"><div id="importPreview"></div></div></section>
 <section id="config" class="page"><h1>Configurações</h1><div class="item"><b>Conta</b><br><small id="accountEmail"></small></div><div class="item"><b>EDIFIQ</b><br><small>Gestão de Obras e Reformas</small></div></section>
-
 </main>
-<nav class="bottom">
-<button class="nav active" data-p="home" onclick="go('home')">⌂<br>Início</button>
-<button class="nav" data-p="obras" onclick="go('obras')">🏗<br>Obras</button>
-<button class="nav" data-p="equipe" onclick="go('equipe')">👷<br>Equipe</button>
-<button class="nav" data-p="financeiro" onclick="go('financeiro')">R$<br>Financeiro</button>
-<button class="nav" data-p="relatorios" onclick="go('relatorios')">☷<br>Mais</button>
-</nav>
+<nav class="bottom"><button class="nav active" data-p="home" onclick="go('home')">⌂<br>Início</button><button class="nav" data-p="obras" onclick="go('obras')">🏗<br>Obras</button><button class="nav" data-p="equipe" onclick="go('equipe')">👷<br>Equipe</button><button class="nav" data-p="financeiro" onclick="go('financeiro')">R$<br>Financeiro</button><button class="nav" data-p="relatorios" onclick="go('relatorios')">☷<br>Mais</button></nav>
 </div>
 
 <!-- MODAIS -->
-<div class="modal" id="obraM"><div class="sheet"><button class="close" onclick="closeM('obraM')">×</button><h2>Nova obra</h2><form class="form" onsubmit="saveObra(event)"><input id="oNome" required placeholder="Nome da obra"><input id="oCli" placeholder="Cliente"><input id="oLoc" placeholder="Endereço"><input id="oVal" type="number" step=".01" required placeholder="Valor do contrato"><select id="oStatus"><option value="em_andamento">Em andamento</option><option value="planejada">Planejada</option><option value="concluida">Concluída</option><option value="pausada">Pausada</option></select><input id="oIni" type="date"><input id="oFim" type="date"><input id="oTipo" placeholder="Tipo de serviço"><textarea id="oObs" placeholder="Observações"></textarea><button class="primary">Salvar obra</button></form></div></div>
-
-<div class="modal" id="funcM"><div class="sheet"><button class="close" onclick="closeM('funcM')">×</button><h2>Novo funcionário</h2><form class="form" onsubmit="saveFunc(event)"><input id="fNome" required placeholder="Nome"><input id="fFunc" placeholder="Função / cargo"><input id="fTel" placeholder="Telefone"><select id="fTipo"><option value="diaria">Diária</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option></select><input id="fDia" type="number" step=".01" placeholder="Valor da diária"><input id="fSal" type="number" step=".01" placeholder="Salário mensal"><input id="fPag" type="number" min="1" max="31" placeholder="Dia do pagamento"><button class="primary">Salvar funcionário</button></form></div></div>
-
+<div class="modal" id="obraM"><div class="sheet"><button class="close" onclick="closeM('obraM')">×</button><h2 id="obraTitle">Nova obra</h2><form class="form" onsubmit="saveObra(event)"><input id="oNome" required placeholder="Nome da obra"><input id="oCli" placeholder="Cliente"><input id="oLoc" placeholder="Endereço"><input id="oVal" type="number" step=".01" required placeholder="Valor do contrato"><select id="oStatus"><option value="em_andamento">Em andamento</option><option value="planejada">Planejada</option><option value="concluida">Concluída</option><option value="pausada">Pausada</option></select><input id="oIni" type="date"><input id="oFim" type="date"><input id="oTipo" placeholder="Tipo de serviço"><textarea id="oObs" placeholder="Observações"></textarea><button class="primary">Salvar obra</button></form></div></div>
+<div class="modal" id="funcM"><div class="sheet"><button class="close" onclick="closeM('funcM')">×</button><h2 id="funcTitle">Novo funcionário</h2><form class="form" onsubmit="saveFunc(event)"><input id="fNome" required placeholder="Nome"><input id="fFunc" placeholder="Função / cargo"><input id="fTel" placeholder="Telefone"><select id="fTipo"><option value="diaria">Diária</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option></select><input id="fDia" type="number" step=".01" placeholder="Valor da diária"><input id="fSal" type="number" step=".01" placeholder="Salário mensal"><input id="fPag" type="number" min="1" max="31" placeholder="Dia do pagamento"><select id="fAtivo"><option value="true">Funcionário ativo</option><option value="false">Funcionário inativo</option></select><button class="primary">Salvar funcionário</button></form></div></div>
 <div class="modal" id="diaM"><div class="sheet"><button class="close" onclick="closeM('diaM')">×</button><h2>Registrar diária</h2><form class="form" onsubmit="saveDia(event)"><select id="dFunc" required></select><select id="dObra"></select><input id="dData" type="date" required><input id="dQtd" type="number" step=".25" value="1" required placeholder="Quantidade"><input id="dVal" type="number" step=".01" required placeholder="Valor da diária"><select id="dStatus"><option value="pendente">Pendente</option><option value="pago">Pago</option></select><textarea id="dObs" placeholder="Observação"></textarea><button class="primary">Salvar diária</button></form></div></div>
-
-<div class="modal" id="finM"><div class="sheet"><button class="close" onclick="closeM('finM')">×</button><h2>Novo lançamento</h2><form class="form" onsubmit="saveFin(event)"><select id="tFin"><option value="entrada">Entrada / recebimento</option><option value="despesa">Despesa</option></select><input id="dFin" required placeholder="Descrição"><input id="vFin" required type="number" step=".01" placeholder="Valor"><input id="dtFin" type="date" required><input id="forFin" placeholder="Fornecedor"><select id="oFin"></select><button class="primary">Salvar lançamento</button></form></div></div>
-
-<div class="modal" id="orcM"><div class="sheet"><button class="close" onclick="closeM('orcM')">×</button><h2>Novo orçamento</h2><form class="form" onsubmit="saveOrc(event)"><input id="orcCli" required placeholder="Cliente"><input id="orcServ" required placeholder="Serviço"><input id="orcVal" required type="number" step=".01" placeholder="Valor"><input id="orcPag" placeholder="Forma de pagamento"><select id="orcStatus"><option value="rascunho">Rascunho</option><option value="enviado">Enviado</option><option value="aprovado">Aprovado</option><option value="recusado">Recusado</option></select><button class="primary">Salvar orçamento</button></form></div></div>
-
-<div class="modal" id="servM"><div class="sheet"><button class="close" onclick="closeM('servM')">×</button><h2>Novo serviço</h2><form class="form" onsubmit="saveServ(event)"><select id="sObra"></select><input id="sDesc" required placeholder="Descrição do serviço"><input id="sData" type="date" required><input id="sVal" type="number" step=".01" placeholder="Valor"><select id="sStatus"><option value="pendente">Pendente</option><option value="em_andamento">Em andamento</option><option value="concluido">Concluído</option></select><textarea id="sObs" placeholder="Observação"></textarea><button class="primary">Salvar serviço</button></form></div></div>
-
-<div class="modal" id="tercM"><div class="sheet"><button class="close" onclick="closeM('tercM')">×</button><h2>Novo terceirizado</h2><form class="form" onsubmit="saveTerc(event)"><select id="tObra"></select><input id="tNome" required placeholder="Nome do terceirizado"><input id="tContato" placeholder="Contato"><input id="tDesc" placeholder="Serviço"><input id="tVal" type="number" step=".01" placeholder="Valor"><input id="tData" type="date" required><select id="tStatus"><option value="pendente">Pendente</option><option value="pago">Pago</option></select><input id="tForma" placeholder="Forma de pagamento"><textarea id="tObs" placeholder="Observação"></textarea><button class="primary">Salvar terceirizado</button></form></div></div>
-
+<div class="modal" id="finM"><div class="sheet"><button class="close" onclick="closeM('finM')">×</button><h2>Novo lançamento</h2><form class="form" onsubmit="saveFin(event)"><select id="tFin"><option value="entrada">Entrada / recebimento</option><option value="despesa">Despesa</option></select><input id="dFin" required placeholder="Descrição"><input id="vFin" required type="number" step=".01" placeholder="Valor"><input id="dtFin" type="date" required><input id="forFin" placeholder="Fornecedor / cliente"><select id="oFin"></select><textarea id="obsFin" placeholder="Observação"></textarea><button class="primary">Salvar lançamento</button></form></div></div>
+<div class="modal" id="checkM"><div class="sheet"><button class="close" onclick="closeM('checkM')">×</button><h2 id="checkTitle">Novo serviço do checklist</h2><form class="form" onsubmit="saveCheckDef(event)"><input id="checkId" type="hidden"><input id="checkDesc" required placeholder="Nome do serviço / etapa"><select id="checkObra"><option value="all">Aplicar em todas as obras</option></select><button class="primary">Salvar serviço</button></form></div></div>
+<div class="modal" id="fotoM"><div class="sheet"><button class="close" onclick="closeM('fotoM')">×</button><h2>Adicionar fotos</h2><form class="form" onsubmit="saveFotos(event)"><select id="fotoObra" required></select><input id="fotoData" type="date" required><input id="fotoTitulo" placeholder="Título / etapa"><textarea id="fotoObs" placeholder="Observação"></textarea><input id="fotoFiles" type="file" accept="image/*" multiple required><button class="primary">Salvar fotos</button></form></div></div>
 <div id="toast" class="toast"></div>
+<script>const SUPABASE_URL='https://SEU-PROJETO.supabase.co';
+const SUPABASE_ANON_KEY='SUA-CHAVE-ANON';
 
-<script>
-const SUPA_URL="https://lwqntzwajjgkvtynwdjg.supabase.co";
-const SUPA_KEY="sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
-const sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
-let user=null;
-const D={obras:[],funcionarios:[],diarias:[],gastos:[],pagamentos:[],orcamentos:[],servicos:[],terceirizados:[],checklist:[]};
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
 const $=id=>document.getElementById(id);
-const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const today=()=>new Date().toISOString().slice(0,10);
-function toast(s){const x=$('toast');x.textContent=s;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}
-function authMsg(s){$('authMsg').textContent=s||''}
-function go(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(p).classList.add('active');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.p===p));renderAll()}
-function openM(id){$(id).classList.add('open');fillSelectors();if(id==='funcM')clearFuncForm();if(id==='diaM'){$('dData').value=today();$('dQtd').value=1}if(id==='finM')$('dtFin').value=today();if(id==='servM')$('sData').value=today();if(id==='tercM')$('tData').value=today()}
-function closeM(id){$(id).classList.remove('open')}
-function clearFuncForm(){['fNome','fFunc','fTel','fDia','fSal','fPag'].forEach(id=>$(id).value='');$('fTipo').value='diaria'}
-async function login(){const email=$('email').value.trim(),password=$('password').value;if(!email||!password)return authMsg('Informe e-mail e senha.');authMsg('Entrando...');const {error}=await sb.auth.signInWithPassword({email,password});if(error)authMsg(error.message)}
-async function signup(){const email=$('email').value.trim(),password=$('password').value;if(!email)return authMsg('Informe seu e-mail.');if(password.length<6)return authMsg('A senha precisa ter pelo menos 6 caracteres.');authMsg('Criando conta...');const {data,error}=await sb.auth.signUp({email,password});if(error)return authMsg(error.message);authMsg(data.session?'Conta criada e login realizado.':'Conta criada. Verifique seu e-mail para confirmar a conta e depois entre.')}
-async function resetPassword(){const email=$('email').value.trim();if(!email)return authMsg('Digite seu e-mail.');const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});authMsg(error?'Erro: '+error.message:'Link de recuperação enviado para seu e-mail.')}
-async function logout(){await sb.auth.signOut()}
-sb.auth.onAuthStateChange(async(_e,s)=>{user=s?.user||null;if(user){$('auth').classList.add('hidden');$('app').classList.remove('hidden');$('accountEmail').textContent=user.email||'';await loadCloud();renderAll()}else{$('app').classList.add('hidden');$('auth').classList.remove('hidden')}});
+const money=v=>(Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 
-const tables=['obras','funcionarios','diarias','gastos','pagamentos','orcamentos','servicos','terceirizados','checklist'];
-async function loadCloud(){
- for(const t of tables){try{const {data,error}=await sb.from(t).select('*').order('created_at',{ascending:false});if(error)console.warn(t,error.message);D[t].splice(0,D[t].length,...(data||[]))}catch(e){console.warn(t,e)}}
+let user=null;
+let editObraId=null;
+let editFuncId=null;
+
+const tables=['obras','funcionarios','diarias','gastos','orcamentos','servicos','terceirizados','checklist'];
+
+const D={
+  obras:[],
+  funcionarios:[],
+  diarias:[],
+  gastos:[],
+  orcamentos:[],
+  servicos:[],
+  terceirizados:[],
+  checklist:[]
+};
+
+function toast(msg){
+  const t=$('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(window.__toast);
+  window.__toast=setTimeout(()=>t.classList.remove('show'),3000);
 }
-async function insertRow(table,row){const payload={...row,user_id:user.id};const {data,error}=await sb.from(table).insert(payload).select().single();if(error){toast('Erro ao salvar: '+error.message);return null}return data}
-async function removeRow(table,id){const {error}=await sb.from(table).delete().eq('id',id);if(error){toast('Erro: '+error.message);return false}return true}
+
+function go(page){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  $(page)?.classList.add('active');
+
+  document.querySelectorAll('.nav').forEach(x=>{
+    x.classList.toggle('active',x.dataset.p===page);
+  });
+
+  if(page==='home')renderHome();
+  if(page==='obras')renderObras();
+  if(page==='equipe'){
+    renderFuncs();
+    renderPayroll();
+    renderDiarias();
+  }
+  if(page==='financeiro')renderFinance();
+  if(page==='checklist')renderChecklist();
+  if(page==='fotos')renderFotos();
+  if(page==='relatorios'){}
+}
+
+function openM(id){
+  $(id)?.classList.add('open');
+}
+
+function closeM(id){
+  $(id)?.classList.remove('open');
+}
+
+async function login(){
+  const email=$('email').value.trim();
+  const password=$('password').value;
+
+  if(!email||!password){
+    $('authMsg').textContent='Informe e-mail e senha.';
+    return;
+  }
+
+  $('authMsg').textContent='Entrando...';
+
+  const {error}=await sb.auth.signInWithPassword({email,password});
+
+  if(error){
+    $('authMsg').textContent=error.message;
+    return;
+  }
+
+  $('authMsg').textContent='';
+}
+
+async function signup(){
+  const email=$('email').value.trim();
+  const password=$('password').value;
+
+  if(!email||!password){
+    $('authMsg').textContent='Informe e-mail e senha.';
+    return;
+  }
+
+  if(password.length<6){
+    $('authMsg').textContent='A senha precisa ter pelo menos 6 caracteres.';
+    return;
+  }
+
+  const {error}=await sb.auth.signUp({email,password});
+
+  if(error){
+    $('authMsg').textContent=error.message;
+    return;
+  }
+
+  $('authMsg').textContent='Cadastro realizado. Verifique seu e-mail se a confirmação estiver ativada.';
+}
+
+async function resetPassword(){
+  const email=$('email').value.trim();
+
+  if(!email){
+    $('authMsg').textContent='Informe seu e-mail primeiro.';
+    return;
+  }
+
+  const {error}=await sb.auth.resetPasswordForEmail(email);
+
+  $('authMsg').textContent=error
+    ? error.message
+    : 'Link para redefinir a senha enviado.';
+}
+
+async function logout(){
+  await sb.auth.signOut();
+}
+
+sb.auth.onAuthStateChange(async(event,session)=>{
+  user=session?.user||null;
+
+  if(user){
+    $('auth').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    $('accountEmail').textContent=user.email||'';
+    await loadData();
+  }else{
+    $('auth').classList.remove('hidden');
+    $('app').classList.add('hidden');
+  }
+});
+
+async function loadData(){
+  for(const table of tables){
+    try{
+      const {data,error}=await sb
+        .from(table)
+        .select('*')
+        .order('created_at',{ascending:false});
+
+      if(error){
+        console.warn(table,error.message);
+        D[table]=[];
+      }else{
+        D[table]=data||[];
+      }
+    }catch(e){
+      D[table]=[];
+    }
+  }
+
+  renderAll();
+}
+
+function addUser(row){
+  if(row && !row.user_id && user?.id)row.user_id=user.id;
+  return row;
+}
+
+async function insertRow(table,row){
+  try{
+    const payload=addUser({...row});
+    const {data,error}=await sb
+      .from(table)
+      .insert(payload)
+      .select()
+      .single();
+
+    if(error){
+      toast('Erro ao salvar: '+error.message);
+      console.error(error);
+      return null;
+    }
+
+    return data;
+  }catch(e){
+    toast('Erro ao salvar registro.');
+    return null;
+  }
+}
+
+async function updateRow(table,id,row){
+  try{
+    const {data,error}=await sb
+      .from(table)
+      .update(row)
+      .eq('id',id)
+      .select()
+      .single();
+
+    if(error){
+      toast('Erro ao editar: '+error.message);
+      console.error(error);
+      return null;
+    }
+
+    return data;
+  }catch(e){
+    toast('Erro ao editar registro.');
+    return null;
+  }
+}
+
+async function removeRow(table,id){
+  try{
+    const {error}=await sb
+      .from(table)
+      .delete()
+      .eq('id',id);
+
+    if(error){
+      toast('Erro ao excluir: '+error.message);
+      return false;
+    }
+
+    return true;
+  }catch(e){
+    toast('Erro ao excluir registro.');
+    return false;
+  }
+}
 
 function renderAll(){
- const ent=D.gastos.filter(x=>x.categoria==='entrada').reduce((a,x)=>a+Number(x.valor||0),0)+D.pagamentos.reduce((a,x)=>a+Number(x.valor||0),0);
- const desp=D.gastos.filter(x=>x.categoria!=='entrada').reduce((a,x)=>a+Number(x.valor||0),0)+D.diarias.reduce((a,x)=>a+Number(x.valor_pago||x.qtd*x.valor_diaria||0),0);
- const contratos=D.obras.reduce((a,x)=>a+Number(x.valor||0),0);
- $('kObras').textContent=D.obras.length;$('kFunc').textContent=D.funcionarios.length;$('kEntradas').textContent=money(ent);$('kDespesas').textContent=money(desp);$('kResultado').textContent=money(ent-desp);$('kReceber').textContent=money(Math.max(0,contratos-ent));
- $('recentes').innerHTML=D.obras.slice(0,4).map(o=>`<div class="item"><b>${esc(o.nome)}</b><br><small>${esc(o.cliente||'Cliente não informado')} • ${money(o.valor)}</small></div>`).join('')||'<div class="item">Nenhuma obra cadastrada.</div>';
- renderObras();renderFuncs();renderFinance();renderOrc();renderServ();renderTerc();renderChecklist();renderPayroll();fillSelectors();
+  renderHome();
+  renderObras();
+  renderFuncs();
+  renderPayroll();
+  renderDiarias();
+  renderFinance();
+  renderChecklist();
+  renderFotos();
+  fillSelectors();
 }
-function renderObras(){$('obrasList').innerHTML=D.obras.map(o=>`<div class="item"><div class="row"><div><b>${esc(o.nome)}</b><br><small>${esc(o.cliente||'')} • ${esc(o.endereco||'')}</small></div><span class="badge">${esc(o.status)}</span></div><div class="progress"><i style="width:${o.status==='concluida'?100:o.status==='em_andamento'?50:10}%"></i></div><small>Contrato: ${money(o.valor)} • ${esc(o.tipo_servico||'')}</small><br><button class="danger" style="margin-top:8px" onclick="delItem('obras',${o.id})">Excluir</button></div>`).join('')||'<div class="item">Nenhuma obra cadastrada.</div>'}
-function renderFuncs(){$('funcList').innerHTML=D.funcionarios.map(f=>`<div class="item"><div class="row"><div><b>${esc(f.nome)}</b><br><small>${esc(f.funcao||'')} • ${esc(f.telefone||'')}</small></div><span class="badge">${esc(f.tipo_pagamento||'diaria')}</span></div><small>Diária: ${money(f.valor_diaria)} • Mensal: ${money(f.salario_mensal)}</small><br><button class="danger" style="margin-top:8px" onclick="delItem('funcionarios',${f.id})">Excluir</button></div>`).join('')||'<div class="item">Nenhum funcionário cadastrado.</div>'}
-function renderFinance(){$('finEnt').textContent=money(D.gastos.filter(x=>x.categoria==='entrada').reduce((a,x)=>a+Number(x.valor||0),0)+D.pagamentos.reduce((a,x)=>a+Number(x.valor||0),0));$('finDesp').textContent=money(D.gastos.filter(x=>x.categoria!=='entrada').reduce((a,x)=>a+Number(x.valor||0),0));$('finRes').textContent=money(Number($('finEnt').textContent.replace(/[^\d,-]/g,'').replace('.','').replace(',','.'))||0);$('finList').innerHTML=D.gastos.map(x=>`<div class="item"><div class="row"><div><b>${esc(x.descricao||'Lançamento')}</b><br><small>${x.data||''} • ${esc(x.fornecedor||'')}</small></div><b class="${x.categoria==='entrada'?'green':'red'}">${x.categoria==='entrada'?'+':'-'} ${money(x.valor)}</b></div><button class="danger" style="margin-top:8px" onclick="delItem('gastos',${x.id})">Excluir</button></div>`).join('')||'<div class="item">Nenhum lançamento.</div>'}
-function renderOrc(){$('orcList').innerHTML=D.orcamentos.map(x=>`<div class="item"><div class="row"><div><b>${esc(x.cliente)}</b><br><small>${esc(x.servico)}</small></div><b class="gold">${money(x.valor)}</b></div><small>${esc(x.status)} • ${esc(x.pagamento||'')}</small><br><button class="danger" style="margin-top:8px" onclick="delItem('orcamentos',${x.id})">Excluir</button></div>`).join('')||'<div class="item">Nenhum orçamento.</div>'}
-function renderServ(){$('servList').innerHTML=D.servicos.map(x=>{const o=D.obras.find(y=>y.id===x.obra_id);return `<div class="item"><div class="row"><div><b>${esc(x.descricao)}</b><br><small>${esc(o?.nome||'Sem obra')} • ${x.data||''}</small></div><b>${money(x.valor)}</b></div><span class="badge">${esc(x.status||'')}</span><br><button class="danger" style="margin-top:8px" onclick="delItem('servicos',${x.id})">Excluir</button></div>`}).join('')||'<div class="item">Nenhum serviço.</div>'}
-function renderTerc(){$('tercList').innerHTML=D.terceirizados.map(x=>{const o=D.obras.find(y=>y.id===x.obra_id);return `<div class="item"><div class="row"><div><b>${esc(x.terceiro_nome)}</b><br><small>${esc(x.descricao||'')} • ${esc(o?.nome||'Sem obra')}</small></div><b class="gold">${money(x.valor)}</b></div><small>${esc(x.status||'')} • ${esc(x.forma_pagamento||'')}</small><br><button class="danger" style="margin-top:8px" onclick="delItem('terceirizados',${x.id})">Excluir</button></div>`}).join('')||'<div class="item">Nenhum terceirizado.</div>'}
-function renderPayroll(){if(!$('payPeriod'))return;const p=$('payPeriod').value;$('customDates').classList.toggle('hidden',p!=='custom');const now=new Date();let a=new Date(now),b=new Date(now);if(p==='semana'){const d=now.getDay()||7;a.setDate(now.getDate()-d+1)}else if(p==='quinzena'){a.setDate(now.getDate()<=15?1:16)}else if(p==='mes'){a.setDate(1)}else if(p==='custom'){a=new Date(($('payStart').value||today())+'T00:00:00');b=new Date(($('payEnd').value||today())+'T23:59:59')}const A=a.toISOString().slice(0,10),B=b.toISOString().slice(0,10),fid=$('payFunc').value;let total=0,count=0;const rows=D.funcionarios.filter(f=>fid==='all'||String(f.id)===String(fid)).map(f=>{const val=f.tipo_pagamento==='mensal'?Number(f.salario_mensal||0):D.diarias.filter(d=>String(d.funcionario_id)===String(f.id)&&d.data>=A&&d.data<=B).reduce((s,d)=>s+Number(d.valor_pago||d.qtd*d.valor_diaria||0),0);if(val)count++;total+=val;return `<tr><td>${esc(f.nome)}</td><td>${esc(f.funcao||'')}</td><td>${money(val)}</td></tr>`}).join('');$('payTotal').textContent=money(total);$('payCount').textContent=count;$('diaList').innerHTML=D.diarias.filter(d=>d.data>=A&&d.data<=B).map(d=>{const f=D.funcionarios.find(x=>x.id===d.funcionario_id);return `<div class="item"><div class="row"><div><b>${esc(f?.nome||'Funcionário')}</b><br><small>${d.data} • ${d.qtd} × ${money(d.valor_diaria)}</small></div><b class="gold">${money(d.valor_pago||d.qtd*d.valor_diaria)}</b></div><button class="danger" style="margin-top:8px" onclick="delItem('diarias',${d.id})">Excluir</button></div>`}).join('')||'<div class="item">Nenhuma diária no período.</div>';if(rows)$('diaList').insertAdjacentHTML('beforeend',`<div class="item"><table><thead><tr><th>Funcionário</th><th>Função</th><th>A pagar</th></tr></thead><tbody>${rows}</tbody></table></div>`)}
-function renderChecklist(){const steps=['Planejamento e orçamento','Contrato assinado','Medição inicial','Compra de materiais','Preparação do local','Chapisco / reboco','Instalações','Pisos e revestimentos','Pintura','Acabamentos','Limpeza final','Entrega da obra'];$('checkList').innerHTML=D.obras.map(o=>{const saved=D.checklist.filter(c=>c.obra_id===o.id);const done=saved.filter(c=>c.concluida).length;return `<div class="item"><b>${esc(o.nome)}</b><div class="progress"><i style="width:${Math.round(done/steps.length*100)}%"></i></div>${steps.map((s,i)=>{const c=saved.find(x=>x.tarefa===s);return `<label style="display:block;padding:6px 0"><input type="checkbox" ${c?.concluida?'checked':''} onchange="toggleCheck(${o.id},'${esc(s)}',this.checked)"> ${esc(s)}</label>`}).join('')}</div>`}).join('')||'<div class="item">Cadastre uma obra primeiro.</div>'}
-function fillSelectors(){const opts='<option value="">Sem obra</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');['dObra','oFin','sObra','tObra'].forEach(id=>{if($(id))$(id).innerHTML=opts});if($('dFunc'))$('dFunc').innerHTML=D.funcionarios.map(f=>`<option value="${f.id}">${esc(f.nome)}</option>`).join('');if($('payFunc'))$('payFunc').innerHTML='<option value="all">Todos</option>'+D.funcionarios.map(f=>`<option value="${f.id}">${esc(f.nome)}</option>`).join('')}
-async function saveObra(e){e.preventDefault();const r=await insertRow('obras',{nome:$('oNome').value,cliente:$('oCli').value,endereco:$('oLoc').value,valor:Number($('oVal').value),status:$('oStatus').value,data_inicio:$('oIni').value||null,data_fim:$('oFim').value||null,tipo_servico:$('oTipo').value,observacoes:$('oObs').value});if(r){D.obras.unshift(r);e.target.reset();closeM('obraM');renderAll();toast('Obra cadastrada.')}}
-async function saveFunc(e){e.preventDefault();const r=await insertRow('funcionarios',{nome:$('fNome').value,funcao:$('fFunc').value,telefone:$('fTel').value,valor_diaria:Number($('fDia').value||0),tipo_pagamento:$('fTipo').value,salario_mensal:Number($('fSal').value||0),dia_pagamento:Number($('fPag').value||0),ativo:true});if(r){D.funcionarios.unshift(r);clearFuncForm();closeM('funcM');renderAll();toast('Funcionário cadastrado. O formulário foi limpo.')}}
-async function saveDia(e){e.preventDefault();const qtd=Number($('dQtd').value),v=Number($('dVal').value);const r=await insertRow('diarias',{funcionario_id:Number($('dFunc').value),obra_id:$('dObra').value?Number($('dObra').value):null,data:$('dData').value,qtd,valor_diaria:v,valor_pago:qtd*v,status:$('dStatus').value,observacao:$('dObs').value});if(r){D.diarias.unshift(r);e.target.reset();closeM('diaM');renderAll();toast('Diária registrada.')}}
-async function saveFin(e){e.preventDefault();const r=await insertRow('gastos',{obra_id:$('oFin').value?Number($('oFin').value):null,categoria:$('tFin').value,descricao:$('dFin').value,valor:Number($('vFin').value),data:$('dtFin').value,fornecedor:$('forFin').value});if(r){D.gastos.unshift(r);e.target.reset();closeM('finM');renderAll();toast('Lançamento salvo.')}}
-async function saveOrc(e){e.preventDefault();const r=await insertRow('orcamentos',{cliente:$('orcCli').value,servico:$('orcServ').value,valor:Number($('orcVal').value),pagamento:$('orcPag').value,status:$('orcStatus').value});if(r){D.orcamentos.unshift(r);e.target.reset();closeM('orcM');renderAll();toast('Orçamento salvo.')}}
-async function saveServ(e){e.preventDefault();const r=await insertRow('servicos',{obra_id:$('sObra').value?Number($('sObra').value):null,descricao:$('sDesc').value,data:$('sData').value,valor:Number($('sVal').value||0),status:$('sStatus').value,observacao:$('sObs').value});if(r){D.servicos.unshift(r);e.target.reset();closeM('servM');renderAll();toast('Serviço salvo.')}}
-async function saveTerc(e){e.preventDefault();const r=await insertRow('terceirizados',{obra_id:$('tObra').value?Number($('tObra').value):null,terceiro_nome:$('tNome').value,terceiro_contato:$('tContato').value,descricao:$('tDesc').value,valor:Number($('tVal').value||0),data:$('tData').value,status:$('tStatus').value,forma_pagamento:$('tForma').value,observacao:$('tObs').value});if(r){D.terceirizados.unshift(r);e.target.reset();closeM('tercM');renderAll();toast('Terceirizado salvo.')}}
-async function toggleCheck(obra,tarefa,on){const old=D.checklist.find(x=>x.obra_id===obra&&x.tarefa===tarefa);if(old){const {data,error}=await sb.from('checklist').update({concluida:on,progresso:on?100:0}).eq('id',old.id).select().single();if(!error){Object.assign(old,data);renderChecklist()}}else{const r=await insertRow('checklist',{obra_id:obra,tarefa,concluida:on,progresso:on?100:0});if(r){D.checklist.unshift(r);renderChecklist()}}}
-async function delItem(t,id){if(!confirm('Excluir este registro?'))return;if(await removeRow(t,id)){D[t].splice(D[t].findIndex(x=>x.id===id),1);renderAll();toast('Registro excluído.')}}
-function snapshot(){return {version:'EDIFIQ-2026',exported_at:new Date().toISOString(),user_email:user?.email,data:D}}
-function download(name,text,type='application/json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
-function exportFull(){download('EDIFIQ-backup.json',JSON.stringify(snapshot(),null,2))}
-function exportTable(t){download('EDIFIQ-'+t+'.json',JSON.stringify(D[t]||[],null,2))}
-function exportExcel(){const wb=XLSX.utils.book_new();Object.entries(D).forEach(([k,v])=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(v||[]),k.slice(0,31)));XLSX.writeFile(wb,'EDIFIQ-dados.xlsx')}
-function toCSV(arr){if(!arr.length)return '';const keys=[...new Set(arr.flatMap(x=>Object.keys(x)))];return '\\ufeff'+[keys.join(';'),...arr.map(x=>keys.map(k=>`"${String(x[k]??'').replaceAll('"','""')}"`).join(';'))].join('\\n')}
-function exportAllCsv(){Object.entries(D).forEach(([k,v])=>download('EDIFIQ-'+k+'.csv',toCSV(v||[]),'text/csv;charset=utf-8'))}
-async function previewImport(e){const file=e.target.files[0];if(!file)return;try{const ext=file.name.split('.').pop().toLowerCase();let obj;if(ext==='json')obj=JSON.parse(await file.text());else if(ext==='xlsx'||ext==='xls'){const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});obj={data:{}};wb.SheetNames.forEach(s=>obj.data[s]=XLSX.utils.sheet_to_json(wb.Sheets[s]))}else{const text=await file.text();const lines=text.replace(/^\\ufeff/,'').split(/\\r?\\n/).filter(Boolean),h=lines.shift().split(';');obj={data:{importados:lines.map(l=>{const c=l.split(';');return Object.fromEntries(h.map((k,i)=>[k,c[i]]))})}}}window.pendingImport=obj;$('importPreview').innerHTML='<p class="green">Arquivo lido com sucesso.</p><button class="primary" onclick="confirmImport()">Confirmar importação</button>'}catch(err){$('importPreview').innerHTML='<p class="red">Erro: '+esc(err.message)+'</p>'}}
-async function confirmImport(){const src=window.pendingImport?.data||{};let count=0;for(const [table,rows] of Object.entries(src)){if(!Array.isArray(rows)||!tables.includes(table))continue;for(const raw of rows){const r={...raw};['id','created_at','legacy_id','user_id'].forEach(k=>delete r[k]);const x=await insertRow(table,r);if(x){D[table].unshift(x);count++}}}window.pendingImport=null;toast(count+' registro(s) importado(s).');renderAll()}
+
+function renderHome(){
+  const receitas=D.gastos
+    .filter(x=>x.categoria==='entrada')
+    .reduce((s,x)=>s+Number(x.valor||0),0);
+
+  const despesas=D.gastos
+    .filter(x=>x.categoria==='despesa')
+    .reduce((s,x)=>s+Number(x.valor||0),0);
+
+  const receber=D.obras.reduce((s,o)=>{
+    const recebido=D.gastos
+      .filter(x=>String(x.obra_id)===String(o.id)&&x.categoria==='entrada')
+      .reduce((a,x)=>a+Number(x.valor||0),0);
+
+    return s+Math.max(0,Number(o.valor||0)-recebido);
+  },0);
+
+  $('kObras').textContent=D.obras.length;
+  $('kFunc').textContent=D.funcionarios.filter(f=>f.ativo!==false).length;
+  $('kReceber').textContent=money(receber);
+  $('kEntradas').textContent=money(receitas);
+  $('kDespesas').textContent=money(despesas);
+  $('kResultado').textContent=money(receitas-despesas);
+
+  $('recentes').innerHTML=D.obras.slice(0,5).map(o=>`
+    <div class="item">
+      <div class="row">
+        <div>
+          <b>${esc(o.nome)}</b><br>
+          <small>${esc(o.cliente||'Sem cliente')}</small>
+        </div>
+        <span class="badge">${esc(o.status||'')}</span>
+      </div>
+    </div>
+  `).join('')||'<div class="empty">Nenhuma obra cadastrada.</div>';
+}
+
+function renderObras(){
+  const q=($('obraSearch')?.value||'').toLowerCase();
+
+  const arr=D.obras.filter(o=>
+    `${o.nome||''} ${o.cliente||''}`.toLowerCase().includes(q)
+  );
+
+  $('obrasList').innerHTML=arr.map(o=>{
+    const recebido=D.gastos
+      .filter(x=>String(x.obra_id)===String(o.id)&&x.categoria==='entrada')
+      .reduce((s,x)=>s+Number(x.valor||0),0);
+
+    const despesas=D.gastos
+      .filter(x=>String(x.obra_id)===String(o.id)&&x.categoria==='despesa')
+      .reduce((s,x)=>s+Number(x.valor||0),0);
+
+    const pct=o.valor
+      ? Math.min(100,Math.round(recebido/Number(o.valor)*100))
+      : 0;
+
+    return `
+      <div class="item">
+        <div class="row">
+          <div>
+            <b>${esc(o.nome)}</b><br>
+            <small>${esc(o.cliente||'Sem cliente')} • ${esc(o.endereco||'')}</small>
+          </div>
+          <span class="badge">${esc(o.status||'')}</span>
+        </div>
+
+        <div class="progress"><i style="width:${pct}%"></i></div>
+
+        <div class="three">
+          <div>
+            <small>Contrato</small><br>
+            <b>${money(o.valor)}</b>
+          </div>
+          <div>
+            <small>Recebido</small><br>
+            <b class="green">${money(recebido)}</b>
+          </div>
+          <div>
+            <small>Despesas</small><br>
+            <b class="red">${money(despesas)}</b>
+          </div>
+        </div>
+
+        <div class="listActions">
+          <button class="mini" onclick="openObra(${o.id})">✏️ Editar</button>
+          <button class="mini" onclick="openFinFor(${o.id})">💰 Financeiro</button>
+          <button class="mini" onclick="openFotoFor(${o.id})">📸 Fotos</button>
+          <button class="mini" onclick="go('checklist')">☑️ Checklist</button>
+          <button class="danger mini" onclick="deleteObra(${o.id})">Excluir</button>
+        </div>
+      </div>
+    `;
+  }).join('')||'<div class="empty">Nenhuma obra encontrada.</div>';
+}
+
+function openObra(id=null){
+  editObraId=id;
+
+  $('obraTitle').textContent=id?'Editar obra':'Nova obra';
+
+  const o=D.obras.find(x=>String(x.id)===String(id));
+
+  $('oNome').value=o?.nome||'';
+  $('oCli').value=o?.cliente||'';
+  $('oLoc').value=o?.endereco||'';
+  $('oVal').value=o?.valor||'';
+  $('oStatus').value=o?.status||'em_andamento';
+  $('oIni').value=o?.data_inicio||'';
+  $('oFim').value=o?.data_fim||'';
+  $('oTipo').value=o?.tipo_servico||'';
+  $('oObs').value=o?.observacoes||'';
+
+  openM('obraM');
+}
+
+async function deleteObra(id){
+  if(!confirm('Excluir esta obra?'))return;
+
+  if(await removeRow('obras',id)){
+    D.obras=D.obras.filter(x=>x.id!==id);
+    renderAll();
+    toast('Obra excluída.');
+  }
+}
+
+function clearFuncForm(){
+  $('fNome').value='';
+  $('fFunc').value='';
+  $('fTel').value='';
+  $('fTipo').value='diaria';
+  $('fDia').value='';
+  $('fSal').value='';
+  $('fPag').value='';
+  $('fAtivo').value='true';
+}
+
+function openFunc(id=null){
+  editFuncId=id;
+
+  $('funcTitle').textContent=id?'Editar funcionário':'Novo funcionário';
+
+  const f=D.funcionarios.find(x=>String(x.id)===String(id));
+
+  $('fNome').value=f?.nome||'';
+  $('fFunc').value=f?.funcao||'';
+  $('fTel').value=f?.telefone||'';
+  $('fTipo').value=f?.tipo_pagamento||'diaria';
+  $('fDia').value=f?.valor_diaria||'';
+  $('fSal').value=f?.salario_mensal||'';
+  $('fPag').value=f?.dia_pagamento||'';
+  $('fAtivo').value=String(f?.ativo!==false);
+
+  openM('funcM');
+}
+
+function renderFuncs(){
+  const filtro=$('funcFilter')?.value||'todos';
+
+  let arr=D.funcionarios;
+
+  if(filtro==='ativos')arr=arr.filter(f=>f.ativo!==false);
+  if(filtro==='inativos')arr=arr.filter(f=>f.ativo===false);
+
+  $('funcList').innerHTML=arr.map(f=>`
+    <div class="item">
+      <div class="row">
+        <div>
+          <b>${esc(f.nome)}</b><br>
+          <small>${esc(f.funcao||'Sem função')} • ${esc(f.telefone||'')}</small>
+        </div>
+        <span class="badge ${f.ativo!==false?'on':'off'}">
+          ${f.ativo!==false?'Ativo':'Inativo'}
+        </span>
+      </div>
+
+      <div class="three">
+        <div>
+          <small>Diária</small><br>
+          <b>${money(f.valor_diaria)}</b>
+        </div>
+        <div>
+          <small>Pagamento</small><br>
+          <b>${esc(f.tipo_pagamento||'-')}</b>
+        </div>
+        <div>
+          <small>Mensal</small><br>
+          <b>${money(f.salario_mensal)}</b>
+        </div>
+      </div>
+
+      <div class="listActions">
+        <button class="mini" onclick="openFunc(${f.id})">✏️ Editar</button>
+        <button class="mini" onclick="toggleFuncionario(${f.id})">
+          ${f.ativo!==false?'Desativar':'Ativar'}
+        </button>
+        <button class="danger mini" onclick="delItem('funcionarios',${f.id})">Excluir</button>
+      </div>
+    </div>
+  `).join('')||'<div class="empty">Nenhum funcionário encontrado.</div>';
+}
+
+async function toggleFuncionario(id){
+  const f=D.funcionarios.find(x=>x.id===id);
+  if(!f)return;
+
+  const r=await updateRow('funcionarios',id,{ativo:f.ativo===false});
+
+  if(r){
+    Object.assign(f,r);
+    renderAll();
+    toast(f.ativo?'Funcionário ativado.':'Funcionário inativado.');
+  }
+}
+
+function renderPayroll(){
+  const period=$('payPeriod')?.value||'semana';
+
+  $('customDates')?.classList.toggle('hidden',period!=='custom');
+
+  let start=new Date();
+  let end=new Date();
+
+  start.setHours(0,0,0,0);
+  end.setHours(23,59,59,999);
+
+  if(period==='dia'){}
+
+  if(period==='semana'){
+    const day=start.getDay()||7;
+    start.setDate(start.getDate()-day+1);
+  }
+
+  if(period==='quinzena'){
+    start.setDate(start.getDate()<=15?1:16);
+  }
+
+  if(period==='mes'){
+    start.setDate(1);
+  }
+
+  if(period==='custom'){
+    start=new Date(($('payStart')?.value||new Date().toISOString().slice(0,10))+'T00:00:00');
+    end=new Date(($('payEnd')?.value||new Date().toISOString().slice(0,10))+'T23:59:59');
+  }
+
+  const rows=D.diarias.filter(d=>{
+    const dt=new Date((d.data||'')+'T12:00:00');
+    return dt>=start&&dt<=end;
+  });
+
+  const total=rows.reduce((s,d)=>s+Number(d.valor_pago||Number(d.qtd||0)*Number(d.valor_diaria||0)),0);
+
+  $('payTotal').textContent=money(total);
+  $('payCount').textContent=new Set(rows.map(x=>x.funcionario_id)).size;
+}
+
+function openDia(){
+  $('dData').value=new Date().toISOString().slice(0,10);
+  fillSelectors();
+  openM('diaM');
+}
+
+function renderDiarias(){
+  const rows=D.diarias.slice(0,30);
+
+  $('diaList').innerHTML=rows.map(d=>{
+    const f=D.funcionarios.find(x=>String(x.id)===String(d.funcionario_id));
+    const o=D.obras.find(x=>String(x.id)===String(d.obra_id));
+
+    return `
+      <div class="item">
+        <div class="row">
+          <div>
+            <b>${esc(f?.nome||'Funcionário')}</b><br>
+            <small>${d.data||''} • ${esc(o?.nome||'Sem obra')} • ${d.qtd} × ${money(d.valor_diaria)}</small>
+          </div>
+
+          <b class="gold">${money(d.valor_pago||d.qtd*d.valor_diaria)}</b>
+        </div>
+
+        <button class="danger mini" onclick="delItem('diarias',${d.id})">Excluir</button>
+      </div>
+    `;
+  }).join('')||'<div class="empty">Nenhuma diária registrada.</div>';
+}
+
+function openFinFor(id){
+  go('financeiro');
+  setTimeout(()=>{
+    openFin();
+    $('oFin').value=id;
+  },50);
+}
+
+function openFin(){
+  fillSelectors();
+  $('dtFin').value=new Date().toISOString().slice(0,10);
+  openM('finM');
+}
+
+function renderFinance(){
+  const obra=$('finObraFilter')?.value||'all';
+  const tipo=$('finTipoFilter')?.value||'all';
+
+  let rows=D.gastos;
+
+  if(obra!=='all'){
+    rows=rows.filter(x=>String(x.obra_id)===String(obra));
+  }
+
+  if(tipo!=='all'){
+    rows=rows.filter(x=>x.categoria===tipo);
+  }
+
+  const entradas=rows
+    .filter(x=>x.categoria==='entrada')
+    .reduce((s,x)=>s+Number(x.valor||0),0);
+
+  const despesas=rows
+    .filter(x=>x.categoria==='despesa')
+    .reduce((s,x)=>s+Number(x.valor||0),0);
+
+  $('finEnt').textContent=money(entradas);
+  $('finDesp').textContent=money(despesas);
+  $('finRes').textContent=money(entradas-despesas);
+
+  const byObra={};
+
+  rows.forEach(x=>{
+    const key=x.obra_id||'sem';
+    if(!byObra[key])byObra[key]={entrada:0,despesa:0};
+
+    if(x.categoria==='entrada')byObra[key].entrada+=Number(x.valor||0);
+    else byObra[key].despesa+=Number(x.valor||0);
+  });
+
+  $('obraFinanceResumo').innerHTML=Object.entries(byObra).map(([id,v])=>{
+    const o=D.obras.find(x=>String(x.id)===String(id));
+
+    return `
+      <div class="row" style="padding:8px 0">
+        <div>
+          <b>${esc(o?.nome||'Sem obra')}</b><br>
+          <small>Entrada ${money(v.entrada)} • Despesa ${money(v.despesa)}</small>
+        </div>
+        <b class="${v.entrada-v.despesa>=0?'green':'red'}">
+          ${money(v.entrada-v.despesa)}
+        </b>
+      </div>
+    `;
+  }).join('')||'<div class="empty">Nenhum lançamento.</div>';
+
+  $('finList').innerHTML=rows.map(x=>{
+    const o=D.obras.find(y=>String(y.id)===String(x.obra_id));
+
+    return `
+      <div class="item">
+        <div class="row">
+          <div>
+            <b>${esc(x.descricao||'Lançamento')}</b><br>
+            <small>${x.data||''} • ${esc(o?.nome||'Sem obra')} • ${esc(x.fornecedor||'')}</small>
+          </div>
+
+          <b class="${x.categoria==='entrada'?'green':'red'}">
+            ${x.categoria==='entrada'?'+':'-'} ${money(x.valor)}
+          </b>
+        </div>
+
+        ${x.observacao?`<small>${esc(x.observacao)}</small>`:''}
+
+        <div class="listActions">
+          <button class="danger mini" onclick="delItem('gastos',${x.id})">Excluir</button>
+        </div>
+      </div>
+    `;
+  }).join('')||'<div class="empty">Nenhum lançamento financeiro.</div>';
+}
+
+function getCheckDefs(){
+  try{
+    return JSON.parse(
+      localStorage.getItem('edifiq_check_defs_'+(user?.id||''))||'[]'
+    );
+  }catch{
+    return [];
+  }
+}
+
+function saveCheckDefs(v){
+  localStorage.setItem(
+    'edifiq_check_defs_'+user.id,
+    JSON.stringify(v)
+  );
+}
+
+function renderChecklist(){
+  const defaults=[
+    'Planejamento e orçamento',
+    'Contrato assinado',
+    'Medição inicial',
+    'Compra de materiais',
+    'Preparação do local',
+    'Chapisco / reboco',
+    'Instalações',
+    'Pisos e revestimentos',
+    'Pintura',
+    'Acabamentos',
+    'Limpeza final',
+    'Entrega da obra'
+  ];
+
+  let defs=getCheckDefs();
+
+  if(!defs.length){
+    defs=defaults.map((x,i)=>({
+      id:'default_'+i,
+      desc:x,
+      obraId:'all'
+    }));
+
+    saveCheckDefs(defs);
+  }
+
+  $('checkList').innerHTML=D.obras.map(o=>{
+    const applicable=defs.filter(
+      d=>d.obraId==='all'||String(d.obraId)===String(o.id)
+    );
+
+    const saved=D.checklist.filter(c=>c.obra_id===o.id);
+
+    const done=applicable.filter(
+      d=>saved.find(c=>c.tarefa===d.desc)?.concluida
+    ).length;
+
+    return `
+      <div class="item">
+        <div class="row">
+          <b>${esc(o.nome)}</b>
+          <span class="badge">${done}/${applicable.length}</span>
+        </div>
+
+        <div class="progress">
+          <i style="width:${applicable.length?Math.round(done/applicable.length*100):0}%"></i>
+        </div>
+
+        ${applicable.map(d=>{
+          const c=saved.find(x=>x.tarefa===d.desc);
+
+          return `
+            <div class="row" style="padding:6px 0">
+              <label>
+                <input type="checkbox"
+                  ${c?.concluida?'checked':''}
+                  onchange="toggleCheck(${o.id},${JSON.stringify(d.desc)},this.checked)">
+                ${esc(d.desc)}
+              </label>
+
+              <span>
+                <button class="mini" onclick="openCheck('${d.id}')">✏️</button>
+                <button class="danger mini" onclick="deleteCheckDef('${d.id}')">×</button>
+              </span>
+            </div>
+          `;
+        }).join('')||'<small>Nenhum serviço.</small>'}
+      </div>
+    `;
+  }).join('')||'<div class="empty">Cadastre uma obra primeiro.</div>';
+}
+
+async function toggleCheck(obra,tarefa,on){
+  const old=D.checklist.find(
+    x=>x.obra_id===obra&&x.tarefa===tarefa
+  );
+
+  if(old){
+    const r=await updateRow(
+      'checklist',
+      old.id,
+      {
+        concluida:on,
+        progresso:on?100:0
+      }
+    );
+
+    if(r)Object.assign(old,r);
+  }else{
+    const r=await insertRow(
+      'checklist',
+      {
+        obra_id:obra,
+        tarefa,
+        concluida:on,
+        progresso:on?100:0
+      }
+    );
+
+    if(r)D.checklist.unshift(r);
+  }
+
+  renderChecklist();
+}
+
+function openCheck(id=null){
+  const d=getCheckDefs().find(x=>x.id===id);
+
+  $('checkId').value=d?.id||'';
+  $('checkDesc').value=d?.desc||'';
+  $('checkObra').value=d?.obraId||'all';
+
+  $('checkTitle').textContent=id
+    ? 'Editar serviço do checklist'
+    : 'Novo serviço do checklist';
+
+  fillSelectors();
+  $('checkObra').value=d?.obraId||'all';
+
+  openM('checkM');
+}
+
+function saveCheckDef(e){
+  e.preventDefault();
+
+  let defs=getCheckDefs();
+
+  const id=$('checkId').value||('c_'+Date.now());
+
+  const val={
+    id,
+    desc:$('checkDesc').value.trim(),
+    obraId:$('checkObra').value||'all'
+  };
+
+  const i=defs.findIndex(x=>x.id===id);
+
+  if(i>=0)defs[i]=val;
+  else defs.push(val);
+
+  saveCheckDefs(defs);
+
+  closeM('checkM');
+  renderChecklist();
+
+  toast('Checklist atualizado.');
+}
+
+function deleteCheckDef(id){
+  if(!confirm('Excluir este serviço do checklist?'))return;
+
+  saveCheckDefs(
+    getCheckDefs().filter(x=>x.id!==id)
+  );
+
+  renderChecklist();
+  toast('Serviço excluído.');
+}
+
+function renderFotos(){
+  const data=getPhotos();
+
+  $('fotoList').innerHTML=data.length
+    ? data.slice().reverse().map(g=>{
+        const o=D.obras.find(
+          x=>String(x.id)===String(g.obraId)
+        );
+
+        return `
+          <div class="item">
+            <div class="row">
+              <div>
+                <b>${esc(g.titulo||'Relatório fotográfico')}</b><br>
+                <small>${esc(o?.nome||'Obra')} • ${g.data||''}</small>
+              </div>
+
+              <button class="danger mini"
+                onclick="deletePhotoGroup('${g.id}')">
+                Excluir
+              </button>
+            </div>
+
+            ${g.obs?`<p class="sub">${esc(g.obs)}</p>`:''}
+
+            <div class="photoGrid">
+              ${g.photos.map((p,i)=>
+                `<img src="${p}" alt="Foto ${i+1}">`
+              ).join('')}
+            </div>
+          </div>
+        `;
+      }).join('')
+    : '<div class="empty">Nenhuma foto adicionada.</div>';
+}
+
+function getPhotos(){
+  try{
+    return JSON.parse(
+      localStorage.getItem('edifiq_photos_'+(user?.id||''))||'[]'
+    );
+  }catch{
+    return [];
+  }
+}
+
+function savePhotos(v){
+  localStorage.setItem(
+    'edifiq_photos_'+user.id,
+    JSON.stringify(v)
+  );
+}
+
+function openFotoFor(id){
+  go('fotos');
+
+  setTimeout(()=>{
+    openFoto();
+    $('fotoObra').value=id;
+  },0);
+}
+
+function openFoto(){
+  fillSelectors();
+  $('fotoData').value=new Date().toISOString().slice(0,10);
+  openM('fotoM');
+}
+
+async function saveFotos(e){
+  e.preventDefault();
+
+  const files=[...$('fotoFiles').files];
+
+  if(!files.length)return;
+
+  const photos=[];
+
+  for(const f of files){
+    photos.push(await fileToDataURL(f));
+  }
+
+  const arr=getPhotos();
+
+  arr.push({
+    id:'p_'+Date.now(),
+    obraId:$('fotoObra').value,
+    data:$('fotoData').value,
+    titulo:$('fotoTitulo').value,
+    obs:$('fotoObs').value,
+    photos
+  });
+
+  savePhotos(arr);
+
+  e.target.reset();
+
+  closeM('fotoM');
+  renderFotos();
+
+  toast(photos.length+' foto(s) adicionada(s).');
+}
+
+function fileToDataURL(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function deletePhotoGroup(id){
+  if(!confirm('Excluir este relatório fotográfico?'))return;
+
+  savePhotos(
+    getPhotos().filter(x=>x.id!==id)
+  );
+
+  renderFotos();
+}
+
+function fillSelectors(){
+  const opts=
+    '<option value="">Sem obra</option>'+
+    D.obras.map(o=>
+      `<option value="${o.id}">${esc(o.nome)}</option>`
+    ).join('');
+
+  ['dObra','oFin','fotoObra'].forEach(id=>{
+    if($(id))$(id).innerHTML=opts;
+  });
+
+  if($('fotoObra')){
+    $('fotoObra').innerHTML=
+      '<option value="" disabled selected>Selecione a obra</option>'+
+      D.obras.map(o=>
+        `<option value="${o.id}">${esc(o.nome)}</option>`
+      ).join('');
+  }
+
+  if($('checkObra')){
+    $('checkObra').innerHTML=
+      '<option value="all">Aplicar em todas as obras</option>'+
+      D.obras.map(o=>
+        `<option value="${o.id}">${esc(o.nome)}</option>`
+      ).join('');
+  }
+
+  if($('dFunc')){
+    $('dFunc').innerHTML=
+      D.funcionarios
+        .filter(f=>f.ativo!==false)
+        .map(f=>
+          `<option value="${f.id}">${esc(f.nome)}</option>`
+        ).join('');
+  }
+
+  if($('finObraFilter')){
+    const cur=$('finObraFilter').value;
+
+    $('finObraFilter').innerHTML=
+      '<option value="all">Todas as obras</option>'+
+      D.obras.map(o=>
+        `<option value="${o.id}">${esc(o.nome)}</option>`
+      ).join('');
+
+    $('finObraFilter').value=cur||'all';
+  }
+}
+
+async function saveObra(e){
+  e.preventDefault();
+
+  const row={
+    nome:$('oNome').value.trim(),
+    cliente:$('oCli').value.trim(),
+    endereco:$('oLoc').value.trim(),
+    valor:Number($('oVal').value||0),
+    status:$('oStatus').value,
+    data_inicio:$('oIni').value||null,
+    data_fim:$('oFim').value||null,
+    tipo_servico:$('oTipo').value.trim(),
+    observacoes:$('oObs').value.trim()
+  };
+
+  let r=editObraId
+    ? await updateRow('obras',editObraId,row)
+    : await insertRow('obras',row);
+
+  if(r){
+    if(editObraId){
+      const o=D.obras.find(x=>x.id===editObraId);
+      Object.assign(o,r);
+    }else{
+      D.obras.unshift(r);
+    }
+
+    editObraId=null;
+
+    e.target.reset();
+
+    closeM('obraM');
+
+    renderAll();
+
+    toast('Obra salva com sucesso.');
+  }
+}
+
+async function saveFunc(e){
+  e.preventDefault();
+
+  const row={
+    nome:$('fNome').value.trim(),
+    funcao:$('fFunc').value.trim(),
+    telefone:$('fTel').value.trim(),
+    valor_diaria:Number($('fDia').value||0),
+    tipo_pagamento:$('fTipo').value,
+    salario_mensal:Number($('fSal').value||0),
+    dia_pagamento:Number($('fPag').value||0),
+    ativo:$('fAtivo').value==='true'
+  };
+
+  let r=editFuncId
+    ? await updateRow('funcionarios',editFuncId,row)
+    : await insertRow('funcionarios',row);
+
+  if(r){
+    if(editFuncId){
+      const f=D.funcionarios.find(x=>x.id===editFuncId);
+      Object.assign(f,r);
+    }else{
+      D.funcionarios.unshift(r);
+    }
+
+    editFuncId=null;
+
+    clearFuncForm();
+    e.target.reset();
+
+    closeM('funcM');
+
+    renderAll();
+
+    toast('Funcionário salvo e formulário limpo.');
+  }
+}
+
+async function saveDia(e){
+  e.preventDefault();
+
+  const qtd=Number($('dQtd').value);
+  const v=Number($('dVal').value);
+
+  const r=await insertRow(
+    'diarias',
+    {
+      funcionario_id:Number($('dFunc').value),
+      obra_id:$('dObra').value
+        ? Number($('dObra').value)
+        : null,
+      data:$('dData').value,
+      qtd,
+      valor_diaria:v,
+      valor_pago:qtd*v,
+      status:$('dStatus').value,
+      observacao:$('dObs').value
+    }
+  );
+
+  if(r){
+    D.diarias.unshift(r);
+
+    e.target.reset();
+
+    closeM('diaM');
+
+    renderAll();
+
+    toast('Diária registrada.');
+  }
+}
+
+async function saveFin(e){
+  e.preventDefault();
+
+  const r=await insertRow(
+    'gastos',
+    {
+      obra_id:$('oFin').value
+        ? Number($('oFin').value)
+        : null,
+      categoria:$('tFin').value,
+      descricao:$('dFin').value.trim(),
+      valor:Number($('vFin').value),
+      data:$('dtFin').value,
+      fornecedor:$('forFin').value.trim(),
+      observacao:$('obsFin').value.trim()
+    }
+  );
+
+  if(r){
+    D.gastos.unshift(r);
+
+    e.target.reset();
+
+    closeM('finM');
+
+    renderAll();
+
+    toast('Recebimento/despesa salvo com sucesso.');
+  }
+}
+
+async function delItem(t,id){
+  if(!confirm('Excluir este registro?'))return;
+
+  if(await removeRow(t,id)){
+    const i=D[t].findIndex(x=>x.id===id);
+
+    if(i>=0)D[t].splice(i,1);
+
+    renderAll();
+
+    toast('Registro excluído.');
+  }
+}
+
+function snapshot(){
+  return {
+    version:'EDIFIQ-2026-09',
+    exported_at:new Date().toISOString(),
+    user_email:user?.email,
+    data:D,
+    checklist_defs:getCheckDefs(),
+    photos:getPhotos()
+  };
+}
+
+function download(name,text,type='application/json'){
+  const a=document.createElement('a');
+
+  a.href=URL.createObjectURL(
+    new Blob([text],{type})
+  );
+
+  a.download=name;
+
+  document.body.appendChild(a);
+
+  a.click();
+
+  a.remove();
+
+  setTimeout(
+    ()=>URL.revokeObjectURL(a.href),
+    500
+  );
+}
+
+function exportFull(){
+  download(
+    'EDIFIQ-backup.json',
+    JSON.stringify(snapshot(),null,2)
+  );
+}
+
+function exportTable(t){
+  download(
+    'EDIFIQ-'+t+'.json',
+    JSON.stringify(D[t]||[],null,2)
+  );
+}
+
+function exportExcel(){
+  const wb=XLSX.utils.book_new();
+
+  Object.entries(D).forEach(([k,v])=>{
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(v||[]),
+      k.slice(0,31)
+    );
+  });
+
+  XLSX.writeFile(
+    wb,
+    'EDIFIQ-dados.xlsx'
+  );
+}
+
+async function previewImport(e){
+  const file=e.target.files[0];
+
+  if(!file)return;
+
+  try{
+    const ext=file.name.split('.').pop().toLowerCase();
+
+    let obj;
+
+    if(ext==='json'){
+      obj=JSON.parse(await file.text());
+    }else{
+      const wb=XLSX.read(
+        await file.arrayBuffer(),
+        {type:'array'}
+      );
+
+      obj={data:{}};
+
+      wb.SheetNames.forEach(s=>{
+        obj.data[s]=XLSX.utils.sheet_to_json(
+          wb.Sheets[s]
+        );
+      });
+    }
+
+    window.pendingImport=obj;
+
+    $('importPreview').innerHTML=`
+      <p class="green">Arquivo lido com sucesso.</p>
+      <button class="primary" onclick="confirmImport()">
+        Confirmar importação
+      </button>
+    `;
+  }catch(err){
+    $('importPreview').innerHTML=
+      '<p class="red">Erro: '+esc(err.message)+'</p>';
+  }
+}
+
+async function confirmImport(){
+  const src=
+    window.pendingImport?.data||
+    window.pendingImport||
+    {};
+
+  let count=0;
+
+  for(const [table,rows] of Object.entries(src)){
+    if(!Array.isArray(rows)||!tables.includes(table))continue;
+
+    for(const raw of rows){
+      const r={...raw};
+
+      ['id','created_at','legacy_id','user_id']
+        .forEach(k=>delete r[k]);
+
+      const x=await insertRow(table,r);
+
+      if(x){
+        D[table].unshift(x);
+        count++;
+      }
+    }
+  }
+
+  if(window.pendingImport?.checklist_defs){
+    saveCheckDefs(
+      window.pendingImport.checklist_defs
+    );
+  }
+
+  if(window.pendingImport?.photos){
+    savePhotos(
+      window.pendingImport.photos
+    );
+  }
+
+  window.pendingImport=null;
+
+  toast(count+' registro(s) importado(s).');
+
+  renderAll();
+}
 </script>
-</body></html>
+</body>
+</html>
