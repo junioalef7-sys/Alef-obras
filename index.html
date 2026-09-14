@@ -1,323 +1,1358 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EDIFIQ - Relatório de Vistoria</title>
-  
-  <!-- Biblioteca para conversão de HTML em PDF real -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080a0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <style>
-    /* Reset e Estilos Gerais */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    }
+<title>EDIFIQ — Gestão de Obras</title>
 
-    body {
-      background-color: #f4f6f9;
-      color: #333;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-    }
+<style>
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
 
-    .container {
-      width: 100%;
-      max-width: 900px;
-      background: #ffffff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    }
+:root{
+  --bg:#07090b;
+  --card:#111318;
+  --card2:#15171c;
+  --line:#292d35;
+  --gold:#e4b92e;
+  --gold2:#f5cf55;
+  --text:#f4f4f5;
+  --muted:#979ca8;
+  --danger:#e85b5b;
+  --green:#45c47a;
+}
 
-    /* Cabeçalho */
-    header {
-      border-bottom: 3px solid #0056b3;
-      padding-bottom: 15px;
-      margin-bottom: 25px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  padding-bottom:90px;
+}
 
-    header h1 {
-      color: #0056b3;
-      font-size: 1.8rem;
-    }
+button,input,select,textarea{
+  font:inherit;
+}
 
-    .actions {
-      display: flex;
-      gap: 10px;
-    }
+button{
+  cursor:pointer;
+}
 
-    /* Botões */
-    .btn {
-      padding: 10px 18px;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s ease, transform 0.1s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.95rem;
-    }
+.header{
+  padding:42px 34px 28px;
+  border-bottom:1px solid #202329;
+}
 
-    .btn:active {
-      transform: scale(0.98);
-    }
+.brand{
+  display:flex;
+  align-items:center;
+  gap:25px;
+}
 
-    .btn-primary {
-      background-color: #0056b3;
-      color: white;
-    }
+.logo{
+  width:102px;
+  height:102px;
+  border:4px solid var(--gold);
+  border-radius:30px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--gold);
+  font-size:48px;
+}
 
-    .btn-primary:hover {
-      background-color: #004085;
-    }
+.brand h1{
+  margin:0;
+  font-size:48px;
+  letter-spacing:1px;
+}
 
-    .btn-danger {
-      background-color: #dc3545;
-      color: white;
-    }
+.brand p{
+  margin:8px 0 0;
+  color:var(--gold);
+  font-size:21px;
+  letter-spacing:.7px;
+}
 
-    .btn-danger:hover {
-      background-color: #c82333;
-    }
+main{
+  padding:32px 34px;
+  max-width:1100px;
+  margin:auto;
+}
 
-    /* Formulário */
-    .section-title {
-      font-size: 1.2rem;
-      color: #495057;
-      margin-top: 20px;
-      margin-bottom: 15px;
-      border-left: 4px solid #0056b3;
-      padding-left: 10px;
-    }
+h2{
+  font-size:40px;
+  margin:0 0 28px;
+}
 
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-    }
+h3{
+  margin-top:0;
+  font-size:24px;
+}
 
-    @media (max-width: 600px) {
-      .grid-2 {
-        grid-template-columns: 1fr;
-      }
-    }
+.hidden{
+  display:none!important;
+}
 
-    .form-group {
-      margin-bottom: 15px;
-      display: flex;
-      flex-direction: column;
-    }
+.stats{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:24px;
+}
 
-    .form-group label {
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin-bottom: 5px;
-      color: #495057;
-    }
+.stat{
+  background:var(--card);
+  border:2px solid var(--line);
+  border-radius:28px;
+  padding:25px;
+}
 
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      padding: 10px;
-      border: 1px solid #ced4da;
-      border-radius: 6px;
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
+.stat span{
+  display:block;
+  color:var(--muted);
+  font-size:22px;
+  margin-bottom:18px;
+}
 
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      border-color: #0056b3;
-      box-shadow: 0 0 0 3px rgba(0,86,179,0.15);
-    }
+.stat strong{
+  color:var(--gold2);
+  font-size:38px;
+}
 
-    .form-group textarea {
-      resize: vertical;
-      min-height: 90px;
-    }
-  </style>
+.card{
+  background:var(--card);
+  border:2px solid var(--line);
+  border-radius:28px;
+  padding:28px;
+  margin-bottom:24px;
+}
+
+.summary{
+  line-height:2;
+  font-size:20px;
+}
+
+.summary b{
+  color:var(--gold2);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:18px;
+}
+
+label{
+  display:block;
+  color:var(--muted);
+  margin-bottom:7px;
+  font-size:15px;
+}
+
+input,select,textarea{
+  width:100%;
+  background:#090b0f;
+  color:white;
+  border:1px solid #363b45;
+  border-radius:14px;
+  padding:15px;
+  outline:none;
+}
+
+input:focus,select:focus,textarea:focus{
+  border-color:var(--gold);
+}
+
+textarea{
+  min-height:100px;
+  resize:vertical;
+}
+
+.btn{
+  border:0;
+  border-radius:14px;
+  padding:14px 18px;
+  background:var(--gold);
+  color:#08090a;
+  font-weight:800;
+  margin-top:15px;
+}
+
+.btn.secondary{
+  background:#242831;
+  color:white;
+}
+
+.btn.danger{
+  background:#541e23;
+  color:#ff9c9c;
+}
+
+.btn.green{
+  background:#19492e;
+  color:#79e5a3;
+}
+
+.btn.small{
+  padding:10px 13px;
+  font-size:14px;
+  margin:5px 4px 0 0;
+}
+
+.section-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  margin-bottom:20px;
+}
+
+.list{
+  display:flex;
+  flex-direction:column;
+  gap:15px;
+}
+
+.item{
+  background:var(--card2);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:20px;
+}
+
+.item-title{
+  font-size:21px;
+  font-weight:800;
+  margin-bottom:8px;
+}
+
+.muted{
+  color:var(--muted);
+}
+
+.badge{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  margin:3px 3px 3px 0;
+}
+
+.badge.active{
+  background:#173c27;
+  color:#74e29b;
+}
+
+.badge.inactive{
+  background:#3c2022;
+  color:#ff9696;
+}
+
+.badge.gold{
+  background:#3d3212;
+  color:var(--gold2);
+}
+
+.progress{
+  height:12px;
+  background:#252932;
+  border-radius:99px;
+  overflow:hidden;
+  margin:12px 0;
+}
+
+.progress div{
+  height:100%;
+  background:var(--gold);
+  width:0%;
+  transition:.25s;
+}
+
+.checklist{
+  margin-top:15px;
+}
+
+.check{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:9px 0;
+}
+
+.check input{
+  width:20px;
+  height:20px;
+}
+
+.bottom{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  height:91px;
+  background:#090b0e;
+  border-top:2px solid #252930;
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  z-index:20;
+}
+
+.nav{
+  background:none;
+  border:0;
+  color:#858b96;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:6px;
+  font-size:14px;
+}
+
+.nav .icon{
+  font-size:28px;
+}
+
+.nav.active{
+  color:var(--gold);
+}
+
+.empty{
+  padding:30px;
+  text-align:center;
+  color:var(--muted);
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.78);
+  z-index:50;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+}
+
+.modal-box{
+  width:100%;
+  max-width:700px;
+  max-height:92vh;
+  overflow:auto;
+  background:#111318;
+  border:1px solid #353a43;
+  border-radius:30px 30px 0 0;
+  padding:28px;
+}
+
+.close{
+  float:right;
+  border:0;
+  background:#292d35;
+  color:white;
+  border-radius:12px;
+  padding:8px 12px;
+}
+
+.photo{
+  width:100%;
+  max-height:250px;
+  object-fit:cover;
+  border-radius:15px;
+  margin-top:10px;
+}
+
+@media(max-width:650px){
+  .header{
+    padding:38px 34px 28px;
+  }
+
+  .brand h1{
+    font-size:42px;
+  }
+
+  .brand p{
+    font-size:17px;
+  }
+
+  .logo{
+    width:100px;
+    height:100px;
+  }
+
+  main{
+    padding:34px;
+  }
+
+  h2{
+    font-size:38px;
+  }
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  .stats{
+    gap:20px;
+  }
+
+  .stat{
+    padding:24px 20px;
+  }
+
+  .stat span{
+    font-size:19px;
+  }
+
+  .stat strong{
+    font-size:35px;
+  }
+}
+</style>
 </head>
+
 <body>
 
-  <div class="container" id="relatorio-conteudo">
-    <header>
-      <h1>🏗️ EDIFIQ - Vistoria Técnica</h1>
-      <div class="actions no-print" id="botoes-acao">
-        <button type="button" class="btn btn-primary" id="btn-exportar" onclick="exportarPDF()">
-          📄 Salvar PDF (Nuvem)
-        </button>
-        <button type="button" class="btn btn-danger" onclick="limparDados()">
-          🗑️ Limpar
-        </button>
-      </div>
-    </header>
+<header class="header">
+  <div class="brand">
+    <div class="logo">⌂</div>
+    <div>
+      <h1>EDIFIQ</h1>
+      <p>GESTÃO DE OBRAS E REFORMAS</p>
+    </div>
+  </div>
+</header>
 
-    <form id="edifiqForm">
-      <!-- Dados Gerais -->
-      <div class="section-title">Dados Gerais da Vistoria</div>
-      
-      <div class="grid-2">
-        <div class="form-group">
-          <label for="cliente">Cliente / Condomínio:</label>
-          <input type="text" id="cliente" name="cliente" placeholder="Nome do cliente ou condomínio">
-        </div>
+<main>
 
-        <div class="form-group">
-          <label for="data">Data da Vistoria:</label>
-          <input type="date" id="data" name="data">
-        </div>
-      </div>
+<!-- INÍCIO -->
+<section id="inicio" class="page">
+  <h2>Dashboard</h2>
 
-      <div class="grid-2">
-        <div class="form-group">
-          <label for="vistor">Responsável Técnico / Vistor:</label>
-          <input type="text" id="vistor" name="vistor" placeholder="Seu nome ou empresa">
-        </div>
+  <div class="stats">
+    <div class="stat">
+      <span>Obras</span>
+      <strong id="statObras">0</strong>
+    </div>
 
-        <div class="form-group">
-          <label for="local">Local / Endereço:</label>
-          <input type="text" id="local" name="local" placeholder="Endereço ou setor vistoriado">
-        </div>
-      </div>
+    <div class="stat">
+      <span>Em andamento</span>
+      <strong id="statAndamento">0</strong>
+    </div>
 
-      <!-- Detalhes do Edifício -->
-      <div class="section-title">Detalhes e Inspeção</div>
+    <div class="stat">
+      <span>Funcionários</span>
+      <strong id="statFuncionarios">0</strong>
+    </div>
 
-      <div class="grid-2">
-        <div class="form-group">
-          <label for="elemento">Elemento Analisado:</label>
-          <select id="elemento" name="elemento">
-            <option value="">Selecione...</option>
-            <option value="Estrutura">Estrutura</option>
-            <option value="Fachada">Fachada</option>
-            <option value="Cobertura / Telhado">Cobertura / Telhado</option>
-            <option value="Instalações Elétricas">Instalações Elétricas</option>
-            <option value="Instalações Hidráulicas">Instalações Hidráulicas</option>
-            <option value="Sistemas de Incêndio">Sistemas de Incêndio</option>
-            <option value="Outro">Outro</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="status">Status da Inspeção:</label>
-          <select id="status" name="status">
-            <option value="">Selecione...</option>
-            <option value="Conforme">Conforme</option>
-            <option value="Não Conforme">Não Conforme</option>
-            <option value="Atenção / Regular">Atenção / Regular</option>
-            <option value="Não Aplicável">Não Aplicável</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="observacoes">Descrição das Anomalias / Observações:</label>
-        <textarea id="observacoes" name="observacoes" placeholder="Descreva os achados da vistoria..."></textarea>
-      </div>
-
-      <div class="form-group">
-        <label for="recomendacoes">Recomendações de Ação:</label>
-        <textarea id="recomendacoes" name="recomendacoes" placeholder="Insira as ações corretivas recomendadas..."></textarea>
-      </div>
-    </form>
+    <div class="stat">
+      <span>Despesas</span>
+      <strong id="statDespesas">R$ 0,00</strong>
+    </div>
   </div>
 
-  <script>
-    const FORM_KEY = 'EDIFIQ_FORM_DATA';
-    const form = document.getElementById('edifiqForm');
+  <div class="card summary">
+    <h3>Resumo</h3>
+    Obras cadastradas: <b id="resObras">0</b><br>
+    Obras em andamento: <b id="resAndamento">0</b><br>
+    Funcionários ativos: <b id="resAtivos">0</b><br>
+    Funcionários inativos: <b id="resInativos">0</b><br>
+    Total de despesas: <b id="resDespesas">R$ 0,00</b>
+  </div>
+</section>
 
-    // Salvar dados no localStorage
-    function salvarDados() {
-      const formData = new FormData(form);
-      const data = {};
-      formData.forEach((value, key) => {
-        data[key] = value;
-      });
-      localStorage.setItem(FORM_KEY, JSON.stringify(data));
-    }
 
-    // Carregar dados salvos
-    function carregarDados() {
-      const savedData = localStorage.getItem(FORM_KEY);
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        Object.keys(data).forEach(key => {
-          const field = form.elements[key];
-          if (field) {
-            field.value = data[key];
+<!-- OBRAS -->
+<section id="obras" class="page hidden">
+  <div class="section-title">
+    <h2>Obras</h2>
+    <button class="btn" onclick="abrirNovaObra()">+ Nova obra</button>
+  </div>
+
+  <div id="listaObras" class="list"></div>
+</section>
+
+
+<!-- EQUIPE -->
+<section id="equipe" class="page hidden">
+  <div class="section-title">
+    <h2>Equipe</h2>
+    <button class="btn" onclick="abrirNovoFuncionario()">+ Funcionário</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <span>Ativos</span>
+      <strong id="equipeAtivos">0</strong>
+    </div>
+
+    <div class="stat">
+      <span>Inativos</span>
+      <strong id="equipeInativos">0</strong>
+    </div>
+  </div>
+
+  <br>
+
+  <div id="listaFuncionarios" class="list"></div>
+</section>
+
+
+<!-- FINANCEIRO -->
+<section id="financeiro" class="page hidden">
+  <div class="section-title">
+    <h2>Financeiro</h2>
+    <button class="btn" onclick="abrirNovaDespesa()">+ Despesa</button>
+  </div>
+
+  <div class="card">
+    <h3>Total de despesas</h3>
+    <strong id="financeTotal" style="font-size:38px;color:var(--gold2)">
+      R$ 0,00
+    </strong>
+  </div>
+
+  <div id="listaDespesas" class="list"></div>
+</section>
+
+
+<!-- CONFIG -->
+<section id="config" class="page hidden">
+  <h2>Config.</h2>
+
+  <div class="card">
+    <h3>EDIFIQ</h3>
+    <p class="muted">
+      Gestão de Obras e Reformas
+    </p>
+
+    <button class="btn secondary" onclick="exportarDados()">
+      Exportar dados
+    </button>
+
+    <button class="btn danger" onclick="limparDados()">
+      Limpar dados locais
+    </button>
+  </div>
+</section>
+
+</main>
+
+
+<!-- MENU -->
+<nav class="bottom">
+  <button class="nav active" onclick="pagina('inicio',this)">
+    <span class="icon">⌂</span>
+    <span>Início</span>
+  </button>
+
+  <button class="nav" onclick="pagina('obras',this)">
+    <span class="icon">🏗️</span>
+    <span>Obras</span>
+  </button>
+
+  <button class="nav" onclick="pagina('equipe',this)">
+    <span class="icon">👷</span>
+    <span>Equipe</span>
+  </button>
+
+  <button class="nav" onclick="pagina('financeiro',this)">
+    <span class="icon">💰</span>
+    <span>Financeiro</span>
+  </button>
+
+  <button class="nav" onclick="pagina('config',this)">
+    <span class="icon">⚙️</span>
+    <span>Config.</span>
+  </button>
+</nav>
+
+
+<!-- MODAL -->
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <button class="close" onclick="fecharModal()">✕</button>
+    <div id="modalConteudo"></div>
+  </div>
+</div>
+
+
+<script>
+
+const DB_KEY="EDIFIQ_DB_V2";
+
+let db=JSON.parse(localStorage.getItem(DB_KEY)) || {
+  obras:[],
+  funcionarios:[],
+  despesas:[],
+  diarios:[]
+};
+
+function salvar(){
+  localStorage.setItem(DB_KEY,JSON.stringify(db));
+  atualizar();
+}
+
+function dinheiro(v){
+  return Number(v||0).toLocaleString("pt-BR",{
+    style:"currency",
+    currency:"BRL"
+  });
+}
+
+function id(){
+  return Date.now().toString(36)+Math.random().toString(36).slice(2);
+}
+
+function pagina(nome,btn){
+  document.querySelectorAll(".page").forEach(p=>{
+    p.classList.add("hidden");
+  });
+
+  document.getElementById(nome).classList.remove("hidden");
+
+  document.querySelectorAll(".nav").forEach(n=>{
+    n.classList.remove("active");
+  });
+
+  btn.classList.add("active");
+
+  atualizar();
+}
+
+function abrirModal(html){
+  document.getElementById("modalConteudo").innerHTML=html;
+  document.getElementById("modal").classList.remove("hidden");
+}
+
+function fecharModal(){
+  document.getElementById("modal").classList.add("hidden");
+}
+
+
+/* =========================
+   OBRAS
+========================= */
+
+function abrirNovaObra(){
+
+  abrirModal(`
+    <h2>Nova obra</h2>
+
+    <label>Nome da obra</label>
+    <input id="obraNome" placeholder="Ex.: Reforma da casa do cliente">
+
+    <label style="margin-top:15px">Cliente</label>
+    <input id="obraCliente" placeholder="Nome do cliente">
+
+    <label style="margin-top:15px">Endereço</label>
+    <input id="obraEndereco" placeholder="Endereço da obra">
+
+    <label style="margin-top:15px">Status</label>
+    <select id="obraStatus">
+      <option value="andamento">Em andamento</option>
+      <option value="pausada">Pausada</option>
+      <option value="concluida">Concluída</option>
+    </select>
+
+    <button class="btn" onclick="salvarObra()">
+      Salvar obra
+    </button>
+  `);
+}
+
+function salvarObra(){
+
+  const nome=document.getElementById("obraNome").value.trim();
+
+  if(!nome){
+    alert("Informe o nome da obra.");
+    return;
+  }
+
+  db.obras.push({
+    id:id(),
+    nome,
+    cliente:document.getElementById("obraCliente").value,
+    endereco:document.getElementById("obraEndereco").value,
+    status:document.getElementById("obraStatus").value,
+    checklist:[
+      {nome:"Planejamento",feito:false},
+      {nome:"Preparação",feito:false},
+      {nome:"Execução",feito:false},
+      {nome:"Acabamento",feito:false},
+      {nome:"Finalização",feito:false}
+    ],
+    fotos:[]
+  });
+
+  salvar();
+  fecharModal();
+}
+
+function progressoObra(obra){
+
+  if(!obra.checklist?.length) return 0;
+
+  const feitos=obra.checklist.filter(x=>x.feito).length;
+
+  return Math.round((feitos/obra.checklist.length)*100);
+}
+
+function abrirObra(obraId){
+
+  const obra=db.obras.find(x=>x.id===obraId);
+
+  if(!obra)return;
+
+  const progresso=progressoObra(obra);
+
+  abrirModal(`
+    <h2>${escapeHtml(obra.nome)}</h2>
+
+    <p class="muted">
+      Cliente: ${escapeHtml(obra.cliente||"Não informado")}<br>
+      ${escapeHtml(obra.endereco||"")}
+    </p>
+
+    <span class="badge gold">
+      Progresso: ${progresso}%
+    </span>
+
+    <div class="progress">
+      <div style="width:${progresso}%"></div>
+    </div>
+
+    <h3>Checklist da obra</h3>
+
+    <div class="checklist">
+      ${obra.checklist.map((c,i)=>`
+        <label class="check">
+          <input
+            type="checkbox"
+            ${c.feito?"checked":""}
+            onchange="alterarChecklist('${obra.id}',${i},this.checked)"
+          >
+          ${escapeHtml(c.nome)}
+        </label>
+      `).join("")}
+    </div>
+
+    <h3 style="margin-top:25px">
+      Funcionários nesta obra
+    </h3>
+
+    <div class="list">
+      ${
+        db.funcionarios.filter(f=>f.obraId===obra.id).length
+        ?
+        db.funcionarios.filter(f=>f.obraId===obra.id).map(f=>`
+          <div class="item">
+            <b>${escapeHtml(f.nome)}</b><br>
+            <span class="muted">${escapeHtml(f.funcao)}</span>
+          </div>
+        `).join("")
+        :
+        `<div class="empty">Nenhum funcionário vinculado.</div>`
+      }
+    </div>
+
+    <button class="btn danger"
+      onclick="excluirObra('${obra.id}')">
+      Excluir obra
+    </button>
+  `);
+}
+
+function alterarChecklist(obraId,index,valor){
+
+  const obra=db.obras.find(x=>x.id===obraId);
+
+  if(!obra)return;
+
+  obra.checklist[index].feito=valor;
+
+  salvar();
+
+  abrirObra(obraId);
+}
+
+function excluirObra(obraId){
+
+  if(!confirm("Excluir esta obra?"))return;
+
+  db.obras=db.obras.filter(x=>x.id!==obraId);
+
+  db.funcionarios.forEach(f=>{
+    if(f.obraId===obraId) f.obraId="";
+  });
+
+  salvar();
+  fecharModal();
+}
+
+
+/* =========================
+   FUNCIONÁRIOS
+========================= */
+
+function abrirNovoFuncionario(){
+
+  const options=db.obras.map(o=>
+    `<option value="${o.id}">
+      ${escapeHtml(o.nome)}
+    </option>`
+  ).join("");
+
+  abrirModal(`
+    <h2>Novo funcionário</h2>
+
+    <label>Nome</label>
+    <input id="funcNome" placeholder="Nome do funcionário">
+
+    <label style="margin-top:15px">Função</label>
+    <input id="funcFuncao" placeholder="Ex.: Pedreiro">
+
+    <label style="margin-top:15px">Obra</label>
+    <select id="funcObra">
+      <option value="">Sem obra definida</option>
+      ${options}
+    </select>
+
+    <label style="margin-top:15px">
+      Registrar diária?
+    </label>
+
+    <select id="funcDiaria">
+      <option value="sim">Sim</option>
+      <option value="nao">Não</option>
+    </select>
+
+    <label style="margin-top:15px">
+      Status
+    </label>
+
+    <select id="funcStatus">
+      <option value="ativo">Ativo</option>
+      <option value="inativo">Inativo</option>
+    </select>
+
+    <button class="btn" onclick="salvarFuncionario()">
+      Salvar funcionário
+    </button>
+  `);
+}
+
+function salvarFuncionario(){
+
+  const nome=document.getElementById("funcNome").value.trim();
+
+  if(!nome){
+    alert("Informe o nome do funcionário.");
+    return;
+  }
+
+  db.funcionarios.push({
+    id:id(),
+    nome,
+    funcao:document.getElementById("funcFuncao").value,
+    obraId:document.getElementById("funcObra").value,
+    registrarDiaria:document.getElementById("funcDiaria").value==="sim",
+    status:document.getElementById("funcStatus").value,
+    criadoEm:new Date().toISOString()
+  });
+
+  salvar();
+  fecharModal();
+}
+
+function editarFuncionario(funcId){
+
+  const f=db.funcionarios.find(x=>x.id===funcId);
+
+  if(!f)return;
+
+  const options=db.obras.map(o=>
+    `<option value="${o.id}" ${f.obraId===o.id?"selected":""}>
+      ${escapeHtml(o.nome)}
+    </option>`
+  ).join("");
+
+  abrirModal(`
+    <h2>Editar funcionário</h2>
+
+    <label>Nome</label>
+    <input id="funcNome" value="${escapeAttr(f.nome)}">
+
+    <label style="margin-top:15px">Função</label>
+    <input id="funcFuncao" value="${escapeAttr(f.funcao||"")}">
+
+    <label style="margin-top:15px">Obra</label>
+    <select id="funcObra">
+      <option value="">Sem obra definida</option>
+      ${options}
+    </select>
+
+    <label style="margin-top:15px">
+      Registrar diária?
+    </label>
+
+    <select id="funcDiaria">
+      <option value="sim" ${f.registrarDiaria?"selected":""}>Sim</option>
+      <option value="nao" ${!f.registrarDiaria?"selected":""}>Não</option>
+    </select>
+
+    <label style="margin-top:15px">
+      Status
+    </label>
+
+    <select id="funcStatus">
+      <option value="ativo" ${f.status==="ativo"?"selected":""}>
+        Ativo
+      </option>
+      <option value="inativo" ${f.status==="inativo"?"selected":""}>
+        Inativo
+      </option>
+    </select>
+
+    <button class="btn" onclick="atualizarFuncionario('${f.id}')">
+      Salvar alterações
+    </button>
+
+    <button class="btn danger"
+      onclick="excluirFuncionario('${f.id}')">
+      Excluir funcionário
+    </button>
+  `);
+}
+
+function atualizarFuncionario(funcId){
+
+  const f=db.funcionarios.find(x=>x.id===funcId);
+
+  if(!f)return;
+
+  f.nome=document.getElementById("funcNome").value.trim();
+  f.funcao=document.getElementById("funcFuncao").value;
+  f.obraId=document.getElementById("funcObra").value;
+  f.registrarDiaria=document.getElementById("funcDiaria").value==="sim";
+  f.status=document.getElementById("funcStatus").value;
+
+  salvar();
+  fecharModal();
+}
+
+function excluirFuncionario(funcId){
+
+  if(!confirm("Excluir este funcionário?"))return;
+
+  db.funcionarios=db.funcionarios.filter(x=>x.id!==funcId);
+
+  salvar();
+  fecharModal();
+}
+
+
+/* =========================
+   REGISTRAR DIÁRIA
+========================= */
+
+function registrarDiaria(funcId){
+
+  const f=db.funcionarios.find(x=>x.id===funcId);
+
+  if(!f)return;
+
+  if(!f.registrarDiaria){
+    alert("Este funcionário está configurado para NÃO registrar diária.");
+    return;
+  }
+
+  const obra=db.obras.find(o=>o.id===f.obraId);
+
+  const data=new Date().toLocaleDateString("pt-BR");
+
+  const jaExiste=db.diarios.some(d=>
+    d.funcionarioId===funcId &&
+    d.data===data
+  );
+
+  if(jaExiste){
+    alert("A diária de hoje já foi registrada.");
+    return;
+  }
+
+  db.diarios.push({
+    id:id(),
+    funcionarioId:funcId,
+    obraId:f.obraId||"",
+    data,
+    valor:0
+  });
+
+  salvar();
+
+  alert(
+    "Diária registrada para "+f.nome+
+    (obra ? "\nObra: "+obra.nome : "")
+  );
+}
+
+
+/* =========================
+   LISTA FUNCIONÁRIOS
+========================= */
+
+function renderFuncionarios(){
+
+  const el=document.getElementById("listaFuncionarios");
+
+  if(!db.funcionarios.length){
+    el.innerHTML=`<div class="card empty">
+      Nenhum funcionário cadastrado.
+    </div>`;
+    return;
+  }
+
+  el.innerHTML=db.funcionarios.map(f=>{
+
+    const obra=db.obras.find(o=>o.id===f.obraId);
+
+    return `
+      <div class="item">
+
+        <div class="item-title">
+          ${escapeHtml(f.nome)}
+        </div>
+
+        <div class="muted">
+          ${escapeHtml(f.funcao||"Função não definida")}
+        </div>
+
+        <div style="margin-top:10px">
+
+          <span class="badge ${f.status==="ativo"?"active":"inactive"}">
+            ${f.status==="ativo"?"ATIVO":"INATIVO"}
+          </span>
+
+          ${
+            f.registrarDiaria
+            ?
+            `<span class="badge gold">
+              REGISTRA DIÁRIA
+            </span>`
+            :
+            `<span class="badge inactive">
+              NÃO REGISTRAR DIÁRIA
+            </span>`
           }
-        });
-      }
-    }
 
-    // Exportação real para PDF
-    async function exportarPDF() {
-      salvarDados();
+        </div>
 
-      const btn = document.getElementById('btn-exportar');
-      const botoesAcao = document.getElementById('botoes-acao');
-      const elementoHTML = document.getElementById('relatorio-conteudo');
+        <p class="muted">
+          🏗️ Obra:
+          <b style="color:white">
+            ${obra ? escapeHtml(obra.nome) : "Nenhuma obra selecionada"}
+          </b>
+        </p>
 
-      // Oculta os botões temporariamente para não saírem no PDF
-      botoesAcao.style.display = 'none';
-      btn.innerText = "⏳ Gerando PDF...";
+        ${
+          f.registrarDiaria
+          ?
+          `<button
+            class="btn green small"
+            onclick="registrarDiaria('${f.id}')">
+            ✓ Registrar Diária
+          </button>`
+          :
+          ``
+        }
 
-      // Nome dinâmico do arquivo com o cliente e a data
-      const cliente = document.getElementById('cliente').value || 'Vistoria';
-      const dataVistoria = document.getElementById('data').value || new Date().toISOString().split('T')[0];
-      const nomeArquivo = `EDIFIQ_${cliente.replace(/[^a-zA-Z0-0]/g, '_')}_${dataVistoria}.pdf`;
+        <button
+          class="btn secondary small"
+          onclick="editarFuncionario('${f.id}')">
+          Editar
+        </button>
 
-      // Configurações do arquivo PDF
-      const opcoes = {
-        margin: [10, 10, 10, 10],
-        filename: nomeArquivo,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
+      </div>
+    `;
+  }).join("");
+}
 
-      try {
-        // Gera e faz o download do arquivo PDF
-        await html2pdf().set(opcoes).from(elementoHTML).save();
-        alert("✅ PDF gerado com sucesso! Salve o arquivo na sua pasta do Google Drive ou iCloud.");
-      } catch (erro) {
-        console.error("Erro ao gerar PDF:", erro);
-        alert("❌ Ocorreu um erro ao gerar o PDF.");
-      } finally {
-        // Restaura a exibição dos botões
-        botoesAcao.style.display = 'flex';
-        btn.innerText = "📄 Salvar PDF (Nuvem)";
-      }
-    }
 
-    // Limpar o formulário
-    function limparDados() {
-      if (confirm("Tem certeza que deseja limpar todos os dados preenchidos?")) {
-        form.reset();
-        localStorage.removeItem(FORM_KEY);
-      }
-    }
+/* =========================
+   FINANCEIRO
+========================= */
 
-    // Auto-salvamento ao preencher os campos
-    form.addEventListener('input', salvarDados);
+function abrirNovaDespesa(){
 
-    // Carrega os dados salvos quando a página abre
-    document.addEventListener('DOMContentLoaded', carregarDados);
-  </script>
+  const options=db.obras.map(o=>
+    `<option value="${o.id}">
+      ${escapeHtml(o.nome)}
+    </option>`
+  ).join("");
+
+  abrirModal(`
+    <h2>Nova despesa</h2>
+
+    <label>Descrição</label>
+    <input id="despDesc" placeholder="Ex.: Material de obra">
+
+    <label style="margin-top:15px">Valor</label>
+    <input id="despValor" type="number" step="0.01" placeholder="0,00">
+
+    <label style="margin-top:15px">Obra</label>
+    <select id="despObra">
+      <option value="">Sem obra</option>
+      ${options}
+    </select>
+
+    <button class="btn" onclick="salvarDespesa()">
+      Salvar despesa
+    </button>
+  `);
+}
+
+function salvarDespesa(){
+
+  const valor=Number(document.getElementById("despValor").value);
+
+  if(!valor){
+    alert("Informe o valor.");
+    return;
+  }
+
+  db.despesas.push({
+    id:id(),
+    descricao:document.getElementById("despDesc").value,
+    valor,
+    obraId:document.getElementById("despObra").value,
+    data:new Date().toLocaleDateString("pt-BR")
+  });
+
+  salvar();
+  fecharModal();
+}
+
+function excluirDespesa(idDesp){
+
+  if(!confirm("Excluir esta despesa?"))return;
+
+  db.despesas=db.despesas.filter(x=>x.id!==idDesp);
+
+  salvar();
+}
+
+function renderDespesas(){
+
+  const el=document.getElementById("listaDespesas");
+
+  if(!db.despesas.length){
+    el.innerHTML=`<div class="card empty">
+      Nenhuma despesa cadastrada.
+    </div>`;
+    return;
+  }
+
+  el.innerHTML=db.despesas.map(d=>{
+
+    const obra=db.obras.find(o=>o.id===d.obraId);
+
+    return `
+      <div class="item">
+
+        <div class="item-title">
+          ${escapeHtml(d.descricao||"Despesa")}
+        </div>
+
+        <div style="font-size:25px;color:var(--gold2);font-weight:800">
+          ${dinheiro(d.valor)}
+        </div>
+
+        <p class="muted">
+          ${d.data}
+          ${obra ? " • "+escapeHtml(obra.nome) : ""}
+        </p>
+
+        <button
+          class="btn danger small"
+          onclick="excluirDespesa('${d.id}')">
+          Excluir
+        </button>
+
+      </div>
+    `;
+  }).join("");
+}
+
+
+/* =========================
+   RENDER OBRAS
+========================= */
+
+function renderObras(){
+
+  const el=document.getElementById("listaObras");
+
+  if(!db.obras.length){
+    el.innerHTML=`<div class="card empty">
+      Nenhuma obra cadastrada.
+    </div>`;
+    return;
+  }
+
+  el.innerHTML=db.obras.map(o=>{
+
+    const p=progressoObra(o);
+
+    return `
+      <div class="item">
+
+        <div class="item-title">
+          ${escapeHtml(o.nome)}
+        </div>
+
+        <div class="muted">
+          Cliente: ${escapeHtml(o.cliente||"Não informado")}
+        </div>
+
+        <span class="badge gold">
+          ${p}% concluída
+        </span>
+
+        <div class="progress">
+          <div style="width:${p}%"></div>
+        </div>
+
+        <button
+          class="btn small"
+          onclick="abrirObra('${o.id}')">
+          Abrir obra
+        </button>
+
+      </div>
+    `;
+  }).join("");
+}
+
+
+/* =========================
+   DASHBOARD
+========================= */
+
+function atualizar(){
+
+  const obras=db.obras.length;
+
+  const andamento=db.obras.filter(
+    o=>o.status==="andamento"
+  ).length;
+
+  const ativos=db.funcionarios.filter(
+    f=>f.status==="ativo"
+  ).length;
+
+  const inativos=db.funcionarios.filter(
+    f=>f.status==="inativo"
+  ).length;
+
+  const total=db.despesas.reduce(
+    (s,d)=>s+Number(d.valor||0),0
+  );
+
+  document.getElementById("statObras").textContent=obras;
+  document.getElementById("statAndamento").textContent=andamento;
+  document.getElementById("statFuncionarios").textContent=ativos;
+  document.getElementById("statDespesas").textContent=dinheiro(total);
+
+  document.getElementById("resObras").textContent=obras;
+  document.getElementById("resAndamento").textContent=andamento;
+  document.getElementById("resAtivos").textContent=ativos;
+  document.getElementById("resInativos").textContent=inativos;
+  document.getElementById("resDespesas").textContent=dinheiro(total);
+
+  document.getElementById("equipeAtivos").textContent=ativos;
+  document.getElementById("equipeInativos").textContent=inativos;
+
+  document.getElementById("financeTotal").textContent=dinheiro(total);
+
+  renderObras();
+  renderFuncionarios();
+  renderDespesas();
+}
+
+
+/* =========================
+   EXPORTAÇÃO
+========================= */
+
+function exportarDados(){
+
+  const arquivo={
+    aplicativo:"EDIFIQ",
+    exportadoEm:new Date().toISOString(),
+    dados:db
+  };
+
+  const blob=new Blob(
+    [JSON.stringify(arquivo,null,2)],
+    {type:"application/json"}
+  );
+
+  const url=URL.createObjectURL(blob);
+
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="edifiq-backup.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function limparDados(){
+
+  if(!confirm(
+    "ATENÇÃO: isso apagará os dados salvos neste aparelho. Continuar?"
+  ))return;
+
+  localStorage.removeItem(DB_KEY);
+
+  location.reload();
+}
+
+
+/* =========================
+   SEGURANÇA DE TEXTO
+========================= */
+
+function escapeHtml(value){
+
+  return String(value??"")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function escapeAttr(value){
+  return escapeHtml(value);
+}
+
+
+/* =========================
+   INICIALIZAÇÃO
+========================= */
+
+atualizar();
+
+</script>
 
 </body>
 </html>
