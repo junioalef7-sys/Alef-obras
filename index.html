@@ -6,428 +6,202 @@
 <title>EDIFIQ - Gestão de Obras</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-:root { --fundo: #0f1115; --card: #1a1d23; --dourado: #d4af37; --texto: #f0f0f0; --verde: #28a745; --vermelho: #dc3545; }
-body { background: var(--fundo); color: var(--texto); min-height: 100vh; }
-
-/* LOGIN */
-.tela-login { position: fixed; top:0; left:0; width:100%; height:100%; background: #0f1115; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; }
-.login-box { background: var(--card); padding:30px; border-radius:12px; border:2px solid var(--dourado); width:90%; max-width:350px; }
-.login-box h1 { text-align:center; color:var(--dourado); margin-bottom:20px; font-size:28px; }
-.login-box input { width:100%; padding:12px; margin:8px 0; border-radius:6px; border:1px solid #444; background:#0f1115; color:white; font-size:15px; }
-.btn-login { width:100%; padding:12px; background:var(--dourado); color:black; border:none; border-radius:6px; font-weight:bold; font-size:16px; margin-top:10px; cursor:pointer; }
-.erro { color:var(--vermelho); text-align:center; margin-top:10px; display:none; }
-
-/* CABEÇALHO */
-.header { background:var(--card); padding:15px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--dourado); }
-.header h1 { color:var(--dourado); font-size:20px; }
-.btn-sair { background:var(--vermelho); color:white; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; }
-
-/* CONTEÚDO */
-main { padding:20px; padding-bottom:80px; display:none; }
-.pagina { display:none; }
-.pagina.ativa { display:block; }
-h2 { font-size:22px; margin-bottom:20px; color:var(--dourado); }
-.card { background:var(--card); padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #333; }
-input { width:100%; padding:10px; margin:6px 0; border-radius:6px; border:1px solid #444; background:#0f1115; color:white; font-size:15px; }
-.btn { padding:10px 15px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:14px; margin:4px; }
-.btn.dourado { background:var(--dourado); color:black; }
-.btn.verde { background:var(--verde); color:white; }
-.btn.vermelho { background:var(--vermelho); color:white; }
-.lista { margin-top:15px; }
-.item { background:#252830; padding:12px; border-radius:8px; margin-bottom:10px; border-left:3px solid var(--dourado); }
-.sucesso { position:fixed; top:15px; left:50%; transform:translateX(-50%); background:var(--verde); color:white; padding:10px 20px; border-radius:6px; font-weight:bold; z-index:9999; display:none; }
-
-/* MENU */
-.menu-inferior { position:fixed; bottom:0; left:0; right:0; background:var(--card); display:grid; grid-template-columns:repeat(4,1fr); border-top:2px solid var(--dourado); }
-.menu-btn { background:none; border:none; color:#888; padding:12px; display:flex; flex-direction:column; align-items:center; cursor:pointer; font-size:11px; }
-.menu-btn.ativo { color:var(--dourado); }
-
-/* MODAL */
-.overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:none; align-items:center; justify-content:center; z-index:999; padding:20px; }
-.modal { background:var(--card); padding:20px; border-radius:10px; width:100%; max-width:350px; border:2px solid var(--dourado); }
-.fechar { float:right; background:none; border:none; color:white; font-size:24px; cursor:pointer; margin-top:-5px; }
+body { background: #121212; color: #fff; min-height: 100vh; padding: 20px; }
+h1 { color: #d4af37; text-align: center; margin: 20px 0; }
+.caixa { background: #1e1e1e; padding: 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; }
+input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: none; background: #2a2a2a; color: white; font-size: 16px; }
+button { padding: 12px 20px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin: 5px; }
+.btn-verde { background: #28a745; color: white; }
+.btn-dourado { background: #d4af37; color: black; }
+.btn-vermelho { background: #dc3545; color: white; }
+.item { background: #2a2a2a; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #d4af37; }
+.sucesso { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 15px 25px; border-radius: 8px; font-weight: bold; display: none; z-index: 9999; }
+.erro { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #dc3545; color: white; padding: 15px 25px; border-radius: 8px; font-weight: bold; display: none; z-index: 9999; }
+.tela-login { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; }
+.escondido { display: none !important; }
 </style>
 </head>
 <body>
 
-<!-- MENSAGEM DE SALVO -->
-<div class="sucesso" id="msgSalvo">✅ SALVO COM SUCESSO!</div>
+<!-- MENSAGENS -->
+<div class="sucesso" id="msgOk">✅ SALVO COM SUCESSO!</div>
+<div class="erro" id="msgErro">❌ ERRO AO SALVAR!</div>
 
 <!-- TELA DE LOGIN -->
 <div class="tela-login" id="telaLogin">
-  <div class="login-box">
+  <div class="caixa" style="width: 90%; max-width: 350px;">
     <h1>EDIFIQ</h1>
-    <input type="text" id="usuario" placeholder="Usuário">
-    <input type="password" id="senha" placeholder="Senha">
-    <div class="erro" id="erroLogin">Usuário ou senha incorretos!</div>
-    <button class="btn-login" onclick="entrar()">ENTRAR</button>
-    <p style="text-align:center; margin-top:15px; font-size:12px; color:#888;">Usuário: admin | Senha: 1234</p>
+    <input type="text" id="user" placeholder="Usuário">
+    <input type="password" id="pass" placeholder="Senha">
+    <button class="btn-dourado" style="width: 100%;" onclick="entrar()">ENTRAR</button>
+    <p style="text-align:center; margin-top:15px; color:#888; font-size:14px;">admin / 1234</p>
   </div>
 </div>
 
-<!-- CABEÇALHO -->
-<header class="header" id="cabecalho" style="display:none;">
-  <h1>EDIFIQ</h1>
-  <button class="btn-sair" onclick="sair()">SAIR</button>
-</header>
+<!-- CONTEÚDO PRINCIPAL -->
+<div id="app" class="escondido">
+  <h1>🏗️ EDIFIQ</h1>
+  <button class="btn-vermelho" style="position:fixed; top:15px; right:15px;" onclick="sair()">SAIR</button>
 
-<!-- CONTEÚDO -->
-<main id="conteudo">
-  <!-- OBRAS -->
-  <div class="pagina ativa" id="pagObras">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h2>🏗️ Obras</h2>
-      <button class="btn verde" onclick="abrirModalObra()">+ Nova Obra</button>
-    </div>
-    <div class="lista" id="listaObras"></div>
+  <!-- ÁREA DE OBRAS -->
+  <div class="caixa">
+    <h2>Nova Obra</h2>
+    <input type="text" id="nomeObra" placeholder="Nome da Obra">
+    <input type="text" id="clienteObra" placeholder="Cliente">
+    <input type="number" step="0.01" id="valorObra" placeholder="Valor R$">
+    <button class="btn-verde" onclick="salvarObra()">💾 SALVAR OBRA</button>
   </div>
 
-  <!-- EQUIPE -->
-  <div class="pagina" id="pagEquipe">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h2>👷 Equipe</h2>
-      <button class="btn verde" onclick="abrirModalFunc()">+ Funcionário</button>
-    </div>
-    <div class="lista" id="listaFunc"></div>
+  <!-- LISTA DE OBRAS -->
+  <div class="caixa">
+    <h2>Obras Cadastradas</h2>
+    <div id="listaObras"></div>
   </div>
 
-  <!-- FINANCEIRO -->
-  <div class="pagina" id="pagFin">
-    <h2>💰 Financeiro</h2>
-    <button class="btn verde" onclick="abrirModalDesp()">+ Despesa</button>
-    <div class="lista" id="listaDesp"></div>
+  <!-- TESTE DE SALVAMENTO -->
+  <div class="caixa">
+    <h2>🔧 Teste de Salvamento</h2>
+    <button class="btn-dourado" onclick="testar()">Clique para testar se salva</button>
+    <p id="resultadoTeste" style="margin-top:10px; font-weight:bold;"></p>
   </div>
-
-  <!-- DADOS -->
-  <div class="pagina" id="pagDados">
-    <h2>💾 Meus Dados</h2>
-    <div class="card">
-      <p style="margin-bottom:10px;">Seus dados são salvos automaticamente no navegador.</p>
-      <button class="btn dourado" onclick="baixarBackup()">📥 Baixar Backup</button>
-      <button class="btn vermelho" onclick="apagarTudo()">🗑️ Apagar Tudo</button>
-    </div>
-    <div class="card" style="margin-top:20px;">
-      <h3 style="margin-bottom:10px;">🔧 Teste de Salvamento</h3>
-      <p id="testeSalvamento">Clique abaixo para testar se o salvamento funciona:</p>
-      <button class="btn dourado" onclick="testarSalvamento()">🧪 Testar Agora</button>
-    </div>
-  </div>
-</main>
-
-<!-- MENU INFERIOR -->
-<nav class="menu-inferior" id="menuInferior" style="display:none;">
-  <button class="menu-btn ativo" onclick="irPara('pagObras', this)">🏗️ Obras</button>
-  <button class="menu-btn" onclick="irPara('pagEquipe', this)">👷 Equipe</button>
-  <button class="menu-btn" onclick="irPara('pagFin', this)">💰 Finanças</button>
-  <button class="menu-btn" onclick="irPara('pagDados', this)">💾 Dados</button>
-</nav>
-
-<!-- MODAL -->
-<div class="overlay" id="modalOverlay" onclick="fecharModal()">
-  <div class="modal" id="modalConteudo" onclick="event.stopPropagation()"></div>
 </div>
 
 <script>
 // ==========================================
-// SALVAMENTO — FUNÇÃO SIMPLES E DIRETA
+// FUNÇÃO DE SALVAR — SIMPLES E DIRETA
 // ==========================================
-const CHAVE = "EDIFIQ_DADOS_SIMPLES";
+const CHAVE = "EDIFIQ_2026_FINAL";
 
-// CARREGAR — RODA AO ABRIR
-let dados = { obras: [], funcionarios: [], despesas: [] };
+// DADOS
+let dados = { obras: [] };
 
-function carregarDados() {
+// CARREGAR AO ABRIR
+function carregar() {
   try {
-    const salvos = localStorage.getItem(CHAVE);
-    if (salvos) {
-      dados = JSON.parse(salvos);
-      console.log("✅ Dados carregados com sucesso!");
-    } else {
-      console.log("ℹ️ Nenhum dado salvo ainda — pronto para salvar.");
+    const temp = localStorage.getItem(CHAVE);
+    if (temp) {
+      dados = JSON.parse(temp);
+      console.log("✅ Dados carregados:", dados);
     }
-  } catch (erro) {
-    console.error("❌ Erro ao carregar:", erro);
-    dados = { obras: [], funcionarios: [], despesas: [] };
+  } catch (e) {
+    console.log("Erro ao carregar:", e);
+    dados = { obras: [] };
   }
+  atualizarLista();
 }
 
-// SALVAR — A FUNÇÃO MAIS IMPORTANTE
-function salvarDados() {
+// SALVAR — A FUNÇÃO PRINCIPAL
+function salvar() {
   try {
     localStorage.setItem(CHAVE, JSON.stringify(dados));
-    console.log("💾 SALVO NO NAVEGADOR:", dados);
+    console.log("💾 SALVO:", dados);
     // MOSTRA MENSAGEM DE SUCESSO
-    const msg = document.getElementById("msgSalvo");
-    msg.style.display = "block";
-    setTimeout(() => { msg.style.display = "none"; }, 2000);
-    atualizarTela();
+    document.getElementById("msgOk").style.display = "block";
+    setTimeout(() => { document.getElementById("msgOk").style.display = "none"; }, 2500);
     return true;
-  } catch (erro) {
-    console.error("❌ ERRO AO SALVAR:", erro);
-    alert("❌ NÃO FOI POSSÍVEL SALVAR!\n\nVerifique se o navegador permite salvar dados.\n(Configurações > Privacidade > Permitir cookies)");
+  } catch (e) {
+    console.log("❌ ERRO AO SALVAR:", e);
+    document.getElementById("msgErro").style.display = "block";
+    setTimeout(() => { document.getElementById("msgErro").style.display = "none"; }, 3000);
+    alert("ERRO: O navegador está bloqueando o salvamento!\n\nUse o Chrome normal, NÃO o modo anônimo.");
     return false;
   }
 }
 
-// TESTE DE SALVAMENTO — PARA CONFIRMAR QUE FUNCIONA
-function testarSalvamento() {
-  const teste = { data: new Date().toLocaleString("pt-BR") };
-  localStorage.setItem("TESTE_EDIFIQ", JSON.stringify(teste));
+// TESTE DE SALVAMENTO
+function testar() {
+  const agora = new Date().toLocaleString("pt-BR");
+  localStorage.setItem("TESTE_EDIFIQ", agora);
   const lido = localStorage.getItem("TESTE_EDIFIQ");
   
   if (lido) {
-    document.getElementById("testeSalvamento").innerHTML = 
-      "✅ <strong>SALVAMENTO FUNCIONANDO PERFEITAMENTE!</strong><br>Teste feito em: " + teste.data;
+    document.getElementById("resultadoTeste").innerHTML = 
+      "✅ SALVAMENTO FUNCIONA! ✅<br>Teste: " + lido;
+    document.getElementById("resultadoTeste").style.color = "#28a745";
   } else {
-    document.getElementById("testeSalvamento").innerHTML = 
-      "❌ <strong>SALVAMENTO NÃO FUNCIONA!</strong><br>Verifique as configurações do navegador.";
+    document.getElementById("resultadoTeste").innerHTML = 
+      "❌ NÃO SALVA! ❌<br>Use navegador normal (não anônimo) e libere cookies.";
+    document.getElementById("resultadoTeste").style.color = "#dc3545";
   }
 }
 
-// FORMATA DINHEIRO
-function real(valor) {
-  return Number(valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
-// ==========================================
 // LOGIN
-// ==========================================
 function entrar() {
-  const user = document.getElementById("usuario").value;
-  const senha = document.getElementById("senha").value;
-  
-  if (user === "admin" && senha === "1234") {
-    document.getElementById("telaLogin").style.display = "none";
-    document.getElementById("cabecalho").style.display = "flex";
-    document.getElementById("conteudo").style.display = "block";
-    document.getElementById("menuInferior").style.display = "grid";
-    carregarDados(); // CARREGA OS DADOS LOGO AO ENTRAR
-    atualizarTela();
+  const u = document.getElementById("user").value;
+  const s = document.getElementById("pass").value;
+  if (u === "admin" && s === "1234") {
+    document.getElementById("telaLogin").classList.add("escondido");
+    document.getElementById("app").classList.remove("escondido");
+    carregar();
   } else {
-    document.getElementById("erroLogin").style.display = "block";
+    alert("Usuário ou senha errados!");
   }
 }
 
 function sair() {
-  if (confirm("Sair do aplicativo?")) {
-    document.getElementById("telaLogin").style.display = "flex";
-    document.getElementById("cabecalho").style.display = "none";
-    document.getElementById("conteudo").style.display = "none";
-    document.getElementById("menuInferior").style.display = "none";
-    document.getElementById("usuario").value = "";
-    document.getElementById("senha").value = "";
-    document.getElementById("erroLogin").style.display = "none";
+  if (confirm("Sair?")) {
+    document.getElementById("telaLogin").classList.remove("escondido");
+    document.getElementById("app").classList.add("escondido");
+    document.getElementById("user").value = "";
+    document.getElementById("pass").value = "";
   }
 }
 
-// ==========================================
-// NAVEGAÇÃO
-// ==========================================
-function irPara(nome, botao) {
-  document.querySelectorAll(".pagina").forEach(p => p.classList.remove("ativa"));
-  document.getElementById(nome).classList.add("ativa");
-  document.querySelectorAll(".menu-btn").forEach(b => b.classList.remove("ativo"));
-  botao.classList.add("ativo");
-  fecharModal();
-}
-
-// ==========================================
-// MODAL
-// ==========================================
-function abrirModal(conteudo) {
-  document.getElementById("modalConteudo").innerHTML = conteudo;
-  document.getElementById("modalOverlay").style.display = "flex";
-}
-
-function fecharModal() {
-  document.getElementById("modalOverlay").style.display = "none";
-}
-
-// ==========================================
-// OBRAS — SALVAR
-// ==========================================
-function abrirModalObra() {
-  abrirModal(`
-    <button class="fechar" onclick="fecharModal()">✕</button>
-    <h3>Nova Obra</h3>
-    <input type="text" id="nomeObra" placeholder="Nome da obra">
-    <input type="text" id="clienteObra" placeholder="Nome do cliente">
-    <input type="number" step="0.01" id="valorObra" placeholder="Valor R$">
-    <button class="btn verde" onclick="salvarObra()" style="width:100%; margin-top:10px;">💾 SALVAR OBRA</button>
-  `);
-}
-
+// SALVAR OBRA
 function salvarObra() {
   const nome = document.getElementById("nomeObra").value.trim();
   const cliente = document.getElementById("clienteObra").value.trim();
-  const valor = Number(document.getElementById("valorObra").value);
+  const valor = parseFloat(document.getElementById("valorObra").value);
 
   if (!nome) { alert("Digite o nome da obra!"); return; }
   if (!valor || valor <= 0) { alert("Digite o valor!"); return; }
 
-  // ADICIONA NO ARRAY
+  // ADICIONA
   dados.obras.push({
     id: Date.now(),
     nome: nome,
     cliente: cliente,
-    valor: valor,
+    valor: valor.toFixed(2),
     data: new Date().toLocaleDateString("pt-BR")
   });
 
   // SALVA NO NAVEGADOR
-  salvarDados();
-  fecharModal();
+  salvar();
+  
+  // LIMPA CAMPOS
+  document.getElementById("nomeObra").value = "";
+  document.getElementById("clienteObra").value = "";
+  document.getElementById("valorObra").value = "";
+
+  atualizarLista();
 }
 
-function renderizarObras() {
+// ATUALIZAR LISTA
+function atualizarLista() {
   const lista = document.getElementById("listaObras");
-  if (dados.obras.length === 0) {
-    lista.innerHTML = `<div class="card">Nenhuma obra cadastrada.</div>`;
+  
+  if (!dados.obras || dados.obras.length === 0) {
+    lista.innerHTML = "<p style='color:#888;'>Nenhuma obra cadastrada.</p>";
     return;
   }
-  lista.innerHTML = dados.obras.map(o => `
+
+  lista.innerHTML = dados.obras.map((obra, indice) => `
     <div class="item">
-      <strong>${o.nome}</strong><br>
-      Cliente: ${o.cliente || "—"}<br>
-      Valor: ${real(o.valor)}<br>
-      <button class="btn vermelho" onclick="excluirObra(${o.id})" style="margin-top:8px;">Excluir</button>
+      <h3>${obra.nome}</h3>
+      <p>Cliente: ${obra.cliente || "Não informado"}</p>
+      <p>Valor: R$ ${obra.valor}</p>
+      <p>Data: ${obra.data}</p>
+      <button class="btn-vermelho" onclick="excluirObra(${indice})">🗑️ Excluir</button>
     </div>
   `).join("");
 }
 
-function excluirObra(id) {
+// EXCLUIR OBRA
+function excluirObra(indice) {
   if (!confirm("Excluir esta obra?")) return;
-  dados.obras = dados.obras.filter(o => o.id !== id);
-  salvarDados();
-}
-
-// ==========================================
-// EQUIPE — SALVAR
-// ==========================================
-function abrirModalFunc() {
-  abrirModal(`
-    <button class="fechar" onclick="fecharModal()">✕</button>
-    <h3>Novo Funcionário</h3>
-    <input type="text" id="nomeFunc" placeholder="Nome completo">
-    <input type="text" id="funcaoFunc" placeholder="Função">
-    <input type="number" step="0.01" id="valorFunc" placeholder="Valor R$">
-    <button class="btn verde" onclick="salvarFunc()" style="width:100%; margin-top:10px;">💾 SALVAR</button>
-  `);
-}
-
-function salvarFunc() {
-  const nome = document.getElementById("nomeFunc").value.trim();
-  const funcao = document.getElementById("funcaoFunc").value.trim();
-  const valor = Number(document.getElementById("valorFunc").value);
-
-  if (!nome || !valor) { alert("Preencha nome e valor!"); return; }
-
-  dados.funcionarios.push({
-    id: Date.now(),
-    nome: nome,
-    funcao: funcao,
-    valor: valor
-  });
-
-  salvarDados();
-  fecharModal();
-}
-
-function renderizarFunc() {
-  const lista = document.getElementById("listaFunc");
-  if (dados.funcionarios.length === 0) {
-    lista.innerHTML = `<div class="card">Nenhum funcionário cadastrado.</div>`;
-    return;
-  }
-  lista.innerHTML = dados.funcionarios.map(f => `
-    <div class="item">
-      <strong>${f.nome}</strong><br>
-      Função: ${f.funcao || "—"}<br>
-      Valor: ${real(f.valor)}<br>
-      <button class="btn vermelho" onclick="excluirFunc(${f.id})" style="margin-top:8px;">Excluir</button>
-    </div>
-  `).join("");
-}
-
-function excluirFunc(id) {
-  if (!confirm("Excluir?")) return;
-  dados.funcionarios = dados.funcionarios.filter(f => f.id !== id);
-  salvarDados();
-}
-
-// ==========================================
-// DESPESAS — SALVAR
-// ==========================================
-function abrirModalDesp() {
-  abrirModal(`
-    <button class="fechar" onclick="fecharModal()">✕</button>
-    <h3>Nova Despesa</h3>
-    <input type="text" id="descDesp" placeholder="Descrição">
-    <input type="number" step="0.01" id="valorDesp" placeholder="Valor R$">
-    <button class="btn verde" onclick="salvarDesp()" style="width:100%; margin-top:10px;">💾 SALVAR</button>
-  `);
-}
-
-function salvarDesp() {
-  const desc = document.getElementById("descDesp").value.trim();
-  const valor = Number(document.getElementById("valorDesp").value);
-
-  if (!desc || !valor) { alert("Preencha tudo!"); return; }
-
-  dados.despesas.push({
-    id: Date.now(),
-    desc: desc,
-    valor: valor,
-    data: new Date().toLocaleDateString("pt-BR")
-  });
-
-  salvarDados();
-  fecharModal();
-}
-
-function renderizarDesp() {
-  const lista = document.getElementById("listaDesp");
-  if (dados.despesas.length === 0) {
-    lista.innerHTML = `<div class="card">Nenhuma despesa lançada.</div>`;
-    return;
-  }
-  lista.innerHTML = dados.despesas.map(d => `
-    <div class="item">
-      <strong>${d.desc}</strong><br>
-      Valor: ${real(d.valor)} • ${d.data}
-    </div>
-  `).join("");
-}
-
-// ==========================================
-// BACKUP E APAGAR
-// ==========================================
-function baixarBackup() {
-  const json = JSON.stringify(dados, null, 2);
-  const blob = new Blob([json], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "edifiq-backup.json";
-  a.click();
-  alert("✅ Backup baixado!");
-}
-
-function apagarTudo() {
-  if (!confirm("⚠️ APAGAR TUDO? Não tem volta!")) return;
-  localStorage.removeItem(CHAVE);
-  dados = { obras: [], funcionarios: [], despesas: [] };
-  atualizarTela();
-  alert("✅ Apagado!");
-}
-
-// ==========================================
-// ATUALIZAR TELA
-// ==========================================
-function atualizarTela() {
-  renderizarObras();
-  renderizarFunc();
-  renderizarDesp();
+  dados.obras.splice(indice, 1);
+  salvar();
+  atualizarLista();
 }
 </script>
 
