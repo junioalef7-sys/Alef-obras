@@ -3,1354 +3,2800 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#080a0d">
+<meta name="theme-color" content="#080c11">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-<title>EDIFIQ — Gestão de Obras</title>
+<meta name="apple-mobile-web-app-title" content="EDIFIQ">
+<title>EDIFIQ — Gestão de Obras e Reformas</title>
 
 <style>
-*{
-  box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
-}
-
 :root{
-  --bg:#07090b;
-  --card:#111318;
-  --card2:#15171c;
-  --line:#292d35;
-  --gold:#e4b92e;
-  --gold2:#f5cf55;
-  --text:#f4f4f5;
-  --muted:#979ca8;
-  --danger:#e85b5b;
-  --green:#45c47a;
+--bg:#080c11;--card:#111820;--card2:#151e28;--line:#273341;
+--text:#f3f6f8;--muted:#9ba8b5;--gold:#d8ad4c;
+--green:#43d17c;--red:#ff6670;--blue:#57a6ff;
+--shadow:0 12px 32px #0007
+}
+*{box-sizing:border-box}
+html,body{
+margin:0;background:var(--bg);color:var(--text);
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+body{padding-bottom:88px}
+button,input,select,textarea{font:inherit}
+button{border:0;cursor:pointer}
+.app{max-width:760px;margin:auto}
+
+.top{
+position:sticky;top:0;z-index:20;background:#080c11ee;
+backdrop-filter:blur(18px);border-bottom:1px solid var(--line);
+padding:16px 18px 12px
 }
 
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
-  padding-bottom:90px;
-}
-
-button,input,select,textarea{
-  font:inherit;
-}
-
-button{
-  cursor:pointer;
-}
-
-.header{
-  padding:42px 34px 28px;
-  border-bottom:1px solid #202329;
-}
-
-.brand{
-  display:flex;
-  align-items:center;
-  gap:25px;
-}
-
+.brand{display:flex;align-items:center;gap:12px}
 .logo{
-  width:102px;
-  height:102px;
-  border:4px solid var(--gold);
-  border-radius:30px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:var(--gold);
-  font-size:48px;
+width:46px;height:46px;border:2px solid var(--gold);
+border-radius:14px;display:grid;place-items:center;
+color:var(--gold);font-weight:900;font-size:19px
 }
+.brand b{font-size:20px;letter-spacing:.8px}
+.brand small{display:block;color:var(--muted);margin-top:2px}
 
-.brand h1{
-  margin:0;
-  font-size:48px;
-  letter-spacing:1px;
+main{padding:18px}
+.view{display:none}
+.view.active{display:block}
+
+.hero{
+padding:20px;border:1px solid var(--line);border-radius:22px;
+background:linear-gradient(145deg,#121a23,#0c1117);
+box-shadow:var(--shadow);margin-bottom:16px
 }
+.hero h1{margin:0 0 6px;font-size:26px}
+.hero p{margin:0;color:var(--muted)}
 
-.brand p{
-  margin:8px 0 0;
-  color:var(--gold);
-  font-size:21px;
-  letter-spacing:.7px;
+.grid{
+display:grid;grid-template-columns:repeat(2,1fr);gap:12px
 }
-
-main{
-  padding:32px 34px;
-  max-width:1100px;
-  margin:auto;
-}
-
-h2{
-  font-size:40px;
-  margin:0 0 28px;
-}
-
-h3{
-  margin-top:0;
-  font-size:24px;
-}
-
-.hidden{
-  display:none!important;
-}
-
-.stats{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:24px;
-}
-
-.stat{
-  background:var(--card);
-  border:2px solid var(--line);
-  border-radius:28px;
-  padding:25px;
-}
-
-.stat span{
-  display:block;
-  color:var(--muted);
-  font-size:22px;
-  margin-bottom:18px;
-}
-
-.stat strong{
-  color:var(--gold2);
-  font-size:38px;
+.grid3{
+display:grid;grid-template-columns:repeat(3,1fr);gap:10px
 }
 
 .card{
-  background:var(--card);
-  border:2px solid var(--line);
-  border-radius:28px;
-  padding:28px;
-  margin-bottom:24px;
+background:var(--card);border:1px solid var(--line);
+border-radius:18px;padding:15px
 }
+.stat b{display:block;font-size:23px;margin-top:5px}
+.stat span{color:var(--muted);font-size:12px}
+.gold{color:var(--gold)}
+.green{color:var(--green)}
+.red{color:var(--red)}
+.blue{color:var(--blue)}
 
-.summary{
-  line-height:2;
-  font-size:20px;
-}
+.actions{display:flex;gap:9px;flex-wrap:wrap}
 
-.summary b{
-  color:var(--gold2);
+.btn{
+padding:12px 14px;border-radius:12px;background:var(--card2);
+color:var(--text);border:1px solid var(--line)
 }
+.btn.primary{
+background:var(--gold);color:#111;border-color:var(--gold);
+font-weight:800
+}
+.btn.danger{
+background:#3a171b;color:#ffadb2;border-color:#6a272e
+}
+.btn.small{padding:8px 10px;font-size:13px}
 
-.grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:18px;
+.section-title{
+display:flex;justify-content:space-between;
+align-items:center;margin:22px 0 10px
 }
+.section-title h2{margin:0;font-size:18px}
+.muted{color:var(--muted)}
 
 label{
-  display:block;
-  color:var(--muted);
-  margin-bottom:7px;
-  font-size:15px;
+display:block;font-size:12px;color:var(--muted);
+margin:0 0 6px
 }
 
 input,select,textarea{
-  width:100%;
-  background:#090b0f;
-  color:white;
-  border:1px solid #363b45;
-  border-radius:14px;
-  padding:15px;
-  outline:none;
+width:100%;background:#0b1117;color:var(--text);
+border:1px solid var(--line);border-radius:12px;
+padding:12px;outline:none
 }
 
-input:focus,select:focus,textarea:focus{
-  border-color:var(--gold);
-}
+textarea{min-height:90px;resize:vertical}
 
-textarea{
-  min-height:100px;
-  resize:vertical;
-}
-
-.btn{
-  border:0;
-  border-radius:14px;
-  padding:14px 18px;
-  background:var(--gold);
-  color:#08090a;
-  font-weight:800;
-  margin-top:15px;
-}
-
-.btn.secondary{
-  background:#242831;
-  color:white;
-}
-
-.btn.danger{
-  background:#541e23;
-  color:#ff9c9c;
-}
-
-.btn.green{
-  background:#19492e;
-  color:#79e5a3;
-}
-
-.btn.small{
-  padding:10px 13px;
-  font-size:14px;
-  margin:5px 4px 0 0;
-}
-
-.section-title{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:15px;
-  margin-bottom:20px;
-}
-
-.list{
-  display:flex;
-  flex-direction:column;
-  gap:15px;
-}
+.form{display:grid;gap:11px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
 .item{
-  background:var(--card2);
-  border:1px solid var(--line);
-  border-radius:20px;
-  padding:20px;
+display:flex;justify-content:space-between;gap:12px;
+align-items:flex-start;padding:13px 0;
+border-bottom:1px solid #202a35
+}
+.item:last-child{border-bottom:0}
+.item h3{margin:0 0 4px;font-size:15px}
+.item p{margin:0;color:var(--muted);font-size:12px}
+
+.pill{
+display:inline-block;padding:4px 8px;border-radius:99px;
+background:#17212b;color:var(--muted);font-size:11px
 }
 
-.item-title{
-  font-size:21px;
-  font-weight:800;
-  margin-bottom:8px;
-}
-
-.muted{
-  color:var(--muted);
-}
-
-.badge{
-  display:inline-block;
-  padding:6px 10px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:800;
-  margin:3px 3px 3px 0;
-}
-
-.badge.active{
-  background:#173c27;
-  color:#74e29b;
-}
-
-.badge.inactive{
-  background:#3c2022;
-  color:#ff9696;
-}
-
-.badge.gold{
-  background:#3d3212;
-  color:var(--gold2);
-}
-
-.progress{
-  height:12px;
-  background:#252932;
-  border-radius:99px;
-  overflow:hidden;
-  margin:12px 0;
-}
-
-.progress div{
-  height:100%;
-  background:var(--gold);
-  width:0%;
-  transition:.25s;
-}
-
-.checklist{
-  margin-top:15px;
-}
-
-.check{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:9px 0;
-}
-
-.check input{
-  width:20px;
-  height:20px;
-}
-
-.bottom{
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-  height:91px;
-  background:#090b0e;
-  border-top:2px solid #252930;
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  z-index:20;
-}
+.empty{padding:28px 10px;text-align:center;color:var(--muted)}
 
 .nav{
-  background:none;
-  border:0;
-  color:#858b96;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  gap:6px;
-  font-size:14px;
+position:fixed;bottom:0;left:0;right:0;z-index:30;
+background:#0b1016f5;border-top:1px solid var(--line);
+backdrop-filter:blur(18px);
+padding:9px max(10px,env(safe-area-inset-left))
+calc(9px + env(safe-area-inset-bottom));
+display:grid;grid-template-columns:repeat(5,1fr);
+max-width:760px;margin:auto
 }
 
-.nav .icon{
-  font-size:28px;
+.nav button{
+background:none;color:var(--muted);font-size:10px
 }
-
-.nav.active{
-  color:var(--gold);
+.nav button span{
+display:block;font-size:20px;margin-bottom:3px
 }
-
-.empty{
-  padding:30px;
-  text-align:center;
-  color:var(--muted);
-}
+.nav button.active{color:var(--gold)}
 
 .modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.78);
-  z-index:50;
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
+position:fixed;inset:0;background:#000b;z-index:50;
+display:none;align-items:flex-end
+}
+.modal.show{display:flex}
+
+.sheet{
+width:100%;max-width:760px;margin:auto;background:#0d141b;
+border:1px solid var(--line);border-radius:24px 24px 0 0;
+max-height:92vh;overflow:auto;padding:18px
 }
 
-.modal-box{
-  width:100%;
-  max-width:700px;
-  max-height:92vh;
-  overflow:auto;
-  background:#111318;
-  border:1px solid #353a43;
-  border-radius:30px 30px 0 0;
-  padding:28px;
+.sheethead{
+display:flex;justify-content:space-between;
+align-items:center;margin-bottom:14px
 }
+.sheethead h2{margin:0;font-size:20px}
 
-.close{
-  float:right;
-  border:0;
-  background:#292d35;
-  color:white;
-  border-radius:12px;
-  padding:8px 12px;
+.check{
+display:flex;gap:10px;align-items:center;padding:12px;
+border:1px solid var(--line);border-radius:12px;
+margin-bottom:8px;background:#101821
 }
+.check input{width:20px;height:20px}
 
 .photo{
-  width:100%;
-  max-height:250px;
-  object-fit:cover;
-  border-radius:15px;
-  margin-top:10px;
+width:100%;aspect-ratio:4/3;object-fit:cover;
+border-radius:12px;border:1px solid var(--line)
 }
 
-@media(max-width:650px){
-  .header{
-    padding:38px 34px 28px;
-  }
+.photos{
+display:grid;grid-template-columns:repeat(3,1fr);gap:8px
+}
 
-  .brand h1{
-    font-size:42px;
-  }
+.toast{
+position:fixed;left:50%;bottom:100px;
+transform:translateX(-50%);background:#e8edf2;
+color:#0b1117;padding:11px 16px;border-radius:99px;
+font-weight:700;z-index:100;display:none;
+box-shadow:var(--shadow)
+}
+.toast.show{display:block}
 
-  .brand p{
-    font-size:17px;
-  }
-
-  .logo{
-    width:100px;
-    height:100px;
-  }
-
-  main{
-    padding:34px;
-  }
-
-  h2{
-    font-size:38px;
-  }
-
-  .grid{
-    grid-template-columns:1fr;
-  }
-
-  .stats{
-    gap:20px;
-  }
-
-  .stat{
-    padding:24px 20px;
-  }
-
-  .stat span{
-    font-size:19px;
-  }
-
-  .stat strong{
-    font-size:35px;
-  }
+@media(min-width:700px){
+.nav{border-radius:20px;margin-bottom:10px}
+.modal{align-items:center}
+.sheet{border-radius:22px;max-width:650px}
+.grid{grid-template-columns:repeat(4,1fr)}
 }
 </style>
 </head>
 
 <body>
 
-<header class="header">
-  <div class="brand">
-    <div class="logo">⌂</div>
-    <div>
-      <h1>EDIFIQ</h1>
-      <p>GESTÃO DE OBRAS E REFORMAS</p>
-    </div>
-  </div>
+<div class="app">
+
+<header class="top">
+<div class="brand">
+<div class="logo">EQ</div>
+<div>
+<b>EDIFIQ</b>
+<small>Gestão de Obras e Reformas</small>
+</div>
+</div>
 </header>
 
 <main>
 
-<!-- INÍCIO -->
-<section id="inicio" class="page">
-  <h2>Dashboard</h2>
+<section id="home" class="view active">
 
-  <div class="stats">
-    <div class="stat">
-      <span>Obras</span>
-      <strong id="statObras">0</strong>
-    </div>
+<div class="hero">
+<h1>Olá, Alef 👋</h1>
+<p>Controle suas obras, equipe e financeiro em um só lugar.</p>
+</div>
 
-    <div class="stat">
-      <span>Em andamento</span>
-      <strong id="statAndamento">0</strong>
-    </div>
+<div class="grid">
 
-    <div class="stat">
-      <span>Funcionários</span>
-      <strong id="statFuncionarios">0</strong>
-    </div>
+<div class="card stat">
+<span>Obras ativas</span>
+<b id="sObras">0</b>
+</div>
 
-    <div class="stat">
-      <span>Despesas</span>
-      <strong id="statDespesas">R$ 0,00</strong>
-    </div>
-  </div>
+<div class="card stat">
+<span>Funcionários</span>
+<b id="sFunc">0</b>
+</div>
 
-  <div class="card summary">
-    <h3>Resumo</h3>
-    Obras cadastradas: <b id="resObras">0</b><br>
-    Obras em andamento: <b id="resAndamento">0</b><br>
-    Funcionários ativos: <b id="resAtivos">0</b><br>
-    Funcionários inativos: <b id="resInativos">0</b><br>
-    Total de despesas: <b id="resDespesas">R$ 0,00</b>
-  </div>
+<div class="card stat">
+<span>Receitas</span>
+<b id="sReceita">R$ 0,00</b>
+</div>
+
+<div class="card stat">
+<span>Despesas</span>
+<b id="sDespesa">R$ 0,00</b>
+</div>
+
+</div>
+
+<div class="card" style="margin-top:12px">
+<div class="stat">
+<span>Saldo / lucro</span>
+<b id="sSaldo" class="green">R$ 0,00</b>
+</div>
+</div>
+
+<div class="section-title">
+<h2>Acesso rápido</h2>
+</div>
+
+<div class="grid">
+
+<button class="card btn" onclick="openModal('obra')">
+🏗️<br><b>Nova obra</b>
+</button>
+
+<button class="card btn" onclick="openModal('despesa')">
+💸<br><b>Despesa</b>
+</button>
+
+<button class="card btn" onclick="openModal('diaria')">
+👷<br><b>Marcar diária</b>
+</button>
+
+<button class="card btn" onclick="openModal('receita')">
+💰<br><b>Receita</b>
+</button>
+
+</div>
+
+<div class="section-title">
+<h2>Atividades recentes</h2>
+</div>
+
+<div class="card" id="recentes"></div>
+
 </section>
 
 
-<!-- OBRAS -->
-<section id="obras" class="page hidden">
-  <div class="section-title">
-    <h2>Obras</h2>
-    <button class="btn" onclick="abrirNovaObra()">+ Nova obra</button>
-  </div>
+<section id="obras" class="view">
 
-  <div id="listaObras" class="list"></div>
+<div class="section-title">
+<h2>Obras</h2>
+<button class="btn primary small" onclick="openModal('obra')">
++ Nova
+</button>
+</div>
+
+<div id="listaObras"></div>
+
 </section>
 
 
-<!-- EQUIPE -->
-<section id="equipe" class="page hidden">
-  <div class="section-title">
-    <h2>Equipe</h2>
-    <button class="btn" onclick="abrirNovoFuncionario()">+ Funcionário</button>
-  </div>
+<section id="equipe" class="view">
 
-  <div class="stats">
-    <div class="stat">
-      <span>Ativos</span>
-      <strong id="equipeAtivos">0</strong>
-    </div>
+<div class="section-title">
+<h2>Funcionários</h2>
 
-    <div class="stat">
-      <span>Inativos</span>
-      <strong id="equipeInativos">0</strong>
-    </div>
-  </div>
+<button class="btn primary small" onclick="openModal('func')">
++ Novo
+</button>
 
-  <br>
+</div>
 
-  <div id="listaFuncionarios" class="list"></div>
+<div class="card" style="margin-bottom:12px">
+
+<div class="grid3">
+
+<div>
+<span class="muted">Ativos</span>
+<b id="totalAtivos">0</b>
+</div>
+
+<div>
+<span class="muted">Inativos</span>
+<b id="totalInativos">0</b>
+</div>
+
+<div>
+<span class="muted">Diárias</span>
+<b id="totalDiarias">0</b>
+</div>
+
+</div>
+
+<div style="margin-top:12px">
+<span class="muted">Mão de obra</span>
+<b id="totalMO">R$ 0,00</b>
+</div>
+
+</div>
+
+<div id="listaFunc"></div>
+
 </section>
 
 
-<!-- FINANCEIRO -->
-<section id="financeiro" class="page hidden">
-  <div class="section-title">
-    <h2>Financeiro</h2>
-    <button class="btn" onclick="abrirNovaDespesa()">+ Despesa</button>
-  </div>
+<section id="financeiro" class="view">
 
-  <div class="card">
-    <h3>Total de despesas</h3>
-    <strong id="financeTotal" style="font-size:38px;color:var(--gold2)">
-      R$ 0,00
-    </strong>
-  </div>
+<div class="section-title">
+<h2>Financeiro</h2>
 
-  <div id="listaDespesas" class="list"></div>
+<div class="actions">
+<button class="btn small" onclick="openModal('receita')">
++ Receita
+</button>
+
+<button class="btn small" onclick="openModal('despesa')">
++ Despesa
+</button>
+</div>
+
+</div>
+
+<div class="grid">
+
+<div class="card stat">
+<span>Receitas</span>
+<b class="green" id="fReceita">R$ 0,00</b>
+</div>
+
+<div class="card stat">
+<span>Despesas</span>
+<b class="red" id="fDespesa">R$ 0,00</b>
+</div>
+
+<div class="card stat">
+<span>Lucro</span>
+<b id="fLucro">R$ 0,00</b>
+</div>
+
+<div class="card stat">
+<span>Margem</span>
+<b id="fMargem">0%</b>
+</div>
+
+</div>
+
+<div class="section-title">
+<h2>Lançamentos</h2>
+</div>
+
+<div class="card" id="lancamentos"></div>
+
 </section>
 
 
-<!-- CONFIG -->
-<section id="config" class="page hidden">
-  <h2>Config.</h2>
+<section id="relatorios" class="view">
 
-  <div class="card">
-    <h3>EDIFIQ</h3>
-    <p class="muted">
-      Gestão de Obras e Reformas
-    </p>
+<div class="section-title">
+<h2>Relatórios</h2>
+</div>
 
-    <button class="btn secondary" onclick="exportarDados()">
-      Exportar dados
-    </button>
+<div class="grid">
 
-    <button class="btn danger" onclick="limparDados()">
-      Limpar dados locais
-    </button>
-  </div>
+<button class="card btn" onclick="openModal('check')">
+☑️<br><b>Checklist</b>
+</button>
+
+<button class="card btn" onclick="openModal('foto')">
+📸<br><b>Relatório fotográfico</b>
+</button>
+
+<button class="card btn" onclick="openModal('contrato')">
+📄<br><b>Contrato</b>
+</button>
+
+<button class="card btn" onclick="openModal('orcamento')">
+🧾<br><b>Orçamento</b>
+</button>
+
+</div>
+
+<div class="section-title">
+<h2>Ferramentas</h2>
+</div>
+
+<div class="card">
+
+<div class="actions">
+
+<button class="btn" onclick="printReport()">
+🖨️ Imprimir / PDF
+</button>
+
+<button class="btn" onclick="exportData()">
+⬇️ Backup
+</button>
+
+<button class="btn"
+onclick="document.getElementById('importFile').click()">
+⬆️ Restaurar
+</button>
+
+<input
+id="importFile"
+type="file"
+accept=".json"
+hidden
+onchange="importData(this)"
+>
+
+</div>
+
+</div>
+
+<div class="section-title">
+<h2>Relatórios cadastrados</h2>
+</div>
+
+<div id="listaRelatorios"></div>
+
+</section>
+
+
+<section id="mais" class="view">
+
+<div class="section-title">
+<h2>Mais</h2>
+</div>
+
+<div class="card">
+
+<div class="item">
+
+<div>
+<h3>☁️ Supabase</h3>
+<p>Sincronização opcional em nuvem.</p>
+</div>
+
+<button class="btn small"
+onclick="openModal('supabase')">
+Configurar
+</button>
+
+</div>
+
+<div class="item">
+
+<div>
+<h3>📱 Instalar como app</h3>
+<p>Use o navegador e adicione à Tela de Início do iPhone.</p>
+</div>
+
+<button class="btn small"
+onclick="installHelp()">
+Como fazer
+</button>
+
+</div>
+
+<div class="item">
+
+<div>
+<h3>🗑️ Limpar dados locais</h3>
+<p>Apaga os dados deste aparelho.</p>
+</div>
+
+<button class="btn danger small"
+onclick="clearAll()">
+Limpar
+</button>
+
+</div>
+
+</div>
+
+<div class="section-title">
+<h2>Dados do sistema</h2>
+</div>
+
+<div class="card">
+
+<p class="muted">
+Os dados são salvos automaticamente no aparelho.
+</p>
+
+<p id="cloudStatus" class="pill">
+Nuvem: não configurada
+</p>
+
+</div>
+
 </section>
 
 </main>
 
 
-<!-- MENU -->
-<nav class="bottom">
-  <button class="nav active" onclick="pagina('inicio',this)">
-    <span class="icon">⌂</span>
-    <span>Início</span>
-  </button>
+<nav class="nav">
 
-  <button class="nav" onclick="pagina('obras',this)">
-    <span class="icon">🏗️</span>
-    <span>Obras</span>
-  </button>
+<button class="active"
+onclick="go('home',this)">
+<span>⌂</span>Início
+</button>
 
-  <button class="nav" onclick="pagina('equipe',this)">
-    <span class="icon">👷</span>
-    <span>Equipe</span>
-  </button>
+<button onclick="go('obras',this)">
+<span>🏗️</span>Obras
+</button>
 
-  <button class="nav" onclick="pagina('financeiro',this)">
-    <span class="icon">💰</span>
-    <span>Financeiro</span>
-  </button>
+<button onclick="go('equipe',this)">
+<span>👷</span>Equipe
+</button>
 
-  <button class="nav" onclick="pagina('config',this)">
-    <span class="icon">⚙️</span>
-    <span>Config.</span>
-  </button>
+<button onclick="go('financeiro',this)">
+<span>R$</span>Financeiro
+</button>
+
+<button onclick="go('relatorios',this)">
+<span>☷</span>Relatórios
+</button>
+
 </nav>
 
-
-<!-- MODAL -->
-<div id="modal" class="modal hidden">
-  <div class="modal-box">
-    <button class="close" onclick="fecharModal()">✕</button>
-    <div id="modalConteudo"></div>
-  </div>
 </div>
+
+
+<div id="modal" class="modal">
+
+<div class="sheet">
+
+<div class="sheethead">
+
+<h2 id="modalTitle">Novo</h2>
+
+<button class="btn small"
+onclick="closeModal()">
+✕
+</button>
+
+</div>
+
+<div id="modalBody"></div>
+
+</div>
+
+</div>
+
+<div id="toast" class="toast"></div>
 
 
 <script>
 
-const DB_KEY="EDIFIQ_DB_V2";
+const KEY='alef_obras_v2';
 
-let db=JSON.parse(localStorage.getItem(DB_KEY)) || {
-  obras:[],
-  funcionarios:[],
-  despesas:[],
-  diarios:[]
+const defaultData={
+obras:[],
+funcionarios:[],
+lancamentos:[],
+checklists:[],
+fotos:[],
+contratos:[],
+orcamentos:[],
+config:{
+supabaseUrl:'',
+supabaseKey:''
+}
 };
 
-function salvar(){
-  localStorage.setItem(DB_KEY,JSON.stringify(db));
-  atualizar();
+let data=load();
+let currentModal='';
+
+
+function load(){
+
+try{
+
+return Object.assign(
+{},
+defaultData,
+JSON.parse(
+localStorage.getItem(KEY)||'{}'
+)
+);
+
+}catch(e){
+
+return structuredClone(defaultData);
+
 }
 
-function dinheiro(v){
-  return Number(v||0).toLocaleString("pt-BR",{
-    style:"currency",
-    currency:"BRL"
-  });
 }
+
+
+function save(){
+
+localStorage.setItem(
+KEY,
+JSON.stringify(data)
+);
+
+render();
+
+cloudSave().catch(()=>{});
+
+}
+
+
+function money(v){
+
+return Number(v||0).toLocaleString(
+'pt-BR',
+{
+style:'currency',
+currency:'BRL'
+}
+);
+
+}
+
+
+function esc(s){
+
+return String(s??'').replace(
+/[&<>"']/g,
+m=>({
+'&':'&amp;',
+'<':'&lt;',
+'>':'&gt;',
+'"':'&quot;',
+"'":'&#039;'
+}[m])
+);
+
+}
+
 
 function id(){
-  return Date.now().toString(36)+Math.random().toString(36).slice(2);
-}
 
-function pagina(nome,btn){
-  document.querySelectorAll(".page").forEach(p=>{
-    p.classList.add("hidden");
-  });
+return Date.now().toString(36)+
+Math.random().toString(36).slice(2,7);
 
-  document.getElementById(nome).classList.remove("hidden");
-
-  document.querySelectorAll(".nav").forEach(n=>{
-    n.classList.remove("active");
-  });
-
-  btn.classList.add("active");
-
-  atualizar();
-}
-
-function abrirModal(html){
-  document.getElementById("modalConteudo").innerHTML=html;
-  document.getElementById("modal").classList.remove("hidden");
-}
-
-function fecharModal(){
-  document.getElementById("modal").classList.add("hidden");
 }
 
 
-/* =========================
-   OBRAS
-========================= */
+function toast(t){
 
-function abrirNovaObra(){
+const e=document.getElementById('toast');
 
-  abrirModal(`
-    <h2>Nova obra</h2>
+e.textContent=t;
 
-    <label>Nome da obra</label>
-    <input id="obraNome" placeholder="Ex.: Reforma da casa do cliente">
+e.classList.add('show');
 
-    <label style="margin-top:15px">Cliente</label>
-    <input id="obraCliente" placeholder="Nome do cliente">
+setTimeout(
+()=>e.classList.remove('show'),
+2200
+);
 
-    <label style="margin-top:15px">Endereço</label>
-    <input id="obraEndereco" placeholder="Endereço da obra">
-
-    <label style="margin-top:15px">Status</label>
-    <select id="obraStatus">
-      <option value="andamento">Em andamento</option>
-      <option value="pausada">Pausada</option>
-      <option value="concluida">Concluída</option>
-    </select>
-
-    <button class="btn" onclick="salvarObra()">
-      Salvar obra
-    </button>
-  `);
-}
-
-function salvarObra(){
-
-  const nome=document.getElementById("obraNome").value.trim();
-
-  if(!nome){
-    alert("Informe o nome da obra.");
-    return;
-  }
-
-  db.obras.push({
-    id:id(),
-    nome,
-    cliente:document.getElementById("obraCliente").value,
-    endereco:document.getElementById("obraEndereco").value,
-    status:document.getElementById("obraStatus").value,
-    checklist:[
-      {nome:"Planejamento",feito:false},
-      {nome:"Preparação",feito:false},
-      {nome:"Execução",feito:false},
-      {nome:"Acabamento",feito:false},
-      {nome:"Finalização",feito:false}
-    ],
-    fotos:[]
-  });
-
-  salvar();
-  fecharModal();
-}
-
-function progressoObra(obra){
-
-  if(!obra.checklist?.length) return 0;
-
-  const feitos=obra.checklist.filter(x=>x.feito).length;
-
-  return Math.round((feitos/obra.checklist.length)*100);
-}
-
-function abrirObra(obraId){
-
-  const obra=db.obras.find(x=>x.id===obraId);
-
-  if(!obra)return;
-
-  const progresso=progressoObra(obra);
-
-  abrirModal(`
-    <h2>${escapeHtml(obra.nome)}</h2>
-
-    <p class="muted">
-      Cliente: ${escapeHtml(obra.cliente||"Não informado")}<br>
-      ${escapeHtml(obra.endereco||"")}
-    </p>
-
-    <span class="badge gold">
-      Progresso: ${progresso}%
-    </span>
-
-    <div class="progress">
-      <div style="width:${progresso}%"></div>
-    </div>
-
-    <h3>Checklist da obra</h3>
-
-    <div class="checklist">
-      ${obra.checklist.map((c,i)=>`
-        <label class="check">
-          <input
-            type="checkbox"
-            ${c.feito?"checked":""}
-            onchange="alterarChecklist('${obra.id}',${i},this.checked)"
-          >
-          ${escapeHtml(c.nome)}
-        </label>
-      `).join("")}
-    </div>
-
-    <h3 style="margin-top:25px">
-      Funcionários nesta obra
-    </h3>
-
-    <div class="list">
-      ${
-        db.funcionarios.filter(f=>f.obraId===obra.id).length
-        ?
-        db.funcionarios.filter(f=>f.obraId===obra.id).map(f=>`
-          <div class="item">
-            <b>${escapeHtml(f.nome)}</b><br>
-            <span class="muted">${escapeHtml(f.funcao)}</span>
-          </div>
-        `).join("")
-        :
-        `<div class="empty">Nenhum funcionário vinculado.</div>`
-      }
-    </div>
-
-    <button class="btn danger"
-      onclick="excluirObra('${obra.id}')">
-      Excluir obra
-    </button>
-  `);
-}
-
-function alterarChecklist(obraId,index,valor){
-
-  const obra=db.obras.find(x=>x.id===obraId);
-
-  if(!obra)return;
-
-  obra.checklist[index].feito=valor;
-
-  salvar();
-
-  abrirObra(obraId);
-}
-
-function excluirObra(obraId){
-
-  if(!confirm("Excluir esta obra?"))return;
-
-  db.obras=db.obras.filter(x=>x.id!==obraId);
-
-  db.funcionarios.forEach(f=>{
-    if(f.obraId===obraId) f.obraId="";
-  });
-
-  salvar();
-  fecharModal();
 }
 
 
-/* =========================
-   FUNCIONÁRIOS
-========================= */
+function go(view,btn){
 
-function abrirNovoFuncionario(){
+document
+.querySelectorAll('.view')
+.forEach(x=>x.classList.remove('active'));
 
-  const options=db.obras.map(o=>
-    `<option value="${o.id}">
-      ${escapeHtml(o.nome)}
-    </option>`
-  ).join("");
+document
+.getElementById(view)
+.classList.add('active');
 
-  abrirModal(`
-    <h2>Novo funcionário</h2>
+document
+.querySelectorAll('.nav button')
+.forEach(x=>x.classList.remove('active'));
 
-    <label>Nome</label>
-    <input id="funcNome" placeholder="Nome do funcionário">
+if(btn)btn.classList.add('active');
 
-    <label style="margin-top:15px">Função</label>
-    <input id="funcFuncao" placeholder="Ex.: Pedreiro">
+render();
 
-    <label style="margin-top:15px">Obra</label>
-    <select id="funcObra">
-      <option value="">Sem obra definida</option>
-      ${options}
-    </select>
-
-    <label style="margin-top:15px">
-      Registrar diária?
-    </label>
-
-    <select id="funcDiaria">
-      <option value="sim">Sim</option>
-      <option value="nao">Não</option>
-    </select>
-
-    <label style="margin-top:15px">
-      Status
-    </label>
-
-    <select id="funcStatus">
-      <option value="ativo">Ativo</option>
-      <option value="inativo">Inativo</option>
-    </select>
-
-    <button class="btn" onclick="salvarFuncionario()">
-      Salvar funcionário
-    </button>
-  `);
-}
-
-function salvarFuncionario(){
-
-  const nome=document.getElementById("funcNome").value.trim();
-
-  if(!nome){
-    alert("Informe o nome do funcionário.");
-    return;
-  }
-
-  db.funcionarios.push({
-    id:id(),
-    nome,
-    funcao:document.getElementById("funcFuncao").value,
-    obraId:document.getElementById("funcObra").value,
-    registrarDiaria:document.getElementById("funcDiaria").value==="sim",
-    status:document.getElementById("funcStatus").value,
-    criadoEm:new Date().toISOString()
-  });
-
-  salvar();
-  fecharModal();
-}
-
-function editarFuncionario(funcId){
-
-  const f=db.funcionarios.find(x=>x.id===funcId);
-
-  if(!f)return;
-
-  const options=db.obras.map(o=>
-    `<option value="${o.id}" ${f.obraId===o.id?"selected":""}>
-      ${escapeHtml(o.nome)}
-    </option>`
-  ).join("");
-
-  abrirModal(`
-    <h2>Editar funcionário</h2>
-
-    <label>Nome</label>
-    <input id="funcNome" value="${escapeAttr(f.nome)}">
-
-    <label style="margin-top:15px">Função</label>
-    <input id="funcFuncao" value="${escapeAttr(f.funcao||"")}">
-
-    <label style="margin-top:15px">Obra</label>
-    <select id="funcObra">
-      <option value="">Sem obra definida</option>
-      ${options}
-    </select>
-
-    <label style="margin-top:15px">
-      Registrar diária?
-    </label>
-
-    <select id="funcDiaria">
-      <option value="sim" ${f.registrarDiaria?"selected":""}>Sim</option>
-      <option value="nao" ${!f.registrarDiaria?"selected":""}>Não</option>
-    </select>
-
-    <label style="margin-top:15px">
-      Status
-    </label>
-
-    <select id="funcStatus">
-      <option value="ativo" ${f.status==="ativo"?"selected":""}>
-        Ativo
-      </option>
-      <option value="inativo" ${f.status==="inativo"?"selected":""}>
-        Inativo
-      </option>
-    </select>
-
-    <button class="btn" onclick="atualizarFuncionario('${f.id}')">
-      Salvar alterações
-    </button>
-
-    <button class="btn danger"
-      onclick="excluirFuncionario('${f.id}')">
-      Excluir funcionário
-    </button>
-  `);
-}
-
-function atualizarFuncionario(funcId){
-
-  const f=db.funcionarios.find(x=>x.id===funcId);
-
-  if(!f)return;
-
-  f.nome=document.getElementById("funcNome").value.trim();
-  f.funcao=document.getElementById("funcFuncao").value;
-  f.obraId=document.getElementById("funcObra").value;
-  f.registrarDiaria=document.getElementById("funcDiaria").value==="sim";
-  f.status=document.getElementById("funcStatus").value;
-
-  salvar();
-  fecharModal();
-}
-
-function excluirFuncionario(funcId){
-
-  if(!confirm("Excluir este funcionário?"))return;
-
-  db.funcionarios=db.funcionarios.filter(x=>x.id!==funcId);
-
-  salvar();
-  fecharModal();
 }
 
 
-/* =========================
-   REGISTRAR DIÁRIA
-========================= */
+function openModal(type,payload=null){
 
-function registrarDiaria(funcId){
+currentModal=type;
 
-  const f=db.funcionarios.find(x=>x.id===funcId);
+document
+.getElementById('modal')
+.classList.add('show');
 
-  if(!f)return;
+const titles={
+obra:'Nova obra',
+func:payload?'Editar funcionário':'Novo funcionário',
+despesa:'Nova despesa',
+receita:'Nova receita',
+diaria:'Marcar diária',
+check:'Checklist da obra',
+foto:'Relatório fotográfico',
+contrato:'Contrato',
+orcamento:'Orçamento',
+supabase:'Configuração do Supabase'
+};
 
-  if(!f.registrarDiaria){
-    alert("Este funcionário está configurado para NÃO registrar diária.");
-    return;
-  }
+document
+.getElementById('modalTitle')
+.textContent=titles[type]||'Cadastro';
 
-  const obra=db.obras.find(o=>o.id===f.obraId);
+document
+.getElementById('modalBody')
+.innerHTML=forms[type]?
+forms[type](payload):'';
 
-  const data=new Date().toLocaleDateString("pt-BR");
 
-  const jaExiste=db.diarios.some(d=>
-    d.funcionarioId===funcId &&
-    d.data===data
-  );
+if(type==='func' && payload){
 
-  if(jaExiste){
-    alert("A diária de hoje já foi registrada.");
-    return;
-  }
+const select=document.getElementById('funcObra');
 
-  db.diarios.push({
-    id:id(),
-    funcionarioId:funcId,
-    obraId:f.obraId||"",
-    data,
-    valor:0
-  });
+if(select)
+select.value=payload.obra||'';
 
-  salvar();
-
-  alert(
-    "Diária registrada para "+f.nome+
-    (obra ? "\nObra: "+obra.nome : "")
-  );
 }
 
 
-/* =========================
-   LISTA FUNCIONÁRIOS
-========================= */
+if(type==='diaria'){
 
-function renderFuncionarios(){
+const f=document.getElementById('func');
 
-  const el=document.getElementById("listaFuncionarios");
+if(f && f.options.length){
 
-  if(!db.funcionarios.length){
-    el.innerHTML=`<div class="card empty">
-      Nenhum funcionário cadastrado.
-    </div>`;
-    return;
-  }
+if(payload && payload.id)
+f.value=payload.id;
 
-  el.innerHTML=db.funcionarios.map(f=>{
+syncDiariaObra();
 
-    const obra=db.obras.find(o=>o.id===f.obraId);
+}
 
-    return `
-      <div class="item">
+}
 
-        <div class="item-title">
-          ${escapeHtml(f.nome)}
-        </div>
-
-        <div class="muted">
-          ${escapeHtml(f.funcao||"Função não definida")}
-        </div>
-
-        <div style="margin-top:10px">
-
-          <span class="badge ${f.status==="ativo"?"active":"inactive"}">
-            ${f.status==="ativo"?"ATIVO":"INATIVO"}
-          </span>
-
-          ${
-            f.registrarDiaria
-            ?
-            `<span class="badge gold">
-              REGISTRA DIÁRIA
-            </span>`
-            :
-            `<span class="badge inactive">
-              NÃO REGISTRAR DIÁRIA
-            </span>`
-          }
-
-        </div>
-
-        <p class="muted">
-          🏗️ Obra:
-          <b style="color:white">
-            ${obra ? escapeHtml(obra.nome) : "Nenhuma obra selecionada"}
-          </b>
-        </p>
-
-        ${
-          f.registrarDiaria
-          ?
-          `<button
-            class="btn green small"
-            onclick="registrarDiaria('${f.id}')">
-            ✓ Registrar Diária
-          </button>`
-          :
-          ``
-        }
-
-        <button
-          class="btn secondary small"
-          onclick="editarFuncionario('${f.id}')">
-          Editar
-        </button>
-
-      </div>
-    `;
-  }).join("");
 }
 
 
-/* =========================
-   FINANCEIRO
-========================= */
+function closeModal(){
 
-function abrirNovaDespesa(){
+document
+.getElementById('modal')
+.classList.remove('show');
 
-  const options=db.obras.map(o=>
-    `<option value="${o.id}">
-      ${escapeHtml(o.nome)}
-    </option>`
-  ).join("");
+currentModal='';
 
-  abrirModal(`
-    <h2>Nova despesa</h2>
-
-    <label>Descrição</label>
-    <input id="despDesc" placeholder="Ex.: Material de obra">
-
-    <label style="margin-top:15px">Valor</label>
-    <input id="despValor" type="number" step="0.01" placeholder="0,00">
-
-    <label style="margin-top:15px">Obra</label>
-    <select id="despObra">
-      <option value="">Sem obra</option>
-      ${options}
-    </select>
-
-    <button class="btn" onclick="salvarDespesa()">
-      Salvar despesa
-    </button>
-  `);
-}
-
-function salvarDespesa(){
-
-  const valor=Number(document.getElementById("despValor").value);
-
-  if(!valor){
-    alert("Informe o valor.");
-    return;
-  }
-
-  db.despesas.push({
-    id:id(),
-    descricao:document.getElementById("despDesc").value,
-    valor,
-    obraId:document.getElementById("despObra").value,
-    data:new Date().toLocaleDateString("pt-BR")
-  });
-
-  salvar();
-  fecharModal();
-}
-
-function excluirDespesa(idDesp){
-
-  if(!confirm("Excluir esta despesa?"))return;
-
-  db.despesas=db.despesas.filter(x=>x.id!==idDesp);
-
-  salvar();
-}
-
-function renderDespesas(){
-
-  const el=document.getElementById("listaDespesas");
-
-  if(!db.despesas.length){
-    el.innerHTML=`<div class="card empty">
-      Nenhuma despesa cadastrada.
-    </div>`;
-    return;
-  }
-
-  el.innerHTML=db.despesas.map(d=>{
-
-    const obra=db.obras.find(o=>o.id===d.obraId);
-
-    return `
-      <div class="item">
-
-        <div class="item-title">
-          ${escapeHtml(d.descricao||"Despesa")}
-        </div>
-
-        <div style="font-size:25px;color:var(--gold2);font-weight:800">
-          ${dinheiro(d.valor)}
-        </div>
-
-        <p class="muted">
-          ${d.data}
-          ${obra ? " • "+escapeHtml(obra.nome) : ""}
-        </p>
-
-        <button
-          class="btn danger small"
-          onclick="excluirDespesa('${d.id}')">
-          Excluir
-        </button>
-
-      </div>
-    `;
-  }).join("");
 }
 
 
-/* =========================
-   RENDER OBRAS
-========================= */
+document
+.getElementById('modal')
+.addEventListener(
+'click',
+e=>{
+if(e.target.id==='modal')
+closeModal();
+}
+);
 
-function renderObras(){
 
-  const el=document.getElementById("listaObras");
+const obraOptions=()=>data.obras.map(
+o=>`<option value="${o.id}">
+${esc(o.nome)}
+</option>`
+).join('');
 
-  if(!db.obras.length){
-    el.innerHTML=`<div class="card empty">
-      Nenhuma obra cadastrada.
-    </div>`;
-    return;
-  }
 
-  el.innerHTML=db.obras.map(o=>{
+const funcOptionsDiaria=()=>data.funcionarios
+.filter(
+f=>f.registrarDiaria!==false &&
+f.status!=='inativo'
+)
+.map(
+f=>`<option value="${f.id}">
+${esc(f.nome)}
+</option>`
+)
+.join('');
 
-    const p=progressoObra(o);
 
-    return `
-      <div class="item">
+const forms={
 
-        <div class="item-title">
-          ${escapeHtml(o.nome)}
-        </div>
 
-        <div class="muted">
-          Cliente: ${escapeHtml(o.cliente||"Não informado")}
-        </div>
+obra:()=>`
 
-        <span class="badge gold">
-          ${p}% concluída
-        </span>
+<div class="form">
 
-        <div class="progress">
-          <div style="width:${p}%"></div>
-        </div>
+<div>
+<label>Nome da obra</label>
+<input id="nome"
+placeholder="Ex.: Reforma da casa do cliente">
+</div>
 
-        <button
-          class="btn small"
-          onclick="abrirObra('${o.id}')">
-          Abrir obra
-        </button>
+<div>
+<label>Cliente</label>
+<input id="cliente"
+placeholder="Nome do cliente">
+</div>
 
-      </div>
-    `;
-  }).join("");
+<div class="two">
+
+<div>
+<label>Valor contratado</label>
+<input id="valor"
+type="number"
+step="0.01"
+inputmode="decimal">
+</div>
+
+<div>
+<label>Prazo (dias)</label>
+<input id="prazo"
+type="number"
+value="30">
+</div>
+
+</div>
+
+<div>
+<label>Endereço / local</label>
+<input id="local">
+</div>
+
+<div>
+<label>Observações</label>
+<textarea id="obs"></textarea>
+</div>
+
+<button class="btn primary"
+onclick="addObra()">
+Salvar obra
+</button>
+
+</div>
+
+`,
+
+
+func:(f=null)=>`
+
+<div class="form">
+
+<div>
+<label>Nome</label>
+<input id="nome"
+value="${esc(f?.nome||'')}">
+</div>
+
+<div class="two">
+
+<div>
+<label>Valor da diária</label>
+<input id="diaria"
+type="number"
+step="0.01"
+value="${f?.diaria??0}">
+</div>
+
+<div>
+<label>Função</label>
+<input id="funcao"
+value="${esc(f?.funcao||'')}"
+placeholder="Pedreiro, ajudante...">
+</div>
+
+</div>
+
+
+<div>
+
+<label>🏗️ Obra em que vai trabalhar</label>
+
+<select id="funcObra">
+
+<option value="">
+Nenhuma obra selecionada
+</option>
+
+${obraOptions()}
+
+</select>
+
+</div>
+
+
+<div>
+
+<label>💰 Registrar diária?</label>
+
+<select id="registrarDiaria">
+
+<option value="sim"
+${f?.registrarDiaria!==false?'selected':''}>
+Sim — registrar diária
+</option>
+
+<option value="nao"
+${f?.registrarDiaria===false?'selected':''}>
+Não — não registrar diária
+</option>
+
+</select>
+
+</div>
+
+
+<div>
+
+<label>Status do funcionário</label>
+
+<select id="status">
+
+<option value="ativo"
+${f?.status!=='inativo'?'selected':''}>
+Ativo
+</option>
+
+<option value="inativo"
+${f?.status==='inativo'?'selected':''}>
+Inativo
+</option>
+
+</select>
+
+</div>
+
+
+<button class="btn primary"
+onclick="${f?
+`updateFunc('${f.id}')`:
+'addFunc()'}">
+
+${f?'Salvar alterações':'Salvar funcionário'}
+
+</button>
+
+</div>
+
+`,
+
+
+despesa:()=>`
+
+<div class="form">
+
+<div>
+<label>Descrição</label>
+<input id="desc"
+placeholder="Material, combustível, diária...">
+</div>
+
+<div class="two">
+
+<div>
+<label>Valor</label>
+<input id="valor"
+type="number"
+step="0.01">
+</div>
+
+<div>
+<label>Data</label>
+<input id="date"
+type="date"
+value="${new Date().toISOString().slice(0,10)}">
+</div>
+
+</div>
+
+<div>
+<label>Obra</label>
+
+<select id="obra">
+
+<option value="">
+Geral
+</option>
+
+${obraOptions()}
+
+</select>
+
+</div>
+
+<button class="btn primary"
+onclick="addLanc('despesa')">
+Salvar despesa
+</button>
+
+</div>
+
+`,
+
+
+receita:()=>`
+
+<div class="form">
+
+<div>
+<label>Descrição</label>
+<input id="desc"
+placeholder="Pagamento do cliente...">
+</div>
+
+<div class="two">
+
+<div>
+<label>Valor</label>
+<input id="valor"
+type="number"
+step="0.01">
+</div>
+
+<div>
+<label>Data</label>
+<input id="date"
+type="date"
+value="${new Date().toISOString().slice(0,10)}">
+</div>
+
+</div>
+
+<div>
+<label>Obra</label>
+
+<select id="obra">
+
+<option value="">
+Geral
+</option>
+
+${obraOptions()}
+
+</select>
+
+</div>
+
+<button class="btn primary"
+onclick="addLanc('receita')">
+Salvar receita
+</button>
+
+</div>
+
+`,
+
+
+diaria:()=>`
+
+<div class="form">
+
+<div>
+
+<label>👷 Funcionário</label>
+
+<select id="func"
+onchange="syncDiariaObra()">
+
+${funcOptionsDiaria()}
+
+</select>
+
+</div>
+
+
+<div>
+
+<label>🏗️ Obra do funcionário</label>
+
+<select id="obra">
+
+<option value="">
+Selecione a obra
+</option>
+
+${obraOptions()}
+
+</select>
+
+<p class="muted"
+style="margin:6px 0 0">
+
+A obra é preenchida automaticamente conforme
+a obra escolhida no cadastro do funcionário.
+
+</p>
+
+</div>
+
+
+<div class="two">
+
+<div>
+
+<label>Quantidade de diárias</label>
+
+<input id="qtd"
+type="number"
+step="0.5"
+value="1">
+
+</div>
+
+
+<div>
+
+<label>Data</label>
+
+<input id="date"
+type="date"
+value="${new Date().toISOString().slice(0,10)}">
+
+</div>
+
+</div>
+
+
+<button class="btn primary"
+onclick="addDiaria()">
+
+Marcar diária
+
+</button>
+
+</div>
+
+`,
+
+
+check:()=>`
+
+<div class="form">
+
+<div>
+<label>Obra</label>
+<select id="obra">
+${obraOptions()}
+</select>
+</div>
+
+<div>
+<label>Nome do checklist</label>
+<input id="nome"
+value="Checklist da obra">
+</div>
+
+<div id="checks">
+
+${[
+'Proteção e organização do local',
+'Materiais conferidos',
+'Ferramentas conferidas',
+'Serviço executado conforme planejamento',
+'Limpeza do local',
+'Fotos registradas',
+'Pendências anotadas',
+'Cliente informado'
+].map(
+(x,i)=>`
+<label class="check">
+<input type="checkbox" id="c${i}">
+${x}
+</label>
+`
+).join('')}
+
+</div>
+
+<button class="btn primary"
+onclick="addChecklist()">
+Salvar checklist
+</button>
+
+</div>
+
+`,
+
+
+foto:()=>`
+
+<div class="form">
+
+<div>
+<label>Obra</label>
+<select id="obra">
+${obraOptions()}
+</select>
+</div>
+
+<div>
+<label>Título / etapa</label>
+<input id="titulo"
+placeholder="Ex.: Antes da pintura">
+</div>
+
+<div>
+<label>Descrição</label>
+<textarea id="desc"></textarea>
+</div>
+
+<div>
+<label>Fotos</label>
+<input id="files"
+type="file"
+accept="image/*"
+multiple>
+</div>
+
+<div id="preview"
+class="photos">
+</div>
+
+<button class="btn primary"
+onclick="addFotos()">
+Salvar relatório
+</button>
+
+</div>
+
+`,
+
+
+contrato:()=>`
+
+<div class="form">
+
+<div>
+<label>Obra</label>
+<select id="obra">
+${obraOptions()}
+</select>
+</div>
+
+<div>
+<label>Cliente</label>
+<input id="cliente">
+</div>
+
+<div>
+<label>Prestador</label>
+<input id="prestador"
+value="Alef Júnior">
+</div>
+
+<div>
+<label>Objeto / serviços</label>
+<textarea id="objeto"
+placeholder="Descreva os serviços...">
+</textarea>
+</div>
+
+<div class="two">
+
+<div>
+<label>Valor</label>
+<input id="valor"
+type="number"
+step="0.01">
+</div>
+
+<div>
+<label>Prazo (dias)</label>
+<input id="prazo"
+type="number"
+value="30">
+</div>
+
+</div>
+
+<div>
+<label>Condições de pagamento</label>
+<textarea id="pagamento"
+placeholder="Ex.: 50% na entrada e 50% após conclusão.">
+</textarea>
+</div>
+
+<button class="btn primary"
+onclick="addContrato()">
+Salvar contrato
+</button>
+
+</div>
+
+`,
+
+
+orcamento:()=>`
+
+<div class="form">
+
+<div>
+<label>Cliente</label>
+<input id="cliente">
+</div>
+
+<div>
+<label>Descrição dos serviços</label>
+<textarea id="servicos"
+placeholder="Pintura, reboco, reparos, passeio...">
+</textarea>
+</div>
+
+<div class="two">
+
+<div>
+<label>Mão de obra</label>
+<input id="mo"
+type="number"
+step="0.01">
+</div>
+
+<div>
+<label>Materiais</label>
+<input id="mat"
+type="number"
+step="0.01">
+</div>
+
+</div>
+
+<div>
+<label>Observações</label>
+<textarea id="obs"></textarea>
+</div>
+
+<button class="btn primary"
+onclick="addOrcamento()">
+Salvar orçamento
+</button>
+
+</div>
+
+`,
+
+
+supabase:()=>`
+
+<div class="form">
+
+<p class="muted">
+Cole abaixo a URL do projeto e a chave pública.
+</p>
+
+<div>
+<label>Project URL</label>
+<input id="surl"
+value="${esc(data.config.supabaseUrl)}"
+placeholder="https://seu-projeto.supabase.co">
+</div>
+
+<div>
+<label>Publishable / anon key</label>
+<textarea id="skey"
+style="min-height:120px">
+${esc(data.config.supabaseKey)}
+</textarea>
+</div>
+
+<button class="btn primary"
+onclick="saveSupabaseConfig()">
+Salvar configuração
+</button>
+
+<button class="btn"
+onclick="testCloud()">
+Testar conexão
+</button>
+
+<p id="cloudMsg"
+class="muted">
+</p>
+
+</div>
+
+`
+
+};
+
+
+function addObra(){
+
+const o={
+id:id(),
+nome:val('nome'),
+cliente:val('cliente'),
+valor:+val('valor'),
+prazo:+val('prazo'),
+local:val('local'),
+obs:val('obs'),
+status:'Em andamento',
+created:new Date().toISOString()
+};
+
+if(!o.nome){
+toast('Informe o nome da obra');
+return;
+}
+
+data.obras.push(o);
+
+save();
+closeModal();
+
+toast('Obra salva');
+
 }
 
 
-/* =========================
-   DASHBOARD
-========================= */
+function addFunc(){
 
-function atualizar(){
+const f={
+id:id(),
+nome:val('nome'),
+diaria:+val('diaria'),
+funcao:val('funcao'),
 
-  const obras=db.obras.length;
+/* OBRA SELECIONADA */
+obra:val('funcObra'),
 
-  const andamento=db.obras.filter(
-    o=>o.status==="andamento"
-  ).length;
+/* SIM OU NÃO */
+registrarDiaria:
+val('registrarDiaria')!=='nao',
 
-  const ativos=db.funcionarios.filter(
-    f=>f.status==="ativo"
-  ).length;
+/* ATIVO OU INATIVO */
+status:val('status')||'ativo',
 
-  const inativos=db.funcionarios.filter(
-    f=>f.status==="inativo"
-  ).length;
+diarias:0,
+pontos:0,
+total:0
+};
 
-  const total=db.despesas.reduce(
-    (s,d)=>s+Number(d.valor||0),0
-  );
+if(!f.nome){
+toast('Informe o nome');
+return;
+}
 
-  document.getElementById("statObras").textContent=obras;
-  document.getElementById("statAndamento").textContent=andamento;
-  document.getElementById("statFuncionarios").textContent=ativos;
-  document.getElementById("statDespesas").textContent=dinheiro(total);
+data.funcionarios.push(f);
 
-  document.getElementById("resObras").textContent=obras;
-  document.getElementById("resAndamento").textContent=andamento;
-  document.getElementById("resAtivos").textContent=ativos;
-  document.getElementById("resInativos").textContent=inativos;
-  document.getElementById("resDespesas").textContent=dinheiro(total);
+save();
+closeModal();
 
-  document.getElementById("equipeAtivos").textContent=ativos;
-  document.getElementById("equipeInativos").textContent=inativos;
+toast('Funcionário salvo');
 
-  document.getElementById("financeTotal").textContent=dinheiro(total);
-
-  renderObras();
-  renderFuncionarios();
-  renderDespesas();
 }
 
 
-/* =========================
-   EXPORTAÇÃO
-========================= */
+function updateFunc(i){
 
-function exportarDados(){
+const f=data.funcionarios.find(
+x=>x.id===i
+);
 
-  const arquivo={
-    aplicativo:"EDIFIQ",
-    exportadoEm:new Date().toISOString(),
-    dados:db
-  };
+if(!f)return;
 
-  const blob=new Blob(
-    [JSON.stringify(arquivo,null,2)],
-    {type:"application/json"}
-  );
+f.nome=val('nome');
+f.diaria=+val('diaria');
+f.funcao=val('funcao');
 
-  const url=URL.createObjectURL(blob);
+/* ATUALIZA A OBRA */
+f.obra=val('funcObra');
 
-  const a=document.createElement("a");
-  a.href=url;
-  a.download="edifiq-backup.json";
-  a.click();
+/* ATUALIZA SIM/NÃO */
+f.registrarDiaria=
+val('registrarDiaria')!=='nao';
 
-  URL.revokeObjectURL(url);
+/* ATUALIZA ATIVO/INATIVO */
+f.status=val('status')||'ativo';
+
+if(!f.nome){
+toast('Informe o nome');
+return;
 }
 
-function limparDados(){
+save();
+closeModal();
 
-  if(!confirm(
-    "ATENÇÃO: isso apagará os dados salvos neste aparelho. Continuar?"
-  ))return;
+toast('Funcionário atualizado');
 
-  localStorage.removeItem(DB_KEY);
-
-  location.reload();
 }
 
 
-/* =========================
-   SEGURANÇA DE TEXTO
-========================= */
+function editFunc(i){
 
-function escapeHtml(value){
+const f=data.funcionarios.find(
+x=>x.id===i
+);
 
-  return String(value??"")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#039;");
-}
+if(f)
+openModal('func',f);
 
-function escapeAttr(value){
-  return escapeHtml(value);
 }
 
 
-/* =========================
-   INICIALIZAÇÃO
-========================= */
+function syncDiariaObra(){
 
-atualizar();
+const f=data.funcionarios.find(
+x=>x.id===val('func')
+);
+
+const select=document.getElementById('obra');
+
+if(!select)return;
+
+if(f?.obra){
+
+select.value=f.obra;
+
+}
+
+}
+
+
+function addLanc(tipo){
+
+const l={
+id:id(),
+tipo,
+desc:val('desc'),
+valor:+val('valor'),
+date:val('date'),
+obra:val('obra'),
+created:new Date().toISOString()
+};
+
+if(!l.desc||!l.valor){
+
+toast('Preencha descrição e valor');
+return;
+
+}
+
+data.lancamentos.push(l);
+
+save();
+closeModal();
+
+toast('Lançamento salvo');
+
+}
+
+
+function addDiaria(){
+
+const f=data.funcionarios.find(
+x=>x.id===val('func')
+);
+
+const o=data.obras.find(
+x=>x.id===val('obra')
+);
+
+const q=+val('qtd');
+
+
+if(!f){
+
+toast('Selecione um funcionário');
+
+return;
+
+}
+
+
+if(!q){
+
+toast('Informe a quantidade de diárias');
+
+return;
+
+}
+
+
+/* FUNCIONÁRIO INATIVO NÃO RECEBE DIÁRIA */
+
+if(f.status==='inativo'){
+
+toast('Funcionário inativo não pode registrar diária');
+
+return;
+
+}
+
+
+/* FUNCIONÁRIO CONFIGURADO PARA NÃO REGISTRAR */
+
+if(f.registrarDiaria===false){
+
+toast('Este funcionário está configurado para não registrar diária');
+
+return;
+
+}
+
+
+/* OBRIGA A TER UMA OBRA */
+
+if(!o && !f.obra){
+
+toast('Selecione a obra do funcionário');
+
+return;
+
+}
+
+
+const obraDaDiaria=
+o?.id ||
+f.obra ||
+'';
+
+
+/* SALVA A OBRA SELECIONADA NO FUNCIONÁRIO */
+
+f.obra=obraDaDiaria;
+
+f.diarias=
+(f.diarias||0)+q;
+
+f.pontos=
+(f.pontos||0)+q;
+
+f.total=
+(f.total||0)+
+q*(f.diaria||0);
+
+
+data.lancamentos.push({
+
+id:id(),
+
+tipo:'despesa',
+
+desc:`Diária — ${f.nome}`,
+
+valor:q*(f.diaria||0),
+
+date:val('date'),
+
+obra:obraDaDiaria,
+
+created:new Date().toISOString()
+
+});
+
+
+save();
+closeModal();
+
+toast(
+'Diária registrada para '+
+f.nome+
+' na obra '+
+(o?.nome||obraName(obraDaDiaria))
+);
+
+}
+
+
+function val(x){
+
+return document
+.getElementById(x)
+?.value
+?.trim()||'';
+
+}
+
+
+function obraName(id){
+
+return data.obras.find(
+o=>o.id===id
+)?.nome||'Geral';
+
+}
+
+
+function render(){
+
+const rec=
+data.lancamentos
+.filter(x=>x.tipo==='receita')
+.reduce((a,x)=>a+x.valor,0);
+
+const desp=
+data.lancamentos
+.filter(x=>x.tipo==='despesa')
+.reduce((a,x)=>a+x.valor,0);
+
+const saldo=rec-desp;
+
+
+document.getElementById('sObras').textContent=
+data.obras.filter(
+o=>o.status!=='Concluída'
+).length;
+
+
+document.getElementById('sFunc').textContent=
+data.funcionarios.length;
+
+
+document.getElementById('sReceita').textContent=
+money(rec);
+
+
+document.getElementById('sDespesa').textContent=
+money(desp);
+
+
+document.getElementById('sSaldo').textContent=
+money(saldo);
+
+
+document.getElementById('fReceita').textContent=
+money(rec);
+
+
+document.getElementById('fDespesa').textContent=
+money(desp);
+
+
+document.getElementById('fLucro').textContent=
+money(saldo);
+
+
+document.getElementById('fMargem').textContent=
+rec?
+(saldo/rec*100).toFixed(1)+'%':
+'0%';
+
+
+/* INDICADORES DA EQUIPE */
+
+document.getElementById('totalAtivos').textContent=
+data.funcionarios.filter(
+f=>f.status!=='inativo'
+).length;
+
+
+document.getElementById('totalInativos').textContent=
+data.funcionarios.filter(
+f=>f.status==='inativo'
+).length;
+
+
+document.getElementById('totalDiarias').textContent=
+data.funcionarios.reduce(
+(a,f)=>a+(f.diarias||0),0
+);
+
+
+document.getElementById('totalMO').textContent=
+money(
+data.funcionarios.reduce(
+(a,f)=>a+(f.total||0),0
+)
+);
+
+
+/* OBRAS */
+
+document.getElementById('listaObras').innerHTML=
+
+data.obras.length?
+
+data.obras.map(
+o=>`
+
+<div class="card"
+style="margin-bottom:10px">
+
+<div class="item">
+
+<div>
+
+<h3>${esc(o.nome)}</h3>
+
+<p>
+${esc(o.cliente||'Sem cliente')}
+·
+${esc(o.local||'')}
+</p>
+
+<span class="pill">
+${esc(o.status)}
+</span>
+
+</div>
+
+<b class="gold">
+${money(o.valor)}
+</b>
+
+</div>
+
+<div class="actions">
+
+<button class="btn small"
+onclick="openObraReport('${o.id}')">
+Relatórios
+</button>
+
+<button class="btn danger small"
+onclick="del('obras','${o.id}')">
+Excluir
+</button>
+
+</div>
+
+</div>
+
+`
+).join(''):
+
+`
+<div class="card empty">
+Nenhuma obra cadastrada.
+<br>
+Toque em “+ Nova”.
+</div>
+`;
+
+
+/* FUNCIONÁRIOS */
+
+document.getElementById('listaFunc').innerHTML=
+
+data.funcionarios.length?
+
+data.funcionarios.map(
+f=>`
+
+<div class="card"
+style="margin-bottom:10px">
+
+<div class="item">
+
+<div>
+
+<h3>${esc(f.nome)}</h3>
+
+<p>
+${esc(f.funcao||'Equipe')}
+·
+${money(f.diaria)}/dia
+</p>
+
+<p>
+🏗️ Obra:
+<b>
+${esc(obraName(f.obra))}
+</b>
+</p>
+
+<p>
+
+${
+f.registrarDiaria===false
+?
+'🚫 Não registrar diária'
+:
+'💰 Registrar diária'
+}
+
+·
+
+<span class="pill">
+
+${
+f.status==='inativo'
+?
+'Inativo'
+:
+'Ativo'
+}
+
+</span>
+
+</p>
+
+</div>
+
+<div style="text-align:right">
+
+<b>
+${f.diarias||0} dias
+</b>
+
+<p>
+${money(f.total)}
+</p>
+
+</div>
+
+</div>
+
+
+<div class="actions">
+
+<button class="btn small"
+onclick="editFunc('${f.id}')">
+Editar
+</button>
+
+
+${
+f.registrarDiaria!==false &&
+f.status!=='inativo'
+?
+
+`
+<button class="btn small"
+onclick="openModal('diaria',{id:'${f.id}'})">
++ Diária
+</button>
+`
+
+:
+''
+}
+
+
+<button class="btn danger small"
+onclick="del('funcionarios','${f.id}')">
+Excluir
+</button>
+
+</div>
+
+</div>
+
+`
+).join(''):
+
+`
+<div class="card empty">
+Nenhum funcionário cadastrado.
+</div>
+`;
+
+
+/* LANÇAMENTOS */
+
+document.getElementById('lancamentos').innerHTML=
+
+data.lancamentos.length?
+
+[...data.lancamentos]
+.reverse()
+.map(
+l=>`
+
+<div class="item">
+
+<div>
+
+<h3>
+${l.tipo==='receita'?'💰':'💸'}
+${esc(l.desc)}
+</h3>
+
+<p>
+${esc(l.date||'')}
+·
+${esc(obraName(l.obra))}
+</p>
+
+</div>
+
+<div style="text-align:right">
+
+<b class="${
+l.tipo==='receita'
+?
+'green'
+:
+'red'
+}">
+
+${l.tipo==='receita'?'+':'-'}
+${money(l.valor)}
+
+</b>
+
+<br>
+
+<button
+class="btn danger small"
+onclick="del('lancamentos','${l.id}')">
+
+Excluir
+
+</button>
+
+</div>
+
+</div>
+
+`
+).join(''):
+
+`
+<div class="empty">
+Nenhum lançamento.
+</div>
+`;
+
+
+/* ATIVIDADES RECENTES */
+
+document.getElementById('recentes').innerHTML=
+
+data.lancamentos.length?
+
+[...data.lancamentos]
+.slice(-5)
+.reverse()
+.map(
+l=>`
+
+<div class="item">
+
+<div>
+
+<h3>
+${esc(l.desc)}
+</h3>
+
+<p>
+${esc(l.date||'')}
+</p>
+
+</div>
+
+<b class="${
+l.tipo==='receita'
+?
+'green'
+:
+'red'
+}">
+
+${l.tipo==='receita'?'+':'-'}
+${money(l.valor)}
+
+</b>
+
+</div>
+
+`
+).join(''):
+
+`
+<div class="empty">
+Suas atividades aparecerão aqui.
+</div>
+`;
+
+
+document.getElementById(
+'listaRelatorios'
+).innerHTML=renderReports();
+
+
+document.getElementById(
+'cloudStatus'
+).textContent=
+data.config.supabaseUrl?
+'Nuvem: configurada':
+'Nuvem: não configurada';
+
+}
+
+
+function renderReports(){
+
+let a=[];
+
+
+data.checklists.forEach(
+x=>a.push(`
+
+<div class="card"
+style="margin-bottom:10px">
+
+<b>
+☑️ ${esc(x.nome)}
+</b>
+
+<p class="muted">
+${esc(obraName(x.obra))}
+·
+${x.checks.filter(c=>c.ok).length}/${x.checks.length}
+concluídos
+</p>
+
+<button class="btn danger small"
+onclick="del('checklists','${x.id}')">
+Excluir
+</button>
+
+</div>
+
+`)
+);
+
+
+data.fotos.forEach(
+x=>a.push(`
+
+<div class="card"
+style="margin-bottom:10px">
+
+<b>
+📸 ${esc(x.titulo)}
+</b>
+
+<p class="muted">
+${esc(obraName(x.obra))}
+</p>
+
+<div class="photos">
+
+${x.photos.map(
+p=>`<img class="photo" src="${p.data}">`
+).join('')}
+
+</div>
+
+<button class="btn danger small"
+onclick="del('fotos','${x.id}')">
+Excluir
+</button>
+
+</div>
+
+`)
+);
+
+
+data.contratos.forEach(
+x=>a.push(`
+
+<div class="card"
+style="margin-bottom:10px">
+
+<b>
+📄 Contrato — ${esc(x.cliente)}
+</b>
+
+<p class="muted">
+${money(x.valor)}
+·
+${x.prazo} dias
+</p>
+
+<button class="btn small"
+onclick="printContrato('${x.id}')">
+Imprimir
+</button>
+
+<button class="btn danger small"
+onclick="del('contratos','${x.id}')">
+Excluir
+</button>
+
+</div>
+
+`)
+);
+
+
+data.orcamentos.forEach(
+x=>a.push(`
+
+<div class="card"
+style="margin-bottom:10px">
+
+<b>
+🧾 Orçamento — ${esc(x.cliente)}
+</b>
+
+<p class="muted">
+${money(x.total)}
+</p>
+
+<button class="btn small"
+onclick="printOrcamento('${x.id}')">
+Imprimir
+</button>
+
+<button class="btn danger small"
+onclick="del('orcamentos','${x.id}')">
+Excluir
+</button>
+
+</div>
+
+`)
+);
+
+
+return a.join('')||
+
+`
+<div class="card empty">
+Nenhum relatório cadastrado.
+</div>
+`;
+
+}
+
+
+function del(col,i){
+
+if(!confirm('Excluir este item?'))
+return;
+
+data[col]=data[col].filter(
+x=>x.id!==i
+);
+
+save();
+
+toast('Excluído');
+
+}
+
+
+function clearAll(){
+
+if(confirm(
+'Isso apagará todos os dados deste aparelho. Continuar?'
+)){
+
+localStorage.removeItem(KEY);
+
+data=load();
+
+render();
+
+toast('Dados limpos');
+
+}
+
+}
+
+
+function exportData(){
+
+const b=new Blob(
+[
+JSON.stringify(data,null,2)
+],
+{
+type:'application/json'
+}
+);
+
+const a=document.createElement('a');
+
+a.href=URL.createObjectURL(b);
+
+a.download='backup-edifiq.json';
+
+a.click();
+
+URL.revokeObjectURL(a.href);
+
+}
+
+
+function importData(input){
+
+const f=input.files[0];
+
+if(!f)return;
+
+const r=new FileReader();
+
+r.onload=()=>{
+
+try{
+
+data=Object.assign(
+{},
+defaultData,
+JSON.parse(r.result)
+);
+
+save();
+
+toast('Backup restaurado');
+
+}catch(e){
+
+toast('Arquivo inválido');
+
+}
+
+};
+
+r.readAsText(f);
+
+}
+
+
+function printReport(){
+
+const w=window.open(
+'',
+'_blank'
+);
+
+if(!w){
+
+toast(
+'Permita pop-ups no navegador'
+);
+
+return;
+
+}
+
+const rec=
+data.lancamentos
+.filter(x=>x.tipo==='receita')
+.reduce((a,x)=>a+x.valor,0);
+
+const desp=
+data.lancamentos
+.filter(x=>x.tipo==='despesa')
+.reduce((a,x)=>a+x.valor,0);
+
+
+w.document.write(`
+
+<html>
+
+<head>
+
+<title>EDIFIQ — Relatório</title>
+
+<style>
+
+body{
+font-family:Arial;
+padding:30px;
+color:#111
+}
+
+h1{
+margin-bottom:4px
+}
+
+table{
+width:100%;
+border-collapse:collapse
+}
+
+td,th{
+border:1px solid #ccc;
+padding:8px;
+text-align:left
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>EDIFIQ</h1>
+
+<p>
+Gestão de Obras e Reformas
+</p>
+
+<h2>
+Resumo financeiro
+</h2>
+
+<p>
+
+Receitas:
+${money(rec)}
+
+<br>
+
+Despesas:
+${money(desp)}
+
+<br>
+
+<b>
+Saldo:
+${money(rec-desp)}
+</b>
+
+</p>
+
+<h2>
+Obras
+</h2>
+
+<table>
+
+<tr>
+<th>Obra</th>
+<th>Cliente</th>
+<th>Valor</th>
+<th>Status</th>
+</tr>
+
+${data.obras.map(
+o=>`
+
+<tr>
+
+<td>
+${esc(o.nome)}
+</td>
+
+<td>
+${esc(o.cliente)}
+</td>
+
+<td>
+${money(o.valor)}
+</td>
+
+<td>
+${esc(o.status)}
+</td>
+
+</tr>
+
+`
+).join('')}
+
+</table>
+
+
+<h2>
+Funcionários
+</h2>
+
+<table>
+
+<tr>
+<th>Nome</th>
+<th>Função</th>
+<th>Obra</th>
+<th>Diárias</th>
+<th>Total</th>
+</tr>
+
+${data.funcionarios.map(
+f=>`
+
+<tr>
+
+<td>
+${esc(f.nome)}
+</td>
+
+<td>
+${esc(f.funcao)}
+</td>
+
+<td>
+${esc(obraName(f.obra))}
+</td>
+
+<td>
+${f.diarias||0}
+</td>
+
+<td>
+${money(f.total)}
+</td>
+
+</tr>
+
+`
+).join('')}
+
+</table>
+
+</body>
+
+</html>
+
+`);
+
+w.document.close();
+
+w.print();
+
+}
+
+
+function printContrato(i){
+
+const x=data.contratos.find(
+a=>a.id===i
+);
+
+if(!x)return;
+
+const w=window.open(
+'',
+'_blank'
+);
+
+w.document.write(`
+
+<html>
+
+<body
+style="font-family:Arial;padding:40px;line-height:1.6">
+
+<h1>EDIFIQ</h1>
+
+<h2>
+CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+</h2>
+
+<p>
+<b>Cliente:</b>
+${esc(x.cliente)}
+</p>
+
+<p>
+<b>Prestador:</b>
+${esc(x.prestador)}
+</p>
+
+<p>
+<b>Objeto:</b>
+${esc(x.objeto)}
+</p>
+
+<p>
+<b>Valor:</b>
+${money(x.valor)}
+</p>
+
+<p>
+<b>Prazo:</b>
+${x.prazo} dias
+</p>
+
+<p>
+<b>Pagamento:</b>
+${esc(x.pagamento)}
+</p>
+
+<br>
+
+<p>
+__________________________________
+<br>
+Cliente
+</p>
+
+<p>
+__________________________________
+<br>
+${esc(x.prestador)}
+</p>
+
+</body>
+
+</html>
+
+`);
+
+w.document.close();
+
+w.print();
+
+}
+
+
+function printOrcamento(i){
+
+const x=data.orcamentos.find(
+a=>a.id===i
+);
+
+if(!x)return;
+
+const w=window.open(
+'',
+'_blank'
+);
+
+w.document.write(`
+
+<html>
+
+<body
+style="font-family:Arial;padding:40px">
+
+<h1>EDIFIQ</h1>
+
+<h2>
+ORÇAMENTO
+</h2>
+
+<p>
+<b>Cliente:</b>
+${esc(x.cliente)}
+</p>
+
+<h3>
+Serviços
+</h3>
+
+<p>
+${esc(x.servicos)
+.replace(/\n/g,'<br>')}
+</p>
+
+<p>
+
+Mão de obra:
+${money(x.mo)}
+
+<br>
+
+Materiais:
+${money(x.mat)}
+
+<br>
+
+<b>
+Total:
+${money(x.total)}
+</b>
+
+</p>
+
+<p>
+${esc(x.obs)}
+</p>
+
+</body>
+
+</html>
+
+`);
+
+w.document.close();
+
+w.print();
+
+}
+
+
+function openObraReport(i){
+
+go(
+'relatorios',
+document.querySelectorAll('.nav button')[4]
+);
+
+toast(
+'Relatórios da obra: '+
+obraName(i)
+);
+
+}
+
+
+function installHelp(){
+
+alert(
+'No iPhone: abra o site no Safari → Compartilhar → Adicionar à Tela de Início → Adicionar.'
+);
+
+}
+
+
+function saveSupabaseConfig(){
+
+data.config.supabaseUrl=
+val('surl').replace(/\/$/,'');
+
+data.config.supabaseKey=
+val('skey');
+
+save();
+
+closeModal();
+
+toast(
+'Configuração salva'
+);
+
+}
+
+
+async function testCloud(){
+
+const u=
+val('surl').replace(/\/$/,'');
+
+const k=val('skey');
+
+const msg=
+document.getElementById('cloudMsg');
+
+if(!u||!k){
+
+msg.textContent=
+'Informe URL e chave.';
+
+return;
+
+}
+
+try{
+
+const r=await fetch(
+u+'/rest/v1/',
+{
+headers:{
+apikey:k,
+Authorization:'Bearer '+k
+}
+}
+);
+
+msg.textContent=
+r.ok?
+'Conexão respondendo.':
+'A URL/chave ou política do projeto precisa ser verificada.';
+
+}catch(e){
+
+msg.textContent=
+'Não foi possível conectar.';
+
+}
+
+}
+
+
+async function cloudSave(){
+
+/*
+O sistema continua funcionando localmente.
+A sincronização do Supabase permanece opcional.
+*/
+
+}
+
+
+render();
 
 </script>
 
