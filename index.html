@@ -26,7 +26,9 @@
   --success:#42c77a;
 }
 
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+}
 
 html,body{
   margin:0;
@@ -50,6 +52,10 @@ textarea{
 
 button{
   cursor:pointer;
+}
+
+button:disabled{
+  cursor:not-allowed;
 }
 
 .app{
@@ -409,1818 +415,6 @@ th{
   color:var(--gold);
 }
 
-@media(max-width:430px){
-  .grid3{
-    gap:7px;
-  }
-
-  .kpi{
-    padding:10px;
-  }
-
-  .kpi b{
-    font-size:18px;
-  }
-}
-
-/* ===== EDIFIQ — PROGRESSO POR ETAPA ===== */
-
-.edifiq-func-kpis{
-  margin-bottom:14px;
-}
-
-.edifiq-daily{
-  width:100%;
-  margin-top:10px;
-}
-
-.edifiq-check{
-  background:#0d1014;
-  border:1px solid #292d35;
-  border-radius:15px;
-  padding:13px;
-  margin-top:10px;
-}
-
-.edifiq-check-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-
-.edifiq-stage{
-  padding:12px 0;
-  border-top:1px solid #252932;
-}
-
-.edifiq-stage:first-child{
-  border-top:0;
-}
-
-.edifiq-stage-title{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  font-weight:700;
-  font-size:14px;
-}
-
-.edifiq-stage-title input{
-  width:auto;
-}
-
-.edifiq-stage-controls{
-  display:grid;
-  grid-template-columns:1fr 70px;
-  gap:9px;
-  align-items:center;
-  margin-top:9px;
-}
-
-.edifiq-stage-controls input[type=range]{
-  padding:0;
-  accent-color:var(--gold);
-}
-
-.edifiq-stage-number{
-  text-align:center;
-  padding:8px 4px;
-}
-
-.edifiq-stage-bar{
-  height:7px;
-  background:#252932;
-  border-radius:999px;
-  overflow:hidden;
-  margin-top:8px;
-}
-
-.edifiq-stage-bar div{
-  height:100%;
-  background:linear-gradient(90deg,var(--gold),var(--gold2));
-  transition:.2s;
-}
-
-.edifiq-total{
-  font-size:13px;
-  color:var(--muted);
-  margin-top:8px;
-}
-
-.edifiq-total strong{
-  color:var(--gold2);
-  font-size:20px;
-}
-</style>
-</head>
-
-<body>
-
-<div id="authScreen" class="auth">
-  <div class="authBox">
-
-    <div class="authLogo">
-      <div class="logo">⌂</div>
-      <h1>EDIFIQ</h1>
-      <p>GESTÃO DE OBRAS E REFORMAS</p>
-    </div>
-
-    <div class="card">
-
-      <div class="formGroup">
-        <label>E-mail</label>
-        <input id="loginEmail" type="email" placeholder="seu@email.com">
-      </div>
-
-      <div class="formGroup">
-        <label>Senha</label>
-        <input id="loginPassword" type="password" placeholder="••••••••">
-      </div>
-
-      <button class="btn btnGold" style="width:100%" onclick="login()">
-        Entrar
-      </button>
-
-      <button class="btn" style="width:100%;margin-top:8px" onclick="signup()">
-        Criar conta
-      </button>
-
-      <div id="authMsg" style="margin-top:12px;text-align:center;color:var(--muted)"></div>
-
-    </div>
-  </div>
-</div>
-
-<div id="app" class="app" style="display:none">
-
-<header>
-  <div class="brand">
-    <div class="logo">⌂</div>
-    <div>
-      <strong>EDIFIQ</strong>
-      <small>GESTÃO DE OBRAS E REFORMAS</small>
-    </div>
-  </div>
-</header>
-
-<main>
-
-<section id="home" class="page active">
-
-  <h2>Dashboard</h2>
-
-  <div class="grid">
-
-    <div class="kpi">
-      <span>Obras</span>
-      <b id="kObras">0</b>
-    </div>
-
-    <div class="kpi">
-      <span>Em andamento</span>
-      <b id="kAndamento">0</b>
-    </div>
-
-    <div class="kpi">
-      <span>Funcionários</span>
-      <b id="kFunc">0</b>
-    </div>
-
-    <div class="kpi">
-      <span>Despesas</span>
-      <b id="kDespesas">R$ 0,00</b>
-    </div>
-
-  </div>
-
-  <div class="card" style="margin-top:14px">
-    <h3>Resumo</h3>
-    <div id="homeResumo"></div>
-  </div>
-
-</section>
-
-<section id="obras" class="page">
-
-  <div class="row">
-    <div>
-      <h2>Obras</h2>
-    </div>
-
-    <button class="btn btnGold" onclick="openObra()">
-      + Nova obra
-    </button>
-  </div>
-
-  <div id="obrasList"></div>
-
-</section>
-
-<section id="equipe" class="page">
-
-  <div class="row">
-    <div>
-      <h2>Funcionários</h2>
-    </div>
-
-    <button class="btn btnGold" onclick="openFunc()">
-      + Funcionário
-    </button>
-  </div>
-
-  <div class="grid3 edifiq-func-kpis">
-
-    <div class="kpi">
-      <span>Contratados</span>
-      <b id="edifiqContratados">0</b>
-    </div>
-
-    <div class="kpi">
-      <span>Ativos</span>
-      <b id="edifiqAtivos">0</b>
-    </div>
-
-    <div class="kpi">
-      <span>Inativos</span>
-      <b id="edifiqInativos">0</b>
-    </div>
-
-  </div>
-
-  <div id="funcList"></div>
-
-</section>
-
-<section id="financeiro" class="page">
-
-  <div class="row">
-    <div>
-      <h2>Financeiro</h2>
-    </div>
-
-    <button class="btn btnGold" onclick="openFin()">
-      + Lançamento
-    </button>
-  </div>
-
-  <div class="grid">
-
-    <div class="kpi">
-      <span>Receitas</span>
-      <b id="finReceitas">R$ 0,00</b>
-    </div>
-
-    <div class="kpi">
-      <span>Despesas</span>
-      <b id="finDespesas">R$ 0,00</b>
-    </div>
-
-  </div>
-
-  <div class="card">
-    <div id="finList"></div>
-  </div>
-
-</section>
-
-<section id="fotos" class="page">
-
-  <div class="row">
-    <div>
-      <h2>Fotos</h2>
-    </div>
-
-    <button class="btn btnGold" onclick="openFoto()">
-      + Foto
-    </button>
-  </div>
-
-  <div id="fotosList"></div>
-
-</section>
-
-<section id="relatorios" class="page">
-
-  <h2>Relatórios</h2>
-
-  <div class="grid">
-
-    <button class="btn" onclick="exportarExcel()">
-      📊 Exportar Excel
-    </button>
-
-    <button class="btn" onclick="window.print()">
-      🖨️ Imprimir
-    </button>
-
-  </div>
-
-  <div class="card">
-    <div id="relatorioContent"></div>
-  </div>
-
-</section>
-
-<section id="config" class="page">
-
-  <h2>Configurações</h2>
-
-  <div class="card">
-
-    <h3>EDIFIQ</h3>
-
-    <p style="color:var(--muted)">
-      Gestão de Obras e Reformas
-    </p>
-
-    <button class="btn btnDanger" onclick="logout()">
-      Sair da conta
-    </button>
-
-  </div>
-
-</section>
-
-</main>
-
-<nav class="bottomNav">
-
-  <div class="bottomNavInner">
-
-    <button class="navBtn active" onclick="go('home',this)">
-      <span class="navIcon">⌂</span>
-      Início
-    </button>
-
-    <button class="navBtn" onclick="go('obras',this)">
-      <span class="navIcon">🏗️</span>
-      Obras
-    </button>
-
-    <button class="navBtn" onclick="go('equipe',this)">
-      <span class="navIcon">👷</span>
-      Equipe
-    </button>
-
-    <button class="navBtn" onclick="go('financeiro',this)">
-      <span class="navIcon">💰</span>
-      Financeiro
-    </button>
-
-    <button class="navBtn" onclick="go('config',this)">
-      <span class="navIcon">⚙️</span>
-      Config.
-    </button>
-
-  </div>
-
-</nav>
-
-</div>
-
-<!-- MODAL OBRA -->
-<div id="obraM" class="modal">
-  <div class="modalBox">
-
-    <div class="modalHeader">
-      <h3>Obra</h3>
-      <button class="close" onclick="closeM('obraM')">×</button>
-    </div>
-
-    <input type="hidden" id="obraId">
-
-    <div class="formGroup">
-      <label>Nome da obra</label>
-      <input id="obraNome">
-    </div>
-
-    <div class="formGroup">
-      <label>Cliente</label>
-      <input id="obraCliente">
-    </div>
-
-    <div class="formGroup">
-      <label>Endereço</label>
-      <input id="obraEndereco">
-    </div>
-
-    <div class="formGroup">
-      <label>Valor contratado</label>
-      <input id="obraValor" type="number" step="0.01">
-    </div>
-
-    <div class="formGroup">
-      <label>Status</label>
-
-      <select id="obraStatus">
-        <option value="planejada">Planejada</option>
-        <option value="em andamento">Em andamento</option>
-        <option value="pausada">Pausada</option>
-        <option value="concluída">Concluída</option>
-      </select>
-
-    </div>
-
-    <button class="btn btnGold" style="width:100%" onclick="saveObra()">
-      Salvar obra
-    </button>
-
-  </div>
-</div>
-
-<!-- MODAL FUNCIONÁRIO -->
-<div id="funcM" class="modal">
-  <div class="modalBox">
-
-    <div class="modalHeader">
-      <h3>Funcionário</h3>
-      <button class="close" onclick="closeM('funcM')">×</button>
-    </div>
-
-    <input type="hidden" id="funcId">
-
-    <div class="formGroup">
-      <label>Nome</label>
-      <input id="funcNome">
-    </div>
-
-    <div class="formGroup">
-      <label>Função</label>
-      <input id="funcFuncao">
-    </div>
-
-    <div class="formGroup">
-      <label>Valor da diária</label>
-      <input id="funcDiaria" type="number" step="0.01">
-    </div>
-
-    <div class="formGroup">
-      <label>Status</label>
-
-      <select id="funcAtivo">
-        <option value="true">Ativo</option>
-        <option value="false">Inativo</option>
-      </select>
-
-    </div>
-
-    <button class="btn btnGold" style="width:100%" onclick="saveFunc()">
-      Salvar funcionário
-    </button>
-
-  </div>
-</div>
-
-<!-- MODAL DIÁRIA -->
-<div id="diaM" class="modal">
-  <div class="modalBox">
-
-    <div class="modalHeader">
-      <h3>Registrar diária</h3>
-      <button class="close" onclick="closeM('diaM')">×</button>
-    </div>
-
-    <input type="hidden" id="diaId">
-
-    <div class="formGroup">
-      <label>Funcionário</label>
-      <select id="diaFunc"></select>
-    </div>
-
-    <div class="formGroup">
-      <label>Data</label>
-      <input id="diaData" type="date">
-    </div>
-
-    <div class="formGroup">
-      <label>Quantidade de diárias</label>
-      <input id="diaQtd" type="number" min="0" step="1" value="1">
-    </div>
-
-    <div class="formGroup">
-      <label>Valor da diária</label>
-      <input id="diaValor" type="number" step="0.01">
-    </div>
-
-    <button class="btn btnGold" style="width:100%" onclick="saveDia()">
-      Registrar diária
-    </button>
-
-  </div>
-</div>
-
-<!-- MODAL FINANCEIRO -->
-<div id="finM" class="modal">
-  <div class="modalBox">
-
-    <div class="modalHeader">
-      <h3>Lançamento financeiro</h3>
-      <button class="close" onclick="closeM('finM')">×</button>
-    </div>
-
-    <input type="hidden" id="finId">
-
-    <div class="formGroup">
-      <label>Tipo</label>
-
-      <select id="finTipo">
-        <option value="despesa">Despesa</option>
-        <option value="receita">Receita</option>
-      </select>
-
-    </div>
-
-    <div class="formGroup">
-      <label>Descrição</label>
-      <input id="finDescricao">
-    </div>
-
-    <div class="formGroup">
-      <label>Valor</label>
-      <input id="finValor" type="number" step="0.01">
-    </div>
-
-    <div class="formGroup">
-      <label>Data</label>
-      <input id="finData" type="date">
-    </div>
-
-    <button class="btn btnGold" style="width:100%" onclick="saveFin()">
-      Salvar lançamento
-    </button>
-
-  </div>
-</div>
-
-<!-- MODAL FOTO -->
-<div id="fotoM" class="modal">
-  <div class="modalBox">
-
-    <div class="modalHeader">
-      <h3>Relatório fotográfico</h3>
-      <button class="close" onclick="closeM('fotoM')">×</button>
-    </div>
-
-    <div class="formGroup">
-      <label>Obra</label>
-      <select id="fotoObra"></select>
-    </div>
-
-    <div class="formGroup">
-      <label>Descrição</label>
-      <textarea id="fotoDescricao"></textarea>
-    </div>
-
-    <div class="formGroup">
-      <label>Foto</label>
-      <input id="fotoArquivo" type="file" accept="image/*">
-    </div>
-
-    <button class="btn btnGold" style="width:100%" onclick="saveFoto()">
-      Salvar foto
-    </button>
-
-  </div>
-</div>
-
-<script>
-/* =========================================
-   EDIFIQ — CONFIGURAÇÃO SUPABASE
-========================================= */
-
-const SUPABASE_URL = "COLE_AQUI_SUA_SUPABASE_URL";
-const SUPABASE_ANON_KEY = "COLE_AQUI_SUA_SUPABASE_ANON_KEY";
-
-const supabaseClient =
-  supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
-
-/* =========================================
-   ESTADO
-========================================= */
-
-let D = {
-  obras: [],
-  funcionarios: [],
-  diarias: [],
-  gastos: [],
-  pagamentos: [],
-  orcamentos: [],
-  servicos: [],
-  terceirizados: [],
-  checklist: []
-};
-
-let currentUser = null;
-
-/* =========================================
-   UTILIDADES
-========================================= */
-
-function $(id){
-  return document.getElementById(id);
-}
-
-function money(v){
-  return Number(v || 0).toLocaleString("pt-BR",{
-    style:"currency",
-    currency:"BRL"
-  });
-}
-
-function today(){
-  return new Date().toISOString().slice(0,10);
-}
-
-function closeM(id){
-  $(id)?.classList.remove("show");
-}
-
-function openM(id){
-  $(id)?.classList.add("show");
-}
-
-function esc(v){
-  return String(v ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-/* =========================================
-   NAVEGAÇÃO
-========================================= */
-
-function go(page,btn){
-
-  document.querySelectorAll(".page")
-    .forEach(x=>x.classList.remove("active"));
-
-  $(page)?.classList.add("active");
-
-  document.querySelectorAll(".navBtn")
-    .forEach(x=>x.classList.remove("active"));
-
-  btn?.classList.add("active");
-
-  renderAll();
-}
-
-/* =========================================
-   AUTENTICAÇÃO
-========================================= */
-
-async function login(){
-
-  const email = $("loginEmail").value.trim();
-  const password = $("loginPassword").value;
-
-  $("authMsg").textContent = "Entrando...";
-
-  const {data,error} =
-    await supabaseClient.auth.signInWithPassword({
-      email,
-      password
-    });
-
-  if(error){
-    $("authMsg").textContent = error.message;
-    return;
-  }
-
-  currentUser = data.user;
-
-  $("authScreen").style.display="none";
-  $("app").style.display="block";
-
-  await loadData();
-}
-
-async function signup(){
-
-  const email = $("loginEmail").value.trim();
-  const password = $("loginPassword").value;
-
-  $("authMsg").textContent = "Criando conta...";
-
-  const {error} =
-    await supabaseClient.auth.signUp({
-      email,
-      password
-    });
-
-  $("authMsg").textContent =
-    error ? error.message : "Conta criada. Verifique seu e-mail.";
-}
-
-async function logout(){
-
-  await supabaseClient.auth.signOut();
-
-  location.reload();
-}
-
-/* =========================================
-   CARREGAMENTO
-========================================= */
-
-async function loadTable(table){
-
-  try{
-
-    const {data,error} =
-      await supabaseClient
-        .from(table)
-        .select("*");
-
-    if(error){
-      console.warn(table,error);
-      return [];
-    }
-
-    return data || [];
-
-  }catch(e){
-
-    console.warn(table,e);
-    return [];
-
-  }
-}
-
-async function loadData(){
-
-  D.obras = await loadTable("obras");
-  D.funcionarios = await loadTable("funcionarios");
-  D.diarias = await loadTable("diarias");
-  D.gastos = await loadTable("gastos");
-  D.pagamentos = await loadTable("pagamentos");
-  D.orcamentos = await loadTable("orcamentos");
-  D.servicos = await loadTable("servicos");
-  D.terceirizados = await loadTable("terceirizados");
-  D.checklist = await loadTable("checklist");
-
-  renderAll();
-}
-
-/* =========================================
-   DASHBOARD
-========================================= */
-
-function renderHome(){
-
-  const obras = D.obras.length;
-
-  const andamento =
-    D.obras.filter(
-      x=>String(x.status||"").toLowerCase()==="em andamento"
-    ).length;
-
-  const ativos =
-    D.funcionarios.filter(
-      x=>x.ativo !== false
-    ).length;
-
-  const despesas =
-    D.gastos.reduce(
-      (s,x)=>s+Number(x.valor||0),
-      0
-    );
-
-  $("kObras").textContent = obras;
-  $("kAndamento").textContent = andamento;
-  $("kFunc").textContent = ativos;
-  $("kDespesas").textContent = money(despesas);
-
-  $("homeResumo").innerHTML = `
-    <p>Obras cadastradas: <b>${obras}</b></p>
-    <p>Obras em andamento: <b>${andamento}</b></p>
-    <p>Funcionários ativos: <b>${ativos}</b></p>
-    <p>Total de despesas: <b>${money(despesas)}</b></p>
-  `;
-}
-
-/* =========================================
-   OBRAS
-========================================= */
-
-function openObra(id=null){
-
-  $("obraId").value = id || "";
-
-  if(id){
-
-    const o = D.obras.find(x=>String(x.id)===String(id));
-
-    if(!o) return;
-
-    $("obraNome").value = o.nome || "";
-    $("obraCliente").value = o.cliente || "";
-    $("obraEndereco").value = o.endereco || "";
-    $("obraValor").value = o.valor || 0;
-    $("obraStatus").value = o.status || "planejada";
-
-  }else{
-
-    $("obraNome").value="";
-    $("obraCliente").value="";
-    $("obraEndereco").value="";
-    $("obraValor").value="";
-    $("obraStatus").value="planejada";
-
-  }
-
-  openM("obraM");
-}
-
-async function saveObra(){
-
-  const id = $("obraId").value;
-
-  const obj = {
-    nome:$("obraNome").value.trim(),
-    cliente:$("obraCliente").value.trim(),
-    endereco:$("obraEndereco").value.trim(),
-    valor:Number($("obraValor").value||0),
-    status:$("obraStatus").value
-  };
-
-  let res;
-
-  if(id){
-
-    res = await supabaseClient
-      .from("obras")
-      .update(obj)
-      .eq("id",id);
-
-  }else{
-
-    res = await supabaseClient
-      .from("obras")
-      .insert(obj);
-
-  }
-
-  if(res.error){
-    alert(res.error.message);
-    return;
-  }
-
-  closeM("obraM");
-  await loadData();
-}
-
-/* =========================================
-   PROGRESSO DAS ETAPAS
-========================================= */
-
-function clamp(v){
-
-  v = Number(v);
-
-  if(!Number.isFinite(v)) v=0;
-
-  return Math.max(0,Math.min(100,v));
-}
-
-function taskProgress(obraId,tarefa){
-
-  const c =
-    D.checklist.find(
-      x =>
-        String(x.obra_id)===String(obraId) &&
-        String(x.tarefa||x.descricao||"")===String(tarefa)
-    );
-
-  if(!c) return 0;
-
-  if(c.concluida) return 100;
-
-  return clamp(c.progresso || 0);
-}
-
-function getDefs(){
-
-  let defs =
-    JSON.parse(
-      localStorage.getItem("edifiq_check_defs") || "null"
-    );
-
-  if(!Array.isArray(defs) || !defs.length){
-
-    defs = [
-      "Planejamento e orçamento",
-      "Contrato assinado",
-      "Medição inicial",
-      "Compra de materiais",
-      "Preparação do local",
-      "Chapisco / reboco",
-      "Instalações",
-      "Pisos e revestimentos",
-      "Pintura",
-      "Acabamentos",
-      "Limpeza final",
-      "Entrega da obra"
-    ].map((nome,i)=>({
-      id:"edifiq_"+i,
-      nome
-    }));
-
-    localStorage.setItem(
-      "edifiq_check_defs",
-      JSON.stringify(defs)
-    );
-  }
-
-  return defs;
-}
-
-function obraProgress(obra,defs){
-
-  const values =
-    defs.map(
-      d=>taskProgress(obra.id,d.nome)
-    );
-
-  if(values.length){
-
-    return Math.round(
-      values.reduce((a,b)=>a+b,0)/values.length
-    );
-
-  }
-
-  const status =
-    String(obra.status||"").toLowerCase();
-
-  if(status==="concluída") return 100;
-  if(status==="em andamento") return 50;
-  if(status==="pausada") return 25;
-
-  return 10;
-}
-
-async function updateCheckProgress(
-  obraId,
-  tarefa,
-  value
-){
-
-  const p = clamp(value);
-
-  const old =
-    D.checklist.find(
-      x =>
-        String(x.obra_id)===String(obraId) &&
-        String(x.tarefa||x.descricao||"")===String(tarefa)
-    );
-
-  const payload = {
-    obra_id:obraId,
-    tarefa:tarefa,
-    descricao:tarefa,
-    concluida:p>=100,
-    progresso:p
-  };
-
-  let res;
-
-  if(old?.id){
-
-    res =
-      await supabaseClient
-        .from("checklist")
-        .update(payload)
-        .eq("id",old.id);
-
-  }else{
-
-    res =
-      await supabaseClient
-        .from("checklist")
-        .insert(payload);
-
-  }
-
-  if(res.error){
-
-    console.warn(res.error);
-    alert(
-      "Não foi possível salvar o progresso: "+
-      res.error.message
-    );
-
-    return;
-  }
-
-  const local = D.checklist.findIndex(
-    x =>
-      String(x.obra_id)===String(obraId) &&
-      String(x.tarefa||x.descricao||"")===String(tarefa)
-  );
-
-  if(local>=0){
-
-    D.checklist[local]={
-      ...D.checklist[local],
-      ...payload
-    };
-
-  }else{
-
-    D.checklist.push(payload);
-
-  }
-
-  renderObras();
-}
-
-function makeStage(obraId,def){
-
-  const p = taskProgress(
-    obraId,
-    def.nome
-  );
-
-  const div =
-    document.createElement("div");
-
-  div.className="edifiq-stage";
-
-  div.innerHTML=`
-
-    <div class="edifiq-stage-title">
-
-      <input
-        type="checkbox"
-        ${p>=100?"checked":""}
-        aria-label="Concluir etapa"
-      >
-
-      <span>${esc(def.nome)}</span>
-
-    </div>
-
-    <div class="edifiq-stage-controls">
-
-      <input
-        type="range"
-        min="0"
-        max="100"
-        value="${p}"
-      >
-
-      <input
-        class="edifiq-stage-number"
-        type="number"
-        min="0"
-        max="100"
-        value="${p}"
-      >
-
-    </div>
-
-    <div class="edifiq-stage-bar">
-      <div style="width:${p}%"></div>
-    </div>
-
-  `;
-
-  const check =
-    div.querySelector('input[type="checkbox"]');
-
-  const range =
-    div.querySelector('input[type="range"]');
-
-  const number =
-    div.querySelector('input[type="number"]');
-
-  function set(v){
-
-    v=clamp(v);
-
-    range.value=v;
-    number.value=v;
-    check.checked=v>=100;
-
-    div.querySelector(
-      ".edifiq-stage-bar div"
-    ).style.width=v+"%";
-
-    updateCheckProgress(
-      obraId,
-      def.nome,
-      v
-    );
-  }
-
-  check.addEventListener(
-    "change",
-    ()=>set(check.checked?100:0)
-  );
-
-  range.addEventListener(
-    "input",
-    ()=>{
-      const v=clamp(range.value);
-
-      number.value=v;
-
-      div.querySelector(
-        ".edifiq-stage-bar div"
-      ).style.width=v+"%";
-    }
-  );
-
-  range.addEventListener(
-    "change",
-    ()=>set(range.value)
-  );
-
-  number.addEventListener(
-    "change",
-    ()=>set(number.value)
-  );
-
-  return div;
-}
-
-function renderObras(){
-
-  const box = $("obrasList");
-
-  if(!box) return;
-
-  const defs = getDefs();
-
-  if(!D.obras.length){
-
-    box.innerHTML=`
-      <div class="empty">
-        Nenhuma obra cadastrada.
-      </div>
-    `;
-
-    return;
-  }
-
-  box.innerHTML =
-    D.obras.map(o=>{
-
-      const p =
-        obraProgress(o,defs);
-
-      return `
-
-      <div class="card">
-
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          gap:10px;
-          align-items:flex-start
-        ">
-
-          <div>
-
-            <h3>${esc(o.nome || "Obra")}</h3>
-
-            <div style="color:var(--muted);font-size:12px">
-              ${esc(o.cliente || "")}
-            </div>
-
-          </div>
-
-          <span class="badge badgeGold">
-            ${p}%
-          </span>
-
-        </div>
-
-        <div class="progress">
-          <div style="width:${p}%"></div>
-        </div>
-
-        <div class="edifiq-total">
-          Progresso total da obra:
-          <strong>${p}%</strong>
-        </div>
-
-        <div class="edifiq-check">
-
-          <div class="edifiq-check-head">
-
-            <strong>☑ Checklist da obra</strong>
-
-            <span class="badge badgeGold">
-              ${p}%
-            </span>
-
-          </div>
-
-          <div id="check_${o.id}"></div>
-
-        </div>
-
-        <div class="listActions">
-
-          <button
-            class="btn"
-            onclick="openObra('${o.id}')"
-          >
-            Editar
-          </button>
-
-          <button
-            class="btn btnDanger"
-            onclick="deleteObra('${o.id}')"
-          >
-            Excluir
-          </button>
-
-        </div>
-
-      </div>
-      `;
-
-    }).join("");
-
-  D.obras.forEach(o=>{
-
-    const area =
-      document.getElementById(
-        "check_"+o.id
-      );
-
-    if(!area) return;
-
-    defs.forEach(def=>{
-      area.appendChild(
-        makeStage(o.id,def)
-      );
-    });
-
-  });
-
-}
-
-async function deleteObra(id){
-
-  if(!confirm("Excluir esta obra?")) return;
-
-  const {error} =
-    await supabaseClient
-      .from("obras")
-      .delete()
-      .eq("id",id);
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  await loadData();
-}
-
-/* =========================================
-   FUNCIONÁRIOS
-========================================= */
-
-function openFunc(id=null){
-
-  $("funcId").value=id||"";
-
-  if(id){
-
-    const f =
-      D.funcionarios.find(
-        x=>String(x.id)===String(id)
-      );
-
-    if(!f) return;
-
-    $("funcNome").value=f.nome||"";
-    $("funcFuncao").value=f.funcao||f.cargo||"";
-    $("funcDiaria").value=f.diaria||f.valor_diaria||0;
-    $("funcAtivo").value =
-      String(f.ativo !== false);
-
-  }else{
-
-    $("funcNome").value="";
-    $("funcFuncao").value="";
-    $("funcDiaria").value="";
-    $("funcAtivo").value="true";
-
-  }
-
-  openM("funcM");
-}
-
-async function saveFunc(){
-
-  const id=$("funcId").value;
-
-  const obj={
-    nome:$("funcNome").value.trim(),
-    funcao:$("funcFuncao").value.trim(),
-    diaria:Number($("funcDiaria").value||0),
-    ativo:$("funcAtivo").value==="true"
-  };
-
-  let res;
-
-  if(id){
-
-    res =
-      await supabaseClient
-        .from("funcionarios")
-        .update(obj)
-        .eq("id",id);
-
-  }else{
-
-    res =
-      await supabaseClient
-        .from("funcionarios")
-        .insert(obj);
-
-  }
-
-  if(res.error){
-    alert(res.error.message);
-    return;
-  }
-
-  closeM("funcM");
-  await loadData();
-}
-
-function openDiaFor(id){
-
-  $("diaId").value="";
-
-  $("diaData").value=today();
-
-  $("diaQtd").value=1;
-
-  const select=$("diaFunc");
-
-  select.innerHTML =
-    D.funcionarios
-      .filter(f=>f.ativo!==false)
-      .map(f=>`
-        <option value="${f.id}">
-          ${esc(f.nome)}
-        </option>
-      `).join("");
-
-  if(id){
-
-    select.value=String(id);
-
-    const f =
-      D.funcionarios.find(
-        x=>String(x.id)===String(id)
-      );
-
-    if(f){
-
-      $("diaValor").value =
-        f.diaria ||
-        f.valor_diaria ||
-        0;
-
-    }
-
-  }
-
-  openM("diaM");
-}
-
-function openDia(){
-
-  const first =
-    D.funcionarios.find(
-      x=>x.ativo!==false
-    );
-
-  openDiaFor(first?.id || "");
-}
-
-async function saveDia(){
-
-  const funcionario_id =
-    $("diaFunc").value;
-
-  const data =
-    $("diaData").value;
-
-  const quantidade =
-    Number($("diaQtd").value||0);
-
-  const valor =
-    Number($("diaValor").value||0);
-
-  if(!funcionario_id){
-
-    alert("Selecione o funcionário.");
-    return;
-  }
-
-  const obj={
-    funcionario_id,
-    data,
-    quantidade,
-    valor,
-    total:quantidade*valor
-  };
-
-  const {error} =
-    await supabaseClient
-      .from("diarias")
-      .insert(obj);
-
-  if(error){
-
-    alert(error.message);
-    return;
-
-  }
-
-  closeM("diaM");
-
-  await loadData();
-}
-
-function renderFuncs(){
-
-  const box=$("funcList");
-
-  if(!box) return;
-
-  if(!D.funcionarios.length){
-
-    box.innerHTML=`
-      <div class="empty">
-        Nenhum funcionário cadastrado.
-      </div>
-    `;
-
-    return;
-  }
-
-  box.innerHTML =
-    D.funcionarios.map(f=>{
-
-      const ativo =
-        f.ativo!==false;
-
-      return `
-
-      <div class="card">
-
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          gap:10px
-        ">
-
-          <div>
-
-            <h3>${esc(f.nome)}</h3>
-
-            <div style="
-              color:var(--muted);
-              font-size:12px
-            ">
-              ${esc(f.funcao||f.cargo||"")}
-            </div>
-
-          </div>
-
-          <span class="
-            badge
-            ${ativo?"badgeGreen":"badgeRed"}
-          ">
-            ${ativo?"Ativo":"Inativo"}
-          </span>
-
-        </div>
-
-        <div style="
-          margin-top:10px;
-          color:var(--muted);
-          font-size:13px
-        ">
-          Diária:
-          <b style="color:var(--gold2)">
-            ${money(f.diaria||f.valor_diaria||0)}
-          </b>
-        </div>
-
-        <div class="listActions">
-
-          <button
-            class="btn btnGold edifiq-daily"
-            onclick="openDiaFor('${f.id}')"
-          >
-            💵 Registrar diária
-          </button>
-
-          <button
-            class="btn"
-            onclick="openFunc('${f.id}')"
-          >
-            Editar
-          </button>
-
-        </div>
-
-      </div>
-      `;
-
-    }).join("");
-}
-
-function renderPayroll(){
-
-  const contratados =
-    D.funcionarios.length;
-
-  const ativos =
-    D.funcionarios.filter(
-      f=>f.ativo!==false
-    ).length;
-
-  const inativos =
-    D.funcionarios.filter(
-      f=>f.ativo===false
-    ).length;
-
-  $("edifiqContratados").textContent =
-    contratados;
-
-  $("edifiqAtivos").textContent =
-    ativos;
-
-  $("edifiqInativos").textContent =
-    inativos;
-
-  renderFuncs();
-}
-
-/* =========================================
-   FINANCEIRO
-========================================= */
-
-function openFin(){
-
-  $("finDescricao").value="";
-  $("finValor").value="";
-  $("finData").value=today();
-  $("finTipo").value="despesa";
-
-  openM("finM");
-}
-
-async function saveFin(){
-
-  const obj={
-    descricao:$("finDescricao").value.trim(),
-    valor:Number($("finValor").value||0),
-    data:$("finData").value,
-    tipo:$("finTipo").value
-  };
-
-  const {error} =
-    await supabaseClient
-      .from("gastos")
-      .insert(obj);
-
-  if(error){
-
-    alert(error.message);
-    return;
-
-  }
-
-  closeM("finM");
-
-  await loadData();
-}
-
-function renderFin(){
-
-  const box=$("finList");
-
-  if(!box) return;
-
-  if(!D.gastos.length){
-
-    box.innerHTML=`
-      <div class="empty">
-        Nenhum lançamento.
-      </div>
-    `;
-
-    return;
-  }
-
-  box.innerHTML =
-    D.gastos.map(g=>`
-
-      <div style="
-        padding:12px 0;
-        border-bottom:1px solid var(--border)
-      ">
-
-        <div style="
-          display:flex;
-          justify-content:space-between
-        ">
-
-          <b>${esc(g.descricao||"Lançamento")}</b>
-
-          <strong style="color:var(--gold2)">
-            ${money(g.valor)}
-          </strong>
-
-        </div>
-
-        <small style="color:var(--muted)">
-          ${esc(g.data||"")}
-        </small>
-
-      </div>
-
-    `).join("");
-
-  const receitas =
-    D.gastos
-      .filter(x=>x.tipo==="receita")
-      .reduce((s,x)=>s+Number(x.valor||0),0);
-
-  const despesas =
-    D.gastos
-      .filter(x=>x.tipo!=="receita")
-      .reduce((s,x)=>s+Number(x.valor||0),0);
-
-  $("finReceitas").textContent=money(receitas);
-  $("finDespesas").textContent=money(despesas);
-}
-
-/* =========================================
-   FOTOS
-========================================= */
-
-function openFoto(){
-
-  $("fotoObra").innerHTML =
-    D.obras.map(o=>`
-      <option value="${o.id}">
-        ${esc(o.nome)}
-      </option>
-    `).join("");
-
-  $("fotoDescricao").value="";
-  $("fotoArquivo").value="";
-
-  openM("fotoM");
-}
-
-async function saveFoto(){
-
-  alert(
-    "A estrutura de fotos está pronta. "+
-    "Configure o Storage do Supabase para salvar os arquivos."
-  );
-
-}
-
-/* =========================================
-   RELATÓRIOS
-========================================= */
-
-function renderRelatorios(){
-
-  const box=$("relatorioContent");
-
-  if(!box) return;
-
-  const totalObras=D.obras.length;
-
-  const totalFuncionarios=
-    D.funcionarios.length;
-
-  const despesas=
-    D.gastos.reduce(
-      (s,x)=>s+Number(x.valor||0),0
-    );
-
-  box.innerHTML=`
-
-    <h3>Resumo EDIFIQ</h3>
-
-    <p>
-      Total de obras:
-      <b>${totalObras}</b>
-    </p>
-
-    <p>
-      Total de funcionários:
-      <b>${totalFuncionarios}</b>
-    </p>
-
-    <p>
-      Total de despesas:
-      <b>${money(despesas)}</b>
-    </p>
-
-  `;
-}
-
-function exportarExcel(){
-
-  const wb =
-    XLSX.utils.book_new();
-
-  const ws =
-    XLSX.utils.json_to_sheet(
-      D.obras
-    );
-
-  XLSX.utils.book_append_sheet(
-    wb,
-    ws,
-    "Obras"
-  );
-
-  XLSX.writeFile(
-    wb,
-    "EDIFIQ_Relatorio.xlsx"
-  );
-}
-
-/* =========================================
-   RENDER GERAL
-========================================= */
-
-function renderAll(){
-
-  renderHome();
-
-  renderObras();
-
-  renderPayroll();
-
-  renderFin();
-
-  renderRelatorios();
-
-}
-
-/* =========================================
-   INICIALIZAÇÃO
-========================================= */
-
-(async function(){
-
-  const {
-    data
-  } =
-    await supabaseClient.auth.getSession();
-
-  if(data?.session?.user){
-
-    currentUser=data.session.user;
-
-    $("authScreen").style.display="none";
-    $("app").style.display="block";
-
-    await loadData();
-
-  }
-
-})();
-</script>
-<!-- =========================================================
-     EDIFIQ — MELHORIAS
-     1. Nome EDIFIQ
-     2. Progresso individual das etapas
-     3. Progresso total da obra
-     4. Registrar diária por funcionário
-     5. Indicadores Contratados / Ativos / Inativos
-========================================================= -->
-
-<style id="edifiqProgressStyle">
-
 .edifiq-func-kpis{
   margin-bottom:14px;
 }
@@ -2297,11 +491,7 @@ function renderAll(){
 
 .edifiq-stage-bar div{
   height:100%;
-  background:linear-gradient(
-    90deg,
-    #d4af37,
-    #f0cf62
-  );
+  background:linear-gradient(90deg,#d4af37,#f0cf62);
   transition:.2s;
 }
 
@@ -2316,57 +506,1801 @@ function renderAll(){
   font-size:20px;
 }
 
-</style>
+.authError{
+  color:#ff8585 !important;
+}
 
-<script>
-/* =========================================================
-   EDIFIQ — IDENTIDADE
-========================================================= */
+.authSuccess{
+  color:#72e09d !important;
+}
 
-document.title = "EDIFIQ — Gestão de Obras";
+@media(max-width:430px){
 
-(function(){
-
-  /*
-   * Troca apenas textos visíveis que ainda estejam como
-   * EDIFIQUE, sem alterar código ou nomes de variáveis.
-   */
-  const walker = document.createTreeWalker(
-    document.body,
-    NodeFilter.SHOW_TEXT
-  );
-
-  const nodes=[];
-
-  while(walker.nextNode()){
-    nodes.push(walker.currentNode);
+  .grid3{
+    gap:7px;
   }
 
-  nodes.forEach(node=>{
+  .kpi{
+    padding:10px;
+  }
 
-    if(
-      node.nodeValue &&
-      node.nodeValue.includes("EDIFIQUE")
-    ){
+  .kpi b{
+    font-size:18px;
+  }
 
-      node.nodeValue =
-        node.nodeValue.replace(
-          /EDIFIQUE/g,
-          "EDIFIQ"
-        );
+  .row{
+    gap:7px;
+  }
+
+}
+</style>
+</head>
+
+<body>
+
+<!-- =====================================================
+     LOGIN
+===================================================== -->
+
+<div id="authScreen" class="auth">
+
+  <div class="authBox">
+
+    <div class="authLogo">
+
+      <div class="logo">⌂</div>
+
+      <h1>EDIFIQ</h1>
+
+      <p>GESTÃO DE OBRAS E REFORMAS</p>
+
+    </div>
+
+    <div class="card">
+
+      <div class="formGroup">
+
+        <label>E-mail</label>
+
+        <input
+          id="loginEmail"
+          type="email"
+          autocomplete="email"
+          placeholder="seu@email.com"
+        >
+
+      </div>
+
+      <div class="formGroup">
+
+        <label>Senha</label>
+
+        <input
+          id="loginPassword"
+          type="password"
+          autocomplete="current-password"
+          placeholder="••••••••"
+        >
+
+      </div>
+
+      <button
+        id="loginButton"
+        class="btn btnGold"
+        style="width:100%"
+        onclick="login()"
+      >
+        Entrar
+      </button>
+
+      <button
+        class="btn"
+        style="width:100%;margin-top:8px"
+        onclick="signup()"
+      >
+        Criar conta
+      </button>
+
+      <div
+        id="authMsg"
+        style="margin-top:12px;text-align:center;color:var(--muted)"
+      ></div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =====================================================
+     APLICATIVO
+===================================================== -->
+
+<div id="app" class="app" style="display:none">
+
+<header>
+
+  <div class="brand">
+
+    <div class="logo">⌂</div>
+
+    <div>
+
+      <strong>EDIFIQ</strong>
+
+      <small>GESTÃO DE OBRAS E REFORMAS</small>
+
+    </div>
+
+  </div>
+
+</header>
+
+
+<main>
+
+<!-- =====================================================
+     DASHBOARD
+===================================================== -->
+
+<section id="home" class="page active">
+
+  <h2>Dashboard</h2>
+
+  <div class="grid">
+
+    <div class="kpi">
+      <span>Obras</span>
+      <b id="kObras">0</b>
+    </div>
+
+    <div class="kpi">
+      <span>Em andamento</span>
+      <b id="kAndamento">0</b>
+    </div>
+
+    <div class="kpi">
+      <span>Funcionários</span>
+      <b id="kFunc">0</b>
+    </div>
+
+    <div class="kpi">
+      <span>Despesas</span>
+      <b id="kDespesas">R$ 0,00</b>
+    </div>
+
+  </div>
+
+  <div class="card" style="margin-top:14px">
+
+    <h3>Resumo</h3>
+
+    <div id="homeResumo"></div>
+
+  </div>
+
+</section>
+
+
+<!-- =====================================================
+     OBRAS
+===================================================== -->
+
+<section id="obras" class="page">
+
+  <div class="row">
+
+    <div>
+      <h2>Obras</h2>
+    </div>
+
+    <button
+      class="btn btnGold"
+      onclick="openObra()"
+    >
+      + Nova obra
+    </button>
+
+  </div>
+
+  <div id="obrasList"></div>
+
+</section>
+
+
+<!-- =====================================================
+     FUNCIONÁRIOS
+===================================================== -->
+
+<section id="equipe" class="page">
+
+  <div class="row">
+
+    <div>
+      <h2>Funcionários</h2>
+    </div>
+
+    <button
+      class="btn btnGold"
+      onclick="openFunc()"
+    >
+      + Funcionário
+    </button>
+
+  </div>
+
+  <div class="grid3 edifiq-func-kpis">
+
+    <div class="kpi">
+
+      <span>Contratados</span>
+
+      <b id="edifiqContratados">0</b>
+
+    </div>
+
+    <div class="kpi">
+
+      <span>Ativos</span>
+
+      <b id="edifiqAtivos">0</b>
+
+    </div>
+
+    <div class="kpi">
+
+      <span>Inativos</span>
+
+      <b id="edifiqInativos">0</b>
+
+    </div>
+
+  </div>
+
+  <div id="funcList"></div>
+
+</section>
+
+
+<!-- =====================================================
+     FINANCEIRO
+===================================================== -->
+
+<section id="financeiro" class="page">
+
+  <div class="row">
+
+    <div>
+      <h2>Financeiro</h2>
+    </div>
+
+    <button
+      class="btn btnGold"
+      onclick="openFin()"
+    >
+      + Lançamento
+    </button>
+
+  </div>
+
+  <div class="grid">
+
+    <div class="kpi">
+
+      <span>Receitas</span>
+
+      <b id="finReceitas">
+        R$ 0,00
+      </b>
+
+    </div>
+
+    <div class="kpi">
+
+      <span>Despesas</span>
+
+      <b id="finDespesas">
+        R$ 0,00
+      </b>
+
+    </div>
+
+  </div>
+
+  <div class="card">
+
+    <div id="finList"></div>
+
+  </div>
+
+</section>
+
+
+<!-- =====================================================
+     FOTOS
+===================================================== -->
+
+<section id="fotos" class="page">
+
+  <div class="row">
+
+    <div>
+      <h2>Fotos</h2>
+    </div>
+
+    <button
+      class="btn btnGold"
+      onclick="openFoto()"
+    >
+      + Foto
+    </button>
+
+  </div>
+
+  <div id="fotosList"></div>
+
+</section>
+
+
+<!-- =====================================================
+     RELATÓRIOS
+===================================================== -->
+
+<section id="relatorios" class="page">
+
+  <h2>Relatórios</h2>
+
+  <div class="grid">
+
+    <button
+      class="btn"
+      onclick="exportarExcel()"
+    >
+      📊 Exportar Excel
+    </button>
+
+    <button
+      class="btn"
+      onclick="window.print()"
+    >
+      🖨️ Imprimir
+    </button>
+
+  </div>
+
+  <div class="card">
+
+    <div id="relatorioContent"></div>
+
+  </div>
+
+</section>
+
+
+<!-- =====================================================
+     CONFIGURAÇÕES
+===================================================== -->
+
+<section id="config" class="page">
+
+  <h2>Configurações</h2>
+
+  <div class="card">
+
+    <h3>EDIFIQ</h3>
+
+    <p style="color:var(--muted)">
+      Gestão de Obras e Reformas
+    </p>
+
+    <button
+      class="btn btnDanger"
+      onclick="logout()"
+    >
+      Sair da conta
+    </button>
+
+  </div>
+
+</section>
+
+</main>
+
+
+<!-- =====================================================
+     NAVEGAÇÃO
+===================================================== -->
+
+<nav class="bottomNav">
+
+  <div class="bottomNavInner">
+
+    <button
+      class="navBtn active"
+      onclick="go('home',this)"
+    >
+      <span class="navIcon">⌂</span>
+      Início
+    </button>
+
+    <button
+      class="navBtn"
+      onclick="go('obras',this)"
+    >
+      <span class="navIcon">🏗️</span>
+      Obras
+    </button>
+
+    <button
+      class="navBtn"
+      onclick="go('equipe',this)"
+    >
+      <span class="navIcon">👷</span>
+      Equipe
+    </button>
+
+    <button
+      class="navBtn"
+      onclick="go('financeiro',this)"
+    >
+      <span class="navIcon">💰</span>
+      Financeiro
+    </button>
+
+    <button
+      class="navBtn"
+      onclick="go('config',this)"
+    >
+      <span class="navIcon">⚙️</span>
+      Config.
+    </button>
+
+  </div>
+
+</nav>
+
+</div>
+
+
+<!-- =====================================================
+     MODAL OBRA
+===================================================== -->
+
+<div id="obraM" class="modal">
+
+  <div class="modalBox">
+
+    <div class="modalHeader">
+
+      <h3>Obra</h3>
+
+      <button
+        class="close"
+        onclick="closeM('obraM')"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <input
+      type="hidden"
+      id="obraId"
+    >
+
+    <div class="formGroup">
+
+      <label>Nome da obra</label>
+
+      <input id="obraNome">
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Cliente</label>
+
+      <input id="obraCliente">
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Endereço</label>
+
+      <input id="obraEndereco">
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Valor contratado</label>
+
+      <input
+        id="obraValor"
+        type="number"
+        step="0.01"
+      >
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Status</label>
+
+      <select id="obraStatus">
+
+        <option value="planejada">
+          Planejada
+        </option>
+
+        <option value="em andamento">
+          Em andamento
+        </option>
+
+        <option value="pausada">
+          Pausada
+        </option>
+
+        <option value="concluída">
+          Concluída
+        </option>
+
+      </select>
+
+    </div>
+
+    <button
+      class="btn btnGold"
+      style="width:100%"
+      onclick="saveObra()"
+    >
+      Salvar obra
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- =====================================================
+     MODAL FUNCIONÁRIO
+===================================================== -->
+
+<div id="funcM" class="modal">
+
+  <div class="modalBox">
+
+    <div class="modalHeader">
+
+      <h3>Funcionário</h3>
+
+      <button
+        class="close"
+        onclick="closeM('funcM')"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <input
+      type="hidden"
+      id="funcId"
+    >
+
+    <div class="formGroup">
+
+      <label>Nome</label>
+
+      <input id="funcNome">
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Função</label>
+
+      <input id="funcFuncao">
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Valor da diária</label>
+
+      <input
+        id="funcDiaria"
+        type="number"
+        step="0.01"
+      >
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Status</label>
+
+      <select id="funcAtivo">
+
+        <option value="true">
+          Ativo
+        </option>
+
+        <option value="false">
+          Inativo
+        </option>
+
+      </select>
+
+    </div>
+
+    <button
+      class="btn btnGold"
+      style="width:100%"
+      onclick="saveFunc()"
+    >
+      Salvar funcionário
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- =====================================================
+     MODAL DIÁRIA
+===================================================== -->
+
+<div id="diaM" class="modal">
+
+  <div class="modalBox">
+
+    <div class="modalHeader">
+
+      <h3>Registrar diária</h3>
+
+      <button
+        class="close"
+        onclick="closeM('diaM')"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <input
+      type="hidden"
+      id="diaId"
+    >
+
+    <div class="formGroup">
+
+      <label>Funcionário</label>
+
+      <select id="diaFunc"></select>
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Data</label>
+
+      <input
+        id="diaData"
+        type="date"
+      >
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Quantidade de diárias</label>
+
+      <input
+        id="diaQtd"
+        type="number"
+        min="0"
+        step="1"
+        value="1"
+      >
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Valor da diária</label>
+
+      <input
+        id="diaValor"
+        type="number"
+        step="0.01"
+      >
+
+    </div>
+
+    <button
+      class="btn btnGold"
+      style="width:100%"
+      onclick="saveDia()"
+    >
+      Registrar diária
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- =====================================================
+     MODAL FINANCEIRO
+===================================================== -->
+
+<div id="finM" class="modal">
+
+  <div class="modalBox">
+
+    <div class="modalHeader">
+
+      <h3>Lançamento financeiro</h3>
+
+      <button
+        class="close"
+        onclick="closeM('finM')"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <input
+      type="hidden"
+      id="finId"
+    >
+
+    <div class="formGroup">
+
+      <label>Tipo</label>
+
+      <select id="finTipo">
+
+        <option value="despesa">
+          Despesa
+        </option>
+
+        <option value="receita">
+          Receita
+        </option>
+
+      </select>
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Descrição</label>
+
+      <input id="finDescricao">
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Valor</label>
+
+      <input
+        id="finValor"
+        type="number"
+        step="0.01"
+      >
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Data</label>
+
+      <input
+        id="finData"
+        type="date"
+      >
+
+    </div>
+
+    <button
+      class="btn btnGold"
+      style="width:100%"
+      onclick="saveFin()"
+    >
+      Salvar lançamento
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- =====================================================
+     MODAL FOTO
+===================================================== -->
+
+<div id="fotoM" class="modal">
+
+  <div class="modalBox">
+
+    <div class="modalHeader">
+
+      <h3>Relatório fotográfico</h3>
+
+      <button
+        class="close"
+        onclick="closeM('fotoM')"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Obra</label>
+
+      <select id="fotoObra"></select>
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Descrição</label>
+
+      <textarea id="fotoDescricao"></textarea>
+
+    </div>
+
+    <div class="formGroup">
+
+      <label>Foto</label>
+
+      <input
+        id="fotoArquivo"
+        type="file"
+        accept="image/*"
+      >
+
+    </div>
+
+    <button
+      class="btn btnGold"
+      style="width:100%"
+      onclick="saveFoto()"
+    >
+      Salvar foto
+    </button>
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   EDIFIQ — SUPABASE
+===================================================== */
+
+/*
+   =====================================================
+   ATENÇÃO
+
+   COLOQUE AQUI OS DADOS REAIS DO SEU SUPABASE.
+
+   NÃO USE A SERVICE_ROLE / SECRET KEY.
+
+   Use a URL do projeto e a chave pública
+   (Publishable key / anon key).
+   =====================================================
+*/
+
+const SUPABASE_URL =
+  "COLE_AQUI_SUA_SUPABASE_URL";
+
+const SUPABASE_ANON_KEY =
+  "COLE_AQUI_SUA_SUPABASE_ANON_KEY";
+
+
+/* =====================================================
+   CONEXÃO
+===================================================== */
+
+let supabaseClient = null;
+
+try{
+
+  if(
+    typeof supabase === "undefined"
+  ){
+
+    throw new Error(
+      "Biblioteca do Supabase não carregou."
+    );
+
+  }
+
+  supabaseClient =
+    supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
+
+}catch(error){
+
+  console.error(
+    "EDIFIQ — erro Supabase:",
+    error
+  );
+
+}
+
+
+/* =====================================================
+   ESTADO
+===================================================== */
+
+let D = {
+
+  obras:[],
+  funcionarios:[],
+  diarias:[],
+  gastos:[],
+  pagamentos:[],
+  orcamentos:[],
+  servicos:[],
+  terceirizados:[],
+  checklist:[]
+
+};
+
+let currentUser = null;
+
+
+/* =====================================================
+   UTILIDADES
+===================================================== */
+
+function $(id){
+
+  return document.getElementById(id);
+
+}
+
+
+function money(v){
+
+  return Number(v || 0).toLocaleString(
+    "pt-BR",
+    {
+      style:"currency",
+      currency:"BRL"
+    }
+  );
+
+}
+
+
+function today(){
+
+  const d = new Date();
+
+  const local =
+    new Date(
+      d.getTime() -
+      d.getTimezoneOffset()*60000
+    );
+
+  return local
+    .toISOString()
+    .slice(0,10);
+
+}
+
+
+function closeM(id){
+
+  $(id)?.classList.remove("show");
+
+}
+
+
+function openM(id){
+
+  $(id)?.classList.add("show");
+
+}
+
+
+function esc(v){
+
+  return String(v ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+
+}
+
+
+/* =====================================================
+   NAVEGAÇÃO
+===================================================== */
+
+function go(page,btn){
+
+  document
+    .querySelectorAll(".page")
+    .forEach(
+      x=>x.classList.remove("active")
+    );
+
+  $(page)?.classList.add("active");
+
+  document
+    .querySelectorAll(".navBtn")
+    .forEach(
+      x=>x.classList.remove("active")
+    );
+
+  btn?.classList.add("active");
+
+  renderAll();
+
+}
+
+
+/* =====================================================
+   AUTENTICAÇÃO — CORRIGIDA
+===================================================== */
+
+async function login(){
+
+  const email =
+    $("loginEmail").value.trim();
+
+  const password =
+    $("loginPassword").value;
+
+  const msg =
+    $("authMsg");
+
+  const btn =
+    $("loginButton");
+
+
+  /* validação */
+
+  if(!email){
+
+    msg.textContent =
+      "Digite seu e-mail.";
+
+    msg.className =
+      "authError";
+
+    $("loginEmail").focus();
+
+    return;
+
+  }
+
+
+  if(!password){
+
+    msg.textContent =
+      "Digite sua senha.";
+
+    msg.className =
+      "authError";
+
+    $("loginPassword").focus();
+
+    return;
+
+  }
+
+
+  /* verifica configuração */
+
+  if(
+    !SUPABASE_URL ||
+    !SUPABASE_ANON_KEY ||
+    SUPABASE_URL.includes("COLE_AQUI") ||
+    SUPABASE_ANON_KEY.includes("COLE_AQUI")
+  ){
+
+    msg.textContent =
+      "O Supabase ainda não está configurado neste código.";
+
+    msg.className =
+      "authError";
+
+    return;
+
+  }
+
+
+  if(!supabaseClient){
+
+    msg.textContent =
+      "Não foi possível conectar ao Supabase.";
+
+    msg.className =
+      "authError";
+
+    return;
+
+  }
+
+
+  msg.textContent =
+    "Entrando...";
+
+  msg.className =
+    "";
+
+
+  btn.disabled = true;
+
+  btn.textContent =
+    "Entrando...";
+
+  btn.style.opacity =
+    ".7";
+
+
+  try{
+
+    /*
+     * Timeout de 15 segundos.
+     * Isso impede que a tela fique presa
+     * eternamente em "Entrando...".
+     */
+
+    const resposta =
+      await Promise.race([
+
+        supabaseClient.auth.signInWithPassword({
+
+          email:email,
+
+          password:password
+
+        }),
+
+        new Promise(
+          (_,reject)=>{
+
+            setTimeout(
+              ()=>reject(
+                new Error(
+                  "O servidor demorou para responder. Verifique sua internet e tente novamente."
+                )
+              ),
+              15000
+            );
+
+          }
+        )
+
+      ]);
+
+
+    const data =
+      resposta.data;
+
+    const error =
+      resposta.error;
+
+
+    if(error){
+
+      console.error(
+        "EDIFIQ LOGIN:",
+        error
+      );
+
+
+      let mensagem =
+        error.message ||
+        "Não foi possível entrar.";
+
+
+      const texto =
+        mensagem.toLowerCase();
+
+
+      if(
+        texto.includes(
+          "invalid login credentials"
+        )
+      ){
+
+        mensagem =
+          "E-mail ou senha incorretos.";
+
+      }
+
+
+      if(
+        texto.includes(
+          "email not confirmed"
+        )
+      ){
+
+        mensagem =
+          "Confirme seu e-mail antes de entrar.";
+
+      }
+
+
+      msg.textContent =
+        mensagem;
+
+      msg.className =
+        "authError";
+
+      return;
 
     }
 
-  });
 
-})();
+    if(
+      !data ||
+      !data.user
+    ){
+
+      throw new Error(
+        "Login processado, mas o usuário não foi encontrado."
+      );
+
+    }
 
 
-/* =========================================================
-   FUNÇÕES DE PROGRESSO
-========================================================= */
+    currentUser =
+      data.user;
 
-function edifiqClamp(v){
+
+    msg.textContent =
+      "Login realizado.";
+
+    msg.className =
+      "authSuccess";
+
+
+    $("authScreen").style.display =
+      "none";
+
+    $("app").style.display =
+      "block";
+
+
+    try{
+
+      await loadData();
+
+    }catch(loadError){
+
+      console.error(
+        "EDIFIQ — erro ao carregar dados:",
+        loadError
+      );
+
+      renderAll();
+
+    }
+
+
+  }catch(error){
+
+    console.error(
+      "EDIFIQ — erro de login:",
+      error
+    );
+
+
+    msg.textContent =
+      error.message ||
+      "Não foi possível entrar.";
+
+    msg.className =
+      "authError";
+
+
+  }finally{
+
+    btn.disabled =
+      false;
+
+    btn.textContent =
+      "Entrar";
+
+    btn.style.opacity =
+      "1";
+
+  }
+
+}
+
+
+/* =====================================================
+   CRIAR CONTA
+===================================================== */
+
+async function signup(){
+
+  const email =
+    $("loginEmail").value.trim();
+
+  const password =
+    $("loginPassword").value;
+
+  const msg =
+    $("authMsg");
+
+
+  if(!email){
+
+    msg.textContent =
+      "Digite seu e-mail.";
+
+    msg.className =
+      "authError";
+
+    return;
+
+  }
+
+
+  if(!password){
+
+    msg.textContent =
+      "Digite uma senha.";
+
+    msg.className =
+      "authError";
+
+    return;
+
+  }
+
+
+  if(password.length < 6){
+
+    msg.textContent =
+      "A senha precisa ter pelo menos 6 caracteres.";
+
+    msg.className =
+      "authError";
+
+    return;
+
+  }
+
+
+  if(
+    SUPABASE_URL.includes("COLE_AQUI") ||
+    SUPABASE_ANON_KEY.includes("COLE_AQUI")
+  ){
+
+    msg.textContent =
+      "Configure primeiro o Supabase.";
+
+    msg.className =
+      "authError";
+
+    return;
+
+  }
+
+
+  msg.textContent =
+    "Criando conta...";
+
+  msg.className =
+    "";
+
+
+  try{
+
+    const {error} =
+      await supabaseClient.auth.signUp({
+
+        email:email,
+
+        password:password
+
+      });
+
+
+    if(error){
+
+      msg.textContent =
+        error.message;
+
+      msg.className =
+        "authError";
+
+      return;
+
+    }
+
+
+    msg.textContent =
+      "Conta criada. Verifique seu e-mail.";
+
+    msg.className =
+      "authSuccess";
+
+
+  }catch(error){
+
+    msg.textContent =
+      error.message ||
+      "Não foi possível criar a conta.";
+
+    msg.className =
+      "authError";
+
+  }
+
+}
+
+
+/* =====================================================
+   LOGOUT
+===================================================== */
+
+async function logout(){
+
+  try{
+
+    if(supabaseClient){
+
+      await supabaseClient.auth.signOut();
+
+    }
+
+  }catch(error){
+
+    console.error(error);
+
+  }
+
+  location.reload();
+
+}
+
+
+/* =====================================================
+   CARREGAMENTO
+===================================================== */
+
+async function loadTable(table){
+
+  try{
+
+    if(!supabaseClient){
+
+      return [];
+
+    }
+
+
+    const {data,error} =
+      await supabaseClient
+        .from(table)
+        .select("*");
+
+
+    if(error){
+
+      console.warn(
+        "EDIFIQ — tabela:",
+        table,
+        error
+      );
+
+      return [];
+
+    }
+
+
+    return data || [];
+
+
+  }catch(error){
+
+    console.warn(
+      "EDIFIQ — erro:",
+      table,
+      error
+    );
+
+    return [];
+
+  }
+
+}
+
+
+async function loadData(){
+
+  D.obras =
+    await loadTable("obras");
+
+  D.funcionarios =
+    await loadTable("funcionarios");
+
+  D.diarias =
+    await loadTable("diarias");
+
+  D.gastos =
+    await loadTable("gastos");
+
+  D.pagamentos =
+    await loadTable("pagamentos");
+
+  D.orcamentos =
+    await loadTable("orcamentos");
+
+  D.servicos =
+    await loadTable("servicos");
+
+  D.terceirizados =
+    await loadTable("terceirizados");
+
+  D.checklist =
+    await loadTable("checklist");
+
+
+  renderAll();
+
+}
+
+
+/* =====================================================
+   DASHBOARD
+===================================================== */
+
+function renderHome(){
+
+  const obras =
+    D.obras.length;
+
+
+  const andamento =
+    D.obras.filter(
+      x =>
+        String(
+          x.status || ""
+        ).toLowerCase() ===
+        "em andamento"
+    ).length;
+
+
+  const ativos =
+    D.funcionarios.filter(
+      x=>x.ativo !== false
+    ).length;
+
+
+  const despesas =
+    D.gastos
+      .filter(
+        x=>x.tipo !== "receita"
+      )
+      .reduce(
+        (s,x)=>
+          s + Number(x.valor || 0),
+        0
+      );
+
+
+  $("kObras").textContent =
+    obras;
+
+  $("kAndamento").textContent =
+    andamento;
+
+  $("kFunc").textContent =
+    ativos;
+
+  $("kDespesas").textContent =
+    money(despesas);
+
+
+  $("homeResumo").innerHTML = `
+
+    <p>
+      Obras cadastradas:
+      <b>${obras}</b>
+    </p>
+
+    <p>
+      Obras em andamento:
+      <b>${andamento}</b>
+    </p>
+
+    <p>
+      Funcionários ativos:
+      <b>${ativos}</b>
+    </p>
+
+    <p>
+      Total de despesas:
+      <b>${money(despesas)}</b>
+    </p>
+
+  `;
+
+}
+
+
+/* =====================================================
+   OBRAS
+===================================================== */
+
+function openObra(id=null){
+
+  $("obraId").value =
+    id || "";
+
+
+  if(id){
+
+    const o =
+      D.obras.find(
+        x=>String(x.id) ===
+        String(id)
+      );
+
+
+    if(!o){
+      return;
+    }
+
+
+    $("obraNome").value =
+      o.nome || "";
+
+    $("obraCliente").value =
+      o.cliente || "";
+
+    $("obraEndereco").value =
+      o.endereco || "";
+
+    $("obraValor").value =
+      o.valor || 0;
+
+    $("obraStatus").value =
+      o.status ||
+      "planejada";
+
+
+  }else{
+
+    $("obraNome").value =
+      "";
+
+    $("obraCliente").value =
+      "";
+
+    $("obraEndereco").value =
+      "";
+
+    $("obraValor").value =
+      "";
+
+    $("obraStatus").value =
+      "planejada";
+
+  }
+
+
+  openM("obraM");
+
+}
+
+
+async function saveObra(){
+
+  const id =
+    $("obraId").value;
+
+
+  const obj = {
+
+    nome:
+      $("obraNome")
+        .value
+        .trim(),
+
+    cliente:
+      $("obraCliente")
+        .value
+        .trim(),
+
+    endereco:
+      $("obraEndereco")
+        .value
+        .trim(),
+
+    valor:
+      Number(
+        $("obraValor").value || 0
+      ),
+
+    status:
+      $("obraStatus").value
+
+  };
+
+
+  if(!obj.nome){
+
+    alert(
+      "Digite o nome da obra."
+    );
+
+    return;
+
+  }
+
+
+  let res;
+
+
+  if(id){
+
+    res =
+      await supabaseClient
+        .from("obras")
+        .update(obj)
+        .eq("id",id);
+
+  }else{
+
+    res =
+      await supabaseClient
+        .from("obras")
+        .insert(obj);
+
+  }
+
+
+  if(res.error){
+
+    alert(
+      res.error.message
+    );
+
+    return;
+
+  }
+
+
+  closeM("obraM");
+
+  await loadData();
+
+}
+
+
+/* =====================================================
+   CHECKLIST / PROGRESSO
+===================================================== */
+
+function clamp(v){
 
   v = Number(v);
 
@@ -2378,46 +2312,11 @@ function edifiqClamp(v){
     0,
     Math.min(100,v)
   );
+
 }
 
 
-function edifiqTaskProgress(
-  obraId,
-  tarefa
-){
-
-  const item =
-    D.checklist.find(x =>
-
-      String(x.obra_id) === String(obraId) &&
-
-      String(
-        x.tarefa ||
-        x.descricao ||
-        ""
-      ) === String(tarefa)
-
-    );
-
-  if(!item){
-    return 0;
-  }
-
-  if(item.concluida){
-    return 100;
-  }
-
-  return edifiqClamp(
-    item.progresso || 0
-  );
-}
-
-
-/* =========================================================
-   ETAPAS PADRÃO
-========================================================= */
-
-function edifiqGetDefs(){
+function getDefs(){
 
   let defs =
     JSON.parse(
@@ -2425,6 +2324,7 @@ function edifiqGetDefs(){
         "edifiq_check_defs"
       ) || "null"
     );
+
 
   if(
     !Array.isArray(defs) ||
@@ -2460,12 +2360,15 @@ function edifiqGetDefs(){
     ].map(
       (nome,i)=>({
 
-        id:"edifiq_"+i,
+        id:
+          "edifiq_"+i,
 
-        nome:nome
+        nome:
+          nome
 
       })
     );
+
 
     localStorage.setItem(
       "edifiq_check_defs",
@@ -2474,15 +2377,53 @@ function edifiqGetDefs(){
 
   }
 
+
   return defs;
+
 }
 
 
-/* =========================================================
-   PROGRESSO TOTAL
-========================================================= */
+function taskProgress(
+  obraId,
+  tarefa
+){
 
-function edifiqObraProgress(
+  const c =
+    D.checklist.find(
+      x =>
+
+        String(x.obra_id) ===
+        String(obraId)
+
+        &&
+
+        String(
+          x.tarefa ||
+          x.descricao ||
+          ""
+        ) ===
+        String(tarefa)
+    );
+
+
+  if(!c){
+    return 0;
+  }
+
+
+  if(c.concluida){
+    return 100;
+  }
+
+
+  return clamp(
+    c.progresso || 0
+  );
+
+}
+
+
+function obraProgress(
   obra,
   defs
 ){
@@ -2494,179 +2435,191 @@ function edifiqObraProgress(
         obra.status || ""
       ).toLowerCase();
 
-    if(status==="concluída"){
+
+    if(status === "concluída"){
       return 100;
     }
 
-    if(status==="em andamento"){
+    if(status === "em andamento"){
       return 50;
     }
 
-    if(status==="pausada"){
+    if(status === "pausada"){
       return 25;
     }
 
     return 10;
+
   }
+
 
   const valores =
     defs.map(
       d =>
-        edifiqTaskProgress(
+        taskProgress(
           obra.id,
           d.nome
         )
     );
 
-  const total =
+
+  return Math.round(
     valores.reduce(
       (a,b)=>a+b,
       0
-    );
-
-  return Math.round(
-    total / valores.length
+    ) /
+    valores.length
   );
+
 }
 
 
-/* =========================================================
-   SALVAR PROGRESSO
-========================================================= */
-
-async function edifiqUpdateProgress(
+async function updateCheckProgress(
   obraId,
   tarefa,
   value
 ){
 
-  const progresso =
-    edifiqClamp(value);
+  const p =
+    clamp(value);
 
-  const existente =
-    D.checklist.find(x =>
 
-      String(x.obra_id) === String(obraId) &&
+  const old =
+    D.checklist.find(
+      x =>
 
-      String(
-        x.tarefa ||
-        x.descricao ||
-        ""
-      ) === String(tarefa)
+        String(x.obra_id) ===
+        String(obraId)
 
+        &&
+
+        String(
+          x.tarefa ||
+          x.descricao ||
+          ""
+        ) ===
+        String(tarefa)
     );
 
-  const dados = {
 
-    obra_id:obraId,
+  const payload = {
 
-    tarefa:tarefa,
+    obra_id:
+      obraId,
 
-    descricao:tarefa,
+    tarefa:
+      tarefa,
+
+    descricao:
+      tarefa,
 
     concluida:
-      progresso >= 100,
+      p >= 100,
 
-    progresso:progresso
+    progresso:
+      p
 
   };
 
-  let resultado;
 
-  if(existente?.id){
+  let res;
 
-    resultado =
+
+  if(old?.id){
+
+    res =
       await supabaseClient
-
         .from("checklist")
-
-        .update(dados)
-
-        .eq(
-          "id",
-          existente.id
-        );
+        .update(payload)
+        .eq("id",old.id);
 
   }else{
 
-    resultado =
+    res =
       await supabaseClient
-
         .from("checklist")
-
-        .insert(dados);
+        .insert(payload);
 
   }
 
-  if(resultado.error){
 
-    console.error(
-      resultado.error
-    );
+  if(res.error){
+
+    console.error(res.error);
 
     alert(
-      "Erro ao salvar progresso:\n" +
-      resultado.error.message
+      "Não foi possível salvar o progresso:\n" +
+      res.error.message
     );
 
     return;
+
   }
 
-  const indice =
-    D.checklist.findIndex(x =>
 
-      String(x.obra_id) === String(obraId) &&
+  const local =
+    D.checklist.findIndex(
+      x =>
 
-      String(
-        x.tarefa ||
-        x.descricao ||
-        ""
-      ) === String(tarefa)
+        String(x.obra_id) ===
+        String(obraId)
 
+        &&
+
+        String(
+          x.tarefa ||
+          x.descricao ||
+          ""
+        ) ===
+        String(tarefa)
     );
 
-  if(indice >= 0){
 
-    D.checklist[indice] = {
+  if(local >= 0){
 
-      ...D.checklist[indice],
+    D.checklist[local] = {
 
-      ...dados
+      ...D.checklist[local],
+
+      ...payload
 
     };
 
   }else{
 
-    D.checklist.push(dados);
+    D.checklist.push(
+      payload
+    );
 
   }
 
+
   renderObras();
+
 }
 
 
-/* =========================================================
-   CRIAR ETAPA
-========================================================= */
-
-function edifiqMakeStage(
+function makeStage(
   obraId,
   def
 ){
 
-  const progresso =
-    edifiqTaskProgress(
+  const p =
+    taskProgress(
       obraId,
       def.nome
     );
+
 
   const div =
     document.createElement(
       "div"
     );
 
+
   div.className =
     "edifiq-stage";
+
 
   div.innerHTML = `
 
@@ -2674,14 +2627,15 @@ function edifiqMakeStage(
 
       <input
         type="checkbox"
-        ${progresso >= 100 ? "checked" : ""}
+        ${p >= 100 ? "checked" : ""}
       >
 
       <span>
-        ${edifiqEscape(def.nome)}
+        ${esc(def.nome)}
       </span>
 
     </div>
+
 
     <div class="edifiq-stage-controls">
 
@@ -2690,7 +2644,7 @@ function edifiqMakeStage(
         min="0"
         max="100"
         step="1"
-        value="${progresso}"
+        value="${p}"
       >
 
       <input
@@ -2699,35 +2653,40 @@ function edifiqMakeStage(
         min="0"
         max="100"
         step="1"
-        value="${progresso}"
+        value="${p}"
       >
 
     </div>
 
+
     <div class="edifiq-stage-bar">
 
       <div
-        style="width:${progresso}%"
+        style="width:${p}%"
       ></div>
 
     </div>
 
   `;
 
-  const checkbox =
+
+  const check =
     div.querySelector(
       'input[type="checkbox"]'
     );
+
 
   const range =
     div.querySelector(
       'input[type="range"]'
     );
 
+
   const number =
     div.querySelector(
       'input[type="number"]'
     );
+
 
   const bar =
     div.querySelector(
@@ -2735,41 +2694,41 @@ function edifiqMakeStage(
     );
 
 
-  function atualizarVisual(valor){
+  function atualizarVisual(v){
 
-    valor =
-      edifiqClamp(valor);
+    v =
+      clamp(v);
 
     range.value =
-      valor;
+      v;
 
     number.value =
-      valor;
+      v;
 
-    checkbox.checked =
-      valor >= 100;
+    check.checked =
+      v >= 100;
 
     bar.style.width =
-      valor + "%";
+      v + "%";
 
   }
 
 
-  checkbox.addEventListener(
+  check.addEventListener(
     "change",
-    function(){
+    ()=>{
 
-      const valor =
-        checkbox.checked
+      const v =
+        check.checked
           ? 100
           : 0;
 
-      atualizarVisual(valor);
+      atualizarVisual(v);
 
-      edifiqUpdateProgress(
+      updateCheckProgress(
         obraId,
         def.nome,
-        valor
+        v
       );
 
     }
@@ -2778,18 +2737,16 @@ function edifiqMakeStage(
 
   range.addEventListener(
     "input",
-    function(){
+    ()=>{
 
-      const valor =
-        edifiqClamp(
-          range.value
-        );
+      const v =
+        clamp(range.value);
 
       number.value =
-        valor;
+        v;
 
       bar.style.width =
-        valor + "%";
+        v + "%";
 
     }
   );
@@ -2797,9 +2754,9 @@ function edifiqMakeStage(
 
   range.addEventListener(
     "change",
-    function(){
+    ()=>{
 
-      edifiqUpdateProgress(
+      updateCheckProgress(
         obraId,
         def.nome,
         range.value
@@ -2811,19 +2768,17 @@ function edifiqMakeStage(
 
   number.addEventListener(
     "change",
-    function(){
+    ()=>{
 
-      const valor =
-        edifiqClamp(
-          number.value
-        );
+      const v =
+        clamp(number.value);
 
-      atualizarVisual(valor);
+      atualizarVisual(v);
 
-      edifiqUpdateProgress(
+      updateCheckProgress(
         obraId,
         def.nome,
-        valor
+        v
       );
 
     }
@@ -2831,259 +2786,731 @@ function edifiqMakeStage(
 
 
   return div;
-}
-
-
-function edifiqEscape(valor){
-
-  return String(
-    valor ?? ""
-  )
-
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
 
 }
 
 
-/* =========================================================
-   ADICIONAR CHECKLIST DENTRO DA OBRA
-========================================================= */
+function renderObras(){
 
-(function(){
+  const box =
+    $("obrasList");
 
-  const renderObrasOriginal =
-    window.renderObras;
 
-  if(
-    typeof renderObrasOriginal !==
-    "function"
-  ){
-
-    console.warn(
-      "EDIFIQ: renderObras não encontrada."
-    );
-
+  if(!box){
     return;
   }
 
 
-  window.renderObras =
-    function(){
-
-      renderObrasOriginal();
-
-      const defs =
-        edifiqGetDefs();
-
-      D.obras.forEach(
-        obra=>{
-
-          const cards =
-            document.querySelectorAll(
-              "#obrasList .card"
-            );
-
-          let card=null;
-
-          cards.forEach(c=>{
-
-            if(
-              !card &&
-              c.textContent.includes(
-                obra.nome
-              )
-            ){
-
-              card=c;
-
-            }
-
-          });
-
-          if(!card){
-            return;
-          }
+  const defs =
+    getDefs();
 
 
-          const percentual =
-            edifiqObraProgress(
-              obra,
-              defs
-            );
+  if(!D.obras.length){
+
+    box.innerHTML = `
+
+      <div class="empty">
+        Nenhuma obra cadastrada.
+      </div>
+
+    `;
+
+    return;
+
+  }
 
 
-          /*
-           * Atualiza barra principal
-           */
-          const barras =
-            card.querySelectorAll(
-              ".progress div"
-            );
+  box.innerHTML =
+    D.obras.map(
+      o => {
 
-          if(barras.length){
-
-            barras[0].style.width =
-              percentual + "%";
-
-          }
+        const p =
+          obraProgress(
+            o,
+            defs
+          );
 
 
-          /*
-           * Procura área de ações.
-           */
-          const actions =
-            card.querySelector(
-              ".listActions"
-            );
+        return `
+
+        <div class="card">
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              gap:10px;
+              align-items:flex-start
+            "
+          >
+
+            <div>
+
+              <h3>
+                ${esc(
+                  o.nome ||
+                  "Obra"
+                )}
+              </h3>
+
+              <div
+                style="
+                  color:var(--muted);
+                  font-size:12px
+                "
+              >
+                ${esc(
+                  o.cliente ||
+                  ""
+                )}
+              </div>
+
+            </div>
+
+            <span
+              class="badge badgeGold"
+            >
+              ${p}%
+            </span>
+
+          </div>
 
 
-          /*
-           * Evita duplicar.
-           */
-          if(
-            card.querySelector(
-              ".edifiq-check"
-            )
-          ){
+          <div class="progress">
 
-            const total =
-              card.querySelector(
-                ".edifiq-total"
-              );
+            <div
+              style="
+                width:${p}%
+              "
+            ></div>
 
-            if(total){
-
-              total.innerHTML =
-                "Progresso total da obra: " +
-                "<strong>" +
-                percentual +
-                "%" +
-                "</strong>";
-
-            }
-
-            return;
-          }
+          </div>
 
 
-          const check =
-            document.createElement(
-              "div"
-            );
+          <div class="edifiq-total">
 
-          check.className =
-            "edifiq-check";
+            Progresso total da obra:
+
+            <strong>
+              ${p}%
+            </strong>
+
+          </div>
 
 
-          check.innerHTML = `
+          <div class="edifiq-check">
 
-            <div class="edifiq-check-head">
+            <div
+              class="edifiq-check-head"
+            >
 
               <strong>
                 ☑ Checklist da obra
               </strong>
 
-              <span class="badge badgeGold">
-                ${percentual}%
+              <span
+                class="badge badgeGold"
+              >
+                ${p}%
               </span>
 
             </div>
 
-            <div class="edifiq-total">
 
-              Progresso total da obra:
-              <strong>
-                ${percentual}%
-              </strong>
+            <div
+              id="check_${o.id}"
+            ></div>
 
-            </div>
-
-            <div class="edifiq-stage-list"></div>
-
-          `;
+          </div>
 
 
-          const lista =
-            check.querySelector(
-              ".edifiq-stage-list"
-            );
+          <div class="listActions">
+
+            <button
+              class="btn"
+              onclick="openObra('${o.id}')"
+            >
+              Editar
+            </button>
+
+            <button
+              class="btn btnDanger"
+              onclick="deleteObra('${o.id}')"
+            >
+              Excluir
+            </button>
+
+          </div>
+
+        </div>
+
+        `;
+
+      }
+    ).join("");
 
 
-          defs.forEach(
-            def=>{
+  D.obras.forEach(
+    o=>{
 
-              lista.appendChild(
+      const area =
+        document.getElementById(
+          "check_"+o.id
+        );
 
-                edifiqMakeStage(
-                  obra.id,
-                  def
-                )
 
-              );
+      if(!area){
+        return;
+      }
 
-            }
+
+      defs.forEach(
+        def=>{
+
+          area.appendChild(
+            makeStage(
+              o.id,
+              def
+            )
           );
-
-
-          if(actions){
-
-            actions.parentNode.insertBefore(
-              check,
-              actions
-            );
-
-          }else{
-
-            card.appendChild(
-              check
-            );
-
-          }
 
         }
       );
 
-    };
+    }
+  );
 
-})();
+}
 
 
-/* =========================================================
-   FUNCIONÁRIOS — INDICADORES
-========================================================= */
+async function deleteObra(id){
 
-function edifiqAtualizarFuncionarios(){
+  if(
+    !confirm(
+      "Excluir esta obra?"
+    )
+  ){
+    return;
+  }
+
+
+  const {error} =
+    await supabaseClient
+      .from("obras")
+      .delete()
+      .eq("id",id);
+
+
+  if(error){
+
+    alert(
+      error.message
+    );
+
+    return;
+
+  }
+
+
+  await loadData();
+
+}
+
+
+/* =====================================================
+   FUNCIONÁRIOS
+===================================================== */
+
+function openFunc(id=null){
+
+  $("funcId").value =
+    id || "";
+
+
+  if(id){
+
+    const f =
+      D.funcionarios.find(
+        x =>
+          String(x.id) ===
+          String(id)
+      );
+
+
+    if(!f){
+      return;
+    }
+
+
+    $("funcNome").value =
+      f.nome || "";
+
+    $("funcFuncao").value =
+      f.funcao ||
+      f.cargo ||
+      "";
+
+    $("funcDiaria").value =
+      f.diaria ||
+      f.valor_diaria ||
+      0;
+
+    $("funcAtivo").value =
+      String(
+        f.ativo !== false
+      );
+
+
+  }else{
+
+    $("funcNome").value =
+      "";
+
+    $("funcFuncao").value =
+      "";
+
+    $("funcDiaria").value =
+      "";
+
+    $("funcAtivo").value =
+      "true";
+
+  }
+
+
+  openM("funcM");
+
+}
+
+
+async function saveFunc(){
+
+  const id =
+    $("funcId").value;
+
+
+  const obj = {
+
+    nome:
+      $("funcNome")
+        .value
+        .trim(),
+
+    funcao:
+      $("funcFuncao")
+        .value
+        .trim(),
+
+    diaria:
+      Number(
+        $("funcDiaria").value ||
+        0
+      ),
+
+    ativo:
+      $("funcAtivo").value ===
+      "true"
+
+  };
+
+
+  if(!obj.nome){
+
+    alert(
+      "Digite o nome do funcionário."
+    );
+
+    return;
+
+  }
+
+
+  let res;
+
+
+  if(id){
+
+    res =
+      await supabaseClient
+        .from("funcionarios")
+        .update(obj)
+        .eq("id",id);
+
+  }else{
+
+    res =
+      await supabaseClient
+        .from("funcionarios")
+        .insert(obj);
+
+  }
+
+
+  if(res.error){
+
+    alert(
+      res.error.message
+    );
+
+    return;
+
+  }
+
+
+  closeM("funcM");
+
+  await loadData();
+
+}
+
+
+/* =====================================================
+   DIÁRIAS
+===================================================== */
+
+function openDiaFor(id=""){
+
+  $("diaId").value =
+    "";
+
+  $("diaData").value =
+    today();
+
+  $("diaQtd").value =
+    1;
+
+
+  const select =
+    $("diaFunc");
+
+
+  const ativos =
+    D.funcionarios.filter(
+      f=>f.ativo !== false
+    );
+
+
+  select.innerHTML =
+    ativos.map(
+      f=>`
+
+        <option
+          value="${f.id}"
+        >
+          ${esc(f.nome)}
+        </option>
+
+      `
+    ).join("");
+
+
+  if(id){
+
+    select.value =
+      String(id);
+
+
+    const f =
+      D.funcionarios.find(
+        x =>
+          String(x.id) ===
+          String(id)
+      );
+
+
+    if(f){
+
+      $("diaValor").value =
+        f.diaria ||
+        f.valor_diaria ||
+        0;
+
+    }
+
+  }else{
+
+    const f =
+      ativos[0];
+
+
+    $("diaValor").value =
+      f
+        ? (
+            f.diaria ||
+            f.valor_diaria ||
+            0
+          )
+        : 0;
+
+  }
+
+
+  openM("diaM");
+
+}
+
+
+function openDia(){
+
+  const first =
+    D.funcionarios.find(
+      x=>x.ativo !== false
+    );
+
+
+  openDiaFor(
+    first?.id || ""
+  );
+
+}
+
+
+async function saveDia(){
+
+  const funcionario_id =
+    $("diaFunc").value;
+
+
+  const data =
+    $("diaData").value;
+
+
+  const quantidade =
+    Number(
+      $("diaQtd").value ||
+      0
+    );
+
+
+  const valor =
+    Number(
+      $("diaValor").value ||
+      0
+    );
+
+
+  if(!funcionario_id){
+
+    alert(
+      "Selecione o funcionário."
+    );
+
+    return;
+
+  }
+
+
+  if(!data){
+
+    alert(
+      "Informe a data."
+    );
+
+    return;
+
+  }
+
+
+  const obj = {
+
+    funcionario_id:
+      funcionario_id,
+
+    data:
+      data,
+
+    quantidade:
+      quantidade,
+
+    valor:
+      valor,
+
+    total:
+      quantidade * valor
+
+  };
+
+
+  const {error} =
+    await supabaseClient
+      .from("diarias")
+      .insert(obj);
+
+
+  if(error){
+
+    alert(
+      error.message
+    );
+
+    return;
+
+  }
+
+
+  closeM("diaM");
+
+  await loadData();
+
+}
+
+
+function renderFuncs(){
+
+  const box =
+    $("funcList");
+
+
+  if(!box){
+    return;
+  }
+
+
+  if(!D.funcionarios.length){
+
+    box.innerHTML = `
+
+      <div class="empty">
+        Nenhum funcionário cadastrado.
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  box.innerHTML =
+    D.funcionarios.map(
+      f=>{
+
+        const ativo =
+          f.ativo !== false;
+
+
+        return `
+
+        <div class="card">
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              gap:10px
+            "
+          >
+
+            <div>
+
+              <h3>
+                ${esc(
+                  f.nome ||
+                  ""
+                )}
+              </h3>
+
+              <div
+                style="
+                  color:var(--muted);
+                  font-size:12px
+                "
+              >
+                ${esc(
+                  f.funcao ||
+                  f.cargo ||
+                  ""
+                )}
+              </div>
+
+            </div>
+
+
+            <span
+              class="
+                badge
+                ${ativo
+                  ? "badgeGreen"
+                  : "badgeRed"}
+              "
+            >
+              ${ativo
+                ? "Ativo"
+                : "Inativo"}
+            </span>
+
+          </div>
+
+
+          <div
+            style="
+              margin-top:10px;
+              color:var(--muted);
+              font-size:13px
+            "
+          >
+
+            Diária:
+
+            <b
+              style="
+                color:var(--gold2)
+              "
+            >
+              ${money(
+                f.diaria ||
+                f.valor_diaria ||
+                0
+              )}
+            </b>
+
+          </div>
+
+
+          <div class="listActions">
+
+            <button
+              class="btn btnGold edifiq-daily"
+              onclick="
+                openDiaFor('${f.id}')
+              "
+            >
+              💵 Registrar diária
+            </button>
+
+
+            <button
+              class="btn"
+              onclick="
+                openFunc('${f.id}')
+              "
+            >
+              Editar
+            </button>
+
+          </div>
+
+        </div>
+
+        `;
+
+      }
+    ).join("");
+
+}
+
+
+function renderPayroll(){
 
   const contratados =
     D.funcionarios.length;
+
 
   const ativos =
     D.funcionarios.filter(
       f=>f.ativo !== false
     ).length;
+
 
   const inativos =
     D.funcionarios.filter(
@@ -3091,561 +3518,529 @@ function edifiqAtualizarFuncionarios(){
     ).length;
 
 
-  const c =
-    document.getElementById(
-      "edifiqContratados"
-    );
-
-  const a =
-    document.getElementById(
-      "edifiqAtivos"
-    );
-
-  const i =
-    document.getElementById(
-      "edifiqInativos"
-    );
+  $("edifiqContratados").textContent =
+    contratados;
 
 
-  if(c){
-    c.textContent =
-      contratados;
-  }
+  $("edifiqAtivos").textContent =
+    ativos;
 
-  if(a){
-    a.textContent =
-      ativos;
-  }
 
-  if(i){
-    i.textContent =
-      inativos;
-  }
+  $("edifiqInativos").textContent =
+    inativos;
+
+
+  renderFuncs();
 
 }
 
 
-/* =========================================================
-   BOTÃO REGISTRAR DIÁRIA EM CADA FUNCIONÁRIO
-========================================================= */
+/* =====================================================
+   FINANCEIRO
+===================================================== */
 
-function edifiqAdicionarBotoesDiaria(){
+function openFin(){
 
-  const lista =
-    document.querySelector(
-      "#funcList"
-    );
+  $("finDescricao").value =
+    "";
 
-  if(!lista){
-    return;
-  }
+  $("finValor").value =
+    "";
 
+  $("finData").value =
+    today();
 
-  const cards =
-    lista.querySelectorAll(
-      ".card"
-    );
+  $("finTipo").value =
+    "despesa";
 
 
-  D.funcionarios.forEach(
-    funcionario=>{
-
-      const card =
-        Array.from(cards)
-          .find(
-            c =>
-              c.textContent.includes(
-                funcionario.nome
-              )
-          );
-
-      if(!card){
-        return;
-      }
-
-
-      /*
-       * Evita duplicar botão.
-       */
-      if(
-        card.querySelector(
-          ".edifiq-daily"
-        )
-      ){
-
-        return;
-
-      }
-
-
-      const area =
-        card.querySelector(
-          ".listActions"
-        );
-
-
-      const botao =
-        document.createElement(
-          "button"
-        );
-
-
-      botao.className =
-        "btn btnGold edifiq-daily";
-
-
-      botao.innerHTML =
-        "💵 Registrar diária";
-
-
-      botao.onclick =
-        function(){
-
-          openDiaFor(
-            funcionario.id
-          );
-
-        };
-
-
-      if(area){
-
-        area.prepend(
-          botao
-        );
-
-      }else{
-
-        card.appendChild(
-          botao
-        );
-
-      }
-
-    }
-  );
+  openM("finM");
 
 }
 
 
-/* =========================================================
-   ABRIR DIÁRIA JÁ COM FUNCIONÁRIO SELECIONADO
-========================================================= */
+async function saveFin(){
 
-window.openDiaFor =
-  function(id){
+  const obj = {
 
-    /*
-     * Usa a função original quando
-     * ela existir para manter compatibilidade.
-     */
-    if(
-      typeof window.openDia ===
-      "function"
-    ){
+    descricao:
+      $("finDescricao")
+        .value
+        .trim(),
 
-      try{
+    valor:
+      Number(
+        $("finValor").value ||
+        0
+      ),
 
-        window.openDia();
+    data:
+      $("finData").value,
 
-      }catch(e){
-
-        console.warn(e);
-
-      }
-
-    }
-
-
-    const select =
-      document.getElementById(
-        "diaFunc"
-      );
-
-
-    if(!select){
-      return;
-    }
-
-
-    /*
-     * Se o select ainda estiver vazio,
-     * monta os funcionários ativos.
-     */
-    if(
-      !select.options.length
-    ){
-
-      select.innerHTML =
-        D.funcionarios
-
-          .filter(
-            f=>f.ativo !== false
-          )
-
-          .map(
-            f=>`
-
-              <option
-                value="${f.id}"
-              >
-                ${edifiqEscape(f.nome)}
-              </option>
-
-            `
-          )
-
-          .join("");
-
-    }
-
-
-    select.value =
-      String(id);
-
-
-    const funcionario =
-      D.funcionarios.find(
-        f =>
-          String(f.id) ===
-          String(id)
-      );
-
-
-    if(
-      funcionario
-    ){
-
-      const valor =
-        funcionario.diaria ??
-        funcionario.valor_diaria ??
-        funcionario.valorDiaria ??
-        0;
-
-
-      const campo =
-        document.getElementById(
-          "diaValor"
-        );
-
-
-      if(campo){
-
-        campo.value =
-          valor;
-
-      }
-
-    }
-
-
-    const data =
-      document.getElementById(
-        "diaData"
-      );
-
-
-    if(
-      data &&
-      !data.value
-    ){
-
-      const agora =
-        new Date();
-
-      data.value =
-        agora
-          .toISOString()
-          .slice(
-            0,
-            10
-          );
-
-    }
-
-
-    const qtd =
-      document.getElementById(
-        "diaQtd"
-      );
-
-
-    if(
-      qtd &&
-      !qtd.value
-    ){
-
-      qtd.value=1;
-
-    }
+    tipo:
+      $("finTipo").value
 
   };
 
 
-/* =========================================================
-   ATUALIZA TUDO DEPOIS DO RENDER
-========================================================= */
+  if(!obj.descricao){
 
-(function(){
-
-  const renderAllOriginal =
-    window.renderAll;
-
-  if(
-    typeof renderAllOriginal !==
-    "function"
-  ){
+    alert(
+      "Digite uma descrição."
+    );
 
     return;
 
   }
 
 
-  window.renderAll =
-    function(){
-
-      renderAllOriginal();
-
-      setTimeout(
-        function(){
-
-          edifiqAtualizarFuncionarios();
-
-          edifiqAdicionarBotoesDiaria();
-
-        },
-        50
-      );
-
-    };
-
-})();
+  const {error} =
+    await supabaseClient
+      .from("gastos")
+      .insert(obj);
 
 
-/* =========================================================
-   SE renderPayroll EXISTIR,
-   ADICIONA OS CONTROLES DEPOIS DELE
-========================================================= */
+  if(error){
 
-(function(){
-
-  const original =
-    window.renderPayroll;
-
-  if(
-    typeof original !==
-    "function"
-  ){
+    alert(
+      error.message
+    );
 
     return;
 
   }
 
 
-  window.renderPayroll =
-    function(){
+  closeM("finM");
 
-      original();
+  await loadData();
 
-      setTimeout(
-        function(){
-
-          edifiqAtualizarFuncionarios();
-
-          edifiqAdicionarBotoesDiaria();
-
-        },
-        50
-      );
-
-    };
-
-})();
+}
 
 
-/* =========================================================
-   GARANTE INDICADORES NA TELA
-========================================================= */
+function renderFin(){
 
-(function(){
-
-  function criarKpis(){
-
-    const equipe =
-      document.getElementById(
-        "equipe"
-      );
-
-    if(!equipe){
-      return;
-    }
+  const box =
+    $("finList");
 
 
-    if(
-      document.getElementById(
-        "edifiqFuncKpis"
-      )
-    ){
-
-      return;
-
-    }
+  if(!box){
+    return;
+  }
 
 
-    const titulo =
-      equipe.querySelector(
-        "h2"
-      );
-
-
-    if(!titulo){
-      return;
-    }
-
-
-    const box =
-      document.createElement(
-        "div"
-      );
-
-
-    box.id =
-      "edifiqFuncKpis";
-
-    box.className =
-      "grid3 edifiq-func-kpis";
-
+  if(!D.gastos.length){
 
     box.innerHTML = `
 
-      <div class="kpi">
-
-        <span>
-          Contratados
-        </span>
-
-        <b id="edifiqContratados">
-          0
-        </b>
-
-      </div>
-
-
-      <div class="kpi">
-
-        <span>
-          Ativos
-        </span>
-
-        <b id="edifiqAtivos">
-          0
-        </b>
-
-      </div>
-
-
-      <div class="kpi">
-
-        <span>
-          Inativos
-        </span>
-
-        <b id="edifiqInativos">
-          0
-        </b>
-
+      <div class="empty">
+        Nenhum lançamento.
       </div>
 
     `;
 
+    $("finReceitas").textContent =
+      money(0);
 
-    /*
-     * Coloca depois do título.
-     */
-    titulo.parentNode.insertBefore(
-      box,
-      titulo.nextSibling
-    );
+    $("finDespesas").textContent =
+      money(0);
 
+    return;
 
   }
 
 
-  /*
-   * Tenta agora.
-   */
-  criarKpis();
+  box.innerHTML =
+    D.gastos.map(
+      g=>`
+
+        <div
+          style="
+            padding:12px 0;
+            border-bottom:1px solid var(--border)
+          "
+        >
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between
+            "
+          >
+
+            <b>
+              ${esc(
+                g.descricao ||
+                "Lançamento"
+              )}
+            </b>
+
+            <strong
+              style="
+                color:var(--gold2)
+              "
+            >
+              ${money(g.valor)}
+            </strong>
+
+          </div>
 
 
-  /*
-   * E tenta novamente após
-   * carregamento do aplicativo.
-   */
-  setTimeout(
-    criarKpis,
-    500
+          <small
+            style="
+              color:var(--muted)
+            "
+          >
+            ${esc(g.data || "")}
+          </small>
+
+        </div>
+
+      `
+    ).join("");
+
+
+  const receitas =
+    D.gastos
+      .filter(
+        x=>x.tipo === "receita"
+      )
+      .reduce(
+        (s,x)=>
+          s +
+          Number(
+            x.valor || 0
+          ),
+        0
+      );
+
+
+  const despesas =
+    D.gastos
+      .filter(
+        x=>x.tipo !== "receita"
+      )
+      .reduce(
+        (s,x)=>
+          s +
+          Number(
+            x.valor || 0
+          ),
+        0
+      );
+
+
+  $("finReceitas").textContent =
+    money(receitas);
+
+
+  $("finDespesas").textContent =
+    money(despesas);
+
+}
+
+
+/* =====================================================
+   FOTOS
+===================================================== */
+
+function openFoto(){
+
+  $("fotoObra").innerHTML =
+    D.obras.map(
+      o=>`
+
+        <option
+          value="${o.id}"
+        >
+          ${esc(o.nome)}
+        </option>
+
+      `
+    ).join("");
+
+
+  $("fotoDescricao").value =
+    "";
+
+  $("fotoArquivo").value =
+    "";
+
+
+  openM("fotoM");
+
+}
+
+
+async function saveFoto(){
+
+  alert(
+    "A estrutura de fotos está pronta. Configure o Storage do Supabase para salvar os arquivos."
   );
 
-  setTimeout(
-    criarKpis,
-    1500
+}
+
+
+/* =====================================================
+   RELATÓRIOS
+===================================================== */
+
+function renderRelatorios(){
+
+  const box =
+    $("relatorioContent");
+
+
+  if(!box){
+    return;
+  }
+
+
+  const totalObras =
+    D.obras.length;
+
+
+  const totalFuncionarios =
+    D.funcionarios.length;
+
+
+  const despesas =
+    D.gastos
+      .filter(
+        x=>x.tipo !== "receita"
+      )
+      .reduce(
+        (s,x)=>
+          s +
+          Number(
+            x.valor || 0
+          ),
+        0
+      );
+
+
+  box.innerHTML = `
+
+    <h3>
+      Resumo EDIFIQ
+    </h3>
+
+    <p>
+      Total de obras:
+      <b>
+        ${totalObras}
+      </b>
+    </p>
+
+    <p>
+      Total de funcionários:
+      <b>
+        ${totalFuncionarios}
+      </b>
+    </p>
+
+    <p>
+      Total de despesas:
+      <b>
+        ${money(despesas)}
+      </b>
+    </p>
+
+  `;
+
+}
+
+
+function exportarExcel(){
+
+  if(
+    typeof XLSX ===
+    "undefined"
+  ){
+
+    alert(
+      "Biblioteca Excel não carregou."
+    );
+
+    return;
+
+  }
+
+
+  const wb =
+    XLSX.utils.book_new();
+
+
+  const ws =
+    XLSX.utils.json_to_sheet(
+      D.obras
+    );
+
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    ws,
+    "Obras"
   );
+
+
+  XLSX.writeFile(
+    wb,
+    "EDIFIQ_Relatorio.xlsx"
+  );
+
+}
+
+
+/* =====================================================
+   RENDER GERAL
+===================================================== */
+
+function renderAll(){
+
+  renderHome();
+
+  renderObras();
+
+  renderPayroll();
+
+  renderFin();
+
+  renderRelatorios();
+
+}
+
+
+/* =====================================================
+   ENTER NO LOGIN
+===================================================== */
+
+$("loginEmail")
+  ?.addEventListener(
+    "keydown",
+    function(e){
+
+      if(e.key === "Enter"){
+
+        e.preventDefault();
+
+        $("loginPassword")
+          .focus();
+
+      }
+
+    }
+  );
+
+
+$("loginPassword")
+  ?.addEventListener(
+    "keydown",
+    function(e){
+
+      if(e.key === "Enter"){
+
+        e.preventDefault();
+
+        login();
+
+      }
+
+    }
+  );
+
+
+/* =====================================================
+   INICIALIZAÇÃO
+===================================================== */
+
+(async function(){
+
+  try{
+
+    if(!supabaseClient){
+
+      return;
+
+    }
+
+
+    const {
+      data
+    } =
+      await supabaseClient
+        .auth
+        .getSession();
+
+
+    if(
+      data?.session?.user
+    ){
+
+      currentUser =
+        data.session.user;
+
+
+      $("authScreen")
+        .style.display =
+        "none";
+
+
+      $("app")
+        .style.display =
+        "block";
+
+
+      await loadData();
+
+    }
+
+  }catch(error){
+
+    console.error(
+      "EDIFIQ — inicialização:",
+      error
+    );
+
+  }
 
 })();
 
 
-/* =========================================================
-   ATUALIZA NOME EDIFIQUE -> EDIFIQ
-========================================================= */
+/* =====================================================
+   ATUALIZA SESSÃO
+===================================================== */
 
-(function(){
+if(supabaseClient){
 
-  function atualizarMarca(){
-
-    const elementos =
-      document.querySelectorAll(
-        "body *"
-      );
-
-
-    elementos.forEach(
-      el=>{
+  supabaseClient
+    .auth
+    .onAuthStateChange(
+      (event,session)=>{
 
         if(
-          el.children.length===0 &&
-          el.textContent.includes(
-            "EDIFIQUE"
-          )
+          event === "SIGNED_OUT"
         ){
 
-          el.textContent =
-            el.textContent.replace(
-              /EDIFIQUE/g,
-              "EDIFIQ"
-            );
+          currentUser =
+            null;
+
+          $("authScreen")
+            .style.display =
+            "flex";
+
+          $("app")
+            .style.display =
+            "none";
 
         }
 
       }
     );
 
-  }
-
-
-  atualizarMarca();
-
-  setTimeout(
-    atualizarMarca,
-    500
-  );
-
-  setTimeout(
-    atualizarMarca,
-    1500
-  );
-
-})();
+}
 
 </script>
+
 </body>
 </html>
