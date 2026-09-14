@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0d10">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 
 <title>EDIFIQ — Gestão de Obras</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -25,442 +26,169 @@
   --danger:#e05252;
   --success:#42c77a;
 }
-
 *{box-sizing:border-box}
-
 html,body{
-  margin:0;
-  padding:0;
-  min-height:100%;
-  background:var(--bg);
-  color:var(--text);
+  margin:0;padding:0;min-height:100%;
+  background:var(--bg);color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
 }
-
 body{padding-bottom:90px}
-
 button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 button:disabled{cursor:not-allowed}
-
-.app{
-  max-width:700px;
-  margin:auto;
-  min-height:100vh;
-}
-
+.app{max-width:700px;margin:auto;min-height:100vh}
 header{
-  position:sticky;
-  top:0;
-  z-index:20;
+  position:sticky;top:0;z-index:20;
   background:rgba(8,10,13,.96);
   backdrop-filter:blur(12px);
   border-bottom:1px solid var(--border);
   padding:14px 16px;
 }
-
-.brand{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-
+.brand{display:flex;align-items:center;gap:12px}
 .logo{
-  width:48px;
-  height:48px;
-  border:2px solid var(--gold);
-  border-radius:14px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:var(--gold);
-  font-size:25px;
-  font-weight:900;
+  width:48px;height:48px;border:2px solid var(--gold);
+  border-radius:14px;display:flex;align-items:center;
+  justify-content:center;color:var(--gold);
+  font-size:25px;font-weight:900;
 }
-
-.brand strong{
-  display:block;
-  font-size:22px;
-  letter-spacing:1px;
-  color:#fff;
-}
-
-.brand small{
-  color:var(--gold);
-  font-size:11px;
-}
-
+.brand strong{display:block;font-size:22px;letter-spacing:1px;color:#fff}
+.brand small{color:var(--gold);font-size:11px}
 main{padding:16px}
-
 .page{display:none}
 .page.active{display:block}
-
 h1,h2,h3{margin-top:0}
-
 .card{
   background:linear-gradient(145deg,#14171c,#0f1115);
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:16px;
-  margin-bottom:14px;
+  border:1px solid var(--border);border-radius:18px;
+  padding:16px;margin-bottom:14px;
   box-shadow:0 10px 30px rgba(0,0,0,.2);
 }
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px;
-}
-
-.grid3{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-}
-
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .kpi{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:14px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:14px;
 }
-
-.kpi b{
-  display:block;
-  font-size:22px;
-  color:var(--gold2);
-  margin-top:5px;
-}
-
-.kpi span{
-  font-size:12px;
-  color:var(--muted);
-}
-
+.kpi b{display:block;font-size:22px;color:var(--gold2);margin-top:5px}
+.kpi span{font-size:12px;color:var(--muted)}
 .btn{
-  border:1px solid var(--border);
-  background:#1b1f26;
-  color:#fff;
-  padding:11px 14px;
-  border-radius:12px;
-  font-weight:700;
+  border:1px solid var(--border);background:#1b1f26;color:#fff;
+  padding:11px 14px;border-radius:12px;font-weight:700;
 }
-
 .btn:hover{border-color:var(--gold)}
-
-.btnGold{
-  background:var(--gold);
-  color:#080a0d;
-  border-color:var(--gold);
-}
-
-.btnDanger{
-  background:#30191b;
-  color:#ff8d8d;
-  border-color:#5b282c;
-}
-
-.btnSuccess{
-  background:#14291d;
-  color:#72e09d;
-  border-color:#285b39;
-}
-
+.btnGold{background:var(--gold);color:#080a0d;border-color:var(--gold)}
+.btnDanger{background:#30191b;color:#ff8d8d;border-color:#5b282c}
+.btnSuccess{background:#14291d;color:#72e09d;border-color:#285b39}
 input,select,textarea{
-  width:100%;
-  background:#0c0f13;
-  color:#fff;
-  border:1px solid var(--border);
-  border-radius:11px;
-  padding:12px;
-  outline:none;
+  width:100%;background:#0c0f13;color:#fff;
+  border:1px solid var(--border);border-radius:11px;
+  padding:12px;outline:none;
 }
-
-input:focus,select:focus,textarea:focus{
-  border-color:var(--gold);
-}
-
-label{
-  display:block;
-  font-size:12px;
-  color:var(--muted);
-  margin-bottom:6px;
-}
-
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
 .formGroup{margin-bottom:12px}
-
-.row{
-  display:flex;
-  gap:10px;
-  align-items:center;
-}
-
+.row{display:flex;gap:10px;align-items:center}
 .row>*{flex:1}
-
-.listActions{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin-top:12px;
-}
-
+.listActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .badge{
-  display:inline-block;
-  padding:5px 9px;
-  border-radius:999px;
-  font-size:11px;
-  font-weight:700;
-  background:#20242b;
-  color:#ddd;
+  display:inline-block;padding:5px 9px;border-radius:999px;
+  font-size:11px;font-weight:700;background:#20242b;color:#ddd;
 }
-
-.badgeGold{
-  background:#3a3014;
-  color:var(--gold2);
-}
-
-.badgeGreen{
-  background:#15301f;
-  color:#70dc98;
-}
-
-.badgeRed{
-  background:#35191b;
-  color:#ff8585;
-}
-
+.badgeGold{background:#3a3014;color:var(--gold2)}
+.badgeGreen{background:#15301f;color:#70dc98}
+.badgeRed{background:#35191b;color:#ff8585}
 .progress{
-  height:9px;
-  background:#242830;
-  border-radius:999px;
-  overflow:hidden;
-  margin-top:8px;
+  height:9px;background:#242830;border-radius:999px;
+  overflow:hidden;margin-top:8px;
 }
-
 .progress div{
-  height:100%;
-  background:linear-gradient(90deg,var(--gold),var(--gold2));
-  border-radius:999px;
-  transition:.25s;
+  height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));
+  border-radius:999px;transition:.25s;
 }
-
 .bottomNav{
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-  z-index:30;
-  background:rgba(11,13,16,.97);
-  border-top:1px solid var(--border);
-  display:flex;
-  justify-content:center;
+  position:fixed;bottom:0;left:0;right:0;z-index:30;
+  background:rgba(11,13,16,.97);border-top:1px solid var(--border);
+  display:flex;justify-content:center;
 }
-
 .bottomNavInner{
-  width:100%;
-  max-width:700px;
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
+  width:100%;max-width:700px;
+  display:grid;grid-template-columns:repeat(5,1fr);
 }
-
 .navBtn{
-  background:none;
-  border:0;
-  color:#858b95;
-  padding:10px 3px;
-  font-size:10px;
+  background:none;border:0;color:#858b95;padding:10px 3px;font-size:10px;
 }
-
 .navBtn.active{color:var(--gold)}
-
-.navIcon{
-  display:block;
-  font-size:20px;
-  margin-bottom:3px;
-}
-
+.navIcon{display:block;font-size:20px;margin-bottom:3px}
 .modal{
-  position:fixed;
-  inset:0;
-  z-index:100;
-  display:none;
-  background:rgba(0,0,0,.75);
-  align-items:flex-end;
-  justify-content:center;
+  position:fixed;inset:0;z-index:100;display:none;
+  background:rgba(0,0,0,.75);align-items:flex-end;justify-content:center;
 }
-
 .modal.show{display:flex}
-
 .modalBox{
-  width:100%;
-  max-width:700px;
-  max-height:92vh;
-  overflow:auto;
-  background:#101318;
-  border:1px solid var(--border);
-  border-radius:22px 22px 0 0;
-  padding:18px;
+  width:100%;max-width:700px;max-height:92vh;overflow:auto;
+  background:#101318;border:1px solid var(--border);
+  border-radius:22px 22px 0 0;padding:18px;
 }
-
 .modalHeader{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:15px;
+  display:flex;justify-content:space-between;
+  align-items:center;margin-bottom:15px;
 }
-
 .close{
-  border:0;
-  background:#22262d;
-  color:#fff;
-  width:38px;
-  height:38px;
-  border-radius:50%;
+  border:0;background:#22262d;color:#fff;
+  width:38px;height:38px;border-radius:50%;
 }
-
 .auth{
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
+  min-height:100vh;display:flex;
+  align-items:center;justify-content:center;padding:20px;
 }
-
-.authBox{
-  width:100%;
-  max-width:430px;
-}
-
-.authLogo{
-  text-align:center;
-  margin-bottom:30px;
-}
-
-.authLogo .logo{
-  margin:auto;
-  width:78px;
-  height:78px;
-  font-size:38px;
-}
-
-.authLogo h1{
-  margin:12px 0 2px;
-  font-size:34px;
-  letter-spacing:2px;
-}
-
-.authLogo p{
-  color:var(--gold);
-  margin:0;
-  font-size:12px;
-}
-
-.empty{
-  text-align:center;
-  color:var(--muted);
-  padding:25px 10px;
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:12px;
-}
-
-th,td{
-  padding:9px 6px;
-  border-bottom:1px solid var(--border);
-  text-align:left;
-}
-
+.authBox{width:100%;max-width:430px}
+.authLogo{text-align:center;margin-bottom:30px}
+.authLogo .logo{margin:auto;width:78px;height:78px;font-size:38px}
+.authLogo h1{margin:12px 0 2px;font-size:34px;letter-spacing:2px}
+.authLogo p{color:var(--gold);margin:0;font-size:12px}
+.empty{text-align:center;color:var(--muted);padding:25px 10px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:9px 6px;border-bottom:1px solid var(--border);text-align:left}
 th{color:var(--gold)}
-
 .edifiq-func-kpis{margin-bottom:14px}
 .edifiq-daily{width:100%;margin-top:10px}
-
 .edifiq-check{
-  background:#0d1014;
-  border:1px solid #292d35;
-  border-radius:15px;
-  padding:13px;
-  margin-top:12px;
+  background:#0d1014;border:1px solid #292d35;
+  border-radius:15px;padding:13px;margin-top:12px;
 }
-
 .edifiq-check-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom:8px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:8px;
 }
-
-.edifiq-stage{
-  padding:13px 0;
-  border-top:1px solid #252932;
-}
-
+.edifiq-stage{padding:13px 0;border-top:1px solid #252932}
 .edifiq-stage:first-child{border-top:0}
-
 .edifiq-stage-title{
-  display:flex;
-  align-items:center;
-  gap:9px;
-  font-weight:700;
-  font-size:14px;
+  display:flex;align-items:center;gap:9px;
+  font-weight:700;font-size:14px;
 }
-
 .edifiq-stage-title input[type="checkbox"]{
-  width:20px;
-  height:20px;
-  accent-color:#d4af37;
+  width:20px;height:20px;accent-color:#d4af37;
 }
-
 .edifiq-stage-controls{
-  display:grid;
-  grid-template-columns:1fr 65px;
-  gap:10px;
-  align-items:center;
-  margin-top:10px;
+  display:grid;grid-template-columns:1fr 65px;
+  gap:10px;align-items:center;margin-top:10px;
 }
-
 .edifiq-stage-controls input[type="range"]{
-  padding:0;
-  accent-color:#d4af37;
+  padding:0;accent-color:#d4af37;
 }
-
-.edifiq-stage-number{
-  text-align:center;
-  padding:8px 4px;
-}
-
+.edifiq-stage-number{text-align:center;padding:8px 4px}
 .edifiq-stage-bar{
-  height:7px;
-  background:#252932;
-  border-radius:999px;
-  overflow:hidden;
-  margin-top:9px;
+  height:7px;background:#252932;border-radius:999px;
+  overflow:hidden;margin-top:9px;
 }
-
 .edifiq-stage-bar div{
-  height:100%;
-  background:linear-gradient(90deg,#d4af37,#f0cf62);
+  height:100%;background:linear-gradient(90deg,#d4af37,#f0cf62);
   transition:.2s;
 }
-
-.edifiq-total{
-  font-size:13px;
-  color:#9da3ad;
-  margin-top:9px;
-}
-
-.edifiq-total strong{
-  color:#f0cf62;
-  font-size:20px;
-}
-
-.authError{color:#ff8585 !important}
-.authSuccess{color:#72e09d !important}
-
+.edifiq-total{font-size:13px;color:#9da3ad;margin-top:9px}
+.edifiq-total strong{color:#f0cf62;font-size:20px}
+.authError{color:#ff8585!important}
+.authSuccess{color:#72e09d!important}
 @media(max-width:430px){
   .grid3{gap:7px}
   .kpi{padding:10px}
@@ -485,50 +213,38 @@ th{color:var(--gold)}
 
       <div class="formGroup">
         <label>E-mail</label>
-        <input
-          id="loginEmail"
-          type="email"
-          autocomplete="email"
-          placeholder="seu@email.com"
-        >
+        <input id="loginEmail" type="email"
+               autocomplete="email"
+               placeholder="seu@email.com">
       </div>
 
       <div class="formGroup">
         <label>Senha</label>
-        <input
-          id="loginPassword"
-          type="password"
-          autocomplete="current-password"
-          placeholder="••••••••"
-        >
+        <input id="loginPassword" type="password"
+               autocomplete="current-password"
+               placeholder="••••••••">
       </div>
 
-      <button
-        id="loginButton"
-        class="btn btnGold"
-        style="width:100%"
-        onclick="login()"
-      >
+      <button id="loginButton"
+              class="btn btnGold"
+              style="width:100%"
+              onclick="login()">
         Entrar
       </button>
 
-      <button
-        class="btn"
-        style="width:100%;margin-top:8px"
-        onclick="signup()"
-      >
+      <button class="btn"
+              style="width:100%;margin-top:8px"
+              onclick="signup()">
         Criar conta
       </button>
 
-      <div
-        id="authMsg"
-        style="margin-top:12px;text-align:center;color:var(--muted)"
-      ></div>
+      <div id="authMsg"
+           style="margin-top:12px;text-align:center;color:var(--muted)">
+      </div>
 
     </div>
   </div>
 </div>
-
 
 <div id="app" class="app" style="display:none">
 
@@ -545,184 +261,124 @@ th{color:var(--gold)}
 <main>
 
 <section id="home" class="page active">
-
   <h2>Dashboard</h2>
 
   <div class="grid">
-
     <div class="kpi">
       <span>Obras</span>
       <b id="kObras">0</b>
     </div>
-
     <div class="kpi">
       <span>Em andamento</span>
       <b id="kAndamento">0</b>
     </div>
-
     <div class="kpi">
       <span>Funcionários</span>
       <b id="kFunc">0</b>
     </div>
-
     <div class="kpi">
       <span>Despesas</span>
       <b id="kDespesas">R$ 0,00</b>
     </div>
-
   </div>
 
   <div class="card" style="margin-top:14px">
     <h3>Resumo</h3>
     <div id="homeResumo"></div>
   </div>
-
 </section>
-
 
 <section id="obras" class="page">
-
   <div class="row">
     <div><h2>Obras</h2></div>
-
-    <button class="btn btnGold" onclick="openObra()">
-      + Nova obra
-    </button>
+    <button class="btn btnGold" onclick="openObra()">+ Nova obra</button>
   </div>
-
   <div id="obrasList"></div>
-
 </section>
 
-
 <section id="equipe" class="page">
-
   <div class="row">
     <div><h2>Funcionários</h2></div>
-
-    <button class="btn btnGold" onclick="openFunc()">
-      + Funcionário
-    </button>
+    <button class="btn btnGold" onclick="openFunc()">+ Funcionário</button>
   </div>
 
   <div class="grid3 edifiq-func-kpis">
-
     <div class="kpi">
       <span>Contratados</span>
       <b id="edifiqContratados">0</b>
     </div>
-
     <div class="kpi">
       <span>Ativos</span>
       <b id="edifiqAtivos">0</b>
     </div>
-
     <div class="kpi">
       <span>Inativos</span>
       <b id="edifiqInativos">0</b>
     </div>
-
   </div>
 
   <div id="funcList"></div>
-
 </section>
 
-
 <section id="financeiro" class="page">
-
   <div class="row">
     <div><h2>Financeiro</h2></div>
-
-    <button class="btn btnGold" onclick="openFin()">
-      + Lançamento
-    </button>
+    <button class="btn btnGold" onclick="openFin()">+ Lançamento</button>
   </div>
 
   <div class="grid">
-
     <div class="kpi">
       <span>Receitas</span>
       <b id="finReceitas">R$ 0,00</b>
     </div>
-
     <div class="kpi">
       <span>Despesas</span>
       <b id="finDespesas">R$ 0,00</b>
     </div>
-
   </div>
 
   <div class="card">
     <div id="finList"></div>
   </div>
-
 </section>
-
 
 <section id="fotos" class="page">
-
   <div class="row">
     <div><h2>Fotos</h2></div>
-
-    <button class="btn btnGold" onclick="openFoto()">
-      + Foto
-    </button>
+    <button class="btn btnGold" onclick="openFoto()">+ Foto</button>
   </div>
-
   <div id="fotosList"></div>
-
 </section>
 
-
 <section id="relatorios" class="page">
-
   <h2>Relatórios</h2>
 
   <div class="grid">
-
-    <button class="btn" onclick="exportarExcel()">
-      📊 Exportar Excel
-    </button>
-
-    <button class="btn" onclick="window.print()">
-      🖨️ Imprimir
-    </button>
-
+    <button class="btn" onclick="exportarExcel()">📊 Exportar Excel</button>
+    <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
   </div>
 
   <div class="card">
     <div id="relatorioContent"></div>
   </div>
-
 </section>
 
-
 <section id="config" class="page">
-
   <h2>Configurações</h2>
 
   <div class="card">
-
     <h3>EDIFIQ</h3>
-
-    <p style="color:var(--muted)">
-      Gestão de Obras e Reformas
-    </p>
+    <p style="color:var(--muted)">Gestão de Obras e Reformas</p>
 
     <button class="btn btnDanger" onclick="logout()">
       Sair da conta
     </button>
-
   </div>
-
 </section>
 
 </main>
 
-
 <nav class="bottomNav">
-
   <div class="bottomNavInner">
 
     <button class="navBtn active" onclick="go('home',this)">
@@ -751,22 +407,16 @@ th{color:var(--gold)}
     </button>
 
   </div>
-
 </nav>
 
 </div>
 
-
 <div id="obraM" class="modal">
-
   <div class="modalBox">
 
     <div class="modalHeader">
       <h3>Obra</h3>
-
-      <button class="close" onclick="closeM('obraM')">
-        ×
-      </button>
+      <button class="close" onclick="closeM('obraM')">×</button>
     </div>
 
     <input type="hidden" id="obraId">
@@ -793,7 +443,6 @@ th{color:var(--gold)}
 
     <div class="formGroup">
       <label>Status</label>
-
       <select id="obraStatus">
         <option value="planejada">Planejada</option>
         <option value="em andamento">Em andamento</option>
@@ -802,30 +451,21 @@ th{color:var(--gold)}
       </select>
     </div>
 
-    <button
-      class="btn btnGold"
-      style="width:100%"
-      onclick="saveObra()"
-    >
+    <button class="btn btnGold"
+            style="width:100%"
+            onclick="saveObra()">
       Salvar obra
     </button>
 
   </div>
 </div>
 
-
 <div id="funcM" class="modal">
-
   <div class="modalBox">
 
     <div class="modalHeader">
-
       <h3>Funcionário</h3>
-
-      <button class="close" onclick="closeM('funcM')">
-        ×
-      </button>
-
+      <button class="close" onclick="closeM('funcM')">×</button>
     </div>
 
     <input type="hidden" id="funcId">
@@ -847,37 +487,27 @@ th{color:var(--gold)}
 
     <div class="formGroup">
       <label>Status</label>
-
       <select id="funcAtivo">
         <option value="true">Ativo</option>
         <option value="false">Inativo</option>
       </select>
     </div>
 
-    <button
-      class="btn btnGold"
-      style="width:100%"
-      onclick="saveFunc()"
-    >
+    <button class="btn btnGold"
+            style="width:100%"
+            onclick="saveFunc()">
       Salvar funcionário
     </button>
 
   </div>
 </div>
 
-
 <div id="diaM" class="modal">
-
   <div class="modalBox">
 
     <div class="modalHeader">
-
       <h3>Registrar diária</h3>
-
-      <button class="close" onclick="closeM('diaM')">
-        ×
-      </button>
-
+      <button class="close" onclick="closeM('diaM')">×</button>
     </div>
 
     <input type="hidden" id="diaId">
@@ -902,37 +532,27 @@ th{color:var(--gold)}
       <input id="diaValor" type="number" step="0.01">
     </div>
 
-    <button
-      class="btn btnGold"
-      style="width:100%"
-      onclick="saveDia()"
-    >
+    <button class="btn btnGold"
+            style="width:100%"
+            onclick="saveDia()">
       Registrar diária
     </button>
 
   </div>
 </div>
 
-
 <div id="finM" class="modal">
-
   <div class="modalBox">
 
     <div class="modalHeader">
-
       <h3>Lançamento financeiro</h3>
-
-      <button class="close" onclick="closeM('finM')">
-        ×
-      </button>
-
+      <button class="close" onclick="closeM('finM')">×</button>
     </div>
 
     <input type="hidden" id="finId">
 
     <div class="formGroup">
       <label>Tipo</label>
-
       <select id="finTipo">
         <option value="despesa">Despesa</option>
         <option value="receita">Receita</option>
@@ -954,30 +574,21 @@ th{color:var(--gold)}
       <input id="finData" type="date">
     </div>
 
-    <button
-      class="btn btnGold"
-      style="width:100%"
-      onclick="saveFin()"
-    >
+    <button class="btn btnGold"
+            style="width:100%"
+            onclick="saveFin()">
       Salvar lançamento
     </button>
 
   </div>
 </div>
 
-
 <div id="fotoM" class="modal">
-
   <div class="modalBox">
 
     <div class="modalHeader">
-
       <h3>Relatório fotográfico</h3>
-
-      <button class="close" onclick="closeM('fotoM')">
-        ×
-      </button>
-
+      <button class="close" onclick="closeM('fotoM')">×</button>
     </div>
 
     <div class="formGroup">
@@ -995,71 +606,41 @@ th{color:var(--gold)}
       <input id="fotoArquivo" type="file" accept="image/*">
     </div>
 
-    <button
-      class="btn btnGold"
-      style="width:100%"
-      onclick="saveFoto()"
-    >
+    <button class="btn btnGold"
+            style="width:100%"
+            onclick="saveFoto()">
       Salvar foto
     </button>
 
   </div>
 </div>
 
-
 <script>
+/* =========================================================
+   EDIFIQ — VERSÃO CORRIGIDA
+   Supabase + autenticação
+========================================================= */
 
-/* =====================================================
-   SUPABASE — CONFIGURAÇÃO REAL
-===================================================== */
+const EDIFIQ_VERSION = "2026.09.14.0927";
 
+/*
+  IMPORTANTE:
+  Esta é a URL do seu projeto Supabase.
+*/
 const SUPABASE_URL =
   "https://lwqntzwajjgkvtynwdjg.supabase.co";
 
+/*
+  Esta é a chave PUBLIC/ANON do projeto.
+  Nunca coloque a SERVICE_ROLE KEY no HTML.
+*/
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3cW50endhampna3Z0eW53ZGpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3Nzc3NjMsImV4cCI6MjEwNDM1Mzc2M30.eWvVd6TPAE-lg3PHS1hiiKOohG4BYmfY3cjhfNE8DKI";
 
-
-/* =====================================================
-   CONEXÃO
-===================================================== */
-
 let supabaseClient = null;
-
-try{
-
-  if(typeof window.supabase === "undefined"){
-    throw new Error(
-      "A biblioteca do Supabase não carregou."
-    );
-  }
-
-  supabaseClient =
-    window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_ANON_KEY,
-      {
-        auth:{
-          persistSession:true,
-          autoRefreshToken:true,
-          detectSessionInUrl:true
-        }
-      }
-    );
-
-}catch(error){
-
-  console.error(
-    "EDIFIQ — erro Supabase:",
-    error
-  );
-
-}
-
-
-/* =====================================================
-   ESTADO
-===================================================== */
+let currentUser = null;
+let loginEmAndamento = false;
+let inicializacaoConcluida = false;
 
 let D = {
   obras:[],
@@ -1073,39 +654,26 @@ let D = {
   checklist:[]
 };
 
-let currentUser = null;
-let loginEmAndamento = false;
-let inicializacaoConcluida = false;
-
-
-/* =====================================================
+/* =========================================================
    UTILIDADES
-===================================================== */
+========================================================= */
 
 function $(id){
   return document.getElementById(id);
 }
 
 function money(v){
-  return Number(v || 0).toLocaleString(
-    "pt-BR",
-    {
-      style:"currency",
-      currency:"BRL"
-    }
-  );
+  return Number(v || 0).toLocaleString("pt-BR",{
+    style:"currency",
+    currency:"BRL"
+  });
 }
 
 function today(){
-
   const d = new Date();
-
-  const local =
-    new Date(
-      d.getTime() -
-      d.getTimezoneOffset()*60000
-    );
-
+  const local = new Date(
+    d.getTime() - d.getTimezoneOffset()*60000
+  );
   return local.toISOString().slice(0,10);
 }
 
@@ -1118,52 +686,134 @@ function openM(id){
 }
 
 function esc(v){
-
   return String(v ?? "")
     .replaceAll("&","&amp;")
     .replaceAll("<","&lt;")
     .replaceAll(">","&gt;")
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
+}
+
+/* =========================================================
+   SUPABASE
+========================================================= */
+
+function iniciarSupabase(){
+
+  try{
+
+    if(!window.supabase){
+
+      throw new Error(
+        "A biblioteca do Supabase não carregou."
+      );
+
+    }
+
+    if(!SUPABASE_URL || !SUPABASE_ANON_KEY){
+
+      throw new Error(
+        "As informações do Supabase estão vazias."
+      );
+
+    }
+
+    supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+        {
+          auth:{
+            persistSession:true,
+            autoRefreshToken:true,
+            detectSessionInUrl:true,
+            storageKey:"edifiq-supabase-auth"
+          }
+        }
+      );
+
+    console.log(
+      "EDIFIQ:",
+      EDIFIQ_VERSION,
+      "Supabase inicializado."
+    );
+
+    return true;
+
+  }catch(error){
+
+    console.error(
+      "EDIFIQ — erro ao iniciar Supabase:",
+      error
+    );
+
+    supabaseClient = null;
+
+    return false;
+  }
+}
+
+function authMensagem(texto,tipo=""){
+
+  const msg = $("authMsg");
+
+  if(!msg)return;
+
+  msg.textContent = texto;
+  msg.className =
+    tipo === "erro"
+      ? "authError"
+      : tipo === "sucesso"
+        ? "authSuccess"
+        : "";
 
 }
 
+function verificarSupabase(){
 
-/* =====================================================
+  if(supabaseClient)return true;
+
+  const ok = iniciarSupabase();
+
+  if(!ok){
+
+    authMensagem(
+      "Não foi possível carregar o Supabase. Recarregue a página.",
+      "erro"
+    );
+
+    return false;
+  }
+
+  return true;
+}
+
+/* =========================================================
    NAVEGAÇÃO
-===================================================== */
+========================================================= */
 
 function go(page,btn){
 
-  document
-    .querySelectorAll(".page")
-    .forEach(
-      x=>x.classList.remove("active")
-    );
+  document.querySelectorAll(".page")
+    .forEach(x=>x.classList.remove("active"));
 
   $(page)?.classList.add("active");
 
-  document
-    .querySelectorAll(".navBtn")
-    .forEach(
-      x=>x.classList.remove("active")
-    );
+  document.querySelectorAll(".navBtn")
+    .forEach(x=>x.classList.remove("active"));
 
   btn?.classList.add("active");
 
   renderAll();
 }
 
-
-/* =====================================================
+/* =========================================================
    AUTENTICAÇÃO
-===================================================== */
+========================================================= */
 
 async function login(){
 
-  if(loginEmAndamento){
-    return;
-  }
+  if(loginEmAndamento)return;
 
   const email =
     $("loginEmail").value.trim();
@@ -1171,52 +821,22 @@ async function login(){
   const password =
     $("loginPassword").value;
 
-  const msg =
-    $("authMsg");
-
   const btn =
     $("loginButton");
 
-
   if(!email){
-
-    msg.textContent =
-      "Digite seu e-mail.";
-
-    msg.className =
-      "authError";
-
+    authMensagem("Digite seu e-mail.","erro");
     $("loginEmail").focus();
-
     return;
   }
-
 
   if(!password){
-
-    msg.textContent =
-      "Digite sua senha.";
-
-    msg.className =
-      "authError";
-
+    authMensagem("Digite sua senha.","erro");
     $("loginPassword").focus();
-
     return;
   }
 
-
-  if(!supabaseClient){
-
-    msg.textContent =
-      "Não foi possível conectar ao Supabase.";
-
-    msg.className =
-      "authError";
-
-    return;
-  }
-
+  if(!verificarSupabase())return;
 
   loginEmAndamento = true;
 
@@ -1224,32 +844,9 @@ async function login(){
   btn.textContent = "Entrando...";
   btn.style.opacity = ".7";
 
-  msg.textContent =
-    "Entrando...";
-
-  msg.className = "";
-
+  authMensagem("Entrando...");
 
   try{
-
-    const timeout =
-      new Promise(
-        (_,reject)=>{
-
-          setTimeout(
-            ()=>{
-              reject(
-                new Error(
-                  "Tempo limite excedido. Verifique sua internet e tente novamente."
-                )
-              );
-            },
-            15000
-          );
-
-        }
-      );
-
 
     const resultado =
       await Promise.race([
@@ -1259,14 +856,19 @@ async function login(){
           password
         }),
 
-        timeout
+        new Promise((_,reject)=>{
+          setTimeout(()=>{
+            reject(
+              new Error(
+                "Tempo limite excedido. Verifique sua internet."
+              )
+            );
+          },15000);
+        })
 
       ]);
 
-
-    const {data,error} =
-      resultado;
-
+    const {data,error} = resultado;
 
     if(error){
 
@@ -1282,36 +884,27 @@ async function login(){
       const texto =
         mensagem.toLowerCase();
 
-
       if(
         texto.includes("invalid login credentials")
       ){
-
         mensagem =
           "E-mail ou senha incorretos.";
-
       }
-
 
       if(
         texto.includes("email not confirmed")
       ){
-
         mensagem =
           "Confirme seu e-mail antes de entrar.";
-
       }
 
-
-      msg.textContent =
-        mensagem;
-
-      msg.className =
-        "authError";
+      authMensagem(
+        mensagem,
+        "erro"
+      );
 
       return;
     }
-
 
     if(!data?.user){
 
@@ -1321,41 +914,17 @@ async function login(){
 
     }
 
-
     currentUser =
       data.user;
 
-
-    msg.textContent =
-      "Login realizado!";
-
-    msg.className =
-      "authSuccess";
-
+    authMensagem(
+      "Login realizado!",
+      "sucesso"
+    );
 
     mostrarAplicativo();
 
-
-    /*
-      Não deixamos o carregamento das tabelas
-      bloquear a entrada no aplicativo.
-    */
-
-    try{
-
-      await loadData();
-
-    }catch(e){
-
-      console.error(
-        "Erro carregando dados:",
-        e
-      );
-
-      renderAll();
-
-    }
-
+    await loadData();
 
   }catch(error){
 
@@ -1364,14 +933,11 @@ async function login(){
       error
     );
 
-
-    msg.textContent =
+    authMensagem(
       error?.message ||
-      "Não foi possível entrar.";
-
-    msg.className =
-      "authError";
-
+      "Não foi possível entrar.",
+      "erro"
+    );
 
   }finally{
 
@@ -1382,38 +948,29 @@ async function login(){
     btn.style.opacity = "1";
 
   }
-
 }
 
-
-/* =====================================================
-   MOSTRAR / ESCONDER APP
-===================================================== */
+/* =========================================================
+   MOSTRAR / ESCONDER
+========================================================= */
 
 function mostrarAplicativo(){
 
-  $("authScreen").style.display =
-    "none";
-
-  $("app").style.display =
-    "block";
+  $("authScreen").style.display = "none";
+  $("app").style.display = "block";
 
 }
 
 function mostrarLogin(){
 
-  $("authScreen").style.display =
-    "flex";
-
-  $("app").style.display =
-    "none";
+  $("authScreen").style.display = "flex";
+  $("app").style.display = "none";
 
 }
 
-
-/* =====================================================
+/* =========================================================
    CRIAR CONTA
-===================================================== */
+========================================================= */
 
 async function signup(){
 
@@ -1423,67 +980,27 @@ async function signup(){
   const password =
     $("loginPassword").value;
 
-  const msg =
-    $("authMsg");
-
-
   if(!email){
-
-    msg.textContent =
-      "Digite seu e-mail.";
-
-    msg.className =
-      "authError";
-
+    authMensagem("Digite seu e-mail.","erro");
     return;
-
   }
-
 
   if(!password){
-
-    msg.textContent =
-      "Digite uma senha.";
-
-    msg.className =
-      "authError";
-
+    authMensagem("Digite uma senha.","erro");
     return;
-
   }
-
 
   if(password.length < 6){
-
-    msg.textContent =
-      "A senha precisa ter pelo menos 6 caracteres.";
-
-    msg.className =
-      "authError";
-
+    authMensagem(
+      "A senha precisa ter pelo menos 6 caracteres.",
+      "erro"
+    );
     return;
-
   }
 
+  if(!verificarSupabase())return;
 
-  if(!supabaseClient){
-
-    msg.textContent =
-      "Não foi possível conectar ao Supabase.";
-
-    msg.className =
-      "authError";
-
-    return;
-
-  }
-
-
-  msg.textContent =
-    "Criando conta...";
-
-  msg.className = "";
-
+  authMensagem("Criando conta...");
 
   try{
 
@@ -1493,21 +1010,17 @@ async function signup(){
         password
       });
 
-
     if(error){
 
-      msg.textContent =
-        error.message;
-
-      msg.className =
-        "authError";
+      authMensagem(
+        error.message,
+        "erro"
+      );
 
       return;
-
     }
 
-
-    if(data?.session){
+    if(data?.session && data?.user){
 
       currentUser =
         data.user;
@@ -1518,41 +1031,36 @@ async function signup(){
 
     }else{
 
-      msg.textContent =
-        "Conta criada. Verifique seu e-mail para confirmar o cadastro.";
-
-      msg.className =
-        "authSuccess";
+      authMensagem(
+        "Conta criada. Verifique seu e-mail para confirmar o cadastro.",
+        "sucesso"
+      );
 
     }
 
-
   }catch(error){
 
-    msg.textContent =
-      error?.message ||
-      "Não foi possível criar a conta.";
+    console.error(error);
 
-    msg.className =
-      "authError";
+    authMensagem(
+      error?.message ||
+      "Não foi possível criar a conta.",
+      "erro"
+    );
 
   }
-
 }
 
-
-/* =====================================================
+/* =========================================================
    LOGOUT
-===================================================== */
+========================================================= */
 
 async function logout(){
 
   try{
 
     if(supabaseClient){
-
       await supabaseClient.auth.signOut();
-
     }
 
   }catch(error){
@@ -1563,14 +1071,25 @@ async function logout(){
 
   currentUser = null;
 
+  D = {
+    obras:[],
+    funcionarios:[],
+    diarias:[],
+    gastos:[],
+    pagamentos:[],
+    orcamentos:[],
+    servicos:[],
+    terceirizados:[],
+    checklist:[]
+  };
+
   mostrarLogin();
 
 }
 
-
-/* =====================================================
-   CARREGAMENTO
-===================================================== */
+/* =========================================================
+   DADOS
+========================================================= */
 
 async function loadTable(table){
 
@@ -1578,14 +1097,12 @@ async function loadTable(table){
     return [];
   }
 
-
   try{
 
     const {data,error} =
       await supabaseClient
         .from(table)
         .select("*");
-
 
     if(error){
 
@@ -1596,12 +1113,9 @@ async function loadTable(table){
       );
 
       return [];
-
     }
 
-
     return data || [];
-
 
   }catch(error){
 
@@ -1612,139 +1126,103 @@ async function loadTable(table){
     );
 
     return [];
-
   }
-
 }
-
 
 async function loadData(){
 
-  if(!currentUser){
-    return;
+  if(!currentUser)return;
+
+  try{
+
+    D.obras =
+      await loadTable("obras");
+
+    D.funcionarios =
+      await loadTable("funcionarios");
+
+    D.diarias =
+      await loadTable("diarias");
+
+    D.gastos =
+      await loadTable("gastos");
+
+    D.pagamentos =
+      await loadTable("pagamentos");
+
+    D.orcamentos =
+      await loadTable("orcamentos");
+
+    D.servicos =
+      await loadTable("servicos");
+
+    D.terceirizados =
+      await loadTable("terceirizados");
+
+    D.checklist =
+      await loadTable("checklist");
+
+  }catch(error){
+
+    console.error(
+      "EDIFIQ — erro carregando dados:",
+      error
+    );
+
   }
 
-
-  D.obras =
-    await loadTable("obras");
-
-  D.funcionarios =
-    await loadTable("funcionarios");
-
-  D.diarias =
-    await loadTable("diarias");
-
-  D.gastos =
-    await loadTable("gastos");
-
-  D.pagamentos =
-    await loadTable("pagamentos");
-
-  D.orcamentos =
-    await loadTable("orcamentos");
-
-  D.servicos =
-    await loadTable("servicos");
-
-  D.terceirizados =
-    await loadTable("terceirizados");
-
-  D.checklist =
-    await loadTable("checklist");
-
-
   renderAll();
-
 }
 
-
-/* =====================================================
+/* =========================================================
    DASHBOARD
-===================================================== */
+========================================================= */
 
 function renderHome(){
 
   const obras =
     D.obras.length;
 
-
   const andamento =
     D.obras.filter(
       x =>
-        String(
-          x.status || ""
-        ).toLowerCase() ===
+        String(x.status || "").toLowerCase() ===
         "em andamento"
     ).length;
-
 
   const ativos =
     D.funcionarios.filter(
       x=>x.ativo !== false
     ).length;
 
-
   const despesas =
     D.gastos
-      .filter(
-        x=>x.tipo !== "receita"
-      )
+      .filter(x=>x.tipo !== "receita")
       .reduce(
-        (s,x)=>
-          s + Number(x.valor || 0),
+        (s,x)=>s + Number(x.valor || 0),
         0
       );
 
-
-  $("kObras").textContent =
-    obras;
-
-  $("kAndamento").textContent =
-    andamento;
-
-  $("kFunc").textContent =
-    ativos;
-
-  $("kDespesas").textContent =
-    money(despesas);
-
+  $("kObras").textContent = obras;
+  $("kAndamento").textContent = andamento;
+  $("kFunc").textContent = ativos;
+  $("kDespesas").textContent = money(despesas);
 
   $("homeResumo").innerHTML = `
-
-    <p>
-      Obras cadastradas:
-      <b>${obras}</b>
-    </p>
-
-    <p>
-      Obras em andamento:
-      <b>${andamento}</b>
-    </p>
-
-    <p>
-      Funcionários ativos:
-      <b>${ativos}</b>
-    </p>
-
-    <p>
-      Total de despesas:
-      <b>${money(despesas)}</b>
-    </p>
-
+    <p>Obras cadastradas: <b>${obras}</b></p>
+    <p>Obras em andamento: <b>${andamento}</b></p>
+    <p>Funcionários ativos: <b>${ativos}</b></p>
+    <p>Total de despesas: <b>${money(despesas)}</b></p>
   `;
-
 }
 
-
-/* =====================================================
+/* =========================================================
    OBRAS
-===================================================== */
+========================================================= */
 
 function openObra(id=null){
 
-  $("obraId").value =
-    id || "";
-
+  $("obraId").value = id || "";
 
   if(id){
 
@@ -1753,25 +1231,13 @@ function openObra(id=null){
         x=>String(x.id) === String(id)
       );
 
-
     if(!o)return;
 
-
-    $("obraNome").value =
-      o.nome || "";
-
-    $("obraCliente").value =
-      o.cliente || "";
-
-    $("obraEndereco").value =
-      o.endereco || "";
-
-    $("obraValor").value =
-      o.valor || 0;
-
-    $("obraStatus").value =
-      o.status || "planejada";
-
+    $("obraNome").value = o.nome || "";
+    $("obraCliente").value = o.cliente || "";
+    $("obraEndereco").value = o.endereco || "";
+    $("obraValor").value = o.valor || 0;
+    $("obraStatus").value = o.status || "planejada";
 
   }else{
 
@@ -1783,11 +1249,8 @@ function openObra(id=null){
 
   }
 
-
   openM("obraM");
-
 }
-
 
 async function saveObra(){
 
@@ -1796,41 +1259,23 @@ async function saveObra(){
     return;
   }
 
-
   const id =
     $("obraId").value;
 
-
   const obj = {
-
-    nome:
-      $("obraNome").value.trim(),
-
-    cliente:
-      $("obraCliente").value.trim(),
-
-    endereco:
-      $("obraEndereco").value.trim(),
-
-    valor:
-      Number($("obraValor").value || 0),
-
-    status:
-      $("obraStatus").value
-
+    nome:$("obraNome").value.trim(),
+    cliente:$("obraCliente").value.trim(),
+    endereco:$("obraEndereco").value.trim(),
+    valor:Number($("obraValor").value || 0),
+    status:$("obraStatus").value
   };
 
-
   if(!obj.nome){
-
     alert("Digite o nome da obra.");
     return;
-
   }
 
-
   let res;
-
 
   if(id){
 
@@ -1849,41 +1294,31 @@ async function saveObra(){
 
   }
 
-
   if(res.error){
-
     alert(res.error.message);
     return;
-
   }
-
 
   closeM("obraM");
 
   await loadData();
-
 }
 
-
-/* =====================================================
+/* =========================================================
    CHECKLIST
-===================================================== */
+========================================================= */
 
 function clamp(v){
 
   v = Number(v);
 
-  if(!Number.isFinite(v)){
-    v = 0;
-  }
+  if(!Number.isFinite(v))v = 0;
 
   return Math.max(
     0,
     Math.min(100,v)
   );
-
 }
-
 
 function getDefs(){
 
@@ -1894,14 +1329,9 @@ function getDefs(){
       ) || "null"
     );
 
-
-  if(
-    !Array.isArray(defs) ||
-    !defs.length
-  ){
+  if(!Array.isArray(defs) || !defs.length){
 
     defs = [
-
       "Planejamento e orçamento",
       "Contrato assinado",
       "Medição inicial",
@@ -1914,7 +1344,6 @@ function getDefs(){
       "Acabamentos",
       "Limpeza final",
       "Entrega da obra"
-
     ].map(
       (nome,i)=>({
         id:"edifiq_"+i,
@@ -1922,19 +1351,14 @@ function getDefs(){
       })
     );
 
-
     localStorage.setItem(
       "edifiq_check_defs",
       JSON.stringify(defs)
     );
-
   }
 
-
   return defs;
-
 }
-
 
 function taskProgress(obraId,tarefa){
 
@@ -1949,15 +1373,12 @@ function taskProgress(obraId,tarefa){
         ) === String(tarefa)
     );
 
-
   if(!c)return 0;
 
   if(c.concluida)return 100;
 
   return clamp(c.progresso || 0);
-
 }
-
 
 function obraProgress(obra,defs){
 
@@ -1968,15 +1389,12 @@ function obraProgress(obra,defs){
         obra.status || ""
       ).toLowerCase();
 
-
     if(status === "concluída")return 100;
     if(status === "em andamento")return 50;
     if(status === "pausada")return 25;
 
     return 10;
-
   }
-
 
   const valores =
     defs.map(
@@ -1986,16 +1404,13 @@ function obraProgress(obra,defs){
       )
     );
 
-
   return Math.round(
     valores.reduce(
       (a,b)=>a+b,
       0
     ) / valores.length
   );
-
 }
-
 
 async function updateCheckProgress(
   obraId,
@@ -2008,10 +1423,7 @@ async function updateCheckProgress(
     return;
   }
 
-
-  const p =
-    clamp(value);
-
+  const p = clamp(value);
 
   const old =
     D.checklist.find(
@@ -2024,20 +1436,15 @@ async function updateCheckProgress(
         ) === String(tarefa)
     );
 
-
   const payload = {
-
     obra_id:obraId,
     tarefa:tarefa,
     descricao:tarefa,
     concluida:p >= 100,
     progresso:p
-
   };
 
-
   let res;
-
 
   if(old?.id){
 
@@ -2056,7 +1463,6 @@ async function updateCheckProgress(
 
   }
 
-
   if(res.error){
 
     console.error(res.error);
@@ -2067,9 +1473,7 @@ async function updateCheckProgress(
     );
 
     return;
-
   }
-
 
   if(old?.id){
 
@@ -2077,15 +1481,18 @@ async function updateCheckProgress(
 
   }else{
 
-    D.checklist.push(payload);
+    D.checklist.push({
+      ...payload,
+      id:
+        res.data?.[0]?.id ||
+        crypto.randomUUID?.() ||
+        Date.now()
+    });
 
   }
 
-
   renderObras();
-
 }
-
 
 function makeStage(obraId,def){
 
@@ -2095,30 +1502,22 @@ function makeStage(obraId,def){
       def.nome
     );
 
-
   const div =
     document.createElement("div");
-
 
   div.className =
     "edifiq-stage";
 
-
   div.innerHTML = `
-
     <div class="edifiq-stage-title">
-
       <input
         type="checkbox"
         ${p >= 100 ? "checked" : ""}
       >
-
       <span>${esc(def.nome)}</span>
-
     </div>
 
     <div class="edifiq-stage-controls">
-
       <input
         type="range"
         min="0"
@@ -2135,15 +1534,12 @@ function makeStage(obraId,def){
         step="1"
         value="${p}"
       >
-
     </div>
 
     <div class="edifiq-stage-bar">
       <div style="width:${p}%"></div>
     </div>
-
   `;
-
 
   const check =
     div.querySelector(
@@ -2165,7 +1561,6 @@ function makeStage(obraId,def){
       ".edifiq-stage-bar div"
     );
 
-
   function atualizarVisual(v){
 
     v = clamp(v);
@@ -2176,7 +1571,6 @@ function makeStage(obraId,def){
     bar.style.width = v + "%";
 
   }
-
 
   check.addEventListener(
     "change",
@@ -2192,10 +1586,8 @@ function makeStage(obraId,def){
         def.nome,
         v
       );
-
     }
   );
-
 
   range.addEventListener(
     "input",
@@ -2210,7 +1602,6 @@ function makeStage(obraId,def){
     }
   );
 
-
   range.addEventListener(
     "change",
     ()=>{
@@ -2223,7 +1614,6 @@ function makeStage(obraId,def){
 
     }
   );
-
 
   number.addEventListener(
     "change",
@@ -2243,24 +1633,18 @@ function makeStage(obraId,def){
     }
   );
 
-
   return div;
-
 }
-
 
 function renderObras(){
 
   const box =
     $("obrasList");
 
-
   if(!box)return;
-
 
   const defs =
     getDefs();
-
 
   if(!D.obras.length){
 
@@ -2271,23 +1655,16 @@ function renderObras(){
     `;
 
     return;
-
   }
-
 
   box.innerHTML =
     D.obras.map(
       o=>{
 
         const p =
-          obraProgress(
-            o,
-            defs
-          );
-
+          obraProgress(o,defs);
 
         return `
-
         <div class="card">
 
           <div style="
@@ -2298,10 +1675,7 @@ function renderObras(){
           ">
 
             <div>
-
-              <h3>
-                ${esc(o.nome || "Obra")}
-              </h3>
+              <h3>${esc(o.nome || "Obra")}</h3>
 
               <div style="
                 color:var(--muted);
@@ -2309,7 +1683,6 @@ function renderObras(){
               ">
                 ${esc(o.cliente || "")}
               </div>
-
             </div>
 
             <span class="badge badgeGold">
@@ -2318,28 +1691,20 @@ function renderObras(){
 
           </div>
 
-
           <div class="progress">
             <div style="width:${p}%"></div>
           </div>
 
-
           <div class="edifiq-total">
-
             Progresso total da obra:
-
             <strong>${p}%</strong>
-
           </div>
-
 
           <div class="edifiq-check">
 
             <div class="edifiq-check-head">
 
-              <strong>
-                ☑ Checklist da obra
-              </strong>
+              <strong>☑ Checklist da obra</strong>
 
               <span class="badge badgeGold">
                 ${p}%
@@ -2347,36 +1712,30 @@ function renderObras(){
 
             </div>
 
-            <div id="check_${o.id}"></div>
+            <div id="check_${esc(o.id)}"></div>
 
           </div>
-
 
           <div class="listActions">
 
             <button
               class="btn"
-              onclick="openObra('${o.id}')"
-            >
+              onclick="openObra('${esc(o.id)}')">
               Editar
             </button>
 
             <button
               class="btn btnDanger"
-              onclick="deleteObra('${o.id}')"
-            >
+              onclick="deleteObra('${esc(o.id)}')">
               Excluir
             </button>
 
           </div>
 
         </div>
-
         `;
-
       }
     ).join("");
-
 
   D.obras.forEach(
     o=>{
@@ -2386,35 +1745,25 @@ function renderObras(){
           "check_"+o.id
         );
 
-
       if(!area)return;
-
 
       defs.forEach(
         def=>{
-
           area.appendChild(
             makeStage(
               o.id,
               def
             )
           );
-
         }
       );
-
     }
   );
-
 }
-
 
 async function deleteObra(id){
 
-  if(!confirm("Excluir esta obra?")){
-    return;
-  }
-
+  if(!confirm("Excluir esta obra?"))return;
 
   const {error} =
     await supabaseClient
@@ -2422,29 +1771,22 @@ async function deleteObra(id){
       .delete()
       .eq("id",id);
 
-
   if(error){
 
     alert(error.message);
     return;
-
   }
 
-
   await loadData();
-
 }
 
-
-/* =====================================================
+/* =========================================================
    FUNCIONÁRIOS
-===================================================== */
+========================================================= */
 
 function openFunc(id=null){
 
-  $("funcId").value =
-    id || "";
-
+  $("funcId").value = id || "";
 
   if(id){
 
@@ -2453,9 +1795,7 @@ function openFunc(id=null){
         x=>String(x.id) === String(id)
       );
 
-
     if(!f)return;
-
 
     $("funcNome").value =
       f.nome || "";
@@ -2473,7 +1813,6 @@ function openFunc(id=null){
     $("funcAtivo").value =
       String(f.ativo !== false);
 
-
   }else{
 
     $("funcNome").value = "";
@@ -2483,36 +1822,23 @@ function openFunc(id=null){
 
   }
 
-
   openM("funcM");
-
 }
-
 
 async function saveFunc(){
 
   const id =
     $("funcId").value;
 
-
   const obj = {
-
-    nome:
-      $("funcNome").value.trim(),
-
-    funcao:
-      $("funcFuncao").value.trim(),
-
-    diaria:
-      Number(
-        $("funcDiaria").value || 0
-      ),
-
+    nome:$("funcNome").value.trim(),
+    funcao:$("funcFuncao").value.trim(),
+    diaria:Number(
+      $("funcDiaria").value || 0
+    ),
     ativo:
       $("funcAtivo").value === "true"
-
   };
-
 
   if(!obj.nome){
 
@@ -2521,12 +1847,9 @@ async function saveFunc(){
     );
 
     return;
-
   }
 
-
   let res;
-
 
   if(id){
 
@@ -2545,25 +1868,20 @@ async function saveFunc(){
 
   }
 
-
   if(res.error){
 
     alert(res.error.message);
     return;
-
   }
-
 
   closeM("funcM");
 
   await loadData();
-
 }
 
-
-/* =====================================================
+/* =========================================================
    DIÁRIAS
-===================================================== */
+========================================================= */
 
 function openDiaFor(id=""){
 
@@ -2571,38 +1889,32 @@ function openDiaFor(id=""){
   $("diaData").value = today();
   $("diaQtd").value = 1;
 
-
   const select =
     $("diaFunc");
-
 
   const ativos =
     D.funcionarios.filter(
       f=>f.ativo !== false
     );
 
-
   select.innerHTML =
     ativos.map(
       f=>`
-        <option value="${f.id}">
+        <option value="${esc(f.id)}">
           ${esc(f.nome)}
         </option>
       `
     ).join("");
-
 
   if(id){
 
     select.value =
       String(id);
 
-
     const f =
       D.funcionarios.find(
         x=>String(x.id) === String(id)
       );
-
 
     if(f){
 
@@ -2610,14 +1922,12 @@ function openDiaFor(id=""){
         f.diaria ||
         f.valor_diaria ||
         0;
-
     }
 
   }else{
 
     const f =
       ativos[0];
-
 
     $("diaValor").value =
       f
@@ -2627,14 +1937,10 @@ function openDiaFor(id=""){
           0
         )
         : 0;
-
   }
 
-
   openM("diaM");
-
 }
-
 
 function openDia(){
 
@@ -2643,13 +1949,10 @@ function openDia(){
       x=>x.ativo !== false
     );
 
-
   openDiaFor(
     first?.id || ""
   );
-
 }
-
 
 async function saveDia(){
 
@@ -2669,69 +1972,48 @@ async function saveDia(){
       $("diaValor").value || 0
     );
 
-
   if(!funcionario_id){
 
-    alert(
-      "Selecione o funcionário."
-    );
-
+    alert("Selecione o funcionário.");
     return;
-
   }
-
 
   if(!data){
 
-    alert(
-      "Informe a data."
-    );
-
+    alert("Informe a data.");
     return;
-
   }
 
-
   const obj = {
-
     funcionario_id,
     data,
     quantidade,
     valor,
     total:quantidade * valor
-
   };
-
 
   const {error} =
     await supabaseClient
       .from("diarias")
       .insert(obj);
 
-
   if(error){
 
     alert(error.message);
     return;
-
   }
-
 
   closeM("diaM");
 
   await loadData();
-
 }
-
 
 function renderFuncs(){
 
   const box =
     $("funcList");
 
-
   if(!box)return;
-
 
   if(!D.funcionarios.length){
 
@@ -2742,9 +2024,7 @@ function renderFuncs(){
     `;
 
     return;
-
   }
-
 
   box.innerHTML =
     D.funcionarios.map(
@@ -2753,9 +2033,7 @@ function renderFuncs(){
         const ativo =
           f.ativo !== false;
 
-
         return `
-
         <div class="card">
 
           <div style="
@@ -2766,9 +2044,7 @@ function renderFuncs(){
 
             <div>
 
-              <h3>
-                ${esc(f.nome || "")}
-              </h3>
+              <h3>${esc(f.nome || "")}</h3>
 
               <div style="
                 color:var(--muted);
@@ -2792,15 +2068,12 @@ function renderFuncs(){
 
           </div>
 
-
           <div style="
             margin-top:10px;
             color:var(--muted);
             font-size:13px
           ">
-
             Diária:
-
             <b style="color:var(--gold2)">
               ${money(
                 f.diaria ||
@@ -2808,55 +2081,44 @@ function renderFuncs(){
                 0
               )}
             </b>
-
           </div>
-
 
           <div class="listActions">
 
             <button
               class="btn btnGold edifiq-daily"
-              onclick="openDiaFor('${f.id}')"
-            >
+              onclick="openDiaFor('${esc(f.id)}')">
               💵 Registrar diária
             </button>
 
             <button
               class="btn"
-              onclick="openFunc('${f.id}')"
-            >
+              onclick="openFunc('${esc(f.id)}')">
               Editar
             </button>
 
           </div>
 
         </div>
-
         `;
-
       }
     ).join("");
-
 }
-
 
 function renderPayroll(){
 
   const contratados =
     D.funcionarios.length;
 
-
   const ativos =
     D.funcionarios.filter(
       f=>f.ativo !== false
     ).length;
 
-
   const inativos =
     D.funcionarios.filter(
       f=>f.ativo === false
     ).length;
-
 
   $("edifiqContratados").textContent =
     contratados;
@@ -2867,15 +2129,12 @@ function renderPayroll(){
   $("edifiqInativos").textContent =
     inativos;
 
-
   renderFuncs();
-
 }
 
-
-/* =====================================================
+/* =========================================================
    FINANCEIRO
-===================================================== */
+========================================================= */
 
 function openFin(){
 
@@ -2885,14 +2144,11 @@ function openFin(){
   $("finTipo").value = "despesa";
 
   openM("finM");
-
 }
-
 
 async function saveFin(){
 
   const obj = {
-
     descricao:
       $("finDescricao").value.trim(),
 
@@ -2906,50 +2162,58 @@ async function saveFin(){
 
     tipo:
       $("finTipo").value
-
   };
-
 
   if(!obj.descricao){
 
-    alert(
-      "Digite uma descrição."
-    );
-
+    alert("Digite uma descrição.");
     return;
-
   }
-
 
   const {error} =
     await supabaseClient
       .from("gastos")
       .insert(obj);
 
-
   if(error){
 
     alert(error.message);
     return;
-
   }
-
 
   closeM("finM");
 
   await loadData();
-
 }
-
 
 function renderFin(){
 
   const box =
     $("finList");
 
-
   if(!box)return;
 
+  const receitas =
+    D.gastos
+      .filter(x=>x.tipo === "receita")
+      .reduce(
+        (s,x)=>s + Number(x.valor || 0),
+        0
+      );
+
+  const despesas =
+    D.gastos
+      .filter(x=>x.tipo !== "receita")
+      .reduce(
+        (s,x)=>s + Number(x.valor || 0),
+        0
+      );
+
+  $("finReceitas").textContent =
+    money(receitas);
+
+  $("finDespesas").textContent =
+    money(despesas);
 
   if(!D.gastos.length){
 
@@ -2959,16 +2223,8 @@ function renderFin(){
       </div>
     `;
 
-    $("finReceitas").textContent =
-      money(0);
-
-    $("finDespesas").textContent =
-      money(0);
-
     return;
-
   }
-
 
   box.innerHTML =
     D.gastos.map(
@@ -3006,112 +2262,64 @@ function renderFin(){
           </small>
 
         </div>
-
       `
     ).join("");
-
-
-  const receitas =
-    D.gastos
-      .filter(
-        x=>x.tipo === "receita"
-      )
-      .reduce(
-        (s,x)=>
-          s + Number(x.valor || 0),
-        0
-      );
-
-
-  const despesas =
-    D.gastos
-      .filter(
-        x=>x.tipo !== "receita"
-      )
-      .reduce(
-        (s,x)=>
-          s + Number(x.valor || 0),
-        0
-      );
-
-
-  $("finReceitas").textContent =
-    money(receitas);
-
-  $("finDespesas").textContent =
-    money(despesas);
-
 }
 
-
-/* =====================================================
+/* =========================================================
    FOTOS
-===================================================== */
+========================================================= */
 
 function openFoto(){
 
   $("fotoObra").innerHTML =
     D.obras.map(
       o=>`
-        <option value="${o.id}">
+        <option value="${esc(o.id)}">
           ${esc(o.nome)}
         </option>
       `
     ).join("");
 
-
   $("fotoDescricao").value = "";
   $("fotoArquivo").value = "";
 
   openM("fotoM");
-
 }
-
 
 async function saveFoto(){
 
   alert(
     "A estrutura de fotos está pronta. Configure o Storage do Supabase para salvar os arquivos."
   );
-
 }
 
-
-/* =====================================================
+/* =========================================================
    RELATÓRIOS
-===================================================== */
+========================================================= */
 
 function renderRelatorios(){
 
   const box =
     $("relatorioContent");
 
-
   if(!box)return;
-
 
   const totalObras =
     D.obras.length;
 
-
   const totalFuncionarios =
     D.funcionarios.length;
 
-
   const despesas =
     D.gastos
-      .filter(
-        x=>x.tipo !== "receita"
-      )
+      .filter(x=>x.tipo !== "receita")
       .reduce(
-        (s,x)=>
-          s + Number(x.valor || 0),
+        (s,x)=>s + Number(x.valor || 0),
         0
       );
 
-
   box.innerHTML = `
-
     <h3>Resumo EDIFIQ</h3>
 
     <p>
@@ -3128,11 +2336,8 @@ function renderRelatorios(){
       Total de despesas:
       <b>${money(despesas)}</b>
     </p>
-
   `;
-
 }
-
 
 function exportarExcel(){
 
@@ -3143,19 +2348,15 @@ function exportarExcel(){
     );
 
     return;
-
   }
-
 
   const wb =
     XLSX.utils.book_new();
-
 
   const ws =
     XLSX.utils.json_to_sheet(
       D.obras
     );
-
 
   XLSX.utils.book_append_sheet(
     wb,
@@ -3163,18 +2364,15 @@ function exportarExcel(){
     "Obras"
   );
 
-
   XLSX.writeFile(
     wb,
     "EDIFIQ_Relatorio.xlsx"
   );
-
 }
 
-
-/* =====================================================
+/* =========================================================
    RENDER GERAL
-===================================================== */
+========================================================= */
 
 function renderAll(){
 
@@ -3186,10 +2384,9 @@ function renderAll(){
 
 }
 
-
-/* =====================================================
-   ENTER NO LOGIN
-===================================================== */
+/* =========================================================
+   ENTER
+========================================================= */
 
 $("loginEmail")?.addEventListener(
   "keydown",
@@ -3200,12 +2397,9 @@ $("loginEmail")?.addEventListener(
       e.preventDefault();
 
       $("loginPassword").focus();
-
     }
-
   }
 );
-
 
 $("loginPassword")?.addEventListener(
   "keydown",
@@ -3216,69 +2410,59 @@ $("loginPassword")?.addEventListener(
       e.preventDefault();
 
       login();
-
     }
-
   }
 );
 
-
-/* =====================================================
-   INICIALIZAÇÃO — CORRIGIDA
-===================================================== */
+/* =========================================================
+   INICIALIZAÇÃO
+========================================================= */
 
 (async function(){
 
+  console.log(
+    "EDIFIQ versão:",
+    EDIFIQ_VERSION
+  );
+
+  const iniciado =
+    iniciarSupabase();
+
+  if(!iniciado){
+
+    mostrarLogin();
+
+    authMensagem(
+      "Não foi possível carregar a conexão com o Supabase.",
+      "erro"
+    );
+
+    inicializacaoConcluida = true;
+
+    return;
+  }
+
   try{
-
-    if(!supabaseClient){
-
-      console.error(
-        "EDIFIQ: Supabase não inicializado."
-      );
-
-      return;
-
-    }
-
-
-    /*
-      Timeout apenas para a verificação inicial
-      da sessão. Isso evita tela travada.
-    */
-
-    const timeout =
-      new Promise(
-        (_,reject)=>{
-
-          setTimeout(
-            ()=>{
-              reject(
-                new Error(
-                  "Tempo limite ao verificar a sessão."
-                )
-              );
-            },
-            10000
-          );
-
-        }
-      );
-
 
     const resultado =
       await Promise.race([
 
         supabaseClient.auth.getSession(),
 
-        timeout
+        new Promise((_,reject)=>{
+          setTimeout(()=>{
+            reject(
+              new Error(
+                "Tempo limite ao verificar a sessão."
+              )
+            );
+          },10000);
+        })
 
       ]);
 
-
     const session =
       resultado?.data?.session;
-
 
     if(session?.user){
 
@@ -3295,19 +2479,12 @@ $("loginPassword")?.addEventListener(
 
     }
 
-
   }catch(error){
 
     console.error(
       "EDIFIQ — inicialização:",
       error
     );
-
-    /*
-      Mesmo que getSession dê problema,
-      o usuário continua podendo tentar
-      fazer login.
-    */
 
     mostrarLogin();
 
@@ -3319,10 +2496,9 @@ $("loginPassword")?.addEventListener(
 
 })();
 
-
-/* =====================================================
-   ATUALIZAÇÃO DA SESSÃO
-===================================================== */
+/* =========================================================
+   ALTERAÇÃO DE SESSÃO
+========================================================= */
 
 if(supabaseClient){
 
@@ -3334,9 +2510,10 @@ if(supabaseClient){
         event
       );
 
-
       if(
-        event === "SIGNED_IN" &&
+        (event === "SIGNED_IN" ||
+         event === "INITIAL_SESSION" ||
+         event === "TOKEN_REFRESHED") &&
         session?.user
       ){
 
@@ -3347,13 +2524,9 @@ if(supabaseClient){
 
       }
 
+      if(event === "SIGNED_OUT"){
 
-      if(
-        event === "SIGNED_OUT"
-      ){
-
-        currentUser =
-          null;
+        currentUser = null;
 
         D = {
           obras:[],
@@ -3368,7 +2541,6 @@ if(supabaseClient){
         };
 
         mostrarLogin();
-
       }
 
     }
