@@ -1,266 +1,3651 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0d10">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<title>EDIFIQUE — Gestão de Obras</title>
+
+<title>EDIFIQ — Gestão de Obras</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
-:root{--bg:#090b0e;--panel:#12161b;--panel2:#181d23;--gold:#d8ad45;--text:#f4f4f4;--muted:#9da5ae;--green:#36c98f;--red:#ef6670;--blue:#64a8ff;--line:#2a3038}
-*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}.hidden{display:none!important}
-header{position:sticky;top:0;z-index:5;background:#0b0d10ee;backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
-.logo{font-weight:900;letter-spacing:2px}.brand{color:var(--gold);display:flex;flex-direction:column;align-items:center;gap:4px}.brand svg{width:68px;height:68px;filter:drop-shadow(0 0 8px #d8ad4544)}.brand .authlogo{color:var(--gold)}.brand.compact{flex-direction:row;gap:8px}.brand.compact svg{width:34px;height:34px}.brand.compact .logo{font-size:16px}.logo span,.gold{color:var(--gold)}.sub,.label,small{font-size:12px;color:var(--muted)}
-main{max-width:1050px;margin:auto;padding:18px 16px 105px}.page{display:none}.page.active{display:block}h1{margin:5px 0}.lead{color:var(--muted);margin-top:4px}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.card,.item,.authbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px;margin:10px 0}.stat{font-size:23px;font-weight:800;margin-top:6px}.green{color:var(--green)}.red{color:var(--red)}.blue{color:var(--blue)}
-.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.action,.primary,.secondary,.danger,.mini{border-radius:12px;padding:12px 14px;font-weight:700}.action{background:var(--panel2);border:1px solid var(--line);color:var(--text);text-align:left}.primary{background:var(--gold);color:#15110a}.secondary{background:#20262d;color:var(--text);border:1px solid var(--line)}.danger{background:#32191c;color:#ff9ca3;border:1px solid #653038}.mini{padding:7px 9px;background:#20262d;color:#fff;border:1px solid var(--line);font-size:12px}
-.form{display:grid;gap:10px}.form input,.form select,.form textarea,.toolbar input,.toolbar select{width:100%;background:#0e1216;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px}.form textarea{min-height:85px}
-.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.row.wrap{flex-wrap:wrap}.badge{background:#242b33;border-radius:999px;padding:5px 9px;font-size:12px}.badge.on{color:#8ff0c5;background:#15382c}.badge.off{color:#ffb0b5;background:#3b1c20}
-.progress{height:7px;background:#252b32;border-radius:9px;overflow:hidden;margin:10px 0}.progress i{display:block;height:100%;background:var(--gold)}
-.bottom{position:fixed;bottom:0;left:0;right:0;background:#0b0d10f5;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px env(safe-area-inset-right) calc(7px + env(safe-area-inset-bottom)) env(safe-area-inset-left);z-index:6}
-.nav{background:none;color:var(--muted);padding:7px}.nav.active{color:var(--gold)}.modal{position:fixed;inset:0;background:#000b;z-index:20;display:none;align-items:end}.modal.open{display:flex}.sheet{background:#11151a;border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-height:94vh;overflow:auto;padding:18px}.close{float:right;background:none;color:var(--muted);font-size:28px}
-.auth{min-height:100vh;display:grid;place-items:center;padding:20px}.authbox{width:min(440px,100%);padding:25px}.authlogo{text-align:center;font-size:30px;font-weight:900;letter-spacing:4px}.authlogo span{color:var(--gold)}
-.connection{text-align:center;margin-top:12px;font-size:12px;color:var(--muted)}.connection.ok{color:var(--green)}.connection.error{color:var(--red)}
-.toolbar{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--muted)}
-.toast{position:fixed;right:15px;bottom:80px;z-index:50;background:#20262d;border:1px solid var(--line);padding:12px 15px;border-radius:12px;display:none;max-width:90vw}.toast.show{display:block}
-.photoGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.photoGrid img{width:100%;aspect-ratio:1;border-radius:10px;object-fit:cover;border:1px solid var(--line)}
-.divider{height:1px;background:var(--line);margin:14px 0}.empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}.search{margin:10px 0}.search input{width:100%;background:#0e1216;color:#fff;border:1px solid var(--line);border-radius:10px;padding:11px}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.kpi{min-height:92px}.sectionTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:18px}.listActions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.note{background:#171d23;border-left:3px solid var(--gold);padding:10px;border-radius:8px;color:#d7dce1;font-size:13px}.profitGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.profitBox{background:#0e1216;border:1px solid var(--line);border-radius:10px;padding:10px}.profitBox b{display:block;margin-top:4px}.profitPct{font-size:12px;color:var(--muted)}
-@media(max-width:700px){.grid4{grid-template-columns:1fr 1fr}.grid3{grid-template-columns:1fr 1fr}.three{grid-template-columns:1fr 1fr}.photoGrid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:450px){.grid,.grid3,.grid4,.two,.three{grid-template-columns:1fr}.actions{grid-template-columns:1fr 1fr}.profitGrid{grid-template-columns:1fr 1fr}.stat{font-size:20px}}
+:root{
+  --bg:#080a0d;
+  --card:#111419;
+  --card2:#171a20;
+  --gold:#d4af37;
+  --gold2:#f0cf62;
+  --text:#f5f5f5;
+  --muted:#9da3ad;
+  --border:#292d35;
+  --danger:#e05252;
+  --success:#42c77a;
+}
+
+*{box-sizing:border-box}
+
+html,body{
+  margin:0;
+  padding:0;
+  min-height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+}
+
+body{
+  padding-bottom:90px;
+}
+
+button,
+input,
+select,
+textarea{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+.app{
+  max-width:700px;
+  margin:auto;
+  min-height:100vh;
+}
+
+header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:rgba(8,10,13,.96);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:14px 16px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.logo{
+  width:48px;
+  height:48px;
+  border:2px solid var(--gold);
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--gold);
+  font-size:25px;
+  font-weight:900;
+}
+
+.brand strong{
+  display:block;
+  font-size:22px;
+  letter-spacing:1px;
+  color:#fff;
+}
+
+.brand small{
+  color:var(--gold);
+  font-size:11px;
+}
+
+main{
+  padding:16px;
+}
+
+.page{
+  display:none;
+}
+
+.page.active{
+  display:block;
+}
+
+h1,h2,h3{
+  margin-top:0;
+}
+
+.card{
+  background:linear-gradient(145deg,#14171c,#0f1115);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:16px;
+  margin-bottom:14px;
+  box-shadow:0 10px 30px rgba(0,0,0,.2);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
+
+.grid3{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+
+.kpi{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:14px;
+}
+
+.kpi b{
+  display:block;
+  font-size:22px;
+  color:var(--gold2);
+  margin-top:5px;
+}
+
+.kpi span{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.btn{
+  border:1px solid var(--border);
+  background:#1b1f26;
+  color:#fff;
+  padding:11px 14px;
+  border-radius:12px;
+  font-weight:700;
+}
+
+.btn:hover{
+  border-color:var(--gold);
+}
+
+.btnGold{
+  background:var(--gold);
+  color:#080a0d;
+  border-color:var(--gold);
+}
+
+.btnDanger{
+  background:#30191b;
+  color:#ff8d8d;
+  border-color:#5b282c;
+}
+
+.btnSuccess{
+  background:#14291d;
+  color:#72e09d;
+  border-color:#285b39;
+}
+
+input,
+select,
+textarea{
+  width:100%;
+  background:#0c0f13;
+  color:#fff;
+  border:1px solid var(--border);
+  border-radius:11px;
+  padding:12px;
+  outline:none;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+  border-color:var(--gold);
+}
+
+label{
+  display:block;
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+
+.formGroup{
+  margin-bottom:12px;
+}
+
+.row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+.row>*{
+  flex:1;
+}
+
+.listActions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:12px;
+}
+
+.badge{
+  display:inline-block;
+  padding:5px 9px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:700;
+  background:#20242b;
+  color:#ddd;
+}
+
+.badgeGold{
+  background:#3a3014;
+  color:var(--gold2);
+}
+
+.badgeGreen{
+  background:#15301f;
+  color:#70dc98;
+}
+
+.badgeRed{
+  background:#35191b;
+  color:#ff8585;
+}
+
+.progress{
+  height:9px;
+  background:#242830;
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:8px;
+}
+
+.progress div{
+  height:100%;
+  background:linear-gradient(90deg,var(--gold),var(--gold2));
+  border-radius:999px;
+  transition:.25s;
+}
+
+.bottomNav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  z-index:30;
+  background:rgba(11,13,16,.97);
+  border-top:1px solid var(--border);
+  display:flex;
+  justify-content:center;
+}
+
+.bottomNavInner{
+  width:100%;
+  max-width:700px;
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+}
+
+.navBtn{
+  background:none;
+  border:0;
+  color:#858b95;
+  padding:10px 3px;
+  font-size:10px;
+}
+
+.navBtn.active{
+  color:var(--gold);
+}
+
+.navIcon{
+  display:block;
+  font-size:20px;
+  margin-bottom:3px;
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  display:none;
+  background:rgba(0,0,0,.75);
+  align-items:flex-end;
+  justify-content:center;
+}
+
+.modal.show{
+  display:flex;
+}
+
+.modalBox{
+  width:100%;
+  max-width:700px;
+  max-height:92vh;
+  overflow:auto;
+  background:#101318;
+  border:1px solid var(--border);
+  border-radius:22px 22px 0 0;
+  padding:18px;
+}
+
+.modalHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:15px;
+}
+
+.close{
+  border:0;
+  background:#22262d;
+  color:#fff;
+  width:38px;
+  height:38px;
+  border-radius:50%;
+}
+
+.auth{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+
+.authBox{
+  width:100%;
+  max-width:430px;
+}
+
+.authLogo{
+  text-align:center;
+  margin-bottom:30px;
+}
+
+.authLogo .logo{
+  margin:auto;
+  width:78px;
+  height:78px;
+  font-size:38px;
+}
+
+.authLogo h1{
+  margin:12px 0 2px;
+  font-size:34px;
+  letter-spacing:2px;
+}
+
+.authLogo p{
+  color:var(--gold);
+  margin:0;
+  font-size:12px;
+}
+
+.empty{
+  text-align:center;
+  color:var(--muted);
+  padding:25px 10px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+}
+
+th,td{
+  padding:9px 6px;
+  border-bottom:1px solid var(--border);
+  text-align:left;
+}
+
+th{
+  color:var(--gold);
+}
+
+@media(max-width:430px){
+  .grid3{
+    gap:7px;
+  }
+
+  .kpi{
+    padding:10px;
+  }
+
+  .kpi b{
+    font-size:18px;
+  }
+}
+
+/* ===== EDIFIQ — PROGRESSO POR ETAPA ===== */
+
+.edifiq-func-kpis{
+  margin-bottom:14px;
+}
+
+.edifiq-daily{
+  width:100%;
+  margin-top:10px;
+}
+
+.edifiq-check{
+  background:#0d1014;
+  border:1px solid #292d35;
+  border-radius:15px;
+  padding:13px;
+  margin-top:10px;
+}
+
+.edifiq-check-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.edifiq-stage{
+  padding:12px 0;
+  border-top:1px solid #252932;
+}
+
+.edifiq-stage:first-child{
+  border-top:0;
+}
+
+.edifiq-stage-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:700;
+  font-size:14px;
+}
+
+.edifiq-stage-title input{
+  width:auto;
+}
+
+.edifiq-stage-controls{
+  display:grid;
+  grid-template-columns:1fr 70px;
+  gap:9px;
+  align-items:center;
+  margin-top:9px;
+}
+
+.edifiq-stage-controls input[type=range]{
+  padding:0;
+  accent-color:var(--gold);
+}
+
+.edifiq-stage-number{
+  text-align:center;
+  padding:8px 4px;
+}
+
+.edifiq-stage-bar{
+  height:7px;
+  background:#252932;
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:8px;
+}
+
+.edifiq-stage-bar div{
+  height:100%;
+  background:linear-gradient(90deg,var(--gold),var(--gold2));
+  transition:.2s;
+}
+
+.edifiq-total{
+  font-size:13px;
+  color:var(--muted);
+  margin-top:8px;
+}
+
+.edifiq-total strong{
+  color:var(--gold2);
+  font-size:20px;
+}
 </style>
 </head>
+
 <body>
 
-<div id="auth" class="auth">
-<div class="authbox">
-<div class="brand"><svg viewBox="0 0 80 80" aria-hidden="true"><path d="M14 68V30l18-14v52M32 68V18l18-8v58M50 68V34l16-12v46M22 38h6M22 47h6M22 56h6M40 28h6M40 38h6M40 48h6M58 43h5M58 52h5M58 61h5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="authlogo">EDIFIQUE</div></div>
-<p class="sub" style="text-align:center">GESTÃO DE OBRAS</p>
-<p id="connectionStatus" class="connection">Verificando conexão...</p>
-<div class="form" style="margin-top:20px">
-<input id="email" type="email" placeholder="E-mail" autocomplete="email">
-<input id="password" type="password" placeholder="Senha" autocomplete="current-password">
-<button class="primary" onclick="login()">Entrar</button>
-<button class="secondary" onclick="signup()">Criar minha conta</button>
-<button class="secondary" onclick="resetPassword()">Esqueci a senha</button>
-</div>
-<p id="authMsg" class="sub"></p>
-</div>
+<div id="authScreen" class="auth">
+  <div class="authBox">
+
+    <div class="authLogo">
+      <div class="logo">⌂</div>
+      <h1>EDIFIQ</h1>
+      <p>GESTÃO DE OBRAS E REFORMAS</p>
+    </div>
+
+    <div class="card">
+
+      <div class="formGroup">
+        <label>E-mail</label>
+        <input id="loginEmail" type="email" placeholder="seu@email.com">
+      </div>
+
+      <div class="formGroup">
+        <label>Senha</label>
+        <input id="loginPassword" type="password" placeholder="••••••••">
+      </div>
+
+      <button class="btn btnGold" style="width:100%" onclick="login()">
+        Entrar
+      </button>
+
+      <button class="btn" style="width:100%;margin-top:8px" onclick="signup()">
+        Criar conta
+      </button>
+
+      <div id="authMsg" style="margin-top:12px;text-align:center;color:var(--muted)"></div>
+
+    </div>
+  </div>
 </div>
 
-<div id="app" class="hidden">
+<div id="app" class="app" style="display:none">
+
 <header>
-<div><div class="brand compact"><svg viewBox="0 0 80 80" aria-hidden="true"><path d="M14 68V30l18-14v52M32 68V18l18-8v58M50 68V34l16-12v46M22 38h6M22 47h6M22 56h6M40 28h6M40 38h6M40 48h6M58 43h5M58 52h5M58 61h5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><div><div class="logo">EDIFIQUE</div><div class="sub">Gestão de Obras e Reformas</div></div></div></div>
-<div style="display:flex;align-items:center;gap:10px"><span id="appConnection" class="connection ok">● Sistema conectado</span><button class="secondary" onclick="logout()">Sair</button></div>
+  <div class="brand">
+    <div class="logo">⌂</div>
+    <div>
+      <strong>EDIFIQ</strong>
+      <small>GESTÃO DE OBRAS E REFORMAS</small>
+    </div>
+  </div>
 </header>
 
 <main>
+
 <section id="home" class="page active">
-<h1>Olá! 👋</h1><p class="lead">Seu painel de controle.</p>
-<div class="grid3">
-<div class="card kpi"><div class="label">Obras</div><div class="stat gold" id="kObras">0</div></div>
-<div class="card kpi"><div class="label">Funcionários ativos</div><div class="stat" id="kFunc">0</div></div>
-<div class="card kpi"><div class="label">A receber</div><div class="stat green" id="kReceber">R$ 0,00</div></div>
-</div>
-<div class="grid3">
-<div class="card kpi"><div class="label">Receitas</div><div class="stat green" id="kEntradas">R$ 0,00</div></div>
-<div class="card kpi"><div class="label">Despesas</div><div class="stat red" id="kDespesas">R$ 0,00</div></div>
-<div class="card kpi"><div class="label">Lucro</div><div class="stat gold" id="kResultado">R$ 0,00</div></div>
-</div>
-<div class="actions">
-<button class="action" onclick="go('obras')">🏗️ <b>Obras</b><br><small>Projetos, custos e lucro</small></button>
-<button class="action" onclick="go('equipe')">👷 <b>Funcionários</b><br><small>Equipe, ativos e diárias</small></button>
-<button class="action" onclick="go('financeiro')">💰 <b>Financeiro</b><br><small>Receitas, materiais e mão de obra</small></button>
-<button class="action" onclick="go('relatorios')">📊 <b>Relatórios</b><br><small>Backup, fotos e controle</small></button>
-</div>
-<div class="sectionTitle"><h2>Obras recentes</h2><button class="mini" onclick="openObra()">＋ Nova</button></div>
-<div id="recentes"></div>
+
+  <h2>Dashboard</h2>
+
+  <div class="grid">
+
+    <div class="kpi">
+      <span>Obras</span>
+      <b id="kObras">0</b>
+    </div>
+
+    <div class="kpi">
+      <span>Em andamento</span>
+      <b id="kAndamento">0</b>
+    </div>
+
+    <div class="kpi">
+      <span>Funcionários</span>
+      <b id="kFunc">0</b>
+    </div>
+
+    <div class="kpi">
+      <span>Despesas</span>
+      <b id="kDespesas">R$ 0,00</b>
+    </div>
+
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>Resumo</h3>
+    <div id="homeResumo"></div>
+  </div>
+
 </section>
 
 <section id="obras" class="page">
-<div class="sectionTitle"><div><h1>Obras</h1><p class="lead">Cadastre, edite e acompanhe seus projetos.</p></div><button class="primary" onclick="openObra()">＋ Nova obra</button></div>
-<div class="search"><input id="obraSearch" placeholder="Pesquisar obra ou cliente..." oninput="renderObras()"></div>
-<div id="obrasList"></div>
+
+  <div class="row">
+    <div>
+      <h2>Obras</h2>
+    </div>
+
+    <button class="btn btnGold" onclick="openObra()">
+      + Nova obra
+    </button>
+  </div>
+
+  <div id="obrasList"></div>
+
 </section>
 
 <section id="equipe" class="page">
-<div class="sectionTitle"><div><h1>Funcionários</h1><p class="lead">Equipe, valores, diárias e status.</p></div><button class="primary" onclick="openFunc()">＋ Novo</button></div>
-<div class="toolbar">
-<select id="funcFilter" onchange="renderFuncs()"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select>
-<select id="payPeriod" onchange="renderPayroll()"><option value="dia">Hoje</option><option value="semana" selected>Esta semana</option><option value="quinzena">Quinzena</option><option value="mes">Este mês</option><option value="custom">Personalizado</option></select>
-</div>
-<div id="customDates" class="toolbar hidden"><input id="payStart" type="date" onchange="renderPayroll()"><input id="payEnd" type="date" onchange="renderPayroll()"></div>
-<div class="grid"><div class="card"><div class="label">A pagar no período</div><div class="stat gold" id="payTotal">R$ 0,00</div></div><div class="card"><div class="label">Funcionários com valor</div><div class="stat" id="payCount">0</div></div></div>
-<div id="funcList"></div>
-<div class="sectionTitle"><h2>Diárias</h2><button class="secondary" onclick="openDia()">＋ Registrar</button></div>
-<div id="diaList"></div>
+
+  <div class="row">
+    <div>
+      <h2>Funcionários</h2>
+    </div>
+
+    <button class="btn btnGold" onclick="openFunc()">
+      + Funcionário
+    </button>
+  </div>
+
+  <div class="grid3 edifiq-func-kpis">
+
+    <div class="kpi">
+      <span>Contratados</span>
+      <b id="edifiqContratados">0</b>
+    </div>
+
+    <div class="kpi">
+      <span>Ativos</span>
+      <b id="edifiqAtivos">0</b>
+    </div>
+
+    <div class="kpi">
+      <span>Inativos</span>
+      <b id="edifiqInativos">0</b>
+    </div>
+
+  </div>
+
+  <div id="funcList"></div>
+
 </section>
 
 <section id="financeiro" class="page">
-<div class="sectionTitle"><div><h1>Financeiro</h1><p class="lead">Recebimentos, despesas e resultado.</p></div><button class="primary" onclick="openFin()">＋ Lançamento</button></div>
-<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Todos os lançamentos</option><option value="entrada">Receitas / recebimentos</option><option value="despesa">Despesas</option></select></div>
-<div class="grid3"><div class="card"><div class="label">Receitas</div><div class="stat green" id="finEnt">R$ 0,00</div></div><div class="card"><div class="label">Despesas</div><div class="stat red" id="finDesp">R$ 0,00</div></div><div class="card"><div class="label">Lucro</div><div class="stat gold" id="finRes">R$ 0,00</div></div></div>
-<div class="card"><b>Composição do custo e lucro</b><div class="profitGrid"><div class="profitBox"><small>Material</small><b id="finMaterial">R$ 0,00</b><span class="profitPct" id="finMaterialPct">0%</span></div><div class="profitBox"><small>Mão de obra</small><b id="finLabor">R$ 0,00</b><span class="profitPct" id="finLaborPct">0%</span></div><div class="profitBox"><small>Outras despesas</small><b id="finOther">R$ 0,00</b><span class="profitPct" id="finOtherPct">0%</span></div><div class="profitBox"><small>Lucro</small><b class="gold" id="finProfit">R$ 0,00</b><span class="profitPct" id="finProfitPct">0%</span></div></div></div>
-<div class="card"><b>Resumo por obra</b><br><small>Receitas − despesas</small><div id="obraFinanceResumo"></div></div>
-<div id="finList"></div>
+
+  <div class="row">
+    <div>
+      <h2>Financeiro</h2>
+    </div>
+
+    <button class="btn btnGold" onclick="openFin()">
+      + Lançamento
+    </button>
+  </div>
+
+  <div class="grid">
+
+    <div class="kpi">
+      <span>Receitas</span>
+      <b id="finReceitas">R$ 0,00</b>
+    </div>
+
+    <div class="kpi">
+      <span>Despesas</span>
+      <b id="finDespesas">R$ 0,00</b>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div id="finList"></div>
+  </div>
+
 </section>
 
 <section id="fotos" class="page">
-<div class="sectionTitle"><div><h1>Relatório fotográfico</h1><p class="lead">Fotos organizadas por obra e data.</p></div><button class="primary" onclick="openFoto()">＋ Adicionar fotos</button></div>
-<div class="note">As fotos são mantidas no armazenamento deste aparelho.</div><div id="fotoList"></div>
+
+  <div class="row">
+    <div>
+      <h2>Fotos</h2>
+    </div>
+
+    <button class="btn btnGold" onclick="openFoto()">
+      + Foto
+    </button>
+  </div>
+
+  <div id="fotosList"></div>
+
 </section>
 
 <section id="relatorios" class="page">
-<h1>Relatórios e dados</h1><p class="lead">Backup, importação e exportação.</p>
-<div class="actions">
-<button class="action" onclick="exportTable('obras')">🏗️ Obras</button><button class="action" onclick="exportTable('funcionarios')">👷 Equipe</button><button class="action" onclick="exportTable('diarias')">💵 Diárias</button><button class="action" onclick="exportTable('gastos')">💰 Financeiro</button><button class="action" onclick="exportFull()">💾 Backup completo</button><button class="action" onclick="exportExcel()">📊 Excel</button>
-</div>
-<div class="card"><b>Importar dados</b><p class="sub">JSON ou Excel exportado pelo EDIFIQUE.</p><input id="importFile" type="file" accept=".json,.xlsx,.xls" onchange="previewImport(event)"><div id="importPreview"></div></div>
+
+  <h2>Relatórios</h2>
+
+  <div class="grid">
+
+    <button class="btn" onclick="exportarExcel()">
+      📊 Exportar Excel
+    </button>
+
+    <button class="btn" onclick="window.print()">
+      🖨️ Imprimir
+    </button>
+
+  </div>
+
+  <div class="card">
+    <div id="relatorioContent"></div>
+  </div>
+
 </section>
 
-<section id="config" class="page"><h1>Configurações</h1><div class="item"><b>Conta</b><br><small id="accountEmail"></small></div><div class="item"><b>EDIFIQUE</b><br><small>Gestão de Obras e Reformas</small></div></section>
+<section id="config" class="page">
+
+  <h2>Configurações</h2>
+
+  <div class="card">
+
+    <h3>EDIFIQ</h3>
+
+    <p style="color:var(--muted)">
+      Gestão de Obras e Reformas
+    </p>
+
+    <button class="btn btnDanger" onclick="logout()">
+      Sair da conta
+    </button>
+
+  </div>
+
+</section>
+
 </main>
 
-<nav class="bottom">
-<button class="nav active" data-p="home" onclick="go('home')">⌂<br>Início</button>
-<button class="nav" data-p="obras" onclick="go('obras')">🏗<br>Obras</button>
-<button class="nav" data-p="equipe" onclick="go('equipe')">👷<br>Equipe</button>
-<button class="nav" data-p="financeiro" onclick="go('financeiro')">R$<br>Financeiro</button>
-<button class="nav" data-p="relatorios" onclick="go('relatorios')">☷<br>Mais</button>
+<nav class="bottomNav">
+
+  <div class="bottomNavInner">
+
+    <button class="navBtn active" onclick="go('home',this)">
+      <span class="navIcon">⌂</span>
+      Início
+    </button>
+
+    <button class="navBtn" onclick="go('obras',this)">
+      <span class="navIcon">🏗️</span>
+      Obras
+    </button>
+
+    <button class="navBtn" onclick="go('equipe',this)">
+      <span class="navIcon">👷</span>
+      Equipe
+    </button>
+
+    <button class="navBtn" onclick="go('financeiro',this)">
+      <span class="navIcon">💰</span>
+      Financeiro
+    </button>
+
+    <button class="navBtn" onclick="go('config',this)">
+      <span class="navIcon">⚙️</span>
+      Config.
+    </button>
+
+  </div>
+
 </nav>
+
 </div>
 
-<div class="modal" id="obraM"><div class="sheet"><button class="close" onclick="closeM('obraM')">×</button><h2 id="obraTitle">Nova obra</h2><form class="form" onsubmit="saveObra(event)">
-<input id="oNome" required placeholder="Nome da obra"><input id="oCli" placeholder="Cliente"><input id="oLoc" placeholder="Endereço"><input id="oVal" type="number" step=".01" required placeholder="Valor do contrato">
-<select id="oStatus"><option value="em_andamento">Em andamento</option><option value="planejada">Planejada</option><option value="concluida">Concluída</option><option value="pausada">Pausada</option></select>
-<input id="oIni" type="date"><input id="oFim" type="date"><input id="oTipo" placeholder="Tipo de serviço"><textarea id="oObs" placeholder="Observações"></textarea><button class="primary">Salvar obra</button>
-</form></div></div>
+<!-- MODAL OBRA -->
+<div id="obraM" class="modal">
+  <div class="modalBox">
 
-<div class="modal" id="funcM"><div class="sheet"><button class="close" onclick="closeM('funcM')">×</button><h2 id="funcTitle">Novo funcionário</h2><form class="form" onsubmit="saveFunc(event)">
-<input id="fNome" required placeholder="Nome"><input id="fFunc" placeholder="Função / cargo"><input id="fTel" placeholder="Telefone">
-<select id="fTipo"><option value="diaria">Diária</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option></select>
-<input id="fDia" type="number" step=".01" placeholder="Valor da diária"><input id="fSal" type="number" step=".01" placeholder="Salário mensal"><input id="fPag" type="number" min="1" max="31" placeholder="Dia do pagamento">
-<select id="fAtivo"><option value="true">Funcionário ativo</option><option value="false">Funcionário inativo</option></select><button class="primary">Salvar funcionário</button>
-</form></div></div>
+    <div class="modalHeader">
+      <h3>Obra</h3>
+      <button class="close" onclick="closeM('obraM')">×</button>
+    </div>
 
-<div class="modal" id="diaM"><div class="sheet"><button class="close" onclick="closeM('diaM')">×</button><h2>Registrar diária</h2><form class="form" onsubmit="saveDia(event)">
-<select id="dFunc" required></select><select id="dObra"></select><input id="dData" type="date" required><input id="dQtd" type="number" step=".25" value="1" required placeholder="Quantidade"><input id="dVal" type="number" step=".01" required placeholder="Valor da diária">
-<select id="dStatus"><option value="pendente">Pendente</option><option value="pago">Pago</option></select><textarea id="dObs" placeholder="Observação"></textarea><button class="primary">Salvar diária</button>
-</form></div></div>
+    <input type="hidden" id="obraId">
 
-<div class="modal" id="finM"><div class="sheet"><button class="close" onclick="closeM('finM')">×</button><h2>Novo lançamento</h2><form class="form" onsubmit="saveFin(event)">
-<select id="tFin"><option value="entrada">Entrada / recebimento</option><option value="material">Material</option><option value="mao_obra">Mão de obra</option><option value="despesa">Outra despesa</option></select><input id="dFin" required placeholder="Descrição"><input id="vFin" required type="number" step=".01" placeholder="Valor"><input id="dtFin" type="date" required><input id="forFin" placeholder="Fornecedor / cliente"><select id="oFin"></select><textarea id="obsFin" placeholder="Observação"></textarea><button class="primary">Salvar lançamento</button>
-</form></div></div>
+    <div class="formGroup">
+      <label>Nome da obra</label>
+      <input id="obraNome">
+    </div>
 
-<div class="modal" id="checkM"><div class="sheet"><button class="close" onclick="closeM('checkM')">×</button><h2 id="checkTitle">Novo serviço do checklist</h2><form class="form" onsubmit="saveCheckDef(event)">
-<input id="checkId" type="hidden"><input id="checkDesc" required placeholder="Nome do serviço / etapa"><select id="checkObra"><option value="all">Aplicar em todas as obras</option></select><button class="primary">Salvar serviço</button>
-</form></div></div>
+    <div class="formGroup">
+      <label>Cliente</label>
+      <input id="obraCliente">
+    </div>
 
-<div class="modal" id="fotoM"><div class="sheet"><button class="close" onclick="closeM('fotoM')">×</button><h2>Adicionar fotos</h2><form class="form" onsubmit="saveFotos(event)">
-<select id="fotoObra" required></select><input id="fotoData" type="date" required><input id="fotoTitulo" placeholder="Título / etapa"><textarea id="fotoObs" placeholder="Observação"></textarea><input id="fotoFiles" type="file" accept="image/*" multiple required><button class="primary">Salvar fotos</button>
-</form></div></div>
+    <div class="formGroup">
+      <label>Endereço</label>
+      <input id="obraEndereco">
+    </div>
 
-<div id="toast" class="toast"></div>
+    <div class="formGroup">
+      <label>Valor contratado</label>
+      <input id="obraValor" type="number" step="0.01">
+    </div>
+
+    <div class="formGroup">
+      <label>Status</label>
+
+      <select id="obraStatus">
+        <option value="planejada">Planejada</option>
+        <option value="em andamento">Em andamento</option>
+        <option value="pausada">Pausada</option>
+        <option value="concluída">Concluída</option>
+      </select>
+
+    </div>
+
+    <button class="btn btnGold" style="width:100%" onclick="saveObra()">
+      Salvar obra
+    </button>
+
+  </div>
+</div>
+
+<!-- MODAL FUNCIONÁRIO -->
+<div id="funcM" class="modal">
+  <div class="modalBox">
+
+    <div class="modalHeader">
+      <h3>Funcionário</h3>
+      <button class="close" onclick="closeM('funcM')">×</button>
+    </div>
+
+    <input type="hidden" id="funcId">
+
+    <div class="formGroup">
+      <label>Nome</label>
+      <input id="funcNome">
+    </div>
+
+    <div class="formGroup">
+      <label>Função</label>
+      <input id="funcFuncao">
+    </div>
+
+    <div class="formGroup">
+      <label>Valor da diária</label>
+      <input id="funcDiaria" type="number" step="0.01">
+    </div>
+
+    <div class="formGroup">
+      <label>Status</label>
+
+      <select id="funcAtivo">
+        <option value="true">Ativo</option>
+        <option value="false">Inativo</option>
+      </select>
+
+    </div>
+
+    <button class="btn btnGold" style="width:100%" onclick="saveFunc()">
+      Salvar funcionário
+    </button>
+
+  </div>
+</div>
+
+<!-- MODAL DIÁRIA -->
+<div id="diaM" class="modal">
+  <div class="modalBox">
+
+    <div class="modalHeader">
+      <h3>Registrar diária</h3>
+      <button class="close" onclick="closeM('diaM')">×</button>
+    </div>
+
+    <input type="hidden" id="diaId">
+
+    <div class="formGroup">
+      <label>Funcionário</label>
+      <select id="diaFunc"></select>
+    </div>
+
+    <div class="formGroup">
+      <label>Data</label>
+      <input id="diaData" type="date">
+    </div>
+
+    <div class="formGroup">
+      <label>Quantidade de diárias</label>
+      <input id="diaQtd" type="number" min="0" step="1" value="1">
+    </div>
+
+    <div class="formGroup">
+      <label>Valor da diária</label>
+      <input id="diaValor" type="number" step="0.01">
+    </div>
+
+    <button class="btn btnGold" style="width:100%" onclick="saveDia()">
+      Registrar diária
+    </button>
+
+  </div>
+</div>
+
+<!-- MODAL FINANCEIRO -->
+<div id="finM" class="modal">
+  <div class="modalBox">
+
+    <div class="modalHeader">
+      <h3>Lançamento financeiro</h3>
+      <button class="close" onclick="closeM('finM')">×</button>
+    </div>
+
+    <input type="hidden" id="finId">
+
+    <div class="formGroup">
+      <label>Tipo</label>
+
+      <select id="finTipo">
+        <option value="despesa">Despesa</option>
+        <option value="receita">Receita</option>
+      </select>
+
+    </div>
+
+    <div class="formGroup">
+      <label>Descrição</label>
+      <input id="finDescricao">
+    </div>
+
+    <div class="formGroup">
+      <label>Valor</label>
+      <input id="finValor" type="number" step="0.01">
+    </div>
+
+    <div class="formGroup">
+      <label>Data</label>
+      <input id="finData" type="date">
+    </div>
+
+    <button class="btn btnGold" style="width:100%" onclick="saveFin()">
+      Salvar lançamento
+    </button>
+
+  </div>
+</div>
+
+<!-- MODAL FOTO -->
+<div id="fotoM" class="modal">
+  <div class="modalBox">
+
+    <div class="modalHeader">
+      <h3>Relatório fotográfico</h3>
+      <button class="close" onclick="closeM('fotoM')">×</button>
+    </div>
+
+    <div class="formGroup">
+      <label>Obra</label>
+      <select id="fotoObra"></select>
+    </div>
+
+    <div class="formGroup">
+      <label>Descrição</label>
+      <textarea id="fotoDescricao"></textarea>
+    </div>
+
+    <div class="formGroup">
+      <label>Foto</label>
+      <input id="fotoArquivo" type="file" accept="image/*">
+    </div>
+
+    <button class="btn btnGold" style="width:100%" onclick="saveFoto()">
+      Salvar foto
+    </button>
+
+  </div>
+</div>
 
 <script>
-"use strict";
+/* =========================================
+   EDIFIQ — CONFIGURAÇÃO SUPABASE
+========================================= */
 
-/* EDIFIQUE — núcleo da aplicação */
-const SUPA_URL="https://lwqntzwajjgkvtynwdjg.supabase.co";
-const SUPA_KEY="sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
-let sb=null;
-function setConnection(text,ok=false){const el=$("connectionStatus");if(!el)return;el.textContent=text;el.className=ok?"connection ok":"connection error"}
-function initSupabase(){try{if(!window.supabase||typeof window.supabase.createClient!=="function")throw new Error("Biblioteca do Supabase não carregou.");sb=window.supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});return true}catch(e){console.error("Supabase init:",e);setConnection("● Supabase não carregou",false);return false}}
+const SUPABASE_URL = "COLE_AQUI_SUA_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "COLE_AQUI_SUA_SUPABASE_ANON_KEY";
 
-let user=null,editObraId=null,editFuncId=null;
-const D={obras:[],funcionarios:[],diarias:[],gastos:[],pagamentos:[],orcamentos:[],servicos:[],terceirizados:[],checklist:[]};
-const tables=['obras','funcionarios','diarias','gastos','pagamentos','orcamentos','servicos','terceirizados','checklist'];
-const $=id=>document.getElementById(id);
-const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const today=()=>new Date().toISOString().slice(0,10);
-const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const supabaseClient =
+  supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
 
-async function checkConnection(){if(!sb){setConnection('● Supabase não inicializado',false);return false}setConnection('Verificando conexão...',false);try{const result=await Promise.race([sb.auth.getSession(),new Promise((_,rej)=>setTimeout(()=>rej(new Error('Tempo limite da conexão.')),8000))]);if(result?.error)throw result.error;setConnection('● Sistema conectado',true);return true}catch(e){console.error('Conexão Supabase:',e);setConnection('● Erro de conexão',false);return false}}
-function toast(s){const x=$('toast');x.textContent=s;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3500)}
-function authMsg(s){$('authMsg').textContent=s||''}
-function go(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));if($(p))$(p).classList.add('active');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.p===p));renderAll()}
-function openM(id){$(id).classList.add('open');fillSelectors()}
-function closeM(id){$(id).classList.remove('open')}
+/* =========================================
+   ESTADO
+========================================= */
 
-function openObra(id=null){editObraId=id;$('obraTitle').textContent=id?'Editar obra':'Nova obra';if(id){const o=D.obras.find(x=>x.id===id);if(!o)return;$('oNome').value=o.nome||'';$('oCli').value=o.cliente||'';$('oLoc').value=o.endereco||'';$('oVal').value=o.valor||0;$('oStatus').value=o.status||'em_andamento';$('oIni').value=o.data_inicio||'';$('oFim').value=o.data_fim||'';$('oTipo').value=o.tipo_servico||'';$('oObs').value=o.observacoes||''}else $('obraM').querySelector('form').reset();openM('obraM')}
-function openFunc(id=null){editFuncId=id;$('funcTitle').textContent=id?'Editar funcionário':'Novo funcionário';if(id){const f=D.funcionarios.find(x=>x.id===id);if(!f)return;$('fNome').value=f.nome||'';$('fFunc').value=f.funcao||'';$('fTel').value=f.telefone||'';$('fTipo').value=f.tipo_pagamento||'diaria';$('fDia').value=f.valor_diaria||'';$('fSal').value=f.salario_mensal||'';$('fPag').value=f.dia_pagamento||'';$('fAtivo').value=String(f.ativo!==false)}else clearFuncForm();openM('funcM')}
-function clearFuncForm(){['fNome','fFunc','fTel','fDia','fSal','fPag'].forEach(id=>$(id).value='');$('fTipo').value='diaria';$('fAtivo').value='true'}
-function openDia(){openM('diaM');$('dData').value=today();$('dQtd').value=1;const f=D.funcionarios.find(x=>x.ativo!==false);if(f){$('dFunc').value=f.id;$('dVal').value=f.valor_diaria||''}}
-function openFin(){openM('finM');$('dtFin').value=today()}
-function openCheck(id=null,obraId='all'){$('checkId').value=id||'';$('checkTitle').textContent=id?'Editar serviço do checklist':'Novo serviço do checklist';const defs=getCheckDefs(),d=defs.find(x=>x.id===id);$('checkDesc').value=d?.desc||'';$('checkObra').value=d?.obraId||(obraId||'all');openM('checkM')}
-function openFoto(){openM('fotoM');$('fotoData').value=today()}
+let D = {
+  obras: [],
+  funcionarios: [],
+  diarias: [],
+  gastos: [],
+  pagamentos: [],
+  orcamentos: [],
+  servicos: [],
+  terceirizados: [],
+  checklist: []
+};
 
-async function login(){if(!sb)return authMsg('Sistema ainda não conectado. Aguarde e tente novamente.');const email=$('email').value.trim(),password=$('password').value;if(!email||!password)return authMsg('Informe e-mail e senha.');authMsg('Entrando...');const{error}=await sb.auth.signInWithPassword({email,password});if(error)authMsg(error.message)}
-async function signup(){if(!sb)return authMsg('Sistema ainda não conectado. Aguarde e tente novamente.');const email=$('email').value.trim(),password=$('password').value;if(!email)return authMsg('Informe seu e-mail.');if(password.length<6)return authMsg('A senha precisa ter pelo menos 6 caracteres.');authMsg('Criando conta...');const{data,error}=await sb.auth.signUp({email,password});if(error)return authMsg(error.message);authMsg(data.session?'Conta criada e login realizado.':'Conta criada. Verifique seu e-mail para confirmar.')}
-async function resetPassword(){if(!sb)return authMsg('Sistema ainda não conectado. Aguarde e tente novamente.');const email=$('email').value.trim();if(!email)return authMsg('Digite seu e-mail.');const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});authMsg(error?'Erro: '+error.message:'Link de recuperação enviado para seu e-mail.')}
-async function logout(){if(sb)await sb.auth.signOut()}
+let currentUser = null;
 
-function startAuth(){if(!sb)return;sb.auth.onAuthStateChange(async(_e,s)=>{user=s?.user||null;if(user){$('auth').classList.add('hidden');$('app').classList.remove('hidden');$('accountEmail').textContent=user.email||'';$('appConnection').textContent='● Sistema conectado';await loadCloud();renderAll()}else{$('app').classList.add('hidden');$('auth').classList.remove('hidden')}})}
+/* =========================================
+   UTILIDADES
+========================================= */
 
-async function loadCloud(){for(const t of tables){try{const{data,error}=await sb.from(t).select('*').order('created_at',{ascending:false});if(error)console.warn(t,error.message);else{D[t].splice(0,D[t].length,...(data||[]))}}catch(e){console.warn(t,e)}}}
-async function insertRow(table,row){const payload={...row,user_id:user.id};const{data,error}=await sb.from(table).insert(payload).select().single();if(error){toast('Erro ao salvar: '+error.message);return null}return data}
-async function updateRow(table,id,row){const{data,error}=await sb.from(table).update(row).eq('id',id).eq('user_id',user.id).select().single();if(error){toast('Erro ao editar: '+error.message);return null}return data}
-async function removeRow(table,id){const{error}=await sb.from(table).delete().eq('id',id).eq('user_id',user.id);if(error){toast(error.message);return false}return true}
+function $(id){
+  return document.getElementById(id);
+}
 
-function sums(obra='all'){const match=x=>obra==='all'||String(x.obra_id)===String(obra);const entradas=D.gastos.filter(x=>x.categoria==='entrada'&&match(x)).reduce((a,x)=>a+Number(x.valor||0),0)+D.pagamentos.filter(match).reduce((a,x)=>a+Number(x.valor||0),0);const material=D.gastos.filter(x=>x.categoria==='material'&&match(x)).reduce((a,x)=>a+Number(x.valor||0),0);const maoObraLanc=D.gastos.filter(x=>x.categoria==='mao_obra'&&match(x)).reduce((a,x)=>a+Number(x.valor||0),0);const diarias=D.diarias.filter(match).reduce((a,x)=>a+Number(x.valor_pago||x.qtd*x.valor_diaria||0),0);const labor=maoObraLanc+diarias;const outras=D.gastos.filter(x=>x.categoria!=='entrada'&&x.categoria!=='material'&&x.categoria!=='mao_obra'&&match(x)).reduce((a,x)=>a+Number(x.valor||0),0);const despesas=material+labor+outras;const lucro=entradas-despesas;const contrato=obra==='all'?D.obras.reduce((a,x)=>a+Number(x.valor||0),0):Number(D.obras.find(x=>String(x.id)===String(obra))?.valor||0);const pct=v=>contrato>0?(v/contrato*100):0;return{entradas,despesas,lucro,material,labor,outras,contrato,materialPct:pct(material),laborPct:pct(labor),otherPct:pct(outras),profitPct:pct(lucro)}}
+function money(v){
+  return Number(v || 0).toLocaleString("pt-BR",{
+    style:"currency",
+    currency:"BRL"
+  });
+}
 
-function renderAll(){const s=sums(),contratos=D.obras.reduce((a,x)=>a+Number(x.valor||0),0);$('kObras').textContent=D.obras.length;$('kFunc').textContent=D.funcionarios.filter(f=>f.ativo!==false).length;$('kEntradas').textContent=money(s.entradas);$('kDespesas').textContent=money(s.despesas);$('kResultado').textContent=money(s.lucro);$('kReceber').textContent=money(Math.max(0,contratos-s.entradas));$('recentes').innerHTML=D.obras.slice(0,4).map(o=>`<div class="item"><div class="row"><div><b>${esc(o.nome)}</b><br><small>${esc(o.cliente||'Cliente não informado')}</small></div><b class="gold">${money(o.valor)}</b></div></div>`).join('')||'<div class="empty">Nenhuma obra cadastrada.</div>';renderObras();renderFuncs();renderFinance();renderPayroll();renderFotos();fillSelectors()}
+function today(){
+  return new Date().toISOString().slice(0,10);
+}
 
-function statusLabel(s){return({em_andamento:'Em andamento',planejada:'Planejada',concluida:'Concluída',pausada:'Pausada'})[s]||s||''}
-function renderObras(){const q=($('obraSearch')?.value||'').toLowerCase();const list=D.obras.filter(o=>!q||`${o.nome} ${o.cliente||''}`.toLowerCase().includes(q));const defaults=['Planejamento e orçamento','Contrato assinado','Medição inicial','Compra de materiais','Preparação do local','Chapisco / reboco','Instalações','Pisos e revestimentos','Pintura','Acabamentos','Limpeza final','Entrega da obra'];let defs=getCheckDefs();if(!defs.length){defs=defaults.map((x,i)=>({id:'default_'+i,desc:x,obraId:'all'}));saveCheckDefs(defs)}$('obrasList').innerHTML=list.map(o=>{const fs=sums(o.id),applicable=defs.filter(d=>d.obraId==='all'||String(d.obraId)===String(o.id)),saved=D.checklist.filter(c=>String(c.obra_id)===String(o.id)),done=applicable.filter(d=>saved.find(c=>c.tarefa===d.desc)?.concluida).length,checkPct=applicable.length?Math.round(done/applicable.length*100):0,pct=applicable.length?checkPct:(o.status==='concluida'?100:o.status==='em_andamento'?50:o.status==='pausada'?25:10);return `<div class="item"><div class="row"><div><b>${esc(o.nome)}</b><br><small>${esc(o.cliente||'')} • ${esc(o.endereco||'')}</small></div><span class="badge">${statusLabel(o.status)}</span></div><div class="row"><small>Progresso da obra</small><b class="gold">${pct}%</b></div><div class="progress"><i style="width:${pct}%"></i></div><div class="three"><div><small>Contrato</small><br><b>${money(o.valor)}</b></div><div><small>Receitas</small><br><b class="green">${money(fs.entradas)}</b></div><div><small>Despesas</small><br><b class="red">${money(fs.despesas)}</b></div></div><div class="profitGrid"><div class="profitBox"><small>Material</small><b>${money(fs.material)}</b><span class="profitPct">${fs.materialPct.toFixed(1)}% do contrato</span></div><div class="profitBox"><small>Mão de obra</small><b>${money(fs.labor)}</b><span class="profitPct">${fs.laborPct.toFixed(1)}% do contrato</span></div><div class="profitBox"><small>Outras despesas</small><b>${money(fs.outras)}</b><span class="profitPct">${fs.otherPct.toFixed(1)}% do contrato</span></div><div class="profitBox"><small>Lucro</small><b class="gold">${money(fs.lucro)}</b><span class="profitPct">${fs.profitPct.toFixed(1)}% do contrato</span></div></div><div class="card" style="margin:10px 0 0;padding:11px"><div class="row"><b>Checklist da obra</b><button class="mini" onclick="openCheck(null,${o.id})">＋ Etapa</button></div><small>${done} de ${applicable.length} etapas concluídas</small>${applicable.map(d=>{const c=saved.find(x=>x.tarefa===d.desc);return `<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><label style="flex:1"><input type="checkbox" ${c?.concluida?'checked':''} onchange="toggleCheck(${o.id},${JSON.stringify(d.desc)},this.checked)"> ${esc(d.desc)}</label><span><button class="mini" onclick="openCheck('${d.id}',${o.id})">✏️</button></span></div>`}).join('')}</div><div class="listActions"><button class="mini" onclick="openObra(${o.id})">✏️ Editar</button><button class="mini" onclick="openFotoFor(${o.id})">📸 Fotos</button><button class="mini" onclick="go('financeiro');setTimeout(()=>{$('finObraFilter').value='${o.id}';renderFinance()},0)">💰 Financeiro</button><button class="danger mini" onclick="delItem('obras',${o.id})">Excluir</button></div></div>`}).join('')||'<div class="empty">Nenhuma obra encontrada.</div>'}
+function closeM(id){
+  $(id)?.classList.remove("show");
+}
 
-function renderFuncs(){const filter=$('funcFilter')?.value||'todos';const list=D.funcionarios.filter(f=>filter==='todos'||(filter==='ativos'&&f.ativo!==false)||(filter==='inativos'&&f.ativo===false));$('funcList').innerHTML=list.map(f=>`<div class="item"><div class="row"><div><b>${esc(f.nome)}</b><br><small>${esc(f.funcao||'')} • ${esc(f.telefone||'')}</small></div><span class="badge ${f.ativo!==false?'on':'off'}">${f.ativo!==false?'Ativo':'Inativo'}</span></div><small>${esc(f.tipo_pagamento||'diaria')} • Diária: ${money(f.valor_diaria)} • Mensal: ${money(f.salario_mensal)}</small><div class="listActions"><button class="mini" onclick="openFunc(${f.id})">✏️ Editar</button><button class="mini" onclick="toggleFunc(${f.id})">${f.ativo!==false?'⏸ Inativar':'▶️ Ativar'}</button><button class="danger mini" onclick="delItem('funcionarios',${f.id})">Excluir</button></div></div>`).join('')||'<div class="empty">Nenhum funcionário nesta categoria.</div>'}
-async function toggleFunc(id){const f=D.funcionarios.find(x=>x.id===id);if(!f)return;const r=await updateRow('funcionarios',id,{ativo:f.ativo===false});if(r){Object.assign(f,r);renderAll();toast(f.ativo===false?'Funcionário inativado.':'Funcionário ativado.')}}
+function openM(id){
+  $(id)?.classList.add("show");
+}
 
-function renderFinance(){const obra=$('finObraFilter')?.value||'all',tipo=$('finTipoFilter')?.value||'all',s=sums(obra);$('finEnt').textContent=money(s.entradas);$('finDesp').textContent=money(s.despesas);$('finRes').textContent=money(s.lucro);if($('finMaterial')){$('finMaterial').textContent=money(s.material);$('finMaterialPct').textContent=s.materialPct.toFixed(1)+'% do contrato';$('finLabor').textContent=money(s.labor);$('finLaborPct').textContent=s.laborPct.toFixed(1)+'% do contrato';$('finOther').textContent=money(s.outras);$('finOtherPct').textContent=s.otherPct.toFixed(1)+'% do contrato';$('finProfit').textContent=money(s.lucro);$('finProfitPct').textContent=s.profitPct.toFixed(1)+'% do contrato'}const rows=D.gastos.filter(x=>(obra==='all'||String(x.obra_id)===String(obra))&&(tipo==='all'||(tipo==='entrada'?x.categoria==='entrada':x.categoria===tipo)));$('finList').innerHTML=rows.map(x=>{const o=D.obras.find(y=>y.id===x.obra_id);const label=x.categoria==='entrada'?'Receita':x.categoria==='material'?'Material':x.categoria==='mao_obra'?'Mão de obra':'Despesa';return `<div class="item"><div class="row"><div><b>${esc(x.descricao||'Lançamento')}</b><br><small>${x.data||''} • ${esc(o?.nome||'Geral')} • ${label} • ${esc(x.fornecedor||'')}</small></div><b class="${x.categoria==='entrada'?'green':'red'}">${x.categoria==='entrada'?'+':'−'}${money(x.valor)}</b></div><div class="listActions"><button class="danger mini" onclick="delItem('gastos',${x.id})">Excluir</button></div></div>`}).join('')||'<div class="empty">Nenhum lançamento encontrado.</div>';let resumo=D.obras.map(o=>{const z=sums(o.id);return `<div class="item"><div class="row"><b>${esc(o.nome)}</b><b class="gold">${money(z.lucro)}</b></div><div class="profitGrid"><div class="profitBox"><small>Material</small><b>${z.materialPct.toFixed(1)}%</b></div><div class="profitBox"><small>Mão de obra</small><b>${z.laborPct.toFixed(1)}%</b></div><div class="profitBox"><small>Outras</small><b>${z.otherPct.toFixed(1)}%</b></div><div class="profitBox"><small>Lucro</small><b class="gold">${z.profitPct.toFixed(1)}%</b></div></div></div>`}).join('');$('obraFinanceResumo').innerHTML=resumo||'<div class="empty">Cadastre uma obra.</div>'}
-function renderPayroll(){if(!$('payPeriod'))return;const p=$('payPeriod').value;$('customDates').classList.toggle('hidden',p!=='custom');const now=new Date();let a=new Date(now),b=new Date(now);if(p==='semana'){const d=now.getDay()||7;a.setDate(now.getDate()-d+1)}else if(p==='quinzena')a.setDate(now.getDate()<=15?1:16);else if(p==='mes')a.setDate(1);else if(p==='custom'){a=new Date(($('payStart').value||today())+'T00:00:00');b=new Date(($('payEnd').value||today())+'T23:59:59')}const A=a.toISOString().slice(0,10),B=b.toISOString().slice(0,10);let total=0,count=0;D.funcionarios.forEach(f=>{let val=f.tipo_pagamento==='mensal'?Number(f.salario_mensal||0):D.diarias.filter(d=>String(d.funcionario_id)===String(f.id)&&d.data>=A&&d.data<=B).reduce((s,d)=>s+Number(d.valor_pago||d.qtd*d.valor_diaria||0),0);if(val)count++;total+=val});$('payTotal').textContent=money(total);$('payCount').textContent=count;const ds=D.diarias.filter(d=>d.data>=A&&d.data<=B);$('diaList').innerHTML=ds.map(d=>{const f=D.funcionarios.find(x=>x.id===d.funcionario_id),o=D.obras.find(x=>x.id===d.obra_id);return `<div class="item"><div class="row"><div><b>${esc(f?.nome||'Funcionário')}</b><br><small>${d.data} • ${esc(o?.nome||'Sem obra')} • ${d.qtd} × ${money(d.valor_diaria)}</small></div><b class="gold">${money(d.valor_pago||d.qtd*d.valor_diaria)}</b></div><button class="danger mini" onclick="delItem('diarias',${d.id})">Excluir</button></div>`}).join('')||'<div class="empty">Nenhuma diária no período.</div>'}
+function esc(v){
+  return String(v ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
 
-function getCheckDefs(){try{return JSON.parse(localStorage.getItem('edifiq_check_defs_'+(user?.id||''))||'[]')}catch{return[]}}
-function saveCheckDefs(v){localStorage.setItem('edifiq_check_defs_'+user.id,JSON.stringify(v))}
-function renderChecklist(){if($('checkList'))renderObras()}
+/* =========================================
+   NAVEGAÇÃO
+========================================= */
 
-async function toggleCheck(obra,tarefa,on){const old=D.checklist.find(x=>String(x.obra_id)===String(obra)&&x.tarefa===tarefa);if(old){const r=await updateRow('checklist',old.id,{concluida:on,progresso:on?100:0});if(r)Object.assign(old,r)}else{const r=await insertRow('checklist',{obra_id:obra,tarefa,concluida:on,progresso:on?100:0});if(r)D.checklist.unshift(r)}renderAll()}
+function go(page,btn){
 
-function saveCheckDef(e){e.preventDefault();let defs=getCheckDefs(),id=$('checkId').value||('c_'+Date.now()),val={id,desc:$('checkDesc').value.trim(),obraId:$('checkObra').value||'all'},i=defs.findIndex(x=>x.id===id);if(i>=0)defs[i]=val;else defs.push(val);saveCheckDefs(defs);closeM('checkM');renderObras();toast('Checklist atualizado.')}
-function deleteCheckDef(id){if(!confirm('Excluir este serviço do checklist?'))return;saveCheckDefs(getCheckDefs().filter(x=>x.id!==id));renderObras();toast('Serviço excluído.')}
+  document.querySelectorAll(".page")
+    .forEach(x=>x.classList.remove("active"));
 
-function renderFotos(){const data=getPhotos();$('fotoList').innerHTML=data.length?data.slice().reverse().map(g=>{const o=D.obras.find(x=>String(x.id)===String(g.obraId));return `<div class="item"><div class="row"><div><b>${esc(g.titulo||'Relatório fotográfico')}</b><br><small>${esc(o?.nome||'Obra')} • ${g.data||''}</small></div><button class="danger mini" onclick="deletePhotoGroup('${g.id}')">Excluir</button></div>${g.obs?`<p class="sub">${esc(g.obs)}</p>`:''}<div class="photoGrid">${g.photos.map((p,i)=>`<img src="${p}" alt="Foto ${i+1}">`).join('')}</div></div>`}).join(''):'<div class="empty">Nenhuma foto adicionada.</div>'}
-function getPhotos(){try{return JSON.parse(localStorage.getItem('edifiq_photos_'+(user?.id||''))||'[]')}catch{return[]}}
-function savePhotos(v){localStorage.setItem('edifiq_photos_'+user.id,JSON.stringify(v))}
-function openFotoFor(id){go('fotos');setTimeout(()=>{openFoto();$('fotoObra').value=id},0)}
-async function saveFotos(e){e.preventDefault();const files=[...$('fotoFiles').files];if(!files.length)return;const photos=[];for(const f of files)photos.push(await fileToDataURL(f));const arr=getPhotos();arr.push({id:'p_'+Date.now(),obraId:$('fotoObra').value,data:$('fotoData').value,titulo:$('fotoTitulo').value,obs:$('fotoObs').value,photos});savePhotos(arr);e.target.reset();closeM('fotoM');renderFotos();toast(photos.length+' foto(s) adicionada(s).')}
-function fileToDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
-function deletePhotoGroup(id){if(!confirm('Excluir este relatório fotográfico?'))return;savePhotos(getPhotos().filter(x=>x.id!==id));renderFotos()}
+  $(page)?.classList.add("active");
 
-function fillSelectors(){const opts='<option value="">Sem obra</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');['dObra','oFin'].forEach(id=>{if($(id))$(id).innerHTML=opts});if($('fotoObra'))$('fotoObra').innerHTML='<option value="" disabled selected>Selecione a obra</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');if($('checkObra'))$('checkObra').innerHTML='<option value="all">Aplicar em todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');if($('dFunc'))$('dFunc').innerHTML=D.funcionarios.filter(f=>f.ativo!==false).map(f=>`<option value="${f.id}">${esc(f.nome)}</option>`).join('');if($('finObraFilter')){const cur=$('finObraFilter').value;$('finObraFilter').innerHTML='<option value="all">Todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');$('finObraFilter').value=cur||'all'}}
+  document.querySelectorAll(".navBtn")
+    .forEach(x=>x.classList.remove("active"));
 
-async function saveObra(e){e.preventDefault();const row={nome:$('oNome').value.trim(),cliente:$('oCli').value.trim(),endereco:$('oLoc').value.trim(),valor:Number($('oVal').value||0),status:$('oStatus').value,data_inicio:$('oIni').value||null,data_fim:$('oFim').value||null,tipo_servico:$('oTipo').value.trim(),observacoes:$('oObs').value.trim()};let r=editObraId?await updateRow('obras',editObraId,row):await insertRow('obras',row);if(r){if(editObraId){const o=D.obras.find(x=>x.id===editObraId);Object.assign(o,r)}else D.obras.unshift(r);editObraId=null;e.target.reset();closeM('obraM');renderAll();toast('Obra salva com sucesso.')}}
-async function saveFunc(e){e.preventDefault();const row={nome:$('fNome').value.trim(),funcao:$('fFunc').value.trim(),telefone:$('fTel').value.trim(),valor_diaria:Number($('fDia').value||0),tipo_pagamento:$('fTipo').value,salario_mensal:Number($('fSal').value||0),dia_pagamento:Number($('fPag').value||0),ativo:$('fAtivo').value==='true'};let r=editFuncId?await updateRow('funcionarios',editFuncId,row):await insertRow('funcionarios',row);if(r){if(editFuncId){const f=D.funcionarios.find(x=>x.id===editFuncId);Object.assign(f,r)}else D.funcionarios.unshift(r);editFuncId=null;clearFuncForm();e.target.reset();closeM('funcM');renderAll();toast('Funcionário salvo e formulário limpo.')}}
-async function saveDia(e){e.preventDefault();const qtd=Number($('dQtd').value),v=Number($('dVal').value),r=await insertRow('diarias',{funcionario_id:Number($('dFunc').value),obra_id:$('dObra').value?Number($('dObra').value):null,data:$('dData').value,qtd,valor_diaria:v,valor_pago:qtd*v,status:$('dStatus').value,observacao:$('dObs').value});if(r){D.diarias.unshift(r);e.target.reset();closeM('diaM');renderAll();toast('Diária registrada.')}}
-async function saveFin(e){e.preventDefault();const r=await insertRow('gastos',{obra_id:$('oFin').value?Number($('oFin').value):null,categoria:$('tFin').value,descricao:$('dFin').value.trim(),valor:Number($('vFin').value),data:$('dtFin').value,fornecedor:$('forFin').value.trim(),observacao:$('obsFin').value.trim()});if(r){D.gastos.unshift(r);e.target.reset();closeM('finM');renderAll();toast('Recebimento/despesa salvo com sucesso.')}}
-async function delItem(t,id){if(!confirm('Excluir este registro?'))return;if(await removeRow(t,id)){const i=D[t].findIndex(x=>x.id===id);if(i>=0)D[t].splice(i,1);renderAll();toast('Registro excluído.')}}
+  btn?.classList.add("active");
 
-function snapshot(){return{version:'EDIFIQUE-2026-09',exported_at:new Date().toISOString(),user_email:user?.email,data:D,checklist_defs:getCheckDefs(),photos:getPhotos()}}
-function download(name,text,type='application/json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
-function exportFull(){download('EDIFIQUE-backup.json',JSON.stringify(snapshot(),null,2))}
-function exportTable(t){download('EDIFIQUE-'+t+'.json',JSON.stringify(D[t]||[],null,2))}
-function exportExcel(){const wb=XLSX.utils.book_new();Object.entries(D).forEach(([k,v])=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(v||[]),k.slice(0,31)));XLSX.writeFile(wb,'EDIFIQUE-dados.xlsx')}
-async function previewImport(e){const file=e.target.files?.[0];if(!file)return;try{const ext=file.name.split('.').pop().toLowerCase();let obj;if(ext==='json'){obj=JSON.parse(await file.text())}else if(ext==='xlsx'||ext==='xls'){if(typeof XLSX==='undefined')throw new Error('Biblioteca do Excel ainda não carregou. Atualize a página e tente novamente.');const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});obj={data:{}};wb.SheetNames.forEach(name=>{const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{defval:null});if(tables.includes(name))obj.data[name]=rows})}else{throw new Error('Formato não suportado. Use JSON, XLSX ou XLS.')}if(Array.isArray(obj)){obj={data:{obras:obj}}}if(!obj.data||typeof obj.data!=='object')throw new Error('Arquivo não contém uma estrutura de dados válida.');const valid=Object.entries(obj.data).filter(([t,r])=>tables.includes(t)&&Array.isArray(r));if(!valid.length)throw new Error('Nenhuma tabela reconhecida foi encontrada no arquivo.');const total=valid.reduce((n,[,r])=>n+r.length,0);window.pendingImport=obj;$('importPreview').innerHTML='<p class="green">Arquivo lido: '+total+' registro(s) em '+valid.length+' tabela(s).</p><button class="primary" onclick="confirmImport()">Confirmar importação</button>'}catch(err){console.error('Importação:',err);window.pendingImport=null;$('importPreview').innerHTML=`<p class="red">Erro na importação: ${esc(err.message)}</p>`}}
-async function confirmImport(){const pending=window.pendingImport;if(!pending){toast('Selecione um arquivo primeiro.');return}const src=pending.data||{};let count=0,failed=0;const idMap={obras:new Map(),funcionarios:new Map()};const order=['obras','funcionarios','gastos','pagamentos','diarias','orcamentos','servicos','terceirizados','checklist'];for(const table of order){const rows=src[table];if(!Array.isArray(rows)||!tables.includes(table))continue;for(const raw of rows){const r={...raw};const oldId=r.id;delete r.id;delete r.created_at;delete r.legacy_id;delete r.user_id;if(r.obra_id!=null&&idMap.obras.has(String(r.obra_id)))r.obra_id=idMap.obras.get(String(r.obra_id));if(r.funcionario_id!=null&&idMap.funcionarios.has(String(r.funcionario_id)))r.funcionario_id=idMap.funcionarios.get(String(r.funcionario_id));if(r.obraId!=null&&idMap.obras.has(String(r.obraId)))r.obraId=idMap.obras.get(String(r.obraId));const x=await insertRow(table,r);if(x){D[table].unshift(x);count++;if(table==='obras'&&oldId!=null)idMap.obras.set(String(oldId),x.id);if(table==='funcionarios'&&oldId!=null)idMap.funcionarios.set(String(oldId),x.id)}else failed++}}if(pending.checklist_defs)saveCheckDefs(pending.checklist_defs);if(pending.photos)savePhotos(pending.photos);window.pendingImport=null;if($('importFile'))$('importFile').value='';if($('importPreview'))$('importPreview').innerHTML='';toast(count+' registro(s) importado(s)'+(failed?' — '+failed+' não foram importados.':'.'));await loadCloud();renderAll()}
+  renderAll();
+}
 
-(async function boot(){setConnection('Carregando conexão...',false);const ok=initSupabase();if(!ok)return;await checkConnection();startAuth();try{const{data}=await sb.auth.getSession();if(data?.session){user=data.session.user;$('auth').classList.add('hidden');$('app').classList.remove('hidden');$('accountEmail').textContent=user.email||'';await loadCloud();renderAll()}}catch(e){console.error(e)}})();
+/* =========================================
+   AUTENTICAÇÃO
+========================================= */
+
+async function login(){
+
+  const email = $("loginEmail").value.trim();
+  const password = $("loginPassword").value;
+
+  $("authMsg").textContent = "Entrando...";
+
+  const {data,error} =
+    await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+  if(error){
+    $("authMsg").textContent = error.message;
+    return;
+  }
+
+  currentUser = data.user;
+
+  $("authScreen").style.display="none";
+  $("app").style.display="block";
+
+  await loadData();
+}
+
+async function signup(){
+
+  const email = $("loginEmail").value.trim();
+  const password = $("loginPassword").value;
+
+  $("authMsg").textContent = "Criando conta...";
+
+  const {error} =
+    await supabaseClient.auth.signUp({
+      email,
+      password
+    });
+
+  $("authMsg").textContent =
+    error ? error.message : "Conta criada. Verifique seu e-mail.";
+}
+
+async function logout(){
+
+  await supabaseClient.auth.signOut();
+
+  location.reload();
+}
+
+/* =========================================
+   CARREGAMENTO
+========================================= */
+
+async function loadTable(table){
+
+  try{
+
+    const {data,error} =
+      await supabaseClient
+        .from(table)
+        .select("*");
+
+    if(error){
+      console.warn(table,error);
+      return [];
+    }
+
+    return data || [];
+
+  }catch(e){
+
+    console.warn(table,e);
+    return [];
+
+  }
+}
+
+async function loadData(){
+
+  D.obras = await loadTable("obras");
+  D.funcionarios = await loadTable("funcionarios");
+  D.diarias = await loadTable("diarias");
+  D.gastos = await loadTable("gastos");
+  D.pagamentos = await loadTable("pagamentos");
+  D.orcamentos = await loadTable("orcamentos");
+  D.servicos = await loadTable("servicos");
+  D.terceirizados = await loadTable("terceirizados");
+  D.checklist = await loadTable("checklist");
+
+  renderAll();
+}
+
+/* =========================================
+   DASHBOARD
+========================================= */
+
+function renderHome(){
+
+  const obras = D.obras.length;
+
+  const andamento =
+    D.obras.filter(
+      x=>String(x.status||"").toLowerCase()==="em andamento"
+    ).length;
+
+  const ativos =
+    D.funcionarios.filter(
+      x=>x.ativo !== false
+    ).length;
+
+  const despesas =
+    D.gastos.reduce(
+      (s,x)=>s+Number(x.valor||0),
+      0
+    );
+
+  $("kObras").textContent = obras;
+  $("kAndamento").textContent = andamento;
+  $("kFunc").textContent = ativos;
+  $("kDespesas").textContent = money(despesas);
+
+  $("homeResumo").innerHTML = `
+    <p>Obras cadastradas: <b>${obras}</b></p>
+    <p>Obras em andamento: <b>${andamento}</b></p>
+    <p>Funcionários ativos: <b>${ativos}</b></p>
+    <p>Total de despesas: <b>${money(despesas)}</b></p>
+  `;
+}
+
+/* =========================================
+   OBRAS
+========================================= */
+
+function openObra(id=null){
+
+  $("obraId").value = id || "";
+
+  if(id){
+
+    const o = D.obras.find(x=>String(x.id)===String(id));
+
+    if(!o) return;
+
+    $("obraNome").value = o.nome || "";
+    $("obraCliente").value = o.cliente || "";
+    $("obraEndereco").value = o.endereco || "";
+    $("obraValor").value = o.valor || 0;
+    $("obraStatus").value = o.status || "planejada";
+
+  }else{
+
+    $("obraNome").value="";
+    $("obraCliente").value="";
+    $("obraEndereco").value="";
+    $("obraValor").value="";
+    $("obraStatus").value="planejada";
+
+  }
+
+  openM("obraM");
+}
+
+async function saveObra(){
+
+  const id = $("obraId").value;
+
+  const obj = {
+    nome:$("obraNome").value.trim(),
+    cliente:$("obraCliente").value.trim(),
+    endereco:$("obraEndereco").value.trim(),
+    valor:Number($("obraValor").value||0),
+    status:$("obraStatus").value
+  };
+
+  let res;
+
+  if(id){
+
+    res = await supabaseClient
+      .from("obras")
+      .update(obj)
+      .eq("id",id);
+
+  }else{
+
+    res = await supabaseClient
+      .from("obras")
+      .insert(obj);
+
+  }
+
+  if(res.error){
+    alert(res.error.message);
+    return;
+  }
+
+  closeM("obraM");
+  await loadData();
+}
+
+/* =========================================
+   PROGRESSO DAS ETAPAS
+========================================= */
+
+function clamp(v){
+
+  v = Number(v);
+
+  if(!Number.isFinite(v)) v=0;
+
+  return Math.max(0,Math.min(100,v));
+}
+
+function taskProgress(obraId,tarefa){
+
+  const c =
+    D.checklist.find(
+      x =>
+        String(x.obra_id)===String(obraId) &&
+        String(x.tarefa||x.descricao||"")===String(tarefa)
+    );
+
+  if(!c) return 0;
+
+  if(c.concluida) return 100;
+
+  return clamp(c.progresso || 0);
+}
+
+function getDefs(){
+
+  let defs =
+    JSON.parse(
+      localStorage.getItem("edifiq_check_defs") || "null"
+    );
+
+  if(!Array.isArray(defs) || !defs.length){
+
+    defs = [
+      "Planejamento e orçamento",
+      "Contrato assinado",
+      "Medição inicial",
+      "Compra de materiais",
+      "Preparação do local",
+      "Chapisco / reboco",
+      "Instalações",
+      "Pisos e revestimentos",
+      "Pintura",
+      "Acabamentos",
+      "Limpeza final",
+      "Entrega da obra"
+    ].map((nome,i)=>({
+      id:"edifiq_"+i,
+      nome
+    }));
+
+    localStorage.setItem(
+      "edifiq_check_defs",
+      JSON.stringify(defs)
+    );
+  }
+
+  return defs;
+}
+
+function obraProgress(obra,defs){
+
+  const values =
+    defs.map(
+      d=>taskProgress(obra.id,d.nome)
+    );
+
+  if(values.length){
+
+    return Math.round(
+      values.reduce((a,b)=>a+b,0)/values.length
+    );
+
+  }
+
+  const status =
+    String(obra.status||"").toLowerCase();
+
+  if(status==="concluída") return 100;
+  if(status==="em andamento") return 50;
+  if(status==="pausada") return 25;
+
+  return 10;
+}
+
+async function updateCheckProgress(
+  obraId,
+  tarefa,
+  value
+){
+
+  const p = clamp(value);
+
+  const old =
+    D.checklist.find(
+      x =>
+        String(x.obra_id)===String(obraId) &&
+        String(x.tarefa||x.descricao||"")===String(tarefa)
+    );
+
+  const payload = {
+    obra_id:obraId,
+    tarefa:tarefa,
+    descricao:tarefa,
+    concluida:p>=100,
+    progresso:p
+  };
+
+  let res;
+
+  if(old?.id){
+
+    res =
+      await supabaseClient
+        .from("checklist")
+        .update(payload)
+        .eq("id",old.id);
+
+  }else{
+
+    res =
+      await supabaseClient
+        .from("checklist")
+        .insert(payload);
+
+  }
+
+  if(res.error){
+
+    console.warn(res.error);
+    alert(
+      "Não foi possível salvar o progresso: "+
+      res.error.message
+    );
+
+    return;
+  }
+
+  const local = D.checklist.findIndex(
+    x =>
+      String(x.obra_id)===String(obraId) &&
+      String(x.tarefa||x.descricao||"")===String(tarefa)
+  );
+
+  if(local>=0){
+
+    D.checklist[local]={
+      ...D.checklist[local],
+      ...payload
+    };
+
+  }else{
+
+    D.checklist.push(payload);
+
+  }
+
+  renderObras();
+}
+
+function makeStage(obraId,def){
+
+  const p = taskProgress(
+    obraId,
+    def.nome
+  );
+
+  const div =
+    document.createElement("div");
+
+  div.className="edifiq-stage";
+
+  div.innerHTML=`
+
+    <div class="edifiq-stage-title">
+
+      <input
+        type="checkbox"
+        ${p>=100?"checked":""}
+        aria-label="Concluir etapa"
+      >
+
+      <span>${esc(def.nome)}</span>
+
+    </div>
+
+    <div class="edifiq-stage-controls">
+
+      <input
+        type="range"
+        min="0"
+        max="100"
+        value="${p}"
+      >
+
+      <input
+        class="edifiq-stage-number"
+        type="number"
+        min="0"
+        max="100"
+        value="${p}"
+      >
+
+    </div>
+
+    <div class="edifiq-stage-bar">
+      <div style="width:${p}%"></div>
+    </div>
+
+  `;
+
+  const check =
+    div.querySelector('input[type="checkbox"]');
+
+  const range =
+    div.querySelector('input[type="range"]');
+
+  const number =
+    div.querySelector('input[type="number"]');
+
+  function set(v){
+
+    v=clamp(v);
+
+    range.value=v;
+    number.value=v;
+    check.checked=v>=100;
+
+    div.querySelector(
+      ".edifiq-stage-bar div"
+    ).style.width=v+"%";
+
+    updateCheckProgress(
+      obraId,
+      def.nome,
+      v
+    );
+  }
+
+  check.addEventListener(
+    "change",
+    ()=>set(check.checked?100:0)
+  );
+
+  range.addEventListener(
+    "input",
+    ()=>{
+      const v=clamp(range.value);
+
+      number.value=v;
+
+      div.querySelector(
+        ".edifiq-stage-bar div"
+      ).style.width=v+"%";
+    }
+  );
+
+  range.addEventListener(
+    "change",
+    ()=>set(range.value)
+  );
+
+  number.addEventListener(
+    "change",
+    ()=>set(number.value)
+  );
+
+  return div;
+}
+
+function renderObras(){
+
+  const box = $("obrasList");
+
+  if(!box) return;
+
+  const defs = getDefs();
+
+  if(!D.obras.length){
+
+    box.innerHTML=`
+      <div class="empty">
+        Nenhuma obra cadastrada.
+      </div>
+    `;
+
+    return;
+  }
+
+  box.innerHTML =
+    D.obras.map(o=>{
+
+      const p =
+        obraProgress(o,defs);
+
+      return `
+
+      <div class="card">
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          gap:10px;
+          align-items:flex-start
+        ">
+
+          <div>
+
+            <h3>${esc(o.nome || "Obra")}</h3>
+
+            <div style="color:var(--muted);font-size:12px">
+              ${esc(o.cliente || "")}
+            </div>
+
+          </div>
+
+          <span class="badge badgeGold">
+            ${p}%
+          </span>
+
+        </div>
+
+        <div class="progress">
+          <div style="width:${p}%"></div>
+        </div>
+
+        <div class="edifiq-total">
+          Progresso total da obra:
+          <strong>${p}%</strong>
+        </div>
+
+        <div class="edifiq-check">
+
+          <div class="edifiq-check-head">
+
+            <strong>☑ Checklist da obra</strong>
+
+            <span class="badge badgeGold">
+              ${p}%
+            </span>
+
+          </div>
+
+          <div id="check_${o.id}"></div>
+
+        </div>
+
+        <div class="listActions">
+
+          <button
+            class="btn"
+            onclick="openObra('${o.id}')"
+          >
+            Editar
+          </button>
+
+          <button
+            class="btn btnDanger"
+            onclick="deleteObra('${o.id}')"
+          >
+            Excluir
+          </button>
+
+        </div>
+
+      </div>
+      `;
+
+    }).join("");
+
+  D.obras.forEach(o=>{
+
+    const area =
+      document.getElementById(
+        "check_"+o.id
+      );
+
+    if(!area) return;
+
+    defs.forEach(def=>{
+      area.appendChild(
+        makeStage(o.id,def)
+      );
+    });
+
+  });
+
+}
+
+async function deleteObra(id){
+
+  if(!confirm("Excluir esta obra?")) return;
+
+  const {error} =
+    await supabaseClient
+      .from("obras")
+      .delete()
+      .eq("id",id);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  await loadData();
+}
+
+/* =========================================
+   FUNCIONÁRIOS
+========================================= */
+
+function openFunc(id=null){
+
+  $("funcId").value=id||"";
+
+  if(id){
+
+    const f =
+      D.funcionarios.find(
+        x=>String(x.id)===String(id)
+      );
+
+    if(!f) return;
+
+    $("funcNome").value=f.nome||"";
+    $("funcFuncao").value=f.funcao||f.cargo||"";
+    $("funcDiaria").value=f.diaria||f.valor_diaria||0;
+    $("funcAtivo").value =
+      String(f.ativo !== false);
+
+  }else{
+
+    $("funcNome").value="";
+    $("funcFuncao").value="";
+    $("funcDiaria").value="";
+    $("funcAtivo").value="true";
+
+  }
+
+  openM("funcM");
+}
+
+async function saveFunc(){
+
+  const id=$("funcId").value;
+
+  const obj={
+    nome:$("funcNome").value.trim(),
+    funcao:$("funcFuncao").value.trim(),
+    diaria:Number($("funcDiaria").value||0),
+    ativo:$("funcAtivo").value==="true"
+  };
+
+  let res;
+
+  if(id){
+
+    res =
+      await supabaseClient
+        .from("funcionarios")
+        .update(obj)
+        .eq("id",id);
+
+  }else{
+
+    res =
+      await supabaseClient
+        .from("funcionarios")
+        .insert(obj);
+
+  }
+
+  if(res.error){
+    alert(res.error.message);
+    return;
+  }
+
+  closeM("funcM");
+  await loadData();
+}
+
+function openDiaFor(id){
+
+  $("diaId").value="";
+
+  $("diaData").value=today();
+
+  $("diaQtd").value=1;
+
+  const select=$("diaFunc");
+
+  select.innerHTML =
+    D.funcionarios
+      .filter(f=>f.ativo!==false)
+      .map(f=>`
+        <option value="${f.id}">
+          ${esc(f.nome)}
+        </option>
+      `).join("");
+
+  if(id){
+
+    select.value=String(id);
+
+    const f =
+      D.funcionarios.find(
+        x=>String(x.id)===String(id)
+      );
+
+    if(f){
+
+      $("diaValor").value =
+        f.diaria ||
+        f.valor_diaria ||
+        0;
+
+    }
+
+  }
+
+  openM("diaM");
+}
+
+function openDia(){
+
+  const first =
+    D.funcionarios.find(
+      x=>x.ativo!==false
+    );
+
+  openDiaFor(first?.id || "");
+}
+
+async function saveDia(){
+
+  const funcionario_id =
+    $("diaFunc").value;
+
+  const data =
+    $("diaData").value;
+
+  const quantidade =
+    Number($("diaQtd").value||0);
+
+  const valor =
+    Number($("diaValor").value||0);
+
+  if(!funcionario_id){
+
+    alert("Selecione o funcionário.");
+    return;
+  }
+
+  const obj={
+    funcionario_id,
+    data,
+    quantidade,
+    valor,
+    total:quantidade*valor
+  };
+
+  const {error} =
+    await supabaseClient
+      .from("diarias")
+      .insert(obj);
+
+  if(error){
+
+    alert(error.message);
+    return;
+
+  }
+
+  closeM("diaM");
+
+  await loadData();
+}
+
+function renderFuncs(){
+
+  const box=$("funcList");
+
+  if(!box) return;
+
+  if(!D.funcionarios.length){
+
+    box.innerHTML=`
+      <div class="empty">
+        Nenhum funcionário cadastrado.
+      </div>
+    `;
+
+    return;
+  }
+
+  box.innerHTML =
+    D.funcionarios.map(f=>{
+
+      const ativo =
+        f.ativo!==false;
+
+      return `
+
+      <div class="card">
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          gap:10px
+        ">
+
+          <div>
+
+            <h3>${esc(f.nome)}</h3>
+
+            <div style="
+              color:var(--muted);
+              font-size:12px
+            ">
+              ${esc(f.funcao||f.cargo||"")}
+            </div>
+
+          </div>
+
+          <span class="
+            badge
+            ${ativo?"badgeGreen":"badgeRed"}
+          ">
+            ${ativo?"Ativo":"Inativo"}
+          </span>
+
+        </div>
+
+        <div style="
+          margin-top:10px;
+          color:var(--muted);
+          font-size:13px
+        ">
+          Diária:
+          <b style="color:var(--gold2)">
+            ${money(f.diaria||f.valor_diaria||0)}
+          </b>
+        </div>
+
+        <div class="listActions">
+
+          <button
+            class="btn btnGold edifiq-daily"
+            onclick="openDiaFor('${f.id}')"
+          >
+            💵 Registrar diária
+          </button>
+
+          <button
+            class="btn"
+            onclick="openFunc('${f.id}')"
+          >
+            Editar
+          </button>
+
+        </div>
+
+      </div>
+      `;
+
+    }).join("");
+}
+
+function renderPayroll(){
+
+  const contratados =
+    D.funcionarios.length;
+
+  const ativos =
+    D.funcionarios.filter(
+      f=>f.ativo!==false
+    ).length;
+
+  const inativos =
+    D.funcionarios.filter(
+      f=>f.ativo===false
+    ).length;
+
+  $("edifiqContratados").textContent =
+    contratados;
+
+  $("edifiqAtivos").textContent =
+    ativos;
+
+  $("edifiqInativos").textContent =
+    inativos;
+
+  renderFuncs();
+}
+
+/* =========================================
+   FINANCEIRO
+========================================= */
+
+function openFin(){
+
+  $("finDescricao").value="";
+  $("finValor").value="";
+  $("finData").value=today();
+  $("finTipo").value="despesa";
+
+  openM("finM");
+}
+
+async function saveFin(){
+
+  const obj={
+    descricao:$("finDescricao").value.trim(),
+    valor:Number($("finValor").value||0),
+    data:$("finData").value,
+    tipo:$("finTipo").value
+  };
+
+  const {error} =
+    await supabaseClient
+      .from("gastos")
+      .insert(obj);
+
+  if(error){
+
+    alert(error.message);
+    return;
+
+  }
+
+  closeM("finM");
+
+  await loadData();
+}
+
+function renderFin(){
+
+  const box=$("finList");
+
+  if(!box) return;
+
+  if(!D.gastos.length){
+
+    box.innerHTML=`
+      <div class="empty">
+        Nenhum lançamento.
+      </div>
+    `;
+
+    return;
+  }
+
+  box.innerHTML =
+    D.gastos.map(g=>`
+
+      <div style="
+        padding:12px 0;
+        border-bottom:1px solid var(--border)
+      ">
+
+        <div style="
+          display:flex;
+          justify-content:space-between
+        ">
+
+          <b>${esc(g.descricao||"Lançamento")}</b>
+
+          <strong style="color:var(--gold2)">
+            ${money(g.valor)}
+          </strong>
+
+        </div>
+
+        <small style="color:var(--muted)">
+          ${esc(g.data||"")}
+        </small>
+
+      </div>
+
+    `).join("");
+
+  const receitas =
+    D.gastos
+      .filter(x=>x.tipo==="receita")
+      .reduce((s,x)=>s+Number(x.valor||0),0);
+
+  const despesas =
+    D.gastos
+      .filter(x=>x.tipo!=="receita")
+      .reduce((s,x)=>s+Number(x.valor||0),0);
+
+  $("finReceitas").textContent=money(receitas);
+  $("finDespesas").textContent=money(despesas);
+}
+
+/* =========================================
+   FOTOS
+========================================= */
+
+function openFoto(){
+
+  $("fotoObra").innerHTML =
+    D.obras.map(o=>`
+      <option value="${o.id}">
+        ${esc(o.nome)}
+      </option>
+    `).join("");
+
+  $("fotoDescricao").value="";
+  $("fotoArquivo").value="";
+
+  openM("fotoM");
+}
+
+async function saveFoto(){
+
+  alert(
+    "A estrutura de fotos está pronta. "+
+    "Configure o Storage do Supabase para salvar os arquivos."
+  );
+
+}
+
+/* =========================================
+   RELATÓRIOS
+========================================= */
+
+function renderRelatorios(){
+
+  const box=$("relatorioContent");
+
+  if(!box) return;
+
+  const totalObras=D.obras.length;
+
+  const totalFuncionarios=
+    D.funcionarios.length;
+
+  const despesas=
+    D.gastos.reduce(
+      (s,x)=>s+Number(x.valor||0),0
+    );
+
+  box.innerHTML=`
+
+    <h3>Resumo EDIFIQ</h3>
+
+    <p>
+      Total de obras:
+      <b>${totalObras}</b>
+    </p>
+
+    <p>
+      Total de funcionários:
+      <b>${totalFuncionarios}</b>
+    </p>
+
+    <p>
+      Total de despesas:
+      <b>${money(despesas)}</b>
+    </p>
+
+  `;
+}
+
+function exportarExcel(){
+
+  const wb =
+    XLSX.utils.book_new();
+
+  const ws =
+    XLSX.utils.json_to_sheet(
+      D.obras
+    );
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    ws,
+    "Obras"
+  );
+
+  XLSX.writeFile(
+    wb,
+    "EDIFIQ_Relatorio.xlsx"
+  );
+}
+
+/* =========================================
+   RENDER GERAL
+========================================= */
+
+function renderAll(){
+
+  renderHome();
+
+  renderObras();
+
+  renderPayroll();
+
+  renderFin();
+
+  renderRelatorios();
+
+}
+
+/* =========================================
+   INICIALIZAÇÃO
+========================================= */
+
+(async function(){
+
+  const {
+    data
+  } =
+    await supabaseClient.auth.getSession();
+
+  if(data?.session?.user){
+
+    currentUser=data.session.user;
+
+    $("authScreen").style.display="none";
+    $("app").style.display="block";
+
+    await loadData();
+
+  }
+
+})();
+</script>
+<!-- =========================================================
+     EDIFIQ — MELHORIAS
+     1. Nome EDIFIQ
+     2. Progresso individual das etapas
+     3. Progresso total da obra
+     4. Registrar diária por funcionário
+     5. Indicadores Contratados / Ativos / Inativos
+========================================================= -->
+
+<style id="edifiqProgressStyle">
+
+.edifiq-func-kpis{
+  margin-bottom:14px;
+}
+
+.edifiq-daily{
+  width:100%;
+  margin-top:10px;
+}
+
+.edifiq-check{
+  background:#0d1014;
+  border:1px solid #292d35;
+  border-radius:15px;
+  padding:13px;
+  margin-top:12px;
+}
+
+.edifiq-check-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+
+.edifiq-stage{
+  padding:13px 0;
+  border-top:1px solid #252932;
+}
+
+.edifiq-stage:first-child{
+  border-top:0;
+}
+
+.edifiq-stage-title{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  font-weight:700;
+  font-size:14px;
+}
+
+.edifiq-stage-title input[type="checkbox"]{
+  width:20px;
+  height:20px;
+  accent-color:#d4af37;
+}
+
+.edifiq-stage-controls{
+  display:grid;
+  grid-template-columns:1fr 65px;
+  gap:10px;
+  align-items:center;
+  margin-top:10px;
+}
+
+.edifiq-stage-controls input[type="range"]{
+  padding:0;
+  accent-color:#d4af37;
+}
+
+.edifiq-stage-number{
+  text-align:center;
+  padding:8px 4px;
+}
+
+.edifiq-stage-bar{
+  height:7px;
+  background:#252932;
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:9px;
+}
+
+.edifiq-stage-bar div{
+  height:100%;
+  background:linear-gradient(
+    90deg,
+    #d4af37,
+    #f0cf62
+  );
+  transition:.2s;
+}
+
+.edifiq-total{
+  font-size:13px;
+  color:#9da3ad;
+  margin-top:9px;
+}
+
+.edifiq-total strong{
+  color:#f0cf62;
+  font-size:20px;
+}
+
+</style>
+
+<script>
+/* =========================================================
+   EDIFIQ — IDENTIDADE
+========================================================= */
+
+document.title = "EDIFIQ — Gestão de Obras";
+
+(function(){
+
+  /*
+   * Troca apenas textos visíveis que ainda estejam como
+   * EDIFIQUE, sem alterar código ou nomes de variáveis.
+   */
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT
+  );
+
+  const nodes=[];
+
+  while(walker.nextNode()){
+    nodes.push(walker.currentNode);
+  }
+
+  nodes.forEach(node=>{
+
+    if(
+      node.nodeValue &&
+      node.nodeValue.includes("EDIFIQUE")
+    ){
+
+      node.nodeValue =
+        node.nodeValue.replace(
+          /EDIFIQUE/g,
+          "EDIFIQ"
+        );
+
+    }
+
+  });
+
+})();
+
+
+/* =========================================================
+   FUNÇÕES DE PROGRESSO
+========================================================= */
+
+function edifiqClamp(v){
+
+  v = Number(v);
+
+  if(!Number.isFinite(v)){
+    v = 0;
+  }
+
+  return Math.max(
+    0,
+    Math.min(100,v)
+  );
+}
+
+
+function edifiqTaskProgress(
+  obraId,
+  tarefa
+){
+
+  const item =
+    D.checklist.find(x =>
+
+      String(x.obra_id) === String(obraId) &&
+
+      String(
+        x.tarefa ||
+        x.descricao ||
+        ""
+      ) === String(tarefa)
+
+    );
+
+  if(!item){
+    return 0;
+  }
+
+  if(item.concluida){
+    return 100;
+  }
+
+  return edifiqClamp(
+    item.progresso || 0
+  );
+}
+
+
+/* =========================================================
+   ETAPAS PADRÃO
+========================================================= */
+
+function edifiqGetDefs(){
+
+  let defs =
+    JSON.parse(
+      localStorage.getItem(
+        "edifiq_check_defs"
+      ) || "null"
+    );
+
+  if(
+    !Array.isArray(defs) ||
+    !defs.length
+  ){
+
+    defs = [
+
+      "Planejamento e orçamento",
+
+      "Contrato assinado",
+
+      "Medição inicial",
+
+      "Compra de materiais",
+
+      "Preparação do local",
+
+      "Chapisco / reboco",
+
+      "Instalações",
+
+      "Pisos e revestimentos",
+
+      "Pintura",
+
+      "Acabamentos",
+
+      "Limpeza final",
+
+      "Entrega da obra"
+
+    ].map(
+      (nome,i)=>({
+
+        id:"edifiq_"+i,
+
+        nome:nome
+
+      })
+    );
+
+    localStorage.setItem(
+      "edifiq_check_defs",
+      JSON.stringify(defs)
+    );
+
+  }
+
+  return defs;
+}
+
+
+/* =========================================================
+   PROGRESSO TOTAL
+========================================================= */
+
+function edifiqObraProgress(
+  obra,
+  defs
+){
+
+  if(!defs.length){
+
+    const status =
+      String(
+        obra.status || ""
+      ).toLowerCase();
+
+    if(status==="concluída"){
+      return 100;
+    }
+
+    if(status==="em andamento"){
+      return 50;
+    }
+
+    if(status==="pausada"){
+      return 25;
+    }
+
+    return 10;
+  }
+
+  const valores =
+    defs.map(
+      d =>
+        edifiqTaskProgress(
+          obra.id,
+          d.nome
+        )
+    );
+
+  const total =
+    valores.reduce(
+      (a,b)=>a+b,
+      0
+    );
+
+  return Math.round(
+    total / valores.length
+  );
+}
+
+
+/* =========================================================
+   SALVAR PROGRESSO
+========================================================= */
+
+async function edifiqUpdateProgress(
+  obraId,
+  tarefa,
+  value
+){
+
+  const progresso =
+    edifiqClamp(value);
+
+  const existente =
+    D.checklist.find(x =>
+
+      String(x.obra_id) === String(obraId) &&
+
+      String(
+        x.tarefa ||
+        x.descricao ||
+        ""
+      ) === String(tarefa)
+
+    );
+
+  const dados = {
+
+    obra_id:obraId,
+
+    tarefa:tarefa,
+
+    descricao:tarefa,
+
+    concluida:
+      progresso >= 100,
+
+    progresso:progresso
+
+  };
+
+  let resultado;
+
+  if(existente?.id){
+
+    resultado =
+      await supabaseClient
+
+        .from("checklist")
+
+        .update(dados)
+
+        .eq(
+          "id",
+          existente.id
+        );
+
+  }else{
+
+    resultado =
+      await supabaseClient
+
+        .from("checklist")
+
+        .insert(dados);
+
+  }
+
+  if(resultado.error){
+
+    console.error(
+      resultado.error
+    );
+
+    alert(
+      "Erro ao salvar progresso:\n" +
+      resultado.error.message
+    );
+
+    return;
+  }
+
+  const indice =
+    D.checklist.findIndex(x =>
+
+      String(x.obra_id) === String(obraId) &&
+
+      String(
+        x.tarefa ||
+        x.descricao ||
+        ""
+      ) === String(tarefa)
+
+    );
+
+  if(indice >= 0){
+
+    D.checklist[indice] = {
+
+      ...D.checklist[indice],
+
+      ...dados
+
+    };
+
+  }else{
+
+    D.checklist.push(dados);
+
+  }
+
+  renderObras();
+}
+
+
+/* =========================================================
+   CRIAR ETAPA
+========================================================= */
+
+function edifiqMakeStage(
+  obraId,
+  def
+){
+
+  const progresso =
+    edifiqTaskProgress(
+      obraId,
+      def.nome
+    );
+
+  const div =
+    document.createElement(
+      "div"
+    );
+
+  div.className =
+    "edifiq-stage";
+
+  div.innerHTML = `
+
+    <div class="edifiq-stage-title">
+
+      <input
+        type="checkbox"
+        ${progresso >= 100 ? "checked" : ""}
+      >
+
+      <span>
+        ${edifiqEscape(def.nome)}
+      </span>
+
+    </div>
+
+    <div class="edifiq-stage-controls">
+
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        value="${progresso}"
+      >
+
+      <input
+        class="edifiq-stage-number"
+        type="number"
+        min="0"
+        max="100"
+        step="1"
+        value="${progresso}"
+      >
+
+    </div>
+
+    <div class="edifiq-stage-bar">
+
+      <div
+        style="width:${progresso}%"
+      ></div>
+
+    </div>
+
+  `;
+
+  const checkbox =
+    div.querySelector(
+      'input[type="checkbox"]'
+    );
+
+  const range =
+    div.querySelector(
+      'input[type="range"]'
+    );
+
+  const number =
+    div.querySelector(
+      'input[type="number"]'
+    );
+
+  const bar =
+    div.querySelector(
+      ".edifiq-stage-bar div"
+    );
+
+
+  function atualizarVisual(valor){
+
+    valor =
+      edifiqClamp(valor);
+
+    range.value =
+      valor;
+
+    number.value =
+      valor;
+
+    checkbox.checked =
+      valor >= 100;
+
+    bar.style.width =
+      valor + "%";
+
+  }
+
+
+  checkbox.addEventListener(
+    "change",
+    function(){
+
+      const valor =
+        checkbox.checked
+          ? 100
+          : 0;
+
+      atualizarVisual(valor);
+
+      edifiqUpdateProgress(
+        obraId,
+        def.nome,
+        valor
+      );
+
+    }
+  );
+
+
+  range.addEventListener(
+    "input",
+    function(){
+
+      const valor =
+        edifiqClamp(
+          range.value
+        );
+
+      number.value =
+        valor;
+
+      bar.style.width =
+        valor + "%";
+
+    }
+  );
+
+
+  range.addEventListener(
+    "change",
+    function(){
+
+      edifiqUpdateProgress(
+        obraId,
+        def.nome,
+        range.value
+      );
+
+    }
+  );
+
+
+  number.addEventListener(
+    "change",
+    function(){
+
+      const valor =
+        edifiqClamp(
+          number.value
+        );
+
+      atualizarVisual(valor);
+
+      edifiqUpdateProgress(
+        obraId,
+        def.nome,
+        valor
+      );
+
+    }
+  );
+
+
+  return div;
+}
+
+
+function edifiqEscape(valor){
+
+  return String(
+    valor ?? ""
+  )
+
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+
+}
+
+
+/* =========================================================
+   ADICIONAR CHECKLIST DENTRO DA OBRA
+========================================================= */
+
+(function(){
+
+  const renderObrasOriginal =
+    window.renderObras;
+
+  if(
+    typeof renderObrasOriginal !==
+    "function"
+  ){
+
+    console.warn(
+      "EDIFIQ: renderObras não encontrada."
+    );
+
+    return;
+  }
+
+
+  window.renderObras =
+    function(){
+
+      renderObrasOriginal();
+
+      const defs =
+        edifiqGetDefs();
+
+      D.obras.forEach(
+        obra=>{
+
+          const cards =
+            document.querySelectorAll(
+              "#obrasList .card"
+            );
+
+          let card=null;
+
+          cards.forEach(c=>{
+
+            if(
+              !card &&
+              c.textContent.includes(
+                obra.nome
+              )
+            ){
+
+              card=c;
+
+            }
+
+          });
+
+          if(!card){
+            return;
+          }
+
+
+          const percentual =
+            edifiqObraProgress(
+              obra,
+              defs
+            );
+
+
+          /*
+           * Atualiza barra principal
+           */
+          const barras =
+            card.querySelectorAll(
+              ".progress div"
+            );
+
+          if(barras.length){
+
+            barras[0].style.width =
+              percentual + "%";
+
+          }
+
+
+          /*
+           * Procura área de ações.
+           */
+          const actions =
+            card.querySelector(
+              ".listActions"
+            );
+
+
+          /*
+           * Evita duplicar.
+           */
+          if(
+            card.querySelector(
+              ".edifiq-check"
+            )
+          ){
+
+            const total =
+              card.querySelector(
+                ".edifiq-total"
+              );
+
+            if(total){
+
+              total.innerHTML =
+                "Progresso total da obra: " +
+                "<strong>" +
+                percentual +
+                "%" +
+                "</strong>";
+
+            }
+
+            return;
+          }
+
+
+          const check =
+            document.createElement(
+              "div"
+            );
+
+          check.className =
+            "edifiq-check";
+
+
+          check.innerHTML = `
+
+            <div class="edifiq-check-head">
+
+              <strong>
+                ☑ Checklist da obra
+              </strong>
+
+              <span class="badge badgeGold">
+                ${percentual}%
+              </span>
+
+            </div>
+
+            <div class="edifiq-total">
+
+              Progresso total da obra:
+              <strong>
+                ${percentual}%
+              </strong>
+
+            </div>
+
+            <div class="edifiq-stage-list"></div>
+
+          `;
+
+
+          const lista =
+            check.querySelector(
+              ".edifiq-stage-list"
+            );
+
+
+          defs.forEach(
+            def=>{
+
+              lista.appendChild(
+
+                edifiqMakeStage(
+                  obra.id,
+                  def
+                )
+
+              );
+
+            }
+          );
+
+
+          if(actions){
+
+            actions.parentNode.insertBefore(
+              check,
+              actions
+            );
+
+          }else{
+
+            card.appendChild(
+              check
+            );
+
+          }
+
+        }
+      );
+
+    };
+
+})();
+
+
+/* =========================================================
+   FUNCIONÁRIOS — INDICADORES
+========================================================= */
+
+function edifiqAtualizarFuncionarios(){
+
+  const contratados =
+    D.funcionarios.length;
+
+  const ativos =
+    D.funcionarios.filter(
+      f=>f.ativo !== false
+    ).length;
+
+  const inativos =
+    D.funcionarios.filter(
+      f=>f.ativo === false
+    ).length;
+
+
+  const c =
+    document.getElementById(
+      "edifiqContratados"
+    );
+
+  const a =
+    document.getElementById(
+      "edifiqAtivos"
+    );
+
+  const i =
+    document.getElementById(
+      "edifiqInativos"
+    );
+
+
+  if(c){
+    c.textContent =
+      contratados;
+  }
+
+  if(a){
+    a.textContent =
+      ativos;
+  }
+
+  if(i){
+    i.textContent =
+      inativos;
+  }
+
+}
+
+
+/* =========================================================
+   BOTÃO REGISTRAR DIÁRIA EM CADA FUNCIONÁRIO
+========================================================= */
+
+function edifiqAdicionarBotoesDiaria(){
+
+  const lista =
+    document.querySelector(
+      "#funcList"
+    );
+
+  if(!lista){
+    return;
+  }
+
+
+  const cards =
+    lista.querySelectorAll(
+      ".card"
+    );
+
+
+  D.funcionarios.forEach(
+    funcionario=>{
+
+      const card =
+        Array.from(cards)
+          .find(
+            c =>
+              c.textContent.includes(
+                funcionario.nome
+              )
+          );
+
+      if(!card){
+        return;
+      }
+
+
+      /*
+       * Evita duplicar botão.
+       */
+      if(
+        card.querySelector(
+          ".edifiq-daily"
+        )
+      ){
+
+        return;
+
+      }
+
+
+      const area =
+        card.querySelector(
+          ".listActions"
+        );
+
+
+      const botao =
+        document.createElement(
+          "button"
+        );
+
+
+      botao.className =
+        "btn btnGold edifiq-daily";
+
+
+      botao.innerHTML =
+        "💵 Registrar diária";
+
+
+      botao.onclick =
+        function(){
+
+          openDiaFor(
+            funcionario.id
+          );
+
+        };
+
+
+      if(area){
+
+        area.prepend(
+          botao
+        );
+
+      }else{
+
+        card.appendChild(
+          botao
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   ABRIR DIÁRIA JÁ COM FUNCIONÁRIO SELECIONADO
+========================================================= */
+
+window.openDiaFor =
+  function(id){
+
+    /*
+     * Usa a função original quando
+     * ela existir para manter compatibilidade.
+     */
+    if(
+      typeof window.openDia ===
+      "function"
+    ){
+
+      try{
+
+        window.openDia();
+
+      }catch(e){
+
+        console.warn(e);
+
+      }
+
+    }
+
+
+    const select =
+      document.getElementById(
+        "diaFunc"
+      );
+
+
+    if(!select){
+      return;
+    }
+
+
+    /*
+     * Se o select ainda estiver vazio,
+     * monta os funcionários ativos.
+     */
+    if(
+      !select.options.length
+    ){
+
+      select.innerHTML =
+        D.funcionarios
+
+          .filter(
+            f=>f.ativo !== false
+          )
+
+          .map(
+            f=>`
+
+              <option
+                value="${f.id}"
+              >
+                ${edifiqEscape(f.nome)}
+              </option>
+
+            `
+          )
+
+          .join("");
+
+    }
+
+
+    select.value =
+      String(id);
+
+
+    const funcionario =
+      D.funcionarios.find(
+        f =>
+          String(f.id) ===
+          String(id)
+      );
+
+
+    if(
+      funcionario
+    ){
+
+      const valor =
+        funcionario.diaria ??
+        funcionario.valor_diaria ??
+        funcionario.valorDiaria ??
+        0;
+
+
+      const campo =
+        document.getElementById(
+          "diaValor"
+        );
+
+
+      if(campo){
+
+        campo.value =
+          valor;
+
+      }
+
+    }
+
+
+    const data =
+      document.getElementById(
+        "diaData"
+      );
+
+
+    if(
+      data &&
+      !data.value
+    ){
+
+      const agora =
+        new Date();
+
+      data.value =
+        agora
+          .toISOString()
+          .slice(
+            0,
+            10
+          );
+
+    }
+
+
+    const qtd =
+      document.getElementById(
+        "diaQtd"
+      );
+
+
+    if(
+      qtd &&
+      !qtd.value
+    ){
+
+      qtd.value=1;
+
+    }
+
+  };
+
+
+/* =========================================================
+   ATUALIZA TUDO DEPOIS DO RENDER
+========================================================= */
+
+(function(){
+
+  const renderAllOriginal =
+    window.renderAll;
+
+  if(
+    typeof renderAllOriginal !==
+    "function"
+  ){
+
+    return;
+
+  }
+
+
+  window.renderAll =
+    function(){
+
+      renderAllOriginal();
+
+      setTimeout(
+        function(){
+
+          edifiqAtualizarFuncionarios();
+
+          edifiqAdicionarBotoesDiaria();
+
+        },
+        50
+      );
+
+    };
+
+})();
+
+
+/* =========================================================
+   SE renderPayroll EXISTIR,
+   ADICIONA OS CONTROLES DEPOIS DELE
+========================================================= */
+
+(function(){
+
+  const original =
+    window.renderPayroll;
+
+  if(
+    typeof original !==
+    "function"
+  ){
+
+    return;
+
+  }
+
+
+  window.renderPayroll =
+    function(){
+
+      original();
+
+      setTimeout(
+        function(){
+
+          edifiqAtualizarFuncionarios();
+
+          edifiqAdicionarBotoesDiaria();
+
+        },
+        50
+      );
+
+    };
+
+})();
+
+
+/* =========================================================
+   GARANTE INDICADORES NA TELA
+========================================================= */
+
+(function(){
+
+  function criarKpis(){
+
+    const equipe =
+      document.getElementById(
+        "equipe"
+      );
+
+    if(!equipe){
+      return;
+    }
+
+
+    if(
+      document.getElementById(
+        "edifiqFuncKpis"
+      )
+    ){
+
+      return;
+
+    }
+
+
+    const titulo =
+      equipe.querySelector(
+        "h2"
+      );
+
+
+    if(!titulo){
+      return;
+    }
+
+
+    const box =
+      document.createElement(
+        "div"
+      );
+
+
+    box.id =
+      "edifiqFuncKpis";
+
+    box.className =
+      "grid3 edifiq-func-kpis";
+
+
+    box.innerHTML = `
+
+      <div class="kpi">
+
+        <span>
+          Contratados
+        </span>
+
+        <b id="edifiqContratados">
+          0
+        </b>
+
+      </div>
+
+
+      <div class="kpi">
+
+        <span>
+          Ativos
+        </span>
+
+        <b id="edifiqAtivos">
+          0
+        </b>
+
+      </div>
+
+
+      <div class="kpi">
+
+        <span>
+          Inativos
+        </span>
+
+        <b id="edifiqInativos">
+          0
+        </b>
+
+      </div>
+
+    `;
+
+
+    /*
+     * Coloca depois do título.
+     */
+    titulo.parentNode.insertBefore(
+      box,
+      titulo.nextSibling
+    );
+
+
+  }
+
+
+  /*
+   * Tenta agora.
+   */
+  criarKpis();
+
+
+  /*
+   * E tenta novamente após
+   * carregamento do aplicativo.
+   */
+  setTimeout(
+    criarKpis,
+    500
+  );
+
+  setTimeout(
+    criarKpis,
+    1500
+  );
+
+})();
+
+
+/* =========================================================
+   ATUALIZA NOME EDIFIQUE -> EDIFIQ
+========================================================= */
+
+(function(){
+
+  function atualizarMarca(){
+
+    const elementos =
+      document.querySelectorAll(
+        "body *"
+      );
+
+
+    elementos.forEach(
+      el=>{
+
+        if(
+          el.children.length===0 &&
+          el.textContent.includes(
+            "EDIFIQUE"
+          )
+        ){
+
+          el.textContent =
+            el.textContent.replace(
+              /EDIFIQUE/g,
+              "EDIFIQ"
+            );
+
+        }
+
+      }
+    );
+
+  }
+
+
+  atualizarMarca();
+
+  setTimeout(
+    atualizarMarca,
+    500
+  );
+
+  setTimeout(
+    atualizarMarca,
+    1500
+  );
+
+})();
+
 </script>
 </body>
 </html>
