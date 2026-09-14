@@ -2,208 +2,866 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>EDIFIQ - Gestão de Obras</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-body { background: #121212; color: #fff; min-height: 100vh; padding: 20px; }
-h1 { color: #d4af37; text-align: center; margin: 20px 0; }
-.caixa { background: #1e1e1e; padding: 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; }
-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: none; background: #2a2a2a; color: white; font-size: 16px; }
-button { padding: 12px 20px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin: 5px; }
-.btn-verde { background: #28a745; color: white; }
-.btn-dourado { background: #d4af37; color: black; }
-.btn-vermelho { background: #dc3545; color: white; }
-.item { background: #2a2a2a; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #d4af37; }
-.sucesso { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 15px 25px; border-radius: 8px; font-weight: bold; display: none; z-index: 9999; }
-.erro { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #dc3545; color: white; padding: 15px 25px; border-radius: 8px; font-weight: bold; display: none; z-index: 9999; }
-.tela-login { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; }
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+:root { --fundo: #0f1115; --card: #1a1d23; --dourado: #d4af37; --verde: #28a745; --vermelho: #dc3545; --azul: #007bff; --cinza: #6c757d; --texto: #f0f0f0; }
+body { background: var(--fundo); color: var(--texto); min-height: 100vh; font-size: 16px; padding-bottom: 90px; }
+
+/* MENSAGENS */
+.msg-sucesso { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: var(--verde); color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; z-index: 9999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+.msg-erro { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: var(--vermelho); color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; z-index: 9999; display: none; }
+
+/* TELA LOGIN */
+.tela-login { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, #0f1115, #1a1d23); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+.login-box { background: var(--card); padding: 30px 20px; border-radius: 16px; border: 2px solid var(--dourado); width: 100%; max-width: 360px; box-shadow: 0 0 40px rgba(212,175,55,0.15); }
+.login-box h1 { color: var(--dourado); text-align: center; font-size: 32px; margin-bottom: 25px; }
+.login-box input { width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: 1px solid #333; background: #0f1115; color: white; font-size: 16px; }
+.btn-login { width: 100%; padding: 14px; background: var(--dourado); color: #000; border: none; border-radius: 10px; font-size: 17px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+.erro-login { color: var(--vermelho); text-align: center; margin-top: 12px; display: none; }
+.dados-login { text-align: center; margin-top: 15px; font-size: 13px; color: #888; }
+
+/* CABEÇALHO */
+.header { background: var(--card); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--dourado); position: sticky; top: 0; z-index: 100; }
+.header h1 { color: var(--dourado); font-size: 20px; }
+.btn-sair { background: var(--vermelho); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; }
+
+/* CONTEÚDO */
+main { padding: 15px; }
+.pagina { display: none; }
+.pagina.ativa { display: block; }
+h2 { font-size: 22px; margin-bottom: 18px; color: var(--dourado); }
+h3 { font-size: 18px; margin: 15px 0 10px; color: #ddd; }
+.card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #2c2f36; }
+input, select, textarea { width: 100%; padding: 12px; margin: 6px 0; border-radius: 8px; border: 1px solid #444; background: #0f1115; color: white; font-size: 15px; }
+label { display: block; margin-top: 10px; margin-bottom: 4px; font-size: 14px; color: #bbb; }
+.btn { padding: 12px 16px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; margin: 5px 4px; }
+.btn.dourado { background: var(--dourado); color: #000; }
+.btn.verde { background: var(--verde); color: white; }
+.btn.vermelho { background: var(--vermelho); color: white; }
+.btn.azul { background: var(--azul); color: white; }
+.btn.cinza { background: var(--cinza); color: white; }
+.btn-pequeno { padding: 6px 10px; font-size: 13px; }
+.lista { margin-top: 12px; }
+.item { background: #252830; padding: 14px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid var(--dourado); }
+.item-titulo { font-weight: bold; font-size: 17px; margin-bottom: 6px; }
+.item-dados { font-size: 14px; color: #ccc; line-height: 1.8; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: #252830; padding: 12px; border-radius: 8px; text-align: center; }
+.stat span { font-size: 12px; color: #aaa; display: block; margin-bottom: 4px; }
+.stat strong { font-size: 18px; color: var(--dourado); }
+.progresso-barra { height: 10px; background: #333; border-radius: 5px; margin-top: 8px; overflow: hidden; }
+.progresso-preenchimento { height: 100%; background: linear-gradient(90deg, var(--dourado), #f5d158); width: 0%; transition: width 0.4s ease; border-radius: 5px; }
+.checkbox-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #333; }
+.checkbox-item input { width: 22px; height: 22px; cursor: pointer; }
+.foto-item { display: flex; align-items: center; gap: 10px; padding: 8px; background: #2a2a2a; border-radius: 6px; margin-top: 6px; }
+.ativo-tag { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+.ativo { background: var(--verde); color: white; }
+.inativo { background: var(--cinza); color: white; }
 .escondido { display: none !important; }
+.destaque { color: var(--dourado); font-weight: bold; }
+.positivo { color: var(--verde); }
+.negativo { color: var(--vermelho); }
+
+/* MENU INFERIOR */
+.menu-inferior { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); display: grid; grid-template-columns: repeat(5, 1fr); border-top: 2px solid var(--dourado); z-index: 100; box-shadow: 0 -3px 15px rgba(0,0,0,0.3); }
+.menu-btn { background: none; border: none; color: #888; padding: 10px 5px 6px; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
+.menu-btn.ativo { color: var(--dourado); }
+.menu-btn .icone { font-size: 22px; margin-bottom: 3px; }
+
+/* MODAL */
+.overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); display: none; align-items: center; justify-content: center; z-index: 998; padding: 15px; overflow-y: auto; }
+.modal { background: var(--card); padding: 20px; border-radius: 14px; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; border: 2px solid var(--dourado); }
+.fechar { float: right; background: none; border: none; color: white; font-size: 28px; cursor: pointer; margin-top: -5px; }
+.clearfix::after { content: ""; display: table; clear: both; }
+
+/* TELA INÍCIO */
+.botao-grande { width: 100%; padding: 22px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin: 12px 0; display: flex; align-items: center; justify-content: center; gap: 12px; }
+.botao-grande.obras { background: linear-gradient(135deg, #2c3e50, #34495e); color: white; }
+.botao-grande.equipe { background: linear-gradient(135deg, #1e8449, #27ae60); color: white; }
+.botao-grande.financeiro { background: linear-gradient(135deg, #b7950b, #f1c40f); color: #000; }
+.botao-grande:hover { transform: scale(1.02); transition: 0.2s; }
+.resumo-inicio { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+.resumo-inicio .stat { padding: 15px; }
 </style>
 </head>
 <body>
 
 <!-- MENSAGENS -->
-<div class="sucesso" id="msgOk">✅ SALVO COM SUCESSO!</div>
-<div class="erro" id="msgErro">❌ ERRO AO SALVAR!</div>
+<div class="msg-sucesso" id="msgOk">✅ SALVO COM SUCESSO!</div>
+<div class="msg-erro" id="msgErro">❌ ERRO AO SALVAR!</div>
 
 <!-- TELA DE LOGIN -->
 <div class="tela-login" id="telaLogin">
-  <div class="caixa" style="width: 90%; max-width: 350px;">
-    <h1>EDIFIQ</h1>
+  <div class="login-box">
+    <h1>🏗️ EDIFIQ</h1>
     <input type="text" id="user" placeholder="Usuário">
     <input type="password" id="pass" placeholder="Senha">
-    <button class="btn-dourado" style="width: 100%;" onclick="entrar()">ENTRAR</button>
-    <p style="text-align:center; margin-top:15px; color:#888; font-size:14px;">admin / 1234</p>
+    <button class="btn-login" onclick="entrar()">ENTRAR</button>
+    <div class="erro-login" id="erroLogin">Usuário ou senha incorretos!</div>
+    <p class="dados-login">Usuário: admin • Senha: 1234</p>
   </div>
 </div>
 
-<!-- CONTEÚDO PRINCIPAL -->
+<!-- APLICATIVO PRINCIPAL -->
 <div id="app" class="escondido">
-  <h1>🏗️ EDIFIQ</h1>
-  <button class="btn-vermelho" style="position:fixed; top:15px; right:15px;" onclick="sair()">SAIR</button>
+  <!-- CABEÇALHO -->
+  <header class="header">
+    <h1>🏗️ EDIFIQ</h1>
+    <button class="btn-sair" onclick="sair()">SAIR</button>
+  </header>
 
-  <!-- ÁREA DE OBRAS -->
-  <div class="caixa">
-    <h2>Nova Obra</h2>
-    <input type="text" id="nomeObra" placeholder="Nome da Obra">
-    <input type="text" id="clienteObra" placeholder="Cliente">
-    <input type="number" step="0.01" id="valorObra" placeholder="Valor R$">
-    <button class="btn-verde" onclick="salvarObra()">💾 SALVAR OBRA</button>
+  <main>
+    <!-- TELA INÍCIO -->
+    <div class="pagina ativa" id="pagInicio">
+      <h2 style="text-align:center; margin-top:10px;">Bem-vindo!</h2>
+      
+      <div class="resumo-inicio">
+        <div class="stat">
+          <span>Obras Ativas</span>
+          <strong id="resObras">0</strong>
+        </div>
+        <div class="stat">
+          <span>Funcionários</span>
+          <strong id="resFunc">0</strong>
+        </div>
+        <div class="stat">
+          <span>A Receber</span>
+          <strong id="resReceber" style="font-size:14px;">R$ 0,00</strong>
+        </div>
+        <div class="stat">
+          <span>Lucro Total</span>
+          <strong id="resLucro" style="font-size:14px;">R$ 0,00</strong>
+        </div>
+      </div>
+
+      <button class="botao-grande obras" onclick="irPara('pagObras', this)">
+        <span style="font-size:24px;">🏗️</span> Gerenciar Obras
+      </button>
+      <button class="botao-grande equipe" onclick="irPara('pagEquipe', this)">
+        <span style="font-size:24px;">👷</span> Equipe / Funcionários
+      </button>
+      <button class="botao-grande financeiro" onclick="irPara('pagFin', this)">
+        <span style="font-size:24px;">💰</span> Financeiro
+      </button>
+    </div>
+
+    <!-- OBRAS -->
+    <div class="pagina" id="pagObras">
+      <h2>🏗️ Obras</h2>
+      <button class="btn verde" onclick="abrirNovaObra()">+ Nova Obra</button>
+      <div class="lista" id="listaObras"></div>
+    </div>
+
+    <!-- DETALHES DA OBRA -->
+    <div class="pagina" id="pagObraDetalhe">
+      <button class="btn cinza" onclick="irPara('pagObras', menuObras)">← Voltar</button>
+      <h2 id="tituloObra">Obra</h2>
+      
+      <!-- PROGRESSO -->
+      <div class="card">
+        <h3>📊 Progresso da Obra</h3>
+        <div class="grid">
+          <div>
+            <label>Progresso Total (%)</label>
+            <input type="number" id="progressoObra" min="0" max="100" value="0" onchange="atualizarProgresso()">
+          </div>
+          <div style="padding-top:20px;">
+            <div class="progresso-barra">
+              <div class="progresso-preenchimento" id="barraProgresso"></div>
+            </div>
+            <p style="text-align:center; margin-top:5px; font-size:14px;" id="textoProgresso">0% concluído</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHECKLIST -->
+      <div class="card">
+        <h3>✅ Checklist de Tarefas</h3>
+        <div id="checklistObra"></div>
+        <button class="btn dourado btn-pequeno" onclick="adicionarChecklist()" style="margin-top:10px;">+ Adicionar Tarefa</button>
+      </div>
+
+      <!-- FINANCEIRO DA OBRA -->
+      <div class="card">
+        <h3>💰 Financeiro da Obra</h3>
+        <div class="grid">
+          <div>
+            <label>Valor Contratado R$</label>
+            <input type="number" step="0.01" id="obraValorContratado" onchange="calcularFinanceiroObra()">
+          </div>
+          <div>
+            <label>Total Material R$</label>
+            <input type="number" step="0.01" id="obraMaterial" onchange="calcularFinanceiroObra()">
+          </div>
+          <div>
+            <label>Mão de Obra R$</label>
+            <input type="number" step="0.01" id="obraMaoObra" onchange="calcularFinanceiroObra()">
+          </div>
+          <div>
+            <label>Outras Despesas R$</label>
+            <input type="number" step="0.01" id="obraOutras" onchange="calcularFinanceiroObra()">
+          </div>
+        </div>
+        <hr style="border:none; border-top:1px solid #333; margin:12px 0;">
+        <div class="grid">
+          <div class="stat">
+            <span>Custos Totais</span>
+            <strong id="obraTotalCustos" class="negativo">R$ 0,00</strong>
+          </div>
+          <div class="stat">
+            <span>Lucro Estimado</span>
+            <strong id="obraLucro" class="positivo">R$ 0,00</strong>
+          </div>
+          <div class="stat">
+            <span>% Lucro</span>
+            <strong id="obraPorcentagem">0%</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- RELATÓRIO FOTOGRÁFICO -->
+      <div class="card">
+        <h3>📸 Relatório Fotográfico</h3>
+        <input type="text" id="novaFoto" placeholder="Nome/Descrição da foto">
+        <button class="btn azul btn-pequeno" onclick="adicionarFoto()">+ Adicionar Foto/Arquivo</button>
+        <div id="listaFotos" style="margin-top:10px;"></div>
+      </div>
+
+      <button class="btn dourado" onclick="salvarObraAtual()">💾 Salvar Obra</button>
+      <button class="btn vermelho btn-pequeno" onclick="excluirObraAtual()">🗑️ Excluir Obra</button>
+    </div>
+
+    <!-- EQUIPE / FUNCIONÁRIOS -->
+    <div class="pagina" id="pagEquipe">
+      <h2>👷 Equipe / Funcionários</h2>
+      <button class="btn verde" onclick="abrirNovoFuncionario()">+ Novo Funcionário</button>
+      
+      <div class="card">
+        <h3>📋 Resumo de Pagamentos</h3>
+        <div class="grid">
+          <div class="stat">
+            <span>Total a Pagar</span>
+            <strong id="totalPagarGeral" class="negativo">R$ 0,00</strong>
+          </div>
+          <div class="stat">
+            <span>Total Adiantamentos</span>
+            <strong id="totalAdiantamentos" style="color:#f39c12;">R$ 0,00</strong>
+          </div>
+          <div class="stat">
+            <span>Saldo a Receber</span>
+            <strong id="totalReceberFunc" class="positivo">R$ 0,00</strong>
+          </div>
+        </div>
+      </div>
+      
+      <div class="lista" id="listaFuncionarios"></div>
+    </div>
+
+    <!-- FINANCEIRO GERAL -->
+    <div class="pagina" id="pagFin">
+      <h2>💰 Financeiro Geral</h2>
+      
+      <div class="card">
+        <h3>📊 Resumo Geral</h3>
+        <div class="grid">
+          <div class="stat">
+            <span>Total Contratado</span>
+            <strong id="finTotalContratado">R$ 0,00</strong>
+          </div>
+          <div class="stat">
+            <span>Total Custos</span>
+            <strong id="finTotalCustos" class="negativo">R$ 0,00</strong>
+          </div>
+          <div class="stat">
+            <span>Lucro Total</span>
+            <strong id="finLucroTotal" class="positivo">R$ 0,00</strong>
+          </div>
+        </div>
+        <div class="grid" style="margin-top:10px;">
+          <div class="stat">
+            <span>Total a Receber</span>
+            <strong id="finAReceber" class="positivo">R$ 0,00</strong>
+          </div>
+          <div class="stat">
+            <span>Total a Pagar (Funcionários)</span>
+            <strong id="finAPagar" class="negativo">R$ 0,00</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📈 Lucro por Obra</h3>
+        <div id="lucroPorObra"></div>
+      </div>
+
+      <button class="btn dourado" onclick="baixarRelatorio()">📥 Baixar Relatório</button>
+    </div>
+
+    <!-- DADOS / BACKUP -->
+    <div class="pagina" id="pagDados">
+      <h2>💾 Dados e Backup</h2>
+      <div class="card">
+        <button class="btn dourado" onclick="baixarBackup()" style="width:100%; margin-bottom:10px;">📥 Baixar Backup Completo</button>
+        <button class="btn verde" onclick="document.getElementById('inputRestaurar').click()" style="width:100%; margin-bottom:10px;">📤 Restaurar Backup</button>
+        <input type="file" id="inputRestaurar" accept=".json" style="display:none;" onchange="restaurarBackup(this)">
+        <hr style="border:none; border-top:1px solid #333; margin:15px 0;">
+        <button class="btn vermelho" onclick="apagarTudo()" style="width:100%;">🗑️ Apagar Todos os Dados</button>
+        <p style="font-size:12px; color:#888; margin-top:10px;">⚠️ Faça backup antes de apagar!</p>
+      </div>
+      <div class="card">
+        <h3>🔧 Teste de Salvamento</h3>
+        <button class="btn dourado" onclick="testarSalvamento()">🧪 Testar Agora</button>
+        <p id="resultadoTeste" style="margin-top:10px; font-weight:bold;"></p>
+      </div>
+    </div>
+  </main>
+
+  <!-- MENU INFERIOR -->
+  <nav class="menu-inferior">
+    <button class="menu-btn ativo" onclick="irPara('pagInicio', this)">
+      <span class="icone">🏠</span>Início
+    </button>
+    <button class="menu-btn" onclick="irPara('pagObras', menuObras)">
+      <span class="icone">🏗️</span>Obras
+    </button>
+    <button class="menu-btn" onclick="irPara('pagEquipe', this)">
+      <span class="icone">👷</span>Equipe
+    </button>
+    <button class="menu-btn" onclick="irPara('pagFin', this)">
+      <span class="icone">💰</span>Finanças
+    </button>
+    <button class="menu-btn" onclick="irPara('pagDados', this)">
+      <span class="icone">💾</span>Dados
+    </button>
+  </nav>
+
+  <!-- MODAL FUNCIONÁRIO -->
+  <div class="overlay" id="modalFuncOverlay">
+    <div class="modal" onclick="event.stopPropagation()">
+      <button class="fechar" onclick="fecharModalFunc()">✕</button>
+      <div class="clearfix"></div>
+      <h3 id="tituloModalFunc">Novo Funcionário</h3>
+      
+      <label>Nome Completo *</label>
+      <input type="text" id="funcNome" placeholder="Nome">
+      
+      <label>Função</label>
+      <input type="text" id="funcFuncao" placeholder="Pedreiro, Pintor, Servente...">
+      
+      <label>Tipo de Pagamento *</label>
+      <select id="funcTipo">
+        <option value="diaria">Diária</option>
+        <option value="mensal">Mensal</option>
+      </select>
+      
+      <label>Valor R$ *</label>
+      <input type="number" step="0.01" id="funcValor" placeholder="0,00">
+      
+      <label>Adiantamento Recebido R$</label>
+      <input type="number" step="0.01" id="funcAdiantamento" value="0" placeholder="0,00">
+      
+      <label>Dias Trabalhados</label>
+      <input type="number" id="funcDias" value="0" min="0">
+      
+      <label>Faltas</label>
+      <input type="number" id="funcFaltas" value="0" min="0">
+      
+      <label>Status</label>
+      <select id="funcStatus">
+        <option value="ativo" selected>✅ Ativo</option>
+        <option value="inativo">⏸️ Inativo</option>
+      </select>
+      
+      <hr style="border:none; border-top:1px solid #333; margin:15px 0;">
+      
+      <h4>💵 Cálculo de Pagamento</h4>
+      <div class="item-dados">
+        <p>Valor Bruto: <span id="funcValorBruto" class="destaque">R$ 0,00</span></p>
+        <p>(-) Adiantamento: <span id="funcValorAdiantamento" class="negativo">R$ 0,00</span></p>
+        <p>(-) Desconto Faltas: <span id="funcValorFaltas" class="negativo">R$ 0,00</span></p>
+        <p style="font-size:16px; margin-top:5px;">💳 <strong>Saldo a Pagar: <span id="funcSaldoFinal" class="destaque">R$ 0,00</span></strong></p>
+      </div>
+      
+      <button class="btn verde" onclick="calcularFuncionario()" style="width:100%; margin-top:10px;">🧮 Calcular</button>
+      <button class="btn dourado" onclick="salvarFuncionario()" style="width:100%; margin-top:8px;">💾 Salvar</button>
+    </div>
   </div>
 
-  <!-- LISTA DE OBRAS -->
-  <div class="caixa">
-    <h2>Obras Cadastradas</h2>
-    <div id="listaObras"></div>
-  </div>
-
-  <!-- TESTE DE SALVAMENTO -->
-  <div class="caixa">
-    <h2>🔧 Teste de Salvamento</h2>
-    <button class="btn-dourado" onclick="testar()">Clique para testar se salva</button>
-    <p id="resultadoTeste" style="margin-top:10px; font-weight:bold;"></p>
+  <!-- MODAL NOVA OBRA -->
+  <div class="overlay" id="modalObraOverlay">
+    <div class="modal" onclick="event.stopPropagation()">
+      <button class="fechar" onclick="fecharModalObra()">✕</button>
+      <div class="clearfix"></div>
+      <h3>Nova Obra</h3>
+      
+      <label>Nome da Obra *</label>
+      <input type="text" id="novaObraNome" placeholder="Ex: Reforma da Casa - Rua X">
+      
+      <label>Cliente</label>
+      <input type="text" id="novaObraCliente" placeholder="Nome do Cliente">
+      
+      <label>Valor Contratado R$ *</label>
+      <input type="number" step="0.01" id="novaObraValor" placeholder="0,00">
+      
+      <button class="btn verde" onclick="criarNovaObra()" style="width:100%; margin-top:15px;">✅ Criar Obra</button>
+    </div>
   </div>
 </div>
 
 <script>
 // ==========================================
-// FUNÇÃO DE SALVAR — SIMPLES E DIRETA
+// SALVAMENTO — GARANTIDO
 // ==========================================
-const CHAVE = "EDIFIQ_2026_FINAL";
+const CHAVE = "EDIFIQ_COMPLETO_V2";
+let dados = { obras: [], funcionarios: [], idObraAtual: null };
 
-// DADOS
-let dados = { obras: [] };
-
-// CARREGAR AO ABRIR
-function carregar() {
+// CARREGAR DADOS
+function carregarDados() {
   try {
-    const temp = localStorage.getItem(CHAVE);
-    if (temp) {
-      dados = JSON.parse(temp);
-      console.log("✅ Dados carregados:", dados);
+    const salvos = localStorage.getItem(CHAVE);
+    if (salvos) {
+      dados = JSON.parse(salvos);
+      if (!dados.obras) dados.obras = [];
+      if (!dados.funcionarios) dados.funcionarios = [];
+      console.log("✅ Dados carregados!");
     }
   } catch (e) {
-    console.log("Erro ao carregar:", e);
-    dados = { obras: [] };
+    console.error("Erro ao carregar:", e);
+    dados = { obras: [], funcionarios: [], idObraAtual: null };
   }
-  atualizarLista();
 }
 
-// SALVAR — A FUNÇÃO PRINCIPAL
-function salvar() {
+// SALVAR DADOS
+function salvarDados() {
   try {
     localStorage.setItem(CHAVE, JSON.stringify(dados));
-    console.log("💾 SALVO:", dados);
-    // MOSTRA MENSAGEM DE SUCESSO
     document.getElementById("msgOk").style.display = "block";
-    setTimeout(() => { document.getElementById("msgOk").style.display = "none"; }, 2500);
+    setTimeout(() => { document.getElementById("msgOk").style.display = "none"; }, 2000);
+    atualizarTelaInicio();
     return true;
   } catch (e) {
-    console.log("❌ ERRO AO SALVAR:", e);
+    console.error("❌ Erro ao salvar:", e);
     document.getElementById("msgErro").style.display = "block";
     setTimeout(() => { document.getElementById("msgErro").style.display = "none"; }, 3000);
-    alert("ERRO: O navegador está bloqueando o salvamento!\n\nUse o Chrome normal, NÃO o modo anônimo.");
+    alert("Erro ao salvar! Verifique as permissões do navegador.");
     return false;
   }
 }
 
+// FORMATA MOEDA
+function real(valor) {
+  return Number(valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 // TESTE DE SALVAMENTO
-function testar() {
+function testarSalvamento() {
   const agora = new Date().toLocaleString("pt-BR");
   localStorage.setItem("TESTE_EDIFIQ", agora);
   const lido = localStorage.getItem("TESTE_EDIFIQ");
   
   if (lido) {
-    document.getElementById("resultadoTeste").innerHTML = 
-      "✅ SALVAMENTO FUNCIONA! ✅<br>Teste: " + lido;
-    document.getElementById("resultadoTeste").style.color = "#28a745";
+    document.getElementById("resultadoTeste").innerHTML = "✅ <strong>SALVAMENTO FUNCIONA!</strong><br>Teste: " + lido;
+    document.getElementById("resultadoTeste").style.color = "var(--verde)";
   } else {
-    document.getElementById("resultadoTeste").innerHTML = 
-      "❌ NÃO SALVA! ❌<br>Use navegador normal (não anônimo) e libere cookies.";
-    document.getElementById("resultadoTeste").style.color = "#dc3545";
+    document.getElementById("resultadoTeste").innerHTML = "❌ <strong>NÃO SALVA!</strong><br>Use navegador normal (não anônimo).";
+    document.getElementById("resultadoTeste").style.color = "var(--vermelho)";
   }
 }
 
+// ==========================================
 // LOGIN
+// ==========================================
 function entrar() {
-  const u = document.getElementById("user").value;
-  const s = document.getElementById("pass").value;
+  const u = document.getElementById("user").value.trim();
+  const s = document.getElementById("pass").value.trim();
+  
   if (u === "admin" && s === "1234") {
     document.getElementById("telaLogin").classList.add("escondido");
     document.getElementById("app").classList.remove("escondido");
-    carregar();
+    carregarDados();
+    atualizarTelaInicio();
   } else {
-    alert("Usuário ou senha errados!");
+    document.getElementById("erroLogin").style.display = "block";
   }
 }
 
 function sair() {
-  if (confirm("Sair?")) {
+  if (confirm("Deseja sair do aplicativo?")) {
     document.getElementById("telaLogin").classList.remove("escondido");
     document.getElementById("app").classList.add("escondido");
     document.getElementById("user").value = "";
     document.getElementById("pass").value = "";
+    document.getElementById("erroLogin").style.display = "none";
+    irPara('pagInicio', null);
   }
 }
 
-// SALVAR OBRA
-function salvarObra() {
-  const nome = document.getElementById("nomeObra").value.trim();
-  const cliente = document.getElementById("clienteObra").value.trim();
-  const valor = parseFloat(document.getElementById("valorObra").value);
+// ==========================================
+// NAVEGAÇÃO
+// ==========================================
+let menuObras, menuEquipe, menuFin, menuDados;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const botoesMenu = document.querySelectorAll(".menu-btn");
+  menuObras = botoesMenu[1];
+  menuEquipe = botoesMenu[2];
+  menuFin = botoesMenu[3];
+  menuDados = botoesMenu[4];
+});
+
+function irPara(nomePagina, botaoMenu) {
+  document.querySelectorAll(".pagina").forEach(p => p.classList.remove("ativa"));
+  document.getElementById(nomePagina).classList.add("ativa");
+  
+  document.querySelectorAll(".menu-btn").forEach(b => b.classList.remove("ativo"));
+  if (botaoMenu) botaoMenu.classList.add("ativo");
+  
+  if (nomePagina === "pagObras") renderizarObras();
+  if (nomePagina === "pagEquipe") renderizarFuncionarios();
+  if (nomePagina === "pagFin") renderizarFinanceiro();
+}
+
+// ==========================================
+// TELA INÍCIO — ATUALIZA DADOS
+// ==========================================
+function atualizarTelaInicio() {
+  const obrasAtivas = dados.obras.filter(o => o.progresso < 100).length;
+  const funcAtivos = dados.funcionarios.filter(f => f.status === "ativo").length;
+  
+  let totalAReceber = 0;
+  dados.funcionarios.forEach(f => {
+    if (f.status === "ativo") {
+      const bruto = f.tipo === "diaria" ? (f.valor || 0) * (f.dias || 0) : (f.valor || 0);
+      const adiantamento = f.adiantamento || 0;
+      totalAReceber += Math.max(0, bruto - adiantamento);
+    }
+  });
+  
+  let lucroTotal = 0;
+  dados.obras.forEach(o => {
+    const contratado = o.valorContratado || 0;
+    const material = o.material || 0;
+    const maoObra = o.maoObra || 0;
+    const outras = o.outras || 0;
+    lucroTotal += contratado - (material + maoObra + outras);
+  });
+  
+  document.getElementById("resObras").textContent = obrasAtivas;
+  document.getElementById("resFunc").textContent = funcAtivos;
+  document.getElementById("resReceber").textContent = real(totalAReceber);
+  document.getElementById("resLucro").textContent = real(lucroTotal);
+}
+
+// ==========================================
+// OBRAS — CRIAÇÃO E LISTA
+// ==========================================
+function abrirNovaObra() {
+  document.getElementById("novaObraNome").value = "";
+  document.getElementById("novaObraCliente").value = "";
+  document.getElementById("novaObraValor").value = "";
+  document.getElementById("modalObraOverlay").style.display = "flex";
+}
+
+function fecharModalObra() {
+  document.getElementById("modalObraOverlay").style.display = "none";
+}
+
+function criarNovaObra() {
+  const nome = document.getElementById("novaObraNome").value.trim();
+  const cliente = document.getElementById("novaObraCliente").value.trim();
+  const valor = parseFloat(document.getElementById("novaObraValor").value);
 
   if (!nome) { alert("Digite o nome da obra!"); return; }
-  if (!valor || valor <= 0) { alert("Digite o valor!"); return; }
+  if (!valor || valor <= 0) { alert("Digite o valor contratado!"); return; }
 
-  // ADICIONA
-  dados.obras.push({
+  const novaObra = {
     id: Date.now(),
     nome: nome,
     cliente: cliente,
-    valor: valor.toFixed(2),
-    data: new Date().toLocaleDateString("pt-BR")
-  });
+    valorContratado: valor,
+    progresso: 0,
+    checklist: [],
+    fotos: [],
+    material: 0,
+    maoObra: 0,
+    outras: 0,
+    dataCriacao: new Date().toLocaleDateString("pt-BR")
+  };
 
-  // SALVA NO NAVEGADOR
-  salvar();
-  
-  // LIMPA CAMPOS
-  document.getElementById("nomeObra").value = "";
-  document.getElementById("clienteObra").value = "";
-  document.getElementById("valorObra").value = "";
-
-  atualizarLista();
+  dados.obras.push(novaObra);
+  salvarDados();
+  fecharModalObra();
+  renderizarObras();
 }
 
-// ATUALIZAR LISTA
-function atualizarLista() {
+function renderizarObras() {
   const lista = document.getElementById("listaObras");
   
   if (!dados.obras || dados.obras.length === 0) {
-    lista.innerHTML = "<p style='color:#888;'>Nenhuma obra cadastrada.</p>";
+    lista.innerHTML = `<div class="card" style="text-align:center; padding:30px;">Nenhuma obra cadastrada.<br><button class="btn verde" onclick="abrirNovaObra()" style="margin-top:15px;">+ Criar Primeira Obra</button></div>`;
     return;
   }
 
-  lista.innerHTML = dados.obras.map((obra, indice) => `
-    <div class="item">
-      <h3>${obra.nome}</h3>
-      <p>Cliente: ${obra.cliente || "Não informado"}</p>
-      <p>Valor: R$ ${obra.valor}</p>
-      <p>Data: ${obra.data}</p>
-      <button class="btn-vermelho" onclick="excluirObra(${indice})">🗑️ Excluir</button>
+  lista.innerHTML = dados.obras.map(obra => {
+    const custos = (obra.material || 0) + (obra.maoObra || 0) + (obra.outras || 0);
+    const lucro = (obra.valorContratado || 0) - custos;
+    return `
+      <div class="item" onclick="abrirObra(${obra.id})" style="cursor:pointer;">
+        <div class="item-titulo">🏗️ ${obra.nome}</div>
+        <div class="item-dados">
+          Cliente: ${obra.cliente || "Não informado"}<br>
+          Valor: ${real(obra.valorContratado)} | Lucro: ${real(lucro)}<br>
+          <div class="progresso-barra" style="margin:5px 0;">
+            <div style="height:100%; background:var(--dourado); width:${obra.progresso || 0}%; border-radius:5px;"></div>
+          </div>
+          ${obra.progresso || 0}% concluído
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ==========================================
+// DETALHES DA OBRA
+// ==========================================
+function abrirObra(id) {
+  const obra = dados.obras.find(o => o.id === id);
+  if (!obra) return;
+  
+  dados.idObraAtual = id;
+  document.getElementById("tituloObra").textContent = obra.nome;
+  document.getElementById("progressoObra").value = obra.progresso || 0;
+  document.getElementById("obraValorContratado").value = obra.valorContratado || "";
+  document.getElementById("obraMaterial").value = obra.material || "";
+  document.getElementById("obraMaoObra").value = obra.maoObra || "";
+  document.getElementById("obraOutras").value = obra.outras || "";
+  
+  atualizarProgresso();
+  calcularFinanceiroObra();
+  renderizarChecklist();
+  renderizarFotos();
+  irPara('pagObraDetalhe', null);
+}
+
+function atualizarProgresso() {
+  const obra = dados.obras.find(o => o.id === dados.idObraAtual);
+  if (!obra) return;
+  
+  obra.progresso = parseInt(document.getElementById("progressoObra").value) || 0;
+  if (obra.progresso < 0) obra.progresso = 0;
+  if (obra.progresso > 100) obra.progresso = 100;
+  
+  document.getElementById("barraProgresso").style.width = obra.progresso + "%";
+  document.getElementById("textoProgresso").textContent = obra.progresso + "% concluído";
+}
+
+function calcularFinanceiroObra() {
+  const obra = dados.obras.find(o => o.id === dados.idObraAtual);
+  if (!obra) return;
+  
+  obra.valorContratado = parseFloat(document.getElementById("obraValorContratado").value) || 0;
+  obra.material = parseFloat(document.getElementById("obraMaterial").value) || 0;
+  obra.maoObra = parseFloat(document.getElementById("obraMaoObra").value) || 0;
+  obra.outras = parseFloat(document.getElementById("obraOutras").value) || 0;
+  
+  const totalCustos = obra.material + obra.maoObra + obra.outras;
+  const lucro = obra.valorContratado - totalCustos;
+  const porcentagem = obra.valorContratado > 0 ? ((lucro / obra.valorContratado) * 100).toFixed(1) : 0;
+  
+  document.getElementById("obraTotalCustos").textContent = real(totalCustos);
+  document.getElementById("obraLucro").textContent = real(lucro);
+  document.getElementById("obraPorcentagem").textContent = porcentagem + "%";
+  document.getElementById("obraLucro").className = lucro >= 0 ? "positivo" : "negativo";
+}
+
+function salvarObraAtual() {
+  const obra = dados.obras.find(o => o.id === dados.idObraAtual);
+  if (!obra) return;
+  
+  obra.progresso = parseInt(document.getElementById("progressoObra").value) || 0;
+  obra.valorContratado = parseFloat(document.getElementById("obraValorContratado").value) || 0;
+  obra.material = parseFloat(document.getElementById("obraMaterial").value) || 0;
+  obra.maoObra = parseFloat(document.getElementById("obraMaoObra").value) || 0;
+  obra.outras = parseFloat(document.getElementById("obraOutras").value) || 0;
+  
+  salvarDados();
+  alert("✅ Obra salva com sucesso!");
+}
+
+function excluirObraAtual() {
+  if (!confirm("⚠️ Tem certeza que deseja EXCLUIR esta obra?\nEsta ação não pode ser desfeita!")) return;
+  dados.obras = dados.obras.filter(o => o.id !== dados.idObraAtual);
+  dados.idObraAtual = null;
+  salvarDados();
+  irPara('pagObras', menuObras);
+}
+
+// CHECKLIST
+function renderizarChecklist() {
+  const obra = dados.obras.find(o => o.id === dados.idObraAtual);
+  if (!obra) return;
+  
+  const lista = document.getElementById("checklistObra");
+  if (!obra.checklist || obra.checklist.length === 0) {
+    lista.innerHTML = "<p style='color:#888;'>Nenhuma tarefa adicionada.</p>";
+    return;
+  }
+  
+  lista.innerHTML = obra.checklist.map((item, indice) => `
+    <div class="checkbox-item">
+      <input type="checkbox" ${item.concluido ? "checked" : ""} onchange="alternarChecklist(${indice})">
+      <span style="${item.concluido ? 'text-decoration:line-through; color:#888;' : ''}">${item.texto}</span>
+      <button class="btn-vermelho btn-pequeno" onclick="excluirChecklist(${indice})" style="margin-left:auto;">✕</button>
     </div>
   `).join("");
 }
 
-// EXCLUIR OBRA
-function excluirObra(indice) {
-  if (!confirm("Excluir esta obra?")) return;
-  dados.obras.splice(indice, 1);
-  salvar();
-  atualizarLista();
+function alternarChecklist(indice) {
+  const obra = dados.obras.find(o => o.id === dados.idObraAtual);
+  if (!obra) return;
+  obra.checklist[indice].concluido = !obra.checklist[indice].concluido;
+  salvarDados();
+  renderizarChecklist();
 }
-</script>
 
-</body>
-</html>
+function adicionarChecklist() {
+  const texto = prompt("Digite a tarefa:");
+  if (!texto) return;
+  
+  const obra = dados.obras.find(o => o.id === dados.idObraAtual);
+  if (!obra) return;
+  if (!obra.checklist) obra.checklist = [];
+  
+  obra.checklist.push({ texto: texto, concluido: false });
+  salvarDados();
+  renderizarChecklist();
+}
+
+function excluirChecklist(indice) {
+  if (!confirm("Excluir esta tarefa?")) return;
+  const obra = dados.obras.find(o => o.id === dados.idObraAtual);
+  if (!obra) return;
+  obra.checklist.splice(indice, 1);
+  salvarDados();
+  renderizarChecklist();
+}
+
+// FOTOS / ARQUIVOS
+function renderizarFotos() {
+  const obra = dados.obras.find(o => o.id === dados.idObraAtual);
+  if (!obra) return;
+  
+  const lista = document.getElementById("listaFotos");
+  if (!obra.fotos || obra.fotos.length === 0) {
+    lista.innerHTML = "<p style='color:#888;'>Nenhum arquivo/foto adicionado.</p>";
+    return;
+  }
+  
+  lista.innerHTML = obra.fotos.map((foto, indice) => `
+    <div class="foto-item">
+      <span>📎 ${foto}</span>
+      <button class="btn-vermelho btn-pequeno" onclick="excluirFoto(${indice})" style="margin-left:auto;">✕</button>
+    </div>
+  `).join("");
+}
+
+function adicionarFoto() {
+  const nome = document.getElementById("novaFoto").value.trim();
+  if (!nome) { alert("Digite o nome/descrição!"); return; }
+  
+  const obra = dados.obras.find(o => o.id === dados.idObraAtual);
+  if (!obra) return;
+  if (!obra.fotos) obra.fotos = [];
+  
+  obra.fotos.push(nome);
+  document.getElementById("novaFoto").value = "";
+  salvarDados();
+  renderizarFotos();
+}
+
+function excluirFoto(indice) {
+  if (!confirm("Excluir este arquivo?")) return;
+  const obra = dados.obras.find(o => o.id === dados.idObraAtual);
+  if (!obra) return;
+  obra.fotos.splice(indice, 1);
+  salvarDados();
+  renderizarFotos();
+}
+
+// ==========================================
+// FUNCIONÁRIOS — COM ADIANTAMENTO
+// ==========================================
+let idFuncEditando = null;
+
+function abrirNovoFuncionario() {
+  idFuncEditando = null;
+  document.getElementById("tituloModalFunc").textContent = "Novo Funcionário";
+  document.getElementById("funcNome").value = "";
+  document.getElementById("funcFuncao").value = "";
+  document.getElementById("funcTipo").value = "diaria";
+  document.getElementById("funcValor").value = "";
+  document.getElementById("funcAdiantamento").value = "0";
+  document.getElementById("funcDias").value = "0";
+  document.getElementById("funcFaltas").value = "0";
+  document.getElementById("funcStatus").value = "ativo";
+  atualizarCalculoFunc();
+  document.getElementById("modalFuncOverlay").style.display = "flex";
+}
+
+function fecharModalFunc() {
+  document.getElementById("modalFuncOverlay").style.display = "none";
+  idFuncEditando = null;
+}
+
+function calcularFuncionario() {
+  atualizarCalculoFunc();
+}
+
+function atualizarCalculoFunc() {
+  const tipo = document.getElementById("funcTipo").value;
+  const valor = parseFloat(document.getElementById("funcValor").value) || 0;
+  const dias = parseInt(document.getElementById("funcDias").value) || 0;
+  const faltas = parseInt(document.getElementById("funcFaltas").value) || 0;
+  const adiantamento = parseFloat(document.getElementById("funcAdiantamento").value) || 0;
+  
+  const diasUteis = Math.max(0, dias - faltas);
+  const valorBruto = tipo === "diaria" ? valor * diasUteis : valor;
+  const descontoFaltas = tipo === "diaria" ? valor * faltas : 0;
+  const saldoFinal = Math.max(0, valorBruto - adiantamento);
+  
+  document.getElementById("funcValorBruto").textContent = real(valorBruto);
+  document.getElementById("funcValorAdiantamento").textContent = real(adiantamento);
+  document.getElementById("funcValorFaltas").textContent = real(descontoFaltas);
+  document.getElementById("funcSaldoFinal").textContent = real(saldoFinal);
+}
+
+// Atualiza cálculo automaticamente ao digitar
+["funcValor", "funcAdiantamento", "funcDias", "funcFaltas", "funcTipo"].forEach(id => {
+  document.addEventListener("input", (e) => {
+    if (e.target.id === id) atualizarCalculoFunc();
+  });
+});
+
+function salvarFuncionario() {
+  const nome = document.getElementById("funcNome").value.trim();
+  const funcao = document.getElementById("funcFuncao").value.trim();
+  const tipo = document.getElementById("funcTipo").value;
+  const valor = parseFloat(document.getElementById("funcValor").value);
+  const adiantamento = parseFloat(document.getElementById("funcAdiantamento").value) || 0;
+  const dias = parseInt(document.getElementById("funcDias").value) || 0;
+  const faltas = parseInt(document.getElementById("funcFaltas").value) || 0;
+  const status = document.getElementById("funcStatus").value;
+
+  if (!nome) { alert("Digite o nome!"); return; }
+  if (!valor || valor <= 0) { alert("Digite o valor!"); return; }
+
+  const diasUteis = Math.max(0, dias - faltas);
+  const valorBruto = tipo === "diaria" ? valor * diasUteis : valor;
+  const saldoFinal = Math.max(0, valorBruto - adiantamento);
+
+  if (idFuncEditando) {
+    const func = dados.funcionarios.find(f => f.id === idFuncEditando);
+    if (func
