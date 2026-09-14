@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EDIFIQ - Relatório de Vistoria</title>
+  
+  <!-- Biblioteca para conversão de HTML em PDF real -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
     /* Reset e Estilos Gerais */
     * {
@@ -143,48 +147,18 @@
 
     .form-group textarea {
       resize: vertical;
-      min-height: 80px;
-    }
-
-    /* Regras de Impressão (Exportar PDF / Nuvem) */
-    @media print {
-      body {
-        background: white;
-        padding: 0;
-      }
-
-      .container {
-        box-shadow: none;
-        padding: 0;
-        max-width: 100%;
-      }
-
-      .no-print {
-        display: none !important;
-      }
-
-      input, select, textarea {
-        border: none !important;
-        border-bottom: 1px solid #999 !important;
-        border-radius: 0 !important;
-        background: transparent !important;
-        padding: 4px 0 !important;
-      }
-
-      .section-title {
-        border-left: 3px solid #000;
-      }
+      min-height: 90px;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
+  <div class="container" id="relatorio-conteudo">
     <header>
-      <h1>EDIFIQ</h1>
-      <div class="actions no-print">
-        <button type="button" class="btn btn-primary" onclick="exportarPDF()">
-          📄 Exportar PDF / Salvar na Nuvem
+      <h1>🏗️ EDIFIQ - Vistoria Técnica</h1>
+      <div class="actions no-print" id="botoes-acao">
+        <button type="button" class="btn btn-primary" id="btn-exportar" onclick="exportarPDF()">
+          📄 Salvar PDF (Nuvem)
         </button>
         <button type="button" class="btn btn-danger" onclick="limparDados()">
           🗑️ Limpar
@@ -290,13 +264,47 @@
       }
     }
 
-    // Função para acionar o salvamento em PDF / Nuvem
-    function exportarPDF() {
+    // Exportação real para PDF
+    async function exportarPDF() {
       salvarDados();
-      window.print();
+
+      const btn = document.getElementById('btn-exportar');
+      const botoesAcao = document.getElementById('botoes-acao');
+      const elementoHTML = document.getElementById('relatorio-conteudo');
+
+      // Oculta os botões temporariamente para não saírem no PDF
+      botoesAcao.style.display = 'none';
+      btn.innerText = "⏳ Gerando PDF...";
+
+      // Nome dinâmico do arquivo com o cliente e a data
+      const cliente = document.getElementById('cliente').value || 'Vistoria';
+      const dataVistoria = document.getElementById('data').value || new Date().toISOString().split('T')[0];
+      const nomeArquivo = `EDIFIQ_${cliente.replace(/[^a-zA-Z0-0]/g, '_')}_${dataVistoria}.pdf`;
+
+      // Configurações do arquivo PDF
+      const opcoes = {
+        margin: [10, 10, 10, 10],
+        filename: nomeArquivo,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      try {
+        // Gera e faz o download do arquivo PDF
+        await html2pdf().set(opcoes).from(elementoHTML).save();
+        alert("✅ PDF gerado com sucesso! Salve o arquivo na sua pasta do Google Drive ou iCloud.");
+      } catch (erro) {
+        console.error("Erro ao gerar PDF:", erro);
+        alert("❌ Ocorreu um erro ao gerar o PDF.");
+      } finally {
+        // Restaura a exibição dos botões
+        botoesAcao.style.display = 'flex';
+        btn.innerText = "📄 Salvar PDF (Nuvem)";
+      }
     }
 
-    // Limpar o formulário e o localStorage
+    // Limpar o formulário
     function limparDados() {
       if (confirm("Tem certeza que deseja limpar todos os dados preenchidos?")) {
         form.reset();
@@ -304,10 +312,10 @@
       }
     }
 
-    // Eventos para auto-salvamento a cada alteração
+    // Auto-salvamento ao preencher os campos
     form.addEventListener('input', salvarDados);
 
-    // Carrega os dados ao abrir a página
+    // Carrega os dados salvos quando a página abre
     document.addEventListener('DOMContentLoaded', carregarDados);
   </script>
 
