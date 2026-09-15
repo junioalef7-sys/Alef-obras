@@ -1,3 +1,1118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090b0e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EDIFIQ">
+<title>EDIFIQ — Construção Civil</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --bg:#090b0e;
+  --card:#11151a;
+  --card2:#151a20;
+  --gold:#d4af37;
+  --gold2:#f0cf63;
+  --text:#f5f5f5;
+  --muted:#9299a3;
+  --line:#252b33;
+  --green:#35c77a;
+  --red:#ef5350;
+  --blue:#4da3ff;
+  --orange:#ff9f43;
+  --radius:18px;
+}
+
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+  margin:0;
+  padding:0;
+  width:100%;
+  min-height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+}
+
+body{
+  overflow-x:hidden;
+}
+
+button,
+input,
+select,
+textarea{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+.hidden{
+  display:none!important;
+}
+
+#auth{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:
+    radial-gradient(circle at top,#25200d 0,#090b0e 42%);
+}
+
+.auth-box{
+  width:100%;
+  max-width:430px;
+  background:rgba(17,21,26,.96);
+  border:1px solid rgba(212,175,55,.25);
+  border-radius:28px;
+  padding:30px 22px;
+  box-shadow:0 20px 70px rgba(0,0,0,.45);
+}
+
+.logo{
+  text-align:center;
+  margin-bottom:25px;
+}
+
+.logo-mark{
+  width:72px;
+  height:72px;
+  margin:auto;
+  border:2px solid var(--gold);
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--gold);
+  font-size:32px;
+  font-weight:900;
+  box-shadow:0 0 25px rgba(212,175,55,.15);
+}
+
+.logo-title{
+  margin-top:12px;
+  font-size:29px;
+  font-weight:900;
+  letter-spacing:2px;
+}
+
+.logo-title span{
+  color:var(--gold);
+}
+
+.logo-sub{
+  color:var(--muted);
+  font-size:12px;
+  margin-top:4px;
+  text-transform:uppercase;
+  letter-spacing:1.5px;
+}
+
+.field{
+  margin-bottom:14px;
+}
+
+.field label{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+  margin-bottom:7px;
+}
+
+.field input,
+.field select,
+.field textarea{
+  width:100%;
+  border:1px solid var(--line);
+  background:#0c1014;
+  color:var(--text);
+  border-radius:12px;
+  padding:13px 14px;
+  outline:none;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus{
+  border-color:var(--gold);
+  box-shadow:0 0 0 2px rgba(212,175,55,.08);
+}
+
+.field textarea{
+  min-height:90px;
+  resize:vertical;
+}
+
+.btn{
+  border:0;
+  border-radius:12px;
+  padding:12px 15px;
+  font-weight:800;
+  transition:.15s;
+}
+
+.btn:active{
+  transform:scale(.97);
+}
+
+.btn-gold{
+  background:var(--gold);
+  color:#090b0e;
+}
+
+.btn-dark{
+  background:#1b2027;
+  color:var(--text);
+  border:1px solid var(--line);
+}
+
+.btn-danger{
+  background:rgba(239,83,80,.12);
+  color:#ff7773;
+  border:1px solid rgba(239,83,80,.25);
+}
+
+.btn-green{
+  background:rgba(53,199,122,.12);
+  color:#55d98d;
+  border:1px solid rgba(53,199,122,.25);
+}
+
+.btn-blue{
+  background:rgba(77,163,255,.12);
+  color:#69b1ff;
+  border:1px solid rgba(77,163,255,.25);
+}
+
+.btn-block{
+  width:100%;
+}
+
+.auth-actions{
+  display:grid;
+  gap:10px;
+  margin-top:18px;
+}
+
+#app{
+  min-height:100vh;
+  padding-bottom:84px;
+}
+
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:rgba(9,11,14,.94);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+  padding:12px 15px;
+}
+
+.topbar-inner{
+  max-width:900px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.brand-mark{
+  width:39px;
+  height:39px;
+  border:1px solid var(--gold);
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--gold);
+  font-weight:900;
+}
+
+.brand-name{
+  font-size:17px;
+  font-weight:900;
+  letter-spacing:1px;
+}
+
+.brand-name span{
+  color:var(--gold);
+}
+
+.brand-sub{
+  color:var(--muted);
+  font-size:9px;
+  letter-spacing:1px;
+}
+
+.top-actions{
+  display:flex;
+  gap:7px;
+}
+
+.icon-btn{
+  width:40px;
+  height:40px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:#11151a;
+  color:var(--text);
+}
+
+.main{
+  width:100%;
+  max-width:900px;
+  margin:auto;
+  padding:16px 14px 30px;
+}
+
+.page{
+  display:none;
+}
+
+.page.active{
+  display:block;
+}
+
+.page-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:15px;
+}
+
+.page-title{
+  font-size:24px;
+  font-weight:900;
+}
+
+.page-title small{
+  display:block;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:500;
+  margin-top:3px;
+}
+
+.search{
+  width:100%;
+  margin-bottom:15px;
+}
+
+.search input{
+  width:100%;
+  background:#101419;
+  border:1px solid var(--line);
+  color:var(--text);
+  border-radius:13px;
+  padding:13px 15px;
+  outline:none;
+}
+
+.dashboard-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  margin-bottom:18px;
+}
+
+.stat{
+  background:linear-gradient(145deg,#151a20,#101419);
+  border:1px solid var(--line);
+  border-radius:17px;
+  padding:15px;
+}
+
+.stat-label{
+  color:var(--muted);
+  font-size:11px;
+}
+
+.stat-value{
+  font-size:22px;
+  font-weight:900;
+  margin-top:7px;
+}
+
+.stat.gold .stat-value{
+  color:var(--gold2);
+}
+
+.stat.green .stat-value{
+  color:var(--green);
+}
+
+.stat.red .stat-value{
+  color:#ff7773;
+}
+
+.stat.blue .stat-value{
+  color:#69b1ff;
+}
+
+.module-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  margin:15px 0 20px;
+}
+
+.module{
+  min-height:110px;
+  border-radius:18px;
+  border:1px solid var(--line);
+  background:linear-gradient(145deg,#171c22,#101419);
+  padding:17px;
+  text-align:left;
+  color:var(--text);
+}
+
+.module-icon{
+  font-size:25px;
+  margin-bottom:9px;
+}
+
+.module-title{
+  font-weight:900;
+}
+
+.module-desc{
+  color:var(--muted);
+  font-size:10px;
+  margin-top:3px;
+}
+
+.card{
+  background:linear-gradient(145deg,#14191f,#101419);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:15px;
+  margin-bottom:12px;
+}
+
+.card-head{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:flex-start;
+}
+
+.card-title{
+  font-weight:900;
+  font-size:16px;
+}
+
+.card-sub{
+  color:var(--muted);
+  font-size:11px;
+  margin-top:4px;
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  border-radius:999px;
+  padding:5px 8px;
+  font-size:10px;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.badge-gold{
+  color:var(--gold2);
+  background:rgba(212,175,55,.11);
+  border:1px solid rgba(212,175,55,.2);
+}
+
+.badge-green{
+  color:#63dd96;
+  background:rgba(53,199,122,.1);
+  border:1px solid rgba(53,199,122,.2);
+}
+
+.badge-red{
+  color:#ff7773;
+  background:rgba(239,83,80,.1);
+  border:1px solid rgba(239,83,80,.2);
+}
+
+.badge-blue{
+  color:#69b1ff;
+  background:rgba(77,163,255,.1);
+  border:1px solid rgba(77,163,255,.2);
+}
+
+.progress-wrap{
+  margin-top:13px;
+}
+
+.progress-head{
+  display:flex;
+  justify-content:space-between;
+  font-size:11px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+
+.progress{
+  height:8px;
+  border-radius:99px;
+  overflow:hidden;
+  background:#252a31;
+}
+
+.progress-bar{
+  height:100%;
+  border-radius:99px;
+  background:linear-gradient(90deg,var(--gold),var(--gold2));
+  transition:.25s;
+}
+
+.card-info{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+  margin-top:13px;
+}
+
+.info{
+  background:#0c1014;
+  border:1px solid #20252c;
+  border-radius:11px;
+  padding:9px;
+}
+
+.info-label{
+  color:var(--muted);
+  font-size:9px;
+}
+
+.info-value{
+  font-size:12px;
+  font-weight:800;
+  margin-top:3px;
+}
+
+.actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-top:13px;
+}
+
+.actions .btn{
+  flex:1;
+  min-width:95px;
+  font-size:11px;
+}
+
+.empty{
+  text-align:center;
+  padding:35px 15px;
+  color:var(--muted);
+  border:1px dashed #2a3037;
+  border-radius:18px;
+}
+
+.empty-icon{
+  font-size:35px;
+  margin-bottom:10px;
+}
+
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  z-index:30;
+  height:72px;
+  padding:7px 8px calc(7px + env(safe-area-inset-bottom));
+  background:rgba(10,12,15,.97);
+  backdrop-filter:blur(15px);
+  border-top:1px solid var(--line);
+}
+
+.bottom-nav-inner{
+  max-width:600px;
+  margin:auto;
+  height:100%;
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+}
+
+.nav-btn{
+  border:0;
+  background:none;
+  color:#737b86;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  font-size:9px;
+  font-weight:700;
+}
+
+.nav-icon{
+  font-size:19px;
+}
+
+.nav-btn.active{
+  color:var(--gold2);
+}
+
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  background:rgba(0,0,0,.72);
+  backdrop-filter:blur(4px);
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  padding:0;
+}
+
+.modal-backdrop.show{
+  display:flex;
+}
+
+.modal{
+  width:100%;
+  max-width:700px;
+  max-height:92vh;
+  overflow:auto;
+  background:#11151a;
+  border:1px solid var(--line);
+  border-radius:24px 24px 0 0;
+  padding:18px 15px 28px;
+  box-shadow:0 -20px 70px rgba(0,0,0,.5);
+}
+
+.modal-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:18px;
+}
+
+.modal-title{
+  font-size:19px;
+  font-weight:900;
+}
+
+.close{
+  width:38px;
+  height:38px;
+  border-radius:11px;
+  border:1px solid var(--line);
+  background:#191e24;
+  color:var(--text);
+}
+
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+}
+
+.form-grid .full{
+  grid-column:1/-1;
+}
+
+.section-title{
+  margin:20px 0 10px;
+  font-size:14px;
+  font-weight:900;
+  color:var(--gold2);
+}
+
+.check-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:#0d1115;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:11px;
+  margin-bottom:7px;
+}
+
+.check-item input{
+  width:19px;
+  height:19px;
+  accent-color:var(--gold);
+}
+
+.check-item-main{
+  flex:1;
+}
+
+.check-item-name{
+  font-size:12px;
+  font-weight:800;
+}
+
+.check-item-meta{
+  color:var(--muted);
+  font-size:9px;
+  margin-top:3px;
+}
+
+.falta-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:11px;
+  background:#0d1115;
+  border:1px solid var(--line);
+  border-radius:12px;
+  margin-bottom:7px;
+}
+
+.falta-main{
+  flex:1;
+}
+
+.falta-name{
+  font-weight:800;
+  font-size:12px;
+}
+
+.falta-date{
+  color:var(--muted);
+  font-size:10px;
+  margin-top:3px;
+}
+
+.photo-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:7px;
+}
+
+.photo-grid img{
+  width:100%;
+  aspect-ratio:1;
+  object-fit:cover;
+  border-radius:10px;
+  border:1px solid var(--line);
+}
+
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:90px;
+  transform:translateX(-50%) translateY(20px);
+  z-index:300;
+  background:#f1f1f1;
+  color:#101010;
+  border-radius:12px;
+  padding:11px 15px;
+  font-size:12px;
+  font-weight:800;
+  opacity:0;
+  pointer-events:none;
+  transition:.2s;
+  max-width:90%;
+  text-align:center;
+}
+
+.toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+.loading{
+  position:fixed;
+  inset:0;
+  z-index:500;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#090b0e;
+  color:var(--gold2);
+  font-weight:900;
+  letter-spacing:1px;
+}
+
+.spinner{
+  width:28px;
+  height:28px;
+  border:3px solid #2a2e34;
+  border-top-color:var(--gold);
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+  margin:auto auto 12px;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+
+@media(min-width:700px){
+  .modal-backdrop{
+    align-items:center;
+    padding:20px;
+  }
+
+  .modal{
+    border-radius:24px;
+    max-height:90vh;
+  }
+
+  .dashboard-grid{
+    grid-template-columns:repeat(4,1fr);
+  }
+
+  .module-grid{
+    grid-template-columns:repeat(4,1fr);
+  }
+}
+
+@media(max-width:420px){
+  .form-grid{
+    grid-template-columns:1fr;
+  }
+
+  .form-grid .full{
+    grid-column:auto;
+  }
+
+  .card-info{
+    grid-template-columns:1fr 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div id="loading" class="loading">
+  <div style="text-align:center">
+    <div class="spinner"></div>
+    CARREGANDO EDIFIQ
+  </div>
+</div>
+
+<section id="auth" class="hidden">
+  <div class="auth-box">
+    <div class="logo">
+      <div class="logo-mark">Q</div>
+      <div class="logo-title">EDIFI<span>Q</span></div>
+      <div class="logo-sub">Construção Civil</div>
+    </div>
+
+    <div id="loginForm">
+      <div class="field">
+        <label>E-mail</label>
+        <input id="loginEmail" type="email" autocomplete="email" placeholder="seu@email.com">
+      </div>
+
+      <div class="field">
+        <label>Senha</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••">
+      </div>
+
+      <div class="auth-actions">
+        <button class="btn btn-gold btn-block" onclick="login()">ENTRAR</button>
+        <button class="btn btn-dark btn-block" onclick="showSignup()">CRIAR CONTA</button>
+        <button class="btn btn-dark btn-block" onclick="resetPassword()">ESQUECI A SENHA</button>
+      </div>
+    </div>
+
+    <div id="signupForm" class="hidden">
+      <div class="field">
+        <label>E-mail</label>
+        <input id="signupEmail" type="email" autocomplete="email" placeholder="seu@email.com">
+      </div>
+
+      <div class="field">
+        <label>Senha</label>
+        <input id="signupPassword" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+      </div>
+
+      <div class="auth-actions">
+        <button class="btn btn-gold btn-block" onclick="signup()">CRIAR CONTA</button>
+        <button class="btn btn-dark btn-block" onclick="showLogin()">VOLTAR</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="app" class="hidden">
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark">Q</div>
+      <div>
+        <div class="brand-name">EDIFI<span>Q</span></div>
+        <div class="brand-sub">CONSTRUÇÃO CIVIL</div>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button class="icon-btn" onclick="exportarExcel()" title="Exportar">📊</button>
+      <button class="icon-btn" onclick="logout()" title="Sair">↪</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+
+<section id="page-home" class="page active">
+  <div class="page-head">
+    <div class="page-title">
+      Painel
+      <small>Visão geral da sua operação</small>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="stat gold">
+      <div class="stat-label">Obras</div>
+      <div class="stat-value" id="dashObras">0</div>
+    </div>
+
+    <div class="stat blue">
+      <div class="stat-label">Funcionários</div>
+      <div class="stat-value" id="dashFuncs">0</div>
+    </div>
+
+    <div class="stat green">
+      <div class="stat-label">Recebido</div>
+      <div class="stat-value" id="dashRecebido">R$ 0</div>
+    </div>
+
+    <div class="stat red">
+      <div class="stat-label">Despesas</div>
+      <div class="stat-value" id="dashDespesas">R$ 0</div>
+    </div>
+  </div>
+
+  <div class="module-grid">
+    <button class="module" onclick="go('obras')">
+      <div class="module-icon">🏗️</div>
+      <div class="module-title">Obras</div>
+      <div class="module-desc">Projetos e checklist</div>
+    </button>
+
+    <button class="module" onclick="go('funcionarios')">
+      <div class="module-icon">👷</div>
+      <div class="module-title">Funcionários</div>
+      <div class="module-desc">Equipe e diárias</div>
+    </button>
+
+    <button class="module" onclick="go('financeiro')">
+      <div class="module-icon">💰</div>
+      <div class="module-title">Financeiro</div>
+      <div class="module-desc">Gastos e pagamentos</div>
+    </button>
+
+    <button class="module" onclick="go('relatorios')">
+      <div class="module-icon">📋</div>
+      <div class="module-title">Relatórios</div>
+      <div class="module-desc">Resumo da operação</div>
+    </button>
+  </div>
+
+  <div class="section-title">Obras em andamento</div>
+  <div id="homeObras"></div>
+
+  <div class="section-title">Atividades recentes</div>
+  <div id="recentes"></div>
+</section>
+
+<section id="page-obras" class="page">
+  <div class="page-head">
+    <div class="page-title">
+      Obras
+      <small>Controle completo dos seus projetos</small>
+    </div>
+
+    <button class="btn btn-gold" onclick="openObra()">＋ Obra</button>
+  </div>
+
+  <div class="search">
+    <input id="obraSearch" placeholder="🔎 Procurar obra..." oninput="renderObras()">
+  </div>
+
+  <div id="obrasList"></div>
+</section>
+
+<section id="page-funcionarios" class="page">
+  <div class="page-head">
+    <div class="page-title">
+      Funcionários
+      <small>Equipe, faltas e diárias</small>
+    </div>
+
+    <button class="btn btn-gold" onclick="openFunc()">＋ Funcionário</button>
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="stat green">
+      <div class="stat-label">Ativos</div>
+      <div class="stat-value" id="funcAtivos">0</div>
+    </div>
+
+    <div class="stat red">
+      <div class="stat-label">Inativos</div>
+      <div class="stat-value" id="funcInativos">0</div>
+    </div>
+
+    <div class="stat blue">
+      <div class="stat-label">Com diária</div>
+      <div class="stat-value" id="funcComDiaria">0</div>
+    </div>
+
+    <div class="stat gold">
+      <div class="stat-label">Sem diária</div>
+      <div class="stat-value" id="funcSemDiaria">0</div>
+    </div>
+  </div>
+
+  <div id="funcList"></div>
+</section>
+
+<section id="page-financeiro" class="page">
+  <div class="page-head">
+    <div class="page-title">
+      Financeiro
+      <small>Controle financeiro das obras</small>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="stat green">
+      <div class="stat-label">Receitas</div>
+      <div class="stat-value" id="finReceitas">R$ 0</div>
+    </div>
+
+    <div class="stat red">
+      <div class="stat-label">Despesas</div>
+      <div class="stat-value" id="finDespesas">R$ 0</div>
+    </div>
+
+    <div class="stat gold">
+      <div class="stat-label">Resultado</div>
+      <div class="stat-value" id="finResultado">R$ 0</div>
+    </div>
+
+    <div class="stat blue">
+      <div class="stat-label">A receber</div>
+      <div class="stat-value" id="finReceber">R$ 0</div>
+    </div>
+  </div>
+
+  <div class="section-title">Lançamentos recentes</div>
+  <div id="financeList"></div>
+</section>
+
+<section id="page-relatorios" class="page">
+  <div class="page-head">
+    <div class="page-title">
+      Relatórios
+      <small>Informações da gestão</small>
+    </div>
+  </div>
+
+  <div class="module-grid">
+    <button class="module" onclick="openPayroll()">
+      <div class="module-icon">💵</div>
+      <div class="module-title">Diárias</div>
+      <div class="module-desc">Folha de diárias</div>
+    </button>
+
+    <button class="module" onclick="openFaltas()">
+      <div class="module-icon">📅</div>
+      <div class="module-title">Faltas</div>
+      <div class="module-desc">Controle de faltas</div>
+    </button>
+
+    <button class="module" onclick="exportarExcel()">
+      <div class="module-icon">📊</div>
+      <div class="module-title">Excel</div>
+      <div class="module-desc">Exportar dados</div>
+    </button>
+
+    <button class="module" onclick="backupLocal()">
+      <div class="module-icon">💾</div>
+      <div class="module-title">Backup</div>
+      <div class="module-desc">Salvar dados</div>
+    </button>
+  </div>
+
+  <div class="section-title">Resumo</div>
+  <div id="relatorioResumo"></div>
+</section>
+
+</main>
+
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+
+    <button class="nav-btn active" data-page="home" onclick="go('home')">
+      <div class="nav-icon">⌂</div>
+      Início
+    </button>
+
+    <button class="nav-btn" data-page="obras" onclick="go('obras')">
+      <div class="nav-icon">🏗️</div>
+      Obras
+    </button>
+
+    <button class="nav-btn" data-page="funcionarios" onclick="go('funcionarios')">
+      <div class="nav-icon">👷</div>
+      Equipe
+    </button>
+
+    <button class="nav-btn" data-page="financeiro" onclick="go('financeiro')">
+      <div class="nav-icon">💰</div>
+      Financeiro
+    </button>
+
+    <button class="nav-btn" data-page="relatorios" onclick="go('relatorios')">
+      <div class="nav-icon">📋</div>
+      Relatórios
+    </button>
+
+  </div>
+</nav>
+
+</section>
+
+<div id="modalBackdrop" class="modal-backdrop" onclick="closeModalOutside(event)">
+  <div id="modal" class="modal"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
 <script>
 const SUPA_URL="https://lwqntzwajjgkvtynwdjg.supabase.co";
 const SUPA_KEY="sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
@@ -6,5349 +1121,2246 @@ let sb=null;
 let user=null;
 let editObraId=null;
 let editFuncId=null;
+let editDiaId=null;
+let editGastoId=null;
+let editPagId=null;
+let currentObraId=null;
 
 const D={
-obras:[],
-funcionarios:[],
-diarias:[],
-gastos:[],
-pagamentos:[],
-checklist:[]
+  obras:[],
+  funcionarios:[],
+  diarias:[],
+  gastos:[],
+  pagamentos:[],
+  checklist:[],
+  faltas:[]
 };
 
-const LOCAL_KEY="edifiq_local_v3";
-const FUNC_OBRA_KEY="edifiq_func_obras_v2";
+const LOCAL_KEY="edifiq_local_v4";
+const FUNC_OBRA_KEY="edifiq_func_obras_v3";
 const ADV_KEY="edifiq_adiantamentos_aplicados_v1";
-
-/* =========================================================
-   BANCO LOCAL DE FOTOS
-   IndexedDB substitui localStorage para imagens.
-   ========================================================= */
 
 const PHOTO_DB="EDIFIQ_FOTOS_DB";
 const PHOTO_STORE="fotos";
 const PHOTO_DB_VERSION=1;
 
-function openPhotoDB(){
-
-return new Promise((resolve,reject)=>{
-
-const request=indexedDB.open(
-PHOTO_DB,
-PHOTO_DB_VERSION
-);
-
-request.onupgradeneeded=e=>{
-
-const db=e.target.result;
-
-if(!db.objectStoreNames.contains(PHOTO_STORE)){
-
-const store=db.createObjectStore(
-PHOTO_STORE,
-{keyPath:"id"}
-);
-
-store.createIndex(
-"obra_id",
-"obra_id",
-{unique:false}
-);
-
-store.createIndex(
-"data",
-"data",
-{unique:false}
-);
-
+function $(id){
+  return document.getElementById(id);
 }
-
-};
-
-request.onsuccess=()=>{
-resolve(request.result);
-};
-
-request.onerror=()=>{
-reject(request.error);
-};
-
-});
-
-}
-
-async function savePhotoDB(foto){
-
-const db=await openPhotoDB();
-
-return new Promise((resolve,reject)=>{
-
-const tx=db.transaction(
-PHOTO_STORE,
-"readwrite"
-);
-
-tx.objectStore(PHOTO_STORE)
-.put(foto);
-
-tx.oncomplete=()=>{
-db.close();
-resolve(foto);
-};
-
-tx.onerror=()=>{
-db.close();
-reject(tx.error);
-};
-
-});
-
-}
-
-async function getAllPhotosDB(){
-
-const db=await openPhotoDB();
-
-return new Promise((resolve,reject)=>{
-
-const tx=db.transaction(
-PHOTO_STORE,
-"readonly"
-);
-
-const request=
-tx.objectStore(PHOTO_STORE).getAll();
-
-request.onsuccess=()=>{
-
-const data=request.result||[];
-
-data.sort((a,b)=>
-String(b.created_at||"")
-.localeCompare(
-String(a.created_at||"")
-)
-);
-
-db.close();
-
-resolve(data);
-
-};
-
-request.onerror=()=>{
-
-db.close();
-
-reject(request.error);
-
-};
-
-});
-
-}
-
-async function getPhotosByObraDB(obraId){
-
-const db=await openPhotoDB();
-
-return new Promise((resolve,reject)=>{
-
-const tx=db.transaction(
-PHOTO_STORE,
-"readonly"
-);
-
-const index=
-tx.objectStore(PHOTO_STORE)
-.index("obra_id");
-
-const request=
-index.getAll(String(obraId));
-
-request.onsuccess=()=>{
-
-const data=request.result||[];
-
-data.sort((a,b)=>
-String(b.created_at||"")
-.localeCompare(
-String(a.created_at||"")
-)
-);
-
-db.close();
-
-resolve(data);
-
-};
-
-request.onerror=()=>{
-
-db.close();
-
-reject(request.error);
-
-};
-
-});
-
-}
-
-async function deletePhotoDB(id){
-
-const db=await openPhotoDB();
-
-return new Promise((resolve,reject)=>{
-
-const tx=db.transaction(
-PHOTO_STORE,
-"readwrite"
-);
-
-tx.objectStore(PHOTO_STORE)
-.delete(id);
-
-tx.oncomplete=()=>{
-db.close();
-resolve();
-};
-
-tx.onerror=()=>{
-db.close();
-reject(tx.error);
-};
-
-});
-
-}
-
-async function clearPhotosDB(){
-
-const db=await openPhotoDB();
-
-return new Promise((resolve,reject)=>{
-
-const tx=db.transaction(
-PHOTO_STORE,
-"readwrite"
-);
-
-tx.objectStore(PHOTO_STORE)
-.clear();
-
-tx.oncomplete=()=>{
-db.close();
-resolve();
-};
-
-tx.onerror=()=>{
-db.close();
-reject(tx.error);
-};
-
-});
-
-}
-
-function fileToDataURL(file){
-
-return new Promise((resolve,reject)=>{
-
-const reader=new FileReader();
-
-reader.onload=()=>{
-resolve(reader.result);
-};
-
-reader.onerror=()=>{
-reject(reader.error);
-};
-
-reader.readAsDataURL(file);
-
-});
-
-}
-
-
-/* =========================================================
-   UTILIDADES
-   ========================================================= */
-
-const $=id=>document.getElementById(id);
 
 function esc(v){
-return String(v??"")
-.replace(/&/g,"&amp;")
-.replace(/</g,"&lt;")
-.replace(/>/g,"&gt;")
-.replace(/"/g,"&quot;")
-.replace(/'/g,"&#039;");
+  return String(v??"")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
 }
 
 function money(v){
-return Number(v||0).toLocaleString("pt-BR",{
-style:"currency",
-currency:"BRL"
-});
+  return Number(v||0).toLocaleString("pt-BR",{
+    style:"currency",
+    currency:"BRL"
+  });
+}
+
+function num(v){
+  if(v===null||v===undefined||v==="") return 0;
+  if(typeof v==="number") return v;
+  let s=String(v).replace(/[R$\s]/g,"").replace(/\./g,"").replace(",",".");
+  let n=parseFloat(s);
+  return isNaN(n)?0:n;
 }
 
 function today(){
-
-const d=new Date();
-
-const y=d.getFullYear();
-
-const m=String(
-d.getMonth()+1
-).padStart(2,"0");
-
-const day=String(
-d.getDate()
-).padStart(2,"0");
-
-return `${y}-${m}-${day}`;
-
+  return new Date().toISOString().slice(0,10);
 }
 
 function toast(msg){
-
-const t=$("toast");
-
-if(!t)return;
-
-t.textContent=msg;
-
-t.classList.add("show");
-
-clearTimeout(
-window.__toastTimer
-);
-
-window.__toastTimer=setTimeout(()=>{
-t.classList.remove("show");
-},3000);
-
+  const t=$("toast");
+  if(!t)return;
+  t.textContent=msg;
+  t.classList.add("show");
+  clearTimeout(window.__toast);
+  window.__toast=setTimeout(()=>t.classList.remove("show"),2600);
 }
 
 function localData(){
-
-try{
-
-return JSON.parse(
-localStorage.getItem(
-LOCAL_KEY
-)||"{}"
-);
-
-}catch{
-
-return {};
-
-}
-
+  try{
+    const raw=localStorage.getItem(LOCAL_KEY);
+    if(!raw)return null;
+    return JSON.parse(raw);
+  }catch(e){
+    console.error(e);
+    return null;
+  }
 }
 
 function saveLocalData(){
-
-try{
-
-localStorage.setItem(
-LOCAL_KEY,
-JSON.stringify({
-obras:D.obras,
-funcionarios:D.funcionarios,
-diarias:D.diarias,
-gastos:D.gastos,
-pagamentos:D.pagamentos,
-checklist:D.checklist
-})
-);
-
-}catch(e){
-
-console.warn(
-"Falha no armazenamento local",
-e
-);
-
-}
-
+  try{
+    localStorage.setItem(LOCAL_KEY,JSON.stringify(D));
+  }catch(e){
+    console.error("Erro ao salvar local:",e);
+  }
 }
 
 function localFuncObras(){
-
-try{
-
-return JSON.parse(
-localStorage.getItem(
-FUNC_OBRA_KEY
-)||"{}"
-);
-
-}catch{
-
-return {};
-
-}
-
+  try{
+    return JSON.parse(localStorage.getItem(FUNC_OBRA_KEY)||"{}");
+  }catch(e){
+    return {};
+  }
 }
 
 function setFuncObra(funcId,obraId){
-
-const x=localFuncObras();
-
-x[funcId]=obraId||"";
-
-localStorage.setItem(
-FUNC_OBRA_KEY,
-JSON.stringify(x)
-);
-
+  const x=localFuncObras();
+  if(obraId) x[String(funcId)]=String(obraId);
+  else delete x[String(funcId)];
+  localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(x));
 }
 
 function getFuncObra(funcId){
-
-const f=D.funcionarios.find(
-x=>String(x.id)===String(funcId)
-);
-
-if(f?.obra_id){
-return f.obra_id;
+  const f=D.funcionarios.find(x=>String(x.id)===String(funcId));
+  if(f?.obra_id) return String(f.obra_id);
+  return localFuncObras()[String(funcId)]||"";
 }
 
-return localFuncObras()[funcId]||"";
-
+function showLogin(){
+  $("loginForm").classList.remove("hidden");
+  $("signupForm").classList.add("hidden");
 }
 
-
-/* =========================================================
-   ADIANTAMENTOS
-   ========================================================= */
-
-function getAdvanceApplied(){
-
-try{
-
-return JSON.parse(
-localStorage.getItem(
-ADV_KEY
-)||"{}"
-);
-
-}catch{
-
-return {};
-
+function showSignup(){
+  $("loginForm").classList.add("hidden");
+  $("signupForm").classList.remove("hidden");
 }
 
+async function init(){
+  try{
+    if(window.supabase){
+      sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+
+      const {data}=await sb.auth.getSession();
+
+      if(data?.session){
+        user=data.session.user;
+        await enterApp();
+      }else{
+        showAuth();
+      }
+
+      sb.auth.onAuthStateChange(async(event,session)=>{
+        if(session && !user){
+          user=session.user;
+          await enterApp();
+        }
+      });
+    }else{
+      showAuth();
+    }
+  }catch(e){
+    console.error(e);
+    loadLocal();
+    showAuth();
+    toast("Modo local ativado");
+  }finally{
+    setTimeout(()=>$("loading")?.classList.add("hidden"),300);
+  }
 }
 
-function saveAdvanceApplied(data){
-
-try{
-
-localStorage.setItem(
-ADV_KEY,
-JSON.stringify(data)
-);
-
-}catch(e){
-
-console.warn(
-"Erro nos adiantamentos",
-e
-);
-
+function showAuth(){
+  $("auth").classList.remove("hidden");
+  $("app").classList.add("hidden");
 }
 
+async function enterApp(){
+  $("auth").classList.add("hidden");
+  $("app").classList.remove("hidden");
+
+  loadLocal();
+
+  if(sb && user){
+    await loadCloud();
+  }
+
+  renderAll();
 }
 
-function normalize(v){
-
-return String(v||"")
-.toLowerCase()
-.normalize("NFD")
-.replace(/[\u0300-\u036f]/g,"")
-.trim();
-
-}
-
-function gastoCategoria(g){
-
-if(g?.categoria){
-
-const c=normalize(
-g.categoria
-);
-
-if(c.includes("material"))
-return "Material";
-
-if(c.includes("mao"))
-return "Mão de obra";
-
-if(c.includes("terceir"))
-return "Serviço terceirizado";
-
-if(c.includes("adiant"))
-return "Adiantamento";
-
-if(c.includes("outro"))
-return "Outros";
-
-}
-
-const desc=normalize(
-g?.descricao
-);
-
-if(
-desc.includes("[material]")||
-desc.includes("material")
-){
-return "Material";
-}
-
-if(
-desc.includes("[mao de obra]")||
-desc.includes("pagamento de equipe")||
-desc.includes("pagamento de diaria")||
-desc.includes("pagamento de diária")
-){
-return "Mão de obra";
-}
-
-if(
-desc.includes("[servico terceirizado]")||
-desc.includes("servico terceirizado")
-){
-return "Serviço terceirizado";
-}
-
-if(
-desc.includes("[adiantamento]")||
-desc.includes("adiantamento")
-){
-return "Adiantamento";
-}
-
-return "Outros";
-
-}
-
-function categoriaFinanceira(g){
-
-const c=gastoCategoria(g);
-
-return c==="Adiantamento"
-?"Mão de obra"
-:c;
-
-}
-
-function diariaValor(d){
-
-return Number(
-d.qtd ??
-d.quantidade ??
-1
-)*Number(
-d.valor_diaria||0
-);
-
-}
-
-function getPendingDiarias(funcId){
-
-return D.diarias.filter(d=>
-String(d.funcionario_id)===
-String(funcId)&&
-String(
-d.status||"pendente"
-).toLowerCase()!=="pago"
-);
-
-}
-
-function getPendingTotal(funcId){
-
-return getPendingDiarias(funcId)
-.reduce(
-(a,d)=>a+diariaValor(d),
-0
-);
-
-}
-
-function getEmployeeAdvances(funcId){
-
-const f=D.funcionarios.find(
-x=>String(x.id)===
-String(funcId)
-);
-
-if(!f)return[];
-
-const nome=normalize(f.nome);
-
-const applied=getAdvanceApplied();
-
-return D.gastos
-.filter(g=>{
-
-if(
-gastoCategoria(g)!=="Adiantamento"
-){
-return false;
-}
-
-const fornecedor=
-normalize(g.fornecedor);
-
-const descricao=
-normalize(g.descricao);
-
-return fornecedor===nome||
-descricao.includes(nome);
-
-})
-.map(g=>{
-
-const valor=Number(g.valor||0);
-
-const usado=
-Number(applied[g.id]||0);
-
-const disponivel=
-Math.max(
-0,
-valor-usado
-);
-
-return{
-...g,
-valorOriginal:valor,
-aplicado:usado,
-disponivel
-};
-
-})
-.filter(g=>g.disponivel>0)
-.sort((a,b)=>
-String(a.data||"")
-.localeCompare(
-String(b.data||"")
-)
-);
-
-}
-
-function calcFuncionarioPagamento(funcId){
-
-const pending=
-getPendingTotal(funcId);
-
-const advances=
-getEmployeeAdvances(funcId);
-
-let restante=pending;
-let abatido=0;
-
-const allocations=[];
-
-for(const adv of advances){
-
-if(restante<=0)break;
-
-const usar=Math.min(
-restante,
-Number(adv.disponivel||0)
-);
-
-if(usar>0){
-
-allocations.push({
-id:adv.id,
-valor:usar
-});
-
-abatido+=usar;
-restante-=usar;
-
-}
-
-}
-
-return{
-pending,
-advance:abatido,
-net:Math.max(0,restante),
-allocations,
-advances
-};
-
-}
-
-function aplicarAdiantamentos(
-funcId,
-allocations
-){
-
-if(!allocations?.length)return;
-
-const data=
-getAdvanceApplied();
-
-allocations.forEach(a=>{
-
-data[a.id]=
-Number(data[a.id]||0)+
-Number(a.valor||0);
-
-});
-
-saveAdvanceApplied(data);
-
-}
-
-
-/* =========================================================
-   NAVEGAÇÃO
-   ========================================================= */
-
-function go(page){
-
-document.querySelectorAll(
-".page"
-).forEach(p=>{
-p.classList.remove("active");
-});
-
-const target=$(page);
-
-if(target)
-target.classList.add("active");
-
-document.querySelectorAll(
-".nav"
-).forEach(btn=>{
-btn.classList.toggle(
-"active",
-btn.dataset.p===page
-);
-});
-
-renderAll();
-
-window.scrollTo({
-top:0,
-behavior:"smooth"
-});
-
-}
-
-
-/* =========================================================
-   MODAIS
-   ========================================================= */
-
-function openM(id){
-
-const el=$(id);
-
-if(el)
-el.classList.add("open");
-
-}
-
-function closeM(id){
-
-const el=$(id);
-
-if(el)
-el.classList.remove("open");
-
-}
-
-
-/* =========================================================
-   AUTENTICAÇÃO
-   ========================================================= */
-
-function authMsg(msg){
-
-if($("authMsg"))
-$("authMsg").textContent=msg;
-
-}
-
-async function initSupabase(){
-
-if(!window.supabase){
-
-authMsg(
-"Não foi possível carregar o sistema. Verifique sua internet."
-);
-
-return false;
-
-}
-
-sb=
-window.supabase.createClient(
-SUPA_URL,
-SUPA_KEY
-);
-
-sb.auth.onAuthStateChange(
-async(event,session)=>{
-
-user=session?.user||null;
-
-if(user){
-
-$("auth")
-.classList.add("hidden");
-
-$("app")
-.classList.remove("hidden");
-
-await loadCloud();
-
-renderAll();
-
-}else{
-
-$("auth")
-.classList.remove("hidden");
-
-$("app")
-.classList.add("hidden");
-
-}
-
-});
-
-const{data}=await sb.auth.getSession();
-
-if(data?.session){
-
-user=data.session.user;
-
-$("auth")
-.classList.add("hidden");
-
-$("app")
-.classList.remove("hidden");
-
-await loadCloud();
-
-renderAll();
-
-}
-
-return true;
-
-}
-
-async function login(){
-
-if(!sb){
-
-authMsg(
-"Sistema ainda carregando. Aguarde."
-);
-
-return;
-
-}
-
-const email=
-$("email").value.trim();
-
-const password=
-$("password").value;
-
-if(!email||!password){
-
-authMsg(
-"Informe e-mail e senha."
-);
-
-return;
-
-}
-
-authMsg("Entrando...");
-
-const{error}=
-await sb.auth.signInWithPassword({
-email,
-password
-});
-
-if(error)
-authMsg(error.message);
-else
-authMsg("");
-
-}
-
-async function signup(){
-
-if(!sb){
-
-authMsg(
-"Sistema ainda carregando."
-);
-
-return;
-
-}
-
-const email=
-$("email").value.trim();
-
-const password=
-$("password").value;
-
-if(!email||!password){
-
-authMsg(
-"Informe e-mail e senha."
-);
-
-return;
-
-}
-
-if(password.length<6){
-
-authMsg(
-"A senha deve ter pelo menos 6 caracteres."
-);
-
-return;
-
-}
-
-authMsg("Criando conta...");
-
-const{error}=
-await sb.auth.signUp({
-email,
-password
-});
-
-if(error)
-authMsg(error.message);
-else
-authMsg(
-"Conta criada. Verifique seu e-mail se necessário."
-);
-
-}
-
-async function resetPassword(){
-
-if(!sb)return;
-
-const email=
-$("email").value.trim();
-
-if(!email){
-
-authMsg(
-"Informe seu e-mail."
-);
-
-return;
-
-}
-
-const{error}=
-await sb.auth.resetPasswordForEmail(
-email,
-{
-redirectTo:location.origin
-}
-);
-
-if(error)
-authMsg(error.message);
-else
-authMsg(
-"Link de redefinição enviado."
-);
-
-}
-
-async function logout(){
-
-if(sb)
-await sb.auth.signOut();
-
-user=null;
-
-}
-
-
-/* =========================================================
-   BANCO
-   ========================================================= */
-
-function mergeLocal(){
-
-const x=localData();
-
-Object.keys(D).forEach(table=>{
-
-if(!Array.isArray(x[table]))
-return;
-
-D[table]=[
-...D[table],
-...x[table].filter(l=>
-!D[table].some(
-r=>String(r.id)===
-String(l.id)
-)
-)
-];
-
-});
-
-}
-
-async function loadTable(table){
-
-if(!sb||!user)return;
-
-try{
-
-const{data,error}=
-await sb
-.from(table)
-.select("*");
-
-if(!error&&Array.isArray(data)){
-
-data.sort((a,b)=>
-String(
-b.created_at||b.data||""
-)
-.localeCompare(
-String(
-a.created_at||a.data||""
-)
-)
-);
-
-D[table]=data;
-
-return;
-
-}
-
-console.warn(
-"EDIFIQ",
-table,
-error?.message
-);
-
-}catch(e){
-
-console.warn(
-"Erro carregando",
-table,
-e
-);
-
-}
-
-D[table]=[];
-
+function loadLocal(){
+  const x=localData();
+  if(!x)return;
+
+  Object.keys(D).forEach(k=>{
+    if(Array.isArray(x[k])) D[k]=x[k];
+  });
 }
 
 async function loadCloud(){
+  const tables=[
+    "obras",
+    "funcionarios",
+    "diarias",
+    "gastos",
+    "pagamentos",
+    "checklist",
+    "faltas"
+  ];
 
-if(!sb||!user)return;
+  for(const table of tables){
+    try{
+      let q=sb.from(table).select("*");
 
-for(const table of[
-"obras",
-"funcionarios",
-"diarias",
-"gastos",
-"pagamentos",
-"checklist"
-]){
+      if(user?.id){
+        q=q.eq("user_id",user.id);
+      }
 
-await loadTable(table);
+      const {data,error}=await q;
 
+      if(!error && Array.isArray(data)){
+        D[table]=data;
+      }
+    }catch(e){
+      console.warn("Tabela",table,e);
+    }
+  }
+
+  saveLocalData();
 }
 
-mergeLocal();
+async function insertRow(table,row){
+  row={...row};
 
-fillSelectors();
+  if(user?.id && !row.user_id){
+    row.user_id=user.id;
+  }
 
+  if(sb && user){
+    try{
+      const {data,error}=await sb
+        .from(table)
+        .insert(row)
+        .select()
+        .single();
+
+      if(!error && data){
+        return data;
+      }
+
+      console.warn("Supabase insert",table,error);
+    }catch(e){
+      console.warn(e);
+    }
+  }
+
+  const local={
+    ...row,
+    id:row.id||crypto.randomUUID?.()||String(Date.now()+Math.random()),
+    created_at:row.created_at||new Date().toISOString()
+  };
+
+  if(!Array.isArray(D[table]))D[table]=[];
+  D[table].push(local);
+  saveLocalData();
+  return local;
 }
 
-async function insertRow(
-table,
-row
-){
+async function updateRow(table,id,patch){
+  if(sb && user){
+    try{
+      const {data,error}=await sb
+        .from(table)
+        .update(patch)
+        .eq("id",id)
+        .select()
+        .single();
 
-if(!user){
+      if(!error && data){
+        const i=D[table].findIndex(x=>String(x.id)===String(id));
+        if(i>=0)D[table][i]=data;
+        saveLocalData();
+        return data;
+      }
 
-toast(
-"Faça login primeiro."
-);
+      console.warn("Supabase update",table,error);
+    }catch(e){
+      console.warn(e);
+    }
+  }
 
-return null;
+  const i=D[table].findIndex(x=>String(x.id)===String(id));
 
+  if(i>=0){
+    D[table][i]={...D[table][i],...patch};
+  }
+
+  saveLocalData();
+  return D[table][i];
 }
 
-const payload={
-...row,
-user_id:user.id
-};
+async function removeRow(table,id){
+  if(sb && user){
+    try{
+      const {error}=await sb
+        .from(table)
+        .delete()
+        .eq("id",id);
 
-const attempts=[
-payload
-];
+      if(!error){
+        D[table]=D[table].filter(x=>String(x.id)!==String(id));
+        saveLocalData();
+        return true;
+      }
 
-if(table==="gastos"){
+      console.warn("Supabase delete",table,error);
+    }catch(e){
+      console.warn(e);
+    }
+  }
 
-attempts.push(
-Object.fromEntries(
-Object.entries(payload)
-.filter(
-([k])=>k!=="categoria"
-)
-)
-);
-
+  D[table]=D[table].filter(x=>String(x.id)!==String(id));
+  saveLocalData();
+  return true;
 }
 
-if(table==="pagamentos"){
+function go(page){
+  document.querySelectorAll(".page").forEach(p=>{
+    p.classList.remove("active");
+  });
 
-attempts.push(
-Object.fromEntries(
-Object.entries(payload)
-.filter(
-([k])=>k!=="forma_pagamento"
-)
-)
-);
+  const p=$("page-"+page);
+  if(p)p.classList.add("active");
 
+  document.querySelectorAll(".nav-btn").forEach(b=>{
+    b.classList.toggle("active",b.dataset.page===page);
+  });
+
+  renderAll();
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 
-if(table==="funcionarios"){
-
-attempts.push(
-Object.fromEntries(
-Object.entries(payload)
-.filter(
-([k])=>k!=="registrar_diaria"
-)
-)
-);
-
+function renderAll(){
+  renderDashboard();
+  renderObras();
+  renderFuncs();
+  renderFinance();
+  renderReports();
 }
 
-for(const tentativa of attempts){
+function renderDashboard(){
+  $("dashObras").textContent=D.obras.length;
+  $("dashFuncs").textContent=D.funcionarios.filter(f=>f.ativo!==false).length;
 
-try{
+  const receitas=D.pagamentos.reduce((s,x)=>s+num(x.valor),0);
+  const despesas=
+    D.gastos.reduce((s,x)=>s+num(x.valor),0)+
+    D.diarias.reduce((s,x)=>s+num(x.valor||x.total),0);
 
-const{data,error}=
-await sb
-.from(table)
-.insert(tentativa)
-.select()
-.single();
+  $("dashRecebido").textContent=money(receitas);
+  $("dashDespesas").textContent=money(despesas);
 
-if(!error&&data){
+  const obras=D.obras.filter(o=>{
+    const status=String(o.status||"").toLowerCase();
+    return status!=="concluida" &&
+           status!=="concluído" &&
+           status!=="concluída" &&
+           status!=="cancelada";
+  }).slice(0,5);
 
-D[table].unshift(data);
+  $("homeObras").innerHTML=obras.length
+    ? obras.map(obraCardMini).join("")
+    : `<div class="empty">
+        <div class="empty-icon">🏗️</div>
+        Nenhuma obra cadastrada.
+      </div>`;
 
-saveLocalData();
+  const atividades=[];
 
-renderAll();
+  D.diarias.slice(-5).forEach(x=>{
+    const f=D.funcionarios.find(f=>String(f.id)===String(x.funcionario_id));
+    atividades.push({
+      date:x.data||x.created_at,
+      text:`Diária registrada — ${f?.nome||"Funcionário"}`
+    });
+  });
 
-return data;
+  D.faltas.slice(-5).forEach(x=>{
+    const f=D.funcionarios.find(f=>String(f.id)===String(x.funcionario_id));
+    atividades.push({
+      date:x.data||x.created_at,
+      text:`Falta registrada — ${f?.nome||"Funcionário"}`
+    });
+  });
 
+  D.gastos.slice(-5).forEach(x=>{
+    atividades.push({
+      date:x.data||x.created_at,
+      text:`Despesa registrada — ${money(x.valor)}`
+    });
+  });
+
+  atividades.sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+
+  $("recentes").innerHTML=atividades.length
+    ? atividades.slice(0,6).map(a=>`
+      <div class="card">
+        <div class="card-sub">${esc(formatDate(a.date))}</div>
+        <div style="font-weight:800;margin-top:4px">${esc(a.text)}</div>
+      </div>
+    `).join("")
+    : `<div class="empty">
+        Nenhuma atividade recente.
+      </div>`;
 }
 
-console.warn(
-"Supabase recusou",
-table,
-error?.message
-);
-
-}catch(e){
-
-console.warn(
-"Erro Supabase",
-table,
-e
-);
-
-}
-
-}
-
-const localRow={
-...row,
-id:
-"local_"+Date.now()+"_"+
-Math.random()
-.toString(36)
-.slice(2),
-user_id:user.id,
-created_at:
-new Date().toISOString()
-};
-
-D[table].unshift(localRow);
-
-saveLocalData();
-
-renderAll();
-
-toast(
-"Salvo neste aparelho. O servidor recusou a gravação."
-);
-
-return localRow;
-
-}
-
-async function updateRow(
-table,
-id,
-row
-){
-
-if(String(id).startsWith("local_")){
-
-const i=D[table].findIndex(
-x=>String(x.id)===
-String(id)
-);
-
-if(i>=0){
-
-D[table][i]={
-...D[table][i],
-...row
-};
-
-saveLocalData();
-
-renderAll();
-
-toast("Atualizado.");
-
-return D[table][i];
-
-}
-
-return null;
-
-}
-
-try{
-
-const{data,error}=
-await sb
-.from(table)
-.update(row)
-.eq("id",id)
-.select()
-.single();
-
-if(!error&&data){
-
-const i=D[table].findIndex(
-x=>String(x.id)===
-String(id)
-);
-
-if(i>=0)
-D[table][i]=data;
-
-saveLocalData();
-
-renderAll();
-
-return data;
-
-}
-
-console.warn(
-"Erro atualização",
-error?.message
-);
-
-}catch(e){
-
-console.warn(e);
-
-}
-
-toast(
-"Não foi possível atualizar no servidor."
-);
-
-return null;
-
-}
-
-async function removeRow(
-table,
-id
-){
-
-if(!confirm(
-"Deseja realmente excluir?"
-))
-return;
-
-if(String(id).startsWith("local_")){
-
-D[table]=D[table].filter(
-x=>String(x.id)!==
-String(id)
-);
-
-saveLocalData();
-
-renderAll();
-
-toast(
-"Excluído com sucesso."
-);
-
-return;
-
-}
-
-try{
-
-const{error}=await sb
-.from(table)
-.delete()
-.eq("id",id);
-
-if(error){
-
-toast(
-"Erro ao excluir: "+
-error.message
-);
-
-return;
-
-}
-
-D[table]=D[table].filter(
-x=>String(x.id)!==
-String(id)
-);
-
-saveLocalData();
-
-renderAll();
-
-toast(
-"Excluído com sucesso."
-);
-
-}catch(e){
-
-toast(
-"Erro ao excluir."
-);
-
-}
-
-}
-
-
-/* =========================================================
-   OBRAS
-   ========================================================= */
-
-function openObra(id=null){
-
-editObraId=id;
-
-const o=D.obras.find(
-x=>String(x.id)===
-String(id)
-);
-
-$("obraTitle").textContent=
-id?"Editar obra":"Nova obra";
-
-$("oNome").value=o?.nome||"";
-$("oCli").value=o?.cliente||"";
-$("oLoc").value=o?.endereco||"";
-$("oVal").value=o?.valor??"";
-$("oStatus").value=
-o?.status||"em_andamento";
-$("oIni").value=
-o?.data_inicio||"";
-$("oFim").value=
-o?.data_fim||"";
-$("oTipo").value=
-o?.tipo_servico||"";
-$("oObs").value=
-o?.observacoes||"";
-
-openM("obraM");
-
-}
-
-async function saveObra(e){
-
-e.preventDefault();
-
-const nome=
-$("oNome").value.trim();
-
-if(!nome){
-
-toast(
-"Informe o nome da obra."
-);
-
-return;
-
-}
-
-const row={
-nome,
-cliente:
-$("oCli").value.trim(),
-endereco:
-$("oLoc").value.trim(),
-valor:
-Number($("oVal").value||0),
-status:
-$("oStatus").value,
-data_inicio:
-$("oIni").value||null,
-data_fim:
-$("oFim").value||null,
-tipo_servico:
-$("oTipo").value.trim(),
-observacoes:
-$("oObs").value.trim()
-};
-
-let result=null;
-
-if(editObraId){
-
-result=await updateRow(
-"obras",
-editObraId,
-row
-);
-
-}else{
-
-result=await insertRow(
-"obras",
-row
-);
-
-}
-
-if(result){
-
-closeM("obraM");
-
-toast(
-editObraId
-?"Obra atualizada."
-:"Obra criada com sucesso."
-);
-
-editObraId=null;
-
-}
-
-}
-
-function statusLabel(s){
-
-return({
-em_andamento:"Em andamento",
-planejada:"Planejada",
-concluida:"Concluída",
-pausada:"Pausada"
-})[s]||s||"—";
-
+function formatDate(v){
+  if(!v)return "—";
+  const d=new Date(v+"T00:00:00");
+  if(isNaN(d))return String(v);
+  return d.toLocaleDateString("pt-BR");
 }
 
 function obraProgress(obra){
+  const arr=D.checklist.filter(x=>String(x.obra_id)===String(obra.id));
 
-const itens=
-D.checklist.filter(
-x=>String(x.obra_id)===
-String(obra.id)
-);
+  if(!arr.length){
+    return Number(obra.progresso||0);
+  }
 
-if(!itens.length){
+  const done=arr.filter(x=>
+    x.concluida===true ||
+    x.concluido===true ||
+    x.status==="concluido" ||
+    x.status==="concluida"
+  ).length;
 
-return obra.status==="concluida"
-?100
-:0;
-
+  return Math.round(done/arr.length*100);
 }
 
-const done=
-itens.filter(x=>
-x.concluida===true||
-x.concluido===true||
-x.status==="concluido"
-).length;
+function obraCardMini(o){
+  const p=obraProgress(o);
 
-return Math.round(
-done/itens.length*100
-);
+  return `
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">${esc(o.nome||"Obra sem nome")}</div>
+        <div class="card-sub">${esc(o.endereco||"")}</div>
+      </div>
+      <span class="badge badge-gold">${p}%</span>
+    </div>
 
-}
-
-
-/* =========================================================
-   FINANCEIRO DA OBRA
-   ========================================================= */
-
-function obraFinanceData(obraId){
-
-const obra=D.obras.find(
-o=>String(o.id)===
-String(obraId)
-);
-
-const contrato=
-Number(obra?.valor||0);
-
-const receita=
-D.pagamentos
-.filter(x=>
-String(x.obra_id)===
-String(obraId)
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const gastos=
-D.gastos.filter(
-x=>String(x.obra_id)===
-String(obraId)
-);
-
-const material=
-gastos
-.filter(
-x=>categoriaFinanceira(x)==="Material"
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const mao=
-gastos
-.filter(
-x=>categoriaFinanceira(x)==="Mão de obra"
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const terceirizado=
-gastos
-.filter(
-x=>categoriaFinanceira(x)==="Serviço terceirizado"
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const outros=
-gastos
-.filter(
-x=>categoriaFinanceira(x)==="Outros"
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const despesas=
-material+
-mao+
-terceirizado+
-outros;
-
-const resultado=
-receita-despesas;
-
-const saldoContrato=
-contrato-despesas;
-
-return{
-contrato,
-receita,
-material,
-mao,
-terceirizado,
-outros,
-despesas,
-resultado,
-saldoContrato
-};
-
-}
-
-function percentContrato(
-valor,
-contrato
-){
-
-if(!contrato)return 0;
-
-return(
-Number(valor||0)/
-Number(contrato)*100
-);
-
-}
-
-function pctText(
-valor,
-contrato
-){
-
-if(!contrato)return"—";
-
-return percentContrato(
-valor,
-contrato
-).toFixed(1)+"%";
-
-}
-
-function obraFinanceMini(o){
-
-const f=
-obraFinanceData(o.id);
-
-return`
-
-<div class="finance-mini">
-
-<div class="finance-line">
-<span>Valor do contrato</span>
-<b class="gold">
-${money(f.contrato)}
-</b>
-</div>
-
-<div class="finance-line">
-<span>Receita recebida</span>
-<b class="green">
-${money(f.receita)}
-</b>
-</div>
-
-<div style="margin-top:8px">
-
-<div class="finance-cat">
-<span>Material</span>
-<span>
-<b>${money(f.material)}</b>
-<br>
-<span class="finance-percent">
-${pctText(f.material,f.contrato)}
-do contrato
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>Mão de obra</span>
-<span>
-<b>${money(f.mao)}</b>
-<br>
-<span class="finance-percent">
-${pctText(f.mao,f.contrato)}
-do contrato
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>Serviço terceirizado</span>
-<span>
-<b>${money(f.terceirizado)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.terceirizado,
-f.contrato
-)}
-do contrato
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>Outras despesas</span>
-<span>
-<b>${money(f.outros)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.outros,
-f.contrato
-)}
-do contrato
-</span>
-</span>
-</div>
-
-</div>
-
-<div class="finance-line"
-style="margin-top:8px">
-
-<span>Total de despesas</span>
-
-<b class="red">
-${money(f.despesas)}
-</b>
-
-</div>
-
-<div class="finance-line">
-
-<span>Resultado / lucro</span>
-
-<b class="${f.resultado>=0?"green":"red"}">
-${money(f.resultado)}
-</b>
-
-</div>
-
-<div class="finance-line">
-
-<span>
-Saldo do contrato após despesas
-</span>
-
-<b class="gold">
-${money(f.saldoContrato)}
-</b>
-
-</div>
-
-</div>
-`;
-
+    <div class="progress-wrap">
+      <div class="progress">
+        <div class="progress-bar" style="width:${Math.max(0,Math.min(100,p))}%"></div>
+      </div>
+    </div>
+  </div>`;
 }
 
 function renderObras(){
+  const q=String($("obraSearch")?.value||"").toLowerCase();
 
-const box=$("obrasList");
+  const arr=D.obras.filter(o=>{
+    const text=[
+      o.nome,
+      o.endereco,
+      o.cliente,
+      o.status
+    ].join(" ").toLowerCase();
 
-if(!box)return;
+    return text.includes(q);
+  });
 
-const search=
-$("obraSearch")
-?.value
-.trim()
-.toLowerCase()||"";
-
-const obras=
-D.obras.filter(o=>{
-
-const texto=
-`${o.nome||""} ${o.cliente||""}`
-.toLowerCase();
-
-return!search||
-texto.includes(search);
-
-});
-
-if(!obras.length){
-
-box.innerHTML=
-`<div class="empty">
-Nenhuma obra cadastrada.
-</div>`;
-
-}else{
-
-box.innerHTML=
-obras.map(o=>{
-
-const p=
-obraProgress(o);
-
-return`
-
-<div class="card">
-
-<div class="row">
-
-<div>
-<h3>${esc(o.nome)}</h3>
-
-<div class="muted">
-${esc(
-o.cliente||
-"Sem cliente"
-)}
-</div>
-
-</div>
-
-<span class="badge ${
-o.status==="concluida"
-?"on":""
-}">
-${esc(
-statusLabel(o.status)
-)}
-</span>
-
-</div>
-
-<div class="three">
-
-<div>
-<small>Contrato</small><br>
-<b>${money(o.valor)}</b>
-</div>
-
-<div>
-<small>Início</small><br>
-<b>${esc(
-o.data_inicio||"—"
-)}</b>
-</div>
-
-<div>
-<small>Previsão</small><br>
-<b>${esc(
-o.data_fim||"—"
-)}</b>
-</div>
-
-</div>
-
-<div style="margin-top:12px">
-
-<div class="row">
-
-<small>
-Progresso da obra
-</small>
-
-<b class="gold">
-${p}%
-</b>
-
-</div>
-
-<div class="progress">
-<i style="width:${p}%"></i>
-</div>
-
-</div>
-
-<div class="note">
-${esc(
-o.endereco||
-"Endereço não informado"
-)}
-</div>
-
-${obraFinanceMini(o)}
-
-<div class="listActions">
-
-<button class="btn"
-onclick="openObra('${o.id}')">
-Editar
-</button>
-
-<button class="btn gold"
-onclick="openCheckForObra('${o.id}')">
-☑️ Checklist
-</button>
-
-<button class="btn"
-onclick="openFotoForObra('${o.id}')">
-📸 Fotos
-</button>
-
-<button class="btn danger"
-onclick="removeRow(
-'obras',
-'${o.id}'
-)">
-Excluir
-</button>
-
-</div>
-
-</div>
-
-`;
-
-}).join("");
-
+  $("obrasList").innerHTML=arr.length
+    ? arr.map(renderObraCard).join("")
+    : `<div class="empty">
+        <div class="empty-icon">🏗️</div>
+        <div>Nenhuma obra encontrada.</div>
+        <button class="btn btn-gold" style="margin-top:12px" onclick="openObra()">Cadastrar primeira obra</button>
+      </div>`;
 }
 
-const recent=$("recentes");
+function renderObraCard(o){
+  const p=obraProgress(o);
 
-if(recent){
+  const recebido=D.pagamentos
+    .filter(x=>String(x.obra_id)===String(o.id))
+    .reduce((s,x)=>s+num(x.valor),0);
 
-recent.innerHTML=
-D.obras
-.slice(0,3)
-.map(o=>`
+  const gastos=D.gastos
+    .filter(x=>String(x.obra_id)===String(o.id))
+    .reduce((s,x)=>s+num(x.valor),0);
 
-<div class="card">
+  const diarias=D.diarias
+    .filter(x=>String(x.obra_id)===String(o.id))
+    .reduce((s,x)=>s+num(x.valor||x.total),0);
 
-<div class="row">
+  const despesas=gastos+diarias;
+  const contrato=num(o.valor_contrato||o.valor||o.contrato);
 
-<div>
-<b>${esc(o.nome)}</b>
-<br>
-<small>
-${esc(o.cliente||"")}
-</small>
-</div>
+  return `
+  <div class="card">
 
-<strong class="gold">
-${obraProgress(o)}%
-</strong>
+    <div class="card-head">
+      <div>
+        <div class="card-title">${esc(o.nome||"Obra")}</div>
+        <div class="card-sub">${esc(o.cliente||"Cliente não informado")}</div>
+      </div>
 
-</div>
+      <span class="badge ${
+        String(o.status||"").toLowerCase().includes("concl")
+        ? "badge-green"
+        : "badge-gold"
+      }">
+        ${esc(o.status||"Em andamento")}
+      </span>
+    </div>
 
-</div>
+    <div class="card-sub" style="margin-top:9px">
+      📍 ${esc(o.endereco||"Endereço não informado")}
+    </div>
 
-`).join("")||
-`
-<div class="empty">
-Nenhuma obra cadastrada.
-</div>
-`;
+    <div class="progress-wrap">
+      <div class="progress-head">
+        <span>Progresso da obra</span>
+        <strong style="color:var(--gold2)">${p}%</strong>
+      </div>
 
+      <div class="progress">
+        <div class="progress-bar" style="width:${p}%"></div>
+      </div>
+    </div>
+
+    <div class="card-info">
+
+      <div class="info">
+        <div class="info-label">Contrato</div>
+        <div class="info-value">${money(contrato)}</div>
+      </div>
+
+      <div class="info">
+        <div class="info-label">Recebido</div>
+        <div class="info-value">${money(recebido)}</div>
+      </div>
+
+      <div class="info">
+        <div class="info-label">Despesas</div>
+        <div class="info-value">${money(despesas)}</div>
+      </div>
+
+      <div class="info">
+        <div class="info-label">Saldo</div>
+        <div class="info-value">${money(contrato-recebido)}</div>
+      </div>
+
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-dark" onclick="openObra('${o.id}')">✏️ Editar</button>
+      <button class="btn btn-gold" onclick="openCheckForObra('${o.id}')">☑️ Checklist</button>
+      <button class="btn btn-blue" onclick="openFotos('${o.id}')">📸 Fotos</button>
+      <button class="btn btn-danger" onclick="deleteObra('${o.id}')">Excluir</button>
+    </div>
+
+  </div>`;
+}
+</script>function openModal(html){
+  $("modal").innerHTML=html;
+  $("modalBackdrop").classList.add("show");
 }
 
+function closeModal(){
+  $("modalBackdrop").classList.remove("show");
+  $("modal").innerHTML="";
+}
+
+function closeModalOutside(e){
+  if(e.target===$("modalBackdrop")) closeModal();
+}
+
+/* =========================
+   OBRAS
+========================= */
+
+function openObra(id=""){
+  editObraId=id||null;
+
+  const o=id
+    ? D.obras.find(x=>String(x.id)===String(id))
+    : null;
+
+  openModal(`
+    <div class="modal-head">
+      <div class="modal-title">${o?"Editar obra":"Nova obra"}</div>
+      <button class="close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="form-grid">
+
+      <div class="field full">
+        <label>Nome da obra *</label>
+        <input id="oNome" value="${esc(o?.nome||"")}" placeholder="Ex.: Reforma Residencial">
+      </div>
+
+      <div class="field">
+        <label>Cliente</label>
+        <input id="oCliente" value="${esc(o?.cliente||"")}" placeholder="Nome do cliente">
+      </div>
+
+      <div class="field">
+        <label>Status</label>
+        <select id="oStatus">
+          <option value="Em andamento" ${o?.status==="Em andamento"?"selected":""}>Em andamento</option>
+          <option value="Pausada" ${o?.status==="Pausada"?"selected":""}>Pausada</option>
+          <option value="Concluída" ${o?.status==="Concluída"?"selected":""}>Concluída</option>
+          <option value="Cancelada" ${o?.status==="Cancelada"?"selected":""}>Cancelada</option>
+        </select>
+      </div>
+
+      <div class="field full">
+        <label>Endereço</label>
+        <input id="oEndereco" value="${esc(o?.endereco||"")}" placeholder="Endereço da obra">
+      </div>
+
+      <div class="field">
+        <label>Data de início</label>
+        <input id="oInicio" type="date" value="${esc(o?.data_inicio||"")}">
+      </div>
+
+      <div class="field">
+        <label>Previsão de término</label>
+        <input id="oFim" type="date" value="${esc(o?.data_fim||"")}">
+      </div>
+
+      <div class="field">
+        <label>Valor do contrato</label>
+        <input id="oValor" inputmode="decimal" value="${o?.valor_contrato??o?.valor??""}" placeholder="0,00">
+      </div>
+
+      <div class="field">
+        <label>Progresso manual (%)</label>
+        <input id="oProgresso" type="number" min="0" max="100" value="${o?.progresso||0}">
+      </div>
+
+      <div class="field full">
+        <label>Observações</label>
+        <textarea id="oObs" placeholder="Observações da obra">${esc(o?.observacoes||"")}</textarea>
+      </div>
+
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-dark" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-gold" onclick="saveObra()">💾 Salvar obra</button>
+    </div>
+  `);
+}
+
+async function saveObra(){
+  const nome=$("oNome")?.value.trim();
+
+  if(!nome){
+    toast("Informe o nome da obra.");
+    return;
+  }
+
+  const row={
+    nome,
+    cliente:$("oCliente")?.value.trim()||"",
+    endereco:$("oEndereco")?.value.trim()||"",
+    status:$("oStatus")?.value||"Em andamento",
+    data_inicio:$("oInicio")?.value||null,
+    data_fim:$("oFim")?.value||null,
+    valor_contrato:num($("oValor")?.value),
+    progresso:Math.max(
+      0,
+      Math.min(100,num($("oProgresso")?.value))
+    ),
+    observacoes:$("oObs")?.value.trim()||""
+  };
+
+  if(editObraId){
+    await updateRow("obras",editObraId,row);
+    toast("Obra atualizada.");
+  }else{
+    await insertRow("obras",row);
+    toast("Obra cadastrada.");
+  }
+
+  editObraId=null;
+  closeModal();
+  renderAll();
+}
+
+async function deleteObra(id){
+  const o=D.obras.find(x=>String(x.id)===String(id));
+
+  if(!confirm(`Excluir a obra "${o?.nome||"obra"}"?`))return;
+
+  await removeRow("obras",id);
+
+  D.checklist=D.checklist.filter(
+    x=>String(x.obra_id)!==String(id)
+  );
+
+  saveLocalData();
+  toast("Obra excluída.");
+  renderAll();
 }
 
 
-/* =========================================================
+/* =========================
+   CHECKLIST
+========================= */
+
+function defaultChecklist(){
+  return [
+    "Planejamento e preparação",
+    "Compra de materiais",
+    "Demolição / preparação",
+    "Fundação",
+    "Alvenaria",
+    "Chapisco",
+    "Reboco",
+    "Instalações elétricas",
+    "Instalações hidráulicas",
+    "Contrapiso",
+    "Piso",
+    "Revestimentos",
+    "Forro / teto",
+    "Pintura",
+    "Esquadrias",
+    "Acabamentos",
+    "Limpeza final",
+    "Entrega da obra"
+  ];
+}
+
+function openCheckForObra(obraId){
+  currentObraId=obraId;
+
+  const obra=D.obras.find(
+    x=>String(x.id)===String(obraId)
+  );
+
+  if(!obra){
+    toast("Obra não encontrada.");
+    return;
+  }
+
+  let itens=D.checklist.filter(
+    x=>String(x.obra_id)===String(obraId)
+  );
+
+  if(!itens.length){
+    itens=defaultChecklist().map((nome,i)=>({
+      id:`temp-${Date.now()}-${i}`,
+      obra_id:obraId,
+      nome,
+      concluida:false,
+      ordem:i
+    }));
+  }
+
+  itens.sort((a,b)=>num(a.ordem)-num(b.ordem));
+
+  const concluidos=itens.filter(x=>
+    x.concluida===true ||
+    x.concluido===true ||
+    x.status==="concluido" ||
+    x.status==="concluida"
+  ).length;
+
+  const progresso=itens.length
+    ? Math.round(concluidos/itens.length*100)
+    : 0;
+
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Checklist da obra</div>
+        <div class="card-sub">${esc(obra.nome)}</div>
+      </div>
+      <button class="close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="progress-wrap" style="margin-bottom:18px">
+      <div class="progress-head">
+        <span>Progresso</span>
+        <strong id="checkProgressText" style="color:var(--gold2)">
+          ${progresso}%
+        </strong>
+      </div>
+      <div class="progress">
+        <div id="checkProgressBar"
+             class="progress-bar"
+             style="width:${progresso}%"></div>
+      </div>
+    </div>
+
+    <div id="checkItems">
+      ${itens.map((x,i)=>`
+        <div class="check-item">
+
+          <input
+            type="checkbox"
+            class="check-input"
+            data-index="${i}"
+            data-id="${esc(x.id)}"
+            ${(
+              x.concluida===true ||
+              x.concluido===true ||
+              x.status==="concluido" ||
+              x.status==="concluida"
+            )?"checked":""}
+            onchange="updateCheckProgress()"
+          >
+
+          <div class="check-item-main">
+            <div class="check-item-name">
+              ${esc(x.nome)}
+            </div>
+            <div class="check-item-meta">
+              Etapa ${i+1}
+            </div>
+          </div>
+
+          <button
+            class="btn btn-danger"
+            style="padding:7px 9px"
+            onclick="removeChecklistItem('${esc(x.id)}','${esc(obraId)}')">
+            ✕
+          </button>
+
+        </div>
+      `).join("")}
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-dark" onclick="addChecklistItem('${esc(obraId)}')">
+        ＋ Nova etapa
+      </button>
+
+      <button class="btn btn-gold" onclick="saveChecklist('${esc(obraId)}')">
+        💾 Salvar checklist
+      </button>
+    </div>
+  `);
+
+  updateCheckProgress();
+}
+
+function updateCheckProgress(){
+  const inputs=[
+    ...document.querySelectorAll(".check-input")
+  ];
+
+  const total=inputs.length;
+  const done=inputs.filter(x=>x.checked).length;
+
+  const p=total
+    ? Math.round(done/total*100)
+    : 0;
+
+  if($("checkProgressText")){
+    $("checkProgressText").textContent=p+"%";
+  }
+
+  if($("checkProgressBar")){
+    $("checkProgressBar").style.width=p+"%";
+  }
+}
+
+async function addChecklistItem(obraId){
+  const nome=prompt("Nome da nova etapa:");
+
+  if(!nome?.trim())return;
+
+  const itens=D.checklist.filter(
+    x=>String(x.obra_id)===String(obraId)
+  );
+
+  const row={
+    obra_id:obraId,
+    nome:nome.trim(),
+    concluida:false,
+    ordem:itens.length
+  };
+
+  const saved=await insertRow("checklist",row);
+
+  if(!D.checklist.some(x=>String(x.id)===String(saved.id))){
+    D.checklist.push(saved);
+  }
+
+  saveLocalData();
+
+  openCheckForObra(obraId);
+}
+
+async function removeChecklistItem(id,obraId){
+  if(String(id).startsWith("temp-")){
+    toast("Salve o checklist primeiro para remover essa etapa.");
+    return;
+  }
+
+  if(!confirm("Excluir esta etapa do checklist?"))return;
+
+  await removeRow("checklist",id);
+
+  openCheckForObra(obraId);
+  renderAll();
+}
+
+async function saveChecklist(obraId){
+  const inputs=[
+    ...document.querySelectorAll(".check-input")
+  ];
+
+  const itens=D.checklist.filter(
+    x=>String(x.obra_id)===String(obraId)
+  );
+
+  for(const input of inputs){
+
+    const id=input.dataset.id;
+
+    if(String(id).startsWith("temp-")){
+      const index=num(input.dataset.index);
+
+      const nome=
+        defaultChecklist()[index] ||
+        `Etapa ${index+1}`;
+
+      const saved=await insertRow("checklist",{
+        obra_id:obraId,
+        nome,
+        concluida:input.checked,
+        ordem:index
+      });
+
+      D.checklist.push(saved);
+
+    }else{
+
+      await updateRow("checklist",id,{
+        concluida:input.checked,
+        status:input.checked?"concluida":"pendente"
+      });
+
+    }
+  }
+
+  saveLocalData();
+
+  const p=obraProgress(
+    D.obras.find(x=>String(x.id)===String(obraId))
+  );
+
+  await updateRow("obras",obraId,{
+    progresso:p
+  });
+
+  toast(`Checklist salvo — ${p}% concluído.`);
+
+  closeModal();
+  renderAll();
+}
+
+
+/* =========================
    FUNCIONÁRIOS
-   ========================================================= */
-
-function openFunc(id=null){
-
-editFuncId=id;
-
-const f=D.funcionarios.find(
-x=>String(x.id)===
-String(id)
-);
-
-$("funcTitle").textContent=
-id
-?"Editar funcionário"
-:"Novo funcionário";
-
-$("fNome").value=
-f?.nome||"";
-
-$("fFunc").value=
-f?.funcao||"";
-
-$("fTel").value=
-f?.telefone||"";
-
-$("fTipo").value=
-f?.tipo_pagamento||"diaria";
-
-$("fDia").value=
-f?.valor_diaria??"";
-
-$("fSal").value=
-f?.salario_mensal??"";
-
-$("fPag").value=
-f?.dia_pagamento??"";
-
-$("fAtivo").value=
-f?.ativo===false
-?"false"
-:"true";
-
-$("fDiariaRegistro").value=
-f?.registrar_diaria===false
-?"false"
-:"true";
-
-fillSelectors();
-
-$("fObra").value=
-getFuncObra(id)||"";
-
-atualizarTipoFuncionario();
-
-openM("funcM");
-
-}
-
-function atualizarTipoFuncionario(){
-
-const mensal=
-$("fTipo")?.value==="mensal";
-
-if($("fDia"))
-$("fDia").disabled=mensal;
-
-if($("fSal"))
-$("fSal").disabled=!mensal;
-
-}
-
-async function saveFunc(e){
-
-e.preventDefault();
-
-const nome=
-$("fNome").value.trim();
-
-if(!nome){
-
-toast("Informe o nome.");
-
-return;
-
-}
-
-const obraId=
-$("fObra").value||null;
-
-const registrar=
-$("fDiariaRegistro").value==="true";
-
-const row={
-nome,
-funcao:
-$("fFunc").value.trim(),
-telefone:
-$("fTel").value.trim(),
-tipo_pagamento:
-$("fTipo").value,
-valor_diaria:
-Number($("fDia").value||0),
-salario_mensal:
-Number($("fSal").value||0),
-dia_pagamento:
-Number($("fPag").value||0),
-ativo:
-$("fAtivo").value==="true",
-registrar_diaria:
-registrar,
-obra_id:
-obraId
-};
-
-let result;
-
-if(editFuncId){
-
-result=await updateRow(
-"funcionarios",
-editFuncId,
-row
-);
-
-}else{
-
-result=await insertRow(
-"funcionarios",
-row
-);
-
-}
-
-if(result){
-
-const id=result.id;
-
-setFuncObra(
-id,
-obraId
-);
-
-closeM("funcM");
-
-toast(
-editFuncId
-?"Funcionário atualizado."
-:"Funcionário cadastrado."
-);
-
-editFuncId=null;
-
-}
-
-}
-
-async function toggleFunc(id){
-
-const f=D.funcionarios.find(
-x=>String(x.id)===
-String(id)
-);
-
-if(!f)return;
-
-await updateRow(
-"funcionarios",
-id,
-{
-ativo:f.ativo===false
-}
-);
-
-}
+========================= */
 
 function renderFuncs(){
+  const ativos=D.funcionarios.filter(
+    f=>f.ativo!==false
+  ).length;
 
-const box=$("funcList");
+  const inativos=D.funcionarios.length-ativos;
 
-if(!box)return;
+  const comDiaria=D.funcionarios.filter(
+    f=>f.registrar_diaria!==false
+  ).length;
 
-const filter=
-$("funcFilter")?.value||"todos";
+  const semDiaria=D.funcionarios.filter(
+    f=>f.registrar_diaria===false
+  ).length;
 
-const funcs=
-D.funcionarios.filter(f=>{
+  $("funcAtivos").textContent=ativos;
+  $("funcInativos").textContent=inativos;
+  $("funcComDiaria").textContent=comDiaria;
+  $("funcSemDiaria").textContent=semDiaria;
 
-if(filter==="ativos")
-return f.ativo!==false;
-
-if(filter==="inativos")
-return f.ativo===false;
-
-return true;
-
-});
-
-if(!funcs.length){
-
-box.innerHTML=
-`<div class="empty">
-Nenhum funcionário encontrado.
-</div>`;
-
-return;
-
+  $("funcList").innerHTML=D.funcionarios.length
+    ? D.funcionarios.map(renderFuncCard).join("")
+    : `<div class="empty">
+        <div class="empty-icon">👷</div>
+        Nenhum funcionário cadastrado.
+      </div>`;
 }
 
-box.innerHTML=
-funcs.map(f=>{
+function renderFuncCard(f){
+  const obraId=getFuncObra(f.id);
 
-const obraId=
-getFuncObra(f.id);
+  const obra=D.obras.find(
+    x=>String(x.id)===String(obraId)
+  );
 
-const obra=
-D.obras.find(
-o=>String(o.id)===
-String(obraId)
-);
+  const registrar=f.registrar_diaria!==false;
 
-const resumo=
-calcFuncionarioPagamento(
-f.id
-);
+  const faltas=D.faltas.filter(
+    x=>String(x.funcionario_id)===String(f.id)
+  ).length;
 
-return`
+  return `
+  <div class="card">
 
-<div class="card">
+    <div class="card-head">
 
-<div class="row">
+      <div>
+        <div class="card-title">
+          ${esc(f.nome||"Funcionário")}
+        </div>
 
-<div>
-<h3>${esc(f.nome)}</h3>
+        <div class="card-sub">
+          ${esc(f.funcao||f.cargo||"Profissional")}
+        </div>
+      </div>
 
-<div class="muted">
-${esc(
-f.funcao||
-"Função não informada"
-)}
-</div>
+      <span class="badge ${
+        f.ativo!==false
+        ?"badge-green"
+        :"badge-red"
+      }">
+        ${f.ativo!==false?"ATIVO":"INATIVO"}
+      </span>
 
-</div>
+    </div>
 
-<span class="badge ${
-f.ativo===false
-?"off":"on"
-}">
-${
-f.ativo===false
-?"Inativo"
-:"Ativo"
-}
-</span>
+    <div class="card-info">
 
-</div>
+      <div class="info">
+        <div class="info-label">Obra</div>
+        <div class="info-value">
+          ${esc(obra?.nome||"Sem obra")}
+        </div>
+      </div>
 
-<div class="three">
+      <div class="info">
+        <div class="info-label">Diária</div>
+        <div class="info-value">
+          ${registrar
+            ?"✅ Registrar"
+            :"🚫 Não registrar"}
+        </div>
+      </div>
 
-<div>
-<small>Pagamento</small><br>
-<b>${esc(
-f.tipo_pagamento||
-"Diária"
-)}</b>
-</div>
+      <div class="info">
+        <div class="info-label">Valor diária</div>
+        <div class="info-value">
+          ${money(f.valor_diaria||f.diaria||0)}
+        </div>
+      </div>
 
-<div>
-<small>Valor</small><br>
-<b>
-${
-f.tipo_pagamento==="mensal"
-?money(f.salario_mensal)
-:money(f.valor_diaria)
-}
-</b>
-</div>
+      <div class="info">
+        <div class="info-label">Faltas</div>
+        <div class="info-value">
+          ${faltas}
+        </div>
+      </div>
 
-<div>
-<small>Obra</small><br>
-<b>${esc(
-obra?.nome||
-"Não definida"
-)}</b>
-</div>
+    </div>
 
-</div>
+    <div class="actions">
 
-<div class="note">
+      <button class="btn btn-dark"
+        onclick="openFunc('${f.id}')">
+        ✏️ Editar
+      </button>
 
-${
-f.registrar_diaria===false
-?"🚫 Não registrar diária"
-:"✅ Registrar diária"
-}
+      ${
+        registrar
+        ? `
+        <button class="btn btn-gold"
+          onclick="openDiaFuncionario('${f.id}')">
+          ＋ Diária
+        </button>
+        `
+        :""
+      }
 
-</div>
+      <button class="btn btn-blue"
+        onclick="openFalta('${f.id}')">
+        📅 Falta
+      </button>
 
-<div class="pay-summary">
+      <button class="btn btn-dark"
+        onclick="openFaltas('${f.id}')">
+        📋 Histórico
+      </button>
 
-<div>
-<small>Diárias pendentes</small><br>
-<b>${money(
-resumo.pending
-)}</b>
-</div>
+      <button class="btn btn-danger"
+        onclick="deleteFunc('${f.id}')">
+        Excluir
+      </button>
 
-<div>
-<small>
-Adiantamento disponível
-</small><br>
+    </div>
 
-<b class="red">
-${money(
-resumo.advances.reduce(
-(a,x)=>
-a+Number(
-x.disponivel||0
-),
-0
-)
-)}
-</b>
-
-</div>
-
-<div>
-<small>
-Próximo pagamento
-</small><br>
-
-<b class="green">
-${money(resumo.net)}
-</b>
-
-</div>
-
-</div>
-
-<div class="listActions">
-
-<button class="btn"
-onclick="openFunc('${f.id}')">
-Editar
-</button>
-
-${
-f.registrar_diaria!==false
-?`
-<button class="btn gold"
-onclick="openDiaFuncionario('${f.id}')">
-＋ Diária
-</button>
-`
-:""
+  </div>`;
 }
 
-<button class="btn"
-onclick="openPagamentoFuncionario('${f.id}')">
-💰 Pagamento
-</button>
+function openFunc(id=""){
+  editFuncId=id||null;
 
-<button class="btn"
-onclick="openAdiantamentoFuncionario('${f.id}')">
-💳 Adiantamento
-</button>
+  const f=id
+    ? D.funcionarios.find(
+        x=>String(x.id)===String(id)
+      )
+    : null;
 
-<button class="btn"
-onclick="toggleFunc('${f.id}')">
-${
-f.ativo===false
-?"Ativar"
-:"Desativar"
+  const obraId=getFuncObra(id);
+
+  openModal(`
+    <div class="modal-head">
+      <div class="modal-title">
+        ${f?"Editar funcionário":"Novo funcionário"}
+      </div>
+      <button class="close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="form-grid">
+
+      <div class="field full">
+        <label>Nome *</label>
+        <input id="fNome"
+          value="${esc(f?.nome||"")}"
+          placeholder="Nome completo">
+      </div>
+
+      <div class="field">
+        <label>Função / cargo</label>
+        <input id="fFuncao"
+          value="${esc(f?.funcao||f?.cargo||"")}"
+          placeholder="Pedreiro, pintor...">
+      </div>
+
+      <div class="field">
+        <label>Valor da diária</label>
+        <input id="fValor"
+          inputmode="decimal"
+          value="${f?.valor_diaria??f?.diaria??""}"
+          placeholder="0,00">
+      </div>
+
+      <div class="field full">
+        <label>Obra em que vai trabalhar</label>
+        <select id="fObra">
+          <option value="">— Sem obra —</option>
+
+          ${D.obras.map(o=>`
+            <option value="${esc(o.id)}"
+              ${String(obraId)===String(o.id)?"selected":""}>
+              ${esc(o.nome)}
+            </option>
+          `).join("")}
+
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Registrar diária?</label>
+        <select id="fDiariaRegistro">
+          <option value="true"
+            ${f?.registrar_diaria!==false?"selected":""}>
+            ✅ Registrar diária
+          </option>
+
+          <option value="false"
+            ${f?.registrar_diaria===false?"selected":""}>
+            🚫 Não registrar diária
+          </option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Status</label>
+        <select id="fAtivo">
+          <option value="true"
+            ${f?.ativo!==false?"selected":""}>
+            Ativo
+          </option>
+
+          <option value="false"
+            ${f?.ativo===false?"selected":""}>
+            Inativo
+          </option>
+        </select>
+      </div>
+
+      <div class="field full">
+        <label>Observações</label>
+        <textarea id="fObs">${esc(f?.observacoes||"")}</textarea>
+      </div>
+
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-dark"
+        onclick="closeModal()">
+        Cancelar
+      </button>
+
+      <button class="btn btn-gold"
+        onclick="saveFunc()">
+        💾 Salvar funcionário
+      </button>
+    </div>
+  `);
 }
-</button>
 
-<button class="btn danger"
-onclick="removeRow(
-'funcionarios',
-'${f.id}'
-)">
-Excluir
-</button>
+async function saveFunc(){
+  const nome=$("fNome")?.value.trim();
 
-</div>
+  if(!nome){
+    toast("Informe o nome do funcionário.");
+    return;
+  }
 
-</div>
+  const registrar=$("fDiariaRegistro")?.value!=="false";
+  const ativo=$("fAtivo")?.value!=="false";
+  const obraId=$("fObra")?.value||null;
 
-`;
+  const row={
+    nome,
+    funcao:$("fFuncao")?.value.trim()||"",
+    valor_diaria:num($("fValor")?.value),
+    registrar_diaria:registrar,
+    ativo,
+    obra_id:obraId,
+    observacoes:$("fObs")?.value.trim()||""
+  };
 
-}).join("");
+  let saved;
 
+  if(editFuncId){
+    saved=await updateRow(
+      "funcionarios",
+      editFuncId,
+      row
+    );
+  }else{
+    saved=await insertRow(
+      "funcionarios",
+      row
+    );
+
+    if(!D.funcionarios.some(
+      x=>String(x.id)===String(saved.id)
+    )){
+      D.funcionarios.push(saved);
+    }
+  }
+
+  if(editFuncId){
+    const i=D.funcionarios.findIndex(
+      x=>String(x.id)===String(editFuncId)
+    );
+
+    if(i>=0){
+      D.funcionarios[i]={
+        ...D.funcionarios[i],
+        ...row
+      };
+    }
+  }
+
+  if(saved?.id){
+    setFuncObra(saved.id,obraId);
+  }else if(editFuncId){
+    setFuncObra(editFuncId,obraId);
+  }
+
+  saveLocalData();
+
+  editFuncId=null;
+  closeModal();
+  toast("Funcionário salvo.");
+  renderAll();
+}
+
+async function deleteFunc(id){
+  const f=D.funcionarios.find(
+    x=>String(x.id)===String(id)
+  );
+
+  if(!confirm(`Excluir ${f?.nome||"funcionário"}?`))
+    return;
+
+  await removeRow("funcionarios",id);
+
+  D.faltas=D.faltas.filter(
+    x=>String(x.funcionario_id)!==String(id)
+  );
+
+  D.diarias=D.diarias.filter(
+    x=>String(x.funcionario_id)!==String(id)
+  );
+
+  setFuncObra(id,null);
+
+  saveLocalData();
+  toast("Funcionário excluído.");
+  renderAll();
 }
 
 
-/* =========================================================
+/* =========================
+   FALTAS
+========================= */
+
+function openFalta(funcId=""){
+  const f=funcId
+    ? D.funcionarios.find(
+        x=>String(x.id)===String(funcId)
+      )
+    : null;
+
+  openModal(`
+    <div class="modal-head">
+      <div class="modal-title">Registrar falta</div>
+      <button class="close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="form-grid">
+
+      <div class="field full">
+        <label>Funcionário *</label>
+
+        <select id="faltaFunc">
+          <option value="">Selecione</option>
+
+          ${D.funcionarios.map(x=>`
+            <option value="${esc(x.id)}"
+              ${String(x.id)===String(funcId)?"selected":""}>
+              ${esc(x.nome)}
+            </option>
+          `).join("")}
+
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Data *</label>
+        <input id="faltaData"
+          type="date"
+          value="${today()}">
+      </div>
+
+      <div class="field">
+        <label>Tipo</label>
+        <select id="faltaTipo">
+          <option value="Falta">Falta</option>
+          <option value="Falta justificada">Falta justificada</option>
+          <option value="Atestado">Atestado</option>
+          <option value="Folga">Folga</option>
+        </select>
+      </div>
+
+      <div class="field full">
+        <label>Observação</label>
+        <textarea id="faltaObs"
+          placeholder="Motivo ou observação">${esc("")}</textarea>
+      </div>
+
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-dark"
+        onclick="closeModal()">
+        Cancelar
+      </button>
+
+      <button class="btn btn-gold"
+        onclick="saveFalta()">
+        💾 Registrar falta
+      </button>
+    </div>
+  `);
+}
+
+async function saveFalta(){
+  const funcionario_id=$("faltaFunc")?.value;
+  const data=$("faltaData")?.value||today();
+
+  if(!funcionario_id){
+    toast("Selecione o funcionário.");
+    return;
+  }
+
+  const row={
+    funcionario_id,
+    data,
+    tipo:$("faltaTipo")?.value||"Falta",
+    observacao:$("faltaObs")?.value.trim()||""
+  };
+
+  const saved=await insertRow("faltas",row);
+
+  if(!D.faltas.some(
+    x=>String(x.id)===String(saved.id)
+  )){
+    D.faltas.push(saved);
+  }
+
+  saveLocalData();
+
+  closeModal();
+  toast("Falta registrada.");
+  renderAll();
+}
+
+function openFaltas(funcId=""){
+  const lista=D.faltas.filter(x=>
+    !funcId ||
+    String(x.funcionario_id)===String(funcId)
+  );
+
+  lista.sort((a,b)=>
+    String(b.data||"").localeCompare(
+      String(a.data||"")
+    )
+  );
+
+  const f=funcId
+    ? D.funcionarios.find(
+        x=>String(x.id)===String(funcId)
+      )
+    : null;
+
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Histórico de faltas</div>
+        <div class="card-sub">
+          ${esc(f?.nome||"Todos os funcionários")}
+        </div>
+      </div>
+
+      <button class="close"
+        onclick="closeModal()">
+        ✕
+      </button>
+    </div>
+
+    <div class="actions" style="margin-bottom:12px">
+      <button class="btn btn-gold"
+        onclick="openFalta('${esc(funcId)}')">
+        ＋ Registrar falta
+      </button>
+    </div>
+
+    ${
+      lista.length
+      ? lista.map(x=>{
+          const fx=D.funcionarios.find(
+            f=>String(f.id)===String(x.funcionario_id)
+          );
+
+          return `
+          <div class="falta-item">
+
+            <div class="falta-main">
+              <div class="falta-name">
+                ${esc(fx?.nome||"Funcionário")}
+              </div>
+
+              <div class="falta-date">
+                ${formatDate(x.data)}
+                · ${esc(x.tipo||"Falta")}
+              </div>
+
+              ${
+                x.observacao
+                ? `<div class="falta-date">
+                    ${esc(x.observacao)}
+                   </div>`
+                :""
+              }
+            </div>
+
+            <button class="btn btn-danger"
+              style="padding:7px 9px"
+              onclick="deleteFalta('${x.id}','${esc(funcId)}')">
+              ✕
+            </button>
+
+          </div>`;
+        }).join("")
+      : `<div class="empty">
+          Nenhuma falta registrada.
+        </div>`
+    }
+  `);
+}
+
+async function deleteFalta(id,funcId=""){
+  if(!confirm("Excluir este registro de falta?"))
+    return;
+
+  await removeRow("faltas",id);
+
+  openFaltas(funcId);
+  renderAll();
+}
+
+
+/* =========================
    DIÁRIAS
-   ========================================================= */
+========================= */
 
-function openDia(){
+function openDiaFuncionario(funcId){
+  openDia("",funcId);
+}
 
-fillSelectors();
+function openDia(id="",funcId=""){
+  editDiaId=id||null;
 
-$("dData").value=today();
-$("dQtd").value=1;
-$("dTipo").value="completa";
-$("dVal").value="";
-$("dStatus").value="pendente";
-$("dObs").value="";
+  const d=id
+    ? D.diarias.find(
+        x=>String(x.id)===String(id)
+      )
+    : null;
 
-atualizarTipoDiaria();
+  const selectedFunc=
+    funcId ||
+    d?.funcionario_id ||
+    "";
 
-openM("diaM");
+  const funcionario=D.funcionarios.find(
+    x=>String(x.id)===String(selectedFunc)
+  );
 
+  if(funcionario?.registrar_diaria===false){
+    toast("Este funcionário está configurado para não registrar diária.");
+    return;
+  }
+
+  openModal(`
+    <div class="modal-head">
+      <div class="modal-title">
+        ${d?"Editar diária":"Registrar diária"}
+      </div>
+      <button class="close"
+        onclick="closeModal()">
+        ✕
+      </button>
+    </div>
+
+    <div class="form-grid">
+
+      <div class="field full">
+        <label>Funcionário *</label>
+        <select id="diaFunc"
+          onchange="aplicarTipoDiaria()">
+
+          <option value="">Selecione</option>
+
+          ${D.funcionarios
+            .filter(f=>f.registrar_diaria!==false)
+            .map(f=>`
+              <option value="${esc(f.id)}"
+                ${String(f.id)===String(selectedFunc)?"selected":""}>
+                ${esc(f.nome)}
+              </option>
+            `).join("")}
+
+        </select>
+      </div>
+
+      <div class="field full">
+        <label>Obra *</label>
+        <select id="diaObra">
+
+          <option value="">Selecione</option>
+
+          ${D.obras.map(o=>`
+            <option value="${esc(o.id)}"
+              ${String(o.id)===String(
+                d?.obra_id ||
+                getFuncObra(selectedFunc)
+              )?"selected":""}>
+              ${esc(o.nome)}
+            </option>
+          `).join("")}
+
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Data</label>
+        <input id="diaData"
+          type="date"
+          value="${d?.data||today()}">
+      </div>
+
+      <div class="field">
+        <label>Tipo de diária</label>
+        <select id="diaTipo"
+          onchange="atualizarTipoDiaria()">
+          <option value="inteira"
+            ${d?.tipo==="meia"?"":"selected"}>
+            Diária inteira
+          </option>
+          <option value="meia"
+            ${d?.tipo==="meia"?"selected":""}>
+            Meia diária
+          </option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Valor da diária</label>
+        <input id="diaValor"
+          inputmode="decimal"
+          value="${d?.valor??funcionario?.valor_diaria??""}"
+          placeholder="0,00">
+      </div>
+
+      <div class="field">
+        <label>Total</label>
+        <input id="diaTotal"
+          readonly
+          value="${money(
+            d?.total ??
+            d?.valor ??
+            funcionario?.valor_diaria ??
+            0
+          )}">
+      </div>
+
+      <div class="field full">
+        <label>Observação</label>
+        <textarea id="diaObs">${esc(d?.observacao||"")}</textarea>
+      </div>
+
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-dark"
+        onclick="closeModal()">
+        Cancelar
+      </button>
+
+      <button class="btn btn-gold"
+        onclick="saveDia()">
+        💾 Salvar diária
+      </button>
+    </div>
+  `);
+
+  atualizarTipoDiaria();
 }
 
 function aplicarTipoDiaria(){
+  const funcId=$("diaFunc")?.value;
 
-const tipo=$("dTipo")?.value;
+  const f=D.funcionarios.find(
+    x=>String(x.id)===String(funcId)
+  );
 
-if(!$("dQtd"))return;
+  if(f && $("diaValor") && !editDiaId){
+    $("diaValor").value=f.valor_diaria||f.diaria||"";
+  }
 
-if(
-tipo==="manha"||
-tipo==="tarde"
-){
+  const obraId=getFuncObra(funcId);
 
-$("dQtd").value=.5;
+  if(obraId && $("diaObra")){
+    $("diaObra").value=obraId;
+  }
 
-$("diaValorInfo").textContent=
-tipo==="manha"
-?"Meia diária da manhã: será considerado 50% do valor da diária."
-:"Meia diária da tarde: será considerado 50% do valor da diária.";
-
-}else{
-
-$("dQtd").value=1;
-
-$("diaValorInfo").textContent=
-"Diária completa: será considerado 100% do valor informado.";
-
-}
-
+  atualizarTipoDiaria();
 }
 
 function atualizarTipoDiaria(){
-aplicarTipoDiaria();
+  const valor=num($("diaValor")?.value);
+  const tipo=$("diaTipo")?.value||"inteira";
+
+  const total=tipo==="meia"
+    ? valor/2
+    : valor;
+
+  if($("diaTotal")){
+    $("diaTotal").value=money(total);
+  }
+
+  $("diaValor")?.addEventListener(
+    "input",
+    atualizarTipoDiaria,
+    {once:true}
+  );
 }
 
-function openDiaFuncionario(id){
-
-openDia();
-
-setTimeout(()=>{
-
-$("dFunc").value=id;
-
-const f=D.funcionarios.find(
-x=>String(x.id)===
-String(id)
-);
-
-if(f){
-
-$("dVal").value=
-f.valor_diaria||"";
-
-$("dObra").value=
-getFuncObra(id)||"";
-
-}
-
-},50);
-
-}
-
-async function saveDia(e){
-
-e.preventDefault();
-
-const funcionario_id=
-$("dFunc").value;
-
-const obra_id=
-$("dObra").value;
-
-if(!funcionario_id){
-
-toast(
-"Selecione o funcionário."
-);
-
-return;
-
-}
-
-if(!obra_id){
-
-toast(
-"Selecione a obra."
-);
-
-return;
-
-}
-
-const tipo=$("dTipo").value;
-
-const qtd=
-tipo==="manha"||
-tipo==="tarde"
-?.5
-:1;
-
-const valorBase=
-Number($("dVal").value||0);
-
-const valorReal=
-valorBase*qtd;
-
-if(valorBase<=0){
-
-toast(
-"Informe o valor da diária."
-);
-
-return;
-
-}
-
-let observacao=
-$("dObs").value.trim();
-
-const textoTipo=
-tipo==="manha"
-?"Meia diária — manhã — 50%"
-:
-tipo==="tarde"
-?"Meia diária — tarde — 50%"
-:"Diária completa — 100%";
-
-observacao=
-observacao
-?`${textoTipo}. ${observacao}`
-:textoTipo;
-
-const row={
-funcionario_id,
-obra_id,
-data:
-$("dData").value,
-qtd,
-valor_diaria:
-valorBase,
-status:
-$("dStatus").value,
-observacao
-};
-
-const result=
-await insertRow(
-"diarias",
-row
-);
-
-if(result){
-
-closeM("diaM");
-
-toast(
-`Diária registrada: ${money(valorReal)}`
-);
-
-}
-
-}
-
-function renderPayroll(){
-
-const box=$("diaList");
-
-if(!box)return;
-
-const period=
-$("payPeriod")?.value||
-"semana";
-
-const now=new Date();
-
-let inicio=null;
-
-if(period==="dia"){
-
-inicio=new Date(
-now.getFullYear(),
-now.getMonth(),
-now.getDate()
-);
-
-}
-
-if(period==="semana"){
-
-const day=now.getDay();
-
-inicio=new Date(
-now.getFullYear(),
-now.getMonth(),
-now.getDate()-
-(day===0?6:day-1)
-);
-
-}
-
-if(period==="quinzena"){
-
-inicio=new Date(
-now.getFullYear(),
-now.getMonth(),
-now.getDate()-14
-);
-
-}
-
-if(period==="mes"){
-
-inicio=new Date(
-now.getFullYear(),
-now.getMonth(),
-1
-);
-
-}
-
-const items=
-D.diarias.filter(d=>{
-
-if(!inicio)return true;
-
-const dt=new Date(
-`${d.data}T00:00:00`
-);
-
-return dt>=inicio;
-
-});
-
-const total=
-items.reduce(
-(a,d)=>a+diariaValor(d),
-0
-);
-
-$("payTotal").textContent=
-money(total);
-
-$("payCount").textContent=
-items.length;
-
-if(!items.length){
-
-box.innerHTML=
-`<div class="empty">
-Nenhuma diária no período.
-</div>`;
-
-return;
-
-}
-
-box.innerHTML=
-items.map(d=>{
-
-const f=
-D.funcionarios.find(
-x=>String(x.id)===
-String(d.funcionario_id)
-);
-
-const o=
-D.obras.find(
-x=>String(x.id)===
-String(d.obra_id)
-);
-
-const valor=
-diariaValor(d);
-
-return`
-
-<div class="card">
-
-<div class="row">
-
-<div>
-<b>${esc(
-f?.nome||
-"Funcionário"
-)}</b>
-<br>
-<small>${esc(
-o?.nome||
-"Sem obra"
-)}</small>
-</div>
-
-<span class="badge ${
-d.status==="pago"
-?"on":""
-}">
-${
-d.status==="pago"
-?"Pago"
-:"Pendente"
-}
-</span>
-
-</div>
-
-<div class="row"
-style="margin-top:10px">
-
-<span>${esc(
-d.data||""
-)}</span>
-
-<strong class="gold">
-${money(valor)}
-</strong>
-
-</div>
-
-${
-d.observacao
-?`<small>${esc(
-d.observacao
-)}</small>`
-:""
-}
-
-<div class="listActions">
-
-<button class="btn danger"
-onclick="removeRow(
-'diarias',
-'${d.id}'
-)">
-Excluir
-</button>
-
-</div>
-
-</div>
-
-`;
-
-}).join("");
-
+async function saveDia(){
+  const funcionario_id=$("diaFunc")?.value;
+  const obra_id=$("diaObra")?.value;
+
+  if(!funcionario_id){
+    toast("Selecione o funcionário.");
+    return;
+  }
+
+  if(!obra_id){
+    toast("Selecione a obra.");
+    return;
+  }
+
+  const f=D.funcionarios.find(
+    x=>String(x.id)===String(funcionario_id)
+  );
+
+  if(f?.registrar_diaria===false){
+    toast("Este funcionário não registra diária.");
+    return;
+  }
+
+  const valor=num($("diaValor")?.value);
+  const tipo=$("diaTipo")?.value||"inteira";
+
+  const total=tipo==="meia"
+    ? valor/2
+    : valor;
+
+  const row={
+    funcionario_id,
+    obra_id,
+    data:$("diaData")?.value||today(),
+    tipo,
+    valor,
+    total,
+    observacao:$("diaObs")?.value.trim()||""
+  };
+
+  if(editDiaId){
+    await updateRow(
+      "diarias",
+      editDiaId,
+      row
+    );
+
+    const i=D.diarias.findIndex(
+      x=>String(x.id)===String(editDiaId)
+    );
+
+    if(i>=0){
+      D.diarias[i]={
+        ...D.diarias[i],
+        ...row
+      };
+    }
+
+    toast("Diária atualizada.");
+
+  }else{
+
+    const saved=await insertRow(
+      "diarias",
+      row
+    );
+
+    if(!D.diarias.some(
+      x=>String(x.id)===String(saved.id)
+    )){
+      D.diarias.push(saved);
+    }
+
+    toast("Diária registrada.");
+  }
+
+  saveLocalData();
+
+  editDiaId=null;
+  closeModal();
+  renderAll();
 }
 
 
+/* =========================
+   FOLHA DE DIÁRIAS
+========================= */
+
+function openPayroll(){
+  const total=D.diarias.reduce(
+    (s,x)=>s+num(x.total||x.valor),
+    0
+  );
+
+  openModal(`
+    <div class="modal-head">
+      <div class="modal-title">Folha de diárias</div>
+      <button class="close"
+        onclick="closeModal()">
+        ✕
+      </button>
+    </div>
+
+    <div class="stat gold"
+      style="margin-bottom:14px">
+      <div class="stat-label">Total registrado</div>
+      <div class="stat-value">${money(total)}</div>
+    </div>
+
+    ${
+      D.funcionarios.length
+      ? D.funcionarios.map(f=>{
+
+          const ds=D.diarias.filter(
+            x=>String(x.funcionario_id)===String(f.id)
+          );
+
+          const totalF=ds.reduce(
+            (s,x)=>s+num(x.total||x.valor),
+            0
+          );
+
+          return `
+          <div class="card">
+
+            <div class="card-head">
+              <div>
+                <div class="card-title">
+                  ${esc(f.nome)}
+                </div>
+
+                <div class="card-sub">
+                  ${ds.length} diária(s)
+                </div>
+              </div>
+
+              <strong style="color:var(--gold2)">
+                ${money(totalF)}
+              </strong>
+            </div>
+
+          </div>`;
+        }).join("")
+      : `<div class="empty">Nenhum funcionário.</div>`
+    }
+  `);
+}<script>
 /* =========================================================
-   PAGAMENTO DA EQUIPE
+   EDIFIQ — PARTE 3
+   FALTAS + CHECKLIST + APOIO AO CONTROLE DE FUNCIONÁRIOS
    ========================================================= */
 
-function fillPagamentoFuncionarios(
-selectedId=null
-){
+/* ---------------------------------------------------------
+   GARANTE A ESTRUTURA DE FALTAS
+   --------------------------------------------------------- */
+
+if(!Array.isArray(D.faltas)){
+  D.faltas=[];
+}
+
+
+/* ---------------------------------------------------------
+   CONTROLE DE FALTAS
+   --------------------------------------------------------- */
+
+let editFaltaId=null;
+
+function openFalta(id=null, funcionarioId=null){
+
+  editFaltaId=id;
+
+  const f=id
+    ? D.faltas.find(x=>String(x.id)===String(id))
+    : null;
+
+  const funcionario=f
+    ? D.funcionarios.find(x=>String(x.id)===String(f.funcionario_id))
+    : D.funcionarios.find(x=>String(x.id)===String(funcionarioId));
+
+  const options=D.funcionarios.map(x=>`
+    <option value="${esc(x.id)}"
+      ${funcionario && String(x.id)===String(funcionario.id)?"selected":""}>
+      ${esc(x.nome)}
+    </option>
+  `).join("");
+
+  openM(`
+    <div class="modal-card">
+
+      <div class="modal-head">
+        <h3>📅 ${f?"Editar falta":"Registrar falta"}</h3>
+        <button onclick="closeM()">✕</button>
+      </div>
+
+      <div class="form-grid">
+
+        <label>
+          Funcionário
+          <select id="faltaFunc">
+            <option value="">Selecione</option>
+            ${options}
+          </select>
+        </label>
+
+        <label>
+          Data
+          <input
+            id="faltaData"
+            type="date"
+            value="${f?.data || today()}"
+          >
+        </label>
 
-const box=$("pagFuncionarios");
+        <label>
+          Tipo
+          <select id="faltaTipo">
+            <option value="Falta">Falta</option>
+            <option value="Falta justificada"
+              ${f?.tipo==="Falta justificada"?"selected":""}>
+              Falta justificada
+            </option>
+            <option value="Atestado"
+              ${f?.tipo==="Atestado"?"selected":""}>
+              Atestado
+            </option>
+          </select>
+        </label>
 
-if(!box)return;
+        <label class="full">
+          Observação
+          <textarea
+            id="faltaObs"
+            rows="3"
+            placeholder="Motivo ou observação..."
+          >${esc(f?.observacao||"")}</textarea>
+        </label>
 
-const funcs=
-D.funcionarios.filter(
-f=>f.ativo!==false
-);
+      </div>
 
-if(!funcs.length){
+      <div class="modal-actions">
+        <button class="btn secondary" onclick="closeM()">
+          Cancelar
+        </button>
 
-box.innerHTML=
-`<div class="empty">
-Cadastre um funcionário primeiro.
-</div>`;
+        <button class="btn primary" onclick="saveFalta()">
+          💾 Salvar
+        </button>
+      </div>
 
-return;
-
-}
-
-box.innerHTML=
-funcs.map(f=>{
-
-const obraId=
-getFuncObra(f.id);
-
-const obra=
-D.obras.find(
-o=>String(o.id)===
-String(obraId)
-);
-
-const resumo=
-calcFuncionarioPagamento(
-f.id
-);
-
-return`
-
-<div class="pay-person">
-
-<div class="pay-person-head">
-
-<label style="
-display:flex;
-align-items:center;
-gap:8px
-">
-
-<input
-type="checkbox"
-class="pag-check"
-data-id="${f.id}"
-onchange="updatePagTotal()"
-${
-selectedId&&
-String(selectedId)===
-String(f.id)
-?"checked":""
-}
->
-
-<span>
-
-<b>${esc(f.nome)}</b>
-
-<br>
-
-<small>
-${esc(
-obra?.nome||
-"Sem obra"
-)}
-</small>
-
-</span>
-
-</label>
-
-</div>
-
-<div class="pay-summary">
-
-<div>
-<small>Diárias</small><br>
-<b>${money(
-resumo.pending
-)}</b>
-</div>
-
-<div>
-<small>Adiantamento</small><br>
-<b class="red">
-${money(
-resumo.advance
-)}
-</b>
-</div>
-
-<div>
-<small>Líquido</small><br>
-<b class="green">
-${money(
-resumo.net
-)}
-</b>
-</div>
-
-</div>
-
-<div class="pay-value">
-
-<input
-class="pag-value"
-data-id="${f.id}"
-type="number"
-step=".01"
-min="0"
-readonly
-value="${
-resumo.net.toFixed(2)
-}"
-placeholder="Valor do pagamento"
->
-
-</div>
-
-</div>
-
-`;
-
-}).join("");
-
-}
-
-function selecionarTodosPagamentos(
-marcar
-){
-
-document.querySelectorAll(
-".pag-check"
-).forEach(ch=>{
-ch.checked=marcar;
-});
-
-updatePagTotal();
-
-}
-
-function updatePagTotal(){
-
-let total=0;
-let diarias=0;
-let adiant=0;
-
-document.querySelectorAll(
-".pag-check"
-).forEach(ch=>{
-
-if(!ch.checked)return;
-
-const id=ch.dataset.id;
-
-const resumo=
-calcFuncionarioPagamento(id);
-
-total+=resumo.net;
-
-diarias+=resumo.pending;
-
-adiant+=resumo.advance;
-
-});
-
-$("pagTotal").textContent=
-money(total);
-
-$("pagDiariasTotal").textContent=
-money(diarias);
-
-$("pagAdiantTotal").textContent=
-money(adiant);
-
-$("pagLiquidoTotal").textContent=
-money(total);
-
-}
-
-function openPagamentoEquipe(){
-
-fillSelectors();
-
-$("pagObra").value="";
-$("pagData").value=today();
-
-$("pagDescricao").value=
-"Pagamento de equipe";
-
-$("pagObs").value="";
-
-fillPagamentoFuncionarios();
-
-$("pagTotal").textContent=
-money(0);
-
-$("pagDiariasTotal").textContent=
-money(0);
-
-$("pagAdiantTotal").textContent=
-money(0);
-
-$("pagLiquidoTotal").textContent=
-money(0);
-
-openM("pagEquipeM");
-
-}
-
-function openPagamentoFuncionario(id){
-
-openPagamentoEquipe();
-
-setTimeout(()=>{
-
-const f=
-D.funcionarios.find(
-x=>String(x.id)===
-String(id)
-);
-
-if(!f)return;
-
-const obra=
-getFuncObra(id);
-
-$("pagObra").value=
-obra||"";
-
-const check=
-document.querySelector(
-`.pag-check[data-id="${id}"]`
-);
-
-if(check)
-check.checked=true;
-
-updatePagTotal();
-
-},50);
-
-}
-
-async function savePagamentoEquipe(e){
-
-e.preventDefault();
-
-const obra_id=
-$("pagObra").value;
-
-if(!obra_id){
-
-toast(
-"Selecione a obra."
-);
-
-return;
-
-}
-
-const checks=[
-...document.querySelectorAll(
-".pag-check"
-)
-].filter(x=>x.checked);
-
-if(!checks.length){
-
-toast(
-"Selecione pelo menos um funcionário."
-);
-
-return;
-
-}
-
-const data=$("pagData").value;
-
-const descricao=
-$("pagDescricao").value.trim()||
-"Pagamento de equipe";
-
-const obs=
-$("pagObs").value.trim();
-
-let total=0;
-let diariasTotal=0;
-let adiantTotal=0;
-let quantidade=0;
-
-const processados=[];
-
-for(const check of checks){
-
-const id=check.dataset.id;
-
-const f=
-D.funcionarios.find(
-x=>String(x.id)===
-String(id)
-);
-
-if(!f)continue;
-
-const resumo=
-calcFuncionarioPagamento(id);
-
-const pendingItems=
-getPendingDiarias(id);
-
-if(resumo.pending<=0)
-continue;
-
-processados.push({
-id,
-f,
-resumo,
-pendingItems
-});
-
-total+=resumo.net;
-diariasTotal+=
-resumo.pending;
-adiantTotal+=
-resumo.advance;
-
-quantidade++;
-
-}
-
-if(!processados.length){
-
-toast(
-"Nenhum funcionário selecionado possui diária pendente."
-);
-
-return;
-
-}
-
-for(const item of processados){
-
-const nome=item.f.nome;
-
-const resumo=item.resumo;
-
-if(resumo.net>0){
-
-const observacao=
-`Diárias pendentes: ${money(
-resumo.pending
-)}. `+
-`Adiantamento abatido: ${money(
-resumo.advance
-)}. `+
-`Valor líquido: ${money(
-resumo.net
-)}.`+
-(obs?` ${obs}`:"");
-
-await insertRow(
-"gastos",
-{
-obra_id,
-data,
-descricao:
-`[Mão de obra] ${descricao} - ${nome}`,
-valor:
-resumo.net,
-fornecedor:
-nome,
-observacao
-}
-);
-
-}
-
-}
-
-for(const item of processados){
-
-for(
-const diaria of
-item.pendingItems
-){
-
-await updateRow(
-"diarias",
-diaria.id,
-{
-status:"pago"
-}
-);
-
-}
-
-aplicarAdiantamentos(
-item.id,
-item.resumo.allocations
-);
-
-}
-
-closeM("pagEquipeM");
-
-toast(
-`${quantidade} funcionário(s) processado(s). `+
-`Diárias: ${money(
-diariasTotal
-)} · `+
-`Adiantamentos: ${money(
-adiantTotal
-)} · `+
-`Pagamento: ${money(
-total
-)}`
-);
-
-await loadCloud();
-
-renderAll();
-
-}
-
-
-/* =========================================================
-   ADIANTAMENTO
-   ========================================================= */
-
-function fillAdiantamentoFuncionarios(){
-
-const el=$("adiantFunc");
-
-if(!el)return;
-
-const atual=el.value;
-
-el.innerHTML=`
-<option value="">
-Selecione o funcionário
-</option>
-${
-D.funcionarios
-.filter(f=>f.ativo!==false)
-.map(f=>`
-<option value="${f.id}">
-${esc(f.nome)}
-</option>
-`).join("")
-}
-`;
-
-if(atual)
-el.value=atual;
-
-}
-
-function openAdiantamento(){
-
-fillSelectors();
-
-fillAdiantamentoFuncionarios();
-
-$("adiantObra").value="";
-$("adiantFunc").value="";
-$("adiantValor").value="";
-$("adiantData").value=today();
-$("adiantObs").value="";
-
-openM("adiantM");
-
-}
-
-function openAdiantamentoFuncionario(id){
-
-openAdiantamento();
-
-setTimeout(()=>{
-
-$("adiantFunc").value=id;
-
-$("adiantObra").value=
-getFuncObra(id)||"";
-
-const f=
-D.funcionarios.find(
-x=>String(x.id)===
-String(id)
-);
-
-if(f){
-
-$("adiantValor").value=
-f.tipo_pagamento==="mensal"
-?f.salario_mensal||""
-:f.valor_diaria||"";
-
-}
-
-},50);
-
-}
-
-async function saveAdiantamento(e){
-
-e.preventDefault();
-
-const obra_id=
-$("adiantObra").value;
-
-const funcionario_id=
-$("adiantFunc").value;
-
-const valor=
-Number(
-$("adiantValor").value||0
-);
-
-if(!obra_id){
-
-toast(
-"Selecione a obra."
-);
-
-return;
-
-}
-
-if(!funcionario_id){
-
-toast(
-"Selecione o funcionário."
-);
-
-return;
-
-}
-
-if(valor<=0){
-
-toast(
-"Informe um valor válido."
-);
-
-return;
-
-}
-
-const f=
-D.funcionarios.find(
-x=>String(x.id)===
-String(funcionario_id)
-);
-
-const nome=
-f?.nome||
-"Funcionário";
-
-const obs=
-$("adiantObs").value.trim();
-
-const result=
-await insertRow(
-"gastos",
-{
-obra_id,
-data:
-$("adiantData").value,
-descricao:
-`[Adiantamento] Adiantamento - ${nome}`,
-valor,
-fornecedor:
-nome,
-observacao:obs
-}
-);
-
-if(result){
-
-closeM("adiantM");
-
-toast(
-`Adiantamento de ${money(
-valor
-)} registrado.`
-);
-
-await loadCloud();
-
-renderAll();
-
-}
-
-}
-
-
-/* =========================================================
-   FINANCEIRO
-   ========================================================= */
-
-function openFin(){
-
-fillSelectors();
-
-$("tFin").value="entrada";
-$("dFin").value="";
-$("vFin").value="";
-$("dtFin").value=today();
-$("forFin").value="";
-$("obsFin").value="";
-$("oFin").value="";
-$("finCategoria").value="Material";
-
-atualizarCategoriaFinanceira();
-
-openM("finM");
-
-}
-
-function atualizarCategoriaFinanceira(){
-
-const despesa=
-$("tFin")?.value==="despesa";
-
-const wrap=$("finCatWrap");
-
-if(wrap){
-
-wrap.classList.toggle(
-"hidden",
-!despesa
-);
-
-}
-
-}
-
-async function saveFin(e){
-
-e.preventDefault();
-
-const tipo=
-$("tFin").value;
-
-const descricaoBase=
-$("dFin").value.trim();
-
-const valor=
-Number(
-$("vFin").value||0
-);
-
-if(!descricaoBase){
-
-toast(
-"Informe a descrição."
-);
-
-return;
-
-}
-
-if(valor<=0){
-
-toast(
-"Informe um valor válido."
-);
-
-return;
-
-}
-
-if(tipo==="entrada"){
-
-const result=
-await insertRow(
-"pagamentos",
-{
-obra_id:
-$("oFin").value||null,
-data:
-$("dtFin").value,
-descricao:
-descricaoBase,
-valor,
-fornecedor:
-$("forFin").value.trim(),
-observacao:
-$("obsFin").value.trim()
-}
-);
-
-if(result){
-
-closeM("finM");
-
-toast(
-"Receita registrada."
-);
-
-await loadCloud();
-
-renderAll();
-
-}
-
-}else{
-
-const categoria=
-$("finCategoria").value;
-
-const descricao=
-`[${categoria}] ${descricaoBase}`;
-
-const result=
-await insertRow(
-"gastos",
-{
-obra_id:
-$("oFin").value||null,
-data:
-$("dtFin").value,
-descricao,
-valor,
-fornecedor:
-$("forFin").value.trim(),
-observacao:
-$("obsFin").value.trim()
-}
-);
-
-if(result){
-
-closeM("finM");
-
-toast(
-"Despesa registrada."
-);
-
-await loadCloud();
-
-renderAll();
-
+    </div>
+  `);
 }
-
-}
-
-}
-
-function renderFinance(){
 
-const box=$("finList");
 
-if(!box)return;
+async function saveFalta(){
 
-const obraFilter=
-$("finObraFilter")?.value||
-"all";
+  const funcionario_id=$("faltaFunc")?.value;
+  const data=$("faltaData")?.value;
+  const tipo=$("faltaTipo")?.value;
+  const observacao=$("faltaObs")?.value.trim();
 
-const tipoFilter=
-$("finTipoFilter")?.value||
-"all";
+  if(!funcionario_id){
+    toast("Selecione o funcionário.");
+    return;
+  }
 
-let entradas=
-D.pagamentos.map(
-x=>({...x,_tipo:"entrada"})
-);
+  if(!data){
+    toast("Informe a data.");
+    return;
+  }
 
-let despesas=
-D.gastos.map(
-x=>({...x,_tipo:"despesa"})
-);
+  const row={
+    funcionario_id,
+    data,
+    tipo,
+    observacao
+  };
 
-let items=[
-...entradas,
-...despesas
-];
+  if(editFaltaId){
 
-if(obraFilter!=="all"){
-
-items=items.filter(
-x=>String(x.obra_id)===
-String(obraFilter)
-);
-
-}
-
-if(tipoFilter!=="all"){
-
-items=items.filter(
-x=>x._tipo===tipoFilter
-);
-
-}
-
-const ent=
-D.pagamentos
-.filter(
-x=>obraFilter==="all"||
-String(x.obra_id)===
-String(obraFilter)
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const desp=
-D.gastos
-.filter(
-x=>obraFilter==="all"||
-String(x.obra_id)===
-String(obraFilter)
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-$("finEnt").textContent=
-money(ent);
-
-$("finDesp").textContent=
-money(desp);
-
-$("finRes").textContent=
-money(ent-desp);
-
-renderObraFinance();
-
-if(!items.length){
-
-box.innerHTML=
-`<div class="empty">
-Nenhum lançamento encontrado.
-</div>`;
-
-return;
-
-}
+    const index=D.faltas.findIndex(
+      x=>String(x.id)===String(editFaltaId)
+    );
 
-items.sort((a,b)=>
-String(b.data||"")
-.localeCompare(
-String(a.data||"")
-)
-);
-
-box.innerHTML=
-items.map(x=>{
-
-const obra=
-D.obras.find(
-o=>String(o.id)===
-String(x.obra_id)
-);
-
-const categoria=
-x._tipo==="despesa"
-?categoriaFinanceira(x)
-:"Receita";
-
-return`
-
-<div class="card">
-
-<div class="row">
-
-<div>
-
-<b>${esc(
-x.descricao||
-"Lançamento"
-)}</b>
-
-<br>
-
-<small>
-${esc(
-obra?.nome||
-"Sem obra"
-)}
-</small>
-
-</div>
-
-<span class="badge ${
-x._tipo==="entrada"
-?"on":"off"
-}">
-${
-x._tipo==="entrada"
-?"Receita"
-:"Despesa"
-}
-</span>
-
-</div>
-
-<div class="row"
-style="margin-top:10px">
-
-<span>${esc(
-x.data||""
-)}</span>
-
-<strong class="${
-x._tipo==="entrada"
-?"green":"red"
-}">
-${money(x.valor)}
-</strong>
-
-</div>
-
-<small>
-Categoria: ${esc(
-categoria
-)}
-</small>
-
-${
-x.fornecedor
-?`<br><small>${esc(
-x.fornecedor
-)}</small>`
-:""
-}
+    if(index>=0){
+      D.faltas[index]={
+        ...D.faltas[index],
+        ...row
+      };
+    }
 
-<div class="listActions">
+  }else{
 
-<button
-class="btn danger"
-onclick="removeRow(
-'${
-x._tipo==="entrada"
-?"pagamentos"
-:"gastos"
-}',
-'${x.id}'
-)">
-Excluir
-</button>
+    D.faltas.push({
+      id:"falta_"+Date.now()+"_"+Math.random().toString(36).slice(2),
+      ...row
+    });
 
-</div>
+  }
 
-</div>
+  saveLocalData();
 
-`;
+  closeM();
 
-}).join("");
+  renderAll();
 
+  toast("Falta registrada.");
 }
-
-function renderObraFinance(){
-
-const box=
-$("obraFinanceResumo");
 
-if(!box)return;
 
-if(!D.obras.length){
+async function deleteFalta(id){
 
-box.innerHTML=
-`<p class="sub">
-Nenhuma obra cadastrada.
-</p>`;
+  if(!confirm("Excluir este registro de falta?")) return;
 
-return;
+  D.faltas=D.faltas.filter(
+    x=>String(x.id)!==String(id)
+  );
 
-}
+  saveLocalData();
 
-box.innerHTML=
-D.obras.map(o=>{
-
-const f=
-obraFinanceData(o.id);
-
-return`
-
-<div class="item">
-
-<div class="row">
-
-<div>
-
-<b>${esc(o.nome)}</b>
-
-<br>
-
-<small>
-Contrato:
-${money(f.contrato)}
-</small>
-
-</div>
-
-<strong class="${
-f.resultado>=0
-?"green":"red"
-}">
-${money(f.resultado)}
-</strong>
-
-</div>
-
-<div class="finance-line">
-<span>Receita</span>
-<b class="green">
-${money(f.receita)}
-</b>
-</div>
-
-<div class="finance-cat">
-<span>Material</span>
-<span>
-<b>${money(f.material)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.material,
-f.contrato
-)}
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>Mão de obra</span>
-<span>
-<b>${money(f.mao)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.mao,
-f.contrato
-)}
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>
-Serviço terceirizado
-</span>
-<span>
-<b>${money(
-f.terceirizado
-)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.terceirizado,
-f.contrato
-)}
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>
-Outras despesas
-</span>
-<span>
-<b>${money(f.outros)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.outros,
-f.contrato
-)}
-</span>
-</span>
-</div>
-
-<div class="finance-line"
-style="margin-top:8px">
-
-<span>
-Total despesas
-</span>
-
-<b class="red">
-${money(f.despesas)}
-</b>
-
-</div>
-
-<div class="finance-line">
-
-<span>
-Resultado / lucro
-</span>
-
-<b class="${
-f.resultado>=0
-?"green":"red"
-}">
-${money(f.resultado)}
-</b>
-
-</div>
-
-<div class="finance-line">
-
-<span>
-Saldo do contrato
-</span>
-
-<b class="gold">
-${money(f.saldoContrato)}
-</b>
-
-</div>
-
-</div>
-
-`;
-
-}).join("");
+  renderAll();
 
+  toast("Registro excluído.");
 }
-
 
-/* =========================================================
-   CHECKLIST
-   ========================================================= */
 
-function openCheck(){
+/* ---------------------------------------------------------
+   LISTAGEM DE FALTAS
+   --------------------------------------------------------- */
 
-fillSelectors();
+function renderFaltas(){
 
-$("checkDesc").value="";
+  const box=$("faltasList");
 
-openM("checkM");
+  if(!box) return;
 
-}
+  if(!D.faltas.length){
 
-function openCheckForObra(
-obraId
-){
+    box.innerHTML=`
+      <div class="empty">
+        Nenhuma falta registrada.
+      </div>
+    `;
 
-openCheck();
+    return;
+  }
 
-setTimeout(()=>{
-$("checkObra").value=
-obraId;
-},50);
+  const rows=[...D.faltas]
+    .sort((a,b)=>String(b.data).localeCompare(String(a.data)));
 
-}
+  box.innerHTML=rows.map(x=>{
 
-async function saveCheck(e){
+    const f=D.funcionarios.find(
+      y=>String(y.id)===String(x.funcionario_id)
+    );
 
-e.preventDefault();
+    const nome=f?.nome||"Funcionário";
 
-const obra_id=
-$("checkObra").value;
+    return `
+      <div class="list-card">
 
-const tarefa=
-$("checkDesc").value.trim();
+        <div>
+          <strong>${esc(nome)}</strong>
 
-if(!obra_id){
+          <div class="muted">
+            📅 ${formatDateSafe(x.data)}
+          </div>
 
-toast(
-"Selecione a obra."
-);
+          <div class="muted">
+            ${esc(x.tipo||"Falta")}
+          </div>
 
-return;
+          ${
+            x.observacao
+            ? `<div class="muted">${esc(x.observacao)}</div>`
+            : ""
+          }
+        </div>
 
-}
+        <div class="list-actions">
 
-if(!tarefa){
+          <button
+            class="btn small"
+            onclick="openFalta('${esc(x.id)}')">
+            ✏️
+          </button>
 
-toast(
-"Informe a etapa."
-);
+          <button
+            class="btn small danger"
+            onclick="deleteFalta('${esc(x.id)}')">
+            🗑️
+          </button>
 
-return;
+        </div>
 
-}
+      </div>
+    `;
 
-const result=
-await insertRow(
-"checklist",
-{
-obra_id,
-tarefa,
-concluida:false,
-progresso:0
+  }).join("");
 }
-);
-
-if(result){
 
-closeM("checkM");
 
-toast(
-"Etapa adicionada."
-);
+function formatDateSafe(v){
 
-}
+  if(!v) return "";
 
-}
+  const p=String(v).split("-");
 
-async function toggleChecklist(
-id,
-checked
-){
-
-await updateRow(
-"checklist",
-id,
-{
-concluida:checked,
-progresso:
-checked?100:0
-}
-);
+  if(p.length===3){
+    return `${p[2]}/${p[1]}/${p[0]}`;
+  }
 
+  return v;
 }
 
-function renderChecklist(){
 
-const box=$("checkList");
+/* ---------------------------------------------------------
+   RESUMO DE FALTAS POR FUNCIONÁRIO
+   --------------------------------------------------------- */
 
-if(!box)return;
+function totalFaltasFuncionario(id){
 
-if(!D.obras.length){
-
-box.innerHTML=`
-<div class="empty">
-Cadastre uma obra para utilizar o checklist.
-</div>
-`;
-
-return;
-
+  return D.faltas.filter(
+    x=>String(x.funcionario_id)===String(id)
+  ).length;
 }
-
-box.innerHTML=
-D.obras.map(o=>{
-
-const itens=
-D.checklist.filter(
-x=>String(x.obra_id)===
-String(o.id)
-);
 
-const total=itens.length;
 
-const concluidos=
-itens.filter(
-x=>
-x.concluida===true||
-x.concluido===true
-).length;
+/* ---------------------------------------------------------
+   CHECKLIST — GARANTE PROGRESSO
+   --------------------------------------------------------- */
 
-const p=total
-?Math.round(
-concluidos/total*100
-)
-:0;
+function checklistProgress(obraId){
 
-return`
+  const itens=D.checklist.filter(
+    x=>String(x.obra_id)===String(obraId)
+  );
 
-<div class="card">
+  if(!itens.length) return 0;
 
-<div class="row">
+  const concluidos=itens.filter(x=>
+    x.concluida===true ||
+    x.concluido===true ||
+    x.status==="concluido"
+  ).length;
 
-<div>
-<h3>${esc(o.nome)}</h3>
-
-<small>
-${concluidos}/${total}
-etapas concluídas
-</small>
-
-</div>
-
-<strong class="gold">
-${p}%
-</strong>
-
-</div>
-
-<div class="progress">
-<i style="width:${p}%"></i>
-</div>
-
-${
-itens.length
-?itens.map(item=>`
-
-<div class="check-item">
-
-<input
-type="checkbox"
-${
-item.concluida===true||
-item.concluido===true
-?"checked":""
-}
-onchange="toggleChecklist(
-'${item.id}',
-this.checked
-)"
->
-
-<span>
-${esc(
-item.tarefa||
-item.descricao||
-"Etapa"
-)}
-</span>
-
-<button
-class="mini"
-style="margin-left:auto"
-onclick="removeRow(
-'checklist',
-'${item.id}'
-)">
-Excluir
-</button>
-
-</div>
-
-`).join("")
-:`
-<div class="empty">
-Nenhuma etapa cadastrada.
-</div>
-`
+  return Math.round(
+    (concluidos/itens.length)*100
+  );
 }
-
-<div class="listActions">
-
-<button
-class="btn gold"
-onclick="openCheckForObra(
-'${o.id}'
-)">
-＋ Adicionar etapa
-</button>
-
-</div>
-
-</div>
-`;
-
-}).join("");
-
-}
-
-
-/* =========================================================
-   FOTOS — NOVA VERSÃO
-   ========================================================= */
-
-function openFoto(){
 
-fillSelectors();
 
-$("fotoData").value=today();
-$("fotoTitulo").value="";
-$("fotoObs").value="";
-$("fotoFiles").value="";
+/* ---------------------------------------------------------
+   BOTÃO PARA ABRIR CHECKLIST DENTRO DA OBRA
+   --------------------------------------------------------- */
 
-openM("fotoM");
+function abrirChecklistDaObra(id){
 
-}
-
-function openFotoForObra(id){
-
-openFoto();
-
-setTimeout(()=>{
-$("fotoObra").value=id;
-},50);
+  openCheckForObra(id);
 
 }
-
-async function saveFoto(e){
-
-e.preventDefault();
-
-const obra_id=
-$("fotoObra").value;
-
-const files=
-[...$("fotoFiles").files];
-
-if(!obra_id){
 
-toast(
-"Selecione a obra."
-);
 
-return;
+/* ---------------------------------------------------------
+   ADICIONA FALTAS AO BACKUP LOCAL
+   --------------------------------------------------------- */
 
-}
-
-if(!files.length){
+function saveLocalDataComFaltas(){
 
-toast(
-"Selecione pelo menos uma foto."
-);
+  try{
 
-return;
+    const data={
+      ...D,
+      faltas:D.faltas||[]
+    };
 
-}
+    localStorage.setItem(
+      LOCAL_KEY,
+      JSON.stringify(data)
+    );
 
-const btn=
-e.submitter||
-document.querySelector(
-"#fotoM button.primary"
-);
+  }catch(e){
 
-if(btn){
+    console.error(
+      "Erro salvando dados locais",
+      e
+    );
 
-btn.disabled=true;
+  }
 
-btn.textContent=
-"Salvando fotos...";
 }
-
-try{
-
-const data=
-$("fotoData").value;
 
-const titulo=
-$("fotoTitulo")
-.value
-.trim();
 
-const observacao=
-$("fotoObs")
-.value
-.trim();
+/* ---------------------------------------------------------
+   SOBRESCREVE SEGURANÇA DO SAVE LOCAL
+   --------------------------------------------------------- */
 
-let salvas=0;
+const _saveLocalDataOriginal=saveLocalData;
 
-for(const file of files){
-
-if(!file.type.startsWith("image/")){
-
-console.warn(
-"Arquivo ignorado:",
-file.name
-);
-
-continue;
-
-}
+saveLocalData=function(){
 
-const src=
-await fileToDataURL(file);
+  try{
 
-const foto={
+    _saveLocalDataOriginal();
 
-id:
-"foto_"+Date.now()+"_"+
-Math.random()
-.toString(36)
-.slice(2),
+  }catch(e){
 
-obra_id:String(obra_id),
+    console.error(e);
 
-data:data,
+  }
 
-titulo:titulo,
+  try{
 
-observacao:observacao,
+    const atual=JSON.parse(
+      localStorage.getItem(LOCAL_KEY)||"{}"
+    );
 
-nome_arquivo:file.name,
+    atual.faltas=D.faltas||[];
 
-tipo:file.type,
+    localStorage.setItem(
+      LOCAL_KEY,
+      JSON.stringify(atual)
+    );
 
-tamanho:file.size,
+  }catch(e){
 
-src:src,
+    console.error(
+      "Erro salvando faltas",
+      e
+    );
 
-created_at:
-new Date().toISOString()
+  }
 
 };
 
-await savePhotoDB(foto);
 
-salvas++;
+/* ---------------------------------------------------------
+   RENDERIZAÇÃO
+   --------------------------------------------------------- */
 
-}
+const _renderAllOriginal=renderAll;
 
-if(!salvas){
+renderAll=function(){
 
-throw new Error(
-"Nenhuma imagem válida foi selecionada."
-);
+  _renderAllOriginal();
 
-}
-
-closeM("fotoM");
-
-$("fotoFiles").value="";
-
-await renderFotos();
-
-toast(
-salvas>1
-?`${salvas} fotos salvas com sucesso.`
-:"Foto salva com sucesso."
-);
-
-}catch(err){
-
-console.error(
-"Erro ao salvar fotos:",
-err
-);
-
-toast(
-"Não foi possível salvar as fotos. Tente novamente."
-);
-
-}finally{
-
-if(btn){
-
-btn.disabled=false;
-
-btn.textContent=
-"Salvar fotos";
-
-}
-
-}
-
-}
-
-async function renderFotos(){
-
-const box=$("fotoList");
-
-if(!box)return;
-
-box.innerHTML=
-`<div class="empty">
-Carregando fotos...
-</div>`;
-
-try{
-
-const fotos=
-await getAllPhotosDB();
-
-if(!fotos.length){
-
-box.innerHTML=
-`<div class="empty">
-Nenhuma foto registrada.
-</div>`;
-
-return;
-
-}
-
-const grupos={};
-
-fotos.forEach(f=>{
-
-const key=String(
-f.obra_id
-);
-
-if(!grupos[key])
-grupos[key]=[];
-
-grupos[key].push(f);
-
-});
-
-const ordemObras=[
-...D.obras
-];
-
-const usados=new Set();
-
-let html="";
-
-for(const obra of ordemObras){
-
-const lista=
-grupos[String(obra.id)];
-
-if(!lista?.length)
-continue;
-
-usados.add(
-String(obra.id)
-);
-
-html+=renderGrupoFotos(
-obra,
-lista
-);
-
-}
-
-for(const obraId of Object.keys(grupos)){
-
-if(usados.has(obraId))
-continue;
-
-const lista=
-grupos[obraId];
-
-html+=renderGrupoFotos(
-null,
-lista
-);
-
-}
-
-box.innerHTML=html;
-
-}catch(err){
-
-console.error(
-"Erro carregando fotos:",
-err
-);
-
-box.innerHTML=
-`<div class="empty">
-Não foi possível carregar as fotos.
-</div>`;
-
-}
-
-}
-
-function renderGrupoFotos(
-obra,
-fotos
-){
-
-return`
-
-<div class="card">
-
-<div class="row">
-
-<div>
-
-<b>
-${esc(
-obra?.nome||
-"Obra"
-)}
-</b>
-
-<br>
-
-<small>
-${fotos.length}
-foto${
-fotos.length===1
-?"":"s"
-}
-</small>
-
-</div>
-
-<span class="badge on">
-📸 Fotos
-</span>
-
-</div>
-
-<div class="photoGrid">
-
-${
-fotos.map(f=>`
-
-<div style="
-position:relative;
-">
-
-<img
-src="${esc(f.src)}"
-alt="${esc(
-f.titulo||
-"Foto da obra"
-)}"
-loading="lazy"
-onclick="openFotoVisual('${f.id}')"
-style="
-cursor:pointer;
-">
-
-<button
-class="mini"
-style="
-position:absolute;
-right:5px;
-top:5px;
-background:#32191c;
-color:#ffb0b5;
-"
-onclick="event.stopPropagation();deleteFoto('${f.id}')"
->
-×
-</button>
-
-</div>
-
-`).join("")
-}
-
-</div>
-
-<div class="divider"></div>
-
-${
-fotos.map(f=>`
-
-<div class="item"
-style="margin:8px 0;">
-
-<div class="row">
-
-<div>
-
-<b>
-${esc(
-f.titulo||
-"Registro fotográfico"
-)}
-</b>
-
-<br>
-
-<small>
-${esc(f.data||"")}
-</small>
-
-</div>
-
-<button
-class="btn danger"
-onclick="deleteFoto('${f.id}')"
->
-Excluir
-</button>
-
-</div>
-
-${
-f.observacao
-?`
-<div class="note">
-${esc(f.observacao)}
-</div>
-`
-:""
-}
-
-</div>
-
-`).join("")
-}
-
-</div>
-
-`;
-
-}
-
-async function openFotoVisual(id){
-
-const fotos=
-await getAllPhotosDB();
-
-const f=
-fotos.find(
-x=>String(x.id)===
-String(id)
-);
-
-if(!f)return;
-
-const win=
-window.open(
-"",
-"_blank"
-);
-
-if(!win){
-
-toast(
-"Permita a abertura de nova janela para visualizar a foto."
-);
-
-return;
-
-}
-
-win.document.write(`
-<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport"
-content="width=device-width,initial-scale=1">
-<title>EDIFIQ — Foto</title>
-<style>
-body{
-margin:0;
-background:#090b0e;
-color:#fff;
-font-family:system-ui,sans-serif;
-padding:15px;
-}
-img{
-display:block;
-width:100%;
-max-width:1000px;
-margin:auto;
-border-radius:14px;
-}
-h3{
-max-width:1000px;
-margin:10px auto;
-}
-p{
-max-width:1000px;
-margin:10px auto;
-color:#aaa;
-}
-</style>
-</head>
-<body>
-<img src="${esc(f.src)}">
-<h3>${esc(
-f.titulo||
-"Registro fotográfico"
-)}</h3>
-<p>${esc(
-f.data||""
-)}</p>
-<p>${esc(
-f.observacao||""
-)}</p>
-</body>
-</html>
-`);
-
-win.document.close();
-
-}
-
-async function deleteFoto(id){
-
-if(!confirm(
-"Excluir esta foto?"
-))
-return;
-
-try{
-
-await deletePhotoDB(id);
-
-await renderFotos();
-
-toast(
-"Foto excluída."
-);
-
-}catch(err){
-
-console.error(err);
-
-toast(
-"Não foi possível excluir a foto."
-);
-
-}
-
-}
-
-
-/* =========================================================
-   SELETORES
-   ========================================================= */
-
-function fillSelectors(){
-
-const obraIds=[
-"fObra",
-"dObra",
-"oFin",
-"checkObra",
-"fotoObra",
-"pagObra",
-"adiantObra"
-];
-
-obraIds.forEach(id=>{
-
-const el=$(id);
-
-if(!el)return;
-
-const atual=el.value;
-
-const first=
-id==="oFin"
-?"Sem obra"
-:"Selecione a obra";
-
-el.innerHTML=`
-
-<option value="">
-${first}
-</option>
-
-${
-D.obras.map(o=>`
-<option value="${o.id}">
-${esc(o.nome)}
-</option>
-`).join("")
-}
-
-`;
-
-if(atual)
-el.value=atual;
-
-});
-
-const func=$("dFunc");
-
-if(func){
-
-const atual=func.value;
-
-func.innerHTML=`
-
-<option value="">
-Selecione o funcionário
-</option>
-
-${
-D.funcionarios
-.filter(
-f=>f.ativo!==false
-)
-.filter(
-f=>f.registrar_diaria!==false
-)
-.map(f=>`
-<option value="${f.id}">
-${esc(f.nome)}
-</option>
-`).join("")
-}
-
-`;
-
-if(atual)
-func.value=atual;
-
-}
-
-const filter=
-$("finObraFilter");
-
-if(filter){
-
-const atual=
-filter.value;
-
-filter.innerHTML=`
-
-<option value="all">
-Todas as obras
-</option>
-
-${
-D.obras.map(o=>`
-<option value="${o.id}">
-${esc(o.nome)}
-</option>
-`).join("")
-}
-
-`;
-
-if(atual)
-filter.value=atual;
-
-}
-
-const adiantFunc=
-$("adiantFunc");
-
-if(adiantFunc){
-
-const atual=
-adiantFunc.value;
-
-adiantFunc.innerHTML=`
-
-<option value="">
-Selecione o funcionário
-</option>
-
-${
-D.funcionarios
-.filter(
-f=>f.ativo!==false
-)
-.map(f=>`
-<option value="${f.id}">
-${esc(f.nome)}
-</option>
-`).join("")
-}
-
-`;
-
-if(atual)
-adiantFunc.value=atual;
-
-}
-
-}
-
-
-/* =========================================================
-   DASHBOARD
-   ========================================================= */
-
-function renderDashboard(){
-
-const contratado=
-D.obras.reduce(
-(a,o)=>a+Number(o.valor||0),
-0
-);
-
-const entradas=
-D.pagamentos.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const despesas=
-D.gastos.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-$("kObras").textContent=
-D.obras.length;
-
-$("kFunc").textContent=
-D.funcionarios.filter(
-f=>f.ativo!==false
-).length;
-
-$("kContratado").textContent=
-money(contratado);
-
-$("kEntradas").textContent=
-money(entradas);
-
-$("kDespesas").textContent=
-money(despesas);
-
-$("kResultado").textContent=
-money(
-entradas-despesas
-);
-
-}
-
-
-/* =========================================================
-   EXPORTAÇÃO
-   ========================================================= */
-
-function downloadFile(
-content,
-filename,
-type
-){
-
-const blob=new Blob(
-[content],
-{type}
-);
-
-const url=
-URL.createObjectURL(blob);
-
-const a=
-document.createElement("a");
-
-a.href=url;
-
-a.download=filename;
-
-document.body.appendChild(a);
-
-a.click();
-
-a.remove();
-
-setTimeout(()=>{
-URL.revokeObjectURL(url);
-},1000);
-
-}
-
-function exportTable(table){
-
-const data=D[table]||[];
-
-downloadFile(
-JSON.stringify(
-data,
-null,
-2
-),
-`EDIFIQ_${table}.json`,
-"application/json"
-);
-
-toast(
-"Arquivo exportado."
-);
-
-}
-
-async function exportFull(){
-
-let fotos=[];
-
-try{
-
-fotos=
-await getAllPhotosDB();
-
-}catch(e){
-
-console.warn(
-"Não foi possível exportar fotos",
-e
-);
-
-}
-
-const backup={
-
-app:"EDIFIQ",
-
-version:"4.0",
-
-date:
-new Date().toISOString(),
-
-data:D,
-
-fotos:fotos,
-
-funcionarioObras:
-localFuncObras(),
-
-adiantamentosAplicados:
-getAdvanceApplied()
+  renderFaltas();
 
 };
 
-downloadFile(
-JSON.stringify(
-backup,
-null,
-2
-),
-"EDIFIQ_backup.json",
-"application/json"
-);
 
-toast(
-"Backup completo criado."
-);
-
-}
-
-function exportExcel(){
-
-if(!window.XLSX){
-
-toast(
-"Excel não carregado."
-);
-
-return;
-
-}
-
-const wb=
-XLSX.utils.book_new();
-
-Object.entries(D).forEach(
-([nome,dados])=>{
-
-const ws=
-XLSX.utils.json_to_sheet(
-dados||[]
-);
-
-XLSX.utils.book_append_sheet(
-wb,
-ws,
-nome.substring(0,31)
-);
-
-}
-);
-
-XLSX.writeFile(
-wb,
-"EDIFIQ_relatorio.xlsx"
-);
-
-toast(
-"Excel exportado."
-);
-
-}
-
-async function importBackup(event){
-
-const file=
-event.target.files?.[0];
-
-if(!file)return;
-
-const reader=
-new FileReader();
-
-reader.onload=async()=>{
-
-try{
-
-const backup=
-JSON.parse(
-reader.result
-);
-
-if(!backup.data){
-
-toast(
-"Backup inválido."
-);
-
-return;
-
-}
-
-if(!confirm(
-"Importar este backup? Os registros serão adicionados ao sistema."
-))
-return;
-
-for(
-const table of[
-"obras",
-"funcionarios",
-"diarias",
-"gastos",
-"pagamentos",
-"checklist"
-]){
-
-const rows=
-backup.data[table]||[];
-
-for(
-const row of rows
-){
-
-const copy={...row};
-
-delete copy.id;
-delete copy.created_at;
-delete copy.updated_at;
-delete copy.user_id;
-
-await insertRow(
-table,
-copy
-);
-
-}
-
-}
-
-if(backup.funcionarioObras){
-
-localStorage.setItem(
-FUNC_OBRA_KEY,
-JSON.stringify(
-backup.funcionarioObras
-)
-);
-
-}
-
-if(backup.adiantamentosAplicados){
-
-localStorage.setItem(
-ADV_KEY,
-JSON.stringify(
-backup.adiantamentosAplicados
-)
-);
-
-}
-
-/*
- Importação das fotos para o IndexedDB.
-*/
-
-if(
-Array.isArray(
-backup.fotos
-)
-){
-
-for(
-const foto of backup.fotos
-){
-
-try{
-
-await savePhotoDB({
-...foto,
-id:
-foto.id||
-"foto_"+Date.now()+"_"+
-Math.random()
-.toString(36)
-.slice(2)
-});
-
-}catch(err){
-
-console.warn(
-"Erro importando foto",
-err
-);
-
-}
-
-}
-
-}
-
-await loadCloud();
-
-renderAll();
-
-toast(
-"Backup importado."
-);
-
-}catch(e){
-
-console.error(e);
-
-toast(
-"Arquivo de backup inválido."
-);
-
-}
-
-};
-
-reader.readAsText(file);
-
-}
-
-
-/* =========================================================
-   RENDER
-   ========================================================= */
-
-function renderAll(){
-
-renderDashboard();
-
-renderObras();
-
-renderFuncs();
-
-renderPayroll();
-
-renderFinance();
-
-renderChecklist();
-
-renderFotos();
-
-fillSelectors();
-
-atualizarCategoriaFinanceira();
-
-}
-
-
-/* =========================================================
-   EVENTOS
-   ========================================================= */
-
-document.addEventListener(
-"change",
-e=>{
-
-if(e.target.id==="dFunc"){
-
-const f=
-D.funcionarios.find(
-x=>String(x.id)===
-String(e.target.value)
-);
-
-if(f){
-
-$("dVal").value=
-f.valor_diaria||"";
-
-$("dObra").value=
-getFuncObra(f.id)||"";
-
-}
-
-}
-
-if(e.target.id==="fTipo"){
-
-atualizarTipoFuncionario();
-
-}
-
-if(e.target.id==="dTipo"){
-
-aplicarTipoDiaria();
-
-}
-
-if(e.target.id==="tFin"){
-
-atualizarCategoriaFinanceira();
-
-}
-
-}
-);
-
-
-/* =========================================================
-   INICIALIZAÇÃO
-   ========================================================= */
-
-document.addEventListener(
-"DOMContentLoaded",
-async()=>{
-
-try{
-
-/*
- Inicializa o banco de fotos antes do restante.
- Isso cria o armazenamento persistente
- automaticamente no navegador.
-*/
-
-if("indexedDB" in window){
-
-await openPhotoDB();
-
-}
-
-await initSupabase();
-
-}catch(e){
-
-console.error(e);
-
-authMsg(
-"Erro ao iniciar o EDIFIQ. Recarregue a página."
-);
-
-}
-
-renderAll();
-
-}
-);
-
-
-/* =========================================================
-   GLOBAIS
-   ========================================================= */
-
-window.go=go;
-
-window.login=login;
-window.signup=signup;
-window.resetPassword=
-resetPassword;
-window.logout=logout;
-
-window.openObra=openObra;
-window.openFunc=openFunc;
-window.openDia=openDia;
-window.openFin=openFin;
-window.openCheck=openCheck;
-window.openFoto=openFoto;
-
-window.openDiaFuncionario=
-openDiaFuncionario;
-
-window.openCheckForObra=
-openCheckForObra;
-
-window.openFotoForObra=
-openFotoForObra;
-
-window.openPagamentoEquipe=
-openPagamentoEquipe;
-
-window.openPagamentoFuncionario=
-openPagamentoFuncionario;
-
-window.openAdiantamento=
-openAdiantamento;
-
-window.openAdiantamentoFuncionario=
-openAdiantamentoFuncionario;
-
-window.updatePagTotal=
-updatePagTotal;
-
-window.selecionarTodosPagamentos=
-selecionarTodosPagamentos;
-
-window.aplicarTipoDiaria=
-aplicarTipoDiaria;
-
-window.closeM=closeM;
-
-window.saveObra=saveObra;
-window.saveFunc=saveFunc;
-window.saveDia=saveDia;
-window.saveFin=saveFin;
-window.saveCheck=saveCheck;
-window.saveFoto=saveFoto;
-
-window.savePagamentoEquipe=
-savePagamentoEquipe;
-
-window.saveAdiantamento=
-saveAdiantamento;
-
-window.toggleFunc=
-toggleFunc;
-
-window.toggleChecklist=
-toggleChecklist;
-
-window.removeRow=
-removeRow;
-
-window.deleteFoto=
-deleteFoto;
-
-window.openFotoVisual=
-openFotoVisual;
-
-window.exportTable=
-exportTable;
-
-window.exportFull=
-exportFull;
-
-window.exportExcel=
-exportExcel;
-
-window.importBackup=
-importBackup;
+/* ---------------------------------------------------------
+   FUNÇÕES GLOBAIS
+   --------------------------------------------------------- */
+
+window.openFalta=openFalta;
+window.saveFalta=saveFalta;
+window.deleteFalta=deleteFalta;
+window.renderFaltas=renderFaltas;
+window.totalFaltasFuncionario=totalFaltasFuncionario;
+window.abrirChecklistDaObra=abrirChecklistDaObra;
 
 </script>
