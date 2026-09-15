@@ -47,7 +47,6 @@ h3{margin-bottom:5px}
 
 .sub,.lead,.muted,.label,small{color:var(--muted)}
 .sub,.label,small{font-size:12px}
-
 .lead{margin:4px 0 16px}
 
 header{
@@ -466,12 +465,67 @@ border-radius:10px;
 padding:10px;
 }
 
+.pay-value input[readonly]{
+opacity:.9;
+}
+
 .total-box{
 background:#171d23;
 border:1px solid var(--line);
 border-radius:12px;
 padding:14px;
 margin-top:10px;
+}
+
+.pay-summary{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:7px;
+margin-top:10px;
+}
+
+.pay-summary div{
+background:#171d23;
+border-radius:9px;
+padding:8px;
+}
+
+.fin-category{
+background:#171d23;
+border:1px solid var(--line);
+border-radius:12px;
+padding:12px;
+}
+
+.finance-mini{
+margin-top:12px;
+padding-top:12px;
+border-top:1px solid var(--line);
+}
+
+.finance-line{
+display:flex;
+justify-content:space-between;
+gap:10px;
+padding:4px 0;
+font-size:13px;
+}
+
+.finance-cat{
+display:flex;
+justify-content:space-between;
+gap:10px;
+padding:6px 0;
+border-bottom:1px solid #222830;
+}
+
+.finance-cat:last-child{
+border-bottom:0;
+}
+
+.finance-percent{
+color:var(--muted);
+font-size:12px;
 }
 
 @media(max-width:700px){
@@ -482,6 +536,7 @@ margin-top:10px;
 .grid,.grid3,.two,.three{grid-template-columns:1fr}
 .actions{grid-template-columns:1fr 1fr}
 .stat{font-size:20px}
+.pay-summary{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -628,7 +683,7 @@ GESTÃO DE OBRAS E REFORMAS
 
 <div>
 <h1>Obras</h1>
-<p class="lead">Projetos, checklist e progresso.</p>
+<p class="lead">Projetos, checklist, progresso e financeiro.</p>
 </div>
 
 <button class="primary" onclick="openObra()">＋ Nova obra</button>
@@ -693,7 +748,7 @@ GESTÃO DE OBRAS E REFORMAS
 
 <button class="action" onclick="openDia()">
 💵 <b>Registrar diária</b><br>
-<small>Lançar uma diária</small>
+<small>Lançar diária completa ou meia diária</small>
 </button>
 
 <button class="action" onclick="openPagamentoEquipe()">
@@ -958,7 +1013,7 @@ Mais
 </select>
 
 <div class="note">
-A obra de trabalho do funcionário é mantida no aparelho para facilitar os próximos lançamentos.
+Escolha a obra onde o funcionário trabalha. Essa obra será usada automaticamente nos próximos lançamentos.
 </div>
 
 <select id="fObra">
@@ -993,9 +1048,19 @@ A obra de trabalho do funcionário é mantida no aparelho para facilitar os pró
 
 <input id="dData" type="date" required>
 
-<input id="dQtd" type="number" step=".25" value="1" required placeholder="Quantidade">
+<select id="dTipo" onchange="aplicarTipoDiaria()">
+<option value="completa">Diária completa — 100%</option>
+<option value="manha">Meia diária — manhã — 50%</option>
+<option value="tarde">Meia diária — tarde — 50%</option>
+</select>
+
+<input id="dQtd" type="number" step=".5" value="1" readonly required placeholder="Quantidade">
 
 <input id="dVal" type="number" step=".01" required placeholder="Valor da diária">
+
+<div class="note" id="diaValorInfo">
+Diária completa: será considerado 100% do valor informado.
+</div>
 
 <select id="dStatus">
 <option value="pendente">Pendente</option>
@@ -1022,7 +1087,7 @@ A obra de trabalho do funcionário é mantida no aparelho para facilitar os pró
 
 <form class="form" onsubmit="saveFin(event)">
 
-<select id="tFin">
+<select id="tFin" onchange="atualizarCategoriaFinanceira()">
 <option value="entrada">Entrada / recebimento</option>
 <option value="despesa">Despesa</option>
 </select>
@@ -1038,6 +1103,21 @@ A obra de trabalho do funcionário é mantida no aparelho para facilitar os pró
 <select id="oFin">
 <option value="">Sem obra</option>
 </select>
+
+<div id="finCatWrap" class="fin-category hidden">
+
+<div class="label" style="margin-bottom:7px">
+Categoria da despesa
+</div>
+
+<select id="finCategoria">
+<option value="Material">Material</option>
+<option value="Mão de obra">Mão de obra</option>
+<option value="Serviço terceirizado">Serviço terceirizado</option>
+<option value="Outros">Outros</option>
+</select>
+
+</div>
 
 <textarea id="obsFin" placeholder="Observação"></textarea>
 
@@ -1058,7 +1138,7 @@ A obra de trabalho do funcionário é mantida no aparelho para facilitar os pró
 <h2>Registrar pagamento</h2>
 
 <p class="sub">
-Selecione um ou vários funcionários. O valor será lançado automaticamente como despesa da obra.
+Selecione um ou vários funcionários. O EDIFIQ calcula automaticamente as diárias pendentes e desconta os adiantamentos disponíveis.
 </p>
 
 <form class="form" onsubmit="savePagamentoEquipe(event)">
@@ -1071,13 +1151,46 @@ Selecione um ou vários funcionários. O valor será lançado automaticamente co
 
 <input id="pagDescricao" placeholder="Descrição" value="Pagamento de equipe">
 
+<div class="row wrap">
+
+<button type="button" class="secondary" onclick="selecionarTodosPagamentos(true)">
+☑️ Selecionar todos
+</button>
+
+<button type="button" class="secondary" onclick="selecionarTodosPagamentos(false)">
+Limpar seleção
+</button>
+
+</div>
+
 <div id="pagFuncionarios"></div>
 
 <div class="total-box">
+
 <div class="row">
 <b>Total do pagamento</b>
 <strong class="gold" id="pagTotal">R$ 0,00</strong>
 </div>
+
+<div class="pay-summary">
+
+<div>
+<small>Diárias pendentes</small><br>
+<b id="pagDiariasTotal">R$ 0,00</b>
+</div>
+
+<div>
+<small>Adiantamentos abatidos</small><br>
+<b class="red" id="pagAdiantTotal">R$ 0,00</b>
+</div>
+
+<div>
+<small>Líquido a pagar</small><br>
+<b class="green" id="pagLiquidoTotal">R$ 0,00</b>
+</div>
+
+</div>
+
 </div>
 
 <textarea id="pagObs" placeholder="Observação"></textarea>
@@ -1100,7 +1213,7 @@ Selecione um ou vários funcionários. O valor será lançado automaticamente co
 <h2>Registrar adiantamento</h2>
 
 <p class="sub">
-O adiantamento será lançado automaticamente como despesa da obra selecionada.
+O adiantamento será lançado automaticamente como despesa da obra selecionada e ficará disponível para abatimento no próximo pagamento do funcionário.
 </p>
 
 <form class="form" onsubmit="saveAdiantamento(event)">
@@ -1168,9 +1281,7 @@ O adiantamento será lançado automaticamente como despesa da obra selecionada.
 
 <input id="fotoData" type="date" required>
 <input id="fotoTitulo" placeholder="Título / etapa">
-<textarea id="fotoObs" placeholder="Observação">
-
-</textarea>
+<textarea id="fotoObs" placeholder="Observação"></textarea>
 
 <input id="fotoFiles" type="file" accept="image/*" multiple required>
 
@@ -1203,8 +1314,9 @@ pagamentos:[],
 checklist:[]
 };
 
-const LOCAL_KEY="edifiq_local_v2";
-const FUNC_OBRA_KEY="edifiq_func_obras_v1";
+const LOCAL_KEY="edifiq_local_v3";
+const FUNC_OBRA_KEY="edifiq_func_obras_v2";
+const ADV_KEY="edifiq_adiantamentos_aplicados_v1";
 
 const $=id=>document.getElementById(id);
 
@@ -1254,6 +1366,9 @@ return {};
 function saveLocalData(){
 try{
 localStorage.setItem(LOCAL_KEY,JSON.stringify({
+obras:D.obras,
+funcionarios:D.funcionarios,
+diarias:D.diarias,
 gastos:D.gastos,
 pagamentos:D.pagamentos,
 checklist:D.checklist
@@ -1278,7 +1393,231 @@ localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(x));
 }
 
 function getFuncObra(funcId){
+const f=D.funcionarios.find(x=>String(x.id)===String(funcId));
+
+if(f?.obra_id){
+return f.obra_id;
+}
+
 return localFuncObras()[funcId]||"";
+}
+
+
+/* ADIANTAMENTOS */
+
+function getAdvanceApplied(){
+
+try{
+return JSON.parse(
+localStorage.getItem(ADV_KEY)||"{}"
+);
+}catch{
+return {};
+}
+
+}
+
+function saveAdvanceApplied(data){
+
+try{
+localStorage.setItem(
+ADV_KEY,
+JSON.stringify(data)
+);
+}catch(e){
+console.warn("Erro nos adiantamentos",e);
+}
+
+}
+
+function normalize(v){
+return String(v||"")
+.toLowerCase()
+.normalize("NFD")
+.replace(/[\u0300-\u036f]/g,"")
+.trim();
+}
+
+function gastoCategoria(g){
+
+if(g?.categoria){
+const c=normalize(g.categoria);
+
+if(c.includes("material"))return "Material";
+if(c.includes("mao"))return "Mão de obra";
+if(c.includes("terceir"))return "Serviço terceirizado";
+if(c.includes("adiant"))return "Adiantamento";
+if(c.includes("outro"))return "Outros";
+}
+
+const desc=normalize(g?.descricao);
+
+if(desc.includes("[material]")||desc.includes("material")){
+return "Material";
+}
+
+if(
+desc.includes("[mao de obra]")||
+desc.includes("pagamento de equipe")||
+desc.includes("pagamento de diaria")||
+desc.includes("pagamento de diária")
+){
+return "Mão de obra";
+}
+
+if(
+desc.includes("[servico terceirizado]")||
+desc.includes("servico terceirizado")
+){
+return "Serviço terceirizado";
+}
+
+if(
+desc.includes("[adiantamento]")||
+desc.includes("adiantamento")
+){
+return "Adiantamento";
+}
+
+return "Outros";
+}
+
+function categoriaFinanceira(g){
+const c=gastoCategoria(g);
+return c==="Adiantamento"?"Mão de obra":c;
+}
+
+function diariaValor(d){
+
+return Number(
+d.qtd ??
+d.quantidade ??
+1
+) * Number(
+d.valor_diaria||0
+);
+
+}
+
+function getPendingDiarias(funcId){
+
+return D.diarias.filter(d=>
+String(d.funcionario_id)===String(funcId) &&
+String(d.status||"pendente").toLowerCase()!=="pago"
+);
+
+}
+
+function getPendingTotal(funcId){
+
+return getPendingDiarias(funcId)
+.reduce((a,d)=>a+diariaValor(d),0);
+
+}
+
+function getEmployeeAdvances(funcId){
+
+const f=D.funcionarios.find(
+x=>String(x.id)===String(funcId)
+);
+
+if(!f)return[];
+
+const nome=normalize(f.nome);
+const applied=getAdvanceApplied();
+
+return D.gastos
+.filter(g=>{
+
+if(gastoCategoria(g)!=="Adiantamento"){
+return false;
+}
+
+const fornecedor=normalize(g.fornecedor);
+const descricao=normalize(g.descricao);
+
+return fornecedor===nome ||
+descricao.includes(nome);
+
+})
+.map(g=>{
+
+const valor=Number(g.valor||0);
+const usado=Number(applied[g.id]||0);
+const disponivel=Math.max(0,valor-usado);
+
+return {
+...g,
+valorOriginal:valor,
+aplicado:usado,
+disponivel
+};
+
+})
+.filter(g=>g.disponivel>0)
+.sort((a,b)=>
+String(a.data||"").localeCompare(String(b.data||""))
+);
+
+}
+
+function calcFuncionarioPagamento(funcId){
+
+const pending=getPendingTotal(funcId);
+
+const advances=getEmployeeAdvances(funcId);
+
+let restante=pending;
+let abatido=0;
+const allocations=[];
+
+for(const adv of advances){
+
+if(restante<=0)break;
+
+const usar=Math.min(
+restante,
+Number(adv.disponivel||0)
+);
+
+if(usar>0){
+
+allocations.push({
+id:adv.id,
+valor:usar
+});
+
+abatido+=usar;
+restante-=usar;
+
+}
+
+}
+
+return {
+pending,
+advance:abatido,
+net:Math.max(0,restante),
+allocations,
+advances
+};
+
+}
+
+function aplicarAdiantamentos(funcId,allocations){
+
+if(!allocations?.length)return;
+
+const data=getAdvanceApplied();
+
+allocations.forEach(a=>{
+
+data[a.id]=Number(data[a.id]||0)+Number(a.valor||0);
+
+});
+
+saveAdvanceApplied(data);
+
 }
 
 
@@ -1459,17 +1798,19 @@ function mergeLocal(){
 
 const x=localData();
 
-if(Array.isArray(x.gastos)){
-D.gastos=[...D.gastos,...x.gastos.filter(l=>!D.gastos.some(r=>r.id===l.id))];
-}
+Object.keys(D).forEach(table=>{
 
-if(Array.isArray(x.pagamentos)){
-D.pagamentos=[...D.pagamentos,...x.pagamentos.filter(l=>!D.pagamentos.some(r=>r.id===l.id))];
-}
+if(!Array.isArray(x[table]))return;
 
-if(Array.isArray(x.checklist)){
-D.checklist=[...D.checklist,...x.checklist.filter(l=>!D.checklist.some(r=>r.id===l.id))];
-}
+D[table]=[
+...D[table],
+...x[table].filter(l=>
+!D[table].some(r=>String(r.id)===String(l.id))
+)
+];
+
+});
+
 }
 
 async function loadTable(table){
@@ -1480,21 +1821,39 @@ try{
 
 const {data,error}=await sb
 .from(table)
-.select("*")
-.order("created_at",{ascending:false});
+.select("*");
 
 if(!error&&Array.isArray(data)){
+
+data.sort((a,b)=>
+String(b.created_at||b.data||"")
+.localeCompare(
+String(a.created_at||a.data||"")
+)
+);
+
 D[table]=data;
 return;
 }
 
-console.warn("EDIFIQ",table,error?.message);
+console.warn(
+"EDIFIQ",
+table,
+error?.message
+);
 
 }catch(e){
-console.warn("Erro carregando",table,e);
+
+console.warn(
+"Erro carregando",
+table,
+e
+);
+
 }
 
 D[table]=[];
+
 }
 
 async function loadCloud(){
@@ -1519,9 +1878,9 @@ fillSelectors();
 
 /*
  Gravação principal.
- Se o Supabase aceitar, o registro vai para a nuvem.
- Se houver erro de política/estrutura, o registro é preservado
- no armazenamento local para não desaparecer.
+ Se o servidor aceitar, salva na nuvem.
+ Caso recuse por estrutura/política,
+ preserva o registro no aparelho.
 */
 
 async function insertRow(table,row){
@@ -1536,11 +1895,42 @@ const payload={
 user_id:user.id
 };
 
+const attempts=[payload];
+
+if(table==="gastos"){
+attempts.push(
+Object.fromEntries(
+Object.entries(payload)
+.filter(([k])=>k!=="categoria")
+)
+);
+}
+
+if(table==="pagamentos"){
+attempts.push(
+Object.fromEntries(
+Object.entries(payload)
+.filter(([k])=>k!=="forma_pagamento")
+)
+);
+}
+
+if(table==="funcionarios"){
+attempts.push(
+Object.fromEntries(
+Object.entries(payload)
+.filter(([k])=>k!=="registrar_diaria")
+)
+);
+}
+
+for(const tentativa of attempts){
+
 try{
 
 const {data,error}=await sb
 .from(table)
-.insert(payload)
+.insert(tentativa)
 .select()
 .single();
 
@@ -1548,19 +1938,29 @@ if(!error&&data){
 
 D[table].unshift(data);
 
-if(["gastos","pagamentos","checklist"].includes(table)){
 saveLocalData();
-}
-
 renderAll();
 
 return data;
+
 }
 
-console.warn("Supabase recusou",table,error?.message);
+console.warn(
+"Supabase recusou",
+table,
+error?.message
+);
 
 }catch(e){
-console.warn("Erro Supabase",table,e);
+
+console.warn(
+"Erro Supabase",
+table,
+e
+);
+
+}
+
 }
 
 const localRow={
@@ -1572,10 +1972,7 @@ created_at:new Date().toISOString()
 
 D[table].unshift(localRow);
 
-if(["gastos","pagamentos","checklist"].includes(table)){
 saveLocalData();
-}
-
 renderAll();
 
 toast("Salvo neste aparelho. O servidor recusou a gravação.");
@@ -1587,17 +1984,28 @@ async function updateRow(table,id,row){
 
 if(String(id).startsWith("local_")){
 
-const i=D[table].findIndex(x=>String(x.id)===String(id));
+const i=D[table].findIndex(
+x=>String(x.id)===String(id)
+);
 
 if(i>=0){
-D[table][i]={...D[table][i],...row};
+
+D[table][i]={
+...D[table][i],
+...row
+};
+
 saveLocalData();
 renderAll();
+
 toast("Atualizado.");
+
 return D[table][i];
+
 }
 
 return null;
+
 }
 
 try{
@@ -1611,19 +2019,28 @@ const {data,error}=await sb
 
 if(!error&&data){
 
-const i=D[table].findIndex(x=>x.id===id);
+const i=D[table].findIndex(
+x=>String(x.id)===String(id)
+);
 
 if(i>=0)D[table][i]=data;
 
+saveLocalData();
 renderAll();
 
 return data;
+
 }
 
-console.warn("Erro atualização",error?.message);
+console.warn(
+"Erro atualização",
+error?.message
+);
 
 }catch(e){
+
 console.warn(e);
+
 }
 
 toast("Não foi possível atualizar no servidor.");
@@ -1636,9 +2053,13 @@ if(!confirm("Deseja realmente excluir?"))return;
 
 if(String(id).startsWith("local_")){
 
-D[table]=D[table].filter(x=>String(x.id)!==String(id));
+D[table]=D[table].filter(
+x=>String(x.id)!==String(id)
+);
+
 saveLocalData();
 renderAll();
+
 toast("Excluído com sucesso.");
 return;
 }
@@ -1651,11 +2072,15 @@ const {error}=await sb
 .eq("id",id);
 
 if(error){
+
 toast("Erro ao excluir: "+error.message);
 return;
+
 }
 
-D[table]=D[table].filter(x=>x.id!==id);
+D[table]=D[table].filter(
+x=>String(x.id)!==String(id)
+);
 
 saveLocalData();
 renderAll();
@@ -1663,7 +2088,9 @@ renderAll();
 toast("Excluído com sucesso.");
 
 }catch(e){
+
 toast("Erro ao excluir.");
+
 }
 
 }
@@ -1675,9 +2102,12 @@ function openObra(id=null){
 
 editObraId=id;
 
-const o=D.obras.find(x=>String(x.id)===String(id));
+const o=D.obras.find(
+x=>String(x.id)===String(id)
+);
 
-$("obraTitle").textContent=id?"Editar obra":"Nova obra";
+$("obraTitle").textContent=
+id?"Editar obra":"Nova obra";
 
 $("oNome").value=o?.nome||"";
 $("oCli").value=o?.cliente||"";
@@ -1719,11 +2149,18 @@ let result=null;
 
 if(editObraId){
 
-result=await updateRow("obras",editObraId,row);
+result=await updateRow(
+"obras",
+editObraId,
+row
+);
 
 }else{
 
-result=await insertRow("obras",row);
+result=await insertRow(
+"obras",
+row
+);
 
 }
 
@@ -1731,9 +2168,14 @@ if(result){
 
 closeM("obraM");
 
-toast(editObraId?"Obra atualizada.":"Obra criada com sucesso.");
+toast(
+editObraId
+?"Obra atualizada."
+:"Obra criada com sucesso."
+);
 
 editObraId=null;
+
 }
 
 }
@@ -1746,11 +2188,14 @@ planejada:"Planejada",
 concluida:"Concluída",
 pausada:"Pausada"
 })[s]||s||"—";
+
 }
 
 function obraProgress(obra){
 
-const itens=D.checklist.filter(x=>String(x.obra_id)===String(obra.id));
+const itens=D.checklist.filter(
+x=>String(x.obra_id)===String(obra.id)
+);
 
 if(!itens.length){
 return obra.status==="concluida"?100:0;
@@ -1762,7 +2207,180 @@ x.concluido===true ||
 x.status==="concluido"
 ).length;
 
-return Math.round(done/itens.length*100);
+return Math.round(
+done/itens.length*100
+);
+
+}
+
+
+/* FINANCEIRO DA OBRA */
+
+function obraFinanceData(obraId){
+
+const obra=D.obras.find(
+o=>String(o.id)===String(obraId)
+);
+
+const contrato=Number(obra?.valor||0);
+
+const receita=D.pagamentos
+.filter(x=>
+String(x.obra_id)===String(obraId)
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+const gastos=D.gastos.filter(
+x=>String(x.obra_id)===String(obraId)
+);
+
+const material=gastos
+.filter(x=>categoriaFinanceira(x)==="Material")
+.reduce((a,x)=>a+Number(x.valor||0),0);
+
+const mao=gastos
+.filter(x=>categoriaFinanceira(x)==="Mão de obra")
+.reduce((a,x)=>a+Number(x.valor||0),0);
+
+const terceirizado=gastos
+.filter(x=>categoriaFinanceira(x)==="Serviço terceirizado")
+.reduce((a,x)=>a+Number(x.valor||0),0);
+
+const outros=gastos
+.filter(x=>categoriaFinanceira(x)==="Outros")
+.reduce((a,x)=>a+Number(x.valor||0),0);
+
+const despesas=
+material+
+mao+
+terceirizado+
+outros;
+
+const resultado=receita-despesas;
+
+const saldoContrato=contrato-despesas;
+
+return{
+contrato,
+receita,
+material,
+mao,
+terceirizado,
+outros,
+despesas,
+resultado,
+saldoContrato
+};
+
+}
+
+function percentContrato(valor,contrato){
+
+if(!contrato)return 0;
+
+return (Number(valor||0)/
+Number(contrato)*100);
+
+}
+
+function pctText(valor,contrato){
+
+if(!contrato)return "—";
+
+return percentContrato(valor,contrato)
+.toFixed(1)+"%";
+
+}
+
+function obraFinanceMini(o){
+
+const f=obraFinanceData(o.id);
+
+return `
+
+<div class="finance-mini">
+
+<div class="finance-line">
+<span>Valor do contrato</span>
+<b class="gold">${money(f.contrato)}</b>
+</div>
+
+<div class="finance-line">
+<span>Receita recebida</span>
+<b class="green">${money(f.receita)}</b>
+</div>
+
+<div style="margin-top:8px">
+
+<div class="finance-cat">
+<span>Material</span>
+<span>
+<b>${money(f.material)}</b>
+<br>
+<span class="finance-percent">
+${pctText(f.material,f.contrato)} do contrato
+</span>
+</span>
+</div>
+
+<div class="finance-cat">
+<span>Mão de obra</span>
+<span>
+<b>${money(f.mao)}</b>
+<br>
+<span class="finance-percent">
+${pctText(f.mao,f.contrato)} do contrato
+</span>
+</span>
+</div>
+
+<div class="finance-cat">
+<span>Serviço terceirizado</span>
+<span>
+<b>${money(f.terceirizado)}</b>
+<br>
+<span class="finance-percent">
+${pctText(f.terceirizado,f.contrato)} do contrato
+</span>
+</span>
+</div>
+
+<div class="finance-cat">
+<span>Outras despesas</span>
+<span>
+<b>${money(f.outros)}</b>
+<br>
+<span class="finance-percent">
+${pctText(f.outros,f.contrato)} do contrato
+</span>
+</span>
+</div>
+
+</div>
+
+<div class="finance-line" style="margin-top:8px">
+<span>Total de despesas</span>
+<b class="red">${money(f.despesas)}</b>
+</div>
+
+<div class="finance-line">
+<span>Resultado / lucro</span>
+<b class="${f.resultado>=0?"green":"red"}">
+${money(f.resultado)}
+</b>
+</div>
+
+<div class="finance-line">
+<span>Saldo do contrato após despesas</span>
+<b class="gold">${money(f.saldoContrato)}</b>
+</div>
+
+</div>
+`;
+
 }
 
 function renderObras(){
@@ -1770,18 +2388,23 @@ function renderObras(){
 const box=$("obrasList");
 if(!box)return;
 
-const search=$("obraSearch")?.value.trim().toLowerCase()||"";
+const search=
+$("obraSearch")?.value.trim().toLowerCase()||"";
 
 const obras=D.obras.filter(o=>{
 
-const texto=`${o.nome||""} ${o.cliente||""}`.toLowerCase();
+const texto=
+`${o.nome||""} ${o.cliente||""}`
+.toLowerCase();
 
 return !search||texto.includes(search);
+
 });
 
 if(!obras.length){
 
-box.innerHTML=`<div class="empty">Nenhuma obra cadastrada.</div>`;
+box.innerHTML=
+`<div class="empty">Nenhuma obra cadastrada.</div>`;
 
 }else{
 
@@ -1796,7 +2419,9 @@ return `
 
 <div>
 <h3>${esc(o.nome)}</h3>
-<div class="muted">${esc(o.cliente||"Sem cliente")}</div>
+<div class="muted">
+${esc(o.cliente||"Sem cliente")}
+</div>
 </div>
 
 <span class="badge ${o.status==="concluida"?"on":""}">
@@ -1841,19 +2466,27 @@ ${esc(statusLabel(o.status))}
 ${esc(o.endereco||"Endereço não informado")}
 </div>
 
+${obraFinanceMini(o)}
+
 <div class="listActions">
 
-<button class="btn" onclick="openObra('${o.id}')">Editar</button>
+<button class="btn"
+onclick="openObra('${o.id}')">
+Editar
+</button>
 
-<button class="btn gold" onclick="openCheckForObra('${o.id}')">
+<button class="btn gold"
+onclick="openCheckForObra('${o.id}')">
 ☑️ Checklist
 </button>
 
-<button class="btn" onclick="openFotoForObra('${o.id}')">
+<button class="btn"
+onclick="openFotoForObra('${o.id}')">
 📸 Fotos
 </button>
 
-<button class="btn danger" onclick="removeRow('obras','${o.id}')">
+<button class="btn danger"
+onclick="removeRow('obras','${o.id}')">
 Excluir
 </button>
 
@@ -1881,14 +2514,19 @@ recent.innerHTML=D.obras.slice(0,3).map(o=>`
 <small>${esc(o.cliente||"")}</small>
 </div>
 
-<strong class="gold">${obraProgress(o)}%</strong>
+<strong class="gold">
+${obraProgress(o)}%
+</strong>
 
 </div>
 
 </div>
 
-`).join("")||`
-<div class="empty">Nenhuma obra cadastrada.</div>
+`).join("")||
+`
+<div class="empty">
+Nenhuma obra cadastrada.
+</div>
 `;
 
 }
@@ -1902,9 +2540,12 @@ function openFunc(id=null){
 
 editFuncId=id;
 
-const f=D.funcionarios.find(x=>String(x.id)===String(id));
+const f=D.funcionarios.find(
+x=>String(x.id)===String(id)
+);
 
-$("funcTitle").textContent=id?"Editar funcionário":"Novo funcionário";
+$("funcTitle").textContent=
+id?"Editar funcionário":"Novo funcionário";
 
 $("fNome").value=f?.nome||"";
 $("fFunc").value=f?.funcao||"";
@@ -1913,16 +2554,36 @@ $("fTipo").value=f?.tipo_pagamento||"diaria";
 $("fDia").value=f?.valor_diaria??"";
 $("fSal").value=f?.salario_mensal??"";
 $("fPag").value=f?.dia_pagamento??"";
-$("fAtivo").value=f?.ativo===false?"false":"true";
+$("fAtivo").value=
+f?.ativo===false?"false":"true";
 
 $("fDiariaRegistro").value=
-f?.registrar_diaria===false?"false":"true";
+f?.registrar_diaria===false
+?"false"
+:"true";
 
 fillSelectors();
 
-$("fObra").value=getFuncObra(id)||"";
+$("fObra").value=
+getFuncObra(id)||"";
+
+atualizarTipoFuncionario();
 
 openM("funcM");
+}
+
+function atualizarTipoFuncionario(){
+
+const mensal=$("fTipo")?.value==="mensal";
+
+if($("fDia")){
+$("fDia").disabled=mensal;
+}
+
+if($("fSal")){
+$("fSal").disabled=!mensal;
+}
+
 }
 
 async function saveFunc(e){
@@ -1936,6 +2597,10 @@ toast("Informe o nome.");
 return;
 }
 
+const obraId=$("fObra").value||null;
+const registrar=
+$("fDiariaRegistro").value==="true";
+
 const row={
 nome,
 funcao:$("fFunc").value.trim(),
@@ -1944,18 +2609,27 @@ tipo_pagamento:$("fTipo").value,
 valor_diaria:Number($("fDia").value||0),
 salario_mensal:Number($("fSal").value||0),
 dia_pagamento:Number($("fPag").value||0),
-ativo:$("fAtivo").value==="true"
+ativo:$("fAtivo").value==="true",
+registrar_diaria:registrar,
+obra_id:obraId
 };
 
 let result;
 
 if(editFuncId){
 
-result=await updateRow("funcionarios",editFuncId,row);
+result=await updateRow(
+"funcionarios",
+editFuncId,
+row
+);
 
 }else{
 
-result=await insertRow("funcionarios",row);
+result=await insertRow(
+"funcionarios",
+row
+);
 
 }
 
@@ -1963,11 +2637,18 @@ if(result){
 
 const id=result.id;
 
-setFuncObra(id,$("fObra").value||"");
+setFuncObra(
+id,
+obraId
+);
 
 closeM("funcM");
 
-toast(editFuncId?"Funcionário atualizado.":"Funcionário cadastrado.");
+toast(
+editFuncId
+?"Funcionário atualizado."
+:"Funcionário cadastrado."
+);
 
 editFuncId=null;
 
@@ -1977,7 +2658,9 @@ editFuncId=null;
 
 async function toggleFunc(id){
 
-const f=D.funcionarios.find(x=>String(x.id)===String(id));
+const f=D.funcionarios.find(
+x=>String(x.id)===String(id)
+);
 
 if(!f)return;
 
@@ -1986,6 +2669,7 @@ await updateRow(
 id,
 {ativo:f.ativo===false}
 );
+
 }
 
 function renderFuncs(){
@@ -1993,26 +2677,40 @@ function renderFuncs(){
 const box=$("funcList");
 if(!box)return;
 
-const filter=$("funcFilter")?.value||"todos";
+const filter=
+$("funcFilter")?.value||"todos";
 
 const funcs=D.funcionarios.filter(f=>{
 
-if(filter==="ativos")return f.ativo!==false;
-if(filter==="inativos")return f.ativo===false;
+if(filter==="ativos"){
+return f.ativo!==false;
+}
+
+if(filter==="inativos"){
+return f.ativo===false;
+}
 
 return true;
+
 });
 
 if(!funcs.length){
 
-box.innerHTML=`<div class="empty">Nenhum funcionário encontrado.</div>`;
+box.innerHTML=
+`<div class="empty">Nenhum funcionário encontrado.</div>`;
+
 return;
 }
 
 box.innerHTML=funcs.map(f=>{
 
 const obraId=getFuncObra(f.id);
-const obra=D.obras.find(o=>String(o.id)===String(obraId));
+
+const obra=D.obras.find(
+o=>String(o.id)===String(obraId)
+);
+
+const resumo=calcFuncionarioPagamento(f.id);
 
 return `
 
@@ -2022,7 +2720,9 @@ return `
 
 <div>
 <h3>${esc(f.nome)}</h3>
-<div class="muted">${esc(f.funcao||"Função não informada")}</div>
+<div class="muted">
+${esc(f.funcao||"Função não informada")}
+</div>
 </div>
 
 <span class="badge ${f.ativo===false?"off":"on"}">
@@ -2062,28 +2762,59 @@ ${f.registrar_diaria===false
 
 </div>
 
+<div class="pay-summary">
+
+<div>
+<small>Diárias pendentes</small><br>
+<b>${money(resumo.pending)}</b>
+</div>
+
+<div>
+<small>Adiantamento disponível</small><br>
+<b class="red">${money(
+resumo.advances.reduce(
+(a,x)=>a+Number(x.disponivel||0),0
+)
+)}</b>
+</div>
+
+<div>
+<small>Próximo pagamento</small><br>
+<b class="green">${money(resumo.net)}</b>
+</div>
+
+</div>
+
 <div class="listActions">
 
-<button class="btn" onclick="openFunc('${f.id}')">Editar</button>
+<button class="btn"
+onclick="openFunc('${f.id}')">
+Editar
+</button>
 
 ${f.registrar_diaria!==false?`
-<button class="btn gold" onclick="openDiaFuncionario('${f.id}')">
+<button class="btn gold"
+onclick="openDiaFuncionario('${f.id}')">
 ＋ Diária
 </button>`:""}
 
-<button class="btn" onclick="openPagamentoFuncionario('${f.id}')">
+<button class="btn"
+onclick="openPagamentoFuncionario('${f.id}')">
 💰 Pagamento
 </button>
 
-<button class="btn" onclick="openAdiantamentoFuncionario('${f.id}')">
+<button class="btn"
+onclick="openAdiantamentoFuncionario('${f.id}')">
 💳 Adiantamento
 </button>
 
-<button class="btn" onclick="toggleFunc('${f.id}')">
+<button class="btn"
+onclick="toggleFunc('${f.id}')">
 ${f.ativo===false?"Ativar":"Desativar"}
 </button>
 
-<button class="btn danger" onclick="removeRow('funcionarios','${f.id}')">
+<button class="btn danger"
+onclick="removeRow('funcionarios','${f.id}')">
 Excluir
 </button>
 
@@ -2094,6 +2825,7 @@ Excluir
 `;
 
 }).join("");
+
 }
 
 
@@ -2105,11 +2837,44 @@ fillSelectors();
 
 $("dData").value=today();
 $("dQtd").value=1;
+$("dTipo").value="completa";
 $("dVal").value="";
 $("dStatus").value="pendente";
 $("dObs").value="";
 
+atualizarTipoDiaria();
+
 openM("diaM");
+}
+
+function aplicarTipoDiaria(){
+
+const tipo=$("dTipo")?.value;
+
+if(!$("dQtd"))return;
+
+if(tipo==="manha"||tipo==="tarde"){
+
+$("dQtd").value=.5;
+
+$("diaValorInfo").textContent=
+tipo==="manha"
+?"Meia diária da manhã: será considerado 50% do valor da diária."
+:"Meia diária da tarde: será considerado 50% do valor da diária.";
+
+}else{
+
+$("dQtd").value=1;
+
+$("diaValorInfo").textContent=
+"Diária completa: será considerado 100% do valor informado.";
+
+}
+
+}
+
+function atualizarTipoDiaria(){
+aplicarTipoDiaria();
 }
 
 function openDiaFuncionario(id){
@@ -2120,12 +2885,13 @@ setTimeout(()=>{
 
 $("dFunc").value=id;
 
-const f=D.funcionarios.find(x=>String(x.id)===String(id));
+const f=D.funcionarios.find(
+x=>String(x.id)===String(id)
+);
 
 if(f){
 
 $("dVal").value=f.valor_diaria||"";
-
 $("dObra").value=getFuncObra(id)||"";
 
 }
@@ -2150,28 +2916,64 @@ toast("Selecione a obra.");
 return;
 }
 
+const tipo=$("dTipo").value;
+
+const qtd=
+tipo==="manha"||tipo==="tarde"
+?.5
+:1;
+
+const valorBase=
+Number($("dVal").value||0);
+
+const valorReal=
+valorBase*qtd;
+
+if(valorBase<=0){
+toast("Informe o valor da diária.");
+return;
+}
+
+let observacao=$("dObs").value.trim();
+
+const textoTipo=
+tipo==="manha"
+?"Meia diária — manhã — 50%"
+:
+tipo==="tarde"
+?"Meia diária — tarde — 50%"
+:"Diária completa — 100%";
+
+observacao=
+observacao
+?`${textoTipo}. ${observacao}`
+:textoTipo;
+
 const row={
 funcionario_id,
 obra_id,
 data:$("dData").value,
-qtd:Number($("dQtd").value||1),
-valor_diaria:Number($("dVal").value||0),
+qtd,
+valor_diaria:valorBase,
 status:$("dStatus").value,
-observacao:$("dObs").value.trim()
+observacao
 };
 
-if(row.qtd<=0||row.valor_diaria<=0){
-toast("Informe quantidade e valor.");
-return;
-}
-
-const result=await insertRow("diarias",row);
+const result=await insertRow(
+"diarias",
+row
+);
 
 if(result){
 
 closeM("diaM");
-toast("Diária registrada.");
+
+toast(
+`Diária registrada: ${money(valorReal)}`
+);
+
 }
+
 }
 
 function renderPayroll(){
@@ -2179,13 +2981,20 @@ function renderPayroll(){
 const box=$("diaList");
 if(!box)return;
 
-const period=$("payPeriod")?.value||"semana";
+const period=
+$("payPeriod")?.value||"semana";
 
 const now=new Date();
 let inicio=null;
 
 if(period==="dia"){
-inicio=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+
+inicio=new Date(
+now.getFullYear(),
+now.getMonth(),
+now.getDate()
+);
+
 }
 
 if(period==="semana"){
@@ -2195,35 +3004,46 @@ const day=now.getDay();
 inicio=new Date(
 now.getFullYear(),
 now.getMonth(),
-now.getDate()-(day===0?6:day-1)
+now.getDate()-
+(day===0?6:day-1)
 );
+
 }
 
 if(period==="quinzena"){
+
 inicio=new Date(
 now.getFullYear(),
 now.getMonth(),
 now.getDate()-14
 );
+
 }
 
 if(period==="mes"){
-inicio=new Date(now.getFullYear(),now.getMonth(),1);
+
+inicio=new Date(
+now.getFullYear(),
+now.getMonth(),
+1
+);
+
 }
 
 const items=D.diarias.filter(d=>{
 
 if(!inicio)return true;
 
-const dt=new Date(`${d.data}T00:00:00`);
+const dt=new Date(
+`${d.data}T00:00:00`
+);
 
 return dt>=inicio;
+
 });
 
 const total=items.reduce(
-(a,d)=>a+
-Number(d.qtd??d.quantidade??1)*
-Number(d.valor_diaria||0),
+(a,d)=>a+diariaValor(d),
 0
 );
 
@@ -2232,18 +3052,23 @@ $("payCount").textContent=items.length;
 
 if(!items.length){
 
-box.innerHTML=`<div class="empty">Nenhuma diária no período.</div>`;
+box.innerHTML=
+`<div class="empty">Nenhuma diária no período.</div>`;
+
 return;
 }
 
 box.innerHTML=items.map(d=>{
 
-const f=D.funcionarios.find(x=>String(x.id)===String(d.funcionario_id));
-const o=D.obras.find(x=>String(x.id)===String(d.obra_id));
+const f=D.funcionarios.find(
+x=>String(x.id)===String(d.funcionario_id)
+);
 
-const valor=
-Number(d.qtd??d.quantidade??1)*
-Number(d.valor_diaria||0);
+const o=D.obras.find(
+x=>String(x.id)===String(d.obra_id)
+);
+
+const valor=diariaValor(d);
 
 return `
 
@@ -2266,13 +3091,20 @@ ${d.status==="pago"?"Pago":"Pendente"}
 
 <span>${esc(d.data||"")}</span>
 
-<strong class="gold">${money(valor)}</strong>
+<strong class="gold">
+${money(valor)}
+</strong>
 
 </div>
 
+${d.observacao
+?`<small>${esc(d.observacao)}</small>`
+:""}
+
 <div class="listActions">
 
-<button class="btn danger" onclick="removeRow('diarias','${d.id}')">
+<button class="btn danger"
+onclick="removeRow('diarias','${d.id}')">
 Excluir
 </button>
 
@@ -2283,6 +3115,7 @@ Excluir
 `;
 
 }).join("");
+
 }
 
 
@@ -2294,17 +3127,27 @@ const box=$("pagFuncionarios");
 
 if(!box)return;
 
-const funcs=D.funcionarios.filter(f=>f.ativo!==false);
+const funcs=D.funcionarios.filter(
+f=>f.ativo!==false
+);
 
 if(!funcs.length){
 
-box.innerHTML=`<div class="empty">Cadastre um funcionário primeiro.</div>`;
+box.innerHTML=
+`<div class="empty">Cadastre um funcionário primeiro.</div>`;
+
 return;
 }
 
 box.innerHTML=funcs.map(f=>{
 
 const obraId=getFuncObra(f.id);
+
+const obra=D.obras.find(
+o=>String(o.id)===String(obraId)
+);
+
+const resumo=calcFuncionarioPagamento(f.id);
 
 return `
 
@@ -2319,17 +3162,42 @@ type="checkbox"
 class="pag-check"
 data-id="${f.id}"
 onchange="updatePagTotal()"
-${selectedId&&String(selectedId)===String(f.id)?"checked":""}
+${selectedId&&
+String(selectedId)===String(f.id)
+?"checked":""}
 >
 
 <span>
 <b>${esc(f.nome)}</b><br>
-<small>${esc(
-D.obras.find(o=>String(o.id)===String(obraId))?.nome||"Sem obra"
-)}</small>
+<small>
+${esc(obra?.nome||"Sem obra")}
+</small>
 </span>
 
 </label>
+
+</div>
+
+<div class="pay-summary">
+
+<div>
+<small>Diárias</small><br>
+<b>${money(resumo.pending)}</b>
+</div>
+
+<div>
+<small>Adiantamento</small><br>
+<b class="red">
+${money(resumo.advance)}
+</b>
+</div>
+
+<div>
+<small>Líquido</small><br>
+<b class="green">
+${money(resumo.net)}
+</b>
+</div>
 
 </div>
 
@@ -2341,13 +3209,9 @@ data-id="${f.id}"
 type="number"
 step=".01"
 min="0"
-value="${
-selectedId&&String(selectedId)===String(f.id)
-?(f.tipo_pagamento==="mensal"?f.salario_mensal:f.valor_diaria)
-:""
-}"
+readonly
+value="${resumo.net.toFixed(2)}"
 placeholder="Valor do pagamento"
-oninput="updatePagTotal()"
 >
 
 </div>
@@ -2357,24 +3221,56 @@ oninput="updatePagTotal()"
 `;
 
 }).join("");
+
+}
+
+function selecionarTodosPagamentos(marcar){
+
+document.querySelectorAll(
+".pag-check"
+).forEach(ch=>{
+ch.checked=marcar;
+});
+
+updatePagTotal();
+
 }
 
 function updatePagTotal(){
 
 let total=0;
+let diarias=0;
+let adiant=0;
 
-document.querySelectorAll(".pag-check").forEach(ch=>{
+document.querySelectorAll(
+".pag-check"
+).forEach(ch=>{
 
 if(!ch.checked)return;
 
-const input=document.querySelector(
-`.pag-value[data-id="${ch.dataset.id}"]`
-);
+const id=ch.dataset.id;
 
-total+=Number(input?.value||0);
+const resumo=
+calcFuncionarioPagamento(id);
+
+total+=resumo.net;
+diarias+=resumo.pending;
+adiant+=resumo.advance;
+
 });
 
-$("pagTotal").textContent=money(total);
+$("pagTotal").textContent=
+money(total);
+
+$("pagDiariasTotal").textContent=
+money(diarias);
+
+$("pagAdiantTotal").textContent=
+money(adiant);
+
+$("pagLiquidoTotal").textContent=
+money(total);
+
 }
 
 function openPagamentoEquipe(){
@@ -2383,12 +3279,16 @@ fillSelectors();
 
 $("pagObra").value="";
 $("pagData").value=today();
-$("pagDescricao").value="Pagamento de equipe";
+$("pagDescricao").value=
+"Pagamento de equipe";
 $("pagObs").value="";
 
 fillPagamentoFuncionarios();
 
 $("pagTotal").textContent=money(0);
+$("pagDiariasTotal").textContent=money(0);
+$("pagAdiantTotal").textContent=money(0);
+$("pagLiquidoTotal").textContent=money(0);
 
 openM("pagEquipeM");
 }
@@ -2399,7 +3299,9 @@ openPagamentoEquipe();
 
 setTimeout(()=>{
 
-const f=D.funcionarios.find(x=>String(x.id)===String(id));
+const f=D.funcionarios.find(
+x=>String(x.id)===String(id)
+);
 
 if(!f)return;
 
@@ -2413,16 +3315,6 @@ const check=document.querySelector(
 
 if(check){
 check.checked=true;
-}
-
-const val=document.querySelector(
-`.pag-value[data-id="${id}"]`
-);
-
-if(val){
-val.value=f.tipo_pagamento==="mensal"
-?f.salario_mensal||""
-:f.valor_diaria||"";
 }
 
 updatePagTotal();
@@ -2451,55 +3343,146 @@ return;
 }
 
 const data=$("pagData").value;
-const descricao=$("pagDescricao").value.trim()||"Pagamento de equipe";
+
+const descricao=
+$("pagDescricao").value.trim()||
+"Pagamento de equipe";
+
 const obs=$("pagObs").value.trim();
 
 let total=0;
+let diariasTotal=0;
+let adiantTotal=0;
 let quantidade=0;
+let houveDiaria=false;
+
+const processados=[];
 
 for(const check of checks){
 
 const id=check.dataset.id;
 
-const input=document.querySelector(
-`.pag-value[data-id="${id}"]`
+const f=D.funcionarios.find(
+x=>String(x.id)===String(id)
 );
 
-const valor=Number(input?.value||0);
+if(!f)continue;
 
-if(valor<=0){
-toast("Informe o valor de todos os funcionários selecionados.");
+const resumo=
+calcFuncionarioPagamento(id);
+
+const pendingItems=
+getPendingDiarias(id);
+
+if(pendingItems.length){
+houveDiaria=true;
+}
+
+if(resumo.pending<=0){
+
+continue;
+
+}
+
+processados.push({
+id,
+f,
+resumo,
+pendingItems
+});
+
+total+=resumo.net;
+diariasTotal+=resumo.pending;
+adiantTotal+=resumo.advance;
+quantidade++;
+
+}
+
+if(!processados.length){
+
+toast(
+"Nenhum funcionário selecionado possui diária pendente."
+);
+
 return;
 }
 
-total+=valor;
-quantidade++;
 
-const f=D.funcionarios.find(x=>String(x.id)===String(id));
+/*
+ Primeiro registra o valor líquido de cada funcionário.
+ O adiantamento não é lançado novamente,
+ pois já foi lançado como despesa no momento do adiantamento.
+*/
 
-const nome=f?.nome||"Funcionário";
+for(const item of processados){
 
-const gasto={
+const nome=item.f.nome;
+const resumo=item.resumo;
+
+if(resumo.net>0){
+
+const observacao=
+`Diárias pendentes: ${money(resumo.pending)}. `+
+`Adiantamento abatido: ${money(resumo.advance)}. `+
+`Valor líquido: ${money(resumo.net)}.`+
+(obs?` ${obs}`:"");
+
+await insertRow(
+"gastos",
+{
 obra_id,
 data,
-descricao:`${descricao} - ${nome}`,
-valor,
+descricao:
+`[Mão de obra] ${descricao} - ${nome}`,
+valor:resumo.net,
 fornecedor:nome,
-categoria:"Mão de obra",
-quantidade:1
-};
+observacao
+}
+);
 
-await insertRow("gastos",gasto);
+}
+
+}
+
+
+/*
+ Marca todas as diárias pendentes desses funcionários
+ como pagas para que não sejam calculadas novamente.
+*/
+
+for(const item of processados){
+
+for(const diaria of item.pendingItems){
+
+await updateRow(
+"diarias",
+diaria.id,
+{
+status:"pago"
+}
+);
+
+}
+
+aplicarAdiantamentos(
+item.id,
+item.resumo.allocations
+);
+
 }
 
 closeM("pagEquipeM");
 
 toast(
-`${quantidade} pagamento(s) registrado(s). Total: ${money(total)}`
+`${quantidade} funcionário(s) processado(s). `+
+`Diárias: ${money(diariasTotal)} · `+
+`Adiantamentos: ${money(adiantTotal)} · `+
+`Pagamento: ${money(total)}`
 );
 
 await loadCloud();
 renderAll();
+
 }
 
 
@@ -2527,6 +3510,7 @@ ${esc(f.nome)}
 `;
 
 if(atual)el.value=atual;
+
 }
 
 function openAdiantamento(){
@@ -2550,14 +3534,21 @@ openAdiantamento();
 setTimeout(()=>{
 
 $("adiantFunc").value=id;
-$("adiantObra").value=getFuncObra(id)||"";
 
-const f=D.funcionarios.find(x=>String(x.id)===String(id));
+$("adiantObra").value=
+getFuncObra(id)||"";
+
+const f=D.funcionarios.find(
+x=>String(x.id)===String(id)
+);
 
 if(f){
-$("adiantValor").value=f.tipo_pagamento==="mensal"
+
+$("adiantValor").value=
+f.tipo_pagamento==="mensal"
 ?f.salario_mensal||""
 :f.valor_diaria||"";
+
 }
 
 },50);
@@ -2569,7 +3560,8 @@ e.preventDefault();
 
 const obra_id=$("adiantObra").value;
 const funcionario_id=$("adiantFunc").value;
-const valor=Number($("adiantValor").value||0);
+const valor=
+Number($("adiantValor").value||0);
 
 if(!obra_id){
 toast("Selecione a obra.");
@@ -2586,28 +3578,38 @@ toast("Informe um valor válido.");
 return;
 }
 
-const f=D.funcionarios.find(x=>String(x.id)===String(funcionario_id));
+const f=D.funcionarios.find(
+x=>String(x.id)===String(funcionario_id)
+);
 
 const nome=f?.nome||"Funcionário";
 
-const result=await insertRow("gastos",{
+const obs=$("adiantObs").value.trim();
+
+const result=await insertRow(
+"gastos",
+{
 obra_id,
 data:$("adiantData").value,
-descricao:`Adiantamento - ${nome}`,
+descricao:
+`[Adiantamento] Adiantamento - ${nome}`,
 valor,
 fornecedor:nome,
-categoria:"Adiantamento",
-quantidade:1
-});
+observacao:obs
+}
+);
 
 if(result){
 
 closeM("adiantM");
 
-toast(`Adiantamento de ${money(valor)} registrado.`);
+toast(
+`Adiantamento de ${money(valor)} registrado.`
+);
 
 await loadCloud();
 renderAll();
+
 }
 
 }
@@ -2626,8 +3628,27 @@ $("dtFin").value=today();
 $("forFin").value="";
 $("obsFin").value="";
 $("oFin").value="";
+$("finCategoria").value="Material";
+
+atualizarCategoriaFinanceira();
 
 openM("finM");
+}
+
+function atualizarCategoriaFinanceira(){
+
+const despesa=
+$("tFin")?.value==="despesa";
+
+const wrap=$("finCatWrap");
+
+if(wrap){
+wrap.classList.toggle(
+"hidden",
+!despesa
+);
+}
+
 }
 
 async function saveFin(e){
@@ -2636,55 +3657,76 @@ e.preventDefault();
 
 const tipo=$("tFin").value;
 
-const row={
-obra_id:$("oFin").value||null,
-data:$("dtFin").value,
-descricao:$("dFin").value.trim(),
-valor:Number($("vFin").value||0),
-quantidade:1
-};
+const descricaoBase=
+$("dFin").value.trim();
 
-if(!row.descricao){
+const valor=
+Number($("vFin").value||0);
+
+if(!descricaoBase){
 toast("Informe a descrição.");
 return;
 }
 
-if(row.valor<=0){
+if(valor<=0){
 toast("Informe um valor válido.");
 return;
 }
 
-let result;
-
 if(tipo==="entrada"){
 
-result=await insertRow("pagamentos",{
-...row,
-forma_pagamento:$("forFin").value.trim()||null
-});
-
-}else{
-
-result=await insertRow("gastos",{
-...row,
+const result=await insertRow(
+"pagamentos",
+{
+obra_id:$("oFin").value||null,
+data:$("dtFin").value,
+descricao:descricaoBase,
+valor,
 fornecedor:$("forFin").value.trim(),
-categoria:"Despesa"
-});
-
+observacao:$("obsFin").value.trim()
 }
+);
 
 if(result){
 
 closeM("finM");
-
-toast(
-tipo==="entrada"
-?"Receita registrada."
-:"Despesa registrada."
-);
+toast("Receita registrada.");
 
 await loadCloud();
 renderAll();
+
+}
+
+}else{
+
+const categoria=
+$("finCategoria").value;
+
+const descricao=
+`[${categoria}] ${descricaoBase}`;
+
+const result=await insertRow(
+"gastos",
+{
+obra_id:$("oFin").value||null,
+data:$("dtFin").value,
+descricao,
+valor,
+fornecedor:$("forFin").value.trim(),
+observacao:$("obsFin").value.trim()
+}
+);
+
+if(result){
+
+closeM("finM");
+toast("Despesa registrada.");
+
+await loadCloud();
+renderAll();
+
+}
+
 }
 
 }
@@ -2694,29 +3736,62 @@ function renderFinance(){
 const box=$("finList");
 if(!box)return;
 
-const obraFilter=$("finObraFilter")?.value||"all";
-const tipoFilter=$("finTipoFilter")?.value||"all";
+const obraFilter=
+$("finObraFilter")?.value||"all";
 
-let entradas=D.pagamentos.map(x=>({...x,_tipo:"entrada"}));
-let despesas=D.gastos.map(x=>({...x,_tipo:"despesa"}));
+const tipoFilter=
+$("finTipoFilter")?.value||"all";
 
-let items=[...entradas,...despesas];
+let entradas=
+D.pagamentos.map(
+x=>({...x,_tipo:"entrada"})
+);
+
+let despesas=
+D.gastos.map(
+x=>({...x,_tipo:"despesa"})
+);
+
+let items=[
+...entradas,
+...despesas
+];
 
 if(obraFilter!=="all"){
-items=items.filter(x=>String(x.obra_id)===String(obraFilter));
+
+items=items.filter(
+x=>String(x.obra_id)===String(obraFilter)
+);
+
 }
 
 if(tipoFilter!=="all"){
-items=items.filter(x=>x._tipo===tipoFilter);
+
+items=items.filter(
+x=>x._tipo===tipoFilter
+);
+
 }
 
 const ent=D.pagamentos
-.filter(x=>obraFilter==="all"||String(x.obra_id)===String(obraFilter))
-.reduce((a,x)=>a+Number(x.valor||0),0);
+.filter(
+x=>obraFilter==="all"||
+String(x.obra_id)===String(obraFilter)
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
 
 const desp=D.gastos
-.filter(x=>obraFilter==="all"||String(x.obra_id)===String(obraFilter))
-.reduce((a,x)=>a+Number(x.valor||0),0);
+.filter(
+x=>obraFilter==="all"||
+String(x.obra_id)===String(obraFilter)
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
 
 $("finEnt").textContent=money(ent);
 $("finDesp").textContent=money(desp);
@@ -2726,12 +3801,19 @@ renderObraFinance();
 
 if(!items.length){
 
-box.innerHTML=`<div class="empty">Nenhum lançamento encontrado.</div>`;
+box.innerHTML=
+`<div class="empty">
+Nenhum lançamento encontrado.
+</div>`;
+
 return;
 }
 
 items.sort((a,b)=>
-String(b.data||"").localeCompare(String(a.data||""))
+String(b.data||"")
+.localeCompare(
+String(a.data||"")
+)
 );
 
 box.innerHTML=items.map(x=>{
@@ -2739,6 +3821,11 @@ box.innerHTML=items.map(x=>{
 const obra=D.obras.find(
 o=>String(o.id)===String(x.obra_id)
 );
+
+const categoria=
+x._tipo==="despesa"
+?categoriaFinanceira(x)
+:"Receita";
 
 return `
 
@@ -2757,12 +3844,15 @@ ${esc(obra?.nome||"Sem obra")}
 </div>
 
 <span class="badge ${x._tipo==="entrada"?"on":"off"}">
-${x._tipo==="entrada"?"Receita":"Despesa"}
+${x._tipo==="entrada"
+?"Receita"
+:"Despesa"}
 </span>
 
 </div>
 
-<div class="row" style="margin-top:10px">
+<div class="row"
+style="margin-top:10px">
 
 <span>${esc(x.data||"")}</span>
 
@@ -2772,9 +3862,13 @@ ${money(x.valor)}
 
 </div>
 
+<small>
+Categoria: ${esc(categoria)}
+</small>
+
 ${
 x.fornecedor
-?`<small>${esc(x.fornecedor)}</small>`
+?`<br><small>${esc(x.fornecedor)}</small>`
 :""
 }
 
@@ -2783,7 +3877,9 @@ x.fornecedor
 <button
 class="btn danger"
 onclick="removeRow(
-'${x._tipo==="entrada"?"pagamentos":"gastos"}',
+'${x._tipo==="entrada"
+?"pagamentos"
+:"gastos"}',
 '${x.id}'
 )">
 Excluir
@@ -2792,9 +3888,11 @@ Excluir
 </div>
 
 </div>
+
 `;
 
 }).join("");
+
 }
 
 function renderObraFinance(){
@@ -2804,19 +3902,17 @@ if(!box)return;
 
 if(!D.obras.length){
 
-box.innerHTML=`<p class="sub">Nenhuma obra cadastrada.</p>`;
+box.innerHTML=
+`<p class="sub">
+Nenhuma obra cadastrada.
+</p>`;
+
 return;
 }
 
 box.innerHTML=D.obras.map(o=>{
 
-const ent=D.pagamentos
-.filter(x=>String(x.obra_id)===String(o.id))
-.reduce((a,x)=>a+Number(x.valor||0),0);
-
-const desp=D.gastos
-.filter(x=>String(x.obra_id)===String(o.id))
-.reduce((a,x)=>a+Number(x.valor||0),0);
+const f=obraFinanceData(o.id);
 
 return `
 
@@ -2824,23 +3920,106 @@ return `
 
 <div class="row">
 
+<div>
 <b>${esc(o.nome)}</b>
+<br>
+<small>
+Contrato: ${money(f.contrato)}
+</small>
+</div>
 
-<strong class="gold">
-${money(ent-desp)}
+<strong class="${f.resultado>=0?"green":"red"}">
+${money(f.resultado)}
 </strong>
 
 </div>
 
-<small>
-Receitas ${money(ent)}
-· Despesas ${money(desp)}
-</small>
+<div class="finance-line">
+<span>Receita</span>
+<b class="green">${money(f.receita)}</b>
+</div>
+
+<div class="finance-cat">
+<span>Material</span>
+<span>
+<b>${money(f.material)}</b>
+<br>
+<span class="finance-percent">
+${pctText(f.material,f.contrato)}
+</span>
+</span>
+</div>
+
+<div class="finance-cat">
+<span>Mão de obra</span>
+<span>
+<b>${money(f.mao)}</b>
+<br>
+<span class="finance-percent">
+${pctText(f.mao,f.contrato)}
+</span>
+</span>
+</div>
+
+<div class="finance-cat">
+<span>Serviço terceirizado</span>
+<span>
+<b>${money(f.terceirizado)}</b>
+<br>
+<span class="finance-percent">
+${pctText(f.terceirizado,f.contrato)}
+</span>
+</span>
+</div>
+
+<div class="finance-cat">
+<span>Outras despesas</span>
+<span>
+<b>${money(f.outros)}</b>
+<br>
+<span class="finance-percent">
+${pctText(f.outros,f.contrato)}
+</span>
+</span>
+</div>
+
+<div class="finance-line"
+style="margin-top:8px">
+
+<span>Total despesas</span>
+
+<b class="red">
+${money(f.despesas)}
+</b>
 
 </div>
+
+<div class="finance-line">
+
+<span>Resultado / lucro</span>
+
+<b class="${f.resultado>=0?"green":"red"}">
+${money(f.resultado)}
+</b>
+
+</div>
+
+<div class="finance-line">
+
+<span>Saldo do contrato</span>
+
+<b class="gold">
+${money(f.saldoContrato)}
+</b>
+
+</div>
+
+</div>
+
 `;
 
 }).join("");
+
 }
 
 
@@ -2895,6 +4074,7 @@ if(result){
 
 closeM("checkM");
 toast("Etapa adicionada.");
+
 }
 
 }
@@ -2909,6 +4089,7 @@ concluida:checked,
 progresso:checked?100:0
 }
 );
+
 }
 
 function renderChecklist(){
@@ -2940,7 +4121,9 @@ x=>x.concluida===true||
 x.concluido===true
 ).length;
 
-const p=total?Math.round(concluidos/total*100):0;
+const p=total
+?Math.round(concluidos/total*100)
+:0;
 
 return `
 
@@ -2950,10 +4133,15 @@ return `
 
 <div>
 <h3>${esc(o.nome)}</h3>
-<small>${concluidos}/${total} etapas concluídas</small>
+<small>
+${concluidos}/${total}
+etapas concluídas
+</small>
 </div>
 
-<strong class="gold">${p}%</strong>
+<strong class="gold">
+${p}%
+</strong>
 
 </div>
 
@@ -2969,18 +4157,30 @@ itens.length
 
 <input
 type="checkbox"
-${item.concluida===true||item.concluido===true?"checked":""}
-onchange="toggleChecklist('${item.id}',this.checked)"
+${item.concluida===true||
+item.concluido===true
+?"checked":""}
+onchange="toggleChecklist(
+'${item.id}',
+this.checked
+)"
 >
 
 <span>
-${esc(item.tarefa||item.descricao||"Etapa")}
+${esc(
+item.tarefa||
+item.descricao||
+"Etapa"
+)}
 </span>
 
 <button
 class="mini"
 style="margin-left:auto"
-onclick="removeRow('checklist','${item.id}')">
+onclick="removeRow(
+'checklist',
+'${item.id}'
+)">
 Excluir
 </button>
 
@@ -2988,7 +4188,9 @@ Excluir
 
 `).join("")
 :`
-<div class="empty">Nenhuma etapa cadastrada.</div>
+<div class="empty">
+Nenhuma etapa cadastrada.
+</div>
 `
 }
 
@@ -3006,6 +4208,7 @@ onclick="openCheckForObra('${o.id}')">
 `;
 
 }).join("");
+
 }
 
 
@@ -3050,7 +4253,9 @@ return;
 }
 
 const fotos=JSON.parse(
-localStorage.getItem("edifiq_fotos")||"[]"
+localStorage.getItem(
+"edifiq_fotos"
+)||"[]"
 );
 
 let concluidas=0;
@@ -3062,11 +4267,19 @@ const reader=new FileReader();
 reader.onload=()=>{
 
 fotos.unshift({
+
 obra_id,
+
 data:$("fotoData").value,
-titulo:$("fotoTitulo").value.trim(),
-observacao:$("fotoObs").value.trim(),
+
+titulo:$("fotoTitulo")
+.value.trim(),
+
+observacao:$("fotoObs")
+.value.trim(),
+
 src:reader.result
+
 });
 
 concluidas++;
@@ -3093,7 +4306,9 @@ files.length>1
 };
 
 reader.readAsDataURL(file);
+
 }
+
 }
 
 function renderFotos(){
@@ -3102,12 +4317,18 @@ const box=$("fotoList");
 if(!box)return;
 
 const fotos=JSON.parse(
-localStorage.getItem("edifiq_fotos")||"[]"
+localStorage.getItem(
+"edifiq_fotos"
+)||"[]"
 );
 
 if(!fotos.length){
 
-box.innerHTML=`<div class="empty">Nenhuma foto registrada.</div>`;
+box.innerHTML=
+`<div class="empty">
+Nenhuma foto registrada.
+</div>`;
+
 return;
 }
 
@@ -3124,14 +4345,19 @@ return `
 <div class="row">
 
 <div>
-<b>${esc(obra?.nome||"Sem obra")}</b><br>
+<b>
+${esc(obra?.nome||"Sem obra")}
+</b>
+<br>
 <small>${esc(f.data||"")}</small>
 </div>
 
 </div>
 
 ${f.titulo
-?`<p style="margin-top:10px"><b>${esc(f.titulo)}</b></p>`
+?`<p style="margin-top:10px">
+<b>${esc(f.titulo)}</b>
+</p>`
 :""}
 
 <img
@@ -3145,12 +4371,16 @@ margin-top:10px;
 ">
 
 ${f.observacao
-?`<p class="sub">${esc(f.observacao)}</p>`
+?`<p class="sub">
+${esc(f.observacao)}
+</p>`
 :""}
 
 <div class="listActions">
 
-<button class="btn danger" onclick="deleteFoto(${i})">
+<button
+class="btn danger"
+onclick="deleteFoto(${i})">
 Excluir
 </button>
 
@@ -3161,12 +4391,15 @@ Excluir
 `;
 
 }).join("");
+
 }
 
 function deleteFoto(i){
 
 const fotos=JSON.parse(
-localStorage.getItem("edifiq_fotos")||"[]"
+localStorage.getItem(
+"edifiq_fotos"
+)||"[]"
 );
 
 fotos.splice(i,1);
@@ -3203,21 +4436,27 @@ if(!el)return;
 
 const atual=el.value;
 
-const first=id==="oFin"
+const first=
+id==="oFin"
 ?"Sem obra"
 :"Selecione a obra";
 
 el.innerHTML=`
-<option value="">${first}</option>
+
+<option value="">
+${first}
+</option>
 
 ${D.obras.map(o=>`
 <option value="${o.id}">
 ${esc(o.nome)}
 </option>
 `).join("")}
+
 `;
 
 if(atual)el.value=atual;
+
 });
 
 const func=$("dFunc");
@@ -3227,7 +4466,10 @@ if(func){
 const atual=func.value;
 
 func.innerHTML=`
-<option value="">Selecione o funcionário</option>
+
+<option value="">
+Selecione o funcionário
+</option>
 
 ${
 D.funcionarios
@@ -3239,9 +4481,11 @@ ${esc(f.nome)}
 </option>
 `).join("")
 }
+
 `;
 
 if(atual)func.value=atual;
+
 }
 
 const filter=$("finObraFilter");
@@ -3251,16 +4495,21 @@ if(filter){
 const atual=filter.value;
 
 filter.innerHTML=`
-<option value="all">Todas as obras</option>
+
+<option value="all">
+Todas as obras
+</option>
 
 ${D.obras.map(o=>`
 <option value="${o.id}">
 ${esc(o.nome)}
 </option>
 `).join("")}
+
 `;
 
 if(atual)filter.value=atual;
+
 }
 
 const adiantFunc=$("adiantFunc");
@@ -3270,7 +4519,10 @@ if(adiantFunc){
 const atual=adiantFunc.value;
 
 adiantFunc.innerHTML=`
-<option value="">Selecione o funcionário</option>
+
+<option value="">
+Selecione o funcionário
+</option>
 
 ${D.funcionarios
 .filter(f=>f.ativo!==false)
@@ -3279,10 +4531,13 @@ ${D.funcionarios
 ${esc(f.nome)}
 </option>
 `).join("")}
+
 `;
 
 if(atual)adiantFunc.value=atual;
+
 }
+
 }
 
 
@@ -3305,27 +4560,47 @@ const despesas=D.gastos.reduce(
 0
 );
 
-$("kObras").textContent=D.obras.length;
+$("kObras").textContent=
+D.obras.length;
 
 $("kFunc").textContent=
-D.funcionarios.filter(f=>f.ativo!==false).length;
+D.funcionarios.filter(
+f=>f.ativo!==false
+).length;
 
-$("kContratado").textContent=money(contratado);
-$("kEntradas").textContent=money(entradas);
-$("kDespesas").textContent=money(despesas);
-$("kResultado").textContent=money(entradas-despesas);
+$("kContratado").textContent=
+money(contratado);
+
+$("kEntradas").textContent=
+money(entradas);
+
+$("kDespesas").textContent=
+money(despesas);
+
+$("kResultado").textContent=
+money(entradas-despesas);
+
 }
 
 
 /* EXPORTAÇÃO */
 
-function downloadFile(content,filename,type){
+function downloadFile(
+content,
+filename,
+type
+){
 
-const blob=new Blob([content],{type});
+const blob=new Blob(
+[content],
+{type}
+);
 
-const url=URL.createObjectURL(blob);
+const url=
+URL.createObjectURL(blob);
 
-const a=document.createElement("a");
+const a=
+document.createElement("a");
 
 a.href=url;
 a.download=filename;
@@ -3339,6 +4614,7 @@ a.remove();
 setTimeout(()=>{
 URL.revokeObjectURL(url);
 },1000);
+
 }
 
 function exportTable(table){
@@ -3357,18 +4633,35 @@ toast("Arquivo exportado.");
 function exportFull(){
 
 const backup={
+
 app:"EDIFIQ",
-version:"2.0",
+
+version:"3.0",
+
 date:new Date().toISOString(),
+
 data:D,
+
 fotos:JSON.parse(
-localStorage.getItem("edifiq_fotos")||"[]"
+localStorage.getItem(
+"edifiq_fotos"
+)||"[]"
 ),
-funcionarioObras:localFuncObras()
+
+funcionarioObras:
+localFuncObras(),
+
+adiantamentosAplicados:
+getAdvanceApplied()
+
 };
 
 downloadFile(
-JSON.stringify(backup,null,2),
+JSON.stringify(
+backup,
+null,
+2
+),
 "EDIFIQ_backup.json",
 "application/json"
 );
@@ -3379,15 +4672,22 @@ toast("Backup completo criado.");
 function exportExcel(){
 
 if(!window.XLSX){
+
 toast("Excel não carregado.");
 return;
+
 }
 
-const wb=XLSX.utils.book_new();
+const wb=
+XLSX.utils.book_new();
 
-Object.entries(D).forEach(([nome,dados])=>{
+Object.entries(D).forEach(
+([nome,dados])=>{
 
-const ws=XLSX.utils.json_to_sheet(dados||[]);
+const ws=
+XLSX.utils.json_to_sheet(
+dados||[]
+);
 
 XLSX.utils.book_append_sheet(
 wb,
@@ -3395,7 +4695,8 @@ ws,
 nome.substring(0,31)
 );
 
-});
+}
+);
 
 XLSX.writeFile(
 wb,
@@ -3407,21 +4708,28 @@ toast("Excel exportado.");
 
 function importBackup(event){
 
-const file=event.target.files?.[0];
+const file=
+event.target.files?.[0];
 
 if(!file)return;
 
-const reader=new FileReader();
+const reader=
+new FileReader();
 
 reader.onload=async()=>{
 
 try{
 
-const backup=JSON.parse(reader.result);
+const backup=
+JSON.parse(
+reader.result
+);
 
 if(!backup.data){
+
 toast("Backup inválido.");
 return;
+
 }
 
 if(!confirm(
@@ -3437,7 +4745,8 @@ for(const table of [
 "checklist"
 ]){
 
-const rows=backup.data[table]||[];
+const rows=
+backup.data[table]||[];
 
 for(const row of rows){
 
@@ -3448,23 +4757,46 @@ delete copy.created_at;
 delete copy.updated_at;
 delete copy.user_id;
 
-await insertRow(table,copy);
+await insertRow(
+table,
+copy
+);
+
 }
+
 }
 
 if(backup.funcionarioObras){
+
 localStorage.setItem(
 FUNC_OBRA_KEY,
-JSON.stringify(backup.funcionarioObras)
+JSON.stringify(
+backup.funcionarioObras
+)
 );
+
+}
+
+if(backup.adiantamentosAplicados){
+
+localStorage.setItem(
+ADV_KEY,
+JSON.stringify(
+backup.adiantamentosAplicados
+)
+);
+
 }
 
 if(Array.isArray(backup.fotos)){
 
 localStorage.setItem(
 "edifiq_fotos",
-JSON.stringify(backup.fotos)
+JSON.stringify(
+backup.fotos
+)
 );
+
 }
 
 await loadCloud();
@@ -3475,13 +4807,17 @@ toast("Backup importado.");
 }catch(e){
 
 console.error(e);
-toast("Arquivo de backup inválido.");
+
+toast(
+"Arquivo de backup inválido."
+);
 
 }
 
 };
 
 reader.readAsText(file);
+
 }
 
 
@@ -3497,24 +4833,32 @@ renderFinance();
 renderChecklist();
 renderFotos();
 fillSelectors();
+atualizarCategoriaFinanceira();
 
 }
 
 
 /* EVENTOS */
 
-document.addEventListener("change",e=>{
+document.addEventListener(
+"change",
+e=>{
 
 if(e.target.id==="dFunc"){
 
-const f=D.funcionarios.find(
-x=>String(x.id)===String(e.target.value)
+const f=
+D.funcionarios.find(
+x=>String(x.id)===
+String(e.target.value)
 );
 
 if(f){
 
-$("dVal").value=f.valor_diaria||"";
-$("dObra").value=getFuncObra(f.id)||"";
+$("dVal").value=
+f.valor_diaria||"";
+
+$("dObra").value=
+getFuncObra(f.id)||"";
 
 }
 
@@ -3522,19 +4866,31 @@ $("dObra").value=getFuncObra(f.id)||"";
 
 if(e.target.id==="fTipo"){
 
-const mensal=e.target.value==="mensal";
-
-$("fDia").disabled=mensal;
-$("fSal").disabled=!mensal;
+atualizarTipoFuncionario();
 
 }
 
-});
+if(e.target.id==="dTipo"){
+
+aplicarTipoDiaria();
+
+}
+
+if(e.target.id==="tFin"){
+
+atualizarCategoriaFinanceira();
+
+}
+
+}
+);
 
 
 /* INICIALIZAÇÃO */
 
-document.addEventListener("DOMContentLoaded",async()=>{
+document.addEventListener(
+"DOMContentLoaded",
+async()=>{
 
 try{
 
@@ -3552,7 +4908,8 @@ authMsg(
 
 renderAll();
 
-});
+}
+);
 
 
 /* GLOBAIS */
@@ -3571,18 +4928,35 @@ window.openFin=openFin;
 window.openCheck=openCheck;
 window.openFoto=openFoto;
 
-window.openDiaFuncionario=openDiaFuncionario;
+window.openDiaFuncionario=
+openDiaFuncionario;
 
-window.openCheckForObra=openCheckForObra;
-window.openFotoForObra=openFotoForObra;
+window.openCheckForObra=
+openCheckForObra;
 
-window.openPagamentoEquipe=openPagamentoEquipe;
-window.openPagamentoFuncionario=openPagamentoFuncionario;
+window.openFotoForObra=
+openFotoForObra;
 
-window.openAdiantamento=openAdiantamento;
-window.openAdiantamentoFuncionario=openAdiantamentoFuncionario;
+window.openPagamentoEquipe=
+openPagamentoEquipe;
 
-window.updatePagTotal=updatePagTotal;
+window.openPagamentoFuncionario=
+openPagamentoFuncionario;
+
+window.openAdiantamento=
+openAdiantamento;
+
+window.openAdiantamentoFuncionario=
+openAdiantamentoFuncionario;
+
+window.updatePagTotal=
+updatePagTotal;
+
+window.selecionarTodosPagamentos=
+selecionarTodosPagamentos;
+
+window.aplicarTipoDiaria=
+aplicarTipoDiaria;
 
 window.closeM=closeM;
 
@@ -3593,19 +4967,35 @@ window.saveFin=saveFin;
 window.saveCheck=saveCheck;
 window.saveFoto=saveFoto;
 
-window.savePagamentoEquipe=savePagamentoEquipe;
-window.saveAdiantamento=saveAdiantamento;
+window.savePagamentoEquipe=
+savePagamentoEquipe;
 
-window.toggleFunc=toggleFunc;
-window.toggleChecklist=toggleChecklist;
+window.saveAdiantamento=
+saveAdiantamento;
 
-window.removeRow=removeRow;
-window.deleteFoto=deleteFoto;
+window.toggleFunc=
+toggleFunc;
 
-window.exportTable=exportTable;
-window.exportFull=exportFull;
-window.exportExcel=exportExcel;
-window.importBackup=importBackup;
+window.toggleChecklist=
+toggleChecklist;
+
+window.removeRow=
+removeRow;
+
+window.deleteFoto=
+deleteFoto;
+
+window.exportTable=
+exportTable;
+
+window.exportFull=
+exportFull;
+
+window.exportExcel=
+exportExcel;
+
+window.importBackup=
+importBackup;
 
 </script>
 
