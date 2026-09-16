@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#090b0e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>EDIFIQ — Gestão de Obras</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -22,688 +24,223 @@
  --blue:#64a8ff;
  --line:#2a3038;
 }
-
 *{box-sizing:border-box}
-
 html,body{
- margin:0;
- padding:0;
- background:var(--bg);
- color:var(--text);
- font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ margin:0;padding:0;background:var(--bg);color:var(--text);
+ font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
 }
-
 body{min-height:100vh}
-
 button,input,select,textarea{font:inherit}
-
-button{
- cursor:pointer;
- border:0;
-}
-
+button{cursor:pointer;border:0}
 .hidden{display:none!important}
-
 header{
- position:sticky;
- top:0;
- z-index:10;
- background:#0b0d10f2;
- backdrop-filter:blur(12px);
- border-bottom:1px solid var(--line);
- padding:14px 16px;
- display:flex;
- align-items:center;
- justify-content:space-between;
+ position:sticky;top:0;z-index:10;background:#0b0d10f2;
+ backdrop-filter:blur(12px);border-bottom:1px solid var(--line);
+ padding:14px 16px;display:flex;align-items:center;justify-content:space-between
 }
-
-.logo{
- font-weight:900;
- letter-spacing:3px;
- font-size:21px;
+.logo{font-weight:900;letter-spacing:3px;font-size:21px}
+.logo span,.gold{color:var(--gold)}
+.sub,.label,small{color:var(--muted);font-size:12px}
+main{max-width:1100px;margin:auto;padding:18px 16px 110px}
+.page{display:none}.page.active{display:block}
+h1{margin:5px 0;font-size:27px}
+h2{margin:8px 0;font-size:20px}
+.lead{color:var(--muted);margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.card,.item,.authbox{
+ background:var(--panel);border:1px solid var(--line);
+ border-radius:16px;padding:15px;margin:10px 0
 }
-
-.logo span,
-.gold{
- color:var(--gold);
+.stat{font-size:23px;font-weight:800;margin-top:6px}
+.green{color:var(--green)}.red{color:var(--red)}.blue{color:var(--blue)}
+.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.action,.primary,.secondary,.danger,.mini{
+ border-radius:12px;padding:12px 14px;font-weight:700
 }
-
-.sub,
-.label,
-small{
- color:var(--muted);
- font-size:12px;
+.action{background:var(--panel2);border:1px solid var(--line);color:var(--text);text-align:left}
+.primary{background:var(--gold);color:#15110a}
+.primary:hover{background:var(--gold2)}
+.secondary{background:#20262d;color:#fff;border:1px solid var(--line)}
+.danger{background:#32191c;color:#ff9ca3;border:1px solid #653038}
+.mini{padding:7px 9px;background:#20262d;color:#fff;border:1px solid var(--line);font-size:12px}
+.form{display:grid;gap:10px}
+.form input,.form select,.form textarea,.search input{
+ width:100%;background:#0e1216;color:var(--text);
+ border:1px solid var(--line);border-radius:10px;padding:11px;outline:none
 }
-
-main{
- max-width:1100px;
- margin:auto;
- padding:18px 16px 110px;
+.form input:focus,.form select:focus,.form textarea:focus,.search input:focus{
+ border-color:var(--gold)
 }
-
-.page{display:none}
-.page.active{display:block}
-
-h1{
- margin:5px 0;
- font-size:27px;
-}
-
-h2{
- margin:8px 0;
- font-size:20px;
-}
-
-.lead{
- color:var(--muted);
- margin-top:4px;
-}
-
-.grid{
- display:grid;
- grid-template-columns:repeat(2,1fr);
- gap:10px;
-}
-
-.grid3{
- display:grid;
- grid-template-columns:repeat(3,1fr);
- gap:10px;
-}
-
-.card,
-.item,
-.authbox{
- background:var(--panel);
- border:1px solid var(--line);
- border-radius:16px;
- padding:15px;
- margin:10px 0;
-}
-
-.stat{
- font-size:23px;
- font-weight:800;
- margin-top:6px;
-}
-
-.green{color:var(--green)}
-.red{color:var(--red)}
-.blue{color:var(--blue)}
-
-.actions{
- display:grid;
- grid-template-columns:repeat(2,1fr);
- gap:10px;
-}
-
-.action,
-.primary,
-.secondary,
-.danger,
-.mini{
- border-radius:12px;
- padding:12px 14px;
- font-weight:700;
-}
-
-.action{
- background:var(--panel2);
- border:1px solid var(--line);
- color:var(--text);
- text-align:left;
-}
-
-.primary{
- background:var(--gold);
- color:#15110a;
-}
-
-.primary:hover{
- background:var(--gold2);
-}
-
-.secondary{
- background:#20262d;
- color:#fff;
- border:1px solid var(--line);
-}
-
-.danger{
- background:#32191c;
- color:#ff9ca3;
- border:1px solid #653038;
-}
-
-.mini{
- padding:7px 9px;
- background:#20262d;
- color:#fff;
- border:1px solid var(--line);
- font-size:12px;
-}
-
-.form{
- display:grid;
- gap:10px;
-}
-
-.form input,
-.form select,
-.form textarea,
-.search input{
- width:100%;
- background:#0e1216;
- color:var(--text);
- border:1px solid var(--line);
- border-radius:10px;
- padding:11px;
- outline:none;
-}
-
-.form input:focus,
-.form select:focus,
-.form textarea:focus,
-.search input:focus{
- border-color:var(--gold);
-}
-
-.form textarea{
- min-height:85px;
- resize:vertical;
-}
-
-.row{
- display:flex;
- align-items:center;
- justify-content:space-between;
- gap:10px;
-}
-
-.row.wrap{
- flex-wrap:wrap;
-}
-
-.badge{
- background:#242b33;
- border-radius:999px;
- padding:5px 9px;
- font-size:12px;
-}
-
-.badge.on{
- color:#8ff0c5;
- background:#15382c;
-}
-
-.badge.off{
- color:#ffb0b5;
- background:#3b1c20;
-}
-
-.progress{
- height:8px;
- background:#252b32;
- border-radius:9px;
- overflow:hidden;
- margin:9px 0;
-}
-
-.progress i{
- display:block;
- height:100%;
- background:var(--gold);
- transition:.3s;
-}
-
+.form textarea{min-height:85px;resize:vertical}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.row.wrap{flex-wrap:wrap}
+.badge{background:#242b33;border-radius:999px;padding:5px 9px;font-size:12px}
+.badge.on{color:#8ff0c5;background:#15382c}
+.badge.off{color:#ffb0b5;background:#3b1c20}
+.progress{height:8px;background:#252b32;border-radius:9px;overflow:hidden;margin:9px 0}
+.progress i{display:block;height:100%;background:var(--gold);transition:.3s}
 .bottom{
- position:fixed;
- bottom:0;
- left:0;
- right:0;
- background:#0b0d10f5;
- border-top:1px solid var(--line);
- display:grid;
- grid-template-columns:repeat(5,1fr);
- padding:7px 0 calc(7px + env(safe-area-inset-bottom));
- z-index:20;
+ position:fixed;bottom:0;left:0;right:0;background:#0b0d10f5;
+ border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);
+ padding:7px 0 calc(7px + env(safe-area-inset-bottom));z-index:20
 }
-
-.nav{
- background:none;
- color:var(--muted);
- padding:7px 3px;
-}
-
-.nav.active{
- color:var(--gold);
-}
-
+.nav{background:none;color:var(--muted);padding:7px 3px}
+.nav.active{color:var(--gold)}
 .modal{
- position:fixed;
- inset:0;
- background:#000b;
- z-index:50;
- display:none;
- align-items:flex-end;
+ position:fixed;inset:0;background:#000b;z-index:50;display:none;align-items:flex-end
 }
-
-.modal.open{
- display:flex;
-}
-
+.modal.open{display:flex}
 .sheet{
- background:#11151a;
- border:1px solid var(--line);
- border-radius:20px 20px 0 0;
- width:100%;
- max-height:94vh;
- overflow:auto;
- padding:18px;
+ background:#11151a;border:1px solid var(--line);border-radius:20px 20px 0 0;
+ width:100%;max-height:94vh;overflow:auto;padding:18px
 }
-
-.close{
- float:right;
- background:none;
- color:var(--muted);
- font-size:28px;
-}
-
-.auth{
- min-height:100vh;
- display:grid;
- place-items:center;
- padding:20px;
-}
-
-.authbox{
- width:min(440px,100%);
- padding:25px;
-}
-
-.authlogo{
- text-align:center;
- font-size:32px;
- font-weight:900;
- letter-spacing:5px;
-}
-
-.authlogo span{
- color:var(--gold);
-}
-
-.connection{
- text-align:center;
- margin:10px 0;
- font-size:12px;
- color:var(--muted);
-}
-
-.connection.ok{color:var(--green)}
-.connection.error{color:var(--red)}
-
+.close{float:right;background:none;color:var(--muted);font-size:28px}
+.auth{min-height:100vh;display:grid;place-items:center;padding:20px}
+.authbox{width:min(440px,100%);padding:25px}
+.authlogo{text-align:center;font-size:32px;font-weight:900;letter-spacing:5px}
+.authlogo span{color:var(--gold)}
+.connection{text-align:center;margin:10px 0;font-size:12px;color:var(--muted)}
+.connection.ok{color:var(--green)}.connection.error{color:var(--red)}
 .bootError{
- display:none;
- padding:10px;
- border-radius:10px;
- background:#32191c;
- color:#ffb0b5;
- border:1px solid #653038;
- font-size:12px;
+ display:none;padding:10px;border-radius:10px;background:#32191c;
+ color:#ffb0b5;border:1px solid #653038;font-size:12px
 }
-
-.toolbar{
- display:grid;
- grid-template-columns:repeat(2,1fr);
- gap:8px;
- margin:10px 0;
-}
-
+.toolbar{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}
 .toast{
- position:fixed;
- right:15px;
- bottom:80px;
- z-index:100;
- background:#20262d;
- border:1px solid var(--line);
- padding:12px 15px;
- border-radius:12px;
- display:none;
- max-width:90vw;
+ position:fixed;right:15px;bottom:80px;z-index:100;background:#20262d;
+ border:1px solid var(--line);padding:12px 15px;border-radius:12px;
+ display:none;max-width:90vw
 }
-
-.toast.show{
- display:block;
-}
-
-.sectionTitle{
- display:flex;
- justify-content:space-between;
- align-items:center;
- gap:8px;
- margin-top:18px;
-}
-
-.listActions{
- display:flex;
- gap:6px;
- flex-wrap:wrap;
- margin-top:9px;
-}
-
-.empty{
- padding:18px;
- text-align:center;
- color:var(--muted);
- border:1px dashed var(--line);
- border-radius:12px;
-}
-
-.note{
- background:#171d23;
- border-left:3px solid var(--gold);
- padding:10px;
- border-radius:8px;
- color:#d7dce1;
- font-size:13px;
- margin:10px 0;
-}
-
+.toast.show{display:block}
+.sectionTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:18px}
+.listActions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
+.note{background:#171d23;border-left:3px solid var(--gold);padding:10px;border-radius:8px;color:#d7dce1;font-size:13px;margin:10px 0}
 .checkrow{
- display:flex;
- align-items:center;
- justify-content:space-between;
- gap:8px;
- padding:8px 0;
- border-bottom:1px solid var(--line);
+ display:flex;align-items:center;justify-content:space-between;gap:8px;
+ padding:8px 0;border-bottom:1px solid var(--line)
 }
-
-.checkrow:last-child{
- border-bottom:0;
+.checkrow:last-child{border-bottom:0}
+.checkrow label{display:flex;align-items:center;gap:8px;flex:1}
+.checkrow input{width:19px;height:19px;accent-color:var(--gold)}
+.obraChecklist{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.kpi{min-height:90px}
+.moneyLine{
+ display:flex;justify-content:space-between;gap:8px;padding:8px 0;
+ border-bottom:1px solid var(--line)
 }
-
-.checkrow label{
- display:flex;
- align-items:center;
- gap:8px;
- flex:1;
+.moneyLine:last-child{border-bottom:0}
+.financeBox{
+ background:#0e1216;border:1px solid var(--line);border-radius:12px;
+ padding:12px;margin-top:10px
 }
-
-.checkrow input{
- width:19px;
- height:19px;
- accent-color:var(--gold);
+.financePct{font-size:11px;color:var(--muted)}
+.historyTitle{
+ margin-top:16px;padding-top:12px;border-top:1px solid var(--line)
 }
-
-.obraChecklist{
- margin-top:14px;
- padding-top:12px;
- border-top:1px solid var(--line);
-}
-
-.kpi{
- min-height:90px;
-}
-
-@media(max-width:700px){
- .grid3{
-  grid-template-columns:1fr 1fr;
- }
-}
-
+@media(max-width:700px){.grid3{grid-template-columns:1fr 1fr}}
 @media(max-width:450px){
- .grid,
- .grid3{
-  grid-template-columns:1fr 1fr;
- }
-
- .actions{
-  grid-template-columns:1fr 1fr;
- }
-
- h1{
-  font-size:24px;
- }
+ .grid,.grid3{grid-template-columns:1fr 1fr}
+ .actions{grid-template-columns:1fr 1fr}
+ h1{font-size:24px}
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
 <div id="auth" class="auth">
  <div class="authbox">
-
   <div class="authlogo">EDIFI<span>Q</span></div>
-
-  <p class="sub" style="text-align:center">
-   GESTÃO DE OBRAS
-  </p>
-
-  <p id="connectionStatus" class="connection">
-   Iniciando sistema...
-  </p>
-
+  <p class="sub" style="text-align:center">GESTÃO DE OBRAS</p>
+  <p id="connectionStatus" class="connection">Iniciando sistema...</p>
   <div id="bootError" class="bootError"></div>
 
   <div class="form" style="margin-top:20px">
-
-   <input
-    id="email"
-    type="email"
-    placeholder="E-mail"
-    autocomplete="email">
-
-   <input
-    id="password"
-    type="password"
-    placeholder="Senha"
-    autocomplete="current-password">
-
-   <button class="primary" onclick="login()">
-    Entrar
-   </button>
-
-   <button class="secondary" onclick="signup()">
-    Criar minha conta
-   </button>
-
-   <button class="secondary" onclick="resetPassword()">
-    Esqueci a senha
-   </button>
-
-   <button
-    id="localButton"
-    class="secondary"
-    onclick="enterLocalMode()">
-    Entrar no modo local
-   </button>
-
+   <input id="email" type="email" placeholder="E-mail" autocomplete="email">
+   <input id="password" type="password" placeholder="Senha" autocomplete="current-password">
+   <button class="primary" onclick="login()">Entrar</button>
+   <button class="secondary" onclick="signup()">Criar minha conta</button>
+   <button class="secondary" onclick="resetPassword()">Esqueci a senha</button>
+   <button id="localButton" class="secondary" onclick="enterLocalMode()">Entrar no modo local</button>
   </div>
-
   <p id="authMsg" class="sub"></p>
-
  </div>
 </div>
 
-
-<!-- APP -->
 <div id="app" class="hidden">
 
 <header>
-
  <div>
-  <div class="logo">
-   EDIFI<span>Q</span>
-  </div>
-
-  <div class="sub">
-   Gestão de Obras
-  </div>
+  <div class="logo">EDIFI<span>Q</span></div>
+  <div class="sub">Gestão de Obras</div>
  </div>
-
  <div style="display:flex;align-items:center;gap:8px">
-
-  <span id="appConnection" class="connection ok">
-   ● Sistema
-  </span>
-
-  <button class="secondary" onclick="logout()">
-   Sair
-  </button>
-
+  <span id="appConnection" class="connection ok">● Sistema</span>
+  <button class="secondary" onclick="logout()">Sair</button>
  </div>
-
 </header>
-
 
 <main>
 
-<!-- INÍCIO -->
 <section id="home" class="page active">
-
  <h1>Olá! 👋</h1>
- <p class="lead">
-  Seu painel de controle.
- </p>
+ <p class="lead">Seu painel de controle.</p>
 
  <div class="grid3">
-
-  <div class="card kpi">
-   <div class="label">Obras</div>
-   <div class="stat gold" id="kObras">0</div>
-  </div>
-
-  <div class="card kpi">
-   <div class="label">Funcionários ativos</div>
-   <div class="stat" id="kFunc">0</div>
-  </div>
-
-  <div class="card kpi">
-   <div class="label">A receber</div>
-   <div class="stat green" id="kReceber">
-    R$ 0,00
-   </div>
-  </div>
-
+  <div class="card kpi"><div class="label">Obras</div><div class="stat gold" id="kObras">0</div></div>
+  <div class="card kpi"><div class="label">Funcionários ativos</div><div class="stat" id="kFunc">0</div></div>
+  <div class="card kpi"><div class="label">A receber</div><div class="stat green" id="kReceber">R$ 0,00</div></div>
  </div>
-
 
  <div class="grid3">
-
-  <div class="card kpi">
-   <div class="label">Receitas</div>
-   <div class="stat green" id="kEntradas">
-    R$ 0,00
-   </div>
-  </div>
-
-  <div class="card kpi">
-   <div class="label">Despesas</div>
-   <div class="stat red" id="kDespesas">
-    R$ 0,00
-   </div>
-  </div>
-
-  <div class="card kpi">
-   <div class="label">Lucro</div>
-   <div class="stat gold" id="kResultado">
-    R$ 0,00
-   </div>
-  </div>
-
+  <div class="card kpi"><div class="label">Receitas</div><div class="stat green" id="kEntradas">R$ 0,00</div></div>
+  <div class="card kpi"><div class="label">Despesas</div><div class="stat red" id="kDespesas">R$ 0,00</div></div>
+  <div class="card kpi"><div class="label">Lucro</div><div class="stat gold" id="kResultado">R$ 0,00</div></div>
  </div>
-
 
  <div class="actions">
-
-  <button class="action" onclick="go('obras')">
-   🏗️ <b>Obras</b><br>
-   <small>Projetos e andamento</small>
-  </button>
-
-  <button class="action" onclick="go('equipe')">
-   👷 <b>Funcionários</b><br>
-   <small>Equipe e diárias</small>
-  </button>
-
-  <button class="action" onclick="go('financeiro')">
-   💰 <b>Financeiro</b><br>
-   <small>Receitas e despesas</small>
-  </button>
-
-  <button class="action" onclick="go('relatorios')">
-   📊 <b>Relatórios</b><br>
-   <small>Backup dos dados</small>
-  </button>
-
+  <button class="action" onclick="go('obras')">🏗️ <b>Obras</b><br><small>Projetos e andamento</small></button>
+  <button class="action" onclick="go('equipe')">👷 <b>Funcionários</b><br><small>Equipe e diárias</small></button>
+  <button class="action" onclick="go('financeiro')">💰 <b>Financeiro</b><br><small>Receitas e despesas</small></button>
+  <button class="action" onclick="go('relatorios')">📊 <b>Relatórios</b><br><small>Backup dos dados</small></button>
  </div>
-
 
  <div class="sectionTitle">
   <h2>Obras recentes</h2>
-
-  <button class="mini" onclick="openObra()">
-   ＋ Nova
-  </button>
+  <button class="mini" onclick="openObra()">＋ Nova</button>
  </div>
-
  <div id="recentes"></div>
-
 </section>
 
 
-<!-- OBRAS -->
 <section id="obras" class="page">
-
  <div class="sectionTitle">
-
   <div>
    <h1>Obras</h1>
-   <p class="lead">
-    Obras, checklist e progresso.
-   </p>
+   <p class="lead">Obras, checklist e progresso.</p>
   </div>
-
-  <button class="primary" onclick="openObra()">
-   ＋ Nova obra
-  </button>
-
+  <button class="primary" onclick="openObra()">＋ Nova obra</button>
  </div>
 
  <div class="search">
-  <input
-   id="obraSearch"
-   placeholder="Pesquisar obra ou cliente..."
-   oninput="renderObras()">
+  <input id="obraSearch" placeholder="Pesquisar obra ou cliente..." oninput="renderObras()">
  </div>
-
  <div id="obrasList"></div>
-
 </section>
 
 
-<!-- EQUIPE -->
 <section id="equipe" class="page">
-
  <div class="sectionTitle">
-
   <div>
    <h1>Funcionários</h1>
-   <p class="lead">
-    Equipe, obra e controle de diária.
-   </p>
+   <p class="lead">Equipe, obra e controle de diária.</p>
   </div>
-
-  <button class="primary" onclick="openFunc()">
-   ＋ Novo
-  </button>
-
+  <button class="primary" onclick="openFunc()">＋ Novo</button>
  </div>
 
-
  <div class="toolbar">
-
   <select id="funcFilter" onchange="renderFuncs()">
    <option value="todos">Todos</option>
    <option value="ativos">Ativos</option>
@@ -717,77 +254,61 @@ h2{
    <option value="mes">Este mês</option>
    <option value="custom">Personalizado</option>
   </select>
-
  </div>
-
 
  <div id="customDates" class="toolbar hidden">
-
   <input id="payStart" type="date" onchange="renderPayroll()">
-
   <input id="payEnd" type="date" onchange="renderPayroll()">
-
  </div>
-
 
  <div class="grid">
-
   <div class="card">
-   <div class="label">A pagar</div>
-   <div class="stat gold" id="payTotal">
-    R$ 0,00
-   </div>
+   <div class="label">A pagar no período</div>
+   <div class="stat gold" id="payTotal">R$ 0,00</div>
   </div>
-
   <div class="card">
    <div class="label">Funcionários com valor</div>
-   <div class="stat" id="payCount">
-    0
-   </div>
+   <div class="stat" id="payCount">0</div>
   </div>
-
  </div>
 
+ <div class="sectionTitle">
+  <h2>Saldo dos funcionários</h2>
+  <button class="secondary" onclick="openPagamento()">💰 Pagamento</button>
+ </div>
 
  <div id="funcList"></div>
 
-
  <div class="sectionTitle">
-
   <h2>Diárias</h2>
-
-  <button class="secondary" onclick="openDia()">
-   ＋ Registrar
-  </button>
-
+  <button class="secondary" onclick="openDia()">＋ Registrar</button>
  </div>
-
  <div id="diaList"></div>
 
+ <div class="sectionTitle">
+  <h2>Histórico financeiro da equipe</h2>
+  <button class="secondary" onclick="openAdiantamento()">＋ Adiantamento</button>
+ </div>
+ <div id="equipeHistorico"></div>
+
+ <div class="sectionTitle">
+  <h2>Faltas</h2>
+  <button class="secondary" onclick="openFalta()">＋ Registrar falta</button>
+ </div>
+ <div id="faltasList"></div>
 </section>
 
 
-<!-- FINANCEIRO -->
 <section id="financeiro" class="page">
-
  <div class="sectionTitle">
-
   <div>
    <h1>Financeiro</h1>
-   <p class="lead">
-    Receitas, despesas e resultado.
-   </p>
+   <p class="lead">Receitas, despesas e resultado.</p>
   </div>
-
-  <button class="primary" onclick="openFin()">
-   ＋ Lançamento
-  </button>
-
+  <button class="primary" onclick="openFin()">＋ Lançamento</button>
  </div>
 
-
  <div class="toolbar">
-
   <select id="finObraFilter" onchange="renderFinance()">
    <option value="all">Todas as obras</option>
   </select>
@@ -797,429 +318,305 @@ h2{
    <option value="entrada">Receitas</option>
    <option value="despesa">Despesas</option>
   </select>
-
  </div>
-
 
  <div class="grid3">
-
-  <div class="card">
-   <div class="label">Receitas</div>
-   <div class="stat green" id="finEnt">R$ 0,00</div>
-  </div>
-
-  <div class="card">
-   <div class="label">Despesas</div>
-   <div class="stat red" id="finDesp">R$ 0,00</div>
-  </div>
-
-  <div class="card">
-   <div class="label">Lucro</div>
-   <div class="stat gold" id="finRes">R$ 0,00</div>
-  </div>
-
+  <div class="card"><div class="label">Receitas</div><div class="stat green" id="finEnt">R$ 0,00</div></div>
+  <div class="card"><div class="label">Despesas</div><div class="stat red" id="finDesp">R$ 0,00</div></div>
+  <div class="card"><div class="label">Lucro</div><div class="stat gold" id="finRes">R$ 0,00</div></div>
  </div>
 
+ <div id="financeSelected"></div>
 
  <div class="card">
-
   <b>Resumo por obra</b>
-
   <div id="obraFinanceResumo"></div>
-
  </div>
 
-
  <div id="finList"></div>
-
 </section>
 
 
-<!-- RELATÓRIOS -->
 <section id="relatorios" class="page">
-
  <h1>Relatórios</h1>
-
- <p class="lead">
-  Backup e dados do EDIFIQ.
- </p>
+ <p class="lead">Backup e dados do EDIFIQ.</p>
 
  <div class="actions">
-
-  <button class="action" onclick="exportFull()">
-   💾 Backup completo
-  </button>
-
-  <button class="action" onclick="exportJSON('obras')">
-   🏗️ Exportar obras
-  </button>
-
-  <button class="action" onclick="exportJSON('funcionarios')">
-   👷 Exportar funcionários
-  </button>
-
-  <button class="action" onclick="exportJSON('diarias')">
-   💵 Exportar diárias
-  </button>
-
-  <button class="action" onclick="exportJSON('gastos')">
-   💰 Exportar financeiro
-  </button>
-
+  <button class="action" onclick="exportFull()">💾 Backup completo</button>
+  <button class="action" onclick="exportJSON('obras')">🏗️ Exportar obras</button>
+  <button class="action" onclick="exportJSON('funcionarios')">👷 Exportar funcionários</button>
+  <button class="action" onclick="exportJSON('diarias')">💵 Exportar diárias</button>
+  <button class="action" onclick="exportJSON('gastos')">💰 Exportar financeiro</button>
+  <button class="action" onclick="exportJSON('pagamentos')">💳 Exportar pagamentos</button>
+  <button class="action" onclick="exportJSON('adiantamentos')">💵 Exportar adiantamentos</button>
+  <button class="action" onclick="exportJSON('faltas')">📅 Exportar faltas</button>
+  <button class="action" onclick="exportJSON('servicos_adicionais')">➕ Exportar adicionais</button>
  </div>
-
 
  <div class="card">
-
   <b>Importar backup</b>
-
-  <p class="sub">
-   Selecione um backup JSON do EDIFIQ.
-  </p>
-
-  <input
-   type="file"
-   id="importFile"
-   accept=".json"
-   onchange="importBackup(event)">
-
+  <p class="sub">Selecione um backup JSON do EDIFIQ.</p>
+  <input type="file" id="importFile" accept=".json" onchange="importBackup(event)">
  </div>
-
 </section>
 
 </main>
 
-
-<!-- NAVEGAÇÃO -->
 <nav class="bottom">
-
- <button class="nav active"
-  data-p="home"
-  onclick="go('home')">
-  ⌂<br>Início
- </button>
-
- <button class="nav"
-  data-p="obras"
-  onclick="go('obras')">
-  🏗<br>Obras
- </button>
-
- <button class="nav"
-  data-p="equipe"
-  onclick="go('equipe')">
-  👷<br>Equipe
- </button>
-
- <button class="nav"
-  data-p="financeiro"
-  onclick="go('financeiro')">
-  R$<br>Financeiro
- </button>
-
- <button class="nav"
-  data-p="relatorios"
-  onclick="go('relatorios')">
-  ☷<br>Mais
- </button>
-
+ <button class="nav active" data-p="home" onclick="go('home')">⌂<br>Início</button>
+ <button class="nav" data-p="obras" onclick="go('obras')">🏗<br>Obras</button>
+ <button class="nav" data-p="equipe" onclick="go('equipe')">👷<br>Equipe</button>
+ <button class="nav" data-p="financeiro" onclick="go('financeiro')">R$<br>Financeiro</button>
+ <button class="nav" data-p="relatorios" onclick="go('relatorios')">☷<br>Mais</button>
 </nav>
 
 </div>
 
 
-<!-- MODAL OBRA -->
+<!-- OBRA -->
 <div class="modal" id="obraM">
-
  <div class="sheet">
-
-  <button class="close" onclick="closeM('obraM')">
-   ×
-  </button>
-
-  <h2 id="obraTitle">
-   Nova obra
-  </h2>
+  <button class="close" onclick="closeM('obraM')">×</button>
+  <h2 id="obraTitle">Nova obra</h2>
 
   <form class="form" onsubmit="saveObra(event)">
-
-   <input id="oNome"
-    required
-    placeholder="Nome da obra">
-
-   <input id="oCli"
-    placeholder="Cliente">
-
-   <input id="oLoc"
-    placeholder="Endereço">
-
-   <input id="oVal"
-    type="number"
-    step=".01"
-    placeholder="Valor do contrato">
+   <input id="oNome" required placeholder="Nome da obra">
+   <input id="oCli" placeholder="Cliente">
+   <input id="oLoc" placeholder="Endereço">
+   <input id="oVal" type="number" step=".01" placeholder="Valor do contrato">
 
    <select id="oStatus">
-
-    <option value="em_andamento">
-     Em andamento
-    </option>
-
-    <option value="planejada">
-     Planejada
-    </option>
-
-    <option value="concluida">
-     Concluída
-    </option>
-
-    <option value="pausada">
-     Pausada
-    </option>
-
+    <option value="em_andamento">Em andamento</option>
+    <option value="planejada">Planejada</option>
+    <option value="concluida">Concluída</option>
+    <option value="pausada">Pausada</option>
    </select>
 
    <input id="oIni" type="date">
-
    <input id="oFim" type="date">
+   <input id="oTipo" placeholder="Tipo de serviço">
+   <textarea id="oObs" placeholder="Observações"></textarea>
 
-   <input id="oTipo"
-    placeholder="Tipo de serviço">
-
-   <textarea id="oObs"
-    placeholder="Observações"></textarea>
-
-   <button class="primary">
-    Salvar obra
-   </button>
-
+   <button class="primary">Salvar obra</button>
   </form>
-
  </div>
-
 </div>
 
 
-<!-- MODAL FUNCIONÁRIO -->
+<!-- FUNCIONÁRIO -->
 <div class="modal" id="funcM">
-
  <div class="sheet">
-
-  <button class="close" onclick="closeM('funcM')">
-   ×
-  </button>
-
-  <h2 id="funcTitle">
-   Novo funcionário
-  </h2>
+  <button class="close" onclick="closeM('funcM')">×</button>
+  <h2 id="funcTitle">Novo funcionário</h2>
 
   <form class="form" onsubmit="saveFunc(event)">
-
-   <input id="fNome"
-    required
-    placeholder="Nome">
-
-   <input id="fFunc"
-    placeholder="Função / cargo">
-
-   <input id="fTel"
-    placeholder="Telefone">
+   <input id="fNome" required placeholder="Nome">
+   <input id="fFunc" placeholder="Função / cargo">
+   <input id="fTel" placeholder="Telefone">
 
    <select id="fObra">
-    <option value="">
-     Sem obra definida
-    </option>
+    <option value="">Sem obra definida</option>
    </select>
 
    <select id="fRegistrar">
-
-    <option value="true">
-     Registrar diária
-    </option>
-
-    <option value="false">
-     Não registrar diária
-    </option>
-
+    <option value="true">Registrar diária</option>
+    <option value="false">Não registrar diária</option>
    </select>
 
    <select id="fTipo">
-
-    <option value="diaria">
-     Diária
-    </option>
-
-    <option value="semanal">
-     Semanal
-    </option>
-
-    <option value="quinzenal">
-     Quinzenal
-    </option>
-
-    <option value="mensal">
-     Mensal
-    </option>
-
+    <option value="diaria">Diária</option>
+    <option value="semanal">Semanal</option>
+    <option value="quinzenal">Quinzenal</option>
+    <option value="mensal">Mensal</option>
    </select>
 
-   <input id="fDia"
-    type="number"
-    step=".01"
-    placeholder="Valor da diária">
-
-   <input id="fSal"
-    type="number"
-    step=".01"
-    placeholder="Salário mensal">
-
-   <input id="fPag"
-    type="number"
-    min="1"
-    max="31"
-    placeholder="Dia do pagamento">
+   <input id="fDia" type="number" step=".01" placeholder="Valor da diária">
+   <input id="fSal" type="number" step=".01" placeholder="Salário mensal">
+   <input id="fPag" type="number" min="1" max="31" placeholder="Dia do pagamento">
 
    <select id="fAtivo">
-
-    <option value="true">
-     Funcionário ativo
-    </option>
-
-    <option value="false">
-     Funcionário inativo
-    </option>
-
+    <option value="true">Funcionário ativo</option>
+    <option value="false">Funcionário inativo</option>
    </select>
 
-   <button class="primary">
-    Salvar funcionário
-   </button>
-
+   <button class="primary">Salvar funcionário</button>
   </form>
-
  </div>
-
 </div>
 
 
-<!-- MODAL DIÁRIA -->
+<!-- DIÁRIA -->
 <div class="modal" id="diaM">
-
  <div class="sheet">
-
-  <button class="close" onclick="closeM('diaM')">
-   ×
-  </button>
-
+  <button class="close" onclick="closeM('diaM')">×</button>
   <h2>Registrar diária</h2>
 
   <form class="form" onsubmit="saveDia(event)">
-
    <select id="dFunc" required></select>
-
    <select id="dObra"></select>
-
-   <input id="dData"
-    type="date"
-    required>
-
-   <input id="dQtd"
-    type="number"
-    step=".25"
-    value="1"
-    required
-    placeholder="Quantidade">
-
-   <input id="dVal"
-    type="number"
-    step=".01"
-    required
-    placeholder="Valor da diária">
+   <input id="dData" type="date" required>
+   <input id="dQtd" type="number" step=".25" value="1" required placeholder="Quantidade">
+   <input id="dVal" type="number" step=".01" required placeholder="Valor da diária">
 
    <select id="dStatus">
-
-    <option value="pendente">
-     Pendente
-    </option>
-
-    <option value="pago">
-     Pago
-    </option>
-
+    <option value="pendente">Pendente</option>
+    <option value="pago">Pago</option>
    </select>
 
-   <textarea id="dObs"
-    placeholder="Observação"></textarea>
-
-   <button class="primary">
-    Salvar diária
-   </button>
-
+   <textarea id="dObs" placeholder="Observação"></textarea>
+   <button class="primary">Salvar diária</button>
   </form>
-
  </div>
-
 </div>
 
 
-<!-- MODAL FINANCEIRO -->
+<!-- FINANCEIRO -->
 <div class="modal" id="finM">
-
  <div class="sheet">
-
-  <button class="close" onclick="closeM('finM')">
-   ×
-  </button>
-
+  <button class="close" onclick="closeM('finM')">×</button>
   <h2>Novo lançamento</h2>
 
   <form class="form" onsubmit="saveFin(event)">
 
-   <select id="tFin">
-
-    <option value="entrada">
-     Entrada / recebimento
-    </option>
-
-    <option value="despesa">
-     Despesa
-    </option>
-
+   <select id="tFin" onchange="updateFinCategory()">
+    <option value="entrada">Entrada / recebimento</option>
+    <option value="despesa">Despesa</option>
    </select>
 
-   <input id="dFin"
-    required
-    placeholder="Descrição">
+   <div id="finCategoryBox">
+    <select id="catFin">
+     <option value="material">Materiais</option>
+     <option value="mao_obra">Mão de obra</option>
+     <option value="terceirizado">Serviços terceirizados</option>
+     <option value="outros">Outras despesas</option>
+    </select>
+   </div>
 
-   <input id="vFin"
-    required
-    type="number"
-    step=".01"
-    placeholder="Valor">
-
-   <input id="dtFin"
-    type="date"
-    required>
-
-   <input id="forFin"
-    placeholder="Fornecedor / cliente">
+   <input id="dFin" required placeholder="Descrição">
+   <input id="vFin" required type="number" step=".01" placeholder="Valor">
+   <input id="dtFin" type="date" required>
+   <input id="forFin" placeholder="Fornecedor / cliente">
 
    <select id="oFin">
-    <option value="">
-     Sem obra
-    </option>
+    <option value="">Sem obra</option>
    </select>
 
-   <textarea id="obsFin"
-    placeholder="Observação"></textarea>
+   <textarea id="obsFin" placeholder="Observação"></textarea>
+   <button class="primary">Salvar lançamento</button>
+  </form>
+ </div>
+</div>
 
-   <button class="primary">
-    Salvar lançamento
-   </button>
 
+<!-- PAGAMENTO -->
+<div class="modal" id="pagM">
+ <div class="sheet">
+  <button class="close" onclick="closeM('pagM')">×</button>
+  <h2>Registrar pagamento</h2>
+
+  <div class="note">
+   O valor disponível é calculado automaticamente:
+   <b>total devido − adiantamentos − pagamentos anteriores.</b>
+  </div>
+
+  <form class="form" onsubmit="savePagamento(event)">
+   <select id="pFunc" onchange="updatePaymentValue()"></select>
+   <input id="pVal" type="number" step=".01" min="0" placeholder="Valor do pagamento">
+   <input id="pData" type="date" required>
+   <textarea id="pObs" placeholder="Observação"></textarea>
+   <button class="primary">Registrar pagamento</button>
   </form>
 
+  <div id="paymentPreview"></div>
  </div>
+</div>
 
+
+<!-- ADIANTAMENTO -->
+<div class="modal" id="adiM">
+ <div class="sheet">
+  <button class="close" onclick="closeM('adiM')">×</button>
+  <h2>Registrar adiantamento</h2>
+
+  <div class="note">
+   O adiantamento será abatido automaticamente do saldo líquido do funcionário.
+  </div>
+
+  <form class="form" onsubmit="saveAdiantamento(event)">
+   <select id="aFunc" onchange="updateAdvanceValue()"></select>
+   <input id="aVal" type="number" step=".01" min="0" placeholder="Valor do adiantamento">
+   <input id="aData" type="date" required>
+   <textarea id="aObs" placeholder="Observação"></textarea>
+   <button class="primary">Registrar adiantamento</button>
+  </form>
+
+  <div id="advancePreview"></div>
+ </div>
+</div>
+
+
+<!-- FALTA -->
+<div class="modal" id="faltaM">
+ <div class="sheet">
+  <button class="close" onclick="closeM('faltaM')">×</button>
+  <h2>Registrar falta</h2>
+
+  <div class="note">
+   A falta <b>não gera diária</b>. Ela ficará registrada no histórico do funcionário.
+  </div>
+
+  <form class="form" onsubmit="saveFalta(event)">
+   <select id="faltFunc" required></select>
+   <select id="faltObra"></select>
+   <input id="faltData" type="date" required>
+
+   <select id="faltJust">
+    <option value="false">Falta não justificada</option>
+    <option value="true">Falta justificada</option>
+   </select>
+
+   <textarea id="faltMotivo" placeholder="Justificativa / observação"></textarea>
+
+   <button class="primary">Registrar falta</button>
+  </form>
+ </div>
+</div>
+
+
+<!-- CHECKLIST -->
+<div class="modal" id="checkM">
+ <div class="sheet">
+  <button class="close" onclick="closeM('checkM')">×</button>
+  <h2 id="checkTitle">Etapa da obra</h2>
+
+  <form class="form" onsubmit="saveChecklistItem(event)">
+   <input type="hidden" id="checkId">
+   <input type="hidden" id="checkObraId">
+   <input id="checkDesc" required placeholder="Nome da etapa">
+   <button class="primary">Salvar etapa</button>
+  </form>
+ </div>
+</div>
+
+
+<!-- SERVIÇO ADICIONAL -->
+<div class="modal" id="addM">
+ <div class="sheet">
+  <button class="close" onclick="closeM('addM')">×</button>
+  <h2 id="addTitle">Serviço adicional</h2>
+
+  <form class="form" onsubmit="saveAdicional(event)">
+   <input type="hidden" id="addId">
+   <input type="hidden" id="addObraId">
+
+   <input id="addDesc" required placeholder="Descrição do serviço adicional">
+   <input id="addVal" required type="number" step=".01" min="0" placeholder="Valor">
+   <input id="addData" required type="date">
+   <textarea id="addObs" placeholder="Observação"></textarea>
+
+   <button class="primary">Salvar serviço adicional</button>
+  </form>
+ </div>
 </div>
 
 
@@ -1229,95 +626,82 @@ h2{
 <script>
 "use strict";
 
-/* =====================================================
-   EDIFIQ — CÓDIGO ÚNICO
-   ===================================================== */
+const SUPA_URL="https://lwqntzwajjgkvtynwdjg.supabase.co";
+const SUPA_KEY="sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
 
-const SUPA_URL =
-"https://lwqntzwajjgkvtynwdjg.supabase.co";
+let sb=null;
+let user=null;
+let localMode=false;
+let editObraId=null;
+let editFuncId=null;
 
-const SUPA_KEY =
-"sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
-
-let sb = null;
-let user = null;
-let localMode = false;
-let editObraId = null;
-let editFuncId = null;
-
-
-/* =====================================================
-   DADOS
-   ===================================================== */
-
-const D = {
+const D={
  obras:[],
  funcionarios:[],
  diarias:[],
  gastos:[],
  pagamentos:[],
- checklist:[]
+ checklist:[],
+ adiantamentos:[],
+ faltas:[],
+ servicos_adicionais:[]
 };
 
-const tables = [
+const tables=[
  "obras",
  "funcionarios",
  "diarias",
  "gastos",
  "pagamentos",
- "checklist"
+ "checklist",
+ "adiantamentos",
+ "faltas",
+ "servicos_adicionais"
 ];
 
-const $ = id => document.getElementById(id);
+const $=id=>document.getElementById(id);
 
-const money = v =>
- Number(v || 0).toLocaleString("pt-BR",{
-  style:"currency",
-  currency:"BRL"
- });
+const money=v=>Number(v||0).toLocaleString("pt-BR",{
+ style:"currency",
+ currency:"BRL"
+});
 
 function today(){
-
- const d = new Date();
-
+ const d=new Date();
  return [
   d.getFullYear(),
   String(d.getMonth()+1).padStart(2,"0"),
   String(d.getDate()).padStart(2,"0")
  ].join("-");
-
 }
 
 function esc(s){
+ return String(s??"").replace(/[&<>"']/g,m=>({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#39;"
+ }[m]));
+}
 
- return String(s ?? "")
-  .replace(/[&<>"']/g,m=>({
-   "&":"&amp;",
-   "<":"&lt;",
-   ">":"&gt;",
-   '"':"&quot;",
-   "'":"&#39;"
-  }[m]));
-
+function num(v){
+ return Number(v||0);
 }
 
 
 /* =====================================================
-   SUPABASE
-   ===================================================== */
+ SUPABASE
+ ===================================================== */
 
 function initSupabase(){
-
  try{
-
-  if(
-   !window.supabase ||
-   typeof window.supabase.createClient !== "function"
-  ){
+  if(!window.supabase ||
+     typeof window.supabase.createClient!=="function"){
    throw new Error("Supabase não carregou.");
   }
 
-  sb = window.supabase.createClient(
+  sb=window.supabase.createClient(
    SUPA_URL,
    SUPA_KEY,
    {
@@ -1332,586 +716,367 @@ function initSupabase(){
   return true;
 
  }catch(e){
-
   console.error(e);
-
-  $("connectionStatus").textContent =
-   "● Sistema local disponível";
-
-  $("connectionStatus").className =
-   "connection error";
-
-  $("bootError").style.display = "block";
-
-  $("bootError").textContent =
+  $("connectionStatus").textContent="● Sistema local disponível";
+  $("connectionStatus").className="connection error";
+  $("bootError").style.display="block";
+  $("bootError").textContent=
    "O banco não carregou. Você ainda pode usar o modo local.";
-
   return false;
-
  }
-
 }
 
 
 /* =====================================================
-   LOCAL STORAGE
-   ===================================================== */
+ LOCAL
+ ===================================================== */
 
 function localKey(table){
-
- return "edifiq_local_" + table;
-
+ return "edifiq_local_"+table;
 }
 
 function loadLocal(){
-
  tables.forEach(t=>{
-
   try{
-
-   D[t] =
-    JSON.parse(
-     localStorage.getItem(localKey(t)) || "[]"
-    );
-
+   D[t]=JSON.parse(
+    localStorage.getItem(localKey(t))||"[]"
+   );
   }catch{
-
-   D[t] = [];
-
+   D[t]=[];
   }
-
  });
-
 }
 
 function saveLocal(table){
-
  localStorage.setItem(
   localKey(table),
   JSON.stringify(D[table])
  );
-
-}
-
-function saveAllLocal(){
-
- tables.forEach(saveLocal);
-
 }
 
 
 /* =====================================================
-   LOGIN
-   ===================================================== */
+ LOGIN
+ ===================================================== */
 
 async function login(){
-
  if(!sb){
-
   enterLocalMode();
-
   return;
-
  }
 
- const email = $("email").value.trim();
- const password = $("password").value;
+ const email=$("email").value.trim();
+ const password=$("password").value;
 
- if(!email || !password){
-
+ if(!email||!password){
   authMsg("Informe e-mail e senha.");
-
   return;
-
  }
 
  authMsg("Entrando...");
 
  try{
+  const {error}=await sb.auth.signInWithPassword({
+   email,
+   password
+  });
 
-  const {error} =
-   await sb.auth.signInWithPassword({
-    email,
-    password
-   });
-
-  if(error){
-
-   authMsg(error.message);
-
-   return;
-
-  }
+  if(error)authMsg(error.message);
 
  }catch(e){
-
   console.error(e);
-
-  authMsg(
-   "Erro de conexão. Você pode usar o modo local."
-  );
-
+  authMsg("Erro de conexão. Você pode usar o modo local.");
  }
-
 }
 
-
 async function signup(){
-
  if(!sb){
-
-  authMsg(
-   "Supabase indisponível. Use o modo local."
-  );
-
+  authMsg("Supabase indisponível. Use o modo local.");
   return;
-
  }
 
- const email = $("email").value.trim();
- const password = $("password").value;
+ const email=$("email").value.trim();
+ const password=$("password").value;
 
  if(!email){
-
   authMsg("Informe seu e-mail.");
-
   return;
-
  }
 
- if(password.length < 6){
-
-  authMsg(
-   "A senha precisa ter pelo menos 6 caracteres."
-  );
-
+ if(password.length<6){
+  authMsg("A senha precisa ter pelo menos 6 caracteres.");
   return;
-
  }
 
  authMsg("Criando conta...");
 
  try{
-
-  const {data,error} =
-   await sb.auth.signUp({
-    email,
-    password
-   });
+  const {data,error}=await sb.auth.signUp({
+   email,password
+  });
 
   if(error){
-
    authMsg(error.message);
-
    return;
-
   }
 
   authMsg(
    data.session
-   ? "Conta criada."
-   : "Conta criada. Verifique seu e-mail."
+   ?"Conta criada."
+   :"Conta criada. Verifique seu e-mail."
   );
 
  }catch(e){
-
   authMsg("Erro ao criar conta.");
-
  }
-
 }
 
-
 async function resetPassword(){
-
  if(!sb){
-
   authMsg("Supabase indisponível.");
-
   return;
-
  }
 
- const email = $("email").value.trim();
+ const email=$("email").value.trim();
 
  if(!email){
-
   authMsg("Digite seu e-mail.");
-
   return;
-
  }
 
  try{
-
-  const {error} =
-   await sb.auth.resetPasswordForEmail(
-    email,
-    {
-     redirectTo:
-      location.origin + location.pathname
-    }
-   );
+  const {error}=await sb.auth.resetPasswordForEmail(
+   email,
+   {
+    redirectTo:location.origin+location.pathname
+   }
+  );
 
   authMsg(
-   error
-   ? error.message
-   : "Link enviado para seu e-mail."
+   error?error.message:"Link enviado para seu e-mail."
   );
 
  }catch(e){
-
   authMsg("Erro ao enviar o link.");
-
  }
-
 }
 
-
 function enterLocalMode(){
-
- localMode = true;
- user = {
-  id:"local",
-  email:"Modo local"
- };
+ localMode=true;
+ user={id:"local",email:"Modo local"};
 
  loadLocal();
 
  $("auth").classList.add("hidden");
  $("app").classList.remove("hidden");
 
- $("appConnection").textContent =
-  "● Modo local";
-
- $("appConnection").className =
-  "connection";
-
- $("accountEmail") &&
- ($("accountEmail").textContent = "Modo local");
+ $("appConnection").textContent="● Modo local";
+ $("appConnection").className="connection";
 
  renderAll();
 
  toast("EDIFIQ aberto no modo local.");
-
 }
 
-
 async function logout(){
-
- if(!localMode && sb){
-
-  try{
-   await sb.auth.signOut();
-  }catch(e){}
-
+ if(!localMode&&sb){
+  try{await sb.auth.signOut()}catch(e){}
  }
 
- localMode = false;
- user = null;
+ localMode=false;
+ user=null;
 
  $("app").classList.add("hidden");
  $("auth").classList.remove("hidden");
-
 }
 
 
 /* =====================================================
-   MENSAGENS / NAVEGAÇÃO
-   ===================================================== */
+ MENSAGENS / NAVEGAÇÃO
+ ===================================================== */
 
 function authMsg(text){
-
- $("authMsg").textContent = text || "";
-
+ $("authMsg").textContent=text||"";
 }
 
 function toast(text){
-
- const x = $("toast");
-
- x.textContent = text;
-
+ const x=$("toast");
+ x.textContent=text;
  x.classList.add("show");
-
- setTimeout(
-  ()=>x.classList.remove("show"),
-  3000
- );
-
+ setTimeout(()=>x.classList.remove("show"),3000);
 }
 
 function go(page){
-
- document
-  .querySelectorAll(".page")
+ document.querySelectorAll(".page")
   .forEach(x=>x.classList.remove("active"));
 
- if($(page))
-  $(page).classList.add("active");
+ if($(page))$(page).classList.add("active");
 
- document
-  .querySelectorAll(".nav")
+ document.querySelectorAll(".nav")
   .forEach(x=>{
-   x.classList.toggle(
-    "active",
-    x.dataset.p === page
-   );
+   x.classList.toggle("active",x.dataset.p===page);
   });
 
  renderAll();
 
- window.scrollTo({
-  top:0,
-  behavior:"smooth"
- });
-
+ window.scrollTo({top:0,behavior:"smooth"});
 }
 
 function openM(id){
-
  $(id).classList.add("open");
-
  fillSelectors();
-
 }
 
 function closeM(id){
-
  $(id).classList.remove("open");
-
 }
 
 
 /* =====================================================
-   BANCO
-   ===================================================== */
+ BANCO
+ ===================================================== */
 
 async function cloudLoad(){
-
- if(!sb || !user || localMode)
-  return;
+ if(!sb||!user||localMode)return;
 
  for(const table of tables){
-
   try{
-
-   const {data,error} =
-    await sb
-     .from(table)
-     .select("*")
-     .order("created_at",{
-      ascending:false
-     });
+   const {data,error}=await sb
+    .from(table)
+    .select("*")
+    .order("created_at",{ascending:false});
 
    if(!error){
-
-    D[table].splice(
-     0,
-     D[table].length,
-     ...(data || [])
-    );
-
+    D[table].splice(0,D[table].length,...(data||[]));
    }else{
-
-    console.warn(
-     table,
-     error.message
-    );
-
+    console.warn(table,error.message);
    }
-
   }catch(e){
-
    console.warn(e);
-
   }
-
  }
-
 }
 
-
 async function insertRow(table,row){
-
  if(localMode){
-
-  const item = {
+  const item={
    ...row,
    id:Date.now()+Math.floor(Math.random()*1000),
    created_at:new Date().toISOString()
   };
 
   D[table].unshift(item);
-
   saveLocal(table);
-
   return item;
-
  }
 
- if(!sb || !user)
-  return null;
+ if(!sb||!user)return null;
 
  try{
+  const payload={...row,user_id:user.id};
 
-  const payload = {
-   ...row,
-   user_id:user.id
-  };
-
-  const {data,error} =
-   await sb
-    .from(table)
-    .insert(payload)
-    .select()
-    .single();
+  const {data,error}=await sb
+   .from(table)
+   .insert(payload)
+   .select()
+   .single();
 
   if(error){
-
    toast("Erro ao salvar: "+error.message);
-
    return null;
-
   }
 
   return data;
 
  }catch(e){
-
   toast("Erro ao salvar.");
-
   return null;
-
  }
-
 }
-
 
 async function updateRow(table,id,row){
-
  if(localMode){
+  const item=D[table].find(x=>String(x.id)===String(id));
 
-  const item =
-   D[table].find(x=>String(x.id)===String(id));
-
-  if(!item)
-   return null;
+  if(!item)return null;
 
   Object.assign(item,row);
-
   saveLocal(table);
-
   return item;
-
  }
 
- if(!sb || !user)
-  return null;
+ if(!sb||!user)return null;
 
  try{
-
-  const {data,error} =
-   await sb
-    .from(table)
-    .update(row)
-    .eq("id",id)
-    .eq("user_id",user.id)
-    .select()
-    .single();
+  const {data,error}=await sb
+   .from(table)
+   .update(row)
+   .eq("id",id)
+   .eq("user_id",user.id)
+   .select()
+   .single();
 
   if(error){
-
    toast("Erro ao editar: "+error.message);
-
    return null;
-
   }
 
   return data;
 
  }catch(e){
-
   toast("Erro ao editar.");
-
   return null;
-
  }
-
 }
 
-
 async function removeRow(table,id){
-
  if(localMode){
-
-  const index =
-   D[table].findIndex(
-    x=>String(x.id)===String(id)
-   );
+  const index=D[table].findIndex(
+   x=>String(x.id)===String(id)
+  );
 
   if(index>=0){
-
    D[table].splice(index,1);
-
    saveLocal(table);
-
   }
 
   return true;
-
  }
 
- if(!sb || !user)
-  return false;
+ if(!sb||!user)return false;
 
  try{
-
-  const {error} =
-   await sb
-    .from(table)
-    .delete()
-    .eq("id",id)
-    .eq("user_id",user.id);
+  const {error}=await sb
+   .from(table)
+   .delete()
+   .eq("id",id)
+   .eq("user_id",user.id);
 
   if(error){
-
    toast(error.message);
-
    return false;
-
   }
 
   return true;
 
  }catch(e){
-
   return false;
-
  }
-
 }
 
 
 /* =====================================================
-   ABRIR FORMULÁRIOS
-   ===================================================== */
+ FORMULÁRIOS
+ ===================================================== */
 
 function openObra(id=null){
+ editObraId=id;
 
- editObraId = id;
-
- $("obraTitle").textContent =
-  id ? "Editar obra" : "Nova obra";
+ $("obraTitle").textContent=id?"Editar obra":"Nova obra";
 
  if(id){
-
-  const o =
-   D.obras.find(
-    x=>String(x.id)===String(id)
-   );
-
-  if(!o) return;
+  const o=D.obras.find(x=>String(x.id)===String(id));
+  if(!o)return;
 
   $("oNome").value=o.nome||"";
   $("oCli").value=o.cliente||"";
@@ -1922,9 +1087,7 @@ function openObra(id=null){
   $("oFim").value=o.data_fim||"";
   $("oTipo").value=o.tipo_servico||"";
   $("oObs").value=o.observacoes||"";
-
  }else{
-
   $("oNome").value="";
   $("oCli").value="";
   $("oLoc").value="";
@@ -1934,45 +1097,36 @@ function openObra(id=null){
   $("oFim").value="";
   $("oTipo").value="";
   $("oObs").value="";
-
  }
 
  openM("obraM");
-
 }
 
-
 function openFunc(id=null){
-
  editFuncId=id;
 
- $("funcTitle").textContent =
-  id ? "Editar funcionário" : "Novo funcionário";
+ $("funcTitle").textContent=
+  id?"Editar funcionário":"Novo funcionário";
 
  if(id){
+  const f=D.funcionarios.find(
+   x=>String(x.id)===String(id)
+  );
 
-  const f =
-   D.funcionarios.find(
-    x=>String(x.id)===String(id)
-   );
-
-  if(!f) return;
+  if(!f)return;
 
   $("fNome").value=f.nome||"";
   $("fFunc").value=f.funcao||"";
   $("fTel").value=f.telefone||"";
   $("fObra").value=f.obra_id||"";
-  $("fRegistrar").value =
-   String(f.registrar_diaria!==false);
+  $("fRegistrar").value=String(f.registrar_diaria!==false);
   $("fTipo").value=f.tipo_pagamento||"diaria";
   $("fDia").value=f.valor_diaria||"";
   $("fSal").value=f.salario_mensal||"";
   $("fPag").value=f.dia_pagamento||"";
-  $("fAtivo").value =
-   String(f.ativo!==false);
+  $("fAtivo").value=String(f.ativo!==false);
 
  }else{
-
   $("fNome").value="";
   $("fFunc").value="";
   $("fTel").value="";
@@ -1983,66 +1137,81 @@ function openFunc(id=null){
   $("fSal").value="";
   $("fPag").value="";
   $("fAtivo").value="true";
-
  }
 
  openM("funcM");
-
 }
 
-
 function openDia(){
-
  openM("diaM");
 
  $("dData").value=today();
-
  $("dQtd").value=1;
 
- const f =
-  D.funcionarios.find(
-   x=>
-    x.ativo!==false &&
-    x.registrar_diaria!==false
-  );
+ const f=D.funcionarios.find(
+  x=>x.ativo!==false&&x.registrar_diaria!==false
+ );
 
  if(f){
-
   $("dFunc").value=f.id;
-
-  $("dVal").value=
-   f.valor_diaria||"";
-
-  $("dObra").value=
-   f.obra_id||"";
-
+  $("dVal").value=f.valor_diaria||"";
+  $("dObra").value=f.obra_id||"";
  }
-
 }
 
+function openDiaForFunc(id){
+ openM("diaM");
+
+ $("dData").value=today();
+ $("dFunc").value=id;
+
+ const f=D.funcionarios.find(
+  x=>String(x.id)===String(id)
+ );
+
+ if(f){
+  $("dVal").value=f.valor_diaria||"";
+  $("dObra").value=f.obra_id||"";
+ }
+}
+
+function openDiaForObra(id){
+ openM("diaM");
+
+ $("dData").value=today();
+ $("dObra").value=id;
+
+ const f=D.funcionarios.find(
+  x=>x.ativo!==false&&
+     x.registrar_diaria!==false&&
+     String(x.obra_id)===String(id)
+ );
+
+ if(f){
+  $("dFunc").value=f.id;
+  $("dVal").value=f.valor_diaria||"";
+ }
+}
 
 function openFin(){
-
  openM("finM");
-
  $("dtFin").value=today();
-
+ updateFinCategory();
 }
 
 
 /* =====================================================
-   SALVAR OBRA
-   ===================================================== */
+ OBRA
+ ===================================================== */
 
 async function saveObra(e){
-
  e.preventDefault();
 
  const row={
   nome:$("oNome").value.trim(),
   cliente:$("oCli").value.trim(),
   endereco:$("oLoc").value.trim(),
-  valor:Number($("oVal").value||0),
+  valor:num($("oVal").value),
   status:$("oStatus").value,
   data_inicio:$("oIni").value||null,
   data_fim:$("oFim").value||null,
@@ -2053,288 +1222,1527 @@ async function saveObra(e){
  let r;
 
  if(editObraId){
-
-  r=await updateRow(
-   "obras",
-   editObraId,
-   row
-  );
-
+  r=await updateRow("obras",editObraId,row);
  }else{
-
-  r=await insertRow(
-   "obras",
-   row
-  );
-
+  r=await insertRow("obras",row);
  }
 
- if(!r) return;
+ if(!r)return;
 
  if(editObraId){
-
-  const o =
-   D.obras.find(
-    x=>String(x.id)===String(editObraId)
-   );
-
-  if(o)
-   Object.assign(o,r);
-
+  const o=D.obras.find(
+   x=>String(x.id)===String(editObraId)
+  );
+  if(o)Object.assign(o,r);
  }else{
-
-  D.obras.unshift(r);
-
+  if(!localMode)D.obras.unshift(r);
  }
 
  editObraId=null;
-
  closeM("obraM");
-
  renderAll();
 
  toast("Obra salva com sucesso.");
-
 }
 
 
 /* =====================================================
-   SALVAR FUNCIONÁRIO
-   ===================================================== */
+ FUNCIONÁRIO
+ ===================================================== */
 
 async function saveFunc(e){
-
  e.preventDefault();
 
- const registrar =
-  $("fRegistrar").value==="true";
-
  const row={
-
   nome:$("fNome").value.trim(),
-
   funcao:$("fFunc").value.trim(),
-
   telefone:$("fTel").value.trim(),
-
-  obra_id:
-   $("fObra").value
-   ? Number($("fObra").value)
-   : null,
-
-  registrar_diaria:
-   registrar,
-
-  valor_diaria:
-   Number($("fDia").value||0),
-
-  tipo_pagamento:
-   $("fTipo").value,
-
-  salario_mensal:
-   Number($("fSal").value||0),
-
-  dia_pagamento:
-   Number($("fPag").value||0),
-
-  ativo:
-   $("fAtivo").value==="true"
-
+  obra_id:$("fObra").value?Number($("fObra").value):null,
+  registrar_diaria:$("fRegistrar").value==="true",
+  valor_diaria:num($("fDia").value),
+  tipo_pagamento:$("fTipo").value,
+  salario_mensal:num($("fSal").value),
+  dia_pagamento:num($("fPag").value),
+  ativo:$("fAtivo").value==="true"
  };
 
  let r;
 
  if(editFuncId){
-
-  r=await updateRow(
-   "funcionarios",
-   editFuncId,
-   row
-  );
-
+  r=await updateRow("funcionarios",editFuncId,row);
  }else{
-
-  r=await insertRow(
-   "funcionarios",
-   row
-  );
-
+  r=await insertRow("funcionarios",row);
  }
 
- if(!r) return;
+ if(!r)return;
 
  if(editFuncId){
-
-  const f =
-   D.funcionarios.find(
-    x=>String(x.id)===String(editFuncId)
-   );
-
-  if(f)
-   Object.assign(f,r);
-
+  const f=D.funcionarios.find(
+   x=>String(x.id)===String(editFuncId)
+  );
+  if(f)Object.assign(f,r);
  }else{
-
-  D.funcionarios.unshift(r);
-
+  if(!localMode)D.funcionarios.unshift(r);
  }
 
  editFuncId=null;
-
  closeM("funcM");
-
  renderAll();
 
  toast("Funcionário salvo.");
-
 }
 
 
 /* =====================================================
-   SALVAR DIÁRIA
-   ===================================================== */
+ DIÁRIA
+ ===================================================== */
 
 async function saveDia(e){
-
  e.preventDefault();
 
- const func =
-  D.funcionarios.find(
-   x=>String(x.id)===String($("dFunc").value)
-  );
+ const func=D.funcionarios.find(
+  x=>String(x.id)===String($("dFunc").value)
+ );
 
- if(func && func.registrar_diaria===false){
-
-  toast(
-   "Este funcionário está configurado para não registrar diária."
-  );
-
+ if(func&&func.registrar_diaria===false){
+  toast("Este funcionário está configurado para não registrar diária.");
   return;
-
  }
 
- const qtd =
-  Number($("dQtd").value||1);
+ const qtd=num($("dQtd").value);
+ const valor=num($("dVal").value);
 
- const valor =
-  Number($("dVal").value||0);
+ const r=await insertRow("diarias",{
+  funcionario_id:Number($("dFunc").value),
+  obra_id:$("dObra").value?Number($("dObra").value):null,
+  data:$("dData").value,
+  qtd,
+  valor_diaria:valor,
+  valor_pago:qtd*valor,
+  status:$("dStatus").value,
+  observacao:$("dObs").value
+ });
 
- const r =
-  await insertRow(
-   "diarias",
-   {
-    funcionario_id:Number($("dFunc").value),
-    obra_id:
-     $("dObra").value
-     ? Number($("dObra").value)
-     : null,
-    data:$("dData").value,
-    qtd:qtd,
-    valor_diaria:valor,
-    valor_pago:qtd*valor,
-    status:$("dStatus").value,
-    observacao:$("dObs").value
-   }
-  );
+ if(!r)return;
 
- if(!r) return;
-
- D.diarias.unshift(r);
+ if(!localMode)D.diarias.unshift(r);
 
  closeM("diaM");
-
  renderAll();
-
  toast("Diária registrada.");
-
 }
 
 
 /* =====================================================
-   FINANCEIRO
-   ===================================================== */
+ FINANCEIRO
+ ===================================================== */
+
+function updateFinCategory(){
+ const isDespesa=$("tFin").value==="despesa";
+ $("finCategoryBox").classList.toggle("hidden",!isDespesa);
+}
 
 async function saveFin(e){
-
  e.preventDefault();
 
- const r =
-  await insertRow(
-   "gastos",
+ const categoria=$("tFin").value;
+
+ const r=await insertRow("gastos",{
+  obra_id:$("oFin").value?Number($("oFin").value):null,
+  categoria,
+  subcategoria:
+   categoria==="despesa"
+   ?$("catFin").value
+   :"recebimento",
+  descricao:$("dFin").value.trim(),
+  valor:num($("vFin").value),
+  data:$("dtFin").value,
+  fornecedor:$("forFin").value.trim(),
+  observacao:$("obsFin").value.trim()
+ });
+
+ if(!r)return;
+
+ if(!localMode)D.gastos.unshift(r);
+
+ closeM("finM");
+ renderAll();
+ toast("Lançamento salvo.");
+}
+
+
+/* =====================================================
+ SERVIÇOS ADICIONAIS
+ ===================================================== */
+
+function adicionalTotal(obraId){
+ return D.servicos_adicionais
+  .filter(x=>String(x.obra_id)===String(obraId))
+  .reduce((s,x)=>s+num(x.valor),0);
+}
+
+function contratoTotal(obraId){
+ const o=D.obras.find(
+  x=>String(x.id)===String(obraId)
+ );
+ return num(o?.valor)+adicionalTotal(obraId);
+}
+
+function openAdicional(obraId,id=null){
+ $("addId").value=id||"";
+ $("addObraId").value=obraId;
+ $("addTitle").textContent=id?"Editar serviço adicional":"Novo serviço adicional";
+
+ if(id){
+  const x=D.servicos_adicionais.find(
+   a=>String(a.id)===String(id)
+  );
+
+  if(!x)return;
+
+  $("addDesc").value=x.descricao||"";
+  $("addVal").value=x.valor||"";
+  $("addData").value=x.data||today();
+  $("addObs").value=x.observacao||"";
+ }else{
+  $("addDesc").value="";
+  $("addVal").value="";
+  $("addData").value=today();
+  $("addObs").value="";
+ }
+
+ openM("addM");
+}
+
+async function saveAdicional(e){
+ e.preventDefault();
+
+ const id=$("addId").value;
+ const obraId=$("addObraId").value;
+
+ const row={
+  obra_id:Number(obraId),
+  descricao:$("addDesc").value.trim(),
+  valor:num($("addVal").value),
+  data:$("addData").value,
+  observacao:$("addObs").value.trim()
+ };
+
+ let r;
+
+ if(id){
+  r=await updateRow("servicos_adicionais",id,row);
+ }else{
+  r=await insertRow("servicos_adicionais",row);
+ }
+
+ if(!r)return;
+
+ if(id){
+  const old=D.servicos_adicionais.find(
+   x=>String(x.id)===String(id)
+  );
+  if(old)Object.assign(old,r);
+ }else if(!localMode){
+  D.servicos_adicionais.unshift(r);
+ }
+
+ closeM("addM");
+ renderAll();
+
+ toast("Serviço adicional salvo. O contrato foi atualizado.");
+}
+
+
+/* =====================================================
+ CHECKLIST
+ ===================================================== */
+
+const CHECK_DEFAULTS=[
+ "Planejamento e orçamento",
+ "Contrato assinado",
+ "Medição inicial",
+ "Compra de materiais",
+ "Preparação do local",
+ "Chapisco / reboco",
+ "Instalações",
+ "Pisos e revestimentos",
+ "Pintura",
+ "Acabamentos",
+ "Limpeza final",
+ "Entrega da obra"
+];
+
+function checklistForObra(obraId){
+ const saved=D.checklist.filter(
+  x=>String(x.obra_id)===String(obraId)
+ );
+
+ if(saved.length)return saved;
+
+ return CHECK_DEFAULTS.map((desc,index)=>({
+  id:"virtual_"+obraId+"_"+index,
+  obra_id:obraId,
+  tarefa:desc,
+  concluida:false,
+  virtual:true
+ }));
+}
+
+function checkState(obraId,desc){
+ return D.checklist.find(
+  x=>String(x.obra_id)===String(obraId)&&
+     x.tarefa===desc
+ );
+}
+
+function obraProgress(obraId){
+ const checks=checklistForObra(obraId);
+
+ if(!checks.length)return 0;
+
+ const done=checks.filter(x=>x.concluida).length;
+
+ return Math.round(done/checks.length*100);
+}
+
+async function toggleCheck(obraId,id,desc,checked){
+ let old=null;
+
+ if(id&&!String(id).startsWith("virtual_")){
+  old=D.checklist.find(
+   x=>String(x.id)===String(id)
+  );
+ }
+
+ if(!old){
+  old=checkState(obraId,desc);
+ }
+
+ if(old){
+  const r=await updateRow(
+   "checklist",
+   old.id,
    {
-    obra_id:
-     $("oFin").value
-     ? Number($("oFin").value)
-     : null,
-
-    categoria:$("tFin").value,
-
-    descricao:
-     $("dFin").value.trim(),
-
-    valor:
-     Number($("vFin").value||0),
-
-    data:
-     $("dtFin").value,
-
-    fornecedor:
-     $("forFin").value.trim(),
-
-    observacao:
-     $("obsFin").value.trim()
+    concluida:checked,
+    progresso:checked?100:0
    }
   );
 
- if(!r) return;
+  if(r)Object.assign(old,r);
 
- D.gastos.unshift(r);
+ }else{
+  const r=await insertRow("checklist",{
+   obra_id:Number(obraId),
+   tarefa:desc,
+   concluida:checked,
+   progresso:checked?100:0
+  });
 
- closeM("finM");
+  if(r&&!localMode)D.checklist.unshift(r);
+ }
 
  renderAll();
+}
 
- toast("Lançamento salvo.");
+function openChecklist(obraId,id=null){
+ $("checkId").value=id||"";
+ $("checkObraId").value=obraId;
+ $("checkTitle").textContent=id?"Editar etapa":"Adicionar etapa";
 
+ if(id){
+  const x=D.checklist.find(
+   c=>String(c.id)===String(id)
+  );
+
+  if(!x)return;
+
+  $("checkDesc").value=x.tarefa||"";
+ }else{
+  $("checkDesc").value="";
+ }
+
+ openM("checkM");
+}
+
+async function saveChecklistItem(e){
+ e.preventDefault();
+
+ const id=$("checkId").value;
+ const obraId=$("checkObraId").value;
+ const tarefa=$("checkDesc").value.trim();
+
+ if(!tarefa)return;
+
+ if(id){
+  const x=D.checklist.find(
+   c=>String(c.id)===String(id)
+  );
+
+  if(x){
+   const r=await updateRow(
+    "checklist",
+    id,
+    {tarefa}
+   );
+
+   if(r)Object.assign(x,r);
+  }
+ }else{
+  const r=await insertRow("checklist",{
+   obra_id:Number(obraId),
+   tarefa,
+   concluida:false,
+   progresso:0
+  });
+
+  if(r&&!localMode)D.checklist.unshift(r);
+ }
+
+ closeM("checkM");
+ renderAll();
+ toast("Etapa do checklist salva.");
+}
+
+async function deleteChecklist(id){
+ if(!confirm("Excluir esta etapa do checklist?"))return;
+
+ if(await removeRow("checklist",id)){
+  const i=D.checklist.findIndex(
+   x=>String(x.id)===String(id)
+  );
+  if(i>=0)D.checklist.splice(i,1);
+
+  renderAll();
+  toast("Etapa excluída.");
+ }
 }
 
 
 /* =====================================================
-   CÁLCULOS
-   ===================================================== */
+ RENDER OBRAS
+ ===================================================== */
+
+function statusLabel(s){
+ return{
+  em_andamento:"Em andamento",
+  planejada:"Planejada",
+  concluida:"Concluída",
+  pausada:"Pausada"
+ }[s]||s||"";
+}
+
+function renderObras(){
+ const q=($("obraSearch")?.value||"").toLowerCase();
+
+ const list=D.obras.filter(o=>
+  !q||
+  `${o.nome} ${o.cliente||""}`
+   .toLowerCase()
+   .includes(q)
+ );
+
+ $("obrasList").innerHTML=list.map(o=>{
+  const fs=sums(o.id);
+  const pct=obraProgress(o.id);
+  const checks=checklistForObra(o.id);
+  const adicionais=adicionalTotal(o.id);
+  const contrato=contratoTotal(o.id);
+
+  return `
+  <div class="item">
+
+   <div class="row">
+    <div>
+     <b>${esc(o.nome)}</b><br>
+     <small>
+      ${esc(o.cliente||"Cliente não informado")}
+      ${o.endereco?" • "+esc(o.endereco):""}
+     </small>
+    </div>
+
+    <span class="badge">${statusLabel(o.status)}</span>
+   </div>
+
+   <div style="margin-top:12px">
+    <div class="row">
+     <b>Progresso da obra</b>
+     <b class="gold">${pct}%</b>
+    </div>
+
+    <div class="progress">
+     <i style="width:${pct}%"></i>
+    </div>
+   </div>
+
+   <div class="grid3">
+    <div>
+     <small>Contrato</small><br>
+     <b>${money(contrato)}</b>
+     ${adicionais?`<br><small class="green">+ ${money(adicionais)} adicionais</small>`:""}
+    </div>
+
+    <div>
+     <small>Recebido</small><br>
+     <b class="green">${money(fs.entradas)}</b>
+    </div>
+
+    <div>
+     <small>Resultado</small><br>
+     <b class="gold">${money(fs.lucro)}</b>
+    </div>
+   </div>
+
+   <div class="obraChecklist">
+
+    <div class="row">
+     <b>Checklist da obra</b>
+     <span class="badge">
+      ${checks.filter(c=>c.concluida).length}/${checks.length}
+     </span>
+    </div>
+
+    ${checks.map(c=>{
+
+     const saved=checkState(o.id,c.tarefa);
+     const cid=saved?saved.id:"";
+
+     return `
+      <div class="checkrow">
+
+       <label>
+        <input
+         type="checkbox"
+         ${c.concluida?"checked":""}
+         onchange='toggleCheck(
+          ${JSON.stringify(o.id)},
+          ${JSON.stringify(cid)},
+          ${JSON.stringify(c.tarefa)},
+          this.checked
+         )'
+        >
+        <span>${esc(c.tarefa)}</span>
+       </label>
+
+       <div style="display:flex;gap:4px">
+        <button
+         class="mini"
+         onclick='openChecklist(
+          ${JSON.stringify(o.id)},
+          ${JSON.stringify(cid)}
+         )'
+         ${!saved?"disabled":""}>
+         ✏️
+        </button>
+
+        <button
+         class="danger mini"
+         onclick='${saved?`deleteChecklist(${JSON.stringify(saved.id)})`:`toast("Esta etapa padrão será criada ao ser marcada.")`}'
+         ${!saved?"disabled":""}>
+         ×
+        </button>
+
+        <span class="${c.concluida?"green":"sub"}">
+         ${c.concluida?"✓":"Pendente"}
+        </span>
+       </div>
+
+      </div>
+     `;
+
+    }).join("")}
+
+    <div class="listActions">
+     <button
+      class="secondary mini"
+      onclick="openChecklist(${JSON.stringify(o.id)})">
+      ＋ Adicionar etapa
+     </button>
+
+     <button
+      class="secondary mini"
+      onclick="openAdicional(${JSON.stringify(o.id)})">
+      ＋ Serviço adicional
+     </button>
+    </div>
+
+   </div>
+
+   <div class="card" style="margin-top:12px">
+
+    <div class="row">
+     <b>Serviços adicionais</b>
+     <b class="green">${money(adicionais)}</b>
+    </div>
+
+    ${
+     D.servicos_adicionais
+      .filter(x=>String(x.obra_id)===String(o.id))
+      .map(x=>`
+       <div class="moneyLine">
+        <span>
+         ${esc(x.descricao)}
+         <br>
+         <small>${x.data||""}</small>
+        </span>
+
+        <span>
+         <b class="green">${money(x.valor)}</b><br>
+         <button
+          class="mini"
+          onclick="openAdicional(${JSON.stringify(o.id)},${JSON.stringify(x.id)})">
+          ✏️
+         </button>
+         <button
+          class="danger mini"
+          onclick="delItem('servicos_adicionais',${JSON.stringify(x.id)})">
+          ×
+         </button>
+        </span>
+       </div>
+      `).join("")
+     ||
+     '<small>Nenhum serviço adicional.</small>'
+    }
+
+   </div>
+
+   <div class="listActions">
+
+    <button class="mini" onclick="openObra(${JSON.stringify(o.id)})">
+     ✏️ Editar
+    </button>
+
+    <button class="mini" onclick="openDiaForObra(${JSON.stringify(o.id)})">
+     👷 Diárias
+    </button>
+
+    <button class="mini" onclick="goFinanceObra(${JSON.stringify(o.id)})">
+     💰 Financeiro
+    </button>
+
+    <button class="danger mini" onclick="delItem('obras',${JSON.stringify(o.id)})">
+     Excluir
+    </button>
+
+   </div>
+
+  </div>
+  `;
+ }).join("")||
+ '<div class="empty">Nenhuma obra cadastrada.</div>';
+}
+
+
+/* =====================================================
+ FUNCIONÁRIOS
+ ===================================================== */
+
+function employeeFinancial(f){
+ const earned=D.diarias
+  .filter(d=>String(d.funcionario_id)===String(f.id))
+  .reduce((s,d)=>s+num(
+   d.valor_pago||(num(d.qtd)*num(d.valor_diaria))
+  ),0);
+
+ const advances=D.adiantamentos
+  .filter(a=>String(a.funcionario_id)===String(f.id))
+  .reduce((s,a)=>s+num(a.valor),0);
+
+ const paid=D.pagamentos
+  .filter(p=>String(p.funcionario_id)===String(f.id))
+  .reduce((s,p)=>s+num(p.valor),0);
+
+ return{
+  earned,
+  advances,
+  paid,
+  balance:Math.max(0,earned-advances-paid)
+ };
+}
+
+function renderFuncs(){
+ const filter=$("funcFilter")?.value||"todos";
+
+ const list=D.funcionarios.filter(f=>
+  filter==="todos"||
+  (filter==="ativos"&&f.ativo!==false)||
+  (filter==="inativos"&&f.ativo===false)
+ );
+
+ $("funcList").innerHTML=list.map(f=>{
+  const obra=D.obras.find(
+   o=>String(o.id)===String(f.obra_id)
+  );
+
+  const registra=f.registrar_diaria!==false;
+  const fin=employeeFinancial(f);
+
+  return `
+  <div class="item">
+
+   <div class="row">
+    <div>
+     <b>${esc(f.nome)}</b><br>
+     <small>
+      ${esc(f.funcao||"")}
+      ${obra?" • 🏗️ "+esc(obra.nome):" • Sem obra"}
+     </small>
+    </div>
+
+    <span class="badge ${f.ativo!==false?"on":"off"}">
+     ${f.ativo!==false?"Ativo":"Inativo"}
+    </span>
+   </div>
+
+   <div style="margin-top:8px">
+    <span class="badge">
+     ${registra?"✓ Registra diária":"Não registrar diária"}
+    </span>
+   </div>
+
+   <div class="grid3" style="margin-top:10px">
+
+    <div>
+     <small>Total devido</small><br>
+     <b>${money(fin.earned)}</b>
+    </div>
+
+    <div>
+     <small>Adiantamentos</small><br>
+     <b class="blue">${money(fin.advances)}</b>
+    </div>
+
+    <div>
+     <small>Pagamentos</small><br>
+     <b class="green">${money(fin.paid)}</b>
+    </div>
+
+   </div>
+
+   <div class="financeBox">
+    <div class="row">
+     <span>Saldo líquido a receber</span>
+     <b class="${fin.balance>0?"gold":"green"}">
+      ${money(fin.balance)}
+     </b>
+    </div>
+   </div>
+
+   <p class="sub">
+    ${esc(f.tipo_pagamento||"diaria")}
+    • Diária: <b>${money(f.valor_diaria)}</b>
+    • Mensal: <b>${money(f.salario_mensal)}</b>
+   </p>
+
+   <div class="listActions">
+
+    <button class="mini" onclick="openFunc(${JSON.stringify(f.id)})">
+     ✏️ Editar
+    </button>
+
+    ${
+     registra
+     ?`
+      <button class="mini" onclick="openDiaForFunc(${JSON.stringify(f.id)})">
+       💵 Registrar diária
+      </button>
+     `:""
+    }
+
+    <button class="mini" onclick="openPagamento(${JSON.stringify(f.id)})">
+     💰 Pagar
+    </button>
+
+    <button class="mini" onclick="openAdiantamento(${JSON.stringify(f.id)})">
+     💵 Adiantamento
+    </button>
+
+    <button class="mini" onclick="openFalta(${JSON.stringify(f.id)})">
+     📅 Falta
+    </button>
+
+    <button class="mini" onclick="toggleFunc(${JSON.stringify(f.id)})">
+     ${f.ativo!==false?"⏸ Inativar":"▶️ Ativar"}
+    </button>
+
+    <button class="danger mini" onclick="delItem('funcionarios',${JSON.stringify(f.id)})">
+     Excluir
+    </button>
+
+   </div>
+
+  </div>
+  `;
+ }).join("")||
+ '<div class="empty">Nenhum funcionário encontrado.</div>';
+}
+
+async function toggleFunc(id){
+ const f=D.funcionarios.find(
+  x=>String(x.id)===String(id)
+ );
+
+ if(!f)return;
+
+ const r=await updateRow(
+  "funcionarios",
+  id,
+  {ativo:f.ativo===false}
+ );
+
+ if(r){
+  Object.assign(f,r);
+  renderAll();
+ }
+}
+
+
+/* =====================================================
+ FOLHA
+ ===================================================== */
+
+function renderPayroll(){
+ if(!$("payPeriod"))return;
+
+ const period=$("payPeriod").value;
+
+ $("customDates").classList.toggle(
+  "hidden",
+  period!=="custom"
+ );
+
+ const now=new Date();
+ let start=new Date(now);
+ let end=new Date(now);
+
+ if(period==="dia"){
+  start=new Date(now);
+  end=new Date(now);
+ }
+
+ if(period==="semana"){
+  const day=now.getDay()||7;
+  start.setDate(now.getDate()-day+1);
+ }
+
+ if(period==="quinzena"){
+  start.setDate(now.getDate()<=15?1:16);
+ }
+
+ if(period==="mes"){
+  start.setDate(1);
+ }
+
+ if(period==="custom"){
+  start=new Date(
+   ($("payStart").value||today())+"T00:00:00"
+  );
+
+  end=new Date(
+   ($("payEnd").value||today())+"T23:59:59"
+  );
+ }
+
+ const A=start.toISOString().slice(0,10);
+ const B=end.toISOString().slice(0,10);
+
+ let total=0;
+ let count=0;
+
+ D.funcionarios.forEach(f=>{
+  if(f.registrar_diaria===false)return;
+
+  const val=D.diarias
+   .filter(d=>
+    String(d.funcionario_id)===String(f.id)&&
+    d.data>=A&&
+    d.data<=B
+   )
+   .reduce(
+    (s,d)=>s+num(
+     d.valor_pago||(num(d.qtd)*num(d.valor_diaria))
+    ),0
+   );
+
+  if(val)count++;
+  total+=val;
+ });
+
+ $("payTotal").textContent=money(total);
+ $("payCount").textContent=count;
+
+ const ds=D.diarias.filter(
+  d=>d.data>=A&&d.data<=B
+ );
+
+ $("diaList").innerHTML=ds.map(d=>{
+  const f=D.funcionarios.find(
+   x=>String(x.id)===String(d.funcionario_id)
+  );
+
+  const o=D.obras.find(
+   x=>String(x.id)===String(d.obra_id)
+  );
+
+  return `
+  <div class="item">
+   <div class="row">
+    <div>
+     <b>${esc(f?.nome||"Funcionário")}</b><br>
+     <small>
+      ${d.data}
+      • ${esc(o?.nome||"Sem obra")}
+      • ${d.qtd} × ${money(d.valor_diaria)}
+     </small>
+    </div>
+
+    <b class="gold">
+     ${money(d.valor_pago||num(d.qtd)*num(d.valor_diaria))}
+    </b>
+   </div>
+
+   <button class="danger mini" onclick="delItem('diarias',${JSON.stringify(d.id)})">
+    Excluir
+   </button>
+  </div>
+  `;
+ }).join("")||
+ '<div class="empty">Nenhuma diária no período.</div>';
+}
+
+
+/* =====================================================
+ PAGAMENTOS
+ ===================================================== */
+
+function employeeOptions(includeAll=true){
+ return `
+  ${includeAll?'<option value="all">Todos os funcionários</option>':""}
+  ${D.funcionarios
+   .filter(f=>f.ativo!==false)
+   .map(f=>`
+    <option value="${f.id}">
+     ${esc(f.nome)}
+    </option>
+   `).join("")}
+ `;
+}
+
+function openPagamento(funcId=null){
+ openM("pagM");
+
+ $("pFunc").innerHTML=employeeOptions(true);
+ $("pFunc").value=funcId||"all";
+ $("pData").value=today();
+ $("pVal").value="";
+
+ updatePaymentValue();
+}
+
+function updatePaymentValue(){
+ const id=$("pFunc").value;
+
+ if(id==="all"){
+  const total=D.funcionarios
+   .filter(f=>f.ativo!==false)
+   .reduce(
+    (s,f)=>s+employeeFinancial(f).balance,
+    0
+   );
+
+  $("pVal").value=total.toFixed(2);
+
+  $("paymentPreview").innerHTML=`
+   <div class="financeBox">
+    <b>Todos os funcionários</b>
+    <div class="moneyLine">
+     <span>Total dos saldos</span>
+     <b class="gold">${money(total)}</b>
+    </div>
+   </div>
+  `;
+
+  return;
+ }
+
+ const f=D.funcionarios.find(
+  x=>String(x.id)===String(id)
+ );
+
+ if(!f)return;
+
+ const z=employeeFinancial(f);
+
+ $("pVal").value=z.balance.toFixed(2);
+
+ $("paymentPreview").innerHTML=`
+  <div class="financeBox">
+   <div class="moneyLine">
+    <span>Total devido</span>
+    <b>${money(z.earned)}</b>
+   </div>
+   <div class="moneyLine">
+    <span>Adiantamentos</span>
+    <b class="blue">− ${money(z.advances)}</b>
+   </div>
+   <div class="moneyLine">
+    <span>Pagamentos anteriores</span>
+    <b class="green">− ${money(z.paid)}</b>
+   </div>
+   <div class="moneyLine">
+    <span>Saldo líquido</span>
+    <b class="gold">${money(z.balance)}</b>
+   </div>
+  </div>
+ `;
+}
+
+async function savePagamento(e){
+ e.preventDefault();
+
+ const id=$("pFunc").value;
+ const valor=num($("pVal").value);
+
+ if(valor<=0){
+  toast("Informe um valor válido.");
+  return;
+ }
+
+ const data=$("pData").value;
+ const obs=$("pObs").value.trim();
+
+ let lista=[];
+
+ if(id==="all"){
+  lista=D.funcionarios
+   .filter(f=>f.ativo!==false)
+   .map(f=>({
+    f,
+    valor:employeeFinancial(f).balance
+   }))
+   .filter(x=>x.valor>0);
+ }else{
+  const f=D.funcionarios.find(
+   x=>String(x.id)===String(id)
+  );
+
+  if(f)lista=[{f,valor}];
+ }
+
+ if(!lista.length){
+  toast("Nenhum funcionário possui saldo a receber.");
+  return;
+ }
+
+ if(id==="all"){
+  for(const x of lista){
+   await insertRow("pagamentos",{
+    funcionario_id:Number(x.f.id),
+    obra_id:x.f.obra_id?Number(x.f.obra_id):null,
+    valor:x.valor,
+    data,
+    tipo:"pagamento",
+    observacao:obs
+   });
+  }
+ }else{
+  const f=lista[0].f;
+  const saldo=employeeFinancial(f).balance;
+
+  if(valor>saldo){
+   toast("O pagamento não pode ser maior que o saldo líquido.");
+   return;
+  }
+
+  await insertRow("pagamentos",{
+   funcionario_id:Number(f.id),
+   obra_id:f.obra_id?Number(f.obra_id):null,
+   valor,
+   data,
+   tipo:"pagamento",
+   observacao:obs
+  });
+ }
+
+ await reloadExtraData();
+
+ closeM("pagM");
+ renderAll();
+
+ toast(
+  id==="all"
+  ?"Pagamentos de todos registrados."
+  :"Pagamento registrado."
+ );
+}
+
+
+/* =====================================================
+ ADIANTAMENTOS
+ ===================================================== */
+
+function openAdiantamento(funcId=null){
+ openM("adiM");
+
+ $("aFunc").innerHTML=employeeOptions(false);
+ $("aFunc").value=funcId||"";
+ $("aData").value=today();
+ $("aVal").value="";
+
+ updateAdvanceValue();
+}
+
+function updateAdvanceValue(){
+ const id=$("aFunc").value;
+
+ const f=D.funcionarios.find(
+  x=>String(x.id)===String(id)
+ );
+
+ if(!f)return;
+
+ const z=employeeFinancial(f);
+
+ $("aVal").value=z.balance.toFixed(2);
+
+ $("advancePreview").innerHTML=`
+  <div class="financeBox">
+   <div class="moneyLine">
+    <span>Total devido</span>
+    <b>${money(z.earned)}</b>
+   </div>
+   <div class="moneyLine">
+    <span>Adiantamentos já feitos</span>
+    <b class="blue">${money(z.advances)}</b>
+   </div>
+   <div class="moneyLine">
+    <span>Pagamentos já feitos</span>
+    <b class="green">${money(z.paid)}</b>
+   </div>
+   <div class="moneyLine">
+    <span>Saldo disponível</span>
+    <b class="gold">${money(z.balance)}</b>
+   </div>
+  </div>
+ `;
+}
+
+async function saveAdiantamento(e){
+ e.preventDefault();
+
+ const id=$("aFunc").value;
+ const f=D.funcionarios.find(
+  x=>String(x.id)===String(id)
+ );
+
+ if(!f)return;
+
+ const valor=num($("aVal").value);
+ const saldo=employeeFinancial(f).balance;
+
+ if(valor<=0){
+  toast("Informe um valor válido.");
+  return;
+ }
+
+ if(valor>saldo){
+  toast("O adiantamento não pode ser maior que o saldo disponível.");
+  return;
+ }
+
+ const r=await insertRow("adiantamentos",{
+  funcionario_id:Number(f.id),
+  obra_id:f.obra_id?Number(f.obra_id):null,
+  valor,
+  data:$("aData").value,
+  observacao:$("aObs").value.trim()
+ });
+
+ if(!r)return;
+
+ if(!localMode)D.adiantamentos.unshift(r);
+
+ closeM("adiM");
+ renderAll();
+
+ toast("Adiantamento registrado e abatido do saldo.");
+}
+
+
+/* =====================================================
+ FALTAS
+ ===================================================== */
+
+function openFalta(funcId=null){
+ openM("faltaM");
+
+ $("faltFunc").innerHTML=employeeOptions(false);
+ $("faltFunc").value=funcId||"";
+ $("faltData").value=today();
+ $("faltJust").value="false";
+ $("faltMotivo").value="";
+ $("faltObra").value=
+  '<option value="">Sem obra</option>'+
+  D.obras.map(o=>
+   `<option value="${o.id}">${esc(o.nome)}</option>`
+  ).join("");
+
+ const f=D.funcionarios.find(
+  x=>String(x.id)===String(funcId)
+ );
+
+ if(f)$("faltObra").value=f.obra_id||"";
+}
+
+async function saveFalta(e){
+ e.preventDefault();
+
+ const id=$("faltFunc").value;
+ const f=D.funcionarios.find(
+  x=>String(x.id)===String(id)
+ );
+
+ if(!f)return;
+
+ const r=await insertRow("faltas",{
+  funcionario_id:Number(f.id),
+  obra_id:$("faltObra").value
+   ?Number($("faltObra").value)
+   :null,
+  data:$("faltData").value,
+  justificada:$("faltJust").value==="true",
+  justificativa:$("faltMotivo").value.trim()
+ });
+
+ if(!r)return;
+
+ if(!localMode)D.faltas.unshift(r);
+
+ closeM("faltaM");
+ renderAll();
+
+ toast("Falta registrada. Nenhuma diária foi gerada.");
+}
+
+function renderFaltas(){
+ const rows=[...D.faltas].sort(
+  (a,b)=>String(b.data||"").localeCompare(String(a.data||""))
+ );
+
+ $("faltasList").innerHTML=rows.map(x=>{
+  const f=D.funcionarios.find(
+   y=>String(y.id)===String(x.funcionario_id)
+  );
+
+  const o=D.obras.find(
+   y=>String(y.id)===String(x.obra_id)
+  );
+
+  return `
+   <div class="item">
+    <div class="row">
+     <div>
+      <b>${esc(f?.nome||"Funcionário")}</b><br>
+      <small>
+       ${x.data||""}
+       ${o?" • "+esc(o.nome):""}
+      </small>
+     </div>
+
+     <span class="badge ${x.justificada?"on":"off"}">
+      ${x.justificada?"Justificada":"Não justificada"}
+     </span>
+    </div>
+
+    ${
+     x.justificativa
+     ?`<p class="sub">${esc(x.justificativa)}</p>`
+     :""
+    }
+
+    <button
+     class="danger mini"
+     onclick="delItem('faltas',${JSON.stringify(x.id)})">
+     Excluir
+    </button>
+   </div>
+  `;
+ }).join("")||
+ '<div class="empty">Nenhuma falta registrada.</div>';
+}
+
+
+/* =====================================================
+ HISTÓRICO DA EQUIPE
+ ===================================================== */
+
+function renderEquipeHistorico(){
+ const rows=[];
+
+ D.pagamentos.forEach(x=>{
+  const f=D.funcionarios.find(
+   y=>String(y.id)===String(x.funcionario_id)
+  );
+
+  rows.push({
+   data:x.data,
+   nome:f?.nome||"Funcionário",
+   tipo:"Pagamento",
+   valor:x.valor,
+   classe:"green",
+   id:x.id,
+   table:"pagamentos"
+  });
+ });
+
+ D.adiantamentos.forEach(x=>{
+  const f=D.funcionarios.find(
+   y=>String(y.id)===String(x.funcionario_id)
+  );
+
+  rows.push({
+   data:x.data,
+   nome:f?.nome||"Funcionário",
+   tipo:"Adiantamento",
+   valor:x.valor,
+   classe:"blue",
+   id:x.id,
+   table:"adiantamentos"
+  });
+ });
+
+ rows.sort(
+  (a,b)=>String(b.data||"").localeCompare(String(a.data||""))
+ );
+
+ $("equipeHistorico").innerHTML=rows.map(x=>`
+  <div class="item">
+   <div class="row">
+    <div>
+     <b>${esc(x.nome)}</b><br>
+     <small>${x.data||""} • ${x.tipo}</small>
+    </div>
+
+    <b class="${x.classe}">
+     ${money(x.valor)}
+    </b>
+   </div>
+
+   <button
+    class="danger mini"
+    onclick="delItem('${x.table}',${JSON.stringify(x.id)})">
+    Excluir
+   </button>
+  </div>
+ `).join("")||
+ '<div class="empty">Nenhum pagamento ou adiantamento registrado.</div>';
+}
+
+
+/* =====================================================
+ FINANCEIRO POR OBRA
+ ===================================================== */
+
+function financeDetails(obraId){
+ const contract=contratoTotal(obraId);
+
+ const gastos=D.gastos.filter(
+  x=>String(x.obra_id)===String(obraId)
+ );
+
+ const recebido=gastos
+  .filter(x=>x.categoria==="entrada")
+  .reduce((s,x)=>s+num(x.valor),0);
+
+ const material=gastos
+  .filter(x=>x.categoria==="despesa"&&x.subcategoria==="material")
+  .reduce((s,x)=>s+num(x.valor),0);
+
+ const terceirizado=gastos
+  .filter(x=>x.categoria==="despesa"&&x.subcategoria==="terceirizado")
+  .reduce((s,x)=>s+num(x.valor),0);
+
+ const outros=gastos
+  .filter(x=>x.categoria==="despesa"&&
+             (!x.subcategoria||x.subcategoria==="outros"))
+  .reduce((s,x)=>s+num(x.valor),0);
+
+ const manualMaoObra=gastos
+  .filter(x=>x.categoria==="despesa"&&x.subcategoria==="mao_obra")
+  .reduce((s,x)=>s+num(x.valor),0);
+
+ const diarias=D.diarias
+  .filter(x=>String(x.obra_id)===String(obraId))
+  .reduce((s,x)=>s+num(
+   x.valor_pago||(num(x.qtd)*num(x.valor_diaria))
+  ),0);
+
+ const maoObra=diarias+manualMaoObra;
+ const despesas=material+maoObra+terceirizado+outros;
+ const receber=Math.max(0,contract-recebido);
+ const resultado=contract-despesas;
+
+ const pct=v=>contract>0
+  ?Math.round(v/contract*100)
+  :0;
+
+ return{
+  contract,
+  recebido,
+  receber,
+  material,
+  maoObra,
+  terceirizado,
+  outros,
+  despesas,
+  resultado,
+  pct
+ };
+}
+
+function financeBar(label,value,pct,cls){
+ return `
+  <div style="margin:10px 0">
+   <div class="row">
+    <span>${label}</span>
+    <b class="${cls||""}">
+     ${money(value)}
+    </b>
+   </div>
+   <div class="progress">
+    <i style="width:${Math.min(100,pct)}%"></i>
+   </div>
+   <div class="financePct">${pct}% do contrato</div>
+  </div>
+ `;
+}
+
+function renderFinanceSelected(obra){
+ if(obra==="all"){
+  $("financeSelected").innerHTML=`
+   <div class="card">
+    <b>Selecione uma obra</b>
+    <p class="sub">
+     Escolha uma obra acima para visualizar
+     materiais, mão de obra, terceirizados,
+     outras despesas, recebido e a receber.
+    </p>
+   </div>
+  `;
+  return;
+ }
+
+ const o=D.obras.find(
+  x=>String(x.id)===String(obra)
+ );
+
+ if(!o){
+  $("financeSelected").innerHTML="";
+  return;
+ }
+
+ const z=financeDetails(obra);
+
+ $("financeSelected").innerHTML=`
+  <div class="card">
+
+   <div class="row">
+    <div>
+     <b>${esc(o.nome)}</b><br>
+     <small>Resumo financeiro completo da obra</small>
+    </div>
+
+    <button
+     class="secondary mini"
+     onclick="openAdicional(${JSON.stringify(o.id)})">
+     ＋ Adicional
+    </button>
+   </div>
+
+   <div class="grid3" style="margin-top:12px">
+
+    <div class="financeBox">
+     <small>Valor do contrato</small><br>
+     <b class="gold">${money(z.contract)}</b>
+    </div>
+
+    <div class="financeBox">
+     <small>Total recebido</small><br>
+     <b class="green">${money(z.recebido)}</b>
+    </div>
+
+    <div class="financeBox">
+     <small>A receber</small><br>
+     <b class="blue">${money(z.receber)}</b>
+    </div>
+
+   </div>
+
+   ${financeBar("Materiais",z.material,z.pct(z.material),"red")}
+   ${financeBar("Mão de obra",z.maoObra,z.pct(z.maoObra),"red")}
+   ${financeBar("Serviços terceirizados",z.terceirizado,z.pct(z.terceirizado),"red")}
+   ${financeBar("Outras despesas",z.outros,z.pct(z.outros),"red")}
+
+   <div class="financeBox">
+    <div class="moneyLine">
+     <span>Total gasto</span>
+     <b class="red">${money(z.despesas)}</b>
+    </div>
+
+    <div class="moneyLine">
+     <span>Resultado da obra</span>
+     <b class="${z.resultado>=0?"gold":"red"}">
+      ${money(z.resultado)}
+     </b>
+    </div>
+
+    <div class="moneyLine">
+     <span>Recebido do contrato</span>
+     <b class="green">${z.pct(z.recebido)}%</b>
+    </div>
+
+    <div class="moneyLine">
+     <span>Percentual a receber</span>
+     <b class="blue">${z.pct(z.receber)}%</b>
+    </div>
+   </div>
+
+  </div>
+ `;
+}
+
+
+/* =====================================================
+ SUMS
+ ===================================================== */
 
 function sums(obra="all"){
-
  let entradas=0;
  let despesas=0;
 
  D.gastos.forEach(x=>{
-
   if(
-   obra!=="all" &&
+   obra!=="all"&&
    String(x.obra_id)!==String(obra)
-  ) return;
+  )return;
 
   if(x.categoria==="entrada")
-   entradas += Number(x.valor||0);
+   entradas+=num(x.valor);
   else
-   despesas += Number(x.valor||0);
-
+   despesas+=num(x.valor);
  });
 
  D.diarias.forEach(x=>{
-
   if(
-   obra!=="all" &&
+   obra!=="all"&&
    String(x.obra_id)!==String(obra)
-  ) return;
+  )return;
 
-  despesas += Number(
-   x.valor_pago ||
-   (Number(x.qtd||0) *
-    Number(x.valor_diaria||0))
+  despesas+=num(
+   x.valor_pago||
+   num(x.qtd)*num(x.valor_diaria)
   );
-
  });
 
  return{
@@ -2342,1379 +2750,434 @@ function sums(obra="all"){
   despesas,
   lucro:entradas-despesas
  };
-
 }
 
 
 /* =====================================================
-   CHECKLIST
-   ===================================================== */
-
-const CHECK_DEFAULTS = [
-
- "Planejamento e orçamento",
-
- "Contrato assinado",
-
- "Medição inicial",
-
- "Compra de materiais",
-
- "Preparação do local",
-
- "Chapisco / reboco",
-
- "Instalações",
-
- "Pisos e revestimentos",
-
- "Pintura",
-
- "Acabamentos",
-
- "Limpeza final",
-
- "Entrega da obra"
-
-];
-
-
-function checklistForObra(obraId){
-
- return CHECK_DEFAULTS.map(
-  (desc,index)=>({
-   id:
-    "check_"+obraId+"_"+index,
-   desc
-  })
- );
-
-}
-
-
-function checkState(obraId,desc){
-
- return D.checklist.find(
-  x=>
-   String(x.obra_id)===String(obraId) &&
-   x.tarefa===desc
- );
-
-}
-
-
-function obraProgress(obraId){
-
- const checks =
-  checklistForObra(obraId);
-
- if(!checks.length)
-  return 0;
-
- let done=0;
-
- checks.forEach(c=>{
-
-  const saved =
-   checkState(obraId,c.desc);
-
-  if(saved?.concluida)
-   done++;
-
- });
-
- return Math.round(
-  done/checks.length*100
- );
-
-}
-
-
-async function toggleCheck(
- obraId,
- desc,
- checked
-){
-
- const old =
-  checkState(obraId,desc);
-
- if(old){
-
-  const r =
-   await updateRow(
-    "checklist",
-    old.id,
-    {
-     concluida:checked,
-     progresso:checked?100:0
-    }
-   );
-
-  if(r)
-   Object.assign(old,r);
-
- }else{
-
-  const r =
-   await insertRow(
-    "checklist",
-    {
-     obra_id:Number(obraId),
-     tarefa:desc,
-     concluida:checked,
-     progresso:checked?100:0
-    }
-   );
-
-  if(r)
-   D.checklist.unshift(r);
-
- }
-
- renderAll();
-
-}
-
-
-/* =====================================================
-   RENDER OBRAS
-   ===================================================== */
-
-function statusLabel(s){
-
- return{
-  em_andamento:"Em andamento",
-  planejada:"Planejada",
-  concluida:"Concluída",
-  pausada:"Pausada"
- }[s] || s || "";
-
-}
-
-
-function renderObras(){
-
- const q =
-  ($("obraSearch")?.value||"")
-   .toLowerCase();
-
- const list =
-  D.obras.filter(o=>
-   !q ||
-   `${o.nome} ${o.cliente||""}`
-    .toLowerCase()
-    .includes(q)
-  );
-
- $("obrasList").innerHTML =
-  list.map(o=>{
-
-   const fs=sums(o.id);
-
-   const pct =
-    o.status==="concluida"
-    ? 100
-    : obraProgress(o.id);
-
-   const checks =
-    checklistForObra(o.id);
-
-   return `
-
-   <div class="item">
-
-    <div class="row">
-
-     <div>
-
-      <b>${esc(o.nome)}</b>
-
-      <br>
-
-      <small>
-       ${esc(o.cliente||"Cliente não informado")}
-       ${o.endereco
-        ? " • "+esc(o.endereco)
-        : ""}
-      </small>
-
-     </div>
-
-     <span class="badge">
-      ${statusLabel(o.status)}
-     </span>
-
-    </div>
-
-
-    <div style="margin-top:12px">
-
-     <div class="row">
-
-      <b>Progresso da obra</b>
-
-      <b class="gold">
-       ${pct}%
-      </b>
-
-     </div>
-
-     <div class="progress">
-      <i style="width:${pct}%"></i>
-     </div>
-
-    </div>
-
-
-    <div class="grid3">
-
-     <div>
-      <small>Contrato</small>
-      <br>
-      <b>${money(o.valor)}</b>
-     </div>
-
-     <div>
-      <small>Receitas</small>
-      <br>
-      <b class="green">
-       ${money(fs.entradas)}
-      </b>
-     </div>
-
-     <div>
-      <small>Resultado</small>
-      <br>
-      <b class="gold">
-       ${money(fs.lucro)}
-      </b>
-     </div>
-
-    </div>
-
-
-    <div class="obraChecklist">
-
-     <div class="row">
-
-      <b>Checklist da obra</b>
-
-      <span class="badge">
-       ${checks.filter(c=>checkState(o.id,c.desc)?.concluida).length}/${checks.length}
-      </span>
-
-     </div>
-
-     ${checks.map(c=>{
-
-      const saved =
-       checkState(o.id,c.desc);
-
-      return `
-
-       <div class="checkrow">
-
-        <label>
-
-         <input
-          type="checkbox"
-          ${saved?.concluida?"checked":""}
-          onchange="
-           toggleCheck(
-            ${o.id},
-            ${JSON.stringify(c.desc)},
-            this.checked
-           )
-          ">
-
-         <span>
-          ${esc(c.desc)}
-         </span>
-
-        </label>
-
-        ${
-         saved?.concluida
-         ? '<span class="green">✓</span>'
-         : '<span class="sub">Pendente</span>'
-        }
-
-       </div>
-
-      `;
-
-     }).join("")}
-
-    </div>
-
-
-    <div class="listActions">
-
-     <button
-      class="mini"
-      onclick="openObra(${o.id})">
-      ✏️ Editar
-     </button>
-
-     <button
-      class="mini"
-      onclick="openDiaForObra(${o.id})">
-      👷 Diárias
-     </button>
-
-     <button
-      class="mini"
-      onclick="go('financeiro')">
-      💰 Financeiro
-     </button>
-
-     <button
-      class="danger mini"
-      onclick="delItem('obras',${o.id})">
-      Excluir
-     </button>
-
-    </div>
-
-   </div>
-
-   `;
-
-  }).join("")
-
-  ||
-
-  '<div class="empty">Nenhuma obra cadastrada.</div>';
-
-}
-
-
-/* =====================================================
-   FUNCIONÁRIOS
-   ===================================================== */
-
-function renderFuncs(){
-
- const filter =
-  $("funcFilter")?.value || "todos";
-
- const list =
-  D.funcionarios.filter(f=>
-   filter==="todos" ||
-   (filter==="ativos" &&
-    f.ativo!==false) ||
-   (filter==="inativos" &&
-    f.ativo===false)
-  );
-
- $("funcList").innerHTML =
-  list.map(f=>{
-
-   const obra =
-    D.obras.find(
-     o=>String(o.id)===String(f.obra_id)
-    );
-
-   const registra =
-    f.registrar_diaria!==false;
-
-   return `
-
-   <div class="item">
-
-    <div class="row">
-
-     <div>
-
-      <b>${esc(f.nome)}</b>
-
-      <br>
-
-      <small>
-       ${esc(f.funcao||"")}
-       ${obra
-        ? " • 🏗️ "+esc(obra.nome)
-        : " • Sem obra"}
-      </small>
-
-     </div>
-
-     <span class="badge ${f.ativo!==false?"on":"off"}">
-      ${f.ativo!==false?"Ativo":"Inativo"}
-     </span>
-
-    </div>
-
-
-    <div style="margin-top:8px">
-
-     <span class="badge">
-      ${
-       registra
-       ? "✓ Registra diária"
-       : "Não registrar diária"
-      }
-     </span>
-
-    </div>
-
-
-    <p class="sub">
-
-     ${esc(f.tipo_pagamento||"diaria")}
-
-     • Diária:
-     <b>${money(f.valor_diaria)}</b>
-
-     • Mensal:
-     <b>${money(f.salario_mensal)}</b>
-
-    </p>
-
-
-    <div class="listActions">
-
-     <button
-      class="mini"
-      onclick="openFunc(${f.id})">
-      ✏️ Editar
-     </button>
-
-     ${
-      registra
-      ? `
-       <button
-        class="mini"
-        onclick="openDiaForFunc(${f.id})">
-        💵 Registrar diária
-       </button>
-      `
-      : ""
-     }
-
-     <button
-      class="mini"
-      onclick="toggleFunc(${f.id})">
-      ${f.ativo!==false?"⏸ Inativar":"▶️ Ativar"}
-     </button>
-
-     <button
-      class="danger mini"
-      onclick="delItem('funcionarios',${f.id})">
-      Excluir
-     </button>
-
-    </div>
-
-   </div>
-
-   `;
-
-  }).join("")
-
-  ||
-
-  '<div class="empty">Nenhum funcionário encontrado.</div>';
-
-}
-
-
-async function toggleFunc(id){
-
- const f =
-  D.funcionarios.find(
-   x=>String(x.id)===String(id)
-  );
-
- if(!f)return;
-
- const r =
-  await updateRow(
-   "funcionarios",
-   id,
-   {
-    ativo:f.ativo===false
-   }
-  );
-
- if(r){
-
-  Object.assign(f,r);
-
-  renderAll();
-
- }
-
-}
-
-
-function openDiaForFunc(id){
-
- openM("diaM");
-
- $("dData").value=today();
-
- $("dFunc").value=id;
-
- const f =
-  D.funcionarios.find(
-   x=>String(x.id)===String(id)
-  );
-
- if(f){
-
-  $("dVal").value=
-   f.valor_diaria||"";
-
-  $("dObra").value=
-   f.obra_id||"";
-
- }
-
-}
-
-
-function openDiaForObra(id){
-
- openM("diaM");
-
- $("dData").value=today();
-
- $("dObra").value=id;
-
- const f =
-  D.funcionarios.find(
-   x=>
-    x.ativo!==false &&
-    x.registrar_diaria!==false &&
-    String(x.obra_id)===String(id)
-  );
-
- if(f){
-
-  $("dFunc").value=f.id;
-
-  $("dVal").value=
-   f.valor_diaria||"";
-
- }
-
-}
-
-
-/* =====================================================
-   FOLHA / DIÁRIAS
-   ===================================================== */
-
-function renderPayroll(){
-
- if(!$("payPeriod"))
-  return;
-
- const period =
-  $("payPeriod").value;
-
- $("customDates").classList.toggle(
-  "hidden",
-  period!=="custom"
- );
-
- const now = new Date();
-
- let start =
-  new Date(now);
-
- let end =
-  new Date(now);
-
- if(period==="semana"){
-
-  const day =
-   now.getDay() || 7;
-
-  start.setDate(
-   now.getDate()-day+1
-  );
-
- }
-
- if(period==="quinzena"){
-
-  start.setDate(
-   now.getDate()<=15
-   ? 1
-   : 16
-  );
-
- }
-
- if(period==="mes"){
-
-  start.setDate(1);
-
- }
-
- if(period==="custom"){
-
-  start =
-   new Date(
-    ($("payStart").value||today())
-    +"T00:00:00"
-   );
-
-  end =
-   new Date(
-    ($("payEnd").value||today())
-    +"T23:59:59"
-   );
-
- }
-
- const A =
-  start.toISOString().slice(0,10);
-
- const B =
-  end.toISOString().slice(0,10);
-
- let total=0;
- let count=0;
-
- D.funcionarios.forEach(f=>{
-
-  if(f.registrar_diaria===false)
-   return;
-
-  const val =
-   D.diarias
-    .filter(d=>
-     String(d.funcionario_id)===
-      String(f.id) &&
-     d.data>=A &&
-     d.data<=B
-    )
-    .reduce(
-     (s,d)=>
-      s+
-      Number(
-       d.valor_pago ||
-       d.qtd*d.valor_diaria ||
-       0
-      ),
-     0
-    );
-
-  if(val)
-   count++;
-
-  total+=val;
-
- });
-
- $("payTotal").textContent =
-  money(total);
-
- $("payCount").textContent =
-  count;
-
- const ds =
-  D.diarias.filter(
-   d=>d.data>=A && d.data<=B
-  );
-
- $("diaList").innerHTML =
-  ds.map(d=>{
-
-   const f =
-    D.funcionarios.find(
-     x=>String(x.id)===
-      String(d.funcionario_id)
-    );
-
-   const o =
-    D.obras.find(
-     x=>String(x.id)===
-      String(d.obra_id)
-    );
-
-   return `
-
-   <div class="item">
-
-    <div class="row">
-
-     <div>
-
-      <b>
-       ${esc(f?.nome||"Funcionário")}
-      </b>
-
-      <br>
-
-      <small>
-       ${d.data}
-       • ${esc(o?.nome||"Sem obra")}
-       • ${d.qtd} × ${money(d.valor_diaria)}
-      </small>
-
-     </div>
-
-     <b class="gold">
-      ${money(
-       d.valor_pago ||
-       d.qtd*d.valor_diaria
-      )}
-     </b>
-
-    </div>
-
-    <button
-     class="danger mini"
-     onclick="delItem('diarias',${d.id})">
-     Excluir
-    </button>
-
-   </div>
-
-   `;
-
-  }).join("")
-
-  ||
-
-  '<div class="empty">Nenhuma diária no período.</div>';
-
-}
-
-
-/* =====================================================
-   FINANCEIRO
-   ===================================================== */
+ RENDER FINANCEIRO
+ ===================================================== */
 
 function renderFinance(){
+ const obra=$("finObraFilter")?.value||"all";
+ const tipo=$("finTipoFilter")?.value||"all";
 
- const obra =
-  $("finObraFilter")?.value || "all";
+ const s=sums(obra);
 
- const tipo =
-  $("finTipoFilter")?.value || "all";
+ $("finEnt").textContent=money(s.entradas);
+ $("finDesp").textContent=money(s.despesas);
+ $("finRes").textContent=money(s.lucro);
 
- const s =
-  sums(obra);
+ renderFinanceSelected(obra);
 
- $("finEnt").textContent =
-  money(s.entradas);
+ const rows=D.gastos.filter(x=>
+  (obra==="all"||
+   String(x.obra_id)===String(obra))&&
+  (tipo==="all"||
+   x.categoria===tipo)
+ );
 
- $("finDesp").textContent =
-  money(s.despesas);
-
- $("finRes").textContent =
-  money(s.lucro);
-
-
- const rows =
-  D.gastos.filter(x=>
-   (obra==="all" ||
-    String(x.obra_id)===String(obra))
-   &&
-   (tipo==="all" ||
-    x.categoria===tipo)
+ $("finList").innerHTML=rows.map(x=>{
+  const o=D.obras.find(
+   y=>String(y.id)===String(x.obra_id)
   );
 
+  const cat={
+   material:"Materiais",
+   mao_obra:"Mão de obra",
+   terceirizado:"Terceirizados",
+   outros:"Outras despesas",
+   recebimento:"Recebimento"
+  }[x.subcategoria]||"";
 
- $("finList").innerHTML =
-  rows.map(x=>{
-
-   const o =
-    D.obras.find(
-     y=>String(y.id)===
-      String(x.obra_id)
-    );
-
-   return `
-
+  return `
    <div class="item">
-
     <div class="row">
-
      <div>
-
-      <b>
-       ${esc(x.descricao||"Lançamento")}
-      </b>
-
-      <br>
-
+      <b>${esc(x.descricao||"Lançamento")}</b><br>
       <small>
        ${x.data||""}
        • ${esc(o?.nome||"Geral")}
-       ${x.fornecedor
-        ? " • "+esc(x.fornecedor)
-        : ""}
+       ${cat?" • "+cat:""}
+       ${x.fornecedor?" • "+esc(x.fornecedor):""}
       </small>
-
      </div>
 
-     <b class="${
-      x.categoria==="entrada"
-      ?"green"
-      :"red"
-     }">
-
-      ${
-       x.categoria==="entrada"
-       ? "+"
-       : "−"
-      }
-
-      ${money(x.valor)}
-
+     <b class="${x.categoria==="entrada"?"green":"red"}">
+      ${x.categoria==="entrada"?"+":"−"} ${money(x.valor)}
      </b>
-
     </div>
 
     <button
      class="danger mini"
-     onclick="delItem('gastos',${x.id})">
+     onclick="delItem('gastos',${JSON.stringify(x.id)})">
      Excluir
+    </button>
+   </div>
+  `;
+ }).join("")||
+ '<div class="empty">Nenhum lançamento.</div>';
+
+ $("obraFinanceResumo").innerHTML=D.obras.map(o=>{
+  const z=financeDetails(o.id);
+
+  return `
+   <div style="padding:12px 0;border-bottom:1px solid var(--line)">
+
+    <div class="row">
+     <b>${esc(o.nome)}</b>
+     <b class="gold">${money(z.contract)}</b>
+    </div>
+
+    <small>
+     Recebido:
+     <span class="green">${money(z.recebido)}</span>
+     • A receber:
+     <span class="blue">${money(z.receber)}</span>
+     • Gasto:
+     <span class="red">${money(z.despesas)}</span>
+    </small>
+
+    <div class="progress">
+     <i style="width:${Math.min(100,z.pct(z.recebido))}%"></i>
+    </div>
+
+    <button
+     class="mini"
+     onclick="goFinanceObra(${JSON.stringify(o.id)})">
+     Ver detalhes
     </button>
 
    </div>
+  `;
+ }).join("")||
+ '<div class="empty">Cadastre uma obra.</div>';
+}
 
-   `;
+function goFinanceObra(id){
+ go("financeiro");
 
-  }).join("")
-
-  ||
-
-  '<div class="empty">Nenhum lançamento.</div>';
-
-
- $("obraFinanceResumo").innerHTML =
-  D.obras.map(o=>{
-
-   const z =
-    sums(o.id);
-
-   return `
-
-   <div
-    class="row"
-    style="
-     padding:9px 0;
-     border-bottom:1px solid var(--line)
-    ">
-
-    <span>
-     ${esc(o.nome)}
-    </span>
-
-    <span>
-
-     <span class="green">
-      ${money(z.entradas)}
-     </span>
-
-     /
-
-     <span class="red">
-      ${money(z.despesas)}
-     </span>
-
-     /
-
-     <b class="gold">
-      ${money(z.lucro)}
-     </b>
-
-    </span>
-
-   </div>
-
-   `;
-
-  }).join("")
-
-  ||
-
-  '<div class="empty">Cadastre uma obra.</div>';
-
+ setTimeout(()=>{
+  if($("finObraFilter")){
+   $("finObraFilter").value=String(id);
+   renderFinance();
+  }
+ },0);
 }
 
 
 /* =====================================================
-   SELECTS
-   ===================================================== */
+ SELECTS
+ ===================================================== */
 
 function fillSelectors(){
-
- const obraOptions =
+ const obraOptions=
   '<option value="">Sem obra</option>'+
   D.obras.map(o=>
-   `<option value="${o.id}">
-    ${esc(o.nome)}
-   </option>`
+   `<option value="${o.id}">${esc(o.nome)}</option>`
   ).join("");
 
+ if($("dObra"))$("dObra").innerHTML=obraOptions;
+ if($("oFin"))$("oFin").innerHTML=obraOptions;
+ if($("fObra"))$("fObra").innerHTML=obraOptions;
 
- if($("dObra"))
-  $("dObra").innerHTML =
-   obraOptions;
+ if($("dFunc")){
+  const current=$("dFunc").value;
 
-
- if($("oFin"))
-  $("oFin").innerHTML =
-   obraOptions;
-
-
- if($("fObra"))
-  $("fObra").innerHTML =
-   obraOptions;
-
-
- if($("dFunc"))
-  $("dFunc").innerHTML =
-   D.funcionarios
-    .filter(
-     f=>
-      f.ativo!==false &&
-      f.registrar_diaria!==false
-    )
-    .map(f=>
-     `<option value="${f.id}">
-      ${esc(f.nome)}
-     </option>`
-    )
-    .join("");
-
-
- if($("finObraFilter")){
-
-  const current =
-   $("finObraFilter").value;
-
-  $("finObraFilter").innerHTML =
-   '<option value="all">Todas as obras</option>'+
-   D.obras.map(o=>
-    `<option value="${o.id}">
-     ${esc(o.nome)}
-    </option>`
+  $("dFunc").innerHTML=D.funcionarios
+   .filter(f=>f.ativo!==false&&f.registrar_diaria!==false)
+   .map(f=>
+    `<option value="${f.id}">${esc(f.nome)}</option>`
    ).join("");
 
-  $("finObraFilter").value =
-   current || "all";
-
+  if(current)$("dFunc").value=current;
  }
 
+ if($("finObraFilter")){
+  const current=$("finObraFilter").value;
+
+  $("finObraFilter").innerHTML=
+   '<option value="all">Todas as obras</option>'+
+   D.obras.map(o=>
+    `<option value="${o.id}">${esc(o.nome)}</option>`
+   ).join("");
+
+  $("finObraFilter").value=
+   current||"all";
+ }
 }
 
 
 /* =====================================================
-   EXCLUIR
-   ===================================================== */
+ EXCLUIR
+ ===================================================== */
 
 async function delItem(table,id){
+ if(!confirm("Excluir este registro?"))return;
 
- if(!confirm(
-  "Excluir este registro?"
- ))
-  return;
+ if(await removeRow(table,id)){
+  const index=D[table].findIndex(
+   x=>String(x.id)===String(id)
+  );
 
- if(
-  await removeRow(table,id)
- ){
-
-  const index =
-   D[table].findIndex(
-    x=>String(x.id)===String(id)
-   );
-
-  if(index>=0)
-   D[table].splice(index,1);
+  if(index>=0)D[table].splice(index,1);
 
   renderAll();
-
   toast("Registro excluído.");
-
  }
-
 }
 
 
 /* =====================================================
-   DASHBOARD
-   ===================================================== */
+ RECARREGAR TABELAS NOVAS
+ ===================================================== */
+
+async function reloadExtraData(){
+ if(localMode)return;
+
+ if(!sb||!user)return;
+
+ for(const table of[
+  "pagamentos",
+  "adiantamentos",
+  "faltas",
+  "servicos_adicionais"
+ ]){
+  try{
+   const {data,error}=await sb
+    .from(table)
+    .select("*")
+    .order("created_at",{ascending:false});
+
+   if(!error){
+    D[table].splice(
+     0,
+     D[table].length,
+     ...(data||[])
+    );
+   }
+  }catch(e){}
+ }
+}
+
+
+/* =====================================================
+ DASHBOARD
+ ===================================================== */
 
 function renderDashboard(){
-
  const s=sums();
 
- const contratos =
-  D.obras.reduce(
-   (a,x)=>
-    a+Number(x.valor||0),
-   0
-  );
+ const contratos=D.obras.reduce(
+  (a,x)=>a+contratoTotal(x.id),
+  0
+ );
 
- $("kObras").textContent =
-  D.obras.length;
+ $("kObras").textContent=D.obras.length;
 
- $("kFunc").textContent =
+ $("kFunc").textContent=
   D.funcionarios.filter(
    f=>f.ativo!==false
   ).length;
 
- $("kEntradas").textContent =
-  money(s.entradas);
+ $("kEntradas").textContent=money(s.entradas);
+ $("kDespesas").textContent=money(s.despesas);
+ $("kResultado").textContent=money(s.lucro);
 
- $("kDespesas").textContent =
-  money(s.despesas);
+ $("kReceber").textContent=money(
+  Math.max(0,contratos-s.entradas)
+ );
 
- $("kResultado").textContent =
-  money(s.lucro);
-
- $("kReceber").textContent =
-  money(
-   Math.max(
-    0,
-    contratos-s.entradas
-   )
-  );
-
-
- $("recentes").innerHTML =
-  D.obras.slice(0,4)
-   .map(o=>`
-
+ $("recentes").innerHTML=
+  D.obras.slice(0,4).map(o=>`
    <div class="item">
-
     <div class="row">
-
      <div>
-
-      <b>${esc(o.nome)}</b>
-
-      <br>
-
-      <small>
-       ${esc(o.cliente||"Cliente não informado")}
-      </small>
-
+      <b>${esc(o.nome)}</b><br>
+      <small>${esc(o.cliente||"Cliente não informado")}</small>
      </div>
-
-     <b class="gold">
-      ${money(o.valor)}
-     </b>
-
+     <b class="gold">${money(contratoTotal(o.id))}</b>
     </div>
-
    </div>
-
-   `).join("")
-
-   ||
-
-   '<div class="empty">Nenhuma obra cadastrada.</div>';
-
+  `).join("")||
+  '<div class="empty">Nenhuma obra cadastrada.</div>';
 }
 
 
 /* =====================================================
-   RENDER GERAL
-   ===================================================== */
+ RENDER GERAL
+ ===================================================== */
 
 function renderAll(){
-
  renderDashboard();
-
  renderObras();
-
  renderFuncs();
-
  renderPayroll();
-
  renderFinance();
-
+ renderEquipeHistorico();
+ renderFaltas();
  fillSelectors();
-
 }
 
 
 /* =====================================================
-   BACKUP
-   ===================================================== */
+ BACKUP
+ ===================================================== */
 
 function snapshot(){
-
- return {
-
+ return{
   version:"EDIFIQ-2026",
-
-  exported_at:
-   new Date().toISOString(),
-
+  exported_at:new Date().toISOString(),
   data:D
-
  };
-
 }
 
+function download(name,text){
+ const blob=new Blob(
+  [text],
+  {type:"application/json"}
+ );
 
-function download(
- name,
- text
-){
-
- const blob =
-  new Blob(
-   [text],
-   {
-    type:"application/json"
-   }
-  );
-
- const url =
-  URL.createObjectURL(blob);
-
- const a =
-  document.createElement("a");
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");
 
  a.href=url;
  a.download=name;
 
  document.body.appendChild(a);
-
  a.click();
-
  a.remove();
 
  setTimeout(
   ()=>URL.revokeObjectURL(url),
   500
  );
-
 }
 
-
 function exportFull(){
-
  download(
   "EDIFIQ-BACKUP.json",
-  JSON.stringify(
-   snapshot(),
-   null,
-   2
-  )
+  JSON.stringify(snapshot(),null,2)
  );
 
  toast("Backup gerado.");
-
 }
-
 
 function exportJSON(table){
-
  download(
   "EDIFIQ-"+table+".json",
-  JSON.stringify(
-   D[table]||[],
-   null,
-   2
-  )
+  JSON.stringify(D[table]||[],null,2)
  );
-
 }
 
-
 async function importBackup(e){
-
- const file =
-  e.target.files[0];
+ const file=e.target.files[0];
 
  if(!file)return;
 
  try{
-
-  const obj =
-   JSON.parse(
-    await file.text()
-   );
-
-  const source =
-   obj.data || obj;
+  const obj=JSON.parse(await file.text());
+  const source=obj.data||obj;
 
   for(const table of tables){
+   if(!Array.isArray(source[table]))continue;
 
-   if(!Array.isArray(source[table]))
-    continue;
-
-   D[table] =
-    source[table].map(x=>({...x}));
+   D[table]=source[table].map(x=>({...x}));
 
    if(localMode)
     saveLocal(table);
-
   }
 
   renderAll();
-
-  toast(
-   "Backup importado com sucesso."
-  );
+  toast("Backup importado com sucesso.");
 
  }catch(err){
-
-  alert(
-   "Erro ao importar backup."
-  );
-
+  alert("Erro ao importar backup.");
  }
-
 }
 
 
 /* =====================================================
-   INICIALIZAÇÃO
-   ===================================================== */
+ INICIALIZAÇÃO
+ ===================================================== */
 
 async function start(){
-
  loadLocal();
 
- const connected =
-  initSupabase();
+ const connected=initSupabase();
 
  if(connected){
 
-  $("connectionStatus").textContent =
-   "● Sistema conectado";
-
-  $("connectionStatus").className =
-   "connection ok";
-
+  $("connectionStatus").textContent="● Sistema conectado";
+  $("connectionStatus").className="connection ok";
 
   sb.auth.onAuthStateChange(
    async(event,session)=>{
 
-    user =
-     session?.user || null;
+    user=session?.user||null;
 
     if(user){
 
      localMode=false;
 
-     $("auth").classList.add(
-      "hidden"
-     );
+     $("auth").classList.add("hidden");
+     $("app").classList.remove("hidden");
 
-     $("app").classList.remove(
-      "hidden"
-     );
-
-     $("appConnection").textContent =
-      "● Sistema conectado";
-
-     $("appConnection").className =
-      "connection ok";
+     $("appConnection").textContent="● Sistema conectado";
+     $("appConnection").className="connection ok";
 
      try{
-
       await cloudLoad();
-
      }catch(e){
-
       console.error(e);
-
      }
 
      renderAll();
 
     }else{
 
-     $("app").classList.add(
-      "hidden"
-     );
-
-     $("auth").classList.remove(
-      "hidden"
-     );
+     $("app").classList.add("hidden");
+     $("auth").classList.remove("hidden");
 
     }
-
    }
   );
 
-
   try{
-
-   const {
-    data
-   } =
-    await sb.auth.getSession();
+   const {data}=await sb.auth.getSession();
 
    if(data?.session){
 
-    user =
-     data.session.user;
+    user=data.session.user;
 
     await cloudLoad();
 
-    $("auth").classList.add(
-     "hidden"
-    );
-
-    $("app").classList.remove(
-     "hidden"
-    );
+    $("auth").classList.add("hidden");
+    $("app").classList.remove("hidden");
 
     renderAll();
-
    }
 
   }catch(e){
-
    console.warn(e);
-
   }
 
  }else{
 
-  $("connectionStatus").textContent =
-   "● Modo local disponível";
-
-  $("connectionStatus").className =
-   "connection";
-
+  $("connectionStatus").textContent="● Modo local disponível";
+  $("connectionStatus").className="connection";
  }
-
 }
 
+window.addEventListener("error",e=>{
+ console.error("EDIFIQ:",e.error||e.message);
+});
 
-window.addEventListener(
- "error",
- e=>{
-  console.error(
-   "EDIFIQ:",
-   e.error || e.message
-  );
- }
-);
-
-
-window.addEventListener(
- "unhandledrejection",
- e=>{
-  console.error(
-   "EDIFIQ:",
-   e.reason
-  );
- }
-);
-
+window.addEventListener("unhandledrejection",e=>{
+ console.error("EDIFIQ:",e.reason);
+});
 
 start();
 
 </script>
-
 </body>
 </html>
