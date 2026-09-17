@@ -7,2863 +7,471 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>EDIFIQ — Gestão de Obras</title>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <style>
-:root{
-  --bg:#080a0d;
-  --panel:#101318;
-  --panel2:#151920;
-  --line:#252a32;
-  --gold:#d7a83f;
-  --gold2:#f0c65c;
-  --text:#f4f5f7;
-  --muted:#9299a5;
-  --green:#38c98a;
-  --red:#ef6262;
-  --blue:#55aaff;
-  --orange:#ef9b43;
-  --radius:18px;
-}
-
-*{box-sizing:border-box}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-body{min-height:100vh}
-button,input,select,textarea{font:inherit}
-button{cursor:pointer}
-.hidden{display:none!important}
-
-#auth{
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:22px;
-  background:
-    radial-gradient(circle at top,#211b0d 0,#0b0d10 42%,#080a0d 75%);
-}
-
-.authBox{
-  width:100%;
-  max-width:420px;
-  background:rgba(16,19,24,.97);
-  border:1px solid var(--line);
-  border-radius:26px;
-  padding:28px;
-  box-shadow:0 25px 80px rgba(0,0,0,.45);
-}
-
-.logo{
-  width:62px;height:62px;
-  border-radius:18px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:linear-gradient(145deg,var(--gold2),#9b711e);
-  color:#111;
-  font-weight:900;
-  font-size:23px;
-  margin-bottom:16px;
-}
-
-h1,h2,h3,p{margin-top:0}
-.authBox h1{font-size:28px;margin-bottom:7px}
-.muted{color:var(--muted)}
-.small{font-size:12px}
-
-.field{margin-bottom:13px}
-.field label{
-  display:block;
-  font-size:12px;
-  color:var(--muted);
-  margin:0 0 7px 2px;
-}
-input,select,textarea{
-  width:100%;
-  border:1px solid var(--line);
-  background:#0b0e12;
-  color:var(--text);
-  border-radius:12px;
-  padding:12px;
-  outline:none;
-}
-input:focus,select:focus,textarea:focus{border-color:var(--gold)}
-textarea{min-height:90px;resize:vertical}
-
-.btn{
-  border:1px solid var(--line);
-  background:#171b21;
-  color:var(--text);
-  border-radius:12px;
-  padding:11px 14px;
-  font-weight:700;
-}
-.btn:hover{filter:brightness(1.12)}
-.btn.gold{
-  background:linear-gradient(135deg,var(--gold2),#b98725);
-  color:#17130a;
-  border-color:#d4a33d;
-}
-.btn.green{background:#123d2d;border-color:#1c7651;color:#78efb8}
-.btn.red{background:#40191c;border-color:#713036;color:#ff9292}
-.btn.blue{background:#102e4b;border-color:#205a8e;color:#78bcff}
-.btn.orange{background:#422912;border-color:#80501d;color:#ffbd6b}
-.btn.sm{padding:8px 10px;font-size:12px}
-.btn.block{width:100%}
-
-#app{display:none;min-height:100vh;padding-bottom:78px}
-header{
-  position:sticky;
-  top:0;
-  z-index:20;
-  background:rgba(8,10,13,.92);
-  backdrop-filter:blur(18px);
-  border-bottom:1px solid var(--line);
-  padding:13px 16px;
-}
-.headerInner{
-  max-width:1180px;
-  margin:auto;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-}
-.brand{display:flex;align-items:center;gap:10px}
-.brandIcon{
-  width:39px;height:39px;border-radius:12px;
-  background:linear-gradient(145deg,var(--gold2),#9d721d);
-  color:#111;display:flex;align-items:center;justify-content:center;
-  font-weight:900;font-size:14px;
-}
-.brand strong{display:block}
-.brand span{font-size:11px;color:var(--muted)}
-.headerActions{display:flex;gap:7px}
-
-main{
-  max-width:1180px;
-  margin:auto;
-  padding:18px 14px 35px;
-}
-.section{display:none}
-.section.active{display:block}
-
-.pageTitle{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:10px;
-  margin-bottom:18px;
-}
-.pageTitle h2{font-size:25px;margin-bottom:4px}
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:12px;
-}
-@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:520px){.grid{grid-template-columns:1fr}}
-
-.card{
-  background:linear-gradient(180deg,#11151a,#0e1115);
-  border:1px solid var(--line);
-  border-radius:var(--radius);
-  padding:15px;
-  margin-bottom:12px;
-}
-.kpi .label{font-size:11px;color:var(--muted);text-transform:uppercase}
-.kpi .value{font-size:25px;font-weight:900;margin-top:6px}
-.greenText{color:var(--green)}
-.redText{color:var(--red)}
-.goldText{color:var(--gold2)}
-.blueText{color:var(--blue)}
-.orangeText{color:var(--orange)}
-
-.toolbar{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin-bottom:14px;
-}
-.toolbar>*{flex:1;min-width:130px}
-
-.list{display:grid;gap:12px}
-
-.obraHeader{
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-}
-.obraHeader h3{margin:0 0 4px;font-size:18px}
-.badge{
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  padding:5px 8px;
-  border-radius:999px;
-  background:#191d24;
-  border:1px solid var(--line);
-  color:var(--muted);
-  font-size:10px;
-  font-weight:800;
-}
-.badge.gold{color:var(--gold2);border-color:#634d20}
-.badge.green{color:#6be9ad;border-color:#1d5e44}
-.badge.red{color:#ff8e8e;border-color:#63272b}
-
-.progress{
-  height:9px;
-  background:#07090c;
-  border-radius:20px;
-  overflow:hidden;
-  border:1px solid #1c2027;
-}
-.progress i{
-  display:block;height:100%;
-  background:linear-gradient(90deg,var(--gold),var(--gold2));
-  border-radius:20px;
-}
-
-.moneyGrid{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:8px;
-  margin-top:12px;
-}
-.moneyBox{
-  background:#0a0d11;
-  border:1px solid var(--line);
-  border-radius:12px;
-  padding:9px;
-}
-.moneyBox small{display:block;color:var(--muted);font-size:10px}
-.moneyBox strong{display:block;margin-top:3px;font-size:14px}
+:root{--bg:#080a0d;--panel:#101318;--panel2:#151920;--line:#252a32;--gold:#d7a83f;--gold2:#f0c65c;--text:#f4f5f7;--muted:#9299a5;--green:#38c98a;--red:#ef6262;--blue:#55aaff;--orange:#ef9b43;--radius:18px}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}body{min-height:100vh}
+button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+#auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at top,#211b0d 0,#0b0d10 42%,#080a0d 75%)}
+.authBox{width:100%;max-width:420px;background:rgba(16,19,24,.97);border:1px solid var(--line);border-radius:26px;padding:28px;box-shadow:0 25px 80px rgba(0,0,0,.45)}
+.logo{width:62px;height:62px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,var(--gold2),#9b711e);color:#111;font-weight:900;font-size:23px;margin-bottom:16px}
+h1,h2,h3,p{margin-top:0}.authBox h1{font-size:28px;margin-bottom:7px}.muted{color:var(--muted)}.small{font-size:12px}
+.field{margin-bottom:13px}.field label{display:block;font-size:12px;color:var(--muted);margin:0 0 7px 2px}
+input,select,textarea{width:100%;border:1px solid var(--line);background:#0b0e12;color:var(--text);border-radius:12px;padding:12px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}textarea{min-height:90px;resize:vertical}
+.btn{border:1px solid var(--line);background:#171b21;color:var(--text);border-radius:12px;padding:11px 14px;font-weight:700}.btn:hover{filter:brightness(1.12)}
+.btn.gold{background:linear-gradient(135deg,var(--gold2),#b98725);color:#17130a;border-color:#d4a33d}.btn.green{background:#123d2d;border-color:#1c7651;color:#78efb8}.btn.red{background:#40191c;border-color:#713036;color:#ff9292}.btn.blue{background:#102e4b;border-color:#205a8e;color:#78bcff}.btn.orange{background:#422912;border-color:#80501d;color:#ffbd6b}.btn.sm{padding:8px 10px;font-size:12px}.btn.block{width:100%}
+#app{display:none;min-height:100vh;padding-bottom:78px}header{position:sticky;top:0;z-index:20;background:rgba(8,10,13,.92);backdrop-filter:blur(18px);border-bottom:1px solid var(--line);padding:13px 16px}
+.headerInner{max-width:1180px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{display:flex;align-items:center;gap:10px}
+.brandIcon{width:39px;height:39px;border-radius:12px;background:linear-gradient(145deg,var(--gold2),#9d721d);color:#111;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px}
+.brand strong{display:block}.brand span{font-size:11px;color:var(--muted)}.headerActions{display:flex;gap:7px}
+main{max-width:1180px;margin:auto;padding:18px 14px 35px}.section{display:none}.section.active{display:block}
+.pageTitle{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:18px}.pageTitle h2{font-size:25px;margin-bottom:4px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.grid{grid-template-columns:1fr}}
+.card{background:linear-gradient(180deg,#11151a,#0e1115);border:1px solid var(--line);border-radius:var(--radius);padding:15px;margin-bottom:12px}
+.kpi .label{font-size:11px;color:var(--muted);text-transform:uppercase}.kpi .value{font-size:25px;font-weight:900;margin-top:6px}
+.greenText{color:var(--green)}.redText{color:var(--red)}.goldText{color:var(--gold2)}.blueText{color:var(--blue)}.orangeText{color:var(--orange)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.toolbar>*{flex:1;min-width:130px}
+.list{display:grid;gap:12px}.obraHeader{display:flex;justify-content:space-between;gap:10px}.obraHeader h3{margin:0 0 4px;font-size:18px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border-radius:999px;background:#191d24;border:1px solid var(--line);color:var(--muted);font-size:10px;font-weight:800}
+.badge.gold{color:var(--gold2);border-color:#634d20}.badge.green{color:#6be9ad;border-color:#1d5e44}.badge.red{color:#ff8e8e;border-color:#63272b}
+.progress{height:9px;background:#07090c;border-radius:20px;overflow:hidden;border:1px solid #1c2027}.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:20px}
+.moneyGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.moneyBox{background:#0a0d11;border:1px solid var(--line);border-radius:12px;padding:9px}.moneyBox small{display:block;color:var(--muted);font-size:10px}.moneyBox strong{display:block;margin-top:3px;font-size:14px}
 @media(max-width:650px){.moneyGrid{grid-template-columns:repeat(2,1fr)}}
-
-.actions{
-  display:flex;
-  flex-wrap:wrap;
-  gap:7px;
-  margin-top:13px;
-}
-
-.modal{
-  position:fixed;
-  inset:0;
-  z-index:100;
-  background:rgba(0,0,0,.72);
-  backdrop-filter:blur(7px);
-  display:none;
-  align-items:flex-end;
-  justify-content:center;
-  padding:10px;
-}
-.modal.show{display:flex}
-.modalBox{
-  width:100%;
-  max-width:650px;
-  max-height:92vh;
-  overflow:auto;
-  background:#101318;
-  border:1px solid var(--line);
-  border-radius:23px 23px 14px 14px;
-  padding:18px;
-}
-.modalHead{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom:15px;
-}
-.modalHead h3{margin:0}
-.close{
-  width:35px;height:35px;border-radius:50%;
-  border:1px solid var(--line);
-  background:#171b21;color:#fff;
-}
-
-.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:600px){.two{grid-template-columns:1fr}}
-
-.bottomNav{
-  position:fixed;
-  z-index:50;
-  left:0;right:0;bottom:0;
-  height:68px;
-  background:rgba(10,12,16,.96);
-  border-top:1px solid var(--line);
-  display:flex;
-  justify-content:center;
-  backdrop-filter:blur(18px);
-}
-.navInner{
-  width:100%;
-  max-width:700px;
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-}
-.navBtn{
-  border:0;background:none;color:#747b87;
-  font-size:10px;font-weight:700;
-}
-.navBtn b{display:block;font-size:20px;margin-bottom:2px}
-.navBtn.active{color:var(--gold2)}
-
-.checkRow{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:9px 0;
-  border-bottom:1px solid #1d2128;
-}
-.checkRow:last-child{border-bottom:0}
-.checkRow input{width:19px;height:19px}
-.checkText{flex:1;font-size:13px}
-.checkText.done{text-decoration:line-through;color:#69717d}
-
-.percentBar{
-  display:flex;
-  height:10px;
-  border-radius:20px;
-  overflow:hidden;
-  background:#07090c;
-}
-.percentBar i{display:block;height:100%}
-
-.detailGrid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-}
-@media(max-width:700px){.detailGrid{grid-template-columns:1fr 1fr}}
-@media(max-width:450px){.detailGrid{grid-template-columns:1fr}}
-
-.detailItem{
-  padding:12px;
-  border:1px solid var(--line);
-  border-radius:14px;
-  background:#0b0e12;
-}
-.detailItem small{display:block;color:var(--muted);font-size:10px}
-.detailItem strong{display:block;margin-top:4px;font-size:17px}
-
-.history{
-  display:grid;
-  gap:7px;
-  margin-top:10px;
-}
-.historyItem{
-  padding:10px;
-  border:1px solid var(--line);
-  border-radius:12px;
-  background:#0b0e12;
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-}
-.historyItem .title{font-weight:800;font-size:12px}
-.historyItem .sub{font-size:10px;color:var(--muted);margin-top:3px}
-
-.empty{
-  padding:30px 15px;
-  text-align:center;
-  color:var(--muted);
-  border:1px dashed var(--line);
-  border-radius:16px;
-}
-
-.toast{
-  position:fixed;
-  z-index:300;
-  left:50%;
-  bottom:85px;
-  transform:translateX(-50%) translateY(20px);
-  opacity:0;
-  pointer-events:none;
-  background:#181d24;
-  border:1px solid var(--line);
-  padding:12px 16px;
-  border-radius:13px;
-  font-size:13px;
-  transition:.25s;
-}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
+.actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
+.modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.72);backdrop-filter:blur(7px);display:none;align-items:flex-end;justify-content:center;padding:10px}.modal.show{display:flex}
+.modalBox{width:100%;max-width:650px;max-height:92vh;overflow:auto;background:#101318;border:1px solid var(--line);border-radius:23px 23px 14px 14px;padding:18px}
+.modalHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}.modalHead h3{margin:0}.close{width:35px;height:35px;border-radius:50%;border:1px solid var(--line);background:#171b21;color:#fff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:600px){.two{grid-template-columns:1fr}}
+.bottomNav{position:fixed;z-index:50;left:0;right:0;bottom:0;height:68px;background:rgba(10,12,16,.96);border-top:1px solid var(--line);display:flex;justify-content:center;backdrop-filter:blur(18px)}
+.navInner{width:100%;max-width:700px;display:grid;grid-template-columns:repeat(5,1fr)}.navBtn{border:0;background:none;color:#747b87;font-size:10px;font-weight:700}.navBtn b{display:block;font-size:20px;margin-bottom:2px}.navBtn.active{color:var(--gold2)}
+.checkRow{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #1d2128}.checkRow:last-child{border-bottom:0}.checkRow input{width:19px;height:19px}.checkText{flex:1;font-size:13px}.checkText.done{text-decoration:line-through;color:#69717d}
+.detailGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}@media(max-width:700px){.detailGrid{grid-template-columns:1fr 1fr}}@media(max-width:450px){.detailGrid{grid-template-columns:1fr}}
+.detailItem{padding:12px;border:1px solid var(--line);border-radius:14px;background:#0b0e12}.detailItem small{display:block;color:var(--muted);font-size:10px}.detailItem strong{display:block;margin-top:4px;font-size:17px}
+.history{display:grid;gap:7px;margin-top:10px}.historyItem{padding:10px;border:1px solid var(--line);border-radius:12px;background:#0b0e12;display:flex;justify-content:space-between;gap:10px}.historyItem .title{font-weight:800;font-size:12px}.historyItem .sub{font-size:10px;color:var(--muted);margin-top:3px}
+.empty{padding:30px 15px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:16px}
+.toast{position:fixed;z-index:300;left:50%;bottom:85px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#181d24;border:1px solid var(--line);padding:12px 16px;border-radius:13px;font-size:13px;transition:.25s}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+.selectAllRow{display:flex;align-items:center;gap:9px;padding:10px 12px;background:#0b0e12;border:1px solid var(--line);border-radius:13px;margin-bottom:10px}.selectAllRow input{width:20px;height:20px}.payCheck{width:20px!important;height:20px!important;flex:0 0 auto}.payRow{display:flex;align-items:center;gap:9px}.payRow .payInfo{flex:1}.payRow .payValue{text-align:right}
 </style>
 </head>
-
 <body>
-
 <div id="auth">
-  <div class="authBox">
-    <div class="logo">EQ</div>
-    <h1>EDIFIQ</h1>
-    <p class="muted">Gestão profissional de obras e reformas.</p>
-
-    <div id="loginFields">
-      <div class="field">
-        <label>E-mail</label>
-        <input id="email" type="email" placeholder="seu@email.com">
-      </div>
-
-      <div class="field">
-        <label>Senha</label>
-        <input id="password" type="password" placeholder="••••••••">
-      </div>
-
-      <button class="btn gold block" onclick="login()">ENTRAR</button>
-      <button class="btn block" style="margin-top:8px" onclick="signup()">CRIAR CONTA</button>
-      <button class="btn block" style="margin-top:8px" onclick="localLogin()">USAR MODO LOCAL</button>
-    </div>
-
-    <p id="authMsg" class="muted small" style="margin-top:15px"></p>
-  </div>
-</div>
+<div class="authBox">
+<div class="logo">EQ</div><h1>EDIFIQ</h1><p class="muted">Gestão profissional de obras e reformas.</p>
+<div id="loginFields">
+<div class="field"><label>E-mail</label><input id="email" type="email" placeholder="seu@email.com"></div>
+<div class="field"><label>Senha</label><input id="password" type="password" placeholder="••••••••"></div>
+<button class="btn gold block" onclick="login()">ENTRAR</button><button class="btn block" style="margin-top:8px" onclick="signup()">CRIAR CONTA</button><button class="btn block" style="margin-top:8px" onclick="localLogin()">USAR MODO LOCAL</button>
+</div><p id="authMsg" class="muted small" style="margin-top:15px"></p>
+</div></div>
 
 <div id="app">
-
-<header>
-  <div class="headerInner">
-    <div class="brand">
-      <div class="brandIcon">EQ</div>
-      <div>
-        <strong>EDIFIQ</strong>
-        <span>Gestão de Obras</span>
-      </div>
-    </div>
-
-    <div class="headerActions">
-      <button class="btn sm" onclick="exportData()">Backup</button>
-      <button class="btn sm" onclick="logout()">Sair</button>
-    </div>
-  </div>
-</header>
-
+<header><div class="headerInner"><div class="brand"><div class="brandIcon">EQ</div><div><strong>EDIFIQ</strong><span>Gestão de Obras</span></div></div><div class="headerActions"><button class="btn sm" onclick="exportData()">Backup</button><button class="btn sm" onclick="logout()">Sair</button></div></div></header>
 <main>
-
 <section id="home" class="section active">
-  <div class="pageTitle">
-    <div>
-      <h2>Dashboard</h2>
-      <p class="muted">Visão geral da sua operação.</p>
-    </div>
-  </div>
-
-  <div class="grid">
-    <div class="card kpi">
-      <div class="label">Obras</div>
-      <div class="value" id="kObras">0</div>
-    </div>
-    <div class="card kpi">
-      <div class="label">Contratos</div>
-      <div class="value goldText" id="kContratos">R$ 0,00</div>
-    </div>
-    <div class="card kpi">
-      <div class="label">Recebido</div>
-      <div class="value greenText" id="kRecebido">R$ 0,00</div>
-    </div>
-    <div class="card kpi">
-      <div class="label">A receber</div>
-      <div class="value redText" id="kReceber">R$ 0,00</div>
-    </div>
-  </div>
-
-  <div class="grid">
-    <div class="card kpi">
-      <div class="label">Funcionários</div>
-      <div class="value" id="kFuncionarios">0</div>
-    </div>
-    <div class="card kpi">
-      <div class="label">Despesas</div>
-      <div class="value redText" id="kDespesas">R$ 0,00</div>
-    </div>
-    <div class="card kpi">
-      <div class="label">Serviços adicionais</div>
-      <div class="value orangeText" id="kAdicionais">R$ 0,00</div>
-    </div>
-    <div class="card kpi">
-      <div class="label">Resultado</div>
-      <div class="value greenText" id="kResultado">R$ 0,00</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3>Obras em andamento</h3>
-    <div id="homeObras"></div>
-  </div>
+<div class="pageTitle"><div><h2>Dashboard</h2><p class="muted">Visão geral da sua operação.</p></div></div>
+<div class="grid">
+<div class="card kpi"><div class="label">Obras</div><div class="value" id="kObras">0</div></div><div class="card kpi"><div class="label">Contratos</div><div class="value goldText" id="kContratos">R$ 0,00</div></div><div class="card kpi"><div class="label">Recebido</div><div class="value greenText" id="kRecebido">R$ 0,00</div></div><div class="card kpi"><div class="label">A receber</div><div class="value redText" id="kReceber">R$ 0,00</div></div>
+</div><div class="grid">
+<div class="card kpi"><div class="label">Funcionários</div><div class="value" id="kFuncionarios">0</div></div><div class="card kpi"><div class="label">Despesas</div><div class="value redText" id="kDespesas">R$ 0,00</div></div><div class="card kpi"><div class="label">Serviços adicionais</div><div class="value orangeText" id="kAdicionais">R$ 0,00</div></div><div class="card kpi"><div class="label">Resultado</div><div class="value greenText" id="kResultado">R$ 0,00</div></div>
+</div><div class="card"><h3>Obras em andamento</h3><div id="homeObras"></div></div>
 </section>
 
 <section id="obras" class="section">
-  <div class="pageTitle">
-    <div>
-      <h2>Obras</h2>
-      <p class="muted">Controle contratos, progresso e serviços.</p>
-    </div>
-    <button class="btn gold" onclick="openObra()">+ Obra</button>
-  </div>
-
-  <div class="toolbar">
-    <input id="obraBusca" placeholder="Pesquisar obra..." oninput="renderObras()">
-    <select id="obraStatusFiltro" onchange="renderObras()">
-      <option value="">Todas</option>
-      <option value="planejamento">Planejamento</option>
-      <option value="andamento">Em andamento</option>
-      <option value="concluida">Concluída</option>
-    </select>
-  </div>
-
-  <div id="obrasList" class="list"></div>
+<div class="pageTitle"><div><h2>Obras</h2><p class="muted">Controle contratos, progresso e serviços.</p></div><button class="btn gold" onclick="openObra()">+ Obra</button></div>
+<div class="toolbar"><input id="obraBusca" placeholder="Pesquisar obra..." oninput="renderObras()"><select id="obraStatusFiltro" onchange="renderObras()"><option value="">Todas</option><option value="planejamento">Planejamento</option><option value="andamento">Em andamento</option><option value="concluida">Concluída</option></select></div>
+<div id="obrasList" class="list"></div>
 </section>
 
 <section id="equipe" class="section">
-  <div class="pageTitle">
-    <div>
-      <h2>Equipe</h2>
-      <p class="muted">Diárias, pagamentos, adiantamentos e faltas.</p>
-    </div>
-    <button class="btn gold" onclick="openFunc()">+ Funcionário</button>
-  </div>
+<div class="pageTitle"><div><h2>Equipe</h2><p class="muted">Diárias, pagamentos, adiantamentos e faltas.</p></div><button class="btn gold" onclick="openFunc()">+ Funcionário</button></div>
+<div class="toolbar"><select id="funcFiltro" onchange="renderFuncs()"><option value="">Todos</option></select><button class="btn blue" onclick="openPagamento()">Pagamento</button><button class="btn orange" onclick="openAdiantamento()">Adiantamento</button><button class="btn red" onclick="openFalta()">Registrar falta</button></div>
 
-  <div class="toolbar">
-    <select id="funcFiltro" onchange="renderFuncs()">
-      <option value="">Todos</option>
-    </select>
-    <button class="btn blue" onclick="openPagamento()">Pagamento</button>
-    <button class="btn orange" onclick="openAdiantamento()">Adiantamento</button>
-    <button class="btn red" onclick="openFalta()">Registrar falta</button>
-  </div>
+<!-- RESUMO DE DIÁRIAS NO TOPO -->
+<div id="diariasTopo"></div>
 
-  <div id="funcResumo"></div>
-
-  <div class="card">
-    <h3>Histórico financeiro da equipe</h3>
-    <div id="pagHistory"></div>
-  </div>
-
-  <div class="card">
-    <h3>Histórico de faltas</h3>
-    <div id="faltaHistory"></div>
-  </div>
-
-  <div class="card">
-    <h3>Diárias</h3>
-    <div class="toolbar">
-      <input id="diaInicio" type="date" onchange="renderPayroll()">
-      <input id="diaFim" type="date" onchange="renderPayroll()">
-    </div>
-    <div id="diaList"></div>
-  </div>
+<div id="funcResumo"></div>
+<div class="card"><h3>Histórico financeiro da equipe</h3><div id="pagHistory"></div></div>
+<div class="card"><h3>Histórico de faltas</h3><div id="faltaHistory"></div></div>
+<div class="card"><h3>Diárias</h3>
+<div class="toolbar"><select id="periodoDiarias" onchange="changePeriodoDiarias()"><option value="dia">Dia</option><option value="semana">Semana</option><option value="quinzena">Quinzena</option><option value="mes" selected>Mês</option></select><input id="diaInicio" type="date" onchange="renderPayroll()"><input id="diaFim" type="date" onchange="renderPayroll()"></div>
+<div id="diaList"></div></div>
 </section>
 
 <section id="financeiro" class="section">
-  <div class="pageTitle">
-    <div>
-      <h2>Financeiro</h2>
-      <p class="muted">Controle completo por obra.</p>
-    </div>
-    <button class="btn gold" onclick="openFin()">+ Lançamento</button>
-  </div>
-
-  <div class="toolbar">
-    <select id="finObraFiltro" onchange="renderFinance()">
-      <option value="all">Todas as obras</option>
-    </select>
-    <select id="finTipoFiltro" onchange="renderFinance()">
-      <option value="">Tudo</option>
-      <option value="entrada">Entradas</option>
-      <option value="despesa">Despesas</option>
-      <option value="adicional">Serviços adicionais</option>
-    </select>
-  </div>
-
-  <div class="grid">
-    <div class="card kpi">
-      <div class="label">Contrato</div>
-      <div class="value goldText" id="fContrato">R$ 0,00</div>
-    </div>
-    <div class="card kpi">
-      <div class="label">Recebido</div>
-      <div class="value greenText" id="fRecebido">R$ 0,00</div>
-    </div>
-    <div class="card kpi">
-      <div class="label">Despesas</div>
-      <div class="value redText" id="fDespesas">R$ 0,00</div>
-    </div>
-    <div class="card kpi">
-      <div class="label">Resultado</div>
-      <div class="value" id="fResultado">R$ 0,00</div>
-    </div>
-  </div>
-
-  <div id="obraFinanceResumo"></div>
-
-  <div class="card">
-    <h3>Lançamentos</h3>
-    <div id="finList"></div>
-  </div>
+<div class="pageTitle"><div><h2>Financeiro</h2><p class="muted">Controle completo por obra.</p></div><button class="btn gold" onclick="openFin()">+ Lançamento</button></div>
+<div class="toolbar"><select id="finObraFiltro" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFiltro" onchange="renderFinance()"><option value="">Tudo</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option><option value="adicional">Serviços adicionais</option></select></div>
+<div class="grid"><div class="card kpi"><div class="label">Contrato</div><div class="value goldText" id="fContrato">R$ 0,00</div></div><div class="card kpi"><div class="label">Recebido</div><div class="value greenText" id="fRecebido">R$ 0,00</div></div><div class="card kpi"><div class="label">Despesas</div><div class="value redText" id="fDespesas">R$ 0,00</div></div><div class="card kpi"><div class="label">Resultado</div><div class="value" id="fResultado">R$ 0,00</div></div></div>
+<div id="obraFinanceResumo"></div><div class="card"><h3>Lançamentos</h3><div id="finList"></div></div>
 </section>
 
 <section id="relatorios" class="section">
-  <div class="pageTitle">
-    <div>
-      <h2>Relatórios</h2>
-      <p class="muted">Resumo operacional do EDIFIQ.</p>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3>Resumo das obras</h3>
-    <div id="relObras"></div>
-  </div>
-
-  <div class="card">
-    <h3>Resumo financeiro</h3>
-    <div id="relFinance"></div>
-  </div>
+<div class="pageTitle"><div><h2>Relatórios</h2><p class="muted">Resumo operacional do EDIFIQ.</p></div></div>
+<div class="card"><h3>Resumo das obras</h3><div id="relObras"></div></div><div class="card"><h3>Resumo financeiro</h3><div id="relFinance"></div></div>
 </section>
-
 </main>
 
-<div class="bottomNav">
-  <div class="navInner">
-    <button class="navBtn active" data-section="home" onclick="go('home')"><b>⌂</b>Início</button>
-    <button class="navBtn" data-section="obras" onclick="go('obras')"><b>⌂</b>Obras</button>
-    <button class="navBtn" data-section="equipe" onclick="go('equipe')"><b>♟</b>Equipe</button>
-    <button class="navBtn" data-section="financeiro" onclick="go('financeiro')"><b>R$</b>Financeiro</button>
-    <button class="navBtn" data-section="relatorios" onclick="go('relatorios')"><b>▤</b>Relatórios</button>
-  </div>
-</div>
+<div class="bottomNav"><div class="navInner">
+<button class="navBtn active" data-section="home" onclick="go('home')"><b>⌂</b>Início</button><button class="navBtn" data-section="obras" onclick="go('obras')"><b>⌂</b>Obras</button><button class="navBtn" data-section="equipe" onclick="go('equipe')"><b>♟</b>Equipe</button><button class="navBtn" data-section="financeiro" onclick="go('financeiro')"><b>R$</b>Financeiro</button><button class="navBtn" data-section="relatorios" onclick="go('relatorios')"><b>▤</b>Relatórios</button>
+</div></div></div>
 
-</div>
+<!-- MODAIS -->
+<div class="modal" id="obraM"><div class="modalBox"><div class="modalHead"><h3 id="obraMTitle">Nova obra</h3><button class="close" onclick="closeM('obraM')">×</button></div><input type="hidden" id="obraId">
+<div class="field"><label>Nome da obra</label><input id="obraNome" placeholder="Ex.: Reforma da casa do cliente"></div><div class="two"><div class="field"><label>Cliente</label><input id="obraCliente"></div><div class="field"><label>Telefone</label><input id="obraTelefone"></div></div>
+<div class="two"><div class="field"><label>Valor do contrato</label><input id="obraValor" type="number" step="0.01"></div><div class="field"><label>Status</label><select id="obraStatus"><option value="planejamento">Planejamento</option><option value="andamento">Em andamento</option><option value="concluida">Concluída</option></select></div></div>
+<div class="two"><div class="field"><label>Início</label><input id="obraInicio" type="date"></div><div class="field"><label>Prazo</label><input id="obraPrazo" type="date"></div></div><div class="field"><label>Observações</label><textarea id="obraObs"></textarea></div><button class="btn gold block" onclick="saveObra()">SALVAR OBRA</button></div></div>
 
-<!-- OBRA -->
-<div class="modal" id="obraM">
-<div class="modalBox">
-<div class="modalHead">
-<h3 id="obraMTitle">Nova obra</h3>
-<button class="close" onclick="closeM('obraM')">×</button>
-</div>
+<div class="modal" id="funcM"><div class="modalBox"><div class="modalHead"><h3 id="funcMTitle">Novo funcionário</h3><button class="close" onclick="closeM('funcM')">×</button></div><input type="hidden" id="funcId">
+<div class="two"><div class="field"><label>Nome</label><input id="funcNome"></div><div class="field"><label>Função</label><input id="funcFuncao"></div></div><div class="field"><label>Telefone</label><input id="funcTelefone"></div>
+<div class="two"><div class="field"><label>Obra onde vai trabalhar</label><select id="funcObra"></select></div><div class="field"><label>Registrar diária?</label><select id="funcRegistrar"><option value="sim">Registrar diária</option><option value="nao">Não registrar diária</option></select></div></div>
+<div class="two"><div class="field"><label>Forma de pagamento</label><select id="funcTipoPag"><option value="diaria">Diária</option><option value="mensal">Mensal</option></select></div><div class="field"><label>Valor da diária</label><input id="funcValorDia" type="number" step="0.01"></div></div>
+<div class="two"><div class="field"><label>Salário mensal</label><input id="funcSalario" type="number" step="0.01"></div><div class="field"><label>Dia de pagamento</label><input id="funcDiaPag" type="number" min="1" max="31"></div></div>
+<button class="btn gold block" onclick="saveFunc()">SALVAR FUNCIONÁRIO</button></div></div>
 
-<input type="hidden" id="obraId">
+<div class="modal" id="diaM"><div class="modalBox"><div class="modalHead"><h3>Registrar diária</h3><button class="close" onclick="closeM('diaM')">×</button></div>
+<div class="field"><label>Funcionário</label><select id="diaFunc"></select></div><div class="field"><label>Obra</label><select id="diaObra"></select></div><div class="two"><div class="field"><label>Data</label><input id="diaData" type="date"></div><div class="field"><label>Quantidade</label><input id="diaQtd" type="number" step="0.5" value="1"></div></div><div class="field"><label>Valor da diária</label><input id="diaValor" type="number" step="0.01"></div><div class="field"><label>Observação</label><textarea id="diaObs"></textarea></div><button class="btn gold block" onclick="saveDia()">REGISTRAR DIÁRIA</button></div></div>
 
-<div class="field">
-<label>Nome da obra</label>
-<input id="obraNome" placeholder="Ex.: Reforma da casa do cliente">
-</div>
+<div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h3>Lançamento financeiro</h3><button class="close" onclick="closeM('finM')">×</button></div>
+<div class="field"><label>Obra</label><select id="finObra"></select></div><div class="two"><div class="field"><label>Tipo</label><select id="finCategoria" onchange="toggleFinCategory()"><option value="entrada">Entrada / recebimento</option><option value="despesa">Despesa</option></select></div><div class="field"><label>Categoria da despesa</label><select id="finSubcategoria"><option value="material">Material</option><option value="mao_obra">Mão de obra</option><option value="terceirizado">Terceirizado</option><option value="outros">Outros</option></select></div></div>
+<div class="field"><label>Descrição</label><input id="finDescricao"></div><div class="two"><div class="field"><label>Valor</label><input id="finValor" type="number" step="0.01"></div><div class="field"><label>Data</label><input id="finData" type="date"></div></div><div class="field"><label>Fornecedor / origem</label><input id="finFornecedor"></div><div class="field"><label>Observação</label><textarea id="finObs"></textarea></div><button class="btn gold block" onclick="saveFin()">SALVAR LANÇAMENTO</button></div></div>
 
-<div class="two">
-<div class="field">
-<label>Cliente</label>
-<input id="obraCliente">
-</div>
-<div class="field">
-<label>Telefone</label>
-<input id="obraTelefone">
-</div>
-</div>
-
-<div class="two">
-<div class="field">
-<label>Valor do contrato</label>
-<input id="obraValor" type="number" step="0.01">
-</div>
-<div class="field">
-<label>Status</label>
-<select id="obraStatus">
-<option value="planejamento">Planejamento</option>
-<option value="andamento">Em andamento</option>
-<option value="concluida">Concluída</option>
-</select>
-</div>
-</div>
-
-<div class="two">
-<div class="field">
-<label>Início</label>
-<input id="obraInicio" type="date">
-</div>
-<div class="field">
-<label>Prazo</label>
-<input id="obraPrazo" type="date">
-</div>
-</div>
-
-<div class="field">
-<label>Observações</label>
-<textarea id="obraObs"></textarea>
-</div>
-
-<button class="btn gold block" onclick="saveObra()">SALVAR OBRA</button>
-</div>
-</div>
-
-<!-- FUNCIONÁRIO -->
-<div class="modal" id="funcM">
-<div class="modalBox">
-<div class="modalHead">
-<h3 id="funcMTitle">Novo funcionário</h3>
-<button class="close" onclick="closeM('funcM')">×</button>
-</div>
-
-<input type="hidden" id="funcId">
-
-<div class="two">
-<div class="field">
-<label>Nome</label>
-<input id="funcNome">
-</div>
-<div class="field">
-<label>Função</label>
-<input id="funcFuncao">
-</div>
-</div>
-
-<div class="field">
-<label>Telefone</label>
-<input id="funcTelefone">
-</div>
-
-<div class="two">
-<div class="field">
-<label>Obra onde vai trabalhar</label>
-<select id="funcObra"></select>
-</div>
-<div class="field">
-<label>Registrar diária?</label>
-<select id="funcRegistrar">
-<option value="sim">Registrar diária</option>
-<option value="nao">Não registrar diária</option>
-</select>
-</div>
-</div>
-
-<div class="two">
-<div class="field">
-<label>Forma de pagamento</label>
-<select id="funcTipoPag">
-<option value="diaria">Diária</option>
-<option value="mensal">Mensal</option>
-</select>
-</div>
-<div class="field">
-<label>Valor da diária</label>
-<input id="funcValorDia" type="number" step="0.01">
-</div>
-</div>
-
-<div class="two">
-<div class="field">
-<label>Salário mensal</label>
-<input id="funcSalario" type="number" step="0.01">
-</div>
-<div class="field">
-<label>Dia de pagamento</label>
-<input id="funcDiaPag" type="number" min="1" max="31">
-</div>
-</div>
-
-<button class="btn gold block" onclick="saveFunc()">SALVAR FUNCIONÁRIO</button>
-</div>
-</div>
-
-<!-- DIÁRIA -->
-<div class="modal" id="diaM">
-<div class="modalBox">
-<div class="modalHead">
-<h3>Registrar diária</h3>
-<button class="close" onclick="closeM('diaM')">×</button>
-</div>
-
-<div class="field">
-<label>Funcionário</label>
-<select id="diaFunc"></select>
-</div>
-
-<div class="field">
-<label>Obra</label>
-<select id="diaObra"></select>
-</div>
-
-<div class="two">
-<div class="field">
-<label>Data</label>
-<input id="diaData" type="date">
-</div>
-<div class="field">
-<label>Quantidade</label>
-<input id="diaQtd" type="number" step="0.5" value="1">
-</div>
-</div>
-
-<div class="field">
-<label>Valor da diária</label>
-<input id="diaValor" type="number" step="0.01">
-</div>
-
-<div class="field">
-<label>Observação</label>
-<textarea id="diaObs"></textarea>
-</div>
-
-<button class="btn gold block" onclick="saveDia()">REGISTRAR DIÁRIA</button>
-</div>
-</div>
-
-<!-- FINANCEIRO -->
-<div class="modal" id="finM">
-<div class="modalBox">
-<div class="modalHead">
-<h3>Lançamento financeiro</h3>
-<button class="close" onclick="closeM('finM')">×</button>
-</div>
-
-<div class="field">
-<label>Obra</label>
-<select id="finObra"></select>
-</div>
-
-<div class="two">
-<div class="field">
-<label>Tipo</label>
-<select id="finCategoria" onchange="toggleFinCategory()">
-<option value="entrada">Entrada / recebimento</option>
-<option value="despesa">Despesa</option>
-</select>
-</div>
-
-<div class="field">
-<label>Categoria da despesa</label>
-<select id="finSubcategoria">
-<option value="material">Material</option>
-<option value="mao_obra">Mão de obra</option>
-<option value="terceirizado">Terceirizado</option>
-<option value="outros">Outros</option>
-</select>
-</div>
-</div>
-
-<div class="field">
-<label>Descrição</label>
-<input id="finDescricao">
-</div>
-
-<div class="two">
-<div class="field">
-<label>Valor</label>
-<input id="finValor" type="number" step="0.01">
-</div>
-<div class="field">
-<label>Data</label>
-<input id="finData" type="date">
-</div>
-</div>
-
-<div class="field">
-<label>Fornecedor / origem</label>
-<input id="finFornecedor">
-</div>
-
-<div class="field">
-<label>Observação</label>
-<textarea id="finObs"></textarea>
-</div>
-
-<button class="btn gold block" onclick="saveFin()">SALVAR LANÇAMENTO</button>
-</div>
-</div>
-
-<!-- PAGAMENTO -->
-<div class="modal" id="pagM">
-<div class="modalBox">
-<div class="modalHead">
-<h3>Registrar pagamento</h3>
-<button class="close" onclick="closeM('pagM')">×</button>
-</div>
-
-<div class="field">
-<label>Funcionário</label>
-<select id="pagFunc" onchange="showEmployeeBalance()"></select>
-</div>
-
+<!-- PAGAMENTO EM LOTE -->
+<div class="modal" id="pagM"><div class="modalBox"><div class="modalHead"><h3>Pagamento da equipe</h3><button class="close" onclick="closeM('pagM')">×</button></div>
+<div class="field"><label>Funcionário</label><select id="pagFunc" onchange="showEmployeeBalance()"></select></div>
 <div class="card" id="pagSaldoBox"></div>
+<div class="card" id="pagLoteBox"></div>
+<div class="two"><div class="field"><label>Valor</label><input id="pagValor" type="number" step="0.01"></div><div class="field"><label>Data</label><input id="pagData" type="date"></div></div>
+<div class="field"><label>Observação</label><textarea id="pagObs"></textarea></div>
+<button class="btn green block" onclick="savePagamento()">CONFIRMAR PAGAMENTO</button></div></div>
 
-<div class="two">
-<div class="field">
-<label>Valor</label>
-<input id="pagValor" type="number" step="0.01">
-</div>
-<div class="field">
-<label>Data</label>
-<input id="pagData" type="date">
-</div>
-</div>
+<div class="modal" id="adiM"><div class="modalBox"><div class="modalHead"><h3>Registrar adiantamento</h3><button class="close" onclick="closeM('adiM')">×</button></div>
+<div class="field"><label>Funcionário</label><select id="adiFunc" onchange="showAdvanceBalance()"></select></div><div class="card" id="adiSaldoBox"></div><div class="two"><div class="field"><label>Valor do adiantamento</label><input id="adiValor" type="number" step="0.01"></div><div class="field"><label>Data</label><input id="adiData" type="date"></div></div><div class="field"><label>Observação</label><textarea id="adiObs"></textarea></div><button class="btn orange block" onclick="saveAdiantamento()">CONFIRMAR ADIANTAMENTO</button></div></div>
 
-<div class="field">
-<label>Observação</label>
-<textarea id="pagObs"></textarea>
-</div>
+<div class="modal" id="faltaM"><div class="modalBox"><div class="modalHead"><h3>Registrar falta</h3><button class="close" onclick="closeM('faltaM')">×</button></div>
+<div class="field"><label>Funcionário</label><select id="faltaFunc"></select></div><div class="field"><label>Obra</label><select id="faltaObra"></select></div><div class="two"><div class="field"><label>Data</label><input id="faltaData" type="date"></div><div class="field"><label>Justificada?</label><select id="faltaJustificada"><option value="nao">Não</option><option value="sim">Sim</option></select></div></div><div class="field"><label>Justificativa</label><textarea id="faltaJustificativa"></textarea></div><button class="btn red block" onclick="saveFalta()">REGISTRAR FALTA</button></div></div>
 
-<button class="btn green block" onclick="savePagamento()">CONFIRMAR PAGAMENTO</button>
-</div>
-</div>
+<div class="modal" id="checkM"><div class="modalBox"><div class="modalHead"><h3>Checklist</h3><button class="close" onclick="closeM('checkM')">×</button></div><input type="hidden" id="checkId"><input type="hidden" id="checkObra"><div id="checkListModal"></div><hr><div class="field"><label>Novo / editar item</label><input id="checkTarefa" placeholder="Nome da etapa"></div><button class="btn gold block" onclick="saveCheck()">SALVAR ITEM</button></div></div>
 
-<!-- ADIANTAMENTO -->
-<div class="modal" id="adiM">
-<div class="modalBox">
-<div class="modalHead">
-<h3>Registrar adiantamento</h3>
-<button class="close" onclick="closeM('adiM')">×</button>
-</div>
-
-<div class="field">
-<label>Funcionário</label>
-<select id="adiFunc" onchange="showAdvanceBalance()"></select>
-</div>
-
-<div class="card" id="adiSaldoBox"></div>
-
-<div class="two">
-<div class="field">
-<label>Valor do adiantamento</label>
-<input id="adiValor" type="number" step="0.01">
-</div>
-<div class="field">
-<label>Data</label>
-<input id="adiData" type="date">
-</div>
-</div>
-
-<div class="field">
-<label>Observação</label>
-<textarea id="adiObs"></textarea>
-</div>
-
-<button class="btn orange block" onclick="saveAdiantamento()">CONFIRMAR ADIANTAMENTO</button>
-</div>
-</div>
-
-<!-- FALTA -->
-<div class="modal" id="faltaM">
-<div class="modalBox">
-<div class="modalHead">
-<h3>Registrar falta</h3>
-<button class="close" onclick="closeM('faltaM')">×</button>
-</div>
-
-<div class="field">
-<label>Funcionário</label>
-<select id="faltaFunc"></select>
-</div>
-
-<div class="field">
-<label>Obra</label>
-<select id="faltaObra"></select>
-</div>
-
-<div class="two">
-<div class="field">
-<label>Data</label>
-<input id="faltaData" type="date">
-</div>
-<div class="field">
-<label>Justificada?</label>
-<select id="faltaJustificada">
-<option value="nao">Não</option>
-<option value="sim">Sim</option>
-</select>
-</div>
-</div>
-
-<div class="field">
-<label>Justificativa</label>
-<textarea id="faltaJustificativa"></textarea>
-</div>
-
-<button class="btn red block" onclick="saveFalta()">REGISTRAR FALTA</button>
-</div>
-</div>
-
-<!-- CHECKLIST -->
-<div class="modal" id="checkM">
-<div class="modalBox">
-<div class="modalHead">
-<h3 id="checkTitle">Item do checklist</h3>
-<button class="close" onclick="closeM('checkM')">×</button>
-</div>
-
-<input type="hidden" id="checkId">
-<input type="hidden" id="checkObra">
-
-<div class="field">
-<label>Item / etapa</label>
-<input id="checkTarefa">
-</div>
-
-<button class="btn gold block" onclick="saveCheck()">SALVAR ITEM</button>
-</div>
-</div>
-
-<!-- SERVIÇO ADICIONAL -->
-<div class="modal" id="servM">
-<div class="modalBox">
-<div class="modalHead">
-<h3>Serviço adicional</h3>
-<button class="close" onclick="closeM('servM')">×</button>
-</div>
-
-<input type="hidden" id="servId">
-
-<div class="field">
-<label>Obra</label>
-<select id="servObra"></select>
-</div>
-
-<div class="field">
-<label>Descrição do serviço</label>
-<input id="servDescricao" placeholder="Ex.: Muro, pintura extra, reparo...">
-</div>
-
-<div class="two">
-<div class="field">
-<label>Valor</label>
-<input id="servValor" type="number" step="0.01">
-</div>
-<div class="field">
-<label>Data</label>
-<input id="servData" type="date">
-</div>
-</div>
-
-<div class="field">
-<label>Observação</label>
-<textarea id="servObs"></textarea>
-</div>
-
-<button class="btn gold block" onclick="saveServico()">ADICIONAR AO CONTRATO</button>
-</div>
-</div>
+<div class="modal" id="servM"><div class="modalBox"><div class="modalHead"><h3>Serviço adicional</h3><button class="close" onclick="closeM('servM')">×</button></div><input type="hidden" id="servId">
+<div class="field"><label>Obra</label><select id="servObra"></select></div><div class="field"><label>Descrição do serviço</label><input id="servDescricao" placeholder="Ex.: Muro, pintura extra, reparo..."></div><div class="two"><div class="field"><label>Valor</label><input id="servValor" type="number" step="0.01"></div><div class="field"><label>Data</label><input id="servData" type="date"></div></div><div class="field"><label>Observação</label><textarea id="servObs"></textarea></div><button class="btn gold block" onclick="saveServico()">ADICIONAR AO CONTRATO</button></div></div>
 
 <div id="toast" class="toast"></div>
 
 <script>
 const SUPA_URL="https://lwqntzwajjgkvtynwdjg.supabase.co";
 const SUPA_KEY="sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
-
-let sb=null;
-let user=null;
-let localMode=false;
-
-const D={
-  obras:[],
-  funcionarios:[],
-  diarias:[],
-  gastos:[],
-  pagamentos:[],
-  checklist:[],
-  adiantamentos:[],
-  faltas:[],
-  servicos_adicionais:[]
-};
-
-const TABLES=[
-  "obras",
-  "funcionarios",
-  "diarias",
-  "gastos",
-  "pagamentos",
-  "checklist"
-];
-
-const LOCAL_EXTRA=[
-  "adiantamentos",
-  "faltas",
-  "servicos_adicionais"
-];
-
-const CHECK_DEFAULTS=[
- "Planejamento e orçamento",
- "Contrato assinado",
- "Medição inicial",
- "Compra de materiais",
- "Preparação do local",
- "Chapisco / reboco",
- "Instalações",
- "Pisos e revestimentos",
- "Pintura",
- "Acabamentos",
- "Limpeza final",
- "Entrega da obra"
-];
-
-let editObraId=null;
-let editFuncId=null;
+let sb=null,user=null,localMode=false;
+const D={obras:[],funcionarios:[],diarias:[],gastos:[],pagamentos:[],checklist:[],adiantamentos:[],faltas:[],servicos_adicionais:[]};
+const TABLES=["obras","funcionarios","diarias","gastos","pagamentos","checklist"];
+const LOCAL_EXTRA=["adiantamentos","faltas","servicos_adicionais"];
+const CHECK_DEFAULTS=["Gabarito","Locação da obra","Fundação","Estrutura","Alvenaria","Chapisco","Reboco","Contrapiso","Instalações elétricas","Instalações hidráulicas","Telhado / cobertura","Pisos e revestimentos","Esquadrias","Pintura","Acabamentos","Limpeza","Final da obra","Entrega da obra"];
+let editObraId=null,editFuncId=null;
 
 function $(id){return document.getElementById(id)}
-
-function money(v){
-  return Number(v||0).toLocaleString("pt-BR",{
-    style:"currency",
-    currency:"BRL"
-  });
-}
-
-function num(v){
-  return Number(String(v||0).replace(",", "."))||0;
-}
-
-function today(){
-  return new Date().toISOString().slice(0,10);
-}
-
-function esc(v){
-  return String(v??"")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;");
-}
-
-function toast(msg){
-  $("toast").textContent=msg;
-  $("toast").classList.add("show");
-  setTimeout(()=>$("toast").classList.remove("show"),2300);
-}
-
-function uid(){
-  return Date.now()+Math.floor(Math.random()*999);
-}
-
-function localKey(t){
-  return "edifiq_local_"+t;
-}
-
-function saveLocal(t){
-  localStorage.setItem(localKey(t),JSON.stringify(D[t]||[]));
-}
-
-function loadLocal(){
-  [...TABLES,...LOCAL_EXTRA].forEach(t=>{
-    try{
-      D[t]=JSON.parse(localStorage.getItem(localKey(t))||"[]");
-    }catch{
-      D[t]=[];
-    }
-  });
-}
-
-function addOnce(t,row){
-  if(!row)return row;
-  const id=String(row.id);
-  if(!D[t].some(x=>String(x.id)===id)){
-    D[t].unshift(row);
-    if(localMode)saveLocal(t);
-  }
-  return row;
-}
+function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+function num(v){return Number(String(v??0).replace(",","."))||0}
+function today(){return new Date().toISOString().slice(0,10)}
+function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function toast(msg){$("toast").textContent=msg;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),2300)}
+function uid(){return Date.now()+Math.floor(Math.random()*999)}
+function localKey(t){return "edifiq_local_"+t}
+function saveLocal(t){localStorage.setItem(localKey(t),JSON.stringify(D[t]||[]))}
+function loadLocal(){[...TABLES,...LOCAL_EXTRA].forEach(t=>{try{D[t]=JSON.parse(localStorage.getItem(localKey(t))||"[]")}catch{D[t]=[]}})}
+function addOnce(t,row){if(!row)return row;const id=String(row.id);if(!D[t].some(x=>String(x.id)===id)){D[t].unshift(row);if(localMode)saveLocal(t)}return row}
 
 async function insertRow(t,row){
-  if(localMode){
-    const r={id:uid(),...row};
-    addOnce(t,r);
-    return r;
-  }
-
-  const payload={...row,user_id:user?.id};
-
-  const {data,error}=await sb.from(t).insert(payload).select().single();
-
-  if(error)throw error;
-
-  addOnce(t,data);
-  return data;
+ if(localMode){const r={id:uid(),...row};addOnce(t,r);return r}
+ const payload={...row,user_id:user?.id};const {data,error}=await sb.from(t).insert(payload).select().single();if(error)throw error;addOnce(t,data);return data
 }
-
 async function updateRow(t,id,row){
-  if(localMode){
-    const i=D[t].findIndex(x=>String(x.id)===String(id));
-    if(i>=0){
-      D[t][i]={...D[t][i],...row};
-      saveLocal(t);
-      return D[t][i];
-    }
-    return null;
-  }
-
-  const {data,error}=await sb
-    .from(t)
-    .update(row)
-    .eq("id",id)
-    .select()
-    .single();
-
-  if(error)throw error;
-
-  const i=D[t].findIndex(x=>String(x.id)===String(id));
-  if(i>=0)D[t][i]=data;
-  return data;
+ if(localMode){const i=D[t].findIndex(x=>String(x.id)===String(id));if(i>=0){D[t][i]={...D[t][i],...row};saveLocal(t);return D[t][i]}return null}
+ const {data,error}=await sb.from(t).update(row).eq("id",id).select().single();if(error)throw error;const i=D[t].findIndex(x=>String(x.id)===String(id));if(i>=0)D[t][i]=data;return data
 }
-
 async function removeRow(t,id){
-  if(localMode){
-    D[t]=D[t].filter(x=>String(x.id)!==String(id));
-    saveLocal(t);
-    return;
-  }
-
-  const {error}=await sb.from(t).delete().eq("id",id);
-  if(error)throw error;
-
-  D[t]=D[t].filter(x=>String(x.id)!==String(id));
+ if(localMode){D[t]=D[t].filter(x=>String(x.id)!==String(id));saveLocal(t);return}
+ const {error}=await sb.from(t).delete().eq("id",id);if(error)throw error;D[t]=D[t].filter(x=>String(x.id)!==String(id))
 }
-
 async function cloudLoad(){
-  for(const t of TABLES){
-    const {data,error}=await sb
-      .from(t)
-      .select("*")
-      .order("created_at",{ascending:false});
-
-    if(error){
-      console.warn("Tabela:",t,error.message);
-      D[t]=[];
-    }else{
-      D[t]=data||[];
-    }
-  }
-
-  loadLocalExtras();
+ for(const t of TABLES){const {data,error}=await sb.from(t).select("*").order("created_at",{ascending:false});if(error){console.warn("Tabela:",t,error.message);D[t]=[]}else D[t]=data||[]}
+ loadLocalExtras()
 }
-
-function loadLocalExtras(){
-  LOCAL_EXTRA.forEach(t=>{
-    try{
-      D[t]=JSON.parse(localStorage.getItem(localKey(t))||"[]");
-    }catch{
-      D[t]=[];
-    }
-  });
-}
+function loadLocalExtras(){LOCAL_EXTRA.forEach(t=>{try{D[t]=JSON.parse(localStorage.getItem(localKey(t))||"[]")}catch{D[t]=[]}})}
 
 async function login(){
-  const email=$("email").value.trim();
-  const password=$("password").value;
-
-  if(!email||!password){
-    $("authMsg").textContent="Informe e-mail e senha.";
-    return;
-  }
-
-  try{
-    sb=supabase.createClient(SUPA_URL,SUPA_KEY);
-
-    const {data,error}=await sb.auth.signInWithPassword({
-      email,password
-    });
-
-    if(error)throw error;
-
-    user=data.user;
-    localMode=false;
-
-    await cloudLoad();
-    startApp();
-
-  }catch(e){
-    $("authMsg").textContent=e.message||"Erro ao entrar.";
-  }
+ const email=$("email").value.trim(),password=$("password").value;if(!email||!password){$("authMsg").textContent="Informe e-mail e senha.";return}
+ try{sb=supabase.createClient(SUPA_URL,SUPA_KEY);const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;user=data.user;localMode=false;await cloudLoad();startApp()}catch(e){$("authMsg").textContent=e.message||"Erro ao entrar."}
 }
-
 async function signup(){
-  const email=$("email").value.trim();
-  const password=$("password").value;
-
-  if(!email||!password){
-    $("authMsg").textContent="Informe e-mail e senha.";
-    return;
-  }
-
-  try{
-    sb=supabase.createClient(SUPA_URL,SUPA_KEY);
-
-    const {error}=await sb.auth.signUp({
-      email,
-      password
-    });
-
-    if(error)throw error;
-
-    $("authMsg").textContent="Conta criada. Confirme o e-mail se solicitado.";
-  }catch(e){
-    $("authMsg").textContent=e.message||"Erro ao criar conta.";
-  }
+ const email=$("email").value.trim(),password=$("password").value;if(!email||!password){$("authMsg").textContent="Informe e-mail e senha.";return}
+ try{sb=supabase.createClient(SUPA_URL,SUPA_KEY);const {error}=await sb.auth.signUp({email,password});if(error)throw error;$("authMsg").textContent="Conta criada. Confirme o e-mail se solicitado."}catch(e){$("authMsg").textContent=e.message||"Erro ao criar conta."}
 }
-
-function localLogin(){
-  localMode=true;
-  user={id:"local"};
-  loadLocal();
-  startApp();
-}
-
-function startApp(){
-  $("auth").style.display="none";
-  $("app").style.display="block";
-  setDefaults();
-  refreshAll();
-}
-
-async function logout(){
-  if(sb&&!localMode){
-    try{await sb.auth.signOut()}catch{}
-  }
-
-  location.reload();
-}
-
+function localLogin(){localMode=true;user={id:"local"};loadLocal();startApp()}
+function startApp(){$("auth").style.display="none";$("app").style.display="block";setDefaults();refreshAll()}
+async function logout(){if(sb&&!localMode){try{await sb.auth.signOut()}catch{}}location.reload()}
 function setDefaults(){
-  $("diaData").value=today();
-  $("finData").value=today();
-  $("pagData").value=today();
-  $("adiData").value=today();
-  $("faltaData").value=today();
-  $("servData").value=today();
-
-  const d=new Date();
-  const first=new Date(d.getFullYear(),d.getMonth(),1)
-    .toISOString().slice(0,10);
-
-  $("diaInicio").value=first;
-  $("diaFim").value=today();
+ ["diaData","finData","pagData","adiData","faltaData","servData"].forEach(id=>{if($(id))$(id).value=today()});
+ setPeriodoDiarias("mes");
 }
-
-function go(section){
-  document.querySelectorAll(".section")
-    .forEach(x=>x.classList.remove("active"));
-
-  $(section).classList.add("active");
-
-  document.querySelectorAll(".navBtn")
-    .forEach(x=>x.classList.toggle(
-      "active",
-      x.dataset.section===section
-    ));
-
-  refreshAll();
-}
-
-function closeM(id){
-  $(id).classList.remove("show");
-}
-
-function openM(id){
-  $(id).classList.add("show");
-}
-
-function obra(id){
-  return D.obras.find(x=>String(x.id)===String(id));
-}
-
-function funcionario(id){
-  return D.funcionarios.find(x=>String(x.id)===String(id));
-}
-
-function additionalTotal(obraId){
-  return D.servicos_adicionais
-    .filter(x=>String(x.obra_id)===String(obraId))
-    .reduce((s,x)=>s+num(x.valor),0);
-}
-
-function contractValue(o){
-  if(!o)return 0;
-  return num(o.valor)+additionalTotal(o.id);
-}
-
-function receipts(obraId){
-  return D.gastos
-    .filter(x=>
-      String(x.obra_id)===String(obraId) &&
-      String(x.categoria).toLowerCase()==="entrada"
-    )
-    .reduce((s,x)=>s+num(x.valor),0);
-}
-
-function financeExpenses(obraId,sub=null){
-  return D.gastos
-    .filter(x=>{
-      if(String(x.obra_id)!==String(obraId))return false;
-      if(String(x.categoria).toLowerCase()!=="despesa")return false;
-
-      if(!sub)return true;
-
-      return String(x.subcategoria||"outros")===sub;
-    })
-    .reduce((s,x)=>s+num(x.valor),0);
-}
-
-function laborDays(obraId){
-  return D.diarias
-    .filter(x=>String(x.obra_id)===String(obraId))
-    .reduce((s,x)=>{
-      const f=funcionario(x.funcionario_id);
-      const value=num(x.valor_pago||x.valor_diaria)*(num(x.qtd)||1);
-      if(f && f.registrar_diaria==="nao")return s;
-      return s+value;
-    },0);
-}
-
-function workFinance(id){
-  const contract=contractValue(obra(id));
-
-  const received=receipts(id);
-  const material=financeExpenses(id,"material");
-  const labor=financeExpenses(id,"mao_obra")+laborDays(id);
-  const outsourced=financeExpenses(id,"terceirizado");
-  const other=financeExpenses(id,"outros");
-
-  const expenses=material+labor+outsourced+other;
-  const toReceive=Math.max(contract-received,0);
-  const result=received-expenses;
-
-  return {
-    contract,
-    received,
-    toReceive,
-    material,
-    labor,
-    outsourced,
-    other,
-    expenses,
-    result
-  };
-}
-
-function percent(v,total){
-  if(!total)return 0;
-  return Math.min(100,(v/total)*100);
-}
-
-function checklistForObra(id){
-  return D.checklist
-    .filter(x=>String(x.obra_id)===String(id))
-    .sort((a,b)=>Number(a.id)-Number(b.id));
-}
-
-function progressForObra(o){
-  const list=checklistForObra(o.id);
-
-  if(!list.length){
-    return o.status==="concluida"?100:0;
-  }
-
-  const done=list.filter(x=>x.concluida===true||x.concluida==="true").length;
-  return Math.round(done/list.length*100);
-}
-
-async function ensureChecklist(id){
-  const current=checklistForObra(id);
-
-  if(current.length)return;
-
-  for(const task of CHECK_DEFAULTS){
-    try{
-      await insertRow("checklist",{
-        obra_id:id,
-        tarefa:task,
-        concluida:false,
-        progresso:0
-      });
-    }catch(e){
-      console.warn(e);
-    }
-  }
-
-  renderObras();
-}
+function go(section){document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));$(section).classList.add("active");document.querySelectorAll(".navBtn").forEach(x=>x.classList.toggle("active",x.dataset.section===section));refreshAll()}
+function closeM(id){$(id).classList.remove("show")}function openM(id){$(id).classList.add("show")}
+function obra(id){return D.obras.find(x=>String(x.id)===String(id))}
+function funcionario(id){return D.funcionarios.find(x=>String(x.id)===String(id))}
+function additionalTotal(obraId){return D.servicos_adicionais.filter(x=>String(x.obra_id)===String(obraId)).reduce((s,x)=>s+num(x.valor),0)}
+function contractValue(o){return o?num(o.valor)+additionalTotal(o.id):0}
+function receipts(obraId){return D.gastos.filter(x=>String(x.obra_id)===String(obraId)&&String(x.categoria).toLowerCase()==="entrada").reduce((s,x)=>s+num(x.valor),0)}
+function financeExpenses(obraId,sub=null){return D.gastos.filter(x=>String(x.obra_id)===String(obraId)&&String(x.categoria).toLowerCase()==="despesa"&&(!sub||String(x.subcategoria||"outros")===sub)).reduce((s,x)=>s+num(x.valor),0)}
+function laborDays(obraId){return D.diarias.filter(x=>String(x.obra_id)===String(obraId)).reduce((s,x)=>{const f=funcionario(x.funcionario_id);if(f&&f.registrar_diaria==="nao")return s;return s+num(x.valor_pago||x.valor_diaria)*num(x.qtd||1)},0)}
+function workFinance(id){const contract=contractValue(obra(id)),received=receipts(id),material=financeExpenses(id,"material"),labor=financeExpenses(id,"mao_obra")+laborDays(id),outsourced=financeExpenses(id,"terceirizado"),other=financeExpenses(id,"outros"),expenses=material+labor+outsourced+other;return{contract,received,toReceive:Math.max(contract-received,0),material,labor,outsourced,other,expenses,result:received-expenses}}
+function percent(v,total){return total?Math.min(100,v/total*100):0}
+function checklistForObra(id){return D.checklist.filter(x=>String(x.obra_id)===String(id)).sort((a,b)=>Number(a.id)-Number(b.id))}
+function progressForObra(o){const list=checklistForObra(o.id);if(!list.length)return o.status==="concluida"?100:0;return Math.round(list.filter(x=>x.concluida===true||x.concluida==="true").length/list.length*100)}
+async function ensureChecklist(id){if(checklistForObra(id).length)return;for(const task of CHECK_DEFAULTS){try{await insertRow("checklist",{obra_id:id,tarefa:task,concluida:false,progresso:0})}catch(e){console.warn(e)}}}
 
 function renderDashboard(){
-  const totalContract=D.obras.reduce((s,o)=>s+contractValue(o),0);
-  const received=D.obras.reduce((s,o)=>s+receipts(o.id),0);
-  const expenses=D.obras.reduce((s,o)=>s+workFinance(o.id).expenses,0);
-  const additional=D.obras.reduce((s,o)=>s+additionalTotal(o.id),0);
-
-  $("kObras").textContent=D.obras.length;
-  $("kContratos").textContent=money(totalContract);
-  $("kRecebido").textContent=money(received);
-  $("kReceber").textContent=money(Math.max(totalContract-received,0));
-  $("kFuncionarios").textContent=D.funcionarios.length;
-  $("kDespesas").textContent=money(expenses);
-  $("kAdicionais").textContent=money(additional);
-  $("kResultado").textContent=money(received-expenses);
-
-  const list=D.obras.filter(o=>o.status!=="concluida");
-
-  $("homeObras").innerHTML=list.length
-    ? list.map(o=>{
-      const p=progressForObra(o);
-      return `
-      <div class="card" style="margin:0 0 8px">
-        <div class="obraHeader">
-          <div>
-            <h3>${esc(o.nome)}</h3>
-            <span class="muted">${esc(o.cliente||"")}</span>
-          </div>
-          <span class="badge">${p}%</span>
-        </div>
-        <div class="progress" style="margin-top:10px"><i style="width:${p}%"></i></div>
-      </div>`;
-    }).join("")
-    : `<div class="empty">Nenhuma obra em andamento.</div>`;
+ const totalContract=D.obras.reduce((s,o)=>s+contractValue(o),0),received=D.obras.reduce((s,o)=>s+receipts(o.id),0),expenses=D.obras.reduce((s,o)=>s+workFinance(o.id).expenses,0),additional=D.obras.reduce((s,o)=>s+additionalTotal(o.id),0);
+ $("kObras").textContent=D.obras.length;$("kContratos").textContent=money(totalContract);$("kRecebido").textContent=money(received);$("kReceber").textContent=money(Math.max(totalContract-received,0));$("kFuncionarios").textContent=D.funcionarios.length;$("kDespesas").textContent=money(expenses);$("kAdicionais").textContent=money(additional);$("kResultado").textContent=money(received-expenses);
+ const list=D.obras.filter(o=>o.status!=="concluida");$("homeObras").innerHTML=list.length?list.map(o=>{const p=progressForObra(o);return `<div class="card" style="margin:0 0 8px"><div class="obraHeader"><div><h3>${esc(o.nome)}</h3><span class="muted">${esc(o.cliente||"")}</span></div><span class="badge">${p}%</span></div><div class="progress" style="margin-top:10px"><i style="width:${p}%"></i></div></div>`}).join(""):`<div class="empty">Nenhuma obra em andamento.</div>`
 }
 
 function renderObras(){
-  const busca=($("obraBusca").value||"").toLowerCase();
-  const status=$("obraStatusFiltro").value;
-
-  const arr=D.obras.filter(o=>{
-    const okBusca=!busca||
-      String(o.nome||"").toLowerCase().includes(busca)||
-      String(o.cliente||"").toLowerCase().includes(busca);
-
-    const okStatus=!status||o.status===status;
-
-    return okBusca&&okStatus;
-  });
-
-  if(!arr.length){
-    $("obrasList").innerHTML=`<div class="empty">Nenhuma obra encontrada.</div>`;
-    return;
-  }
-
-  $("obrasList").innerHTML=arr.map(o=>{
-    const f=workFinance(o.id);
-    const p=progressForObra(o);
-    const checks=checklistForObra(o.id);
-
-    return `
-    <div class="card">
-      <div class="obraHeader">
-        <div>
-          <h3>${esc(o.nome)}</h3>
-          <div class="muted">${esc(o.cliente||"Sem cliente")}</div>
-          <div style="margin-top:7px">
-            <span class="badge">${esc(o.status||"planejamento")}</span>
-            ${additionalTotal(o.id)>0
-              ? `<span class="badge gold">+ ${money(additionalTotal(o.id))} adicionais</span>`
-              : ""}
-          </div>
-        </div>
-
-        <button class="btn sm" onclick="openObra('${o.id}')">Editar</button>
-      </div>
-
-      <div style="margin-top:14px;display:flex;justify-content:space-between">
-        <small class="muted">Progresso da obra</small>
-        <strong class="goldText">${p}%</strong>
-      </div>
-
-      <div class="progress" style="margin-top:6px">
-        <i style="width:${p}%"></i>
-      </div>
-
-      <div class="moneyGrid">
-        <div class="moneyBox">
-          <small>Contrato</small>
-          <strong>${money(f.contract)}</strong>
-        </div>
-        <div class="moneyBox">
-          <small>Recebido</small>
-          <strong class="greenText">${money(f.received)}</strong>
-        </div>
-        <div class="moneyBox">
-          <small>A receber</small>
-          <strong class="redText">${money(f.toReceive)}</strong>
-        </div>
-        <div class="moneyBox">
-          <small>Despesas</small>
-          <strong>${money(f.expenses)}</strong>
-        </div>
-      </div>
-
-      <div class="actions">
-        <button class="btn sm blue" onclick="goFinanceObra('${o.id}')">Financeiro</button>
-        <button class="btn sm orange" onclick="openServico('${o.id}')">+ Serviço adicional</button>
-        <button class="btn sm" onclick="openChecklist('${o.id}')">Checklist</button>
-        <button class="btn sm red" onclick="deleteObra('${o.id}')">Excluir</button>
-      </div>
-
-      <div style="margin-top:15px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <strong style="font-size:13px">Checklist</strong>
-          <button class="btn sm" onclick="openChecklist('${o.id}')">Gerenciar</button>
-        </div>
-
-        <div style="margin-top:7px">
-          ${checks.length
-            ? checks.slice(0,4).map(c=>`
-              <div class="checkRow">
-                <input type="checkbox"
-                  ${c.concluida===true||c.concluida==="true"?"checked":""}
-                  onchange="toggleCheck('${c.id}')">
-                <div class="checkText ${(c.concluida===true||c.concluida==="true")?"done":""}">
-                  ${esc(c.tarefa)}
-                </div>
-              </div>
-            `).join("")
-            : `<div class="muted small">Checklist ainda não carregado.</div>`
-          }
-        </div>
-      </div>
-    </div>`;
-  });
-
-  arr.forEach(o=>{
-    if(!checklistForObra(o.id).length){
-      ensureChecklist(o.id);
-    }
-  });
+ const busca=($("obraBusca").value||"").toLowerCase(),status=$("obraStatusFiltro").value,arr=D.obras.filter(o=>(!busca||String(o.nome||"").toLowerCase().includes(busca)||String(o.cliente||"").toLowerCase().includes(busca))&&(!status||o.status===status));
+ if(!arr.length){$("obrasList").innerHTML=`<div class="empty">Nenhuma obra encontrada.</div>`;return}
+ $("obrasList").innerHTML=arr.map(o=>{const f=workFinance(o.id),p=progressForObra(o),checks=checklistForObra(o.id);return `<div class="card"><div class="obraHeader"><div><h3>${esc(o.nome)}</h3><div class="muted">${esc(o.cliente||"Sem cliente")}</div><div style="margin-top:7px"><span class="badge">${esc(o.status||"planejamento")}</span>${additionalTotal(o.id)>0?`<span class="badge gold">+ ${money(additionalTotal(o.id))} adicionais</span>`:""}</div></div><button class="btn sm" onclick="openObra('${o.id}')">Editar</button></div>
+<div style="margin-top:14px;display:flex;justify-content:space-between"><small class="muted">Progresso da obra</small><strong class="goldText">${p}%</strong></div><div class="progress" style="margin-top:6px"><i style="width:${p}%"></i></div>
+<div class="moneyGrid"><div class="moneyBox"><small>Contrato</small><strong>${money(f.contract)}</strong></div><div class="moneyBox"><small>Recebido</small><strong class="greenText">${money(f.received)}</strong></div><div class="moneyBox"><small>A receber</small><strong class="redText">${money(f.toReceive)}</strong></div><div class="moneyBox"><small>Despesas</small><strong>${money(f.expenses)}</strong></div></div>
+<div class="actions"><button class="btn sm blue" onclick="goFinanceObra('${o.id}')">Financeiro</button><button class="btn sm orange" onclick="openServico('${o.id}')">+ Serviço adicional</button><button class="btn sm" onclick="openChecklist('${o.id}')">Checklist</button><button class="btn sm red" onclick="deleteObra('${o.id}')">Excluir</button></div>
+<div style="margin-top:15px"><div style="display:flex;justify-content:space-between;align-items:center"><strong style="font-size:13px">Checklist</strong><button class="btn sm" onclick="openChecklist('${o.id}')">Gerenciar</button></div><div style="margin-top:7px">${checks.length?checks.slice(0,4).map(c=>`<div class="checkRow"><input type="checkbox" ${c.concluida===true||c.concluida==="true"?"checked":""} onchange="toggleCheck('${c.id}')"><div class="checkText ${c.concluida===true||c.concluida==="true"?"done":""}">${esc(c.tarefa)}</div></div>`).join(""):`<div class="muted small">Checklist carregando...</div>`}</div></div></div>`}).join("");
+ arr.forEach(o=>{if(!checklistForObra(o.id).length)ensureChecklist(o.id)})
 }
 
 function openObra(id=null){
-  editObraId=id;
-
-  if(id){
-    const o=obra(id);
-    $("obraMTitle").textContent="Editar obra";
-    $("obraId").value=id;
-    $("obraNome").value=o.nome||"";
-    $("obraCliente").value=o.cliente||"";
-    $("obraTelefone").value=o.telefone||"";
-    $("obraValor").value=num(o.valor);
-    $("obraStatus").value=o.status||"planejamento";
-    $("obraInicio").value=o.inicio||"";
-    $("obraPrazo").value=o.prazo||"";
-    $("obraObs").value=o.observacao||o.obs||"";
-  }else{
-    $("obraMTitle").textContent="Nova obra";
-    $("obraId").value="";
-    $("obraNome").value="";
-    $("obraCliente").value="";
-    $("obraTelefone").value="";
-    $("obraValor").value="";
-    $("obraStatus").value="planejamento";
-    $("obraInicio").value=today();
-    $("obraPrazo").value="";
-    $("obraObs").value="";
-  }
-
-  openM("obraM");
+ editObraId=id;if(id){const o=obra(id);$("obraMTitle").textContent="Editar obra";$("obraId").value=id;$("obraNome").value=o.nome||"";$("obraCliente").value=o.cliente||"";$("obraTelefone").value=o.telefone||"";$("obraValor").value=num(o.valor);$("obraStatus").value=o.status||"planejamento";$("obraInicio").value=o.inicio||"";$("obraPrazo").value=o.prazo||"";$("obraObs").value=o.observacao||o.obs||""}else{$("obraMTitle").textContent="Nova obra";$("obraId").value="";$("obraNome").value="";$("obraCliente").value="";$("obraTelefone").value="";$("obraValor").value="";$("obraStatus").value="planejamento";$("obraInicio").value=today();$("obraPrazo").value="";$("obraObs").value=""}openM("obraM")
 }
-
 async function saveObra(){
-  const row={
-    nome:$("obraNome").value.trim(),
-    cliente:$("obraCliente").value.trim(),
-    telefone:$("obraTelefone").value.trim(),
-    valor:num($("obraValor").value),
-    status:$("obraStatus").value,
-    inicio:$("obraInicio").value,
-    prazo:$("obraPrazo").value,
-    observacao:$("obraObs").value.trim()
-  };
-
-  if(!row.nome){
-    toast("Informe o nome da obra.");
-    return;
-  }
-
-  try{
-    if(editObraId){
-      await updateRow("obras",editObraId,row);
-      toast("Obra atualizada.");
-    }else{
-      const r=await insertRow("obras",row);
-      await ensureChecklist(r.id);
-      toast("Obra criada.");
-    }
-
-    closeM("obraM");
-    refreshAll();
-  }catch(e){
-    toast("Erro ao salvar obra: "+e.message);
-  }
+ const row={nome:$("obraNome").value.trim(),cliente:$("obraCliente").value.trim(),telefone:$("obraTelefone").value.trim(),valor:num($("obraValor").value),status:$("obraStatus").value,inicio:$("obraInicio").value,prazo:$("obraPrazo").value,observacao:$("obraObs").value.trim()};
+ if(!row.nome){toast("Informe o nome da obra.");return}
+ try{if(editObraId){await updateRow("obras",editObraId,row);toast("Obra atualizada.")}else{const r=await insertRow("obras",row);await ensureChecklist(r.id);toast("Obra criada.")}closeM("obraM");refreshAll()}catch(e){toast("Erro ao salvar obra: "+e.message)}
 }
-
 async function deleteObra(id){
-  if(!confirm("Excluir esta obra?"))return;
-
-  try{
-    await removeRow("obras",id);
-
-    D.checklist=D.checklist.filter(x=>String(x.obra_id)!==String(id));
-    D.diarias=D.diarias.filter(x=>String(x.obra_id)!==String(id));
-
-    if(localMode){
-      saveLocal("checklist");
-      saveLocal("diarias");
-    }
-
-    toast("Obra excluída.");
-    refreshAll();
-  }catch(e){
-    toast(e.message);
-  }
+ if(!confirm("Excluir esta obra?"))return;try{await removeRow("obras",id);D.checklist=D.checklist.filter(x=>String(x.obra_id)!==String(id));D.diarias=D.diarias.filter(x=>String(x.obra_id)!==String(id));if(localMode){saveLocal("checklist");saveLocal("diarias")}toast("Obra excluída.");refreshAll()}catch(e){toast(e.message)}
 }
-
-function openChecklist(id){
-  $("checkObra").value=id;
-  $("checkId").value="";
-  $("checkTarefa").value="";
-  $("checkTitle").textContent="Adicionar item";
-  renderChecklistModal(id);
-  openM("checkM");
-}
-
+function openChecklist(id){$("checkObra").value=id;$("checkId").value="";$("checkTarefa").value="";renderChecklistModal(id);openM("checkM")}
 function renderChecklistModal(id){
-  const list=checklistForObra(id);
-
-  let html=`
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;gap:10px">
-      <strong>Etapas da obra</strong>
-      <span class="badge gold">${progressForObra(obra(id))}% concluído</span>
-    </div>
-
-    <div style="margin-top:10px">
-      <div class="progress"><i style="width:${progressForObra(obra(id))}%"></i></div>
-    </div>
-  </div>`;
-
-  if(!list.length){
-    html+=`<div class="empty">Nenhum item.</div>`;
-  }else{
-    html+=list.map(c=>{
-      const done=c.concluida===true||c.concluida==="true";
-      return `
-      <div class="checkRow">
-        <input type="checkbox"
-          ${done?"checked":""}
-          onchange="toggleCheck('${c.id}')">
-        <div class="checkText ${done?"done":""}">${esc(c.tarefa)}</div>
-        <button class="btn sm" onclick="editCheck('${c.id}')">Editar</button>
-        <button class="btn sm red" onclick="deleteCheck('${c.id}')">Excluir</button>
-      </div>`;
-    }).join("");
-  }
-
-  $("checkM").querySelector(".modalBox").innerHTML=`
-    <div class="modalHead">
-      <h3>Checklist</h3>
-      <button class="close" onclick="closeM('checkM')">×</button>
-    </div>
-
-    <div id="checkListModal">${html}</div>
-
-    <hr>
-
-    <input type="hidden" id="checkId">
-    <input type="hidden" id="checkObra" value="${id}">
-
-    <div class="field">
-      <label>Novo / editar item</label>
-      <input id="checkTarefa" placeholder="Nome da etapa">
-    </div>
-
-    <button class="btn gold block" onclick="saveCheck()">SALVAR ITEM</button>
-  `;
+ const o=obra(id),list=checklistForObra(id),p=progressForObra(o);
+ let html=`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px"><strong>Progresso da obra</strong><span class="badge gold">${p}% concluído</span></div><div class="progress" style="margin-top:10px"><i style="width:${p}%"></i></div><div class="muted small" style="margin-top:7px">${list.filter(x=>x.concluida===true||x.concluida==="true").length} de ${list.length} etapas concluídas</div></div>`;
+ html+=list.length?list.map(c=>{const done=c.concluida===true||c.concluida==="true";return `<div class="checkRow"><input type="checkbox" ${done?"checked":""} onchange="toggleCheck('${c.id}')"><div class="checkText ${done?"done":""}">${esc(c.tarefa)}</div><button class="btn sm" onclick="editCheck('${c.id}')">Editar</button><button class="btn sm red" onclick="deleteCheck('${c.id}')">Excluir</button></div>`}).join(""):`<div class="empty">Nenhum item.</div>`;
+ $("checkListModal").innerHTML=html
 }
-
 async function saveCheck(){
-  const id=$("checkId").value;
-  const obraId=$("checkObra").value;
-  const tarefa=$("checkTarefa").value.trim();
-
-  if(!tarefa){
-    toast("Digite o item.");
-    return;
-  }
-
-  try{
-    if(id){
-      await updateRow("checklist",id,{tarefa});
-      toast("Item alterado.");
-    }else{
-      await insertRow("checklist",{
-        obra_id:obraId,
-        tarefa,
-        concluida:false,
-        progresso:0
-      });
-      toast("Item adicionado.");
-    }
-
-    renderChecklistModal(obraId);
-    renderObras();
-  }catch(e){
-    toast("Erro: "+e.message);
-  }
+ const id=$("checkId").value,obraId=$("checkObra").value,tarefa=$("checkTarefa").value.trim();if(!tarefa){toast("Digite o item.");return}
+ try{if(id){await updateRow("checklist",id,{tarefa});toast("Item alterado.")}else{await insertRow("checklist",{obra_id:obraId,tarefa,concluida:false,progresso:0});toast("Item adicionado.")}$("checkId").value="";$("checkTarefa").value="";renderChecklistModal(obraId);renderObras()}catch(e){toast("Erro: "+e.message)}
 }
-
-function editCheck(id){
-  const c=D.checklist.find(x=>String(x.id)===String(id));
-  if(!c)return;
-
-  $("checkId").value=c.id;
-  $("checkTarefa").value=c.tarefa||"";
-  $("checkTarefa").focus();
-}
-
-async function deleteCheck(id){
-  if(!confirm("Excluir este item do checklist?"))return;
-
-  const c=D.checklist.find(x=>String(x.id)===String(id));
-
-  try{
-    await removeRow("checklist",id);
-    toast("Item excluído.");
-    renderChecklistModal(c.obra_id);
-    renderObras();
-  }catch(e){
-    toast(e.message);
-  }
-}
-
+function editCheck(id){const c=D.checklist.find(x=>String(x.id)===String(id));if(!c)return;$("checkId").value=c.id;$("checkTarefa").value=c.tarefa||"";$("checkTarefa").focus()}
+async function deleteCheck(id){if(!confirm("Excluir este item do checklist?"))return;const c=D.checklist.find(x=>String(x.id)===String(id));try{await removeRow("checklist",id);toast("Item excluído.");renderChecklistModal(c.obra_id);renderObras()}catch(e){toast(e.message)}}
 async function toggleCheck(id){
-  const c=D.checklist.find(x=>String(x.id)===String(id));
-  if(!c)return;
-
-  const done=!(c.concluida===true||c.concluida==="true");
-
-  try{
-    await updateRow("checklist",id,{
-      concluida:done,
-      progresso:done?100:0
-    });
-
-    const o=obra(c.obra_id);
-    if(o){
-      const p=progressForObra(o);
-
-      if(localMode){
-        o.progresso=p;
-        saveLocal("obras");
-      }else{
-        try{
-          await updateRow("obras",o.id,{progresso:p});
-        }catch{}
-      }
-    }
-
-    toast(done?"Etapa concluída.":"Etapa reaberta.");
-    renderObras();
-    renderDashboard();
-
-    if($("checkM").classList.contains("show")){
-      renderChecklistModal(c.obra_id);
-    }
-  }catch(e){
-    toast("Erro no checklist: "+e.message);
-  }
+ const c=D.checklist.find(x=>String(x.id)===String(id));if(!c)return;const done=!(c.concluida===true||c.concluida==="true");
+ try{await updateRow("checklist",id,{concluida:done,progresso:done?100:0});const o=obra(c.obra_id);if(o){const p=progressForObra(o);if(localMode){o.progresso=p;saveLocal("obras")}else{try{await updateRow("obras",o.id,{progresso:p})}catch{}}}toast(done?"Etapa concluída.":"Etapa reaberta.");renderObras();renderDashboard();if($("checkM").classList.contains("show"))renderChecklistModal(c.obra_id)}catch(e){toast("Erro no checklist: "+e.message)}
 }
 
-function openServico(obraId=null){
-  $("servId").value="";
-  $("servDescricao").value="";
-  $("servValor").value="";
-  $("servData").value=today();
-  $("servObs").value="";
-  fillSelectors();
+function openServico(obraId=null){$("servId").value="";$("servDescricao").value="";$("servValor").value="";$("servData").value=today();$("servObs").value="";fillSelectors();if(obraId)$("servObra").value=obraId;openM("servM")}
+async function saveServico(){const obraId=$("servObra").value,descricao=$("servDescricao").value.trim(),valor=num($("servValor").value);if(!obraId||!descricao||valor<=0){toast("Informe obra, descrição e valor.");return}try{await insertRow("servicos_adicionais",{obra_id:obraId,descricao,valor,data:$("servData").value,observacao:$("servObs").value.trim()});toast("Serviço adicional incluído no contrato.");closeM("servM");refreshAll()}catch(e){toast("Erro: "+e.message)}}
 
-  if(obraId)$("servObra").value=obraId;
-
-  openM("servM");
-}
-
-async function saveServico(){
-  const obraId=$("servObra").value;
-  const descricao=$("servDescricao").value.trim();
-  const valor=num($("servValor").value);
-
-  if(!obraId||!descricao||valor<=0){
-    toast("Informe obra, descrição e valor.");
-    return;
-  }
-
-  try{
-    await insertRow("servicos_adicionais",{
-      obra_id:obraId,
-      descricao,
-      valor,
-      data:$("servData").value,
-      observacao:$("servObs").value.trim()
-    });
-
-    toast("Serviço adicional incluído no contrato.");
-    closeM("servM");
-    refreshAll();
-  }catch(e){
-    toast("Erro: "+e.message);
-  }
-}
-
-function openFunc(id=null){
-  editFuncId=id;
-  fillSelectors();
-
-  if(id){
-    const f=funcionario(id);
-
-    $("funcMTitle").textContent="Editar funcionário";
-    $("funcId").value=id;
-    $("funcNome").value=f.nome||"";
-    $("funcFuncao").value=f.funcao||f.cargo||"";
-    $("funcTelefone").value=f.telefone||"";
-    $("funcObra").value=f.obra_id||"";
-    $("funcRegistrar").value=f.registrar_diaria||"sim";
-    $("funcTipoPag").value=f.tipo_pagamento||"diaria";
-    $("funcValorDia").value=num(f.valor_diaria);
-    $("funcSalario").value=num(f.salario_mensal);
-    $("funcDiaPag").value=f.dia_pagamento||"";
-  }else{
-    $("funcMTitle").textContent="Novo funcionário";
-    $("funcId").value="";
-    $("funcNome").value="";
-    $("funcFuncao").value="";
-    $("funcTelefone").value="";
-    $("funcObra").value="";
-    $("funcRegistrar").value="sim";
-    $("funcTipoPag").value="diaria";
-    $("funcValorDia").value="";
-    $("funcSalario").value="";
-    $("funcDiaPag").value="";
-  }
-
-  openM("funcM");
-}
-
+function openFunc(id=null){editFuncId=id;fillSelectors();if(id){const f=funcionario(id);$("funcMTitle").textContent="Editar funcionário";$("funcId").value=id;$("funcNome").value=f.nome||"";$("funcFuncao").value=f.funcao||f.cargo||"";$("funcTelefone").value=f.telefone||"";$("funcObra").value=f.obra_id||"";$("funcRegistrar").value=f.registrar_diaria||"sim";$("funcTipoPag").value=f.tipo_pagamento||"diaria";$("funcValorDia").value=num(f.valor_diaria);$("funcSalario").value=num(f.salario_mensal);$("funcDiaPag").value=f.dia_pagamento||""}else{$("funcMTitle").textContent="Novo funcionário";$("funcId").value="";$("funcNome").value="";$("funcFuncao").value="";$("funcTelefone").value="";$("funcObra").value="";$("funcRegistrar").value="sim";$("funcTipoPag").value="diaria";$("funcValorDia").value="";$("funcSalario").value="";$("funcDiaPag").value=""}openM("funcM")}
 async function saveFunc(){
-  const row={
-    nome:$("funcNome").value.trim(),
-    funcao:$("funcFuncao").value.trim(),
-    telefone:$("funcTelefone").value.trim(),
-    obra_id:$("funcObra").value||null,
-    registrar_diaria:$("funcRegistrar").value,
-    tipo_pagamento:$("funcTipoPag").value,
-    valor_diaria:num($("funcValorDia").value),
-    salario_mensal:num($("funcSalario").value),
-    dia_pagamento:$("funcDiaPag").value||null,
-    ativo:true
-  };
-
-  if(!row.nome){
-    toast("Informe o nome.");
-    return;
-  }
-
-  try{
-    if(editFuncId){
-      await updateRow("funcionarios",editFuncId,row);
-      toast("Funcionário atualizado.");
-    }else{
-      await insertRow("funcionarios",row);
-      toast("Funcionário cadastrado.");
-    }
-
-    closeM("funcM");
-    refreshAll();
-  }catch(e){
-    toast("Erro: "+e.message);
-  }
+ const row={nome:$("funcNome").value.trim(),funcao:$("funcFuncao").value.trim(),telefone:$("funcTelefone").value.trim(),obra_id:$("funcObra").value||null,registrar_diaria:$("funcRegistrar").value,tipo_pagamento:$("funcTipoPag").value,valor_diaria:num($("funcValorDia").value),salario_mensal:num($("funcSalario").value),dia_pagamento:$("funcDiaPag").value||null,ativo:true};
+ if(!row.nome){toast("Informe o nome.");return}try{if(editFuncId){await updateRow("funcionarios",editFuncId,row);toast("Funcionário atualizado.")}else{await insertRow("funcionarios",row);toast("Funcionário cadastrado.")}closeM("funcM");refreshAll()}catch(e){toast("Erro: "+e.message)}
 }
 
-function employeeDue(id){
-  const f=funcionario(id);
-
-  if(!f)return 0;
-
-  if(f.tipo_pagamento==="mensal"){
-    return D.diarias
-      .filter(x=>String(x.funcionario_id)===String(id))
-      .reduce((s,x)=>s+num(x.valor_pago||x.valor_diaria)*num(x.qtd||1),0);
-  }
-
-  return D.diarias
-    .filter(x=>String(x.funcionario_id)===String(id))
-    .reduce((s,x)=>{
-      return s+num(x.valor_pago||x.valor_diaria)*num(x.qtd||1);
-    },0);
+/* ===== CONTROLE DE DIÁRIAS E PAGAMENTOS ===== */
+function dayAmount(x){return num(x.valor_pago||x.valor_diaria)*Math.max(num(x.qtd)||1,0)}
+function dateObj(s){const a=String(s||"").split("-").map(Number);return a.length===3?new Date(a[0],a[1]-1,a[2]):null}
+function inPeriod(date,start,end){return String(date||"")>=start&&String(date||"")<=end}
+function periodRange(tipo){
+ const d=new Date();d.setHours(0,0,0,0);let start=new Date(d);
+ if(tipo==="dia"){}
+ else if(tipo==="semana"){const day=d.getDay();const diff=day===0?6:day-1;start.setDate(d.getDate()-diff)}
+ else if(tipo==="quinzena"){start.setDate(d.getDate()<=15?1:16)}
+ else {start=new Date(d.getFullYear(),d.getMonth(),1)}
+ return {start:start.toISOString().slice(0,10),end:d.toISOString().slice(0,10)}
+}
+function setPeriodoDiarias(tipo){$("periodoDiarias").value=tipo;const r=periodRange(tipo);$("diaInicio").value=r.start;$("diaFim").value=r.end}
+function changePeriodoDiarias(){setPeriodoDiarias($("periodoDiarias").value);renderPayroll();renderDiariasTopo()}
+function activeDiariaEntries(start,end,selected=null){
+ return D.diarias.filter(x=>{const f=funcionario(x.funcionario_id);if(!f||f.registrar_diaria==="nao")return false;if(selected&&String(x.funcionario_id)!==String(selected))return false;if(!inPeriod(x.data,start,end))return false;return true})
+}
+function employeeDuePeriod(id,start,end){return activeDiariaEntries(start,end,id).reduce((s,x)=>s+dayAmount(x),0)}
+function employeeAdvancesPeriod(id,start,end){return D.adiantamentos.filter(x=>String(x.funcionario_id)===String(id)&&inPeriod(x.data,start,end)).reduce((s,x)=>s+num(x.valor),0)}
+function employeePaymentsPeriod(id,start,end){return D.pagamentos.filter(x=>String(x.funcionario_id)===String(id)&&String(x.tipo||"pagamento")==="pagamento"&&inPeriod(x.data,start,end)).reduce((s,x)=>s+num(x.valor),0)}
+function employeeDue(id){return D.diarias.filter(x=>String(x.funcionario_id)===String(id)).reduce((s,x)=>s+dayAmount(x),0)}
+function employeeAdvances(id){return D.adiantamentos.filter(x=>String(x.funcionario_id)===String(id)).reduce((s,x)=>s+num(x.valor),0)}
+function employeePayments(id){return D.pagamentos.filter(x=>String(x.funcionario_id)===String(id)&&String(x.tipo||"pagamento")==="pagamento").reduce((s,x)=>s+num(x.valor),0)}
+function employeeBalance(id,start=null,end=null){
+ if(start&&end){const due=employeeDuePeriod(id,start,end),advances=employeeAdvancesPeriod(id,start,end),payments=employeePaymentsPeriod(id,start,end);return{due,advances,payments,balance:Math.max(due-advances-payments,0)}}
+ const due=employeeDue(id),advances=employeeAdvances(id),payments=employeePayments(id);return{due,advances,payments,balance:Math.max(due-advances-payments,0)}
 }
 
-function employeeAdvances(id){
-  return D.adiantamentos
-    .filter(x=>String(x.funcionario_id)===String(id))
-    .reduce((s,x)=>s+num(x.valor),0);
-}
-
-function employeePayments(id){
-  return D.pagamentos
-    .filter(x=>
-      String(x.funcionario_id)===String(id) &&
-      String(x.tipo||"pagamento")!=="adiantamento" &&
-      String(x.tipo||"pagamento")!=="falta"
-    )
-    .reduce((s,x)=>s+num(x.valor),0);
-}
-
-function employeeBalance(id){
-  const due=employeeDue(id);
-  const advances=employeeAdvances(id);
-  const payments=employeePayments(id);
-  return {
-    due,
-    advances,
-    payments,
-    balance:due-advances-payments
-  };
+function renderDiariasTopo(){
+ const tipo=$("periodoDiarias").value||"mes",r=periodRange(tipo),selected=$("funcFiltro").value||null;
+ const arr=activeDiariaEntries(r.start,r.end,selected);
+ const gross=arr.reduce((s,x)=>s+dayAmount(x),0);
+ const advances=selected?employeeAdvancesPeriod(selected,r.start,r.end):D.adiantamentos.filter(x=>inPeriod(x.data,r.start,r.end)).reduce((s,x)=>s+num(x.valor),0);
+ const payments=selected?employeePaymentsPeriod(selected,r.start,r.end):D.pagamentos.filter(x=>String(x.tipo||"pagamento")==="pagamento"&&inPeriod(x.data,r.start,r.end)).reduce((s,x)=>s+num(x.valor),0);
+ const balance=Math.max(gross-advances-payments,0);
+ const label={dia:"Hoje",semana:"Semana",quinzena:"Quinzena",mes:"Mês"}[tipo]||"Mês";
+ $("diariasTopo").innerHTML=`<div class="grid">
+ <div class="card kpi"><div class="label">Diárias registradas — ${label}</div><div class="value goldText">${arr.reduce((s,x)=>s+(num(x.qtd)||1),0)}</div><div class="muted small">${arr.length} registros</div></div>
+ <div class="card kpi"><div class="label">Total devido</div><div class="value">${money(gross)}</div></div>
+ <div class="card kpi"><div class="label">Adiantamentos</div><div class="value orangeText">${money(advances)}</div></div>
+ <div class="card kpi"><div class="label">Saldo líquido</div><div class="value ${balance>0?"redText":"greenText"}">${money(balance)}</div></div>
+ </div>
+ <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><strong>Período: ${label}</strong><div class="muted small">${r.start} até ${r.end}${selected?" · funcionário selecionado":""}</div></div><button class="btn blue sm" onclick="openDia()">+ Registrar diária</button></div></div>`;
 }
 
 function renderFuncs(){
-  fillSelectors();
-
-  const selected=$("funcFiltro").value;
-
-  const arr=selected
-    ? D.funcionarios.filter(f=>String(f.id)===String(selected))
-    : D.funcionarios;
-
-  if(!arr.length){
-    $("funcResumo").innerHTML=`<div class="empty">Nenhum funcionário cadastrado.</div>`;
-  }else{
-    $("funcResumo").innerHTML=arr.map(f=>{
-      const b=employeeBalance(f.id);
-      const o=obra(f.obra_id);
-
-      return `
-      <div class="card">
-        <div class="obraHeader">
-          <div>
-            <h3>${esc(f.nome)}</h3>
-            <div class="muted">${esc(f.funcao||"")}</div>
-            <div style="margin-top:7px">
-              <span class="badge">${f.registrar_diaria==="nao"?"Não registra diária":"Registra diária"}</span>
-              ${o?`<span class="badge gold">${esc(o.nome)}</span>`:""}
-            </div>
-          </div>
-          <button class="btn sm" onclick="openFunc('${f.id}')">Editar</button>
-        </div>
-
-        <div class="moneyGrid">
-          <div class="moneyBox">
-            <small>Total devido</small>
-            <strong class="goldText">${money(b.due)}</strong>
-          </div>
-          <div class="moneyBox">
-            <small>Adiantamentos</small>
-            <strong class="orangeText">${money(b.advances)}</strong>
-          </div>
-          <div class="moneyBox">
-            <small>Pagamentos</small>
-            <strong class="greenText">${money(b.payments)}</strong>
-          </div>
-          <div class="moneyBox">
-            <small>Saldo</small>
-            <strong class="${b.balance>0?"redText":"greenText"}">${money(b.balance)}</strong>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button class="btn sm blue" onclick="openPagamento('${f.id}')">Pagar</button>
-          <button class="btn sm orange" onclick="openAdiantamento('${f.id}')">Adiantamento</button>
-          <button class="btn sm red" onclick="openFalta('${f.id}')">Falta</button>
-        </div>
-      </div>`;
-    }).join("");
-  }
-
-  renderPayroll();
-  renderPaymentHistory();
-  renderFaltaHistory();
+ fillSelectors();const selected=$("funcFiltro").value,arr=selected?D.funcionarios.filter(f=>String(f.id)===String(selected)):D.funcionarios;
+ renderDiariasTopo();
+ if(!arr.length){$("funcResumo").innerHTML=`<div class="empty">Nenhum funcionário cadastrado.</div>`}else{$("funcResumo").innerHTML=arr.map(f=>{const b=employeeBalance(f.id),o=obra(f.obra_id);return `<div class="card"><div class="obraHeader"><div><h3>${esc(f.nome)}</h3><div class="muted">${esc(f.funcao||"")}</div><div style="margin-top:7px"><span class="badge">${f.registrar_diaria==="nao"?"Não registra diária":"Registra diária"}</span>${o?`<span class="badge gold">${esc(o.nome)}</span>`:""}</div></div><button class="btn sm" onclick="openFunc('${f.id}')">Editar</button></div>
+<div class="moneyGrid"><div class="moneyBox"><small>Total devido</small><strong class="goldText">${money(b.due)}</strong></div><div class="moneyBox"><small>Adiantamentos</small><strong class="orangeText">${money(b.advances)}</strong></div><div class="moneyBox"><small>Pagamentos</small><strong class="greenText">${money(b.payments)}</strong></div><div class="moneyBox"><small>Saldo</small><strong class="${b.balance>0?"redText":"greenText"}">${money(b.balance)}</strong></div></div>
+<div class="actions"><button class="btn sm blue" onclick="openPagamento('${f.id}')">Pagar</button><button class="btn sm orange" onclick="openAdiantamento('${f.id}')">Adiantamento</button><button class="btn sm red" onclick="openFalta('${f.id}')">Falta</button></div></div>`}).join("")}
+ renderPayroll();renderPaymentHistory();renderFaltaHistory()
 }
 
 function openPagamento(funcId=null){
-  fillSelectors();
-
-  $("pagFunc").value=funcId||"";
-  $("pagValor").value="";
-  $("pagData").value=today();
-  $("pagObs").value="";
-
-  showEmployeeBalance();
-  openM("pagM");
+ fillSelectors();$("pagFunc").value=funcId||"";$("pagValor").value="";$("pagData").value=today();$("pagObs").value="";showEmployeeBalance();renderLotePagamento();openM("pagM")
 }
-
 function showEmployeeBalance(){
-  const id=$("pagFunc").value;
-
-  if(!id){
-    $("pagSaldoBox").innerHTML=`<span class="muted">Selecione um funcionário.</span>`;
-    return;
-  }
-
-  const b=employeeBalance(id);
-
-  $("pagSaldoBox").innerHTML=`
-    <div class="detailGrid">
-      <div class="detailItem">
-        <small>Devido</small>
-        <strong>${money(b.due)}</strong>
-      </div>
-      <div class="detailItem">
-        <small>Adiantamentos</small>
-        <strong>${money(b.advances)}</strong>
-      </div>
-      <div class="detailItem">
-        <small>Pagamentos</small>
-        <strong>${money(b.payments)}</strong>
-      </div>
-      <div class="detailItem">
-        <small>Saldo disponível</small>
-        <strong class="${b.balance>0?"redText":"greenText"}">${money(b.balance)}</strong>
-      </div>
-    </div>`;
+ const id=$("pagFunc").value;
+ if(!id){$("pagSaldoBox").innerHTML=`<span class="muted">Selecione um funcionário ou use o pagamento em lote abaixo.</span>`;return}
+ const b=employeeBalance(id);
+ $("pagSaldoBox").innerHTML=`<div class="detailGrid"><div class="detailItem"><small>Devido</small><strong>${money(b.due)}</strong></div><div class="detailItem"><small>Adiantamentos</small><strong class="orangeText">${money(b.advances)}</strong></div><div class="detailItem"><small>Pagamentos</small><strong class="greenText">${money(b.payments)}</strong></div><div class="detailItem"><small>Saldo líquido</small><strong class="${b.balance>0?"redText":"greenText"}">${money(b.balance)}</strong></div></div>`;
 }
-
+function loteCandidates(){
+ return D.funcionarios.filter(f=>f.ativo!==false&&f.registrar_diaria!=="nao").map(f=>{const b=employeeBalance(f.id);return{f,b}}).filter(x=>x.b.balance>0)
+}
+function renderLotePagamento(){
+ const arr=loteCandidates();
+ $("pagLoteBox").innerHTML=`<div class="selectAllRow"><input type="checkbox" id="pagSelectAll" onchange="toggleAllPagamentos(this.checked)"><div><strong>Pagamento em lote</strong><div class="muted small">Selecione todos ou somente os funcionários que deseja pagar.</div></div></div>
+ <div id="pagLoteLista">${arr.length?arr.map(x=>`<div class="historyItem payRow"><input class="payCheck" type="checkbox" data-pay-func="${x.f.id}" onchange="updateLoteTotal()"><div class="payInfo"><div class="title">${esc(x.f.nome)}</div><div class="sub">${esc(obra(x.f.obra_id)?.nome||"Sem obra")} · Devido ${money(x.b.due)} · Adiant. ${money(x.b.advances)}</div></div><div class="payValue"><strong class="redText">${money(x.b.balance)}</strong></div></div>`).join(""):`<div class="empty">Nenhum funcionário com saldo a pagar.</div>`}</div>
+ <div id="loteTotalBox" class="card" style="margin-top:10px;margin-bottom:0"><div class="detailGrid"><div class="detailItem"><small>Selecionados</small><strong id="loteQtd">0</strong></div><div class="detailItem"><small>Total a pagar</small><strong class="redText" id="loteTotal">R$ 0,00</strong></div><div class="detailItem"><small>Ação</small><strong>Dar baixa</strong></div></div></div>`;
+}
+function toggleAllPagamentos(checked){document.querySelectorAll("#pagLoteLista .payCheck").forEach(x=>x.checked=checked);updateLoteTotal()}
+function selectedPagamentoIds(){return [...document.querySelectorAll("#pagLoteLista .payCheck:checked")].map(x=>String(x.dataset.payFunc))}
+function updateLoteTotal(){
+ const ids=selectedPagamentoIds();let total=0;
+ ids.forEach(id=>{total+=employeeBalance(id).balance});
+ $("loteQtd").textContent=ids.length;$("loteTotal").textContent=money(total);
+}
 async function savePagamento(){
-  const funcId=$("pagFunc").value;
-  const valor=num($("pagValor").value);
-
-  if(!funcId||valor<=0){
-    toast("Selecione o funcionário e informe o valor.");
-    return;
-  }
-
-  const b=employeeBalance(funcId);
-
-  if(valor>b.balance){
-    toast("O pagamento não pode ser maior que o saldo devido.");
-    return;
-  }
-
-  try{
-    await insertRow("pagamentos",{
-      funcionario_id:funcId,
-      obra_id:funcionario(funcId)?.obra_id||null,
-      valor,
-      data:$("pagData").value,
-      tipo:"pagamento",
-      observacao:$("pagObs").value.trim()
-    });
-
-    toast("Pagamento registrado.");
-    closeM("pagM");
-    refreshAll();
-  }catch(e){
-    toast("Erro no pagamento: "+e.message);
-  }
+ const loteIds=selectedPagamentoIds();
+ if(loteIds.length){
+   try{
+    let total=0,count=0;
+    for(const funcId of loteIds){
+      const b=employeeBalance(funcId);if(b.balance<=0)continue;
+      await registrarPagamentoComBaixa(funcId,b.balance,$("pagData").value,$("pagObs").value.trim());
+      total+=b.balance;count++;
+    }
+    toast(`${count} pagamento(s) registrado(s). Total: ${money(total)}`);
+    closeM("pagM");refreshAll();return
+   }catch(e){toast("Erro no pagamento em lote: "+e.message);return}
+ }
+ const funcId=$("pagFunc").value,valor=num($("pagValor").value);if(!funcId||valor<=0){toast("Selecione o funcionário ou marque pagamentos em lote.");return}
+ const b=employeeBalance(funcId);if(valor>b.balance){toast("O pagamento não pode ser maior que o saldo líquido.");return}
+ try{await registrarPagamentoComBaixa(funcId,valor,$("pagData").value,$("pagObs").value.trim());toast("Pagamento registrado e dado baixa.");closeM("pagM");refreshAll()}catch(e){toast("Erro no pagamento: "+e.message)}
 }
-
-function openAdiantamento(funcId=null){
-  fillSelectors();
-
-  $("adiFunc").value=funcId||"";
-  $("adiValor").value="";
-  $("adiData").value=today();
-  $("adiObs").value="";
-
-  showAdvanceBalance();
-  openM("adiM");
+async function registrarPagamentoComBaixa(funcId,valor,data,obs){
+ const f=funcionario(funcId);const obraId=f?.obra_id||null;
+ await insertRow("pagamentos",{funcionario_id:funcId,obra_id:obraId,valor,data,tipo:"pagamento",observacao:obs||"Pagamento de diárias"});
+ // Para evitar dupla cobrança, marca as diárias pendentes até completar o valor pago.
+ let restante=valor;
+ const dias=D.diarias.filter(x=>String(x.funcionario_id)===String(funcId)).sort((a,b)=>String(a.data||"").localeCompare(String(b.data||"")));
+ for(const d of dias){
+   if(restante<=0)break;
+   const total=dayAmount(d);
+   const jaPago=String(d.status||"")!=="pendente";
+   if(jaPago)continue;
+   if(total<=restante){
+     await updateRow("diarias",d.id,{status:"pago",pago_em:data});
+     restante-=total;
+   }else{
+     const qtd=num(d.qtd)||1,unit=total/qtd,pagoQtd=Math.max(0,Math.min(qtd,restante/unit));
+     await updateRow("diarias",d.id,{status:"pago_parcial",qtd_paga:pagoQtd,pago_em:data});
+     restante=0;
+   }
+ }
+ // Lança a mão de obra na obra automaticamente, apenas uma vez por pagamento.
+ await insertRow("gastos",{obra_id:obraId,categoria:"despesa",subcategoria:"mao_obra",descricao:"Pagamento de diárias — "+(f?.nome||"Funcionário"),valor,data,fornecedor:f?.nome||"",observacao:"Gerado automaticamente pelo pagamento da equipe."});
 }
-
-function showAdvanceBalance(){
-  const id=$("adiFunc").value;
-
-  if(!id){
-    $("adiSaldoBox").innerHTML=`<span class="muted">Selecione um funcionário.</span>`;
-    return;
-  }
-
-  const b=employeeBalance(id);
-
-  $("adiSaldoBox").innerHTML=`
-    <div class="detailGrid">
-      <div class="detailItem">
-        <small>Total devido</small>
-        <strong>${money(b.due)}</strong>
-      </div>
-      <div class="detailItem">
-        <small>Adiantamentos</small>
-        <strong>${money(b.advances)}</strong>
-      </div>
-      <div class="detailItem">
-        <small>Pagamentos</small>
-        <strong>${money(b.payments)}</strong>
-      </div>
-      <div class="detailItem">
-        <small>Saldo disponível</small>
-        <strong class="redText">${money(Math.max(b.balance,0))}</strong>
-      </div>
-    </div>`;
-}
-
-async function saveAdiantamento(){
-  const funcId=$("adiFunc").value;
-  const valor=num($("adiValor").value);
-
-  if(!funcId||valor<=0){
-    toast("Informe funcionário e valor.");
-    return;
-  }
-
-  const b=employeeBalance(funcId);
-
-  if(valor>b.balance){
-    toast("O adiantamento não pode ser maior que o saldo devido.");
-    return;
-  }
-
-  try{
-    await insertRow("adiantamentos",{
-      funcionario_id:funcId,
-      valor,
-      data:$("adiData").value,
-      observacao:$("adiObs").value.trim()
-    });
-
-    toast("Adiantamento registrado.");
-    closeM("adiM");
-    refreshAll();
-  }catch(e){
-    toast("Erro: "+e.message);
-  }
-}
-
-function openFalta(funcId=null){
-  fillSelectors();
-
-  $("faltaFunc").value=funcId||"";
-  $("faltaObra").value=funcionario(funcId)?.obra_id||"";
-  $("faltaData").value=today();
-  $("faltaJustificada").value="nao";
-  $("faltaJustificativa").value="";
-
-  openM("faltaM");
-}
-
-async function saveFalta(){
-  const funcionarioId=$("faltaFunc").value;
-
-  if(!funcionarioId){
-    toast("Selecione o funcionário.");
-    return;
-  }
-
-  try{
-    await insertRow("faltas",{
-      funcionario_id:funcionarioId,
-      obra_id:$("faltaObra").value||null,
-      data:$("faltaData").value,
-      justificada:$("faltaJustificada").value==="sim",
-      justificativa:$("faltaJustificativa").value.trim()
-    });
-
-    toast("Falta registrada. Nenhuma diária foi lançada.");
-    closeM("faltaM");
-    refreshAll();
-  }catch(e){
-    toast("Erro ao registrar falta: "+e.message);
-  }
-}
+function openAdiantamento(funcId=null){fillSelectors();$("adiFunc").value=funcId||"";$("adiValor").value="";$("adiData").value=today();$("adiObs").value="";showAdvanceBalance();openM("adiM")}
+function showAdvanceBalance(){const id=$("adiFunc").value;if(!id){$("adiSaldoBox").innerHTML=`<span class="muted">Selecione um funcionário.</span>`;return}const b=employeeBalance(id);$("adiSaldoBox").innerHTML=`<div class="detailGrid"><div class="detailItem"><small>Total devido</small><strong>${money(b.due)}</strong></div><div class="detailItem"><small>Adiantamentos</small><strong>${money(b.advances)}</strong></div><div class="detailItem"><small>Pagamentos</small><strong>${money(b.payments)}</strong></div><div class="detailItem"><small>Saldo disponível</small><strong class="redText">${money(Math.max(b.balance,0))}</strong></div></div>`}
+async function saveAdiantamento(){const funcId=$("adiFunc").value,valor=num($("adiValor").value);if(!funcId||valor<=0){toast("Informe funcionário e valor.");return}const b=employeeBalance(funcId);if(valor>b.balance){toast("O adiantamento não pode ser maior que o saldo devido.");return}try{await insertRow("adiantamentos",{funcionario_id:funcId,valor,data:$("adiData").value,observacao:$("adiObs").value.trim()});toast("Adiantamento registrado.");closeM("adiM");refreshAll()}catch(e){toast("Erro: "+e.message)}}
+function openFalta(funcId=null){fillSelectors();$("faltaFunc").value=funcId||"";$("faltaObra").value=funcionario(funcId)?.obra_id||"";$("faltaData").value=today();$("faltaJustificada").value="nao";$("faltaJustificativa").value="";openM("faltaM")}
+async function saveFalta(){const funcionarioId=$("faltaFunc").value;if(!funcionarioId){toast("Selecione o funcionário.");return}try{await insertRow("faltas",{funcionario_id:funcionarioId,obra_id:$("faltaObra").value||null,data:$("faltaData").value,justificada:$("faltaJustificada").value==="sim",justificativa:$("faltaJustificativa").value.trim()});toast("Falta registrada. Nenhuma diária foi lançada.");closeM("faltaM");refreshAll()}catch(e){toast("Erro ao registrar falta: "+e.message)}}
 
 function renderPaymentHistory(){
-  const selected=$("funcFiltro").value;
-
-  const payments=D.pagamentos
-    .filter(p=>{
-      if(selected&&String(p.funcionario_id)!==String(selected))return false;
-      return String(p.tipo||"pagamento")!=="falta";
-    })
-    .sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
-
-  const advances=D.adiantamentos
-    .filter(a=>!selected||String(a.funcionario_id)===String(selected))
-    .sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
-
-  const all=[
-    ...payments.map(p=>({...p,__tipo:"Pagamento"})),
-    ...advances.map(a=>({...a,__tipo:"Adiantamento"}))
-  ].sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
-
-  $("pagHistory").innerHTML=all.length
-    ? `<div class="history">${all.map(x=>{
-      const f=funcionario(x.funcionario_id);
-      return `
-      <div class="historyItem">
-        <div>
-          <div class="title">${esc(f?.nome||"Funcionário")} — ${x.__tipo}</div>
-          <div class="sub">${esc(x.data||"")} ${esc(x.observacao||"")}</div>
-        </div>
-        <strong>${money(x.valor)}</strong>
-      </div>`;
-    }).join("")}</div>`
-    : `<div class="empty">Nenhum pagamento ou adiantamento.</div>`;
+ const selected=$("funcFiltro").value;
+ const payments=D.pagamentos.filter(p=>(!selected||String(p.funcionario_id)===String(selected))&&String(p.tipo||"pagamento")==="pagamento").sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
+ const advances=D.adiantamentos.filter(a=>!selected||String(a.funcionario_id)===String(selected)).sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
+ const all=[...payments.map(p=>({...p,__tipo:"Pagamento"})),...advances.map(a=>({...a,__tipo:"Adiantamento"}))].sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
+ $("pagHistory").innerHTML=all.length?`<div class="history">${all.map(x=>{const f=funcionario(x.funcionario_id);return `<div class="historyItem"><div><div class="title">${esc(f?.nome||"Funcionário")} — ${x.__tipo}</div><div class="sub">${esc(x.data||"")} ${esc(x.observacao||"")}</div></div><strong>${money(x.valor)}</strong></div>`}).join("")}</div>`:`<div class="empty">Nenhum pagamento ou adiantamento.</div>`
 }
-
 function renderFaltaHistory(){
-  const selected=$("funcFiltro").value;
-
-  const arr=D.faltas
-    .filter(x=>!selected||String(x.funcionario_id)===String(selected))
-    .sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
-
-  $("faltaHistory").innerHTML=arr.length
-    ? `<div class="history">${arr.map(x=>{
-      const f=funcionario(x.funcionario_id);
-      const o=obra(x.obra_id);
-
-      return `
-      <div class="historyItem">
-        <div>
-          <div class="title">${esc(f?.nome||"Funcionário")} — Falta</div>
-          <div class="sub">
-            ${esc(x.data||"")} ·
-            ${x.justificada?"Justificada":"Não justificada"}
-            ${o?" · "+esc(o.nome):""}
-          </div>
-          ${x.justificativa
-            ?`<div class="sub">${esc(x.justificativa)}</div>`
-            :""}
-        </div>
-        <strong class="redText">FALTA</strong>
-      </div>`;
-    }).join("")}</div>`
-    : `<div class="empty">Nenhuma falta registrada.</div>`;
+ const selected=$("funcFiltro").value,arr=D.faltas.filter(x=>!selected||String(x.funcionario_id)===String(selected)).sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
+ $("faltaHistory").innerHTML=arr.length?`<div class="history">${arr.map(x=>{const f=funcionario(x.funcionario_id),o=obra(x.obra_id);return `<div class="historyItem"><div><div class="title">${esc(f?.nome||"Funcionário")} — Falta</div><div class="sub">${esc(x.data||"")} · ${x.justificada?"Justificada":"Não justificada"}${o?" · "+esc(o.nome):""}</div>${x.justificativa?`<div class="sub">${esc(x.justificativa)}</div>`:""}</div><strong class="redText">FALTA</strong></div>`}).join("")}</div>`:`<div class="empty">Nenhuma falta registrada.</div>`
 }
-
 function renderPayroll(){
-  const inicio=$("diaInicio").value;
-  const fim=$("diaFim").value;
-  const selected=$("funcFiltro").value;
-
-  const arr=D.diarias.filter(x=>{
-    if(selected&&String(x.funcionario_id)!==String(selected))return false;
-    if(inicio&&String(x.data)<inicio)return false;
-    if(fim&&String(x.data)>fim)return false;
-    return true;
-  });
-
-  if(!arr.length){
-    $("diaList").innerHTML=`<div class="empty">Nenhuma diária no período.</div>`;
-    return;
-  }
-
-  $("diaList").innerHTML=arr.map(x=>{
-    const f=funcionario(x.funcionario_id);
-    const o=obra(x.obra_id);
-    const total=num(x.valor_pago||x.valor_diaria)*num(x.qtd||1);
-
-    return `
-    <div class="historyItem">
-      <div>
-        <div class="title">${esc(f?.nome||"")} — ${esc(o?.nome||"")}</div>
-        <div class="sub">${esc(x.data||"")} · ${num(x.qtd||1)} diária(s)</div>
-      </div>
-      <strong>${money(total)}</strong>
-    </div>`;
-  }).join("");
+ const inicio=$("diaInicio").value,fim=$("diaFim").value,selected=$("funcFiltro").value,arr=activeDiariaEntries(inicio,fim,selected);
+ if(!arr.length){$("diaList").innerHTML=`<div class="empty">Nenhuma diária no período.</div>`;return}
+ $("diaList").innerHTML=arr.map(x=>{const f=funcionario(x.funcionario_id),o=obra(x.obra_id),total=dayAmount(x);return `<div class="historyItem"><div><div class="title">${esc(f?.nome||"")} — ${esc(o?.nome||"")}</div><div class="sub">${esc(x.data||"")} · ${num(x.qtd||1)} diária(s) · ${x.status==="pago"?"Paga":x.status==="pago_parcial"?"Paga parcialmente":"Pendente"}</div></div><strong>${money(total)}</strong></div>`}).join("")
 }
-
-function openDia(){
-  fillSelectors();
-  $("diaFunc").value="";
-  $("diaObra").value="";
-  $("diaData").value=today();
-  $("diaQtd").value=1;
-  $("diaValor").value="";
-  $("diaObs").value="";
-  openM("diaM");
-}
-
+function openDia(){fillSelectors();$("diaFunc").value="";$("diaObra").value="";$("diaData").value=today();$("diaQtd").value=1;$("diaValor").value="";$("diaObs").value="";openM("diaM")}
 async function saveDia(){
-  const f=funcionario($("diaFunc").value);
-
-  if(!f){
-    toast("Selecione um funcionário.");
-    return;
-  }
-
-  if(f.registrar_diaria==="nao"){
-    toast("Este funcionário está configurado para não registrar diária.");
-    return;
-  }
-
-  const valor=num($("diaValor").value)||num(f.valor_diaria);
-  const qtd=num($("diaQtd").value)||1;
-
-  if(valor<=0){
-    toast("Informe o valor da diária.");
-    return;
-  }
-
-  try{
-    await insertRow("diarias",{
-      funcionario_id:f.id,
-      obra_id:$("diaObra").value||f.obra_id||null,
-      data:$("diaData").value,
-      qtd,
-      valor_diaria:valor,
-      valor_pago:valor,
-      status:"pendente",
-      observacao:$("diaObs").value.trim()
-    });
-
-    toast("Diária registrada.");
-    closeM("diaM");
-    refreshAll();
-  }catch(e){
-    toast("Erro: "+e.message);
-  }
+ const f=funcionario($("diaFunc").value);if(!f){toast("Selecione um funcionário.");return}if(f.registrar_diaria==="nao"){toast("Este funcionário está configurado para não registrar diária.");return}
+ const valor=num($("diaValor").value)||num(f.valor_diaria),qtd=num($("diaQtd").value)||1;if(valor<=0){toast("Informe o valor da diária.");return}
+ try{await insertRow("diarias",{funcionario_id:f.id,obra_id:$("diaObra").value||f.obra_id||null,data:$("diaData").value,qtd,valor_diaria:valor,valor_pago:valor,status:"pendente",observacao:$("diaObs").value.trim()});toast("Diária registrada.");closeM("diaM");refreshAll()}catch(e){toast("Erro: "+e.message)}
 }
 
-function toggleFinCategory(){
-  $("finSubcategoria").disabled=$("finCategoria").value!=="despesa";
-}
-
-function openFin(){
-  fillSelectors();
-
-  $("finObra").value="";
-  $("finCategoria").value="entrada";
-  $("finSubcategoria").value="material";
-  $("finDescricao").value="";
-  $("finValor").value="";
-  $("finData").value=today();
-  $("finFornecedor").value="";
-  $("finObs").value="";
-
-  toggleFinCategory();
-  openM("finM");
-}
-
-async function saveFin(){
-  const obraId=$("finObra").value;
-  const categoria=$("finCategoria").value;
-  const valor=num($("finValor").value);
-
-  if(!obraId||valor<=0){
-    toast("Informe obra e valor.");
-    return;
-  }
-
-  try{
-    await insertRow("gastos",{
-      obra_id:obraId,
-      categoria,
-      subcategoria:categoria==="despesa"
-        ?$("finSubcategoria").value
-        :null,
-      descricao:$("finDescricao").value.trim(),
-      valor,
-      data:$("finData").value,
-      fornecedor:$("finFornecedor").value.trim(),
-      observacao:$("finObs").value.trim()
-    });
-
-    toast("Lançamento salvo.");
-    closeM("finM");
-    refreshAll();
-  }catch(e){
-    toast("Erro no lançamento: "+e.message);
-  }
-}
-
-function goFinanceObra(id){
-  go("financeiro");
-  $("finObraFiltro").value=id;
-  renderFinance();
-}
-
+function toggleFinCategory(){$("finSubcategoria").disabled=$("finCategoria").value!=="despesa"}
+function openFin(){fillSelectors();$("finObra").value="";$("finCategoria").value="entrada";$("finSubcategoria").value="material";$("finDescricao").value="";$("finValor").value="";$("finData").value=today();$("finFornecedor").value="";$("finObs").value="";toggleFinCategory();openM("finM")}
+async function saveFin(){const obraId=$("finObra").value,categoria=$("finCategoria").value,valor=num($("finValor").value);if(!obraId||valor<=0){toast("Informe obra e valor.");return}try{await insertRow("gastos",{obra_id:obraId,categoria,subcategoria:categoria==="despesa"?$("finSubcategoria").value:null,descricao:$("finDescricao").value.trim(),valor,data:$("finData").value,fornecedor:$("finFornecedor").value.trim(),observacao:$("finObs").value.trim()});toast("Lançamento salvo.");closeM("finM");refreshAll()}catch(e){toast("Erro no lançamento: "+e.message)}}
+function goFinanceObra(id){go("financeiro");$("finObraFiltro").value=id;renderFinance()}
 function renderFinanceDetail(id){
-  const o=obra(id);
-  if(!o)return "";
-
-  const f=workFinance(id);
-
-  const items=[
-    ["Materiais",f.material],
-    ["Mão de obra",f.labor],
-    ["Terceirizados",f.outsourced],
-    ["Outros",f.other]
-  ];
-
-  return `
-  <div class="card">
-    <div class="pageTitle" style="margin-bottom:12px">
-      <div>
-        <h3 style="margin-bottom:4px">${esc(o.nome)}</h3>
-        <span class="muted">Detalhamento financeiro</span>
-      </div>
-      <span class="badge gold">Contrato ${money(f.contract)}</span>
-    </div>
-
-    <div class="detailGrid">
-      <div class="detailItem">
-        <small>Valor do contrato</small>
-        <strong class="goldText">${money(f.contract)}</strong>
-      </div>
-
-      <div class="detailItem">
-        <small>Total recebido</small>
-        <strong class="greenText">${money(f.received)}</strong>
-      </div>
-
-      <div class="detailItem">
-        <small>A receber</small>
-        <strong class="redText">${money(f.toReceive)}</strong>
-      </div>
-
-      <div class="detailItem">
-        <small>Total despesas</small>
-        <strong>${money(f.expenses)}</strong>
-      </div>
-
-      <div class="detailItem">
-        <small>Resultado</small>
-        <strong class="${f.result>=0?"greenText":"redText"}">${money(f.result)}</strong>
-      </div>
-
-      <div class="detailItem">
-        <small>Adicionais</small>
-        <strong class="orangeText">${money(additionalTotal(id))}</strong>
-      </div>
-    </div>
-
-    <hr>
-
-    <h3 style="font-size:14px">Despesas por categoria</h3>
-
-    ${items.map(([name,value])=>`
-      <div style="margin:12px 0">
-        <div style="display:flex;justify-content:space-between;font-size:12px">
-          <span>${name}</span>
-          <strong>${money(value)} · ${percent(value,f.contract).toFixed(1)}%</strong>
-        </div>
-        <div class="progress" style="margin-top:5px">
-          <i style="width:${percent(value,f.contract)}%"></i>
-        </div>
-      </div>
-    `).join("")}
-
-    <hr>
-
-    <h3 style="font-size:14px">Recebimento do contrato</h3>
-    <div class="percentBar">
-      <i style="width:${percent(f.received,f.contract)}%;background:var(--green)"></i>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px">
-      <span>Recebido: ${percent(f.received,f.contract).toFixed(1)}%</span>
-      <span>Restante: ${(100-percent(f.received,f.contract)).toFixed(1)}%</span>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="pageTitle" style="margin-bottom:8px">
-      <h3>Serviços adicionais</h3>
-      <button class="btn sm orange" onclick="openServico('${id}')">+ Adicionar</button>
-    </div>
-
-    ${renderAdditionalList(id)}
-  </div>`;
+ const o=obra(id);if(!o)return "";const f=workFinance(id),items=[["Materiais",f.material],["Mão de obra",f.labor],["Terceirizados",f.outsourced],["Outros",f.other]];
+ return `<div class="card"><div class="pageTitle" style="margin-bottom:12px"><div><h3 style="margin-bottom:4px">${esc(o.nome)}</h3><span class="muted">Detalhamento financeiro</span></div><span class="badge gold">Contrato ${money(f.contract)}</span></div>
+ <div class="detailGrid"><div class="detailItem"><small>Valor do contrato</small><strong class="goldText">${money(f.contract)}</strong></div><div class="detailItem"><small>Total recebido</small><strong class="greenText">${money(f.received)}</strong></div><div class="detailItem"><small>A receber</small><strong class="redText">${money(f.toReceive)}</strong></div><div class="detailItem"><small>Total despesas</small><strong>${money(f.expenses)}</strong></div><div class="detailItem"><small>Resultado</small><strong class="${f.result>=0?"greenText":"redText"}">${money(f.result)}</strong></div><div class="detailItem"><small>Adicionais</small><strong class="orangeText">${money(additionalTotal(id))}</strong></div></div><hr><h3 style="font-size:14px">Despesas por categoria</h3>
+ ${items.map(([name,value])=>`<div style="margin:12px 0"><div style="display:flex;justify-content:space-between;font-size:12px"><span>${name}</span><strong>${money(value)} · ${percent(value,f.contract).toFixed(1)}%</strong></div><div class="progress" style="margin-top:5px"><i style="width:${percent(value,f.contract)}%"></i></div></div>`).join("")}
+ <hr><h3 style="font-size:14px">Recebimento do contrato</h3><div class="percentBar"><i style="width:${percent(f.received,f.contract)}%;background:var(--green)"></i></div></div>
+ <div class="card"><div class="pageTitle" style="margin-bottom:8px"><h3>Serviços adicionais</h3><button class="btn sm orange" onclick="openServico('${id}')">+ Adicionar</button></div>${renderAdditionalList(id)}</div>`
 }
-
-function renderAdditionalList(id){
-  const arr=D.servicos_adicionais
-    .filter(x=>String(x.obra_id)===String(id))
-    .sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
-
-  if(!arr.length)return `<div class="empty">Nenhum serviço adicional.</div>`;
-
-  return `<div class="history">${arr.map(x=>`
-    <div class="historyItem">
-      <div>
-        <div class="title">${esc(x.descricao)}</div>
-        <div class="sub">${esc(x.data||"")} ${esc(x.observacao||"")}</div>
-      </div>
-      <div style="text-align:right">
-        <strong class="orangeText">${money(x.valor)}</strong>
-        <br>
-        <button class="btn sm red" onclick="deleteServico('${x.id}')">Excluir</button>
-      </div>
-    </div>
-  `).join("")}</div>`;
-}
-
-async function deleteServico(id){
-  if(!confirm("Excluir este serviço adicional?"))return;
-
-  try{
-    await removeRow("servicos_adicionais",id);
-    toast("Serviço adicional excluído.");
-    refreshAll();
-  }catch(e){
-    toast(e.message);
-  }
-}
-
+function renderAdditionalList(id){const arr=D.servicos_adicionais.filter(x=>String(x.obra_id)===String(id)).sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));if(!arr.length)return `<div class="empty">Nenhum serviço adicional.</div>`;return `<div class="history">${arr.map(x=>`<div class="historyItem"><div><div class="title">${esc(x.descricao)}</div><div class="sub">${esc(x.data||"")} ${esc(x.observacao||"")}</div></div><div style="text-align:right"><strong class="orangeText">${money(x.valor)}</strong><br><button class="btn sm red" onclick="deleteServico('${x.id}')">Excluir</button></div></div>`).join("")}</div>`}
+async function deleteServico(id){if(!confirm("Excluir este serviço adicional?"))return;try{await removeRow("servicos_adicionais",id);toast("Serviço adicional excluído.");refreshAll()}catch(e){toast(e.message)}}
 function renderFinance(){
-  const obraFiltro=$("finObraFiltro").value||"all";
-  const tipo=$("finTipoFiltro").value;
-
-  let works=D.obras;
-
-  if(obraFiltro!=="all"){
-    works=works.filter(o=>String(o.id)===String(obraFiltro));
-  }
-
-  const totals=works.reduce((acc,o)=>{
-    const f=workFinance(o.id);
-
-    acc.contract+=f.contract;
-    acc.received+=f.received;
-    acc.expenses+=f.expenses;
-
-    return acc;
-  },{contract:0,received:0,expenses:0});
-
-  $("fContrato").textContent=money(totals.contract);
-  $("fRecebido").textContent=money(totals.received);
-  $("fDespesas").textContent=money(totals.expenses);
-  $("fResultado").textContent=money(totals.received-totals.expenses);
-
-  if(obraFiltro!=="all"){
-    $("obraFinanceResumo").innerHTML=renderFinanceDetail(obraFiltro);
-  }else{
-    $("obraFinanceResumo").innerHTML=works.map(o=>{
-      const f=workFinance(o.id);
-
-      return `
-      <div class="card">
-        <div class="obraHeader">
-          <div>
-            <h3>${esc(o.nome)}</h3>
-            <span class="muted">${esc(o.cliente||"")}</span>
-          </div>
-          <span class="badge gold">${money(f.contract)}</span>
-        </div>
-
-        <div class="moneyGrid">
-          <div class="moneyBox">
-            <small>Recebido</small>
-            <strong class="greenText">${money(f.received)}</strong>
-          </div>
-          <div class="moneyBox">
-            <small>A receber</small>
-            <strong class="redText">${money(f.toReceive)}</strong>
-          </div>
-          <div class="moneyBox">
-            <small>Despesas</small>
-            <strong>${money(f.expenses)}</strong>
-          </div>
-          <div class="moneyBox">
-            <small>Resultado</small>
-            <strong>${money(f.result)}</strong>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button class="btn sm blue" onclick="goFinanceObra('${o.id}')">Ver detalhes</button>
-          <button class="btn sm orange" onclick="openServico('${o.id}')">+ Adicional</button>
-        </div>
-      </div>`;
-    }).join("");
-  }
-
-  let arr=D.gastos.filter(x=>{
-    if(obraFiltro!=="all"&&String(x.obra_id)!==String(obraFiltro))return false;
-    if(tipo==="adicional")return false;
-    if(tipo&&String(x.categoria)!==tipo)return false;
-    return true;
-  });
-
-  if(obraFiltro!=="all"){
-    const additional=D.servicos_adicionais
-      .filter(x=>String(x.obra_id)===String(obraFiltro))
-      .map(x=>({
-        ...x,
-        categoria:"adicional",
-        descricao:"Serviço adicional: "+x.descricao
-      }));
-
-    if(!tipo||tipo==="adicional")arr=[...arr,...additional];
-  }
-
-  arr.sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
-
-  $("finList").innerHTML=arr.length
-    ? `<div class="history">${arr.map(x=>{
-      const o=obra(x.obra_id);
-      const entrada=x.categoria==="entrada";
-
-      return `
-      <div class="historyItem">
-        <div>
-          <div class="title">${esc(o?.nome||"")} — ${esc(x.descricao||x.categoria)}</div>
-          <div class="sub">
-            ${esc(x.data||"")}
-            ${x.subcategoria?" · "+esc(x.subcategoria):""}
-            ${x.fornecedor?" · "+esc(x.fornecedor):""}
-          </div>
-        </div>
-        <strong class="${entrada?"greenText":x.categoria==="adicional"?"orangeText":"redText"}">
-          ${entrada?"+":"-"} ${money(x.valor)}
-        </strong>
-      </div>`;
-    }).join("")}</div>`
-    : `<div class="empty">Nenhum lançamento encontrado.</div>`;
+ const obraFiltro=$("finObraFiltro").value||"all",tipo=$("finTipoFiltro").value;let works=D.obras;if(obraFiltro!=="all")works=works.filter(o=>String(o.id)===String(obraFiltro));
+ const totals=works.reduce((a,o)=>{const f=workFinance(o.id);a.contract+=f.contract;a.received+=f.received;a.expenses+=f.expenses;return a},{contract:0,received:0,expenses:0});
+ $("fContrato").textContent=money(totals.contract);$("fRecebido").textContent=money(totals.received);$("fDespesas").textContent=money(totals.expenses);$("fResultado").textContent=money(totals.received-totals.expenses);
+ $("obraFinanceResumo").innerHTML=obraFiltro!=="all"?renderFinanceDetail(obraFiltro):works.map(o=>{const f=workFinance(o.id);return `<div class="card"><div class="obraHeader"><div><h3>${esc(o.nome)}</h3><span class="muted">${esc(o.cliente||"")}</span></div><span class="badge gold">${money(f.contract)}</span></div><div class="moneyGrid"><div class="moneyBox"><small>Recebido</small><strong class="greenText">${money(f.received)}</strong></div><div class="moneyBox"><small>A receber</small><strong class="redText">${money(f.toReceive)}</strong></div><div class="moneyBox"><small>Despesas</small><strong>${money(f.expenses)}</strong></div><div class="moneyBox"><small>Resultado</small><strong>${money(f.result)}</strong></div></div><div class="actions"><button class="btn sm blue" onclick="goFinanceObra('${o.id}')">Ver detalhes</button><button class="btn sm orange" onclick="openServico('${o.id}')">+ Adicional</button></div></div>`}).join("");
+ let arr=D.gastos.filter(x=>(obraFiltro==="all"||String(x.obra_id)===String(obraFiltro))&&(!tipo||String(x.categoria)===tipo));if(obraFiltro!=="all"&&(!tipo||tipo==="adicional"))arr=[...arr,...D.servicos_adicionais.filter(x=>String(x.obra_id)===String(obraFiltro)).map(x=>({...x,categoria:"adicional",descricao:"Serviço adicional: "+x.descricao}))];arr.sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
+ $("finList").innerHTML=arr.length?`<div class="history">${arr.map(x=>{const o=obra(x.obra_id),entrada=x.categoria==="entrada";return `<div class="historyItem"><div><div class="title">${esc(o?.nome||"")} — ${esc(x.descricao||x.categoria)}</div><div class="sub">${esc(x.data||"")}${x.subcategoria?" · "+esc(x.subcategoria):""}${x.fornecedor?" · "+esc(x.fornecedor):""}</div></div><strong class="${entrada?"greenText":x.categoria==="adicional"?"orangeText":"redText"}">${entrada?"+":"-"} ${money(x.valor)}</strong></div>`}).join("")}</div>`:`<div class="empty">Nenhum lançamento encontrado.</div>`
 }
-
 function renderReports(){
-  $("relObras").innerHTML=D.obras.length
-    ? `<div class="history">${D.obras.map(o=>{
-      const f=workFinance(o.id);
-      return `
-      <div class="historyItem">
-        <div>
-          <div class="title">${esc(o.nome)}</div>
-          <div class="sub">
-            Progresso: ${progressForObra(o)}% ·
-            Contrato: ${money(f.contract)}
-          </div>
-        </div>
-        <strong>${money(f.toReceive)}</strong>
-      </div>`;
-    }).join("")}</div>`
-    : `<div class="empty">Nenhuma obra.</div>`;
-
-  const contract=D.obras.reduce((s,o)=>s+contractValue(o),0);
-  const received=D.obras.reduce((s,o)=>s+receipts(o.id),0);
-  const expenses=D.obras.reduce((s,o)=>s+workFinance(o.id).expenses,0);
-
-  $("relFinance").innerHTML=`
-    <div class="detailGrid">
-      <div class="detailItem">
-        <small>Contratos</small>
-        <strong>${money(contract)}</strong>
-      </div>
-      <div class="detailItem">
-        <small>Recebido</small>
-        <strong class="greenText">${money(received)}</strong>
-      </div>
-      <div class="detailItem">
-        <small>A receber</small>
-        <strong class="redText">${money(Math.max(contract-received,0))}</strong>
-      </div>
-      <div class="detailItem">
-        <small>Despesas</small>
-        <strong>${money(expenses)}</strong>
-      </div>
-      <div class="detailItem">
-        <small>Resultado</small>
-        <strong>${money(received-expenses)}</strong>
-      </div>
-    </div>`;
+ $("relObras").innerHTML=D.obras.length?`<div class="history">${D.obras.map(o=>{const f=workFinance(o.id);return `<div class="historyItem"><div><div class="title">${esc(o.nome)}</div><div class="sub">Progresso: ${progressForObra(o)}% · Contrato: ${money(f.contract)}</div></div><strong>${money(f.toReceive)}</strong></div>`}).join("")}</div>`:`<div class="empty">Nenhuma obra.</div>`;
+ const contract=D.obras.reduce((s,o)=>s+contractValue(o),0),received=D.obras.reduce((s,o)=>s+receipts(o.id),0),expenses=D.obras.reduce((s,o)=>s+workFinance(o.id).expenses,0);
+ $("relFinance").innerHTML=`<div class="detailGrid"><div class="detailItem"><small>Contratos</small><strong>${money(contract)}</strong></div><div class="detailItem"><small>Recebido</small><strong class="greenText">${money(received)}</strong></div><div class="detailItem"><small>A receber</small><strong class="redText">${money(Math.max(contract-received,0))}</strong></div><div class="detailItem"><small>Despesas</small><strong>${money(expenses)}</strong></div><div class="detailItem"><small>Resultado</small><strong>${money(received-expenses)}</strong></div></div>`
 }
-
 function fillSelectors(){
-  const obraOptions=
-    `<option value="">Selecione a obra</option>`+
-    D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join("");
-
-  $("funcObra").innerHTML=obraOptions;
-  $("diaObra").innerHTML=obraOptions;
-  $("finObra").innerHTML=obraOptions;
-  $("faltaObra").innerHTML=obraOptions;
-  $("servObra").innerHTML=obraOptions;
-
-  $("finObraFiltro").innerHTML=
-    `<option value="all">Todas as obras</option>`+
-    D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join("");
-
-  const funcOptions=
-    `<option value="">Todos</option>`+
-    D.funcionarios.map(f=>`<option value="${f.id}">${esc(f.nome)}</option>`).join("");
-
-  $("funcFiltro").innerHTML=funcOptions;
-  $("diaFunc").innerHTML=funcOptions;
-  $("pagFunc").innerHTML=funcOptions;
-  $("adiFunc").innerHTML=funcOptions;
-  $("faltaFunc").innerHTML=funcOptions;
-
-  toggleFinCategory();
+ const obraOptions=`<option value="">Selecione a obra</option>`+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join("");
+ ["funcObra","diaObra","finObra","faltaObra","servObra"].forEach(id=>$(id).innerHTML=obraOptions);
+ $("finObraFiltro").innerHTML=`<option value="all">Todas as obras</option>`+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join("");
+ const funcOptions=`<option value="">Todos</option>`+D.funcionarios.map(f=>`<option value="${f.id}">${esc(f.nome)}</option>`).join("");
+ ["funcFiltro","diaFunc","pagFunc","adiFunc","faltaFunc"].forEach(id=>$(id).innerHTML=funcOptions);
+ toggleFinCategory()
 }
-
-function refreshAll(){
-  fillSelectors();
-  renderDashboard();
-  renderObras();
-  renderFuncs();
-  renderFinance();
-  renderReports();
-}
-
-function exportData(){
-  const backup={};
-
-  [...TABLES,...LOCAL_EXTRA].forEach(t=>{
-    backup[t]=D[t];
-  });
-
-  const blob=new Blob(
-    [JSON.stringify(backup,null,2)],
-    {type:"application/json"}
-  );
-
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="edifiq-backup-"+today()+".json";
-  a.click();
-
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  toast("Backup gerado.");
-}
-
-document.addEventListener("keydown",e=>{
-  if(e.key==="Escape"){
-    document.querySelectorAll(".modal.show")
-      .forEach(m=>m.classList.remove("show"));
-  }
-});
-
-document.querySelectorAll(".modal").forEach(m=>{
-  m.addEventListener("click",e=>{
-    if(e.target===m)m.classList.remove("show");
-  });
-});
-
-if(window.supabase){
-  try{
-    sb=supabase.createClient(SUPA_URL,SUPA_KEY);
-
-    sb.auth.getSession().then(async({data})=>{
-      if(data?.session){
-        user=data.session.user;
-        localMode=false;
-
-        try{
-          await cloudLoad();
-          startApp();
-        }catch(e){
-          console.error(e);
-        }
-      }
-    });
-  }catch(e){
-    console.warn(e);
-  }
-}
+function refreshAll(){fillSelectors();renderDashboard();renderObras();renderFuncs();renderFinance();renderReports()}
+function exportData(){const backup={};[...TABLES,...LOCAL_EXTRA].forEach(t=>backup[t]=D[t]);const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="edifiq-backup-"+today()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("Backup gerado.")}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".modal.show").forEach(m=>m.classList.remove("show"))});
+document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
+if(window.supabase){try{sb=supabase.createClient(SUPA_URL,SUPA_KEY);sb.auth.getSession().then(async({data})=>{if(data?.session){user=data.session.user;localMode=false;try{await cloudLoad();startApp()}catch(e){console.error(e)}}})}catch(e){console.warn(e)}}
 </script>
-
 </body>
 </html>
