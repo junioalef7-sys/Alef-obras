@@ -45,7 +45,7 @@ main{max-width:1180px;margin:auto;padding:18px 14px 35px}.section{display:none}.
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:600px){.two{grid-template-columns:1fr}}
 .bottomNav{position:fixed;z-index:50;left:0;right:0;bottom:0;height:68px;background:rgba(10,12,16,.96);border-top:1px solid var(--line);display:flex;justify-content:center;backdrop-filter:blur(18px)}
 .navInner{width:100%;max-width:700px;display:grid;grid-template-columns:repeat(5,1fr)}.navBtn{border:0;background:none;color:#747b87;font-size:10px;font-weight:700}.navBtn b{display:block;font-size:20px;margin-bottom:2px}.navBtn.active{color:var(--gold2)}
-.checkRow{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #1d2128}.checkRow:last-child{border-bottom:0}.checkRow input{width:19px;height:19px}.checkText{flex:1;font-size:13px}.checkText.done{text-decoration:line-through;color:#69717d}
+.checkRow{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #1d2128}.checkRow:last-child{border-bottom:0}.checkRow input{width:19px;height:19px}.checkText{flex:1;font-size:13px}.checkText.done{text-decoration:line-through;color:#69717d}.checkItemBox{padding:10px 0;border-bottom:1px solid #1d2128}.checkItemBox:last-child{border-bottom:0}.checkItemTop{display:flex;align-items:center;gap:8px}.checkItemTop .checkText{flex:1}.checkItemProgress{height:7px;background:#07090c;border-radius:20px;overflow:hidden;border:1px solid #1c2027;margin:7px 0 5px}.checkItemProgress i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:20px}.range{width:100%;padding:0;accent-color:var(--gold2);background:transparent;border:0}
 .detailGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}@media(max-width:700px){.detailGrid{grid-template-columns:1fr 1fr}}@media(max-width:450px){.detailGrid{grid-template-columns:1fr}}
 .detailItem{padding:12px;border:1px solid var(--line);border-radius:14px;background:#0b0e12}.detailItem small{display:block;color:var(--muted);font-size:10px}.detailItem strong{display:block;margin-top:4px;font-size:17px}
 .history{display:grid;gap:7px;margin-top:10px}.historyItem{padding:10px;border:1px solid var(--line);border-radius:12px;background:#0b0e12;display:flex;justify-content:space-between;gap:10px}.historyItem .title{font-weight:800;font-size:12px}.historyItem .sub{font-size:10px;color:var(--muted);margin-top:3px}
@@ -141,7 +141,8 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 <div class="field"><label>Funcionário</label><select id="pagFunc" onchange="showEmployeeBalance()"></select></div>
 <div class="card" id="pagSaldoBox"></div>
 <div class="card" id="pagLoteBox"></div>
-<div class="two"><div class="field"><label>Valor</label><input id="pagValor" type="number" step="0.01"></div><div class="field"><label>Data</label><input id="pagData" type="date"></div></div>
+<div class="two"><div class="field"><label>Valor bruto a pagar</label><input id="pagValor" type="number" step="0.01" oninput="updatePagamentoPreview()"></div><div class="field"><label>Desconto</label><input id="pagDesconto" type="number" step="0.01" value="0" oninput="updatePagamentoPreview()"></div></div>
+<div class="two"><div class="field"><label>Valor líquido</label><input id="pagLiquido" type="number" step="0.01" readonly></div><div class="field"><label>Data</label><input id="pagData" type="date"></div></div>
 <div class="field"><label>Observação</label><textarea id="pagObs"></textarea></div>
 <button type="button" class="btn green block" onclick="savePagamento()">CONFIRMAR PAGAMENTO</button></div></div>
 
@@ -165,7 +166,7 @@ let sb=null,user=null,localMode=false;
 const D={obras:[],funcionarios:[],diarias:[],gastos:[],pagamentos:[],checklist:[],adiantamentos:[],faltas:[],servicos_adicionais:[]};
 const TABLES=["obras","funcionarios","diarias","gastos","pagamentos","checklist","adiantamentos","faltas","servicos_adicionais"];
 const LOCAL_EXTRA=[];
-const CHECK_DEFAULTS=["Gabarito","Locação da obra","Fundação","Estrutura","Alvenaria","Chapisco","Reboco","Contrapiso","Instalações elétricas","Instalações hidráulicas","Telhado / cobertura","Pisos e revestimentos","Esquadrias","Pintura","Acabamentos","Limpeza","Final da obra","Entrega da obra"];
+const CHECK_DEFAULTS=["Serviços iniciais","Gabarito","Locação da obra","Fundação","Estrutura","Alvenaria","Chapisco","Reboco","Contrapiso","Instalações elétricas","Instalações hidráulicas","Telhado / cobertura","Pisos e revestimentos","Esquadrias","Pintura","Acabamentos","Limpeza","Final da obra","Entrega da obra"];
 let editObraId=null,editFuncId=null;
 
 function $(id){return document.getElementById(id)}
@@ -185,7 +186,20 @@ function addOnce(t,row){if(!row)return row;const id=String(row.id);if(!D[t].some
 
 async function insertRow(t,row){
  if(localMode){const r={id:uid(),...row};addOnce(t,r);return r}
- const payload={...row,user_id:user?.id};const {data,error}=await sb.from(t).insert(payload).select().single();if(error)throw error;addOnce(t,data);return data
+ let payload={...row,user_id:user?.id};
+ for(let attempt=0;attempt<8;attempt++){
+  const {data,error}=await sb.from(t).insert(payload).select().single();
+  if(!error){addOnce(t,data);return data}
+  const msg=String(error.message||"");
+  const m=msg.match(/(?:column|field) ['"]?([A-Za-z0-9_]+)['"]?/i);
+  const col=m?.[1];
+  if(col && Object.prototype.hasOwnProperty.call(payload,col) && /schema cache|column .* does not exist|could not find/i.test(msg)){
+    delete payload[col];
+    continue;
+  }
+  throw error;
+ }
+ throw new Error("Não foi possível salvar no Supabase após adaptar as colunas.");
 }
 async function updateRow(t,id,row){
  if(localMode){const i=D[t].findIndex(x=>String(x.id)===String(id));if(i>=0){D[t][i]={...D[t][i],...row};saveLocal(t);return D[t][i]}return null}
@@ -227,7 +241,15 @@ function laborDays(obraId){return D.diarias.filter(x=>String(x.obra_id)===String
 function workFinance(id){const contract=contractValue(obra(id)),received=receipts(id),material=financeExpenses(id,"material"),labor=financeExpenses(id,"mao_obra")+laborDays(id),outsourced=financeExpenses(id,"terceirizado"),other=financeExpenses(id,"outros"),expenses=material+labor+outsourced+other;return{contract,received,toReceive:Math.max(contract-received,0),material,labor,outsourced,other,expenses,result:received-expenses}}
 function percent(v,total){return total?Math.min(100,v/total*100):0}
 function checklistForObra(id){return D.checklist.filter(x=>String(x.obra_id)===String(id)).sort((a,b)=>Number(a.id)-Number(b.id))}
-function progressForObra(o){const list=checklistForObra(o.id);if(!list.length)return o.status==="concluida"?100:0;return Math.round(list.filter(x=>x.concluida===true||x.concluida==="true").length/list.length*100)}
+function progressForObra(o){
+ const list=checklistForObra(o.id);
+ if(!list.length)return o.status==="concluida"?100:0;
+ const total=list.reduce((s,x)=>{
+  const p=(x.concluida===true||x.concluida==="true")?100:Math.max(0,Math.min(100,num(x.progresso)));
+  return s+p;
+ },0);
+ return Math.round(total/list.length);
+}
 async function ensureChecklist(id){if(checklistForObra(id).length)return;for(const task of CHECK_DEFAULTS){try{await insertRow("checklist",{obra_id:id,tarefa:task,concluida:false,progresso:0})}catch(e){console.warn(e)}}}
 
 function renderDashboard(){
@@ -275,10 +297,38 @@ async function deleteObra(id){
 function openChecklist(id){$("checkObra").value=id;$("checkId").value="";$("checkTarefa").value="";renderChecklistModal(id);openM("checkM")}
 function renderChecklistModal(id){
  const o=obra(id),list=checklistForObra(id),p=progressForObra(o);
- let html=`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px"><strong>Progresso da obra</strong><span class="badge gold">${p}% concluído</span></div><div class="progress" style="margin-top:10px"><i style="width:${p}%"></i></div><div class="muted small" style="margin-top:7px">${list.filter(x=>x.concluida===true||x.concluida==="true").length} de ${list.length} etapas concluídas</div></div>`;
- html+=list.length?list.map(c=>{const done=c.concluida===true||c.concluida==="true";return `<div class="checkRow"><input type="checkbox" ${done?"checked":""} onchange="toggleCheck('${c.id}')"><div class="checkText ${done?"done":""}">${esc(c.tarefa)}</div><button class="btn sm" onclick="editCheck('${c.id}')">Editar</button><button class="btn sm red" onclick="deleteCheck('${c.id}')">Excluir</button></div>`}).join(""):`<div class="empty">Nenhum item.</div>`;
+ let html=`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px"><strong>Progresso da obra</strong><span class="badge gold">${p}% concluído</span></div><div class="progress" style="margin-top:10px"><i style="width:${p}%"></i></div><div class="muted small" style="margin-top:7px">O progresso geral é calculado pela média dos percentuais de cada etapa.</div></div>`;
+ html+=list.length?list.map(c=>{
+  const done=c.concluida===true||c.concluida==="true";
+  const cp=done?100:Math.max(0,Math.min(100,num(c.progresso)));
+  return `<div class="checkItemBox">
+   <div class="checkItemTop"><input type="checkbox" ${done?"checked":""} onchange="toggleCheck('${c.id}')"><div class="checkText ${done?"done":""}">${esc(c.tarefa)}</div><strong class="small goldText">${cp}%</strong><button class="btn sm" onclick="editCheck('${c.id}')">Editar</button><button class="btn sm red" onclick="deleteCheck('${c.id}')">Excluir</button></div>
+   <div class="checkItemProgress"><i style="width:${cp}%"></i></div>
+   <input class="range" type="range" min="0" max="100" step="5" value="${cp}" oninput="previewCheckProgress(this,'${c.id}')" onchange="updateCheckProgress('${c.id}',this.value)">
+  </div>`;
+ }).join(""):`<div class="empty">Nenhum item.</div>`;
  $("checkListModal").innerHTML=html
 }
+function previewCheckProgress(el,id){
+ const box=el.closest(".checkItemBox");if(!box)return;
+ const pct=Math.max(0,Math.min(100,num(el.value)));
+ const strong=box.querySelector("strong");if(strong)strong.textContent=pct+"%";
+ const bar=box.querySelector(".checkItemProgress i");if(bar)bar.style.width=pct+"%";
+}
+async function updateCheckProgress(id,value){
+ const c=D.checklist.find(x=>String(x.id)===String(id));if(!c)return;
+ const p=Math.max(0,Math.min(100,num(value))),done=p>=100;
+ try{
+  await updateRow("checklist",id,{progresso:p,concluida:done});
+  const o=obra(c.obra_id);
+  if(o){
+   const geral=progressForObra(o);
+   try{await updateRow("obras",o.id,{progresso:geral})}catch{}
+  }
+  renderChecklistModal(c.obra_id);renderObras();renderDashboard();
+ }catch(e){toast("Erro ao atualizar progresso: "+(e.message||e))}
+}
+
 async function saveCheck(){
  const id=$("checkId").value,obraId=$("checkObra").value,tarefa=$("checkTarefa").value.trim();if(!tarefa){toast("Digite o item.");return}
  try{if(id){await updateRow("checklist",id,{tarefa});toast("Item alterado.")}else{await insertRow("checklist",{obra_id:obraId,tarefa,concluida:false,progresso:0});toast("Item adicionado.")}$("checkId").value="";$("checkTarefa").value="";renderChecklistModal(obraId);renderObras()}catch(e){toast("Erro: "+e.message)}
@@ -321,10 +371,15 @@ function employeeAdvancesPeriod(id,start,end){return D.adiantamentos.filter(x=>S
 function employeePaymentsPeriod(id,start,end){return D.pagamentos.filter(x=>String(x.funcionario_id)===String(id)&&String(x.tipo||"pagamento")==="pagamento"&&inPeriod(x.data,start,end)).reduce((s,x)=>s+num(x.valor),0)}
 function employeeDue(id){return D.diarias.filter(x=>String(x.funcionario_id)===String(id)).reduce((s,x)=>s+dayAmount(x),0)}
 function employeeAdvances(id){return D.adiantamentos.filter(x=>String(x.funcionario_id)===String(id)).reduce((s,x)=>s+num(x.valor),0)}
-function employeePayments(id){return D.pagamentos.filter(x=>String(x.funcionario_id)===String(id)&&String(x.tipo||"pagamento")==="pagamento").reduce((s,x)=>s+num(x.valor),0)}
+function employeePayments(id){return D.pagamentos.filter(x=>String(x.funcionario_id)===String(id)&&String(x.tipo||"pagamento")==="pagamento").reduce((s,x)=>s+num(x.valor)+num(x.desconto),0)}
 function employeeBalance(id,start=null,end=null){
- if(start&&end){const due=employeeDuePeriod(id,start,end),advances=employeeAdvancesPeriod(id,start,end),payments=employeePaymentsPeriod(id,start,end);return{due,advances,payments,balance:Math.max(due-advances-payments,0)}}
- const due=employeeDue(id),advances=employeeAdvances(id),payments=employeePayments(id);return{due,advances,payments,balance:Math.max(due-advances-payments,0)}
+ if(start&&end){
+  const due=employeeDuePeriod(id,start,end),advances=employeeAdvancesPeriod(id,start,end);
+  const payments=D.pagamentos.filter(x=>String(x.funcionario_id)===String(id)&&String(x.tipo||"pagamento")==="pagamento"&&inPeriod(x.data,start,end)).reduce((s,x)=>s+num(x.valor)+num(x.desconto),0);
+  return{due,advances,payments,balance:Math.max(due-advances-payments,0)}
+ }
+ const due=employeeDue(id),advances=employeeAdvances(id),payments=employeePayments(id);
+ return{due,advances,payments,balance:Math.max(due-advances-payments,0)}
 }
 
 function renderDiariasTopo(){
@@ -363,69 +418,85 @@ function renderFuncs(){
  renderPayroll();renderPaymentHistory();renderFaltaHistory()
 }
 function openPagamento(funcId=null){
- fillSelectors();$("pagFunc").value=funcId||"";$("pagValor").value="";$("pagData").value=today();$("pagObs").value="";showEmployeeBalance();renderLotePagamento();openM("pagM")
+ fillSelectors();$("pagFunc").value=funcId||"";$("pagValor").value="";$("pagDesconto").value="0";$("pagLiquido").value="0";$("pagData").value=today();$("pagObs").value="";
+ showEmployeeBalance();renderLotePagamento();updatePagamentoPreview();openM("pagM")
 }
 function showEmployeeBalance(){
  const id=$("pagFunc").value;
  if(!id){$("pagSaldoBox").innerHTML=`<span class="muted">Selecione um funcionário ou use o pagamento em lote abaixo.</span>`;return}
  const b=employeeBalance(id);
- $("pagSaldoBox").innerHTML=`<div class="detailGrid"><div class="detailItem"><small>Devido</small><strong>${money(b.due)}</strong></div><div class="detailItem"><small>Adiantamentos</small><strong class="orangeText">${money(b.advances)}</strong></div><div class="detailItem"><small>Pagamentos</small><strong class="greenText">${money(b.payments)}</strong></div><div class="detailItem"><small>Saldo líquido</small><strong class="${b.balance>0?"redText":"greenText"}">${money(b.balance)}</strong></div></div>`;
+ $("pagSaldoBox").innerHTML=`<div class="detailGrid"><div class="detailItem"><small>Total de diárias</small><strong>${money(b.due)}</strong></div><div class="detailItem"><small>Adiantamentos</small><strong class="orangeText">${money(b.advances)}</strong></div><div class="detailItem"><small>Pagamentos/baixas</small><strong class="greenText">${money(b.payments)}</strong></div><div class="detailItem"><small>Saldo líquido devido</small><strong class="${b.balance>0?"redText":"greenText"}">${money(b.balance)}</strong></div></div>`;
 }
 function loteCandidates(){
  return D.funcionarios.filter(f=>f.ativo!==false&&f.registrar_diaria!=="nao").map(f=>{const b=employeeBalance(f.id);return{f,b}}).filter(x=>x.b.balance>0)
 }
 function renderLotePagamento(){
  const arr=loteCandidates();
- const gross=arr.reduce((s,x)=>s+x.b.due,0),adv=arr.reduce((s,x)=>s+x.b.advances,0),paid=arr.reduce((s,x)=>s+x.b.payments,0),net=Math.max(gross-adv-paid,0);
- $("pagLoteBox").innerHTML=`<div class="selectAllRow"><input type="checkbox" id="pagSelectAll" onchange="toggleAllPagamentos(this.checked)"><div><strong>Selecionar todos os funcionários ativos</strong><div class="muted small">Também é possível selecionar somente quem será pago.</div></div></div>
- <div class="grid" style="margin-bottom:10px"><div class="detailItem"><small>Total bruto</small><strong>${money(gross)}</strong></div><div class="detailItem"><small>Adiantamentos</small><strong class="orangeText">− ${money(adv)}</strong></div><div class="detailItem"><small>Pagamentos já feitos</small><strong class="greenText">− ${money(paid)}</strong></div><div class="detailItem"><small>Total líquido</small><strong class="redText">${money(net)}</strong></div></div>
- <div id="pagLoteLista">${arr.length?arr.map(x=>`<div class="historyItem payRow"><input class="payCheck" type="checkbox" data-pay-func="${x.f.id}" onchange="updateLoteTotal()"><div class="payInfo"><div class="title">${esc(x.f.nome)}</div><div class="sub">${esc(obra(x.f.obra_id)?.nome||"Sem obra")} · Bruto ${money(x.b.due)} · Adiant. ${money(x.b.advances)} · Líquido ${money(x.b.balance)}</div></div><div class="payValue"><strong class="redText">${money(x.b.balance)}</strong></div></div>`).join(""):`<div class="empty">Nenhum funcionário ativo com saldo a pagar.</div>`}</div>
- <div id="loteTotalBox" class="card" style="margin-top:10px;margin-bottom:0"><div class="detailGrid"><div class="detailItem"><small>Selecionados</small><strong id="loteQtd">0</strong></div><div class="detailItem"><small>Bruto selecionado</small><strong id="loteBruto">R$ 0,00</strong></div><div class="detailItem"><small>Adiantamentos</small><strong class="orangeText" id="loteAdiant">R$ 0,00</strong></div><div class="detailItem"><small>Líquido a pagar</small><strong class="redText" id="loteTotal">R$ 0,00</strong></div></div></div>`;
+ $("pagLoteBox").innerHTML=`<div class="selectAllRow"><input type="checkbox" id="pagSelectAll" onchange="toggleAllPagamentos(this.checked)"><div><strong>Selecionar todos os funcionários ativos</strong><div class="muted small">Selecione todos ou somente quem será pago.</div></div></div>
+ <div id="pagLoteLista">${arr.length?arr.map(x=>`<div class="historyItem payRow"><input class="payCheck" type="checkbox" data-pay-func="${x.f.id}" onchange="updateLoteTotal()"><div class="payInfo"><div class="title">${esc(x.f.nome)}</div><div class="sub">${esc(obra(x.f.obra_id)?.nome||"Sem obra")} · Diárias ${money(x.b.due)} · Adiant. ${money(x.b.advances)} · Saldo ${money(x.b.balance)}</div></div><div class="payValue"><strong class="redText">${money(x.b.balance)}</strong></div></div>`).join(""):`<div class="empty">Nenhum funcionário ativo com saldo a pagar.</div>`}</div>
+ <div id="loteTotalBox" class="card" style="margin-top:10px;margin-bottom:0"><div class="detailGrid"><div class="detailItem"><small>Selecionados</small><strong id="loteQtd">0</strong></div><div class="detailItem"><small>Valor devido</small><strong id="loteBruto">R$ 0,00</strong></div><div class="detailItem"><small>Adiantamentos</small><strong class="orangeText" id="loteAdiant">R$ 0,00</strong></div><div class="detailItem"><small>Desconto</small><strong class="orangeText" id="loteDesconto">R$ 0,00</strong></div><div class="detailItem"><small>Líquido a pagar</small><strong class="redText" id="loteTotal">R$ 0,00</strong></div></div></div>`;
 }
 function toggleAllPagamentos(checked){document.querySelectorAll("#pagLoteLista .payCheck").forEach(x=>x.checked=checked);updateLoteTotal()}
 function selectedPagamentoIds(){return [...document.querySelectorAll("#pagLoteLista .payCheck:checked")].map(x=>String(x.dataset.payFunc))}
-function updateLoteTotal(){const ids=selectedPagamentoIds();let gross=0,adv=0,net=0;ids.forEach(id=>{const b=employeeBalance(id);gross+=b.due;adv+=b.advances;net+=b.balance});$("loteQtd").textContent=ids.length;$("loteBruto").textContent=money(gross);$("loteAdiant").textContent=money(adv);$("loteTotal").textContent=money(net)}
-
+function updateLoteTotal(){
+ const ids=selectedPagamentoIds();let gross=0,adv=0,net=0;
+ ids.forEach(id=>{const b=employeeBalance(id);gross+=b.due;adv+=b.advances;net+=b.balance});
+ $("loteQtd").textContent=ids.length;$("loteBruto").textContent=money(gross);$("loteAdiant").textContent=money(adv);
+ const desconto=Math.max(0,num($("pagDesconto")?.value));
+ const applied=Math.min(desconto,net);
+ $("loteDesconto").textContent=money(applied);$("loteTotal").textContent=money(Math.max(net-applied,0));
+}
+function updatePagamentoPreview(){
+ const bruto=num($("pagValor")?.value),desconto=Math.max(0,num($("pagDesconto")?.value));
+ if($("pagLiquido"))$("pagLiquido").value=Math.max(bruto-desconto,0).toFixed(2);
+ updateLoteTotal();
+}
 async function savePagamento(){
  const loteIds=selectedPagamentoIds();
+ const data=$("pagData").value||today(),obs=$("pagObs").value.trim(),descontoLote=Math.max(0,num($("pagDesconto").value));
  if(loteIds.length){
-   try{
-    let total=0,count=0;
-    for(const funcId of loteIds){
-      const b=employeeBalance(funcId);if(b.balance<=0)continue;
-      await registrarPagamentoComBaixa(funcId,b.balance,$("pagData").value,$("pagObs").value.trim());
-      total+=b.balance;count++;
-    }
-    toast(`${count} pagamento(s) registrado(s). Total: ${money(total)}`);
-    closeM("pagM");refreshAll();return
-   }catch(e){toast("Erro no pagamento em lote: "+e.message);return}
- }
- const funcId=$("pagFunc").value,valor=num($("pagValor").value);if(!funcId||valor<=0){toast("Selecione o funcionário ou marque pagamentos em lote.");return}
- const b=employeeBalance(funcId);if(valor>b.balance){toast("O pagamento não pode ser maior que o saldo líquido.");return}
- try{await registrarPagamentoComBaixa(funcId,valor,$("pagData").value,$("pagObs").value.trim());toast("Pagamento registrado e dado baixa.");closeM("pagM");refreshAll()}catch(e){toast("Erro no pagamento: "+e.message)}
-}
-async function registrarPagamentoComBaixa(funcId,valor,data,obs){
- const f=funcionario(funcId);const obraId=f?.obra_id||null;
- await insertRow("pagamentos",{funcionario_id:funcId,obra_id:obraId,valor,data,tipo:"pagamento",observacao:obs||"Pagamento de diárias"});
- // Para evitar dupla cobrança, marca as diárias pendentes até completar o valor pago.
- let restante=valor;
- const dias=D.diarias.filter(x=>String(x.funcionario_id)===String(funcId)).sort((a,b)=>String(a.data||"").localeCompare(String(b.data||"")));
- for(const d of dias){
-   if(restante<=0)break;
-   const total=dayAmount(d);
-   const jaPago=String(d.status||"")!=="pendente";
-   if(jaPago)continue;
-   if(total<=restante){
-     await updateRow("diarias",d.id,{status:"pago",pago_em:data});
-     restante-=total;
-   }else{
-     const qtd=num(d.qtd)||1,unit=total/qtd,pagoQtd=Math.max(0,Math.min(qtd,restante/unit));
-     await updateRow("diarias",d.id,{status:"pago_parcial",qtd_paga:pagoQtd,pago_em:data});
-     restante=0;
+  try{
+   let total=0,count=0,remainingDiscount=descontoLote;
+   const balances=loteIds.map(id=>({id,b:employeeBalance(id)})).filter(x=>x.b.balance>0);
+   const base=balances.reduce((s,x)=>s+x.b.balance,0);
+   for(const x of balances){
+    const desconto=base>0?Math.min(x.b.balance,remainingDiscount*(x.b.balance/base)):0;
+    const bruto=x.b.balance,liquido=Math.max(bruto-desconto,0);
+    if(liquido>0||desconto>0){await registrarPagamentoComBaixa(x.id,liquido,data,obs,desconto);total+=liquido;count++}
+    remainingDiscount=Math.max(0,remainingDiscount-desconto);
    }
+   toast(`${count} pagamento(s) registrado(s). Total líquido: ${money(total)}`);
+   closeM("pagM");refreshAll();return
+  }catch(e){toast("Erro no pagamento em lote: "+(e.message||e));return}
  }
- // Lança a mão de obra na obra automaticamente, apenas uma vez por pagamento.
- await insertRow("gastos",{obra_id:obraId,categoria:"despesa",subcategoria:"mao_obra",descricao:"Pagamento de diárias — "+(f?.nome||"Funcionário"),valor,data,fornecedor:f?.nome||"",observacao:"Gerado automaticamente pelo pagamento da equipe."});
+ const funcId=$("pagFunc").value,valor=num($("pagValor").value),desconto=Math.max(0,num($("pagDesconto").value)),liquido=Math.max(valor-desconto,0);
+ if(!funcId||valor<=0){toast("Informe o funcionário e o valor bruto.");return}
+ const b=employeeBalance(funcId);
+ if(valor>b.balance){toast("O valor bruto não pode ser maior que o saldo líquido devido.");return}
+ if(desconto>valor){toast("O desconto não pode ser maior que o valor bruto.");return}
+ try{await registrarPagamentoComBaixa(funcId,liquido,data,obs,desconto);toast("Pagamento registrado e dado baixa.");closeM("pagM");refreshAll()}catch(e){toast("Erro no pagamento: "+(e.message||e))}
+}
+async function registrarPagamentoComBaixa(funcId,valor,data,obs,desconto=0){
+ const f=funcionario(funcId),obraId=f?.obra_id||null,baixa=num(valor)+num(desconto);
+ await insertRow("pagamentos",{funcionario_id:funcId,obra_id:obraId,valor:num(valor),desconto:num(desconto),data,tipo:"pagamento",observacao:obs||"Pagamento de diárias"});
+ let restante=baixa;
+ const dias=D.diarias.filter(x=>String(x.funcionario_id)===String(funcId)&&String(x.status||"pendente")!=="pago").sort((a,b)=>String(a.data||"").localeCompare(String(b.data||"")));
+ for(const d of dias){
+  if(restante<=0)break;
+  const total=dayAmount(d),jaPago=num(d.valor_baixado||0),pendente=Math.max(total-jaPago,0);
+  if(pendente<=0){continue}
+  if(pendente<=restante){
+   await updateRow("diarias",d.id,{status:"pago",valor_baixado:total,pago_em:data});
+   restante-=pendente;
+  }else{
+   const novoBaixado=jaPago+restante;
+   await updateRow("diarias",d.id,{status:"pago_parcial",valor_baixado:novoBaixado,pago_em:data});
+   restante=0;
+  }
+ }
+ if(obraId&&num(valor)>0){
+  await insertRow("gastos",{obra_id:obraId,categoria:"despesa",subcategoria:"mao_obra",descricao:"Pagamento de diárias — "+(f?.nome||"Funcionário"),valor:num(valor),data,fornecedor:f?.nome||"",observacao:"Gerado automaticamente pelo pagamento da equipe."});
+ }
 }
 function openAdiantamento(funcId=null){fillSelectors();$("adiFunc").value=funcId||"";$("adiValor").value="";$("adiData").value=today();$("adiObs").value="";showAdvanceBalance();openM("adiM")}
 function showAdvanceBalance(){const id=$("adiFunc").value;if(!id){$("adiSaldoBox").innerHTML=`<span class="muted">Selecione um funcionário.</span>`;return}const b=employeeBalance(id);$("adiSaldoBox").innerHTML=`<div class="detailGrid"><div class="detailItem"><small>Total devido</small><strong>${money(b.due)}</strong></div><div class="detailItem"><small>Adiantamentos</small><strong>${money(b.advances)}</strong></div><div class="detailItem"><small>Pagamentos</small><strong>${money(b.payments)}</strong></div><div class="detailItem"><small>Saldo disponível</small><strong class="redText">${money(Math.max(b.balance,0))}</strong></div></div>`}
@@ -456,8 +527,15 @@ function renderFaltaHistory(){
 function renderPayroll(){
  const inicio=$("diaInicio").value,fim=$("diaFim").value,selected=$("funcFiltro").value,arr=activeDiariaEntries(inicio,fim,selected);
  if(!arr.length){$("diaList").innerHTML=`<div class="empty">Nenhuma diária no período.</div>`;return}
- $("diaList").innerHTML=arr.map(x=>{const f=funcionario(x.funcionario_id),o=obra(x.obra_id),total=dayAmount(x);return `<div class="historyItem"><div><div class="title">${esc(f?.nome||"")} — ${esc(o?.nome||"")}</div><div class="sub">${esc(x.data||"")} · ${num(x.qtd||1)} diária(s) · ${x.status==="pago"?"Paga":x.status==="pago_parcial"?"Paga parcialmente":"Pendente"}</div></div><strong>${money(total)}</strong></div>`}).join("")
+ $("diaList").innerHTML=arr.map(x=>{const f=funcionario(x.funcionario_id),o=obra(x.obra_id),total=dayAmount(x),status=x.status==="pago"?"Paga":x.status==="pago_parcial"?"Paga parcialmente":"Pendente";return `<div class="historyItem"><div><div class="title">${esc(f?.nome||"")} — ${esc(o?.nome||"")}</div><div class="sub">${esc(x.data||"")} · ${num(x.qtd||1)} diária(s) · ${status}</div></div><div style="text-align:right"><strong>${money(total)}</strong><br><button class="btn sm red" onclick="deleteDiaria('${x.id}')">Excluir</button></div></div>`}).join("")
 }
+async function deleteDiaria(id){
+ const d=D.diarias.find(x=>String(x.id)===String(id));if(!d)return;
+ if(String(d.status||"pendente")==="pago"||String(d.status||"")==="pago_parcial"){toast("Esta diária já possui baixa de pagamento. Exclua/ajuste o pagamento antes.");return}
+ if(!confirm("Excluir esta diária?"))return;
+ try{await removeRow("diarias",id);toast("Diária excluída.");refreshAll()}catch(e){toast("Erro ao excluir diária: "+(e.message||e))}
+}
+
 async function toggleFuncionarioStatus(id){const f=funcionario(id);if(!f)return;try{const novo=f.ativo===false;await updateRow("funcionarios",id,{ativo:novo});f.ativo=novo;toast(novo?"Funcionário ativado.":"Funcionário inativado.");refreshAll()}catch(e){toast("Erro: "+(e.message||e))}}
 async function deleteFuncionario(id){const f=funcionario(id);if(!f)return;if(!confirm("Excluir definitivamente o funcionário "+f.nome+"?"))return;try{await removeRow("funcionarios",id);toast("Funcionário excluído.");refreshAll()}catch(e){toast("Erro ao excluir: "+(e.message||e))}}
 
@@ -522,7 +600,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelect
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
 
 // Exposição explícita das ações para os botões do navegador/iPhone.
-Object.assign(window,{login,signup,localLogin,logout,go,closeM,openM,openObra,saveObra,deleteObra,openChecklist,saveCheck,editCheck,deleteCheck,toggleCheck,openServico,saveServico,openFunc,saveFunc,quickDiaria,openDia,saveDia,openPagamento,savePagamento,openAdiantamento,saveAdiantamento,openFalta,saveFalta,toggleFuncionarioStatus,deleteFuncionario,openFin,saveFin,renderObras,renderFuncs,renderFinance,renderReports,refreshAll,exportData});
+Object.assign(window,{login,signup,localLogin,logout,go,closeM,openM,openObra,saveObra,deleteObra,openChecklist,saveCheck,editCheck,deleteCheck,toggleCheck,updateCheckProgress,previewCheckProgress,openServico,saveServico,openFunc,saveFunc,quickDiaria,openDia,saveDia,deleteDiaria,openPagamento,savePagamento,updatePagamentoPreview,openAdiantamento,saveAdiantamento,openFalta,saveFalta,toggleFuncionarioStatus,deleteFuncionario,openFin,saveFin,renderObras,renderFuncs,renderFinance,renderReports,refreshAll,exportData});
 if(window.supabase){try{sb=supabase.createClient(SUPA_URL,SUPA_KEY);sb.auth.getSession().then(async({data})=>{if(data?.session){user=data.session.user;localMode=false;try{await cloudLoad();startApp()}catch(e){console.error(e)}}})}catch(e){console.warn(e)}}
 </script>
 </body>
