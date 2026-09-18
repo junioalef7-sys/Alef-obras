@@ -130,7 +130,7 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 <button type="button" class="btn gold block" onclick="saveFunc()">SALVAR FUNCIONÁRIO</button></div></div>
 
 <div class="modal" id="diaM"><div class="modalBox"><div class="modalHead"><h3>Registrar diária</h3><button class="close" onclick="closeM('diaM')">×</button></div>
-<div class="field"><label>Funcionário</label><select id="diaFunc"></select></div><div class="field"><label>Obra</label><select id="diaObra"></select></div><div class="two"><div class="field"><label>Data</label><input id="diaData" type="date"></div><div class="field"><label>Quantidade</label><input id="diaQtd" type="number" step="0.5" value="1"></div></div><div class="field"><label>Valor da diária</label><input id="diaValor" type="number" step="0.01"></div><div class="field"><label>Observação</label><textarea id="diaObs"></textarea></div><button type="button" class="btn gold block" onclick="saveDia()">REGISTRAR DIÁRIA</button></div></div>
+<div class="field"><label>Funcionário</label><select id="diaFunc" onchange="onDiaFuncChange()"></select></div><div class="field"><label>Obra</label><select id="diaObra"></select></div><div class="two"><div class="field"><label>Data</label><input id="diaData" type="date"></div><div class="field"><label>Quantidade</label><input id="diaQtd" type="number" step="0.5" value="1"></div></div><div class="field"><label>Valor da diária</label><input id="diaValor" type="number" step="0.01"></div><div class="field"><label>Observação</label><textarea id="diaObs"></textarea></div><button type="button" class="btn gold block" onclick="saveDia()">REGISTRAR DIÁRIA</button></div></div>
 
 <div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h3>Lançamento financeiro</h3><button class="close" onclick="closeM('finM')">×</button></div>
 <div class="field"><label>Obra</label><select id="finObra"></select></div><div class="two"><div class="field"><label>Tipo</label><select id="finCategoria" onchange="toggleFinCategory()"><option value="entrada">Entrada / recebimento</option><option value="despesa">Despesa</option></select></div><div class="field"><label>Categoria da despesa</label><select id="finSubcategoria"><option value="material">Material</option><option value="mao_obra">Mão de obra</option><option value="terceirizado">Terceirizado</option><option value="outros">Outros</option></select></div></div>
@@ -186,31 +186,51 @@ function addOnce(t,row){if(!row)return row;const id=String(row.id);if(!D[t].some
 
 async function insertRow(t,row){
  if(localMode){const r={id:uid(),...row};addOnce(t,r);return r}
- let payload={...row,user_id:user?.id};
- for(let attempt=0;attempt<8;attempt++){
+ let payload={...row};
+ if(user?.id) payload.user_id=user.id;
+ for(let attempt=0;attempt<12;attempt++){
   const {data,error}=await sb.from(t).insert(payload).select().single();
   if(!error){addOnce(t,data);return data}
-  const msg=String(error.message||"");
-  const m=msg.match(/(?:column|field) ['"]?([A-Za-z0-9_]+)['"]?/i);
-  const col=m?.[1];
+  const msg=String(error.message||error.details||error.hint||"");
+  const col=(msg.match(/(?:column|field)\s+['"]?([A-Za-z0-9_]+)['"]?/i)||[])[1];
   if(col && Object.prototype.hasOwnProperty.call(payload,col) && /schema cache|column .* does not exist|could not find/i.test(msg)){
-    delete payload[col];
-    continue;
+   delete payload[col];continue
   }
-  throw error;
+  throw error
  }
- throw new Error("Não foi possível salvar no Supabase após adaptar as colunas.");
+ throw new Error("Não foi possível salvar. Verifique as colunas e as permissões do Supabase.");
 }
 async function updateRow(t,id,row){
  if(localMode){const i=D[t].findIndex(x=>String(x.id)===String(id));if(i>=0){D[t][i]={...D[t][i],...row};saveLocal(t);return D[t][i]}return null}
- const {data,error}=await sb.from(t).update(row).eq("id",id).select().single();if(error)throw error;const i=D[t].findIndex(x=>String(x.id)===String(id));if(i>=0)D[t][i]=data;return data
+ let payload={...row};
+ for(let attempt=0;attempt<12;attempt++){
+  const {data,error}=await sb.from(t).update(payload).eq("id",id).select().single();
+  if(!error){const i=D[t].findIndex(x=>String(x.id)===String(id));if(i>=0)D[t][i]=data;return data}
+  const msg=String(error.message||error.details||error.hint||"");
+  const col=(msg.match(/(?:column|field)\s+['"]?([A-Za-z0-9_]+)['"]?/i)||[])[1];
+  if(col && Object.prototype.hasOwnProperty.call(payload,col) && /schema cache|column .* does not exist|could not find/i.test(msg)){
+   delete payload[col];continue
+  }
+  throw error
+ }
+ throw new Error("Não foi possível atualizar. Verifique as colunas e as permissões do Supabase.");
 }
 async function removeRow(t,id){
  if(localMode){D[t]=D[t].filter(x=>String(x.id)!==String(id));saveLocal(t);return}
  const {error}=await sb.from(t).delete().eq("id",id);if(error)throw error;D[t]=D[t].filter(x=>String(x.id)!==String(id))
 }
 async function cloudLoad(){
- for(const t of TABLES){const {data,error}=await sb.from(t).select("*").order("created_at",{ascending:false});if(error){console.warn("Tabela:",t,error.message);D[t]=[]}else D[t]=data||[]}
+ for(const t of TABLES){
+  const {data,error}=await sb.from(t).select("*").order("created_at",{ascending:false});
+  if(error){console.warn("Tabela:",t,error.message);toast("Erro ao carregar "+t+": "+error.message);continue}
+  D[t]=data||[];
+ }
+}
+async function ensureAllChecklists(){
+ if(!D.obras.length)return;
+ for(const o of D.obras){
+  try{await ensureChecklist(o.id)}catch(e){console.warn("Checklist",o.id,e)}
+ }
 }
 function loadLocalExtras(){}
 
@@ -223,7 +243,7 @@ async function signup(){
  try{sb=supabase.createClient(SUPA_URL,SUPA_KEY);const {error}=await sb.auth.signUp({email,password});if(error)throw error;$("authMsg").textContent="Conta criada. Confirme o e-mail se solicitado."}catch(e){$("authMsg").textContent=e.message||"Erro ao criar conta."}
 }
 function localLogin(){localMode=true;user={id:"local"};loadLocal();startApp()}
-function startApp(){$("auth").style.display="none";$("app").style.display="block";setDefaults();refreshAll()}
+async function startApp(){$("auth").style.display="none";$("app").style.display="block";setDefaults();try{await ensureAllChecklists()}catch(e){console.warn(e)}refreshAll()}
 async function logout(){if(sb&&!localMode){try{await sb.auth.signOut()}catch{}}location.reload()}
 function setDefaults(){
  ["diaData","finData","pagData","adiData","faltaData","servData"].forEach(id=>{if($(id))$(id).value=today()});
@@ -238,7 +258,7 @@ function contractValue(o){return o?num(o.valor)+additionalTotal(o.id):0}
 function receipts(obraId){return D.gastos.filter(x=>String(x.obra_id)===String(obraId)&&String(x.categoria).toLowerCase()==="entrada").reduce((s,x)=>s+num(x.valor),0)}
 function financeExpenses(obraId,sub=null){return D.gastos.filter(x=>String(x.obra_id)===String(obraId)&&String(x.categoria).toLowerCase()==="despesa"&&(!sub||String(x.subcategoria||"outros")===sub)).reduce((s,x)=>s+num(x.valor),0)}
 function laborDays(obraId){return D.diarias.filter(x=>String(x.obra_id)===String(obraId)).reduce((s,x)=>{const f=funcionario(x.funcionario_id);if(f&&f.registrar_diaria==="nao")return s;return s+num(x.valor_pago||x.valor_diaria)*num(x.qtd||1)},0)}
-function workFinance(id){const contract=contractValue(obra(id)),received=receipts(id),material=financeExpenses(id,"material"),labor=financeExpenses(id,"mao_obra")+laborDays(id),outsourced=financeExpenses(id,"terceirizado"),other=financeExpenses(id,"outros"),expenses=material+labor+outsourced+other;return{contract,received,toReceive:Math.max(contract-received,0),material,labor,outsourced,other,expenses,result:received-expenses}}
+function workFinance(id){const contract=contractValue(obra(id)),received=receipts(id),material=financeExpenses(id,"material"),labor=financeExpenses(id,"mao_obra"),outsourced=financeExpenses(id,"terceirizado"),other=financeExpenses(id,"outros"),expenses=material+labor+outsourced+other;return{contract,received,toReceive:Math.max(contract-received,0),material,labor,outsourced,other,expenses,result:received-expenses}}
 function percent(v,total){return total?Math.min(100,v/total*100):0}
 function checklistForObra(id){return D.checklist.filter(x=>String(x.obra_id)===String(id)).sort((a,b)=>Number(a.id)-Number(b.id))}
 function progressForObra(o){
@@ -284,17 +304,17 @@ function renderObras(){
  arr.forEach(o=>{if(!checklistForObra(o.id).length)ensureChecklist(o.id).catch(()=>{})});
 }
 function openObra(id=null){
- editObraId=id;if(id){const o=obra(id);$("obraMTitle").textContent="Editar obra";$("obraId").value=id;$("obraNome").value=o.nome||"";$("obraCliente").value=o.cliente||"";$("obraTelefone").value=o.telefone||"";$("obraValor").value=num(o.valor);$("obraStatus").value=o.status||"planejamento";$("obraInicio").value=o.inicio||"";$("obraPrazo").value=o.prazo||"";$("obraObs").value=o.observacao||o.obs||""}else{$("obraMTitle").textContent="Nova obra";$("obraId").value="";$("obraNome").value="";$("obraCliente").value="";$("obraTelefone").value="";$("obraValor").value="";$("obraStatus").value="planejamento";$("obraInicio").value=today();$("obraPrazo").value="";$("obraObs").value=""}openM("obraM")
+ editObraId=id;if(id){const o=obra(id);$("obraMTitle").textContent="Editar obra";$("obraId").value=id;$("obraNome").value=o.nome||"";$("obraCliente").value=o.cliente||"";$("obraTelefone").value=o.telefone||"";$("obraValor").value=num(o.valor);$("obraStatus").value=o.status||"planejamento";$("obraInicio").value=(o.data_inicio||o.inicio||"");$("obraPrazo").value=(o.data_fim||o.prazo||"");$("obraObs").value=(o.observacoes||o.observacao||o.obs||"")}else{$("obraMTitle").textContent="Nova obra";$("obraId").value="";$("obraNome").value="";$("obraCliente").value="";$("obraTelefone").value="";$("obraValor").value="";$("obraStatus").value="planejamento";$("obraInicio").value=today();$("obraPrazo").value="";$("obraObs").value=""}openM("obraM")
 }
 async function saveObra(){
- const row={nome:$("obraNome").value.trim(),cliente:$("obraCliente").value.trim(),telefone:$("obraTelefone").value.trim(),valor:num($("obraValor").value),status:$("obraStatus").value,inicio:$("obraInicio").value,prazo:$("obraPrazo").value,observacao:$("obraObs").value.trim()};
+ const row={nome:$("obraNome").value.trim(),cliente:$("obraCliente").value.trim(),telefone:$("obraTelefone").value.trim(),valor:num($("obraValor").value),status:$("obraStatus").value,data_inicio:$("obraInicio").value,data_fim:$("obraPrazo").value,observacoes:$("obraObs").value.trim()};
  if(!row.nome){toast("Informe o nome da obra.");return}
- try{if(editObraId){await updateRow("obras",editObraId,row);toast("Obra atualizada.")}else{const r=await insertRow("obras",row);await ensureChecklist(r.id);toast("Obra criada.")}closeM("obraM");refreshAll()}catch(e){toast("Erro ao salvar obra: "+e.message)}
+ try{if(editObraId){await updateRow("obras",editObraId,row);await ensureChecklist(editObraId);toast("Obra atualizada.")}else{const r=await insertRow("obras",row);await ensureChecklist(r.id);toast("Obra criada.")}closeM("obraM");refreshAll()}catch(e){toast("Erro ao salvar obra: "+e.message)}
 }
 async function deleteObra(id){
  if(!confirm("Excluir esta obra?"))return;try{await removeRow("obras",id);D.checklist=D.checklist.filter(x=>String(x.obra_id)!==String(id));D.diarias=D.diarias.filter(x=>String(x.obra_id)!==String(id));if(localMode){saveLocal("checklist");saveLocal("diarias")}toast("Obra excluída.");refreshAll()}catch(e){toast(e.message)}
 }
-function openChecklist(id){$("checkObra").value=id;$("checkId").value="";$("checkTarefa").value="";renderChecklistModal(id);openM("checkM")}
+async function openChecklist(id){$("checkObra").value=id;$("checkId").value="";$("checkTarefa").value="";await ensureChecklist(id);renderChecklistModal(id);openM("checkM")}
 function renderChecklistModal(id){
  const o=obra(id),list=checklistForObra(id),p=progressForObra(o);
  let html=`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px"><strong>Progresso da obra</strong><span class="badge gold">${p}% concluído</span></div><div class="progress" style="margin-top:10px"><i style="width:${p}%"></i></div><div class="muted small" style="margin-top:7px">O progresso geral é calculado pela média dos percentuais de cada etapa.</div></div>`;
@@ -337,7 +357,7 @@ function editCheck(id){const c=D.checklist.find(x=>String(x.id)===String(id));if
 async function deleteCheck(id){if(!confirm("Excluir este item do checklist?"))return;const c=D.checklist.find(x=>String(x.id)===String(id));try{await removeRow("checklist",id);toast("Item excluído.");renderChecklistModal(c.obra_id);renderObras()}catch(e){toast(e.message)}}
 async function toggleCheck(id){
  const c=D.checklist.find(x=>String(x.id)===String(id));if(!c)return;const done=!(c.concluida===true||c.concluida==="true");
- try{await updateRow("checklist",id,{concluida:done,progresso:done?100:0});const o=obra(c.obra_id);if(o){const p=progressForObra(o);if(localMode){o.progresso=p;saveLocal("obras")}else{try{await updateRow("obras",o.id,{progresso:p})}catch{}}}toast(done?"Etapa concluída.":"Etapa reaberta.");renderObras();renderDashboard();if($("checkM").classList.contains("show"))renderChecklistModal(c.obra_id)}catch(e){toast("Erro no checklist: "+e.message)}
+ try{await updateRow("checklist",id,{concluida:done,progresso:done?100:0});const o=obra(c.obra_id);if(o){const p=progressForObra(o);if(localMode){o.progresso=p;saveLocal("obras")}}toast(done?"Etapa concluída.":"Etapa reaberta.");renderObras();renderDashboard();if($("checkM").classList.contains("show"))renderChecklistModal(c.obra_id)}catch(e){toast("Erro no checklist: "+e.message)}
 }
 
 function openServico(obraId=null){$("servId").value="";$("servDescricao").value="";$("servValor").value="";$("servData").value=today();$("servObs").value="";fillSelectors();if(obraId)$("servObra").value=obraId;openM("servM")}
@@ -350,7 +370,7 @@ async function saveFunc(){
 }
 
 /* ===== CONTROLE DE DIÁRIAS E PAGAMENTOS ===== */
-function dayAmount(x){return num(x.valor_pago||x.valor_diaria)*Math.max(num(x.qtd)||1,0)}
+function dayAmount(x){const base=num(x.valor_diaria);return (base>0?base:num(x.valor_pago))*Math.max(num(x.qtd)||1,0)}
 function dateObj(s){const a=String(s||"").split("-").map(Number);return a.length===3?new Date(a[0],a[1]-1,a[2]):null}
 function inPeriod(date,start,end){return String(date||"")>=start&&String(date||"")<=end}
 function periodRange(tipo){
@@ -368,7 +388,7 @@ function activeDiariaEntries(start,end,selected=null){
 }
 function employeeDuePeriod(id,start,end){return activeDiariaEntries(start,end,id).reduce((s,x)=>s+dayAmount(x),0)}
 function employeeAdvancesPeriod(id,start,end){return D.adiantamentos.filter(x=>String(x.funcionario_id)===String(id)&&inPeriod(x.data,start,end)).reduce((s,x)=>s+num(x.valor),0)}
-function employeePaymentsPeriod(id,start,end){return D.pagamentos.filter(x=>String(x.funcionario_id)===String(id)&&String(x.tipo||"pagamento")==="pagamento"&&inPeriod(x.data,start,end)).reduce((s,x)=>s+num(x.valor),0)}
+function employeePaymentsPeriod(id,start,end){return D.pagamentos.filter(x=>String(x.funcionario_id)===String(id)&&String(x.tipo||"pagamento")==="pagamento"&&inPeriod(x.data,start,end)).reduce((s,x)=>s+num(x.valor)+num(x.desconto),0)}
 function employeeDue(id){return D.diarias.filter(x=>String(x.funcionario_id)===String(id)).reduce((s,x)=>s+dayAmount(x),0)}
 function employeeAdvances(id){return D.adiantamentos.filter(x=>String(x.funcionario_id)===String(id)).reduce((s,x)=>s+num(x.valor),0)}
 function employeePayments(id){return D.pagamentos.filter(x=>String(x.funcionario_id)===String(id)&&String(x.tipo||"pagamento")==="pagamento").reduce((s,x)=>s+num(x.valor)+num(x.desconto),0)}
@@ -426,6 +446,7 @@ function showEmployeeBalance(){
  if(!id){$("pagSaldoBox").innerHTML=`<span class="muted">Selecione um funcionário ou use o pagamento em lote abaixo.</span>`;return}
  const b=employeeBalance(id);
  $("pagSaldoBox").innerHTML=`<div class="detailGrid"><div class="detailItem"><small>Total de diárias</small><strong>${money(b.due)}</strong></div><div class="detailItem"><small>Adiantamentos</small><strong class="orangeText">${money(b.advances)}</strong></div><div class="detailItem"><small>Pagamentos/baixas</small><strong class="greenText">${money(b.payments)}</strong></div><div class="detailItem"><small>Saldo líquido devido</small><strong class="${b.balance>0?"redText":"greenText"}">${money(b.balance)}</strong></div></div>`;
+ if($("pagValor") && num($("pagValor").value)<=0){$("pagValor").value=b.balance.toFixed(2);updatePagamentoPreview()}
 }
 function loteCandidates(){
  return D.funcionarios.filter(f=>f.ativo!==false&&f.registrar_diaria!=="nao").map(f=>{const b=employeeBalance(f.id);return{f,b}}).filter(x=>x.b.balance>0)
@@ -477,25 +498,22 @@ async function savePagamento(){
  try{await registrarPagamentoComBaixa(funcId,liquido,data,obs,desconto);toast("Pagamento registrado e dado baixa.");closeM("pagM");refreshAll()}catch(e){toast("Erro no pagamento: "+(e.message||e))}
 }
 async function registrarPagamentoComBaixa(funcId,valor,data,obs,desconto=0){
- const f=funcionario(funcId),obraId=f?.obra_id||null,baixa=num(valor)+num(desconto);
- await insertRow("pagamentos",{funcionario_id:funcId,obra_id:obraId,valor:num(valor),desconto:num(desconto),data,tipo:"pagamento",observacao:obs||"Pagamento de diárias"});
+ const f=funcionario(funcId),obraId=f?.obra_id||null,liquido=num(valor),desc=Math.max(0,num(desconto)),baixa=liquido+desc;
+ await insertRow("pagamentos",{funcionario_id:funcId,obra_id:obraId,valor:liquido,desconto:desc,data,tipo:"pagamento",observacao:obs||"Pagamento de diárias"});
  let restante=baixa;
- const dias=D.diarias.filter(x=>String(x.funcionario_id)===String(funcId)&&String(x.status||"pendente")!=="pago").sort((a,b)=>String(a.data||"").localeCompare(String(b.data||"")));
+ const dias=D.diarias.filter(x=>String(x.funcionario_id)===String(funcId)&&String(x.status||"").toLowerCase()!=="pago").sort((a,b)=>String(a.data||"").localeCompare(String(b.data||"")));
  for(const d of dias){
   if(restante<=0)break;
-  const total=dayAmount(d),jaPago=num(d.valor_baixado||0),pendente=Math.max(total-jaPago,0);
-  if(pendente<=0){continue}
-  if(pendente<=restante){
-   await updateRow("diarias",d.id,{status:"pago",valor_baixado:total,pago_em:data});
-   restante-=pendente;
-  }else{
-   const novoBaixado=jaPago+restante;
-   await updateRow("diarias",d.id,{status:"pago_parcial",valor_baixado:novoBaixado,pago_em:data});
-   restante=0;
-  }
+  const total=dayAmount(d),jaBaixado=Math.max(num(d.valor_baixado),num(d.qtd_paga)*num(d.valor_diaria));
+  const pendente=Math.max(total-jaBaixado,0);
+  if(pendente<=0)continue;
+  const baixaAgora=Math.min(pendente,restante),novoBaixado=jaBaixado+baixaAgora;
+  const qtdPaga=dayAmount(d)>0?Math.min(num(d.qtd||1),novoBaixado/num(d.valor_diaria||1)):0;
+  await updateRow("diarias",d.id,{status:novoBaixado>=total?"pago":"pago_parcial",qtd_paga:qtdPaga,valor_baixado:novoBaixado,pago_em:data});
+  restante-=baixaAgora;
  }
- if(obraId&&num(valor)>0){
-  await insertRow("gastos",{obra_id:obraId,categoria:"despesa",subcategoria:"mao_obra",descricao:"Pagamento de diárias — "+(f?.nome||"Funcionário"),valor:num(valor),data,fornecedor:f?.nome||"",observacao:"Gerado automaticamente pelo pagamento da equipe."});
+ if(obraId&&liquido>0){
+  await insertRow("gastos",{obra_id:obraId,categoria:"despesa",subcategoria:"mao_obra",descricao:"Pagamento de diárias — "+(f?.nome||"Funcionário"),valor:liquido,data,fornecedor:f?.nome||"",observacao:"Gerado automaticamente pelo pagamento da equipe."});
  }
 }
 function openAdiantamento(funcId=null){fillSelectors();$("adiFunc").value=funcId||"";$("adiValor").value="";$("adiData").value=today();$("adiObs").value="";showAdvanceBalance();openM("adiM")}
@@ -552,6 +570,12 @@ async function quickDiaria(funcId){
  }catch(e){toast("Erro ao registrar diária: "+(e.message||e))}
 }
 
+function onDiaFuncChange(){
+ const f=funcionario($("diaFunc").value);
+ if(!f)return;
+ $("diaObra").value=f.obra_id?String(f.obra_id):"";
+ $("diaValor").value=num(f.valor_diaria)>0?num(f.valor_diaria):"";
+}
 function openDia(){fillSelectors();$("diaFunc").value="";$("diaObra").value="";$("diaData").value=today();$("diaQtd").value=1;$("diaValor").value="";$("diaObs").value="";openM("diaM")}
 async function saveDia(){
  const f=funcionario($("diaFunc").value);if(!f){toast("Selecione um funcionário.");return}if(f.registrar_diaria==="nao"){toast("Este funcionário está configurado para não registrar diária.");return}
@@ -600,7 +624,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelect
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
 
 // Exposição explícita das ações para os botões do navegador/iPhone.
-Object.assign(window,{login,signup,localLogin,logout,go,closeM,openM,openObra,saveObra,deleteObra,openChecklist,saveCheck,editCheck,deleteCheck,toggleCheck,updateCheckProgress,previewCheckProgress,openServico,saveServico,openFunc,saveFunc,quickDiaria,openDia,saveDia,deleteDiaria,openPagamento,savePagamento,updatePagamentoPreview,openAdiantamento,saveAdiantamento,openFalta,saveFalta,toggleFuncionarioStatus,deleteFuncionario,openFin,saveFin,renderObras,renderFuncs,renderFinance,renderReports,refreshAll,exportData});
+Object.assign(window,{login,signup,localLogin,logout,go,closeM,openM,openObra,saveObra,deleteObra,openChecklist,saveCheck,editCheck,deleteCheck,toggleCheck,updateCheckProgress,previewCheckProgress,openServico,saveServico,openFunc,saveFunc,quickDiaria,openDia,onDiaFuncChange,saveDia,deleteDiaria,openPagamento,savePagamento,updatePagamentoPreview,openAdiantamento,saveAdiantamento,openFalta,saveFalta,toggleFuncionarioStatus,deleteFuncionario,openFin,saveFin,renderObras,renderFuncs,renderFinance,renderReports,refreshAll,exportData});
 if(window.supabase){try{sb=supabase.createClient(SUPA_URL,SUPA_KEY);sb.auth.getSession().then(async({data})=>{if(data?.session){user=data.session.user;localMode=false;try{await cloudLoad();startApp()}catch(e){console.error(e)}}})}catch(e){console.warn(e)}}
 </script>
 </body>
