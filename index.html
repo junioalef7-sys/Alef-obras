@@ -715,14 +715,24 @@ d.valor_diaria||0
 
 }
 
+function diariaEstaPaga(d){
+
+const status=String(d?.status||"pendente").trim().toLowerCase();
+
+return status==="pago" ||
+       status==="paid" ||
+       status==="quitado" ||
+       status==="liquidado" ||
+       d?.pago===true ||
+       d?.paga===true;
+}
+
 function getPendingDiarias(funcId){
 
 return D.diarias.filter(d=>
 String(d.funcionario_id)===
 String(funcId)&&
-String(
-d.status||"pendente"
-).toLowerCase()!=="pago"
+!diariaEstaPaga(d)
 );
 
 }
@@ -1140,14 +1150,26 @@ Object.keys(D).forEach(table=>{
 if(!Array.isArray(x[table]))
 return;
 
+const localRows=x[table];
+const localById=new Map(
+localRows.map(r=>[String(r.id),r])
+);
+
+/*
+  O local é a fonte de continuidade quando o Supabase recusou
+  alguma gravação/alteração. Assim, um reload não "desfaz"
+  uma diária que acabou de ser marcada como paga.
+*/
+D[table]=D[table].map(cloudRow=>{
+const localRow=localById.get(String(cloudRow.id));
+return localRow ? {...cloudRow,...localRow} : cloudRow;
+});
+
+const ids=new Set(D[table].map(r=>String(r.id)));
+
 D[table]=[
 ...D[table],
-...x[table].filter(l=>
-!D[table].some(
-r=>String(r.id)===
-String(l.id)
-)
-)
+...localRows.filter(r=>!ids.has(String(r.id)))
 ];
 
 });
@@ -1364,78 +1386,76 @@ id,
 row
 ){
 
-if(String(id).startsWith("local_")){
-
-const i=D[table].findIndex(
-x=>String(x.id)===
-String(id)
+const index=D[table].findIndex(
+x=>String(x.id)===String(id)
 );
 
-if(i>=0){
-
-D[table][i]={
-...D[table][i],
-...row
-};
-
-saveLocalData();
-
-renderAll();
-
-toast("Atualizado.");
-
-return D[table][i];
-
+if(index<0){
+toast("Registro não encontrado.");
+return null;
 }
 
-return null;
+const anterior={...D[table][index]};
+D[table][index]={
+...D[table][index],
+...row
+};
+saveLocalData();
+renderAll();
 
+if(String(id).startsWith("local_")){
+return D[table][index];
+}
+
+if(!sb||!user){
+return D[table][index];
 }
 
 try{
 
+const tentativas=[row];
+
+/* Algumas instalações antigas não possuem a coluna "pago".
+   Tenta primeiro o registro completo e depois somente "status"
+   para que a baixa da diária continue funcionando. */
+if(table==="diarias" && Object.prototype.hasOwnProperty.call(row,"pago")){
+  const semPago={...row};
+  delete semPago.pago;
+  tentativas.push(semPago);
+}
+
+for(const tentativa of tentativas){
+
 const{data,error}=
 await sb
 .from(table)
-.update(row)
+.update(tentativa)
 .eq("id",id)
 .select()
 .single();
 
 if(!error&&data){
 
-const i=D[table].findIndex(
-x=>String(x.id)===
-String(id)
-);
-
-if(i>=0)
-D[table][i]=data;
-
+D[table][index]=data;
 saveLocalData();
-
 renderAll();
-
 return data;
 
 }
 
-console.warn(
-"Erro atualização",
-error?.message
-);
+console.warn("Supabase recusou atualização",table,error?.message);
+}
+
+toast("Atualizado no aparelho. O servidor recusou a alteração.");
+return D[table][index];
 
 }catch(e){
 
-console.warn(e);
+console.warn("Erro Supabase ao atualizar",table,e);
+toast("Atualizado no aparelho. Não foi possível sincronizar agora.");
+return D[table][index];
 
 }
-
-toast(
-"Não foi possível atualizar no servidor."
-);
-
-return null;
 
 }
 
@@ -2691,184 +2711,50 @@ toast(
 function renderPayroll(){
 
 const box=$("diaList");
-
 if(!box)return;
 
-const period=
-$("payPeriod")?.value||
-"semana";
-
+const period=$("payPeriod")?.value||"semana";
 const now=new Date();
-
 let inicio=null;
 
-if(period==="dia"){
+if(period==="dia") inicio=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+if(period==="semana"){const day=now.getDay();inicio=new Date(now.getFullYear(),now.getMonth(),now.getDate()-(day===0?6:day-1));}
+if(period==="quinzena") inicio=new Date(now.getFullYear(),now.getMonth(),now.getDate()-14);
+if(period==="mes") inicio=new Date(now.getFullYear(),now.getMonth(),1);
 
-inicio=new Date(
-now.getFullYear(),
-now.getMonth(),
-now.getDate()
-);
-
-}
-
-if(period==="semana"){
-
-const day=now.getDay();
-
-inicio=new Date(
-now.getFullYear(),
-now.getMonth(),
-now.getDate()-
-(day===0?6:day-1)
-);
-
-}
-
-if(period==="quinzena"){
-
-inicio=new Date(
-now.getFullYear(),
-now.getMonth(),
-now.getDate()-14
-);
-
-}
-
-if(period==="mes"){
-
-inicio=new Date(
-now.getFullYear(),
-now.getMonth(),
-1
-);
-
-}
-
-const items=
-D.diarias.filter(d=>{
-
-if(!inicio)return true;
-
-const dt=new Date(
-`${d.data}T00:00:00`
-);
-
+/* Somente diárias PENDENTES entram no total. */
+const items=D.diarias.filter(d=>{
+/* Pago/quitado/liquidado nunca entra no total pendente. */
+if(diariaEstaPaga(d)) return false;
+if(!inicio) return true;
+const dt=new Date(`${d.data}T00:00:00`);
 return dt>=inicio;
-
 });
 
-const total=
-items.reduce(
-(a,d)=>a+diariaValor(d),
-0
-);
-
-$("payTotal").textContent=
-money(total);
-
-$("payCount").textContent=
-items.length;
+const total=items.reduce((a,d)=>a+diariaValor(d),0);
+$("payTotal").textContent=money(total);
+$("payCount").textContent=items.length;
 
 if(!items.length){
-
-box.innerHTML=
-`<div class="empty">
-Nenhuma diária no período.
-</div>`;
-
+box.innerHTML=`<div class="empty">Nenhuma diária pendente no período.</div>`;
 return;
-
 }
 
-box.innerHTML=
-items.map(d=>{
-
-const f=
-D.funcionarios.find(
-x=>String(x.id)===
-String(d.funcionario_id)
-);
-
-const o=
-D.obras.find(
-x=>String(x.id)===
-String(d.obra_id)
-);
-
-const valor=
-diariaValor(d);
-
+box.innerHTML=items.map(d=>{
+const f=D.funcionarios.find(x=>String(x.id)===String(d.funcionario_id));
+const o=D.obras.find(x=>String(x.id)===String(d.obra_id));
+const valor=diariaValor(d);
 return`
-
 <div class="card">
-
 <div class="row">
-
-<div>
-<b>${esc(
-f?.nome||
-"Funcionário"
-)}</b>
-<br>
-<small>${esc(
-o?.nome||
-"Sem obra"
-)}</small>
+<div><b>${esc(f?.nome||"Funcionário")}</b><br><small>${esc(o?.nome||"Sem obra")}</small></div>
+<span class="badge">Pendente</span>
 </div>
-
-<span class="badge ${
-d.status==="pago"
-?"on":""
-}">
-${
-d.status==="pago"
-?"Pago"
-:"Pendente"
-}
-</span>
-
-</div>
-
-<div class="row"
-style="margin-top:10px">
-
-<span>${esc(
-d.data||""
-)}</span>
-
-<strong class="gold">
-${money(valor)}
-</strong>
-
-</div>
-
-${
-d.observacao
-?`<small>${esc(
-d.observacao
-)}</small>`
-:""
-}
-
-<div class="listActions">
-
-<button class="btn danger"
-onclick="removeRow(
-'diarias',
-'${d.id}'
-)">
-Excluir
-</button>
-
-</div>
-
-</div>
-
-`;
-
+<div class="row" style="margin-top:10px"><span>${esc(d.data||"")}</span><strong class="gold">${money(valor)}</strong></div>
+${d.observacao?`<small>${esc(d.observacao)}</small>`:""}
+<div class="listActions"><button class="btn danger" onclick="removeRow('diarias','${d.id}')">Excluir</button></div>
+</div>`;
 }).join("");
-
 }
 
 
@@ -3133,34 +3019,102 @@ updatePagTotal();
 }
 
 async function savePagamentoEquipe(e){
-  e.preventDefault();
-  const checks=[...document.querySelectorAll(".pag-check")].filter(x=>x.checked);
-  if(!checks.length){toast("Selecione pelo menos um funcionário.");return;}
-  const fallbackObra=$("pagObra").value||""; const data=$("pagData").value||today();
-  const descricao=$("pagDescricao").value.trim()||"Pagamento de equipe"; const obs=$("pagObs").value.trim();
-  let total=0,diariasTotal=0,adiantTotal=0,quantidade=0; const processados=[];
-  for(const check of checks){
-    const id=check.dataset.id; const f=D.funcionarios.find(x=>String(x.id)===String(id)); if(!f||f.ativo===false)continue;
-    const resumo=calcFuncionarioPagamento(id); if(resumo.pending<=0)continue;
-    const obraId=getFuncObra(id)||fallbackObra;
-    if(!obraId){toast(`Defina uma obra para ${f.nome} antes de pagar.`);continue;}
-    processados.push({id,f,resumo,pendingItems:getPendingDiarias(id),obraId});
-    total+=resumo.net; diariasTotal+=resumo.pending; adiantTotal+=resumo.advance; quantidade++;
-  }
-  if(!processados.length){toast("Nenhum funcionário selecionado possui diária pendente e obra definida.");return;}
-  let falhas=0;
-  for(const item of processados){
-    if(item.resumo.net<=0){ continue; }
-    const observacao=`Diárias pendentes: ${money(item.resumo.pending)}. Adiantamento abatido: ${money(item.resumo.advance)}. Valor líquido: ${money(item.resumo.net)}.${obs?" "+obs:""}`;
-    const result=await insertRow("gastos",{obra_id:item.obraId,data,descricao:`[Mão de obra] ${descricao} - ${item.f.nome}`,valor:item.resumo.net,fornecedor:item.f.nome,observacao,categoria:"Mão de obra"});
-    if(!result){falhas++;continue;}
-    for(const diaria of item.pendingItems){await updateRow("diarias",diaria.id,{status:"pago"});}
-    aplicarAdiantamentos(item.id,item.resumo.allocations);
-  }
-  closeM("pagEquipeM");
-  toast(`${quantidade-falhas} pagamento(s) processado(s). Total líquido: ${money(total)}`);
-  await loadCloud(); renderAll();
+
+e.preventDefault();
+
+try{
+
+const checks=[...document.querySelectorAll(".pag-check")].filter(x=>x.checked);
+if(!checks.length){toast("Selecione pelo menos um funcionário.");return;}
+
+const fallbackObra=$("pagObra").value||"";
+const data=$("pagData").value||today();
+const descricao=$("pagDescricao").value.trim()||"Pagamento de equipe";
+const obs=$("pagObs").value.trim();
+let total=0,diariasTotal=0,adiantTotal=0,quantidade=0;
+const processados=[];
+
+for(const check of checks){
+const id=check.dataset.id;
+const f=D.funcionarios.find(x=>String(x.id)===String(id));
+if(!f||f.ativo===false)continue;
+
+const pendingItems=getPendingDiarias(id);
+const pending=pendingItems.reduce((a,d)=>a+diariaValor(d),0);
+if(pending<=0)continue;
+
+const resumo=calcFuncionarioPagamento(id);
+const obraId=getFuncObra(id)||fallbackObra;
+if(!obraId){toast(`Defina uma obra para ${f.nome} antes de pagar.`);continue;}
+
+processados.push({id,f,resumo,pendingItems,obraId});
+total+=resumo.net;
+diariasTotal+=resumo.pending;
+adiantTotal+=resumo.advance;
+quantidade++;
 }
+
+if(!processados.length){toast("Nenhum funcionário selecionado possui diária pendente e obra definida.");return;}
+
+let falhas=0,baixados=0;
+
+for(const item of processados){
+
+const observacao=`Diárias pendentes: ${money(item.resumo.pending)}. Adiantamento abatido: ${money(item.resumo.advance)}. Valor líquido: ${money(item.resumo.net)}.${obs?" "+obs:""}`;
+
+/* Só cria nova despesa se houver valor líquido a pagar. */
+if(item.resumo.net>0){
+const result=await insertRow("gastos",{
+obra_id:item.obraId,
+data,
+descricao:`[Mão de obra] ${descricao} - ${item.f.nome}`,
+valor:item.resumo.net,
+fornecedor:item.f.nome,
+observacao,
+categoria:"Mão de obra"
+});
+if(!result){falhas++;continue;}
+}
+
+/* Baixa as diárias mesmo se a atualização no servidor falhar. */
+for(const diaria of item.pendingItems){
+const atualizado=await updateRow(
+  "diarias",
+  diaria.id,
+  {status:"pago",pago:true,data_pagamento:data}
+);
+if(atualizado){
+  baixados++;
+}
+}
+
+aplicarAdiantamentos(item.id,item.resumo.allocations);
+}
+
+closeM("pagEquipeM");
+
+/*
+  Não recarrega o Supabase imediatamente aqui.
+  Se o servidor tiver recusado alguma atualização, o estado local
+  já foi salvo por updateRow/insertRow. O mergeLocal corrigido acima
+  preserva esse estado quando a próxima sincronização ocorrer.
+*/
+saveLocalData();
+renderAll();
+
+if(falhas>0){
+toast(`${quantidade-falhas} pagamento(s) processado(s). ${falhas} aguardando sincronização.`);
+}else{
+toast(`${quantidade} pagamento(s) processado(s). ${baixados} diária(s) baixada(s). Total líquido: ${money(total)}. As diárias pagas saíram do pendente.`);
+}
+
+}catch(err){
+console.error("Erro no pagamento da equipe:",err);
+toast("Não foi possível concluir o pagamento. Os dados pendentes foram preservados.");
+}
+
+}
+
 /* =========================================================
    ADIANTAMENTO
    ========================================================= */
