@@ -1,21 +1,24 @@
 <script>
 /* =========================================================
    EDIFIQ — CHECKLIST COM PROGRESSO POR SERVIÇO
-   VERSÃO CORRIGIDA
+   VERSÃO ESTÁVEL
    ========================================================= */
 
-/* Estado interno do formulário */
 let checklistEditId = "";
 let checklistEditTarefa = "";
 
 
 /* =========================================================
-   LOCALIZA CHECKLIST DA OBRA
+   LOCALIZA CHECKLIST
    ========================================================= */
 
 function checklistForOba(obraId){
 
-  if(!D || !Array.isArray(D.checklist)){
+  if(
+    typeof D === "undefined" ||
+    !D ||
+    !Array.isArray(D.checklist)
+  ){
     return [];
   }
 
@@ -23,38 +26,25 @@ function checklistForOba(obraId){
     .filter(x =>
       String(x.obra_id) === String(obraId)
     )
-    .sort((a,b)=>{
-
-      const da =
-        Number(a.ordem ?? 999999);
-
-      const db =
-        Number(b.ordem ?? 999999);
-
-      return da - db;
-
-    });
-
+    .sort((a,b) =>
+      Number(a.ordem ?? 999999) -
+      Number(b.ordem ?? 999999)
+    );
 }
 
 
-/* Compatibilidade com o restante do sistema */
 function checklistForObra(obraId){
-
   return checklistForOba(obraId);
-
 }
 
 
 /* =========================================================
-   PERCENTUAL REAL DA ETAPA
+   PERCENTUAL
    ========================================================= */
 
 function checklistPercent(item){
 
-  if(!item){
-    return 0;
-  }
+  if(!item) return 0;
 
   if(
     item.concluida === true ||
@@ -62,13 +52,10 @@ function checklistPercent(item){
     item.concluida === 1 ||
     item.concluida === "1"
   ){
-
     return 100;
-
   }
 
-  let p =
-    Number(item.progresso);
+  let p = Number(item.progresso);
 
   if(!Number.isFinite(p)){
     p = 0;
@@ -76,56 +63,48 @@ function checklistPercent(item){
 
   return Math.max(
     0,
-    Math.min(
-      100,
-      Math.round(p)
-    )
+    Math.min(100, Math.round(p))
   );
-
 }
 
 
 /* =========================================================
-   PROGRESSO TOTAL DA OBRA
+   PROGRESSO GERAL DA OBRA
    ========================================================= */
 
 function progressForObra(o){
 
-  if(!o){
-    return 0;
-  }
+  if(!o) return 0;
 
   const lista =
     checklistForObra(o.id);
 
-  /*
-   * Se não houver checklist,
-   * mantém o progresso já existente.
-   */
   if(!lista.length){
 
     const antigo =
       Number(o.progresso);
 
     return Number.isFinite(antigo)
-      ? Math.max(0,Math.min(100,Math.round(antigo)))
+      ? Math.max(
+          0,
+          Math.min(
+            100,
+            Math.round(antigo)
+          )
+        )
       : 0;
-
   }
 
   const soma =
     lista.reduce(
-      (total,item)=>{
-        return total +
-          checklistPercent(item);
-      },
+      (total,item) =>
+        total + checklistPercent(item),
       0
     );
 
   return Math.round(
     soma / lista.length
   );
-
 }
 
 
@@ -135,8 +114,17 @@ function progressForObra(o){
 
 async function ensureChecklist(obraId){
 
-  if(!obraId){
+  if(!obraId) return;
+
+  if(
+    typeof D === "undefined" ||
+    !D
+  ){
     return;
+  }
+
+  if(!Array.isArray(D.checklist)){
+    D.checklist = [];
   }
 
   const existente =
@@ -147,7 +135,6 @@ async function ensureChecklist(obraId){
   }
 
   const padrao = [
-
     "Gabarito",
     "Locação",
     "Alvenaria",
@@ -156,7 +143,6 @@ async function ensureChecklist(obraId){
     "Pintura",
     "Limpeza",
     "Final da obra"
-
   ];
 
   for(
@@ -167,47 +153,121 @@ async function ensureChecklist(obraId){
 
     try{
 
-      const novo =
-        await insertRow(
-          "checklist",
-          {
-            obra_id: obraId,
-            tarefa: padrao[i],
-            concluida: false,
-            progresso: 0,
-            ordem: i
-          }
-        );
+      let novo = null;
 
-      if(novo){
+      if(
+        typeof insertRow === "function"
+      ){
 
-        /*
-         * Evita duplicação local
-         */
-        const existeLocal =
-          D.checklist.some(
-            x =>
-              String(x.id) ===
-              String(novo.id)
+        novo =
+          await insertRow(
+            "checklist",
+            {
+              obra_id: obraId,
+              tarefa: padrao[i],
+              concluida: false,
+              progresso: 0,
+              ordem: i
+            }
           );
 
-        if(!existeLocal){
+      }
 
-          D.checklist.push(novo);
+      /*
+       * Mesmo se o banco não retornar o registro,
+       * cria uma cópia local para o aplicativo
+       * continuar funcionando.
+       */
 
-        }
+      if(!novo){
+
+        novo = {
+          id:
+            "local-check-" +
+            Date.now() +
+            "-" +
+            i,
+
+          obra_id: obraId,
+
+          tarefa: padrao[i],
+
+          concluida: false,
+
+          progresso: 0,
+
+          ordem: i
+        };
+
+      }
+
+      const existeLocal =
+        D.checklist.some(
+          x =>
+            String(x.id) ===
+            String(novo.id)
+        );
+
+      if(!existeLocal){
+
+        D.checklist.push(novo);
 
       }
 
     }catch(e){
 
       console.warn(
-        "Erro criando checklist:",
+        "Falha ao criar etapa:",
         padrao[i],
         e
       );
 
+      /*
+       * Fallback local
+       */
+
+      D.checklist.push({
+        id:
+          "local-check-" +
+          Date.now() +
+          "-" +
+          i,
+
+        obra_id: obraId,
+
+        tarefa: padrao[i],
+
+        concluida: false,
+
+        progresso: 0,
+
+        ordem: i
+      });
+
     }
+
+  }
+
+  /*
+   * Tenta salvar localmente
+   */
+
+  try{
+
+    if(
+      typeof saveLocal === "function"
+    ){
+
+      saveLocal("checklist");
+
+    }
+
+  }catch(e){
+
+    console.warn(
+      "Erro no salvamento local:",
+      e
+    );
 
   }
 
@@ -232,62 +292,77 @@ async function criarChecklistPadraoDaObra(obraId){
 async function openChecklist(obraId){
 
   const o =
-    obra(obraId);
+    typeof obra === "function"
+      ? obra(obraId)
+      : null;
 
   if(!o){
 
-    toast(
-      "Obra não encontrada."
-    );
+    if(typeof toast === "function"){
+      toast("Obra não encontrada.");
+    }
 
     return;
-
-  }
-
-  /*
-   * Guarda a obra selecionada
-   */
-  const campoObra =
-    $("checkObra");
-
-  if(campoObra){
-
-    campoObra.value =
-      obraId;
-
   }
 
   checklistEditId = "";
   checklistEditTarefa = "";
 
   /*
-   * Também limpa campos antigos,
-   * caso existam no HTML.
+   * Abre o modal
    */
-  const campoId =
-    $("checkId");
 
-  const campoTarefa =
-    $("checkTarefa");
+  if(typeof openM === "function"){
 
-  if(campoId){
-    campoId.value = "";
-  }
+    openM("checkM");
 
-  if(campoTarefa){
-    campoTarefa.value = "";
   }
 
   /*
-   * Abre imediatamente.
+   * Cria o campo hidden se o modal
+   * ainda não possuir.
    */
-  openM("checkM");
+
+  let campoObra =
+    $("checkObra");
+
+  if(!campoObra){
+
+    const modal =
+      $("checkListModal");
+
+    if(modal){
+
+      const hidden =
+        document.createElement("input");
+
+      hidden.type = "hidden";
+
+      hidden.id = "checkObra";
+
+      hidden.value = obraId;
+
+      modal.prepend(hidden);
+
+      campoObra = hidden;
+
+    }
+
+  }
+
+  if(campoObra){
+
+    campoObra.value = obraId;
+
+  }
 
   /*
-   * Se não existir checklist,
-   * cria os itens padrão.
+   * Cria checklist padrão.
    */
-  if(!checklistForObra(obraId).length){
+
+  if(
+    !checklistForObra(obraId).length
+  ){
 
     const modal =
       $("checkListModal");
@@ -295,6 +370,12 @@ async function openChecklist(obraId){
     if(modal){
 
       modal.innerHTML = `
+        <input
+          type="hidden"
+          id="checkObra"
+          value="${esc(String(obraId))}"
+        >
+
         <div class="empty">
           Criando checklist da obra...
         </div>
@@ -312,17 +393,17 @@ async function openChecklist(obraId){
 
 
 /* =========================================================
-   RENDERIZA CHECKLIST
+   RENDERIZA
    ========================================================= */
 
 function renderChecklistModal(obraId){
 
   const o =
-    obra(obraId);
+    typeof obra === "function"
+      ? obra(obraId)
+      : null;
 
-  if(!o){
-    return;
-  }
+  if(!o) return;
 
   const lista =
     checklistForObra(obraId);
@@ -331,14 +412,20 @@ function renderChecklistModal(obraId){
     progressForObra(o);
 
   /*
-   * Sincroniza o progresso da obra
-   * no objeto local.
+   * Atualiza progresso local
    */
+
   o.progresso =
     progressoGeral;
 
 
   let html = `
+
+    <input
+      type="hidden"
+      id="checkObra"
+      value="${esc(String(obraId))}"
+    >
 
     <div class="card">
 
@@ -360,7 +447,7 @@ function renderChecklistModal(obraId){
             style="margin-top:4px"
           >
             Calculado automaticamente pelas
-            etapas abaixo.
+            etapas da obra.
           </div>
 
         </div>
@@ -422,11 +509,9 @@ function renderChecklistModal(obraId){
   if(!lista.length){
 
     html += `
-
       <div class="empty">
-        Nenhum item cadastrado.
+        Nenhuma etapa cadastrada.
       </div>
-
     `;
 
   }else{
@@ -443,6 +528,7 @@ function renderChecklistModal(obraId){
 
         <div
           class="checkItemBox"
+          data-check-id="${esc(String(item.id))}"
         >
 
           <div style="
@@ -453,12 +539,9 @@ function renderChecklistModal(obraId){
 
             <input
               type="checkbox"
-              class="checkPercentCheckbox"
-              ${concluida
-                ? "checked"
-                : ""}
+              ${concluida ? "checked" : ""}
               onchange="
-                toggleCheck('${item.id}')
+                toggleCheck('${String(item.id)}')
               "
               style="
                 width:20px;
@@ -466,7 +549,6 @@ function renderChecklistModal(obraId){
                 flex:0 0 auto;
               "
             >
-
 
             <div style="
               flex:1;
@@ -479,8 +561,8 @@ function renderChecklistModal(obraId){
                   font-size:14px;
                   ${
                     concluida
-                      ? "text-decoration:line-through;color:#69717d;"
-                      : ""
+                    ? "text-decoration:line-through;color:#69717d;"
+                    : ""
                   }
                 "
               >
@@ -496,9 +578,8 @@ function renderChecklistModal(obraId){
 
             </div>
 
-
             <strong
-              id="pct-${item.id}"
+              id="pct-${esc(String(item.id))}"
               class="goldText"
               style="
                 min-width:48px;
@@ -512,8 +593,6 @@ function renderChecklistModal(obraId){
           </div>
 
 
-          <!-- BARRA DO SERVIÇO -->
-
           <div
             class="checkItemProgress"
             style="
@@ -523,16 +602,12 @@ function renderChecklistModal(obraId){
           >
 
             <i
-              id="bar-${item.id}"
-              style="
-                width:${p}%;
-              "
+              id="bar-${esc(String(item.id))}"
+              style="width:${p}%"
             ></i>
 
           </div>
 
-
-          <!-- SLIDER -->
 
           <div style="
             margin:9px 0 0 29px;
@@ -548,12 +623,12 @@ function renderChecklistModal(obraId){
               oninput="
                 previewCheckProgress(
                   this,
-                  '${item.id}'
+                  '${String(item.id)}'
                 )
               "
               onchange="
                 updateCheckProgress(
-                  '${item.id}',
+                  '${String(item.id)}',
                   this.value
                 )
               "
@@ -561,8 +636,6 @@ function renderChecklistModal(obraId){
 
           </div>
 
-
-          <!-- ATALHOS -->
 
           <div style="
             margin:8px 0 0 29px;
@@ -576,7 +649,7 @@ function renderChecklistModal(obraId){
               class="btn sm"
               onclick="
                 updateCheckProgress(
-                  '${item.id}',
+                  '${String(item.id)}',
                   0
                 )
               "
@@ -589,7 +662,7 @@ function renderChecklistModal(obraId){
               class="btn sm"
               onclick="
                 updateCheckProgress(
-                  '${item.id}',
+                  '${String(item.id)}',
                   25
                 )
               "
@@ -602,7 +675,7 @@ function renderChecklistModal(obraId){
               class="btn sm"
               onclick="
                 updateCheckProgress(
-                  '${item.id}',
+                  '${String(item.id)}',
                   50
                 )
               "
@@ -615,7 +688,7 @@ function renderChecklistModal(obraId){
               class="btn sm"
               onclick="
                 updateCheckProgress(
-                  '${item.id}',
+                  '${String(item.id)}',
                   75
                 )
               "
@@ -628,7 +701,7 @@ function renderChecklistModal(obraId){
               class="btn sm green"
               onclick="
                 updateCheckProgress(
-                  '${item.id}',
+                  '${String(item.id)}',
                   100
                 )
               "
@@ -638,8 +711,6 @@ function renderChecklistModal(obraId){
 
           </div>
 
-
-          <!-- EDITAR / EXCLUIR -->
 
           <div style="
             margin:9px 0 0 29px;
@@ -651,7 +722,7 @@ function renderChecklistModal(obraId){
               type="button"
               class="btn sm"
               onclick="
-                editCheck('${item.id}')
+                editCheck('${String(item.id)}')
               "
             >
               Editar
@@ -661,7 +732,7 @@ function renderChecklistModal(obraId){
               type="button"
               class="btn sm red"
               onclick="
-                deleteCheck('${item.id}')
+                deleteCheck('${String(item.id)}')
               "
             >
               Excluir
@@ -683,8 +754,6 @@ function renderChecklistModal(obraId){
     </div>
 
 
-    <!-- NOVA ETAPA -->
-
     <div class="card">
 
       <h3>
@@ -694,7 +763,6 @@ function renderChecklistModal(obraId){
             : "Adicionar nova etapa"
         }
       </h3>
-
 
       <div class="field">
 
@@ -709,7 +777,6 @@ function renderChecklistModal(obraId){
         >
 
       </div>
-
 
       <div style="
         display:flex;
@@ -729,14 +796,13 @@ function renderChecklistModal(obraId){
           }
         </button>
 
-
         <button
           type="button"
           class="btn"
           onclick="
             checklistEditId='';
             checklistEditTarefa='';
-            renderChecklistModal('${obraId}');
+            renderChecklistModal('${String(obraId)}');
           "
         >
           Limpar
@@ -763,24 +829,28 @@ function renderChecklistModal(obraId){
 
 
 /* =========================================================
-   PRÉ-VISUALIZAÇÃO
+   PREVIEW
    ========================================================= */
 
 function previewCheckProgress(el,id){
 
-  if(!el){
-    return;
+  if(!el) return;
+
+  let valor =
+    Number(el.value);
+
+  if(!Number.isFinite(valor)){
+    valor = 0;
   }
 
-  const valor =
+  valor =
     Math.max(
       0,
       Math.min(
         100,
-        Number(el.value) || 0
+        Math.round(valor)
       )
     );
-
 
   const pct =
     document.getElementById(
@@ -792,30 +862,32 @@ function previewCheckProgress(el,id){
       "bar-" + id
     );
 
-
   if(pct){
-
     pct.textContent =
       valor + "%";
-
   }
 
-
   if(bar){
-
     bar.style.width =
       valor + "%";
-
   }
 
 }
 
 
 /* =========================================================
-   SALVA PORCENTAGEM
+   SALVAR PROGRESSO
    ========================================================= */
 
 async function updateCheckProgress(id,value){
+
+  if(
+    typeof D === "undefined" ||
+    !D ||
+    !Array.isArray(D.checklist)
+  ){
+    return;
+  }
 
   const item =
     D.checklist.find(
@@ -826,12 +898,13 @@ async function updateCheckProgress(id,value){
 
   if(!item){
 
-    toast(
-      "Serviço do checklist não encontrado."
-    );
+    if(typeof toast === "function"){
+      toast(
+        "Serviço do checklist não encontrado."
+      );
+    }
 
     return;
-
   }
 
 
@@ -839,11 +912,8 @@ async function updateCheckProgress(id,value){
     Number(value);
 
   if(!Number.isFinite(percentual)){
-
     percentual = 0;
-
   }
-
 
   percentual =
     Math.max(
@@ -859,136 +929,156 @@ async function updateCheckProgress(id,value){
     percentual >= 100;
 
 
+  /*
+   * ======================================================
+   * PRIMEIRO ATUALIZA LOCALMENTE
+   * ======================================================
+   *
+   * Isso evita que erro do Supabase trave o botão.
+   */
+
+  item.progresso =
+    percentual;
+
+  item.concluida =
+    concluida;
+
+
+  const o =
+    typeof obra === "function"
+      ? obra(item.obra_id)
+      : null;
+
+
+  if(o){
+
+    const geral =
+      progressForObra(o);
+
+    o.progresso =
+      geral;
+
+  }
+
+
+  /*
+   * SALVA LOCAL
+   */
+
   try{
 
-    /*
-     * SALVA NO BANCO
-     */
+    if(
+      typeof saveLocal === "function"
+    ){
 
-    await updateRow(
-      "checklist",
-      id,
-      {
-        progresso: percentual,
-        concluida: concluida
-      }
-    );
+      saveLocal("checklist");
 
-
-    /*
-     * ATUALIZA LOCALMENTE
-     */
-
-    item.progresso =
-      percentual;
-
-    item.concluida =
-      concluida;
-
-
-    /*
-     * RECALCULA A OBRA
-     */
-
-    const o =
-      obra(item.obra_id);
-
-    if(o){
-
-      const geral =
-        progressForObra(o);
-
-      o.progresso =
-        geral;
-
-
-      /*
-       * Salva local
-       */
-
-      if(
-        typeof localMode !== "undefined" &&
-        localMode
-      ){
-
-        if(
-          typeof saveLocal === "function"
-        ){
-
-          saveLocal("obras");
-
-        }
-
-      }else{
-
-        /*
-         * Salva no Supabase
-         */
-
-        try{
-
-          await updateRow(
-            "obras",
-            o.id,
-            {
-              progresso: geral
-            }
-          );
-
-        }catch(e){
-
-          console.warn(
-            "Erro salvando progresso da obra:",
-            e
-          );
-
-        }
-
+      if(o){
+        saveLocal("obras");
       }
 
     }
-
-
-    /*
-     * ATUALIZA AS TELAS
-     */
-
-    renderChecklistModal(
-      item.obra_id
-    );
-
-
-    if(
-      typeof renderObras ===
-      "function"
-    ){
-
-      renderObras();
-
-    }
-
-
-    if(
-      typeof renderDashboard ===
-      "function"
-    ){
-
-      renderDashboard();
-
-    }
-
 
   }catch(e){
 
-    console.error(e);
-
-    toast(
-      "Erro ao salvar progresso: " +
-      (
-        e?.message ||
-        e
-      )
+    console.warn(
+      "Erro salvando local:",
+      e
     );
+
+  }
+
+
+  /*
+   * ATUALIZA A TELA IMEDIATAMENTE
+   */
+
+  renderChecklistModal(
+    item.obra_id
+  );
+
+
+  if(
+    typeof renderObras === "function"
+  ){
+
+    try{
+      renderObras();
+    }catch(e){
+      console.warn(e);
+    }
+
+  }
+
+
+  if(
+    typeof renderDashboard === "function"
+  ){
+
+    try{
+      renderDashboard();
+    }catch(e){
+      console.warn(e);
+    }
+
+  }
+
+
+  /*
+   * ======================================================
+   * DEPOIS TENTA SINCRONIZAR SUPABASE
+   * ======================================================
+   */
+
+  try{
+
+    if(
+      typeof updateRow === "function" &&
+      String(id).indexOf("local-check-") !== 0
+    ){
+
+      await updateRow(
+        "checklist",
+        id,
+        {
+          progresso: percentual,
+          concluida: concluida
+        }
+      );
+
+    }
+
+
+    if(o){
+
+      if(
+        typeof updateRow === "function" &&
+        String(o.id).indexOf("local-") !== 0
+      ){
+
+        await updateRow(
+          "obras",
+          o.id,
+          {
+            progresso: o.progresso
+          }
+        );
+
+      }
+
+    }
+
+  }catch(e){
+
+    console.warn(
+      "Sincronização pendente:",
+      e
+    );
+
+    /*
+     * Não mostra erro bloqueante.
+     * O dado já foi salvo localmente.
+     */
 
   }
 
@@ -996,10 +1086,18 @@ async function updateCheckProgress(id,value){
 
 
 /* =========================================================
-   MARCAR / DESMARCAR CONCLUÍDO
+   TOGGLE
    ========================================================= */
 
 async function toggleCheck(id){
+
+  if(
+    typeof D === "undefined" ||
+    !D ||
+    !Array.isArray(D.checklist)
+  ){
+    return;
+  }
 
   const item =
     D.checklist.find(
@@ -1008,38 +1106,26 @@ async function toggleCheck(id){
         String(id)
     );
 
-  if(!item){
-    return;
-  }
-
+  if(!item) return;
 
   const atual =
     checklistPercent(item);
-
 
   const novo =
     atual >= 100
       ? 0
       : 100;
 
-
   await updateCheckProgress(
     id,
     novo
-  );
-
-
-  toast(
-    novo === 100
-      ? "Serviço concluído em 100%."
-      : "Serviço reaberto em 0%."
   );
 
 }
 
 
 /* =========================================================
-   ADICIONAR / EDITAR ITEM
+   ADICIONAR / EDITAR
    ========================================================= */
 
 async function saveCheck(){
@@ -1064,42 +1150,37 @@ async function saveCheck(){
 
   if(!obraId){
 
-    toast(
-      "Obra não encontrada."
-    );
+    if(typeof toast === "function"){
+      toast("Obra não encontrada.");
+    }
 
     return;
-
   }
 
 
   if(!tarefa){
 
-    toast(
-      "Digite o nome do serviço."
-    );
+    if(typeof toast === "function"){
+      toast("Digite o nome do serviço.");
+    }
+
+    if(campoTarefa){
+      campoTarefa.focus();
+    }
 
     return;
-
   }
 
 
   try{
 
     /*
+     * ====================================================
      * EDITAR
+     * ====================================================
      */
 
     if(checklistEditId){
-
-      await updateRow(
-        "checklist",
-        checklistEditId,
-        {
-          tarefa: tarefa
-        }
-      );
-
 
       const item =
         D.checklist.find(
@@ -1111,56 +1192,54 @@ async function saveCheck(){
 
       if(item){
 
+        /*
+         * Atualiza local primeiro
+         */
+
         item.tarefa =
           tarefa;
 
-      }
+        try{
 
+          if(
+            typeof saveLocal === "function"
+          ){
 
-      toast(
-        "Item do checklist alterado."
-      );
+            saveLocal("checklist");
 
-
-    }else{
-
-      /*
-       * NOVO ITEM
-       */
-
-      const ordem =
-        checklistForObra(
-          obraId
-        ).length;
-
-
-      const novo =
-        await insertRow(
-          "checklist",
-          {
-            obra_id: obraId,
-            tarefa: tarefa,
-            concluida: false,
-            progresso: 0,
-            ordem: ordem
           }
-        );
+
+        }catch(e){
+          console.warn(e);
+        }
 
 
-      if(novo){
+        /*
+         * Tenta banco
+         */
 
-        const existe =
-          D.checklist.some(
-            x =>
-              String(x.id) ===
-              String(novo.id)
-          );
+        try{
 
+          if(
+            typeof updateRow === "function" &&
+            String(item.id).indexOf("local-check-") !== 0
+          ){
 
-        if(!existe){
+            await updateRow(
+              "checklist",
+              item.id,
+              {
+                tarefa: tarefa
+              }
+            );
 
-          D.checklist.push(
-            novo
+          }
+
+        }catch(e){
+
+          console.warn(
+            "Sincronização da edição pendente:",
+            e
           );
 
         }
@@ -1168,24 +1247,145 @@ async function saveCheck(){
       }
 
 
-      toast(
-        "Novo item adicionado ao checklist."
-      );
+      if(typeof toast === "function"){
+        toast(
+          "Item do checklist alterado."
+        );
+      }
+
+
+    }else{
+
+      /*
+       * ==================================================
+       * NOVO ITEM
+       * ==================================================
+       */
+
+      const lista =
+        checklistForObra(
+          obraId
+        );
+
+      const ordem =
+        lista.length;
+
+
+      let novo = null;
+
+
+      /*
+       * Tenta inserir no banco
+       */
+
+      try{
+
+        if(
+          typeof insertRow === "function"
+        ){
+
+          novo =
+            await insertRow(
+              "checklist",
+              {
+                obra_id: obraId,
+                tarefa: tarefa,
+                concluida: false,
+                progresso: 0,
+                ordem: ordem
+              }
+            );
+
+        }
+
+      }catch(e){
+
+        console.warn(
+          "Banco indisponível. Salvando local:",
+          e
+        );
+
+      }
+
+
+      /*
+       * Fallback local
+       */
+
+      if(!novo){
+
+        novo = {
+
+          id:
+            "local-check-" +
+            Date.now(),
+
+          obra_id:
+            obraId,
+
+          tarefa:
+            tarefa,
+
+          concluida:
+            false,
+
+          progresso:
+            0,
+
+          ordem:
+            ordem
+
+        };
+
+      }
+
+
+      const existe =
+        D.checklist.some(
+          x =>
+            String(x.id) ===
+            String(novo.id)
+        );
+
+
+      if(!existe){
+
+        D.checklist.push(
+          novo
+        );
+
+      }
+
+
+      try{
+
+        if(
+          typeof saveLocal === "function"
+        ){
+
+          saveLocal("checklist");
+
+        }
+
+      }catch(e){
+
+        console.warn(e);
+
+      }
+
+
+      if(typeof toast === "function"){
+        toast(
+          "Novo item adicionado ao checklist."
+        );
+      }
 
     }
 
 
-    /*
-     * LIMPA EDIÇÃO
-     */
-
     checklistEditId = "";
     checklistEditTarefa = "";
 
-
-    /*
-     * RENDERIZA NOVAMENTE
-     */
 
     renderChecklistModal(
       obraId
@@ -1193,36 +1393,49 @@ async function saveCheck(){
 
 
     if(
-      typeof renderObras ===
-      "function"
+      typeof renderObras === "function"
     ){
 
-      renderObras();
+      try{
+        renderObras();
+      }catch(e){
+        console.warn(e);
+      }
 
     }
 
 
     if(
-      typeof renderDashboard ===
-      "function"
+      typeof renderDashboard === "function"
     ){
 
-      renderDashboard();
+      try{
+        renderDashboard();
+      }catch(e){
+        console.warn(e);
+      }
 
     }
 
 
   }catch(e){
 
-    console.error(e);
-
-    toast(
-      "Erro ao salvar item: " +
-      (
-        e?.message ||
-        e
-      )
+    console.error(
+      "Erro no checklist:",
+      e
     );
+
+    if(typeof toast === "function"){
+
+      toast(
+        "Erro ao salvar item: " +
+        (
+          e?.message ||
+          e
+        )
+      );
+
+    }
 
   }
 
@@ -1230,10 +1443,18 @@ async function saveCheck(){
 
 
 /* =========================================================
-   EDITAR ITEM
+   EDITAR
    ========================================================= */
 
 function editCheck(id){
+
+  if(
+    typeof D === "undefined" ||
+    !D ||
+    !Array.isArray(D.checklist)
+  ){
+    return;
+  }
 
   const item =
     D.checklist.find(
@@ -1242,14 +1463,11 @@ function editCheck(id){
         String(id)
     );
 
-  if(!item){
-    return;
-  }
+  if(!item) return;
 
 
   checklistEditId =
     item.id;
-
 
   checklistEditTarefa =
     item.tarefa || "";
@@ -1282,10 +1500,18 @@ function editCheck(id){
 
 
 /* =========================================================
-   EXCLUIR ITEM
+   EXCLUIR
    ========================================================= */
 
 async function deleteCheck(id){
+
+  if(
+    typeof D === "undefined" ||
+    !D ||
+    !Array.isArray(D.checklist)
+  ){
+    return;
+  }
 
   const item =
     D.checklist.find(
@@ -1294,9 +1520,7 @@ async function deleteCheck(id){
         String(id)
     );
 
-  if(!item){
-    return;
-  }
+  if(!item) return;
 
 
   if(
@@ -1310,120 +1534,171 @@ async function deleteCheck(id){
   }
 
 
+  const obraId =
+    item.obra_id;
+
+
+  /*
+   * Remove local primeiro
+   */
+
+  D.checklist =
+    D.checklist.filter(
+      x =>
+        String(x.id) !==
+        String(id)
+    );
+
+
+  /*
+   * Salva local
+   */
+
   try{
 
-    await removeRow(
-      "checklist",
-      id
-    );
-
-
-    D.checklist =
-      D.checklist.filter(
-        x =>
-          String(x.id) !==
-          String(id)
-      );
-
-
-    /*
-     * Recalcula progresso
-     */
-
-    const o =
-      obra(item.obra_id);
-
-
-    if(o){
-
-      const geral =
-        progressForObra(o);
-
-
-      o.progresso =
-        geral;
-
-
-      if(
-        typeof localMode !== "undefined" &&
-        localMode
-      ){
-
-        if(
-          typeof saveLocal === "function"
-        ){
-
-          saveLocal("obras");
-
-        }
-
-      }else{
-
-        try{
-
-          await updateRow(
-            "obras",
-            o.id,
-            {
-              progresso: geral
-            }
-          );
-
-        }catch(e){
-
-          console.warn(
-            "Erro atualizando obra:",
-            e
-          );
-
-        }
-
-      }
-
-    }
-
-
-    toast(
-      "Item excluído."
-    );
-
-
-    renderChecklistModal(
-      item.obra_id
-    );
-
-
     if(
-      typeof renderObras ===
-      "function"
+      typeof saveLocal === "function"
     ){
 
-      renderObras();
+      saveLocal("checklist");
 
     }
-
-
-    if(
-      typeof renderDashboard ===
-      "function"
-    ){
-
-      renderDashboard();
-
-    }
-
 
   }catch(e){
 
-    console.error(e);
+    console.warn(e);
 
-    toast(
-      "Erro ao excluir: " +
-      (
-        e?.message ||
+  }
+
+
+  /*
+   * Recalcula obra
+   */
+
+  const o =
+    typeof obra === "function"
+      ? obra(obraId)
+      : null;
+
+
+  if(o){
+
+    /*
+     * Se ainda existem etapas,
+     * calcula a média.
+     *
+     * Se todas forem excluídas,
+     * o progresso volta para 0.
+     */
+
+    const restantes =
+      checklistForObra(
+        obraId
+      );
+
+    const geral =
+      restantes.length
+        ? progressForObra(o)
+        : 0;
+
+    o.progresso =
+      geral;
+
+
+    try{
+
+      if(
+        typeof saveLocal === "function"
+      ){
+
+        saveLocal("obras");
+
+      }
+
+    }catch(e){
+
+      console.warn(e);
+
+    }
+
+
+    /*
+     * Sincronização
+     */
+
+    try{
+
+      if(
+        typeof removeRow === "function" &&
+        String(id).indexOf("local-check-") !== 0
+      ){
+
+        await removeRow(
+          "checklist",
+          id
+        );
+
+      }
+
+      if(
+        typeof updateRow === "function" &&
+        String(o.id).indexOf("local-") !== 0
+      ){
+
+        await updateRow(
+          "obras",
+          o.id,
+          {
+            progresso: geral
+          }
+        );
+
+      }
+
+    }catch(e){
+
+      console.warn(
+        "Sincronização da exclusão pendente:",
         e
-      )
-    );
+      );
+
+    }
+
+  }
+
+
+  if(typeof toast === "function"){
+    toast("Item excluído.");
+  }
+
+
+  renderChecklistModal(
+    obraId
+  );
+
+
+  if(
+    typeof renderObras === "function"
+  ){
+
+    try{
+      renderObras();
+    }catch(e){
+      console.warn(e);
+    }
+
+  }
+
+
+  if(
+    typeof renderDashboard === "function"
+  ){
+
+    try{
+      renderDashboard();
+    }catch(e){
+      console.warn(e);
+    }
 
   }
 
@@ -1431,98 +1706,100 @@ async function deleteCheck(id){
 
 
 /* =========================================================
-   CSS DO CHECKLIST
+   CSS
    ========================================================= */
 
-const styleChecklist =
-  document.createElement("style");
+if(
+  !document.getElementById(
+    "edifiqChecklistStyle"
+  )
+){
 
+  const styleChecklist =
+    document.createElement("style");
 
-styleChecklist.textContent = `
+  styleChecklist.id =
+    "edifiqChecklistStyle";
 
-.checkItemBox{
+  styleChecklist.textContent = `
 
-  background:#0b0e12;
+    .checkItemBox{
 
-  border:1px solid var(--line);
+      background:#0b0e12;
 
-  border-radius:14px;
+      border:1px solid var(--line);
 
-  padding:14px;
+      border-radius:14px;
 
-  margin-bottom:10px;
+      padding:14px;
 
-}
+      margin-bottom:10px;
 
+    }
 
-.checkItemBox:last-child{
+    .checkItemBox:last-child{
+      margin-bottom:0;
+    }
 
-  margin-bottom:0;
+    .checkItemBox .range{
 
-}
+      width:100%;
 
+      height:28px;
 
-.checkItemBox .range{
+      cursor:pointer;
 
-  width:100%;
+      accent-color:var(--gold2);
 
-  height:28px;
+    }
 
-  cursor:pointer;
+    .checkItemProgress{
 
-  accent-color:var(--gold2);
+      width:100%;
 
-}
+      height:9px;
 
+      background:#05070a;
 
-.checkItemProgress{
+      border:1px solid #1c2027;
 
-  width:100%;
+      border-radius:20px;
 
-  height:9px;
+      overflow:hidden;
 
-  background:#05070a;
+    }
 
-  border:1px solid #1c2027;
+    .checkItemProgress i{
 
-  border-radius:20px;
+      display:block;
 
-  overflow:hidden;
+      height:100%;
 
-}
+      width:0%;
 
+      background:linear-gradient(
+        90deg,
+        var(--gold),
+        var(--gold2)
+      );
 
-.checkItemProgress i{
+      border-radius:20px;
 
-  display:block;
+      transition:width .2s ease;
 
-  height:100%;
+    }
 
-  width:0%;
+  `;
 
-  background:linear-gradient(
-    90deg,
-    var(--gold),
-    var(--gold2)
+  document.head.appendChild(
+    styleChecklist
   );
 
-  border-radius:20px;
-
-  transition:width .2s ease;
-
 }
-
-
-`;
-
-
-document.head.appendChild(
-  styleChecklist
-);
 
 
 /* =========================================================
-   DISPONIBILIZA PARA OS BOTÕES
+   DISPONIBILIZA FUNÇÕES
    ========================================================= */
 
 Object.assign(
@@ -1530,27 +1807,16 @@ Object.assign(
   {
 
     openChecklist,
-
     renderChecklistModal,
-
     previewCheckProgress,
-
     updateCheckProgress,
-
     toggleCheck,
-
     saveCheck,
-
     editCheck,
-
     deleteCheck,
-
     ensureChecklist,
-
     criarChecklistPadraoDaObra,
-
     progressForObra,
-
     checklistForObra
 
   }
