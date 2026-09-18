@@ -1469,6 +1469,211 @@ if(!confirm(
 ))
 return;
 
+/*
+  EXCLUSÃO DE OBRA:
+  checklist.obra_id possui chave estrangeira para obras.id.
+  Portanto, os registros dependentes precisam ser removidos
+  antes da obra.
+*/
+if(table==="obras"){
+
+  const obraId=String(id);
+
+  /* Limpeza imediata dos dados locais relacionados */
+  const dependentes=["diarias","gastos","pagamentos","checklist","faltas"];
+
+  dependentes.forEach(t=>{
+    if(Array.isArray(D[t])){
+      D[t]=D[t].filter(
+        x=>String(x.obra_id)!==obraId
+      );
+    }
+  });
+
+  /* Remove fotos da obra do IndexedDB */
+  try{
+    if(
+      typeof getPhotosByObraDB==="function" &&
+      typeof deletePhotoDB==="function"
+    ){
+      const fotos=await getPhotosByObraDB(obraId);
+
+      for(const foto of fotos){
+        try{
+          await deletePhotoDB(foto.id);
+        }catch(e){
+          console.warn(
+            "Não foi possível remover foto da obra:",
+            e
+          );
+        }
+      }
+    }
+  }catch(e){
+    console.warn(
+      "Erro limpando fotos da obra:",
+      e
+    );
+  }
+
+  /* Remove vínculo funcionário -> obra */
+  try{
+    const mapa=localFuncObras()||{};
+
+    Object.keys(mapa).forEach(fid=>{
+      if(String(mapa[fid])===obraId){
+        delete mapa[fid];
+      }
+    });
+
+    localStorage.setItem(
+      FUNC_OBRA_KEY,
+      JSON.stringify(mapa)
+    );
+  }catch(e){
+    console.warn(
+      "Erro limpando vínculo funcionário/obra:",
+      e
+    );
+  }
+
+  /* Remove serviços adicionais da obra */
+  try{
+    const servicos=getServices()||{};
+    delete servicos[obraId];
+    saveServices(servicos);
+  }catch(e){
+    console.warn(
+      "Erro limpando serviços adicionais:",
+      e
+    );
+  }
+
+  /*
+    Se a obra é local ou estamos sem servidor,
+    basta concluir a exclusão local.
+  */
+  if(
+    String(id).startsWith("local_") ||
+    !sb ||
+    !user
+  ){
+
+    D.obras=D.obras.filter(
+      x=>String(x.id)!==obraId
+    );
+
+    saveLocalData();
+    renderAll();
+
+    toast(
+      "Obra e registros vinculados excluídos."
+    );
+
+    return;
+  }
+
+  /*
+    Supabase:
+    exclui primeiro as tabelas filhas para evitar
+    violação de chave estrangeira.
+  */
+  const tabelasFilhas=[
+    "checklist",
+    "diarias",
+    "gastos",
+    "pagamentos",
+    "faltas"
+  ];
+
+  for(const filha of tabelasFilhas){
+
+    try{
+
+      const{error}=await sb
+        .from(filha)
+        .delete()
+        .eq("obra_id",obraId);
+
+      if(error){
+        console.warn(
+          "Erro ao limpar dependência:",
+          filha,
+          error.message
+        );
+      }
+
+    }catch(e){
+
+      console.warn(
+        "Erro ao limpar dependência:",
+        filha,
+        e
+      );
+
+    }
+  }
+
+  try{
+
+    const{error}=await sb
+      .from("obras")
+      .delete()
+      .eq("id",id);
+
+    if(error){
+
+      /*
+        Não removemos a obra visualmente se o Supabase
+        ainda recusar a exclusão.
+      */
+      toast(
+        "Não foi possível excluir a obra: "+
+        error.message
+      );
+
+      try{
+        await loadCloud();
+      }catch(_){}
+
+      renderAll();
+      return;
+    }
+
+    D.obras=D.obras.filter(
+      x=>String(x.id)!==obraId
+    );
+
+    saveLocalData();
+    renderAll();
+
+    toast(
+      "Obra e registros vinculados excluídos com sucesso."
+    );
+
+  }catch(e){
+
+    console.error(
+      "Erro ao excluir obra:",
+      e
+    );
+
+    toast(
+      "Erro ao excluir a obra."
+    );
+
+    try{
+      await loadCloud();
+    }catch(_){}
+
+    renderAll();
+  }
+
+  return;
+}
+
+/* Exclusão normal das demais tabelas */
+
 if(String(id).startsWith("local_")){
 
 D[table]=D[table].filter(
@@ -1477,7 +1682,6 @@ String(id)
 );
 
 saveLocalData();
-
 renderAll();
 
 toast(
@@ -1485,7 +1689,23 @@ toast(
 );
 
 return;
+}
 
+if(!sb||!user){
+
+D[table]=D[table].filter(
+x=>String(x.id)!==
+String(id)
+);
+
+saveLocalData();
+renderAll();
+
+toast(
+"Excluído deste aparelho."
+);
+
+return;
 }
 
 try{
@@ -1503,7 +1723,6 @@ error.message
 );
 
 return;
-
 }
 
 D[table]=D[table].filter(
@@ -1512,7 +1731,6 @@ String(id)
 );
 
 saveLocalData();
-
 renderAll();
 
 toast(
@@ -1521,6 +1739,11 @@ toast(
 
 }catch(e){
 
+console.error(
+"Erro ao excluir:",
+e
+);
+
 toast(
 "Erro ao excluir."
 );
@@ -1528,7 +1751,6 @@ toast(
 }
 
 }
-
 
 /* =========================================================
    OBRAS
