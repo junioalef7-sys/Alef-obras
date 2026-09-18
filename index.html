@@ -1,1825 +1,5300 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090b0e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>EDIFIQ — Gestão de Obras e Reformas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#090b0e;--panel:#11151a;--panel2:#171c22;--gold:#d9ad55;--gold2:#f1d58d;--text:#f5f5f5;--muted:#9ba3ad;--line:#252b33;--green:#49d18d;--red:#ff7078;--shadow:0 12px 30px rgba(0,0,0,.28)}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{min-height:100vh}.hidden{display:none!important}.gold{color:var(--gold)}.green{color:var(--green)}.red{color:var(--red)}.muted,.sub,small{color:var(--muted)}
+button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,textarea{width:100%;background:#0c1014;color:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--gold)}textarea{min-height:90px;resize:vertical}.hidden{display:none}
+.top{position:sticky;top:0;z-index:20;background:rgba(9,11,14,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:14px 16px}.brand{display:flex;align-items:center;gap:11px}.logo{width:42px;height:42px;border:1px solid var(--gold);border-radius:50%;display:grid;place-items:center;color:var(--gold);font-weight:900;font-size:18px}.brand b{font-size:20px;letter-spacing:2px}.brand small{display:block}.wrap{max-width:1100px;margin:auto;padding:18px 16px 110px}.page{display:none}.page.active{display:block}.pageTitle{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 16px}.pageTitle h1{font-size:24px;margin:0}.grid{display:grid;gap:12px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{background:linear-gradient(145deg,#12171c,#0d1115);border:1px solid var(--line);border-radius:16px;padding:15px;box-shadow:var(--shadow)}.kpi small{display:block}.kpi strong{font-size:21px;display:block;margin-top:5px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px;margin:12px 0;box-shadow:var(--shadow)}.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}.three>div{background:#0d1115;border:1px solid var(--line);padding:10px;border-radius:12px;min-width:0}.three b{word-break:break-word}.badge{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:5px 9px;font-size:12px;background:#1b2026}.badge.on{color:var(--green);border-color:#24563e}.badge.off{color:var(--red);border-color:#5d282d}.btn{border:1px solid var(--line);background:#171c22;color:#fff;border-radius:10px;padding:9px 12px}.btn:hover{border-color:#555}.btn.gold,.btn.primary{background:linear-gradient(180deg,#d9ad55,#a77a2d);color:#090b0e;border-color:#e4c16f;font-weight:700}.btn.danger{color:#ffb0b5;border-color:#5b2c30;background:#211316}.listActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}.progress{height:9px;background:#242a31;border-radius:99px;overflow:hidden;margin-top:7px}.progress i{display:block;height:100%;background:linear-gradient(90deg,#a77a2d,#f0d58b);border-radius:inherit}.note{margin-top:10px;padding:10px;border-radius:10px;background:#0d1115;color:#cbd0d5}.finance-mini{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}.finance-line,.finance-cat{display:flex;justify-content:space-between;gap:10px;padding:6px 0}.finance-percent{font-size:11px;color:var(--muted)}.empty{border:1px dashed #303740;border-radius:14px;padding:25px;text-align:center;color:var(--muted);margin:12px 0}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.toolbar>*{flex:1;min-width:150px}.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(12,15,19,.97);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px max(7px,env(safe-area-inset-left)) max(7px,env(safe-area-inset-bottom))}.nav button{background:none;border:0;color:var(--muted);padding:7px 2px;font-size:11px}.nav button.active{color:var(--gold)}.nav span{display:block;font-size:20px;line-height:22px}.auth{min-height:100vh;display:grid;place-items:center;padding:20px}.authBox{width:min(430px,100%);background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:var(--shadow)}.authLogo{text-align:center;margin-bottom:20px}.authLogo .logo{margin:auto;width:70px;height:70px;font-size:28px}.authLogo h1{letter-spacing:4px;margin:12px 0 3px}.authBox label,.formGrid label{display:block;color:var(--muted);font-size:13px;margin:10px 0 6px}.authBtns{display:grid;gap:9px;margin-top:15px}.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;display:none;align-items:flex-end;padding:10px}.modal.open{display:flex}.modalBox{width:min(720px,100%);max-height:92vh;overflow:auto;background:#11151a;border:1px solid var(--line);border-radius:20px 20px 8px 8px;margin:auto;padding:18px}.modalHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.modalHead h2{margin:0;font-size:20px}.x{border:0;background:#20252b;color:#fff;border-radius:10px;width:38px;height:38px}.formGrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}.full{grid-column:1/-1}.formActions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}.check-item{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.check-item input{width:20px;height:20px}.photoGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}.photoGrid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px}.divider{height:1px;background:var(--line);margin:14px 0}.item{background:#0d1115;border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0}.toast{position:fixed;left:50%;bottom:82px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#f5f5f5;color:#090b0e;padding:11px 15px;border-radius:12px;z-index:200;transition:.2s;font-weight:700;max-width:90%;text-align:center}.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(min-width:760px){.kpis{grid-template-columns:repeat(4,1fr)}.photoGrid{grid-template-columns:repeat(4,1fr)}.nav{position:sticky;top:57px;bottom:auto;border-top:0;border-bottom:1px solid var(--line);grid-template-columns:repeat(9,1fr)}.wrap{padding-bottom:30px}.modal{align-items:center}.modalBox{border-radius:20px}}
+
+.bootError{display:none;position:fixed;inset:0;z-index:9999;background:#090b0e;color:#fff;padding:24px;font-family:system-ui,-apple-system,sans-serif;align-items:center;justify-content:center;text-align:center}.bootError.show{display:flex}.bootErrorBox{max-width:520px;background:#11151a;border:1px solid #252b33;border-radius:20px;padding:24px;box-shadow:0 12px 30px rgba(0,0,0,.35)}.bootErrorBox h2{margin:0 0 8px;color:#d9ad55}.bootErrorBox p{color:#9ba3ad;line-height:1.5}.bootErrorBox button{border:1px solid #e4c16f;background:linear-gradient(180deg,#d9ad55,#a77a2d);color:#090b0e;border-radius:10px;padding:11px 15px;font-weight:800}.localMode{margin-top:8px}.progressInput{width:100%;accent-color:#d9ad55}.checkPercent{font-size:12px;color:#d9ad55;min-width:45px;text-align:right}.serviceLine{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid #252b33}.serviceLine small{color:#9ba3ad}.pay-person{padding:10px 0;border-top:1px solid var(--line)}.pay-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.pay-summary>div{background:#0d1115;border:1px solid var(--line);border-radius:10px;padding:9px}.pay-value{margin-top:8px}.mini{border:1px solid var(--line);background:#171c22;color:#fff;border-radius:8px;padding:6px 9px}.lockNote{color:#ffb0b5;font-size:12px;margin-top:7px}@media(max-width:600px){.pay-summary{grid-template-columns:1fr 1fr}.pay-summary>div:last-child{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<div id="bootError" class="bootError"><div class="bootErrorBox"><h2>EDIFIQ</h2><p id="bootErrorText">O aplicativo encontrou um erro ao iniciar.</p><button onclick="location.reload()">Recarregar</button></div></div>
+<section id="auth" class="auth">
+  <div class="authBox">
+    <div class="authLogo"><div class="logo">Q</div><h1>EDIFIQ</h1><small>Construção Civil · Gestão de Obras</small></div>
+    <label>E-mail</label><input id="email" type="email" autocomplete="email" placeholder="seu@email.com">
+    <label>Senha</label><input id="password" type="password" autocomplete="current-password" placeholder="••••••••">
+    <div class="authBtns">
+      <button class="btn primary" onclick="login()">Entrar</button>
+      <button class="btn" onclick="signup()">Criar conta</button>
+      <button class="btn" onclick="resetPassword()">Esqueci a senha</button>
+      <button id="localModeBtn" class="btn localMode" onclick="enterLocalMode()">Entrar no modo local</button>
+    </div>
+    <p id="authMsg" class="sub" style="text-align:center"></p>
+  </div>
+</section>
+
+<section id="app" class="hidden">
+<header class="top"><div class="brand"><div class="logo">Q</div><div><b>EDIFIQ</b><small>Construção Civil · Gestão de Obras e Reformas</small></div></div></header>
+<nav class="nav">
+<button data-p="dashboard" onclick="go('dashboard')"><span>⌂</span>Início</button>
+<button data-p="obras" onclick="go('obras')"><span>🏗️</span>Obras</button>
+<button data-p="funcionarios" onclick="go('funcionarios')"><span>👷</span>Equipe</button>
+<button data-p="financeiro" onclick="go('financeiro')"><span>💰</span>Financeiro</button>
+<button data-p="diarias" onclick="go('diarias')"><span>📅</span>Diárias</button>
+<button data-p="faltas" onclick="go('faltas')"><span>⚠️</span>Faltas</button>
+<button data-p="checklist" onclick="go('checklist')"><span>☑️</span>Checklist</button>
+<button data-p="fotos" onclick="go('fotos')"><span>📸</span>Fotos</button>
+<button data-p="relatorios" onclick="go('relatorios')"><span>📊</span>Relatórios</button>
+</nav>
+<main class="wrap">
+<section id="dashboard" class="page active">
+ <div class="pageTitle"><div><h1>Visão geral</h1><p class="sub">Controle da sua operação</p></div><button class="btn" onclick="logout()">Sair</button></div>
+ <div class="grid kpis">
+  <div class="kpi"><small>Obras</small><strong id="kObras">0</strong></div><div class="kpi"><small>Funcionários ativos</small><strong id="kFunc">0</strong></div><div class="kpi"><small>Contratado</small><strong id="kContratado">R$ 0,00</strong></div><div class="kpi"><small>Entradas</small><strong class="green" id="kEntradas">R$ 0,00</strong></div><div class="kpi"><small>Despesas</small><strong class="red" id="kDespesas">R$ 0,00</strong></div><div class="kpi"><small>Resultado</small><strong class="gold" id="kResultado">R$ 0,00</strong></div>
+ </div>
+ <div class="card"><div class="row"><h2>Obras recentes</h2><button class="btn gold" onclick="go('obras');openObra()">＋ Nova obra</button></div><div id="recentes"></div></div>
+</section>
+
+<section id="obras" class="page">
+ <div class="pageTitle"><h1>Obras</h1><button class="btn gold" onclick="openObra()">＋ Nova obra</button></div>
+ <div class="toolbar"><input id="obraSearch" oninput="renderObras()" placeholder="Buscar obra ou cliente"></div>
+ <div id="obrasList"></div>
+</section>
+
+<section id="funcionarios" class="page">
+ <div class="pageTitle"><h1>Funcionários</h1><button class="btn gold" onclick="openFunc()">＋ Funcionário</button></div>
+ <div class="toolbar"><select id="funcFilter" onchange="renderFuncs()"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select></div>
+ <div id="funcList"></div>
+</section>
+
+<section id="diarias" class="page">
+ <div class="pageTitle"><div><h1>Diárias</h1><p class="sub">Registro e acompanhamento da equipe</p></div><button class="btn gold" onclick="openDia()">＋ Diária</button></div>
+ <div class="toolbar"><select id="payPeriod" onchange="renderPayroll()"><option value="dia">Hoje</option><option value="semana" selected>Semana</option><option value="quinzena">Últimos 14 dias</option><option value="mes">Mês</option></select></div>
+ <div class="grid kpis"><div class="kpi"><small>Total</small><strong id="payTotal">R$ 0,00</strong></div><div class="kpi"><small>Registros</small><strong id="payCount">0</strong></div></div>
+ <div id="diaList"></div>
+</section>
+
+<section id="faltas" class="page">
+ <div class="pageTitle"><div><h1>Faltas</h1><p class="sub">Controle de faltas e justificativas</p></div><button class="btn gold" onclick="openFalta()">＋ Registrar falta</button></div>
+ <div id="faltaList"></div>
+</section>
+
+<section id="checklist" class="page">
+ <div class="pageTitle"><div><h1>Checklist</h1><p class="sub">O checklist também fica disponível dentro de cada obra.</p></div><button class="btn gold" onclick="openCheck()">＋ Etapa</button></div>
+ <div id="checkList"></div>
+</section>
+
+<section id="financeiro" class="page">
+ <div class="pageTitle"><h1>Financeiro</h1><button class="btn gold" onclick="openFin()">＋ Lançamento</button></div>
+ <div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select></div>
+ <div class="grid kpis"><div class="kpi"><small>Entradas</small><strong class="green" id="finEnt">R$ 0,00</strong></div><div class="kpi"><small>Despesas</small><strong class="red" id="finDesp">R$ 0,00</strong></div><div class="kpi"><small>Resultado</small><strong class="gold" id="finRes">R$ 0,00</strong></div></div>
+ <div class="card"><h2>Resumo por obra</h2><div id="obraFinanceResumo"></div></div><div id="finList"></div>
+</section>
+
+<section id="fotos" class="page">
+ <div class="pageTitle"><div><h1>Relatórios fotográficos</h1><p class="sub">Fotos organizadas por obra</p></div><button class="btn gold" onclick="openFoto()">＋ Foto</button></div>
+ <div id="fotoList"></div>
+</section>
+
+<section id="relatorios" class="page">
+ <div class="pageTitle"><h1>Relatórios e backup</h1></div>
+ <div class="card"><h2>Exportar dados</h2><div class="listActions"><button class="btn gold" onclick="exportFull()">Backup completo</button><button class="btn" onclick="exportExcel()">Exportar Excel</button><button class="btn" onclick="exportTable('obras')">Obras JSON</button><button class="btn" onclick="exportTable('funcionarios')">Funcionários JSON</button><button class="btn" onclick="exportTable('diarias')">Diárias JSON</button><button class="btn" onclick="exportTable('faltas')">Faltas JSON</button></div></div>
+ <div class="card"><h2>Importar backup</h2><input type="file" accept="application/json,.json" onchange="importBackup(event)"><p class="sub">Use um backup criado pelo próprio EDIFIQ.</p></div>
+ <div class="card"><h2>Pagamentos</h2><button class="btn gold" onclick="openPagamentoEquipe()">💰 Pagamento da equipe</button><button class="btn" onclick="openAdiantamento()">💳 Adiantamento</button></div>
+</section>
+</main></section>
+
+<!-- MODAIS -->
+<div id="obraM" class="modal"><div class="modalBox"><div class="modalHead"><h2 id="obraTitle">Nova obra</h2><button class="x" onclick="closeM('obraM')">×</button></div><form onsubmit="saveObra(event)"><div class="formGrid"><label>Nome<input id="oNome" required></label><label>Cliente<input id="oCli"></label><label class="full">Endereço<input id="oLoc"></label><label>Valor do contrato<input id="oVal" type="number" step="0.01"></label><label>Status<select id="oStatus"><option value="em_andamento">Em andamento</option><option value="planejada">Planejada</option><option value="concluida">Concluída</option><option value="pausada">Pausada</option></select></label><label>Início<input id="oIni" type="date"></label><label>Previsão de término<input id="oFim" type="date"></label><label class="full">Tipo de serviço<input id="oTipo"></label><label class="full">Observações<textarea id="oObs"></textarea></label></div><div class="formActions"><button type="button" class="btn" onclick="closeM('obraM')">Cancelar</button><button class="btn primary">Salvar obra</button></div></form></div></div>
+
+<div id="funcM" class="modal"><div class="modalBox"><div class="modalHead"><h2 id="funcTitle">Novo funcionário</h2><button class="x" onclick="closeM('funcM')">×</button></div><form onsubmit="saveFunc(event)"><div class="formGrid"><label>Nome<input id="fNome" required></label><label>Função<input id="fFunc"></label><label>Telefone<input id="fTel" type="tel"></label><label>Tipo de pagamento<select id="fTipo"><option value="diaria">Diária</option><option value="mensal">Mensal</option></select></label><label>Valor da diária<input id="fDia" type="number" step="0.01"></label><label>Salário mensal<input id="fSal" type="number" step="0.01"></label><label>Dia de pagamento<input id="fPag" type="number" min="1" max="31"></label><label>Ativo<select id="fAtivo"><option value="true">Ativo</option><option value="false">Inativo</option></select></label><label>Registrar diária<select id="fDiariaRegistro"><option value="true">Registrar diária</option><option value="false">Não registrar diária</option></select></label><label>Obra atual<select id="fObra"><option value="">Selecione a obra</option></select></label></div><div class="formActions"><button type="button" class="btn" onclick="closeM('funcM')">Cancelar</button><button class="btn primary">Salvar funcionário</button></div></form></div></div>
+
+<div id="diaM" class="modal"><div class="modalBox"><div class="modalHead"><h2>Registrar diária</h2><button class="x" onclick="closeM('diaM')">×</button></div><form onsubmit="saveDia(event)"><div class="formGrid"><label>Funcionário<select id="dFunc"><option value="">Selecione</option></select></label><label>Obra<select id="dObra"><option value="">Selecione</option></select></label><label>Data<input id="dData" type="date"></label><label>Tipo<select id="dTipo"><option value="completa">Diária completa</option><option value="manha">Meia diária — manhã</option><option value="tarde">Meia diária — tarde</option></select></label><label>Valor da diária<input id="dVal" type="number" step="0.01"></label><label>Status<select id="dStatus"><option value="pendente">Pendente</option><option value="pago">Pago</option></select></label><label class="full"><span id="diaValorInfo" class="sub">Diária completa: 100%</span></label><label class="full">Observação<textarea id="dObs"></textarea></label></div><input id="dQtd" type="hidden" value="1"><div class="formActions"><button type="button" class="btn" onclick="closeM('diaM')">Cancelar</button><button class="btn primary">Salvar diária</button></div></form></div></div>
+
+<div id="faltaM" class="modal"><div class="modalBox"><div class="modalHead"><h2>Registrar falta</h2><button class="x" onclick="closeM('faltaM')">×</button></div><form onsubmit="saveFalta(event)"><div class="formGrid"><label>Funcionário<select id="faltaFunc" required><option value="">Selecione</option></select></label><label>Data<input id="faltaData" type="date" required></label><label>Tipo<select id="faltaTipo"><option value="falta">Falta</option><option value="justificada">Falta justificada</option><option value="atestado">Atestado</option></select></label><label>Observação<input id="faltaObs"></label></div><div class="formActions"><button type="button" class="btn" onclick="closeM('faltaM')">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
+
+<div id="checkM" class="modal"><div class="modalBox"><div class="modalHead"><h2>Adicionar etapa</h2><button class="x" onclick="closeM('checkM')">×</button></div><form onsubmit="saveCheck(event)"><div class="formGrid"><label>Obra<select id="checkObra" required><option value="">Selecione</option></select></label><label class="full">Etapa<input id="checkDesc" required placeholder="Ex.: Reboco concluído"></label></div><div class="formActions"><button type="button" class="btn" onclick="closeM('checkM')">Cancelar</button><button class="btn primary">Adicionar</button></div></form></div></div>
+
+<div id="finM" class="modal"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required></label><label>Valor<input id="vFin" type="number" step="0.01" required></label><label>Data<input id="dtFin" type="date"></label><label>Fornecedor<input id="forFin"></label><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Mão de obra</option><option>Serviço terceirizado</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button type="button" class="btn" onclick="closeM('finM')">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
+
+<div id="fotoM" class="modal"><div class="modalBox"><div class="modalHead"><h2>Relatório fotográfico</h2><button class="x" onclick="closeM('fotoM')">×</button></div><form onsubmit="saveFoto(event)"><div class="formGrid"><label>Obra<select id="fotoObra" required><option value="">Selecione</option></select></label><label>Data<input id="fotoData" type="date"></label><label class="full">Título<input id="fotoTitulo"></label><label class="full">Fotos<input id="fotoFiles" type="file" accept="image/*" multiple required></label><label class="full">Observação<textarea id="fotoObs"></textarea></label></div><div class="formActions"><button type="button" class="btn" onclick="closeM('fotoM')">Cancelar</button><button class="btn primary">Salvar fotos</button></div></form></div></div>
+
+<div id="pagEquipeM" class="modal"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"></label><label class="full">Descrição<input id="pagDescricao"></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three"><div><small>Diárias</small><b id="pagDiariasTotal">R$ 0,00</b></div><div><small>Adiantamentos</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div><div class="formActions"><button type="button" class="btn" onclick="closeM('pagEquipeM')">Cancelar</button><button class="btn primary">Processar pagamento</button></div></form></div></div>
+
+<div id="adiantM" class="modal"><div class="modalBox"><div class="modalHead"><h2>Adiantamento</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveAdiantamento(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" required><option value="">Selecione</option></select></label><label>Valor<input id="adiantValor" type="number" step="0.01" required></label><label>Data<input id="adiantData" type="date"></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="formActions"><button type="button" class="btn" onclick="closeM('adiantM')">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
+
+<div id="toast" class="toast"></div>
 <script>
-/* =========================================================
-   EDIFIQ — CHECKLIST COM PROGRESSO POR SERVIÇO
-   VERSÃO ESTÁVEL
-   ========================================================= */
 
-let checklistEditId = "";
-let checklistEditTarefa = "";
+const SUPA_URL="https://lwqntzwajjgkvtynwdjg.supabase.co";
+const SUPA_KEY="sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
 
+let sb=null;
+let user=null;
+let editObraId=null;
+let editFuncId=null;
 
-/* =========================================================
-   LOCALIZA CHECKLIST
-   ========================================================= */
+const D={
+obras:[],
+funcionarios:[],
+diarias:[],
+gastos:[],
+pagamentos:[],
+checklist:[],
+faltas:[]
+};
 
-function checklistForOba(obraId){
+const LOCAL_KEY="edifiq_local_v3";
+const FUNC_OBRA_KEY="edifiq_func_obras_v2";
+const ADV_KEY="edifiq_adiantamentos_aplicados_v1";
+const SERVICE_KEY="edifiq_servicos_adicionais_v1";
+const DEFAULT_CHECKLIST=["Gabarito","Locação","Alvenaria","Chapisco","Reboco","Pintura","Limpeza","Final da obra"];
 
-  if(
-    typeof D === "undefined" ||
-    !D ||
-    !Array.isArray(D.checklist)
-  ){
-    return [];
-  }
-
-  return D.checklist
-    .filter(x =>
-      String(x.obra_id) === String(obraId)
-    )
-    .sort((a,b) =>
-      Number(a.ordem ?? 999999) -
-      Number(b.ordem ?? 999999)
-    );
+function getServices(){try{return JSON.parse(localStorage.getItem(SERVICE_KEY)||"{}")}catch{return {}}}
+function saveServices(x){try{localStorage.setItem(SERVICE_KEY,JSON.stringify(x))}catch(e){console.warn(e)}}
+function servicesForObra(obraId){const x=getServices();return Array.isArray(x[obraId])?x[obraId]:[]}
+async function ensureDefaultChecklist(obraId){
+  if(!obraId || D.checklist.some(x=>String(x.obra_id)===String(obraId))) return;
+  for(const tarefa of DEFAULT_CHECKLIST){ await insertRow("checklist",{obra_id:String(obraId),tarefa,concluida:false,progresso:0}); }
 }
-
-
-function checklistForObra(obraId){
-  return checklistForOba(obraId);
-}
-
-
-/* =========================================================
-   PERCENTUAL
-   ========================================================= */
-
-function checklistPercent(item){
-
-  if(!item) return 0;
-
-  if(
-    item.concluida === true ||
-    item.concluida === "true" ||
-    item.concluida === 1 ||
-    item.concluida === "1"
-  ){
-    return 100;
+async function addServicoAdicional(obraId){
+  const o=D.obras.find(x=>String(x.id)===String(obraId)); if(!o)return;
+  const nome=prompt("Nome do serviço adicional:",""); if(nome===null||!nome.trim())return;
+  const raw=prompt("Valor do serviço adicional (R$):","0"); if(raw===null)return;
+  const valor=Number(String(raw).replace(/\./g,"").replace(",",".")); if(!Number.isFinite(valor)||valor<=0){toast("Informe um valor válido.");return;}
+  const novoValor=Number(o.valor||0)+valor;
+  const result=await updateRow("obras",obraId,{valor:novoValor});
+  if(result){
+    const all=getServices(); if(!all[obraId])all[obraId]=[]; all[obraId].push({id:"svc_"+Date.now(),nome:nome.trim(),valor,data:today()}); saveServices(all);
+    toast(`Serviço adicional registrado: ${money(valor)}`); renderAll();
   }
-
-  let p = Number(item.progresso);
-
-  if(!Number.isFinite(p)){
-    p = 0;
-  }
-
-  return Math.max(
-    0,
-    Math.min(100, Math.round(p))
-  );
 }
 
 
 /* =========================================================
-   PROGRESSO GERAL DA OBRA
+   BANCO LOCAL DE FOTOS
+   IndexedDB substitui localStorage para imagens.
    ========================================================= */
 
-function progressForObra(o){
+const PHOTO_DB="EDIFIQ_FOTOS_DB";
+const PHOTO_STORE="fotos";
+const PHOTO_DB_VERSION=1;
 
-  if(!o) return 0;
+function openPhotoDB(){
 
-  const lista =
-    checklistForObra(o.id);
+return new Promise((resolve,reject)=>{
 
-  if(!lista.length){
-
-    const antigo =
-      Number(o.progresso);
-
-    return Number.isFinite(antigo)
-      ? Math.max(
-          0,
-          Math.min(
-            100,
-            Math.round(antigo)
-          )
-        )
-      : 0;
-  }
-
-  const soma =
-    lista.reduce(
-      (total,item) =>
-        total + checklistPercent(item),
-      0
-    );
-
-  return Math.round(
-    soma / lista.length
-  );
-}
-
-
-/* =========================================================
-   CRIA CHECKLIST PADRÃO
-   ========================================================= */
-
-async function ensureChecklist(obraId){
-
-  if(!obraId) return;
-
-  if(
-    typeof D === "undefined" ||
-    !D
-  ){
-    return;
-  }
-
-  if(!Array.isArray(D.checklist)){
-    D.checklist = [];
-  }
-
-  const existente =
-    checklistForObra(obraId);
-
-  if(existente.length){
-    return;
-  }
-
-  const padrao = [
-    "Gabarito",
-    "Locação",
-    "Alvenaria",
-    "Chapisco",
-    "Reboco",
-    "Pintura",
-    "Limpeza",
-    "Final da obra"
-  ];
-
-  for(
-    let i = 0;
-    i < padrao.length;
-    i++
-  ){
-
-    try{
-
-      let novo = null;
-
-      if(
-        typeof insertRow === "function"
-      ){
-
-        novo =
-          await insertRow(
-            "checklist",
-            {
-              obra_id: obraId,
-              tarefa: padrao[i],
-              concluida: false,
-              progresso: 0,
-              ordem: i
-            }
-          );
-
-      }
-
-      /*
-       * Mesmo se o banco não retornar o registro,
-       * cria uma cópia local para o aplicativo
-       * continuar funcionando.
-       */
-
-      if(!novo){
-
-        novo = {
-          id:
-            "local-check-" +
-            Date.now() +
-            "-" +
-            i,
-
-          obra_id: obraId,
-
-          tarefa: padrao[i],
-
-          concluida: false,
-
-          progresso: 0,
-
-          ordem: i
-        };
-
-      }
-
-      const existeLocal =
-        D.checklist.some(
-          x =>
-            String(x.id) ===
-            String(novo.id)
-        );
-
-      if(!existeLocal){
-
-        D.checklist.push(novo);
-
-      }
-
-    }catch(e){
-
-      console.warn(
-        "Falha ao criar etapa:",
-        padrao[i],
-        e
-      );
-
-      /*
-       * Fallback local
-       */
-
-      D.checklist.push({
-        id:
-          "local-check-" +
-          Date.now() +
-          "-" +
-          i,
-
-        obra_id: obraId,
-
-        tarefa: padrao[i],
-
-        concluida: false,
-
-        progresso: 0,
-
-        ordem: i
-      });
-
-    }
-
-  }
-
-  /*
-   * Tenta salvar localmente
-   */
-
-  try{
-
-    if(
-      typeof saveLocal === "function"
-    ){
-
-      saveLocal("checklist");
-
-    }
-
-  }catch(e){
-
-    console.warn(
-      "Erro no salvamento local:",
-      e
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   COMPATIBILIDADE
-   ========================================================= */
-
-async function criarChecklistPadraoDaObra(obraId){
-
-  return ensureChecklist(obraId);
-
-}
-
-
-/* =========================================================
-   ABRIR CHECKLIST
-   ========================================================= */
-
-async function openChecklist(obraId){
-
-  const o =
-    typeof obra === "function"
-      ? obra(obraId)
-      : null;
-
-  if(!o){
-
-    if(typeof toast === "function"){
-      toast("Obra não encontrada.");
-    }
-
-    return;
-  }
-
-  checklistEditId = "";
-  checklistEditTarefa = "";
-
-  /*
-   * Abre o modal
-   */
-
-  if(typeof openM === "function"){
-
-    openM("checkM");
-
-  }
-
-  /*
-   * Cria o campo hidden se o modal
-   * ainda não possuir.
-   */
-
-  let campoObra =
-    $("checkObra");
-
-  if(!campoObra){
-
-    const modal =
-      $("checkListModal");
-
-    if(modal){
-
-      const hidden =
-        document.createElement("input");
-
-      hidden.type = "hidden";
-
-      hidden.id = "checkObra";
-
-      hidden.value = obraId;
-
-      modal.prepend(hidden);
-
-      campoObra = hidden;
-
-    }
-
-  }
-
-  if(campoObra){
-
-    campoObra.value = obraId;
-
-  }
-
-  /*
-   * Cria checklist padrão.
-   */
-
-  if(
-    !checklistForObra(obraId).length
-  ){
-
-    const modal =
-      $("checkListModal");
-
-    if(modal){
-
-      modal.innerHTML = `
-        <input
-          type="hidden"
-          id="checkObra"
-          value="${esc(String(obraId))}"
-        >
-
-        <div class="empty">
-          Criando checklist da obra...
-        </div>
-      `;
-
-    }
-
-    await ensureChecklist(obraId);
-
-  }
-
-  renderChecklistModal(obraId);
-
-}
-
-
-/* =========================================================
-   RENDERIZA
-   ========================================================= */
-
-function renderChecklistModal(obraId){
-
-  const o =
-    typeof obra === "function"
-      ? obra(obraId)
-      : null;
-
-  if(!o) return;
-
-  const lista =
-    checklistForObra(obraId);
-
-  const progressoGeral =
-    progressForObra(o);
-
-  /*
-   * Atualiza progresso local
-   */
-
-  o.progresso =
-    progressoGeral;
-
-
-  let html = `
-
-    <input
-      type="hidden"
-      id="checkObra"
-      value="${esc(String(obraId))}"
-    >
-
-    <div class="card">
-
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap:10px;
-      ">
-
-        <div>
-
-          <strong>
-            Progresso geral da obra
-          </strong>
-
-          <div
-            class="muted small"
-            style="margin-top:4px"
-          >
-            Calculado automaticamente pelas
-            etapas da obra.
-          </div>
-
-        </div>
-
-        <strong
-          class="goldText"
-          style="font-size:22px"
-        >
-          ${progressoGeral}%
-        </strong>
-
-      </div>
-
-
-      <div
-        class="progress"
-        style="
-          margin-top:12px;
-          height:14px;
-        "
-      >
-
-        <i
-          style="
-            width:${progressoGeral}%;
-          "
-        ></i>
-
-      </div>
-
-    </div>
-
-
-    <div class="card">
-
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        margin-bottom:12px;
-      ">
-
-        <strong>
-          Etapas da obra
-        </strong>
-
-        <span class="badge">
-          ${lista.length}
-          ${lista.length === 1
-            ? "etapa"
-            : "etapas"}
-        </span>
-
-      </div>
-
-  `;
-
-
-  if(!lista.length){
-
-    html += `
-      <div class="empty">
-        Nenhuma etapa cadastrada.
-      </div>
-    `;
-
-  }else{
-
-    html += lista.map(item=>{
-
-      const p =
-        checklistPercent(item);
-
-      const concluida =
-        p >= 100;
-
-      return `
-
-        <div
-          class="checkItemBox"
-          data-check-id="${esc(String(item.id))}"
-        >
-
-          <div style="
-            display:flex;
-            align-items:center;
-            gap:9px;
-          ">
-
-            <input
-              type="checkbox"
-              ${concluida ? "checked" : ""}
-              onchange="
-                toggleCheck('${String(item.id)}')
-              "
-              style="
-                width:20px;
-                height:20px;
-                flex:0 0 auto;
-              "
-            >
-
-            <div style="
-              flex:1;
-              min-width:0;
-            ">
-
-              <div
-                style="
-                  font-weight:700;
-                  font-size:14px;
-                  ${
-                    concluida
-                    ? "text-decoration:line-through;color:#69717d;"
-                    : ""
-                  }
-                "
-              >
-                ${esc(item.tarefa || "Sem nome")}
-              </div>
-
-              <div
-                class="muted small"
-                style="margin-top:3px"
-              >
-                Progresso deste serviço:
-              </div>
-
-            </div>
-
-            <strong
-              id="pct-${esc(String(item.id))}"
-              class="goldText"
-              style="
-                min-width:48px;
-                text-align:right;
-                font-size:16px;
-              "
-            >
-              ${p}%
-            </strong>
-
-          </div>
-
-
-          <div
-            class="checkItemProgress"
-            style="
-              margin-top:9px;
-              margin-left:29px;
-            "
-          >
-
-            <i
-              id="bar-${esc(String(item.id))}"
-              style="width:${p}%"
-            ></i>
-
-          </div>
-
-
-          <div style="
-            margin:9px 0 0 29px;
-          ">
-
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              value="${p}"
-              class="range"
-              oninput="
-                previewCheckProgress(
-                  this,
-                  '${String(item.id)}'
-                )
-              "
-              onchange="
-                updateCheckProgress(
-                  '${String(item.id)}',
-                  this.value
-                )
-              "
-            >
-
-          </div>
-
-
-          <div style="
-            margin:8px 0 0 29px;
-            display:flex;
-            flex-wrap:wrap;
-            gap:6px;
-          ">
-
-            <button
-              type="button"
-              class="btn sm"
-              onclick="
-                updateCheckProgress(
-                  '${String(item.id)}',
-                  0
-                )
-              "
-            >
-              0%
-            </button>
-
-            <button
-              type="button"
-              class="btn sm"
-              onclick="
-                updateCheckProgress(
-                  '${String(item.id)}',
-                  25
-                )
-              "
-            >
-              25%
-            </button>
-
-            <button
-              type="button"
-              class="btn sm"
-              onclick="
-                updateCheckProgress(
-                  '${String(item.id)}',
-                  50
-                )
-              "
-            >
-              50%
-            </button>
-
-            <button
-              type="button"
-              class="btn sm"
-              onclick="
-                updateCheckProgress(
-                  '${String(item.id)}',
-                  75
-                )
-              "
-            >
-              75%
-            </button>
-
-            <button
-              type="button"
-              class="btn sm green"
-              onclick="
-                updateCheckProgress(
-                  '${String(item.id)}',
-                  100
-                )
-              "
-            >
-              100%
-            </button>
-
-          </div>
-
-
-          <div style="
-            margin:9px 0 0 29px;
-            display:flex;
-            gap:7px;
-          ">
-
-            <button
-              type="button"
-              class="btn sm"
-              onclick="
-                editCheck('${String(item.id)}')
-              "
-            >
-              Editar
-            </button>
-
-            <button
-              type="button"
-              class="btn sm red"
-              onclick="
-                deleteCheck('${String(item.id)}')
-              "
-            >
-              Excluir
-            </button>
-
-          </div>
-
-        </div>
-
-      `;
-
-    }).join("");
-
-  }
-
-
-  html += `
-
-    </div>
-
-
-    <div class="card">
-
-      <h3>
-        ${
-          checklistEditId
-            ? "Editar etapa"
-            : "Adicionar nova etapa"
-        }
-      </h3>
-
-      <div class="field">
-
-        <label>
-          Nome do serviço / etapa
-        </label>
-
-        <input
-          id="checkTarefa"
-          placeholder="Ex.: Instalação elétrica"
-          value="${esc(checklistEditTarefa || "")}"
-        >
-
-      </div>
-
-      <div style="
-        display:flex;
-        gap:8px;
-        flex-wrap:wrap;
-      ">
-
-        <button
-          type="button"
-          class="btn gold"
-          onclick="saveCheck()"
-        >
-          ${
-            checklistEditId
-              ? "SALVAR ALTERAÇÃO"
-              : "+ ADICIONAR ITEM"
-          }
-        </button>
-
-        <button
-          type="button"
-          class="btn"
-          onclick="
-            checklistEditId='';
-            checklistEditTarefa='';
-            renderChecklistModal('${String(obraId)}');
-          "
-        >
-          Limpar
-        </button>
-
-      </div>
-
-    </div>
-
-  `;
-
-
-  const modal =
-    $("checkListModal");
-
-  if(modal){
-
-    modal.innerHTML =
-      html;
-
-  }
-
-}
-
-
-/* =========================================================
-   PREVIEW
-   ========================================================= */
-
-function previewCheckProgress(el,id){
-
-  if(!el) return;
-
-  let valor =
-    Number(el.value);
-
-  if(!Number.isFinite(valor)){
-    valor = 0;
-  }
-
-  valor =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round(valor)
-      )
-    );
-
-  const pct =
-    document.getElementById(
-      "pct-" + id
-    );
-
-  const bar =
-    document.getElementById(
-      "bar-" + id
-    );
-
-  if(pct){
-    pct.textContent =
-      valor + "%";
-  }
-
-  if(bar){
-    bar.style.width =
-      valor + "%";
-  }
-
-}
-
-
-/* =========================================================
-   SALVAR PROGRESSO
-   ========================================================= */
-
-async function updateCheckProgress(id,value){
-
-  if(
-    typeof D === "undefined" ||
-    !D ||
-    !Array.isArray(D.checklist)
-  ){
-    return;
-  }
-
-  const item =
-    D.checklist.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if(!item){
-
-    if(typeof toast === "function"){
-      toast(
-        "Serviço do checklist não encontrado."
-      );
-    }
-
-    return;
-  }
-
-
-  let percentual =
-    Number(value);
-
-  if(!Number.isFinite(percentual)){
-    percentual = 0;
-  }
-
-  percentual =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round(percentual)
-      )
-    );
-
-
-  const concluida =
-    percentual >= 100;
-
-
-  /*
-   * ======================================================
-   * PRIMEIRO ATUALIZA LOCALMENTE
-   * ======================================================
-   *
-   * Isso evita que erro do Supabase trave o botão.
-   */
-
-  item.progresso =
-    percentual;
-
-  item.concluida =
-    concluida;
-
-
-  const o =
-    typeof obra === "function"
-      ? obra(item.obra_id)
-      : null;
-
-
-  if(o){
-
-    const geral =
-      progressForObra(o);
-
-    o.progresso =
-      geral;
-
-  }
-
-
-  /*
-   * SALVA LOCAL
-   */
-
-  try{
-
-    if(
-      typeof saveLocal === "function"
-    ){
-
-      saveLocal("checklist");
-
-      if(o){
-        saveLocal("obras");
-      }
-
-    }
-
-  }catch(e){
-
-    console.warn(
-      "Erro salvando local:",
-      e
-    );
-
-  }
-
-
-  /*
-   * ATUALIZA A TELA IMEDIATAMENTE
-   */
-
-  renderChecklistModal(
-    item.obra_id
-  );
-
-
-  if(
-    typeof renderObras === "function"
-  ){
-
-    try{
-      renderObras();
-    }catch(e){
-      console.warn(e);
-    }
-
-  }
-
-
-  if(
-    typeof renderDashboard === "function"
-  ){
-
-    try{
-      renderDashboard();
-    }catch(e){
-      console.warn(e);
-    }
-
-  }
-
-
-  /*
-   * ======================================================
-   * DEPOIS TENTA SINCRONIZAR SUPABASE
-   * ======================================================
-   */
-
-  try{
-
-    if(
-      typeof updateRow === "function" &&
-      String(id).indexOf("local-check-") !== 0
-    ){
-
-      await updateRow(
-        "checklist",
-        id,
-        {
-          progresso: percentual,
-          concluida: concluida
-        }
-      );
-
-    }
-
-
-    if(o){
-
-      if(
-        typeof updateRow === "function" &&
-        String(o.id).indexOf("local-") !== 0
-      ){
-
-        await updateRow(
-          "obras",
-          o.id,
-          {
-            progresso: o.progresso
-          }
-        );
-
-      }
-
-    }
-
-  }catch(e){
-
-    console.warn(
-      "Sincronização pendente:",
-      e
-    );
-
-    /*
-     * Não mostra erro bloqueante.
-     * O dado já foi salvo localmente.
-     */
-
-  }
-
-}
-
-
-/* =========================================================
-   TOGGLE
-   ========================================================= */
-
-async function toggleCheck(id){
-
-  if(
-    typeof D === "undefined" ||
-    !D ||
-    !Array.isArray(D.checklist)
-  ){
-    return;
-  }
-
-  const item =
-    D.checklist.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if(!item) return;
-
-  const atual =
-    checklistPercent(item);
-
-  const novo =
-    atual >= 100
-      ? 0
-      : 100;
-
-  await updateCheckProgress(
-    id,
-    novo
-  );
-
-}
-
-
-/* =========================================================
-   ADICIONAR / EDITAR
-   ========================================================= */
-
-async function saveCheck(){
-
-  const campoObra =
-    $("checkObra");
-
-  const obraId =
-    campoObra
-      ? campoObra.value
-      : "";
-
-
-  const campoTarefa =
-    $("checkTarefa");
-
-  const tarefa =
-    campoTarefa
-      ? campoTarefa.value.trim()
-      : checklistEditTarefa.trim();
-
-
-  if(!obraId){
-
-    if(typeof toast === "function"){
-      toast("Obra não encontrada.");
-    }
-
-    return;
-  }
-
-
-  if(!tarefa){
-
-    if(typeof toast === "function"){
-      toast("Digite o nome do serviço.");
-    }
-
-    if(campoTarefa){
-      campoTarefa.focus();
-    }
-
-    return;
-  }
-
-
-  try{
-
-    /*
-     * ====================================================
-     * EDITAR
-     * ====================================================
-     */
-
-    if(checklistEditId){
-
-      const item =
-        D.checklist.find(
-          x =>
-            String(x.id) ===
-            String(checklistEditId)
-        );
-
-
-      if(item){
-
-        /*
-         * Atualiza local primeiro
-         */
-
-        item.tarefa =
-          tarefa;
-
-        try{
-
-          if(
-            typeof saveLocal === "function"
-          ){
-
-            saveLocal("checklist");
-
-          }
-
-        }catch(e){
-          console.warn(e);
-        }
-
-
-        /*
-         * Tenta banco
-         */
-
-        try{
-
-          if(
-            typeof updateRow === "function" &&
-            String(item.id).indexOf("local-check-") !== 0
-          ){
-
-            await updateRow(
-              "checklist",
-              item.id,
-              {
-                tarefa: tarefa
-              }
-            );
-
-          }
-
-        }catch(e){
-
-          console.warn(
-            "Sincronização da edição pendente:",
-            e
-          );
-
-        }
-
-      }
-
-
-      if(typeof toast === "function"){
-        toast(
-          "Item do checklist alterado."
-        );
-      }
-
-
-    }else{
-
-      /*
-       * ==================================================
-       * NOVO ITEM
-       * ==================================================
-       */
-
-      const lista =
-        checklistForObra(
-          obraId
-        );
-
-      const ordem =
-        lista.length;
-
-
-      let novo = null;
-
-
-      /*
-       * Tenta inserir no banco
-       */
-
-      try{
-
-        if(
-          typeof insertRow === "function"
-        ){
-
-          novo =
-            await insertRow(
-              "checklist",
-              {
-                obra_id: obraId,
-                tarefa: tarefa,
-                concluida: false,
-                progresso: 0,
-                ordem: ordem
-              }
-            );
-
-        }
-
-      }catch(e){
-
-        console.warn(
-          "Banco indisponível. Salvando local:",
-          e
-        );
-
-      }
-
-
-      /*
-       * Fallback local
-       */
-
-      if(!novo){
-
-        novo = {
-
-          id:
-            "local-check-" +
-            Date.now(),
-
-          obra_id:
-            obraId,
-
-          tarefa:
-            tarefa,
-
-          concluida:
-            false,
-
-          progresso:
-            0,
-
-          ordem:
-            ordem
-
-        };
-
-      }
-
-
-      const existe =
-        D.checklist.some(
-          x =>
-            String(x.id) ===
-            String(novo.id)
-        );
-
-
-      if(!existe){
-
-        D.checklist.push(
-          novo
-        );
-
-      }
-
-
-      try{
-
-        if(
-          typeof saveLocal === "function"
-        ){
-
-          saveLocal("checklist");
-
-        }
-
-      }catch(e){
-
-        console.warn(e);
-
-      }
-
-
-      if(typeof toast === "function"){
-        toast(
-          "Novo item adicionado ao checklist."
-        );
-      }
-
-    }
-
-
-    checklistEditId = "";
-    checklistEditTarefa = "";
-
-
-    renderChecklistModal(
-      obraId
-    );
-
-
-    if(
-      typeof renderObras === "function"
-    ){
-
-      try{
-        renderObras();
-      }catch(e){
-        console.warn(e);
-      }
-
-    }
-
-
-    if(
-      typeof renderDashboard === "function"
-    ){
-
-      try{
-        renderDashboard();
-      }catch(e){
-        console.warn(e);
-      }
-
-    }
-
-
-  }catch(e){
-
-    console.error(
-      "Erro no checklist:",
-      e
-    );
-
-    if(typeof toast === "function"){
-
-      toast(
-        "Erro ao salvar item: " +
-        (
-          e?.message ||
-          e
-        )
-      );
-
-    }
-
-  }
-
-}
-
-
-/* =========================================================
-   EDITAR
-   ========================================================= */
-
-function editCheck(id){
-
-  if(
-    typeof D === "undefined" ||
-    !D ||
-    !Array.isArray(D.checklist)
-  ){
-    return;
-  }
-
-  const item =
-    D.checklist.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if(!item) return;
-
-
-  checklistEditId =
-    item.id;
-
-  checklistEditTarefa =
-    item.tarefa || "";
-
-
-  renderChecklistModal(
-    item.obra_id
-  );
-
-
-  setTimeout(()=>{
-
-    const campo =
-      $("checkTarefa");
-
-    if(campo){
-
-      campo.focus();
-
-      campo.scrollIntoView({
-        behavior:"smooth",
-        block:"center"
-      });
-
-    }
-
-  },50);
-
-}
-
-
-/* =========================================================
-   EXCLUIR
-   ========================================================= */
-
-async function deleteCheck(id){
-
-  if(
-    typeof D === "undefined" ||
-    !D ||
-    !Array.isArray(D.checklist)
-  ){
-    return;
-  }
-
-  const item =
-    D.checklist.find(
-      x =>
-        String(x.id) ===
-        String(id)
-    );
-
-  if(!item) return;
-
-
-  if(
-    !confirm(
-      "Excluir este serviço do checklist?"
-    )
-  ){
-
-    return;
-
-  }
-
-
-  const obraId =
-    item.obra_id;
-
-
-  /*
-   * Remove local primeiro
-   */
-
-  D.checklist =
-    D.checklist.filter(
-      x =>
-        String(x.id) !==
-        String(id)
-    );
-
-
-  /*
-   * Salva local
-   */
-
-  try{
-
-    if(
-      typeof saveLocal === "function"
-    ){
-
-      saveLocal("checklist");
-
-    }
-
-  }catch(e){
-
-    console.warn(e);
-
-  }
-
-
-  /*
-   * Recalcula obra
-   */
-
-  const o =
-    typeof obra === "function"
-      ? obra(obraId)
-      : null;
-
-
-  if(o){
-
-    /*
-     * Se ainda existem etapas,
-     * calcula a média.
-     *
-     * Se todas forem excluídas,
-     * o progresso volta para 0.
-     */
-
-    const restantes =
-      checklistForObra(
-        obraId
-      );
-
-    const geral =
-      restantes.length
-        ? progressForObra(o)
-        : 0;
-
-    o.progresso =
-      geral;
-
-
-    try{
-
-      if(
-        typeof saveLocal === "function"
-      ){
-
-        saveLocal("obras");
-
-      }
-
-    }catch(e){
-
-      console.warn(e);
-
-    }
-
-
-    /*
-     * Sincronização
-     */
-
-    try{
-
-      if(
-        typeof removeRow === "function" &&
-        String(id).indexOf("local-check-") !== 0
-      ){
-
-        await removeRow(
-          "checklist",
-          id
-        );
-
-      }
-
-      if(
-        typeof updateRow === "function" &&
-        String(o.id).indexOf("local-") !== 0
-      ){
-
-        await updateRow(
-          "obras",
-          o.id,
-          {
-            progresso: geral
-          }
-        );
-
-      }
-
-    }catch(e){
-
-      console.warn(
-        "Sincronização da exclusão pendente:",
-        e
-      );
-
-    }
-
-  }
-
-
-  if(typeof toast === "function"){
-    toast("Item excluído.");
-  }
-
-
-  renderChecklistModal(
-    obraId
-  );
-
-
-  if(
-    typeof renderObras === "function"
-  ){
-
-    try{
-      renderObras();
-    }catch(e){
-      console.warn(e);
-    }
-
-  }
-
-
-  if(
-    typeof renderDashboard === "function"
-  ){
-
-    try{
-      renderDashboard();
-    }catch(e){
-      console.warn(e);
-    }
-
-  }
-
-}
-
-
-/* =========================================================
-   CSS
-   ========================================================= */
-
-if(
-  !document.getElementById(
-    "edifiqChecklistStyle"
-  )
-){
-
-  const styleChecklist =
-    document.createElement("style");
-
-  styleChecklist.id =
-    "edifiqChecklistStyle";
-
-  styleChecklist.textContent = `
-
-    .checkItemBox{
-
-      background:#0b0e12;
-
-      border:1px solid var(--line);
-
-      border-radius:14px;
-
-      padding:14px;
-
-      margin-bottom:10px;
-
-    }
-
-    .checkItemBox:last-child{
-      margin-bottom:0;
-    }
-
-    .checkItemBox .range{
-
-      width:100%;
-
-      height:28px;
-
-      cursor:pointer;
-
-      accent-color:var(--gold2);
-
-    }
-
-    .checkItemProgress{
-
-      width:100%;
-
-      height:9px;
-
-      background:#05070a;
-
-      border:1px solid #1c2027;
-
-      border-radius:20px;
-
-      overflow:hidden;
-
-    }
-
-    .checkItemProgress i{
-
-      display:block;
-
-      height:100%;
-
-      width:0%;
-
-      background:linear-gradient(
-        90deg,
-        var(--gold),
-        var(--gold2)
-      );
-
-      border-radius:20px;
-
-      transition:width .2s ease;
-
-    }
-
-  `;
-
-  document.head.appendChild(
-    styleChecklist
-  );
-
-}
-
-
-/* =========================================================
-   DISPONIBILIZA FUNÇÕES
-   ========================================================= */
-
-Object.assign(
-  window,
-  {
-
-    openChecklist,
-    renderChecklistModal,
-    previewCheckProgress,
-    updateCheckProgress,
-    toggleCheck,
-    saveCheck,
-    editCheck,
-    deleteCheck,
-    ensureChecklist,
-    criarChecklistPadraoDaObra,
-    progressForObra,
-    checklistForObra
-
-  }
+const request=indexedDB.open(
+PHOTO_DB,
+PHOTO_DB_VERSION
 );
 
+request.onupgradeneeded=e=>{
+
+const db=e.target.result;
+
+if(!db.objectStoreNames.contains(PHOTO_STORE)){
+
+const store=db.createObjectStore(
+PHOTO_STORE,
+{keyPath:"id"}
+);
+
+store.createIndex(
+"obra_id",
+"obra_id",
+{unique:false}
+);
+
+store.createIndex(
+"data",
+"data",
+{unique:false}
+);
+
+}
+
+};
+
+request.onsuccess=()=>{
+resolve(request.result);
+};
+
+request.onerror=()=>{
+reject(request.error);
+};
+
+});
+
+}
+
+async function savePhotoDB(foto){
+
+const db=await openPhotoDB();
+
+return new Promise((resolve,reject)=>{
+
+const tx=db.transaction(
+PHOTO_STORE,
+"readwrite"
+);
+
+tx.objectStore(PHOTO_STORE)
+.put(foto);
+
+tx.oncomplete=()=>{
+db.close();
+resolve(foto);
+};
+
+tx.onerror=()=>{
+db.close();
+reject(tx.error);
+};
+
+});
+
+}
+
+async function getAllPhotosDB(){
+
+const db=await openPhotoDB();
+
+return new Promise((resolve,reject)=>{
+
+const tx=db.transaction(
+PHOTO_STORE,
+"readonly"
+);
+
+const request=
+tx.objectStore(PHOTO_STORE).getAll();
+
+request.onsuccess=()=>{
+
+const data=request.result||[];
+
+data.sort((a,b)=>
+String(b.created_at||"")
+.localeCompare(
+String(a.created_at||"")
+)
+);
+
+db.close();
+
+resolve(data);
+
+};
+
+request.onerror=()=>{
+
+db.close();
+
+reject(request.error);
+
+};
+
+});
+
+}
+
+async function getPhotosByObraDB(obraId){
+
+const db=await openPhotoDB();
+
+return new Promise((resolve,reject)=>{
+
+const tx=db.transaction(
+PHOTO_STORE,
+"readonly"
+);
+
+const index=
+tx.objectStore(PHOTO_STORE)
+.index("obra_id");
+
+const request=
+index.getAll(String(obraId));
+
+request.onsuccess=()=>{
+
+const data=request.result||[];
+
+data.sort((a,b)=>
+String(b.created_at||"")
+.localeCompare(
+String(a.created_at||"")
+)
+);
+
+db.close();
+
+resolve(data);
+
+};
+
+request.onerror=()=>{
+
+db.close();
+
+reject(request.error);
+
+};
+
+});
+
+}
+
+async function deletePhotoDB(id){
+
+const db=await openPhotoDB();
+
+return new Promise((resolve,reject)=>{
+
+const tx=db.transaction(
+PHOTO_STORE,
+"readwrite"
+);
+
+tx.objectStore(PHOTO_STORE)
+.delete(id);
+
+tx.oncomplete=()=>{
+db.close();
+resolve();
+};
+
+tx.onerror=()=>{
+db.close();
+reject(tx.error);
+};
+
+});
+
+}
+
+async function clearPhotosDB(){
+
+const db=await openPhotoDB();
+
+return new Promise((resolve,reject)=>{
+
+const tx=db.transaction(
+PHOTO_STORE,
+"readwrite"
+);
+
+tx.objectStore(PHOTO_STORE)
+.clear();
+
+tx.oncomplete=()=>{
+db.close();
+resolve();
+};
+
+tx.onerror=()=>{
+db.close();
+reject(tx.error);
+};
+
+});
+
+}
+
+function fileToDataURL(file){
+
+return new Promise((resolve,reject)=>{
+
+const reader=new FileReader();
+
+reader.onload=()=>{
+resolve(reader.result);
+};
+
+reader.onerror=()=>{
+reject(reader.error);
+};
+
+reader.readAsDataURL(file);
+
+});
+
+}
+
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+
+const $=id=>document.getElementById(id);
+
+function esc(v){
+return String(v??"")
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+}
+
+function money(v){
+return Number(v||0).toLocaleString("pt-BR",{
+style:"currency",
+currency:"BRL"
+});
+}
+
+function today(){
+
+const d=new Date();
+
+const y=d.getFullYear();
+
+const m=String(
+d.getMonth()+1
+).padStart(2,"0");
+
+const day=String(
+d.getDate()
+).padStart(2,"0");
+
+return `${y}-${m}-${day}`;
+
+}
+
+function toast(msg){
+
+const t=$("toast");
+
+if(!t)return;
+
+t.textContent=msg;
+
+t.classList.add("show");
+
+clearTimeout(
+window.__toastTimer
+);
+
+window.__toastTimer=setTimeout(()=>{
+t.classList.remove("show");
+},3000);
+
+}
+
+function localData(){
+
+try{
+
+return JSON.parse(
+localStorage.getItem(
+LOCAL_KEY
+)||"{}"
+);
+
+}catch{
+
+return {};
+
+}
+
+}
+
+function saveLocalData(){
+
+try{
+
+localStorage.setItem(
+LOCAL_KEY,
+JSON.stringify({
+obras:D.obras,
+funcionarios:D.funcionarios,
+diarias:D.diarias,
+gastos:D.gastos,
+pagamentos:D.pagamentos,
+checklist:D.checklist,
+faltas:D.faltas
+})
+);
+
+}catch(e){
+
+console.warn(
+"Falha no armazenamento local",
+e
+);
+
+}
+
+}
+
+function localFuncObras(){
+
+try{
+
+return JSON.parse(
+localStorage.getItem(
+FUNC_OBRA_KEY
+)||"{}"
+);
+
+}catch{
+
+return {};
+
+}
+
+}
+
+function setFuncObra(funcId,obraId){
+
+const x=localFuncObras();
+
+x[funcId]=obraId||"";
+
+localStorage.setItem(
+FUNC_OBRA_KEY,
+JSON.stringify(x)
+);
+
+}
+
+function getFuncObra(funcId){
+
+const f=D.funcionarios.find(
+x=>String(x.id)===String(funcId)
+);
+
+if(f?.obra_id){
+return f.obra_id;
+}
+
+return localFuncObras()[funcId]||"";
+
+}
+
+
+/* =========================================================
+   ADIANTAMENTOS
+   ========================================================= */
+
+function getAdvanceApplied(){
+
+try{
+
+return JSON.parse(
+localStorage.getItem(
+ADV_KEY
+)||"{}"
+);
+
+}catch{
+
+return {};
+
+}
+
+}
+
+function saveAdvanceApplied(data){
+
+try{
+
+localStorage.setItem(
+ADV_KEY,
+JSON.stringify(data)
+);
+
+}catch(e){
+
+console.warn(
+"Erro nos adiantamentos",
+e
+);
+
+}
+
+}
+
+function normalize(v){
+
+return String(v||"")
+.toLowerCase()
+.normalize("NFD")
+.replace(/[\u0300-\u036f]/g,"")
+.trim();
+
+}
+
+function gastoCategoria(g){
+
+if(g?.categoria){
+
+const c=normalize(
+g.categoria
+);
+
+if(c.includes("material"))
+return "Material";
+
+if(c.includes("mao"))
+return "Mão de obra";
+
+if(c.includes("terceir"))
+return "Serviço terceirizado";
+
+if(c.includes("adiant"))
+return "Adiantamento";
+
+if(c.includes("outro"))
+return "Outros";
+
+}
+
+const desc=normalize(
+g?.descricao
+);
+
+if(
+desc.includes("[material]")||
+desc.includes("material")
+){
+return "Material";
+}
+
+if(
+desc.includes("[mao de obra]")||
+desc.includes("pagamento de equipe")||
+desc.includes("pagamento de diaria")||
+desc.includes("pagamento de diária")
+){
+return "Mão de obra";
+}
+
+if(
+desc.includes("[servico terceirizado]")||
+desc.includes("servico terceirizado")
+){
+return "Serviço terceirizado";
+}
+
+if(
+desc.includes("[adiantamento]")||
+desc.includes("adiantamento")
+){
+return "Adiantamento";
+}
+
+return "Outros";
+
+}
+
+function categoriaFinanceira(g){
+
+const c=gastoCategoria(g);
+
+return c==="Adiantamento"
+?"Mão de obra"
+:c;
+
+}
+
+function diariaValor(d){
+
+return Number(
+d.qtd ??
+d.quantidade ??
+1
+)*Number(
+d.valor_diaria||0
+);
+
+}
+
+function getPendingDiarias(funcId){
+
+return D.diarias.filter(d=>
+String(d.funcionario_id)===
+String(funcId)&&
+String(
+d.status||"pendente"
+).toLowerCase()!=="pago"
+);
+
+}
+
+function getPendingTotal(funcId){
+
+return getPendingDiarias(funcId)
+.reduce(
+(a,d)=>a+diariaValor(d),
+0
+);
+
+}
+
+function getEmployeeAdvances(funcId){
+
+const f=D.funcionarios.find(
+x=>String(x.id)===
+String(funcId)
+);
+
+if(!f)return[];
+
+const nome=normalize(f.nome);
+
+const applied=getAdvanceApplied();
+
+return D.gastos
+.filter(g=>{
+
+if(
+gastoCategoria(g)!=="Adiantamento"
+){
+return false;
+}
+
+const fornecedor=
+normalize(g.fornecedor);
+
+const descricao=
+normalize(g.descricao);
+
+return fornecedor===nome||
+descricao.includes(nome);
+
+})
+.map(g=>{
+
+const valor=Number(g.valor||0);
+
+const usado=
+Number(applied[g.id]||0);
+
+const disponivel=
+Math.max(
+0,
+valor-usado
+);
+
+return{
+...g,
+valorOriginal:valor,
+aplicado:usado,
+disponivel
+};
+
+})
+.filter(g=>g.disponivel>0)
+.sort((a,b)=>
+String(a.data||"")
+.localeCompare(
+String(b.data||"")
+)
+);
+
+}
+
+function calcFuncionarioPagamento(funcId){
+
+const pending=
+getPendingTotal(funcId);
+
+const advances=
+getEmployeeAdvances(funcId);
+
+let restante=pending;
+let abatido=0;
+
+const allocations=[];
+
+for(const adv of advances){
+
+if(restante<=0)break;
+
+const usar=Math.min(
+restante,
+Number(adv.disponivel||0)
+);
+
+if(usar>0){
+
+allocations.push({
+id:adv.id,
+valor:usar
+});
+
+abatido+=usar;
+restante-=usar;
+
+}
+
+}
+
+return{
+pending,
+advance:abatido,
+net:Math.max(0,restante),
+allocations,
+advances
+};
+
+}
+
+function aplicarAdiantamentos(
+funcId,
+allocations
+){
+
+if(!allocations?.length)return;
+
+const data=
+getAdvanceApplied();
+
+allocations.forEach(a=>{
+
+data[a.id]=
+Number(data[a.id]||0)+
+Number(a.valor||0);
+
+});
+
+saveAdvanceApplied(data);
+
+}
+
+
+/* =========================================================
+   NAVEGAÇÃO
+   ========================================================= */
+
+function go(page){
+
+document.querySelectorAll(
+".page"
+).forEach(p=>{
+p.classList.remove("active");
+});
+
+const target=$(page);
+
+if(target)
+target.classList.add("active");
+
+document.querySelectorAll(
+".nav"
+).forEach(btn=>{
+btn.classList.toggle(
+"active",
+btn.dataset.p===page
+);
+});
+
+renderAll();
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+
+
+/* =========================================================
+   MODAIS
+   ========================================================= */
+
+function openM(id){
+
+const el=$(id);
+
+if(el)
+el.classList.add("open");
+
+}
+
+function closeM(id){
+
+const el=$(id);
+
+if(el)
+el.classList.remove("open");
+
+}
+
+
+/* =========================================================
+   AUTENTICAÇÃO
+   ========================================================= */
+
+function authMsg(msg){
+
+if($("authMsg"))
+$("authMsg").textContent=msg;
+
+}
+
+function showBootError(message){const el=$("bootError");if(el){$("bootErrorText").textContent=message;el.classList.add("show")}}
+function enterLocalMode(){
+  user={id:"local-user",email:"modo-local"};
+  $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
+  const local=localData(); Object.keys(D).forEach(k=>{D[k]=Array.isArray(local[k])?local[k]:[]});
+  fillSelectors(); renderAll(); toast("Modo local ativado. Os dados ficam neste aparelho.");
+}
+async function waitForSupabase(timeout=7000){
+  const start=Date.now();
+  while(!window.supabase && Date.now()-start<timeout) await new Promise(r=>setTimeout(r,100));
+  return !!window.supabase;
+}
+
+async function initSupabase(){
+  // A interface aparece primeiro; o Supabase é opcional para impedir tela branca/offline.
+  try{
+    if(!window.supabase){ await waitForSupabase(7000); }
+    if(!window.supabase){
+      authMsg("Não foi possível carregar o servidor agora. Você pode usar o modo local.");
+      return false;
+    }
+    sb=window.supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    sb.auth.onAuthStateChange(async(event,session)=>{
+      try{
+        user=session?.user||null;
+        if(user){
+          $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
+          await loadCloud(); renderAll();
+        }else if(user!==undefined){
+          $("auth")?.classList.remove("hidden"); $("app")?.classList.add("hidden");
+        }
+      }catch(err){ console.error("Auth state",err); enterLocalMode(); }
+    });
+    const result=await Promise.race([sb.auth.getSession(),new Promise(resolve=>setTimeout(()=>resolve({data:{session:null},timeout:true}),8000))]);
+    if(result?.data?.session){
+      user=result.data.session.user; $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
+      await loadCloud(); renderAll();
+    }
+    return true;
+  }catch(err){
+    console.error("Supabase init",err);
+    authMsg("Servidor indisponível. Use o modo local ou tente novamente.");
+    return false;
+  }
+}
+
+async function login(){
+
+if(!sb){
+
+authMsg(
+"Sistema ainda carregando. Aguarde."
+);
+
+return;
+
+}
+
+const email=
+$("email").value.trim();
+
+const password=
+$("password").value;
+
+if(!email||!password){
+
+authMsg(
+"Informe e-mail e senha."
+);
+
+return;
+
+}
+
+authMsg("Entrando...");
+
+const{error}=
+await sb.auth.signInWithPassword({
+email,
+password
+});
+
+if(error)
+authMsg(error.message);
+else
+authMsg("");
+
+}
+
+async function signup(){
+
+if(!sb){
+
+authMsg(
+"Sistema ainda carregando."
+);
+
+return;
+
+}
+
+const email=
+$("email").value.trim();
+
+const password=
+$("password").value;
+
+if(!email||!password){
+
+authMsg(
+"Informe e-mail e senha."
+);
+
+return;
+
+}
+
+if(password.length<6){
+
+authMsg(
+"A senha deve ter pelo menos 6 caracteres."
+);
+
+return;
+
+}
+
+authMsg("Criando conta...");
+
+const{error}=
+await sb.auth.signUp({
+email,
+password
+});
+
+if(error)
+authMsg(error.message);
+else
+authMsg(
+"Conta criada. Verifique seu e-mail se necessário."
+);
+
+}
+
+async function resetPassword(){
+
+if(!sb)return;
+
+const email=
+$("email").value.trim();
+
+if(!email){
+
+authMsg(
+"Informe seu e-mail."
+);
+
+return;
+
+}
+
+const{error}=
+await sb.auth.resetPasswordForEmail(
+email,
+{
+redirectTo:location.origin
+}
+);
+
+if(error)
+authMsg(error.message);
+else
+authMsg(
+"Link de redefinição enviado."
+);
+
+}
+
+async function logout(){
+
+if(sb)
+await sb.auth.signOut();
+
+user=null;
+
+}
+
+
+/* =========================================================
+   BANCO
+   ========================================================= */
+
+function mergeLocal(){
+
+const x=localData();
+
+Object.keys(D).forEach(table=>{
+
+if(!Array.isArray(x[table]))
+return;
+
+D[table]=[
+...D[table],
+...x[table].filter(l=>
+!D[table].some(
+r=>String(r.id)===
+String(l.id)
+)
+)
+];
+
+});
+
+}
+
+async function loadTable(table){
+
+if(!sb||!user)return;
+
+try{
+
+const{data,error}=
+await sb
+.from(table)
+.select("*");
+
+if(!error&&Array.isArray(data)){
+
+data.sort((a,b)=>
+String(
+b.created_at||b.data||""
+)
+.localeCompare(
+String(
+a.created_at||a.data||""
+)
+)
+);
+
+D[table]=data;
+
+return;
+
+}
+
+console.warn(
+"EDIFIQ",
+table,
+error?.message
+);
+
+}catch(e){
+
+console.warn(
+"Erro carregando",
+table,
+e
+);
+
+}
+
+D[table]=[];
+
+}
+
+async function loadCloud(){
+
+if(!sb||!user)return;
+
+for(const table of[
+"obras",
+"funcionarios",
+"diarias",
+"gastos",
+"pagamentos",
+"checklist",
+"faltas"
+]){
+
+await loadTable(table);
+
+}
+
+mergeLocal();
+
+fillSelectors();
+
+}
+
+async function insertRow(
+table,
+row
+){
+
+if(!user){
+
+toast(
+"Faça login primeiro."
+);
+
+return null;
+
+}
+
+const payload={
+...row,
+user_id:user.id
+};
+
+const attempts=[
+payload
+];
+
+if(table==="gastos"){
+
+attempts.push(
+Object.fromEntries(
+Object.entries(payload)
+.filter(
+([k])=>k!=="categoria"
+)
+)
+);
+
+}
+
+if(table==="pagamentos"){
+
+attempts.push(
+Object.fromEntries(
+Object.entries(payload)
+.filter(
+([k])=>k!=="forma_pagamento"
+)
+)
+);
+
+}
+
+if(table==="funcionarios"){
+
+attempts.push(
+Object.fromEntries(
+Object.entries(payload)
+.filter(
+([k])=>k!=="registrar_diaria"
+)
+)
+);
+
+}
+
+for(const tentativa of attempts){
+
+try{
+
+const{data,error}=
+await sb
+.from(table)
+.insert(tentativa)
+.select()
+.single();
+
+if(!error&&data){
+
+D[table].unshift(data);
+
+saveLocalData();
+
+renderAll();
+
+return data;
+
+}
+
+console.warn(
+"Supabase recusou",
+table,
+error?.message
+);
+
+}catch(e){
+
+console.warn(
+"Erro Supabase",
+table,
+e
+);
+
+}
+
+}
+
+const localRow={
+...row,
+id:
+"local_"+Date.now()+"_"+
+Math.random()
+.toString(36)
+.slice(2),
+user_id:user.id,
+created_at:
+new Date().toISOString()
+};
+
+D[table].unshift(localRow);
+
+saveLocalData();
+
+renderAll();
+
+toast(
+"Salvo neste aparelho. O servidor recusou a gravação."
+);
+
+return localRow;
+
+}
+
+async function updateRow(
+table,
+id,
+row
+){
+
+if(String(id).startsWith("local_")){
+
+const i=D[table].findIndex(
+x=>String(x.id)===
+String(id)
+);
+
+if(i>=0){
+
+D[table][i]={
+...D[table][i],
+...row
+};
+
+saveLocalData();
+
+renderAll();
+
+toast("Atualizado.");
+
+return D[table][i];
+
+}
+
+return null;
+
+}
+
+try{
+
+const{data,error}=
+await sb
+.from(table)
+.update(row)
+.eq("id",id)
+.select()
+.single();
+
+if(!error&&data){
+
+const i=D[table].findIndex(
+x=>String(x.id)===
+String(id)
+);
+
+if(i>=0)
+D[table][i]=data;
+
+saveLocalData();
+
+renderAll();
+
+return data;
+
+}
+
+console.warn(
+"Erro atualização",
+error?.message
+);
+
+}catch(e){
+
+console.warn(e);
+
+}
+
+toast(
+"Não foi possível atualizar no servidor."
+);
+
+return null;
+
+}
+
+async function removeRow(
+table,
+id
+){
+
+if(!confirm(
+"Deseja realmente excluir?"
+))
+return;
+
+if(String(id).startsWith("local_")){
+
+D[table]=D[table].filter(
+x=>String(x.id)!==
+String(id)
+);
+
+saveLocalData();
+
+renderAll();
+
+toast(
+"Excluído com sucesso."
+);
+
+return;
+
+}
+
+try{
+
+const{error}=await sb
+.from(table)
+.delete()
+.eq("id",id);
+
+if(error){
+
+toast(
+"Erro ao excluir: "+
+error.message
+);
+
+return;
+
+}
+
+D[table]=D[table].filter(
+x=>String(x.id)!==
+String(id)
+);
+
+saveLocalData();
+
+renderAll();
+
+toast(
+"Excluído com sucesso."
+);
+
+}catch(e){
+
+toast(
+"Erro ao excluir."
+);
+
+}
+
+}
+
+
+/* =========================================================
+   OBRAS
+   ========================================================= */
+
+function openObra(id=null){
+
+editObraId=id;
+
+const o=D.obras.find(
+x=>String(x.id)===
+String(id)
+);
+
+$("obraTitle").textContent=
+id?"Editar obra":"Nova obra";
+
+$("oNome").value=o?.nome||"";
+$("oCli").value=o?.cliente||"";
+$("oLoc").value=o?.endereco||"";
+$("oVal").value=o?.valor??"";
+$("oStatus").value=
+o?.status||"em_andamento";
+$("oIni").value=
+o?.data_inicio||"";
+$("oFim").value=
+o?.data_fim||"";
+$("oTipo").value=
+o?.tipo_servico||"";
+$("oObs").value=
+o?.observacoes||"";
+
+openM("obraM");
+
+}
+
+async function saveObra(e){
+
+e.preventDefault();
+
+const nome=
+$("oNome").value.trim();
+
+if(!nome){
+
+toast(
+"Informe o nome da obra."
+);
+
+return;
+
+}
+
+const row={
+nome,
+cliente:
+$("oCli").value.trim(),
+endereco:
+$("oLoc").value.trim(),
+valor:
+Number($("oVal").value||0),
+status:
+$("oStatus").value,
+data_inicio:
+$("oIni").value||null,
+data_fim:
+$("oFim").value||null,
+tipo_servico:
+$("oTipo").value.trim(),
+observacoes:
+$("oObs").value.trim()
+};
+
+let result=null;
+
+if(editObraId){
+
+result=await updateRow(
+"obras",
+editObraId,
+row
+);
+
+}else{
+
+result=await insertRow(
+"obras",
+row
+);
+
+}
+
+if(result){
+  if(!editObraId) await ensureDefaultChecklist(result.id);
+
+closeM("obraM");
+
+toast(
+editObraId
+?"Obra atualizada."
+:"Obra criada com sucesso."
+);
+
+editObraId=null;
+
+}
+
+}
+
+function statusLabel(s){
+
+return({
+em_andamento:"Em andamento",
+planejada:"Planejada",
+concluida:"Concluída",
+pausada:"Pausada"
+})[s]||s||"—";
+
+}
+
+function obraProgress(obra){
+
+const itens=
+D.checklist.filter(
+x=>String(x.obra_id)===
+String(obra.id)
+);
+
+if(!itens.length){
+
+return obra.status==="concluida"
+?100
+:0;
+
+}
+
+const done=
+itens.filter(x=>
+x.concluida===true||
+x.concluido===true||
+x.status==="concluido"
+).length;
+
+return Math.round(
+done/itens.length*100
+);
+
+}
+
+
+/* =========================================================
+   FINANCEIRO DA OBRA
+   ========================================================= */
+
+function obraFinanceData(obraId){
+
+const obra=D.obras.find(
+o=>String(o.id)===
+String(obraId)
+);
+
+const contrato=
+Number(obra?.valor||0);
+
+const receita=
+D.pagamentos
+.filter(x=>
+String(x.obra_id)===
+String(obraId)
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+const gastos=
+D.gastos.filter(
+x=>String(x.obra_id)===
+String(obraId)
+);
+
+const material=
+gastos
+.filter(
+x=>categoriaFinanceira(x)==="Material"
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+const mao=
+gastos
+.filter(
+x=>categoriaFinanceira(x)==="Mão de obra"
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+const terceirizado=
+gastos
+.filter(
+x=>categoriaFinanceira(x)==="Serviço terceirizado"
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+const outros=
+gastos
+.filter(
+x=>categoriaFinanceira(x)==="Outros"
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+const despesas=
+material+
+mao+
+terceirizado+
+outros;
+
+const resultado=
+receita-despesas;
+
+const saldoContrato=
+contrato-despesas;
+
+return{
+contrato,
+receita,
+material,
+mao,
+terceirizado,
+outros,
+despesas,
+resultado,
+saldoContrato
+};
+
+}
+
+function percentContrato(
+valor,
+contrato
+){
+
+if(!contrato)return 0;
+
+return(
+Number(valor||0)/
+Number(contrato)*100
+);
+
+}
+
+function pctText(
+valor,
+contrato
+){
+
+if(!contrato)return"—";
+
+return percentContrato(
+valor,
+contrato
+).toFixed(1)+"%";
+
+}
+
+function obraFinanceMini(o){
+
+const f=
+obraFinanceData(o.id);
+
+return`
+
+<div class="finance-mini">
+
+<div class="finance-line">
+<span>Valor do contrato</span>
+<b class="gold">
+${money(f.contrato)}
+</b>
+</div>
+
+<div class="finance-line">
+<span>Receita recebida</span>
+<b class="green">
+${money(f.receita)}
+</b>
+</div>
+
+<div style="margin-top:8px">
+
+<div class="finance-cat">
+<span>Material</span>
+<span>
+<b>${money(f.material)}</b>
+<br>
+<span class="finance-percent">
+${pctText(f.material,f.contrato)}
+do contrato
+</span>
+</span>
+</div>
+
+<div class="finance-cat">
+<span>Mão de obra</span>
+<span>
+<b>${money(f.mao)}</b>
+<br>
+<span class="finance-percent">
+${pctText(f.mao,f.contrato)}
+do contrato
+</span>
+</span>
+</div>
+
+<div class="finance-cat">
+<span>Serviço terceirizado</span>
+<span>
+<b>${money(f.terceirizado)}</b>
+<br>
+<span class="finance-percent">
+${pctText(
+f.terceirizado,
+f.contrato
+)}
+do contrato
+</span>
+</span>
+</div>
+
+<div class="finance-cat">
+<span>Outras despesas</span>
+<span>
+<b>${money(f.outros)}</b>
+<br>
+<span class="finance-percent">
+${pctText(
+f.outros,
+f.contrato
+)}
+do contrato
+</span>
+</span>
+</div>
+
+</div>
+
+<div class="finance-line"
+style="margin-top:8px">
+
+<span>Total de despesas</span>
+
+<b class="red">
+${money(f.despesas)}
+</b>
+
+</div>
+
+<div class="finance-line">
+
+<span>Resultado / lucro</span>
+
+<b class="${f.resultado>=0?"green":"red"}">
+${money(f.resultado)}
+</b>
+
+</div>
+
+<div class="finance-line">
+
+<span>
+Saldo do contrato após despesas
+</span>
+
+<b class="gold">
+${money(f.saldoContrato)}
+</b>
+
+</div>
+
+</div>
+`;
+
+}
+
+function renderObras(){
+
+const box=$("obrasList");
+
+if(!box)return;
+
+const search=
+$("obraSearch")
+?.value
+.trim()
+.toLowerCase()||"";
+
+const obras=
+D.obras.filter(o=>{
+
+const texto=
+`${o.nome||""} ${o.cliente||""}`
+.toLowerCase();
+
+return!search||
+texto.includes(search);
+
+});
+
+if(!obras.length){
+
+box.innerHTML=
+`<div class="empty">
+Nenhuma obra cadastrada.
+</div>`;
+
+}else{
+
+box.innerHTML=
+obras.map(o=>{
+
+const p=
+obraProgress(o);
+
+return`
+
+<div class="card">
+
+<div class="row">
+
+<div>
+<h3>${esc(o.nome)}</h3>
+
+<div class="muted">
+${esc(
+o.cliente||
+"Sem cliente"
+)}
+</div>
+
+</div>
+
+<span class="badge ${
+o.status==="concluida"
+?"on":""
+}">
+${esc(
+statusLabel(o.status)
+)}
+</span>
+
+</div>
+
+<div class="three">
+
+<div>
+<small>Contrato</small><br>
+<b>${money(o.valor)}</b>
+</div>
+
+<div>
+<small>Início</small><br>
+<b>${esc(
+o.data_inicio||"—"
+)}</b>
+</div>
+
+<div>
+<small>Previsão</small><br>
+<b>${esc(
+o.data_fim||"—"
+)}</b>
+</div>
+
+</div>
+
+<div style="margin-top:12px">
+
+<div class="row">
+
+<small>
+Progresso da obra
+</small>
+
+<b class="gold">
+${p}%
+</b>
+
+</div>
+
+<div class="progress">
+<i style="width:${p}%"></i>
+</div>
+
+</div>
+
+<div class="note">
+${esc(
+o.endereco||
+"Endereço não informado"
+)}
+</div>
+
+${servicesForObra(o.id).length?`<div class="note"><b>Serviços adicionais</b>${servicesForObra(o.id).map(s=>`<div class="serviceLine"><span>${esc(s.nome)}<br><small>${esc(s.data||"")}</small></span><b class="gold">${money(s.valor)}</b></div>`).join('')}</div>`:""}
+
+${obraFinanceMini(o)}
+
+<div class="listActions">
+
+<button class="btn"
+onclick="openObra('${o.id}')">
+Editar
+</button>
+
+<button class="btn gold"
+onclick="openCheckForObra('${o.id}')">
+☑️ Checklist
+</button>
+
+<button class="btn gold" onclick="addServicoAdicional('${o.id}')">
+➕ Serviço adicional
+</button>
+
+<button class="btn"
+onclick="openFotoForObra('${o.id}')">
+📸 Fotos
+</button>
+
+<button class="btn danger"
+onclick="removeRow(
+'obras',
+'${o.id}'
+)">
+Excluir
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}).join("");
+
+}
+
+const recent=$("recentes");
+
+if(recent){
+
+recent.innerHTML=
+D.obras
+.slice(0,3)
+.map(o=>`
+
+<div class="card">
+
+<div class="row">
+
+<div>
+<b>${esc(o.nome)}</b>
+<br>
+<small>
+${esc(o.cliente||"")}
+</small>
+</div>
+
+<strong class="gold">
+${obraProgress(o)}%
+</strong>
+
+</div>
+
+</div>
+
+`).join("")||
+`
+<div class="empty">
+Nenhuma obra cadastrada.
+</div>
+`;
+
+}
+
+}
+
+
+/* =========================================================
+   FUNCIONÁRIOS
+   ========================================================= */
+
+function openFunc(id=null){
+
+editFuncId=id;
+
+const f=D.funcionarios.find(
+x=>String(x.id)===
+String(id)
+);
+
+$("funcTitle").textContent=
+id
+?"Editar funcionário"
+:"Novo funcionário";
+
+$("fNome").value=
+f?.nome||"";
+
+$("fFunc").value=
+f?.funcao||"";
+
+$("fTel").value=
+f?.telefone||"";
+
+$("fTipo").value=
+f?.tipo_pagamento||"diaria";
+
+$("fDia").value=
+f?.valor_diaria??"";
+
+$("fSal").value=
+f?.salario_mensal??"";
+
+$("fPag").value=
+f?.dia_pagamento??"";
+
+$("fAtivo").value=
+f?.ativo===false
+?"false"
+:"true";
+
+$("fDiariaRegistro").value=
+f?.registrar_diaria===false
+?"false"
+:"true";
+
+fillSelectors();
+
+$("fObra").value=
+getFuncObra(id)||"";
+
+atualizarTipoFuncionario();
+
+openM("funcM");
+
+}
+
+function atualizarTipoFuncionario(){
+
+const mensal=
+$("fTipo")?.value==="mensal";
+
+if($("fDia"))
+$("fDia").disabled=mensal;
+
+if($("fSal"))
+$("fSal").disabled=!mensal;
+
+}
+
+async function saveFunc(e){
+
+e.preventDefault();
+
+const nome=
+$("fNome").value.trim();
+
+if(!nome){
+
+toast("Informe o nome.");
+
+return;
+
+}
+
+const obraId=
+$("fObra").value||null;
+
+const registrar=
+$("fDiariaRegistro").value==="true";
+
+const row={
+nome,
+funcao:
+$("fFunc").value.trim(),
+telefone:
+$("fTel").value.trim(),
+tipo_pagamento:
+$("fTipo").value,
+valor_diaria:
+Number($("fDia").value||0),
+salario_mensal:
+Number($("fSal").value||0),
+dia_pagamento:
+Number($("fPag").value||0),
+ativo:
+$("fAtivo").value==="true",
+registrar_diaria:
+registrar,
+obra_id:
+obraId
+};
+
+let result;
+
+if(editFuncId){
+
+result=await updateRow(
+"funcionarios",
+editFuncId,
+row
+);
+
+}else{
+
+result=await insertRow(
+"funcionarios",
+row
+);
+
+}
+
+if(result){
+
+const id=result.id;
+
+setFuncObra(
+id,
+obraId
+);
+
+closeM("funcM");
+
+toast(
+editFuncId
+?"Funcionário atualizado."
+:"Funcionário cadastrado."
+);
+
+editFuncId=null;
+
+}
+
+}
+
+async function toggleFunc(id){
+
+const f=D.funcionarios.find(
+x=>String(x.id)===
+String(id)
+);
+
+if(!f)return;
+
+await updateRow(
+"funcionarios",
+id,
+{
+ativo:f.ativo===false
+}
+);
+
+}
+
+function renderFuncs(){
+
+const box=$("funcList");
+
+if(!box)return;
+
+const filter=
+$("funcFilter")?.value||"todos";
+
+const funcs=
+D.funcionarios.filter(f=>{
+
+if(filter==="ativos")
+return f.ativo!==false;
+
+if(filter==="inativos")
+return f.ativo===false;
+
+return true;
+
+});
+
+if(!funcs.length){
+
+box.innerHTML=
+`<div class="empty">
+Nenhum funcionário encontrado.
+</div>`;
+
+return;
+
+}
+
+box.innerHTML=
+funcs.map(f=>{
+
+const obraId=
+getFuncObra(f.id);
+
+const obra=
+D.obras.find(
+o=>String(o.id)===
+String(obraId)
+);
+
+const resumo=
+calcFuncionarioPagamento(
+f.id
+);
+
+return`
+
+<div class="card">
+
+<div class="row">
+
+<div>
+<h3>${esc(f.nome)}</h3>
+
+<div class="muted">
+${esc(
+f.funcao||
+"Função não informada"
+)}
+</div>
+
+</div>
+
+<span class="badge ${
+f.ativo===false
+?"off":"on"
+}">
+${
+f.ativo===false
+?"Inativo"
+:"Ativo"
+}
+</span>
+
+</div>
+
+<div class="three">
+
+<div>
+<small>Pagamento</small><br>
+<b>${esc(
+f.tipo_pagamento||
+"Diária"
+)}</b>
+</div>
+
+<div>
+<small>Valor</small><br>
+<b>
+${
+f.tipo_pagamento==="mensal"
+?money(f.salario_mensal)
+:money(f.valor_diaria)
+}
+</b>
+</div>
+
+<div>
+<small>Obra</small><br>
+<b>${esc(
+obra?.nome||
+"Não definida"
+)}</b>
+</div>
+
+</div>
+
+<div class="note">
+
+${
+f.registrar_diaria===false
+?"🚫 Não registrar diária"
+:"✅ Registrar diária"
+}
+
+</div>
+
+<div class="pay-summary">
+
+<div>
+<small>Diárias pendentes</small><br>
+<b>${money(
+resumo.pending
+)}</b>
+</div>
+
+<div>
+<small>
+Adiantamento disponível
+</small><br>
+
+<b class="red">
+${money(
+resumo.advances.reduce(
+(a,x)=>
+a+Number(
+x.disponivel||0
+),
+0
+)
+)}
+</b>
+
+</div>
+
+<div>
+<small>
+Próximo pagamento
+</small><br>
+
+<b class="green">
+${money(resumo.net)}
+</b>
+
+</div>
+
+</div>
+
+<div class="listActions">
+
+<button class="btn"
+onclick="openFunc('${f.id}')">
+Editar
+</button>
+
+${
+f.registrar_diaria!==false
+?`
+<button class="btn gold"
+onclick="openDiaFuncionario('${f.id}')">
+＋ Diária
+</button>
+`
+:""
+}
+
+<button class="btn"
+onclick="openPagamentoFuncionario('${f.id}')">
+💰 Pagamento
+</button>
+
+<button class="btn"
+onclick="openAdiantamentoFuncionario('${f.id}')">
+💳 Adiantamento
+</button>
+
+<button class="btn"
+onclick="toggleFunc('${f.id}')">
+${
+f.ativo===false
+?"Ativar"
+:"Desativar"
+}
+</button>
+
+<button class="btn danger"
+onclick="removeRow(
+'funcionarios',
+'${f.id}'
+)">
+Excluir
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}).join("");
+
+}
+
+
+/* =========================================================
+   DIÁRIAS
+   ========================================================= */
+
+function openDia(){
+
+fillSelectors();
+
+$("dData").value=today();
+$("dQtd").value=1;
+$("dTipo").value="completa";
+$("dVal").value="";
+$("dStatus").value="pendente";
+$("dObs").value="";
+
+atualizarTipoDiaria();
+
+openM("diaM");
+
+}
+
+function aplicarTipoDiaria(){
+
+const tipo=$("dTipo")?.value;
+
+if(!$("dQtd"))return;
+
+if(
+tipo==="manha"||
+tipo==="tarde"
+){
+
+$("dQtd").value=.5;
+
+$("diaValorInfo").textContent=
+tipo==="manha"
+?"Meia diária da manhã: será considerado 50% do valor da diária."
+:"Meia diária da tarde: será considerado 50% do valor da diária.";
+
+}else{
+
+$("dQtd").value=1;
+
+$("diaValorInfo").textContent=
+"Diária completa: será considerado 100% do valor informado.";
+
+}
+
+}
+
+function atualizarTipoDiaria(){
+aplicarTipoDiaria();
+}
+
+function openDiaFuncionario(id){
+
+openDia();
+
+setTimeout(()=>{
+
+$("dFunc").value=id;
+
+const f=D.funcionarios.find(
+x=>String(x.id)===
+String(id)
+);
+
+if(f){
+
+$("dVal").value=
+f.valor_diaria||"";
+
+$("dObra").value=
+getFuncObra(id)||"";
+
+}
+
+},50);
+
+}
+
+async function saveDia(e){
+
+e.preventDefault();
+
+const funcionario_id=
+$("dFunc").value;
+
+const funcionarioAtual=D.funcionarios.find(x=>String(x.id)===String(funcionario_id));
+if(!funcionarioAtual){toast("Funcionário não encontrado.");return;}
+if(funcionarioAtual.ativo===false){toast("Funcionário inativo não pode registrar diária.");closeM("diaM");return;}
+if(funcionarioAtual.registrar_diaria===false){toast("Este funcionário está configurado para não registrar diária.");return;}
+
+const obra_id=
+$("dObra").value;
+
+if(!funcionario_id){
+
+toast(
+"Selecione o funcionário."
+);
+
+return;
+
+}
+
+if(!obra_id){
+
+toast(
+"Selecione a obra."
+);
+
+return;
+
+}
+
+const tipo=$("dTipo").value;
+
+const qtd=
+tipo==="manha"||
+tipo==="tarde"
+?.5
+:1;
+
+const valorBase=
+Number($("dVal").value||0);
+
+const valorReal=
+valorBase*qtd;
+
+if(valorBase<=0){
+
+toast(
+"Informe o valor da diária."
+);
+
+return;
+
+}
+
+let observacao=
+$("dObs").value.trim();
+
+const textoTipo=
+tipo==="manha"
+?"Meia diária — manhã — 50%"
+:
+tipo==="tarde"
+?"Meia diária — tarde — 50%"
+:"Diária completa — 100%";
+
+observacao=
+observacao
+?`${textoTipo}. ${observacao}`
+:textoTipo;
+
+const row={
+funcionario_id,
+obra_id,
+data:
+$("dData").value,
+qtd,
+valor_diaria:
+valorBase,
+status:
+$("dStatus").value,
+observacao
+};
+
+const result=
+await insertRow(
+"diarias",
+row
+);
+
+if(result){
+
+closeM("diaM");
+
+toast(
+`Diária registrada: ${money(valorReal)}`
+);
+
+}
+
+}
+
+function renderPayroll(){
+
+const box=$("diaList");
+
+if(!box)return;
+
+const period=
+$("payPeriod")?.value||
+"semana";
+
+const now=new Date();
+
+let inicio=null;
+
+if(period==="dia"){
+
+inicio=new Date(
+now.getFullYear(),
+now.getMonth(),
+now.getDate()
+);
+
+}
+
+if(period==="semana"){
+
+const day=now.getDay();
+
+inicio=new Date(
+now.getFullYear(),
+now.getMonth(),
+now.getDate()-
+(day===0?6:day-1)
+);
+
+}
+
+if(period==="quinzena"){
+
+inicio=new Date(
+now.getFullYear(),
+now.getMonth(),
+now.getDate()-14
+);
+
+}
+
+if(period==="mes"){
+
+inicio=new Date(
+now.getFullYear(),
+now.getMonth(),
+1
+);
+
+}
+
+const items=
+D.diarias.filter(d=>{
+
+if(!inicio)return true;
+
+const dt=new Date(
+`${d.data}T00:00:00`
+);
+
+return dt>=inicio;
+
+});
+
+const total=
+items.reduce(
+(a,d)=>a+diariaValor(d),
+0
+);
+
+$("payTotal").textContent=
+money(total);
+
+$("payCount").textContent=
+items.length;
+
+if(!items.length){
+
+box.innerHTML=
+`<div class="empty">
+Nenhuma diária no período.
+</div>`;
+
+return;
+
+}
+
+box.innerHTML=
+items.map(d=>{
+
+const f=
+D.funcionarios.find(
+x=>String(x.id)===
+String(d.funcionario_id)
+);
+
+const o=
+D.obras.find(
+x=>String(x.id)===
+String(d.obra_id)
+);
+
+const valor=
+diariaValor(d);
+
+return`
+
+<div class="card">
+
+<div class="row">
+
+<div>
+<b>${esc(
+f?.nome||
+"Funcionário"
+)}</b>
+<br>
+<small>${esc(
+o?.nome||
+"Sem obra"
+)}</small>
+</div>
+
+<span class="badge ${
+d.status==="pago"
+?"on":""
+}">
+${
+d.status==="pago"
+?"Pago"
+:"Pendente"
+}
+</span>
+
+</div>
+
+<div class="row"
+style="margin-top:10px">
+
+<span>${esc(
+d.data||""
+)}</span>
+
+<strong class="gold">
+${money(valor)}
+</strong>
+
+</div>
+
+${
+d.observacao
+?`<small>${esc(
+d.observacao
+)}</small>`
+:""
+}
+
+<div class="listActions">
+
+<button class="btn danger"
+onclick="removeRow(
+'diarias',
+'${d.id}'
+)">
+Excluir
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}).join("");
+
+}
+
+
+/* =========================================================
+   PAGAMENTO DA EQUIPE
+   ========================================================= */
+
+function fillPagamentoFuncionarios(
+selectedId=null
+){
+
+const box=$("pagFuncionarios");
+
+if(!box)return;
+
+const funcs=
+D.funcionarios.filter(
+f=>f.ativo!==false
+);
+
+if(!funcs.length){
+
+box.innerHTML=
+`<div class="empty">
+Cadastre um funcionário primeiro.
+</div>`;
+
+return;
+
+}
+
+box.innerHTML=
+funcs.map(f=>{
+
+const obraId=
+getFuncObra(f.id);
+
+const obra=
+D.obras.find(
+o=>String(o.id)===
+String(obraId)
+);
+
+const resumo=
+calcFuncionarioPagamento(
+f.id
+);
+
+return`
+
+<div class="pay-person">
+
+<div class="pay-person-head">
+
+<label style="
+display:flex;
+align-items:center;
+gap:8px
+">
+
+<input
+type="checkbox"
+class="pag-check"
+data-id="${f.id}"
+onchange="updatePagTotal()"
+${
+selectedId&&
+String(selectedId)===
+String(f.id)
+?"checked":""
+}
+>
+
+<span>
+
+<b>${esc(f.nome)}</b>
+
+<br>
+
+<small>
+${esc(
+obra?.nome||
+"Sem obra"
+)}
+</small>
+
+</span>
+
+</label>
+
+</div>
+
+<div class="pay-summary">
+
+<div>
+<small>Diárias</small><br>
+<b>${money(
+resumo.pending
+)}</b>
+</div>
+
+<div>
+<small>Adiantamento</small><br>
+<b class="red">
+${money(
+resumo.advance
+)}
+</b>
+</div>
+
+<div>
+<small>Líquido</small><br>
+<b class="green">
+${money(
+resumo.net
+)}
+</b>
+</div>
+
+</div>
+
+<div class="pay-value">
+
+<input
+class="pag-value"
+data-id="${f.id}"
+type="number"
+step=".01"
+min="0"
+readonly
+value="${
+resumo.net.toFixed(2)
+}"
+placeholder="Valor do pagamento"
+>
+
+</div>
+
+</div>
+
+`;
+
+}).join("");
+
+}
+
+function selecionarTodosPagamentos(
+marcar
+){
+
+document.querySelectorAll(
+".pag-check"
+).forEach(ch=>{
+ch.checked=marcar;
+});
+
+updatePagTotal();
+
+}
+
+function updatePagTotal(){
+
+let total=0;
+let diarias=0;
+let adiant=0;
+
+document.querySelectorAll(
+".pag-check"
+).forEach(ch=>{
+
+if(!ch.checked)return;
+
+const id=ch.dataset.id;
+
+const resumo=
+calcFuncionarioPagamento(id);
+
+total+=resumo.net;
+
+diarias+=resumo.pending;
+
+adiant+=resumo.advance;
+
+});
+
+$("pagTotal").textContent=
+money(total);
+
+$("pagDiariasTotal").textContent=
+money(diarias);
+
+$("pagAdiantTotal").textContent=
+money(adiant);
+
+$("pagLiquidoTotal").textContent=
+money(total);
+
+}
+
+function openPagamentoEquipe(){
+
+fillSelectors();
+
+$("pagObra").value="";
+$("pagData").value=today();
+
+$("pagDescricao").value=
+"Pagamento de equipe";
+
+$("pagObs").value="";
+
+fillPagamentoFuncionarios();
+
+$("pagTotal").textContent=
+money(0);
+
+$("pagDiariasTotal").textContent=
+money(0);
+
+$("pagAdiantTotal").textContent=
+money(0);
+
+$("pagLiquidoTotal").textContent=
+money(0);
+
+openM("pagEquipeM");
+
+}
+
+function openPagamentoFuncionario(id){
+
+openPagamentoEquipe();
+
+setTimeout(()=>{
+
+const f=
+D.funcionarios.find(
+x=>String(x.id)===
+String(id)
+);
+
+if(!f)return;
+
+const obra=
+getFuncObra(id);
+
+$("pagObra").value=
+obra||"";
+
+const check=
+document.querySelector(
+`.pag-check[data-id="${id}"]`
+);
+
+if(check)
+check.checked=true;
+
+updatePagTotal();
+
+},50);
+
+}
+
+async function savePagamentoEquipe(e){
+  e.preventDefault();
+  const checks=[...document.querySelectorAll(".pag-check")].filter(x=>x.checked);
+  if(!checks.length){toast("Selecione pelo menos um funcionário.");return;}
+  const fallbackObra=$("pagObra").value||""; const data=$("pagData").value||today();
+  const descricao=$("pagDescricao").value.trim()||"Pagamento de equipe"; const obs=$("pagObs").value.trim();
+  let total=0,diariasTotal=0,adiantTotal=0,quantidade=0; const processados=[];
+  for(const check of checks){
+    const id=check.dataset.id; const f=D.funcionarios.find(x=>String(x.id)===String(id)); if(!f||f.ativo===false)continue;
+    const resumo=calcFuncionarioPagamento(id); if(resumo.pending<=0)continue;
+    const obraId=getFuncObra(id)||fallbackObra;
+    if(!obraId){toast(`Defina uma obra para ${f.nome} antes de pagar.`);continue;}
+    processados.push({id,f,resumo,pendingItems:getPendingDiarias(id),obraId});
+    total+=resumo.net; diariasTotal+=resumo.pending; adiantTotal+=resumo.advance; quantidade++;
+  }
+  if(!processados.length){toast("Nenhum funcionário selecionado possui diária pendente e obra definida.");return;}
+  let falhas=0;
+  for(const item of processados){
+    if(item.resumo.net<=0){ continue; }
+    const observacao=`Diárias pendentes: ${money(item.resumo.pending)}. Adiantamento abatido: ${money(item.resumo.advance)}. Valor líquido: ${money(item.resumo.net)}.${obs?" "+obs:""}`;
+    const result=await insertRow("gastos",{obra_id:item.obraId,data,descricao:`[Mão de obra] ${descricao} - ${item.f.nome}`,valor:item.resumo.net,fornecedor:item.f.nome,observacao,categoria:"Mão de obra"});
+    if(!result){falhas++;continue;}
+    for(const diaria of item.pendingItems){await updateRow("diarias",diaria.id,{status:"pago"});}
+    aplicarAdiantamentos(item.id,item.resumo.allocations);
+  }
+  closeM("pagEquipeM");
+  toast(`${quantidade-falhas} pagamento(s) processado(s). Total líquido: ${money(total)}`);
+  await loadCloud(); renderAll();
+}
+/* =========================================================
+   ADIANTAMENTO
+   ========================================================= */
+
+function fillAdiantamentoFuncionarios(){
+
+const el=$("adiantFunc");
+
+if(!el)return;
+
+const atual=el.value;
+
+el.innerHTML=`
+<option value="">
+Selecione o funcionário
+</option>
+${
+D.funcionarios
+.filter(f=>f.ativo!==false)
+.map(f=>`
+<option value="${f.id}">
+${esc(f.nome)}
+</option>
+`).join("")
+}
+`;
+
+if(atual)
+el.value=atual;
+
+}
+
+function openAdiantamento(){
+
+fillSelectors();
+
+fillAdiantamentoFuncionarios();
+
+$("adiantObra").value="";
+$("adiantFunc").value="";
+$("adiantValor").value="";
+$("adiantData").value=today();
+$("adiantObs").value="";
+
+openM("adiantM");
+
+}
+
+function openAdiantamentoFuncionario(id){
+
+openAdiantamento();
+
+setTimeout(()=>{
+
+$("adiantFunc").value=id;
+
+$("adiantObra").value=
+getFuncObra(id)||"";
+
+const f=
+D.funcionarios.find(
+x=>String(x.id)===
+String(id)
+);
+
+if(f){
+
+$("adiantValor").value=
+f.tipo_pagamento==="mensal"
+?f.salario_mensal||""
+:f.valor_diaria||"";
+
+}
+
+},50);
+
+}
+
+async function saveAdiantamento(e){
+
+e.preventDefault();
+
+const obra_id=
+$("adiantObra").value;
+
+const funcionario_id=
+$("adiantFunc").value;
+
+const valor=
+Number(
+$("adiantValor").value||0
+);
+
+if(!obra_id){
+
+toast(
+"Selecione a obra."
+);
+
+return;
+
+}
+
+if(!funcionario_id){
+
+toast(
+"Selecione o funcionário."
+);
+
+return;
+
+}
+
+if(valor<=0){
+
+toast(
+"Informe um valor válido."
+);
+
+return;
+
+}
+
+const f=
+D.funcionarios.find(
+x=>String(x.id)===
+String(funcionario_id)
+);
+
+const nome=
+f?.nome||
+"Funcionário";
+
+const obs=
+$("adiantObs").value.trim();
+
+const result=
+await insertRow(
+"gastos",
+{
+obra_id,
+data:
+$("adiantData").value,
+descricao:
+`[Adiantamento] Adiantamento - ${nome}`,
+valor,
+fornecedor:
+nome,
+observacao:obs
+}
+);
+
+if(result){
+
+closeM("adiantM");
+
+toast(
+`Adiantamento de ${money(
+valor
+)} registrado.`
+);
+
+await loadCloud();
+
+renderAll();
+
+}
+
+}
+
+
+/* =========================================================
+   FINANCEIRO
+   ========================================================= */
+
+function openFin(){
+
+fillSelectors();
+
+$("tFin").value="entrada";
+$("dFin").value="";
+$("vFin").value="";
+$("dtFin").value=today();
+$("forFin").value="";
+$("obsFin").value="";
+$("oFin").value="";
+$("finCategoria").value="Material";
+
+atualizarCategoriaFinanceira();
+
+openM("finM");
+
+}
+
+function atualizarCategoriaFinanceira(){
+
+const despesa=
+$("tFin")?.value==="despesa";
+
+const wrap=$("finCatWrap");
+
+if(wrap){
+
+wrap.classList.toggle(
+"hidden",
+!despesa
+);
+
+}
+
+}
+
+async function saveFin(e){
+
+e.preventDefault();
+
+const tipo=
+$("tFin").value;
+
+const descricaoBase=
+$("dFin").value.trim();
+
+const valor=
+Number(
+$("vFin").value||0
+);
+
+if(!descricaoBase){
+
+toast(
+"Informe a descrição."
+);
+
+return;
+
+}
+
+if(valor<=0){
+
+toast(
+"Informe um valor válido."
+);
+
+return;
+
+}
+
+if(tipo==="entrada"){
+
+const result=
+await insertRow(
+"pagamentos",
+{
+obra_id:
+$("oFin").value||null,
+data:
+$("dtFin").value,
+descricao:
+descricaoBase,
+valor,
+fornecedor:
+$("forFin").value.trim(),
+observacao:
+$("obsFin").value.trim()
+}
+);
+
+if(result){
+
+closeM("finM");
+
+toast(
+"Receita registrada."
+);
+
+await loadCloud();
+
+renderAll();
+
+}
+
+}else{
+
+const categoria=
+$("finCategoria").value;
+
+const descricao=
+`[${categoria}] ${descricaoBase}`;
+
+const result=
+await insertRow(
+"gastos",
+{
+obra_id:
+$("oFin").value||null,
+data:
+$("dtFin").value,
+descricao,
+valor,
+fornecedor:
+$("forFin").value.trim(),
+observacao:
+$("obsFin").value.trim()
+}
+);
+
+if(result){
+
+closeM("finM");
+
+toast(
+"Despesa registrada."
+);
+
+await loadCloud();
+
+renderAll();
+
+}
+
+}
+
+}
+
+function renderFinance(){
+
+const box=$("finList");
+
+if(!box)return;
+
+const obraFilter=
+$("finObraFilter")?.value||
+"all";
+
+const tipoFilter=
+$("finTipoFilter")?.value||
+"all";
+
+let entradas=
+D.pagamentos.map(
+x=>({...x,_tipo:"entrada"})
+);
+
+let despesas=
+D.gastos.map(
+x=>({...x,_tipo:"despesa"})
+);
+
+let items=[
+...entradas,
+...despesas
+];
+
+if(obraFilter!=="all"){
+
+items=items.filter(
+x=>String(x.obra_id)===
+String(obraFilter)
+);
+
+}
+
+if(tipoFilter!=="all"){
+
+items=items.filter(
+x=>x._tipo===tipoFilter
+);
+
+}
+
+const ent=
+D.pagamentos
+.filter(
+x=>obraFilter==="all"||
+String(x.obra_id)===
+String(obraFilter)
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+const desp=
+D.gastos
+.filter(
+x=>obraFilter==="all"||
+String(x.obra_id)===
+String(obraFilter)
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+$("finEnt").textContent=
+money(ent);
+
+$("finDesp").textContent=
+money(desp);
+
+$("finRes").textContent=
+money(ent-desp);
+
+renderObraFinance();
+
+if(!items.length){
+
+box.innerHTML=
+`<div class="empty">
+Nenhum lançamento encontrado.
+</div>`;
+
+return;
+
+}
+
+items.sort((a,b)=>
+String(b.data||"")
+.localeCompare(
+String(a.data||"")
+)
+);
+
+box.innerHTML=
+items.map(x=>{
+
+const obra=
+D.obras.find(
+o=>String(o.id)===
+String(x.obra_id)
+);
+
+const categoria=
+x._tipo==="despesa"
+?categoriaFinanceira(x)
+:"Receita";
+
+return`
+
+<div class="card">
+
+<div class="row">
+
+<div>
+
+<b>${esc(
+x.descricao||
+"Lançamento"
+)}</b>
+
+<br>
+
+<small>
+${esc(
+obra?.nome||
+"Sem obra"
+)}
+</small>
+
+</div>
+
+<span class="badge ${
+x._tipo==="entrada"
+?"on":"off"
+}">
+${
+x._tipo==="entrada"
+?"Receita"
+:"Despesa"
+}
+</span>
+
+</div>
+
+<div class="row"
+style="margin-top:10px">
+
+<span>${esc(
+x.data||""
+)}</span>
+
+<strong class="${
+x._tipo==="entrada"
+?"green":"red"
+}">
+${money(x.valor)}
+</strong>
+
+</div>
+
+<small>
+Categoria: ${esc(
+categoria
+)}
+</small>
+
+${
+x.fornecedor
+?`<br><small>${esc(
+x.fornecedor
+)}</small>`
+:""
+}
+
+<div class="listActions">
+
+<button
+class="btn danger"
+onclick="removeRow(
+'${
+x._tipo==="entrada"
+?"pagamentos"
+:"gastos"
+}',
+'${x.id}'
+)">
+Excluir
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}).join("");
+
+}
+
+function renderObraFinance(){
+
+const box=
+$("obraFinanceResumo");
+
+if(!box)return;
+
+if(!D.obras.length){
+
+box.innerHTML=
+`<p class="sub">
+Nenhuma obra cadastrada.
+</p>`;
+
+return;
+
+}
+
+box.innerHTML=
+D.obras.map(o=>{
+
+const f=
+obraFinanceData(o.id);
+
+return`
+
+<div class="item">
+
+<div class="row">
+
+<div>
+
+<b>${esc(o.nome)}</b>
+
+<br>
+
+<small>
+Contrato:
+${money(f.contrato)}
+</small>
+
+</div>
+
+<strong class="${
+f.resultado>=0
+?"green":"red"
+}">
+${money(f.resultado)}
+</strong>
+
+</div>
+
+<div class="finance-line">
+<span>Receita</span>
+<b class="green">
+${money(f.receita)}
+</b>
+</div>
+
+<div class="finance-cat">
+<span>Material</span>
+<span>
+<b>${money(f.material)}</b>
+<br>
+<span class="finance-percent">
+${pctText(
+f.material,
+f.contrato
+)}
+</span>
+</span>
+</div>
+
+<div class="finance-cat">
+<span>Mão de obra</span>
+<span>
+<b>${money(f.mao)}</b>
+<br>
+<span class="finance-percent">
+${pctText(
+f.mao,
+f.contrato
+)}
+</span>
+</span>
+</div>
+
+<div class="finance-cat">
+<span>
+Serviço terceirizado
+</span>
+<span>
+<b>${money(
+f.terceirizado
+)}</b>
+<br>
+<span class="finance-percent">
+${pctText(
+f.terceirizado,
+f.contrato
+)}
+</span>
+</span>
+</div>
+
+<div class="finance-cat">
+<span>
+Outras despesas
+</span>
+<span>
+<b>${money(f.outros)}</b>
+<br>
+<span class="finance-percent">
+${pctText(
+f.outros,
+f.contrato
+)}
+</span>
+</span>
+</div>
+
+<div class="finance-line"
+style="margin-top:8px">
+
+<span>
+Total despesas
+</span>
+
+<b class="red">
+${money(f.despesas)}
+</b>
+
+</div>
+
+<div class="finance-line">
+
+<span>
+Resultado / lucro
+</span>
+
+<b class="${
+f.resultado>=0
+?"green":"red"
+}">
+${money(f.resultado)}
+</b>
+
+</div>
+
+<div class="finance-line">
+
+<span>
+Saldo do contrato
+</span>
+
+<b class="gold">
+${money(f.saldoContrato)}
+</b>
+
+</div>
+
+</div>
+
+`;
+
+}).join("");
+
+}
+
+
+/* =========================================================
+   FALTAS DOS FUNCIONÁRIOS
+   Armazenamento local para não exigir nova tabela no Supabase.
+   ========================================================= */
+
+function openFalta(funcId=null){
+
+fillSelectors();
+
+const f=$("faltaFunc");
+if(f){
+  f.innerHTML=`<option value="">Selecione o funcionário</option>`+
+    D.funcionarios.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join("");
+  f.value=funcId||"";
+}
+
+$("faltaData").value=today();
+$("faltaTipo").value="falta";
+$("faltaObs").value="";
+openM("faltaM");
+
+}
+
+function renderFaltas(){
+
+const box=$("faltaList");
+if(!box)return;
+
+const items=[...D.faltas].sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
+
+if(!items.length){
+  box.innerHTML=`<div class="empty">Nenhuma falta registrada.</div>`;
+  return;
+}
+
+box.innerHTML=items.map(x=>{
+  const f=D.funcionarios.find(y=>String(y.id)===String(x.funcionario_id));
+  const o=D.obras.find(y=>String(y.id)===String(x.obra_id));
+  const tipo=x.tipo||"falta";
+  const label={falta:"Falta",justificada:"Falta justificada",atestado:"Atestado"}[tipo]||tipo;
+  return `<div class="card">
+    <div class="row">
+      <div><b>${esc(f?.nome||"Funcionário")}</b><br><small>${esc(x.data||"")}</small></div>
+      <span class="badge ${tipo==="falta"?"off":"on"}">${label}</span>
+    </div>
+    <div class="three" style="margin-top:10px">
+      <div><small>Obra</small><br><b>${esc(o?.nome||"Não definida")}</b></div>
+      <div><small>Motivo</small><br><b>${esc(x.observacao||"—")}</b></div>
+      <div><small>Registrado</small><br><b>${esc(x.created_at?new Date(x.created_at).toLocaleDateString("pt-BR"):"")}</b></div>
+    </div>
+    <div class="listActions"><button class="btn danger" onclick="deleteFalta('${x.id}')">Excluir</button></div>
+  </div>`;
+}).join("");
+
+}
+
+function getFaltasFuncionario(funcId){
+  return D.faltas.filter(x=>String(x.funcionario_id)===String(funcId));
+}
+
+async function saveFalta(e){
+
+e.preventDefault();
+const funcionario_id=$("faltaFunc").value;
+if(!funcionario_id){toast("Selecione o funcionário.");return;}
+
+const row={
+ id:"falta_"+Date.now()+"_"+Math.random().toString(36).slice(2),
+ funcionario_id,
+ obra_id:getFuncObra(funcionario_id)||null,
+ data:$("faltaData").value||today(),
+ tipo:$("faltaTipo").value||"falta",
+ observacao:$("faltaObs").value.trim(),
+ created_at:new Date().toISOString()
+};
+
+D.faltas.unshift(row);
+saveLocalData();
+closeM("faltaM");
+renderAll();
+toast("Falta registrada.");
+}
+
+function deleteFalta(id){
+ if(!confirm("Excluir este registro de falta?"))return;
+ D.faltas=D.faltas.filter(x=>String(x.id)!==String(id));
+ saveLocalData();
+ renderAll();
+ toast("Registro excluído.");
+}
+
+/* =========================================================
+   CHECKLIST
+   ========================================================= */
+
+function openCheck(){
+
+fillSelectors();
+
+$("checkDesc").value="";
+
+openM("checkM");
+
+}
+
+function openCheckForObra(
+obraId
+){
+
+openCheck();
+
+setTimeout(()=>{
+$("checkObra").value=
+obraId;
+},50);
+
+}
+
+async function saveCheck(e){
+
+e.preventDefault();
+
+const obra_id=
+$("checkObra").value;
+
+const tarefa=
+$("checkDesc").value.trim();
+
+if(!obra_id){
+
+toast(
+"Selecione a obra."
+);
+
+return;
+
+}
+
+if(!tarefa){
+
+toast(
+"Informe a etapa."
+);
+
+return;
+
+}
+
+const result=
+await insertRow(
+"checklist",
+{
+obra_id,
+tarefa,
+concluida:false,
+progresso:0
+}
+);
+
+if(result){
+
+closeM("checkM");
+
+toast(
+"Etapa adicionada."
+);
+
+}
+
+}
+
+async function toggleChecklist(id,checked){
+  await updateRow("checklist",id,{concluida:checked,progresso:checked?100:0});
+  renderObras(); renderChecklist();
+}
+
+function renderChecklist(){
+  const box=$("checkList"); if(!box)return;
+  if(!D.obras.length){box.innerHTML='<div class="empty">Cadastre uma obra para utilizar o checklist.</div>';return;}
+  box.innerHTML=D.obras.map(o=>{
+    const itens=D.checklist.filter(x=>String(x.obra_id)===String(o.id));
+    const total=itens.length; const avg=total?Math.round(itens.reduce((a,x)=>a+Number(x.progresso??((x.concluida||x.concluido)?100:0)),0)/total):0;
+    return `<div class="card"><div class="row"><div><h3>${esc(o.nome)}</h3><small>${total} etapa(s)</small></div><strong class="gold">${avg}%</strong></div><div class="progress"><i style="width:${avg}%"></i></div>${itens.length?itens.map(item=>{const pct=Math.max(0,Math.min(100,Number(item.progresso??((item.concluida||item.concluido)?100:0))));return `<div class="check-item" style="display:block"><div class="row"><div style="display:flex;align-items:center;gap:8px;flex:1"><input type="checkbox" ${pct>=100?'checked':''} onchange="toggleChecklist('${item.id}',this.checked)"><span>${esc(item.tarefa||item.descricao||'Etapa')}</span></div><span class="checkPercent" id="cp_${item.id}">${pct}%</span><button class="mini" onclick="editarChecklist('${item.id}')">Editar</button><button class="mini" onclick="removeRow('checklist','${item.id}')">Excluir</button></div><input class="progressInput" type="range" min="0" max="100" step="5" value="${pct}" oninput="previewChecklistPct('${item.id}',this.value)" onchange="setChecklistProgress('${item.id}',this.value)"></div>`}).join(''):'<div class="empty">Nenhuma etapa cadastrada.</div>'}<div class="listActions"><button class="btn gold" onclick="openCheckForObra('${o.id}')">＋ Adicionar etapa</button></div></div>`;
+  }).join('');
+}
+function previewChecklistPct(id,value){const el=$("cp_"+id);if(el)el.textContent=Math.round(Number(value)||0)+"%";}
+async function setChecklistProgress(id,value){const pct=Math.max(0,Math.min(100,Number(value)||0));await updateRow("checklist",id,{progresso:pct,concluida:pct>=100});renderObras();renderChecklist();}
+async function editarChecklist(id){const item=D.checklist.find(x=>String(x.id)===String(id));if(!item)return;const tarefa=prompt("Editar etapa:",item.tarefa||item.descricao||"");if(tarefa===null||!tarefa.trim())return;await updateRow("checklist",id,{tarefa:tarefa.trim()});renderChecklist();}
+
+
+/* =========================================================
+   FOTOS — NOVA VERSÃO
+   ========================================================= */
+
+function openFoto(){
+
+fillSelectors();
+
+$("fotoData").value=today();
+$("fotoTitulo").value="";
+$("fotoObs").value="";
+$("fotoFiles").value="";
+
+openM("fotoM");
+
+}
+
+function openFotoForObra(id){
+
+openFoto();
+
+setTimeout(()=>{
+$("fotoObra").value=id;
+},50);
+
+}
+
+async function saveFoto(e){
+
+e.preventDefault();
+
+const obra_id=
+$("fotoObra").value;
+
+const files=
+[...$("fotoFiles").files];
+
+if(!obra_id){
+
+toast(
+"Selecione a obra."
+);
+
+return;
+
+}
+
+if(!files.length){
+
+toast(
+"Selecione pelo menos uma foto."
+);
+
+return;
+
+}
+
+const btn=
+e.submitter||
+document.querySelector(
+"#fotoM button.primary"
+);
+
+if(btn){
+
+btn.disabled=true;
+
+btn.textContent=
+"Salvando fotos...";
+}
+
+try{
+
+const data=
+$("fotoData").value;
+
+const titulo=
+$("fotoTitulo")
+.value
+.trim();
+
+const observacao=
+$("fotoObs")
+.value
+.trim();
+
+let salvas=0;
+
+for(const file of files){
+
+if(!file.type.startsWith("image/")){
+
+console.warn(
+"Arquivo ignorado:",
+file.name
+);
+
+continue;
+
+}
+
+const src=
+await fileToDataURL(file);
+
+const foto={
+
+id:
+"foto_"+Date.now()+"_"+
+Math.random()
+.toString(36)
+.slice(2),
+
+obra_id:String(obra_id),
+
+data:data,
+
+titulo:titulo,
+
+observacao:observacao,
+
+nome_arquivo:file.name,
+
+tipo:file.type,
+
+tamanho:file.size,
+
+src:src,
+
+created_at:
+new Date().toISOString()
+
+};
+
+await savePhotoDB(foto);
+
+salvas++;
+
+}
+
+if(!salvas){
+
+throw new Error(
+"Nenhuma imagem válida foi selecionada."
+);
+
+}
+
+closeM("fotoM");
+
+$("fotoFiles").value="";
+
+await renderFotos();
+
+toast(
+salvas>1
+?`${salvas} fotos salvas com sucesso.`
+:"Foto salva com sucesso."
+);
+
+}catch(err){
+
+console.error(
+"Erro ao salvar fotos:",
+err
+);
+
+toast(
+"Não foi possível salvar as fotos. Tente novamente."
+);
+
+}finally{
+
+if(btn){
+
+btn.disabled=false;
+
+btn.textContent=
+"Salvar fotos";
+
+}
+
+}
+
+}
+
+async function renderFotos(){
+
+const box=$("fotoList");
+
+if(!box)return;
+
+box.innerHTML=
+`<div class="empty">
+Carregando fotos...
+</div>`;
+
+try{
+
+const fotos=
+await getAllPhotosDB();
+
+if(!fotos.length){
+
+box.innerHTML=
+`<div class="empty">
+Nenhuma foto registrada.
+</div>`;
+
+return;
+
+}
+
+const grupos={};
+
+fotos.forEach(f=>{
+
+const key=String(
+f.obra_id
+);
+
+if(!grupos[key])
+grupos[key]=[];
+
+grupos[key].push(f);
+
+});
+
+const ordemObras=[
+...D.obras
+];
+
+const usados=new Set();
+
+let html="";
+
+for(const obra of ordemObras){
+
+const lista=
+grupos[String(obra.id)];
+
+if(!lista?.length)
+continue;
+
+usados.add(
+String(obra.id)
+);
+
+html+=renderGrupoFotos(
+obra,
+lista
+);
+
+}
+
+for(const obraId of Object.keys(grupos)){
+
+if(usados.has(obraId))
+continue;
+
+const lista=
+grupos[obraId];
+
+html+=renderGrupoFotos(
+null,
+lista
+);
+
+}
+
+box.innerHTML=html;
+
+}catch(err){
+
+console.error(
+"Erro carregando fotos:",
+err
+);
+
+box.innerHTML=
+`<div class="empty">
+Não foi possível carregar as fotos.
+</div>`;
+
+}
+
+}
+
+function renderGrupoFotos(
+obra,
+fotos
+){
+
+return`
+
+<div class="card">
+
+<div class="row">
+
+<div>
+
+<b>
+${esc(
+obra?.nome||
+"Obra"
+)}
+</b>
+
+<br>
+
+<small>
+${fotos.length}
+foto${
+fotos.length===1
+?"":"s"
+}
+</small>
+
+</div>
+
+<span class="badge on">
+📸 Fotos
+</span>
+
+</div>
+
+<div class="photoGrid">
+
+${
+fotos.map(f=>`
+
+<div style="
+position:relative;
+">
+
+<img
+src="${esc(f.src)}"
+alt="${esc(
+f.titulo||
+"Foto da obra"
+)}"
+loading="lazy"
+onclick="openFotoVisual('${f.id}')"
+style="
+cursor:pointer;
+">
+
+<button
+class="mini"
+style="
+position:absolute;
+right:5px;
+top:5px;
+background:#32191c;
+color:#ffb0b5;
+"
+onclick="event.stopPropagation();deleteFoto('${f.id}')"
+>
+×
+</button>
+
+</div>
+
+`).join("")
+}
+
+</div>
+
+<div class="divider"></div>
+
+${
+fotos.map(f=>`
+
+<div class="item"
+style="margin:8px 0;">
+
+<div class="row">
+
+<div>
+
+<b>
+${esc(
+f.titulo||
+"Registro fotográfico"
+)}
+</b>
+
+<br>
+
+<small>
+${esc(f.data||"")}
+</small>
+
+</div>
+
+<button
+class="btn danger"
+onclick="deleteFoto('${f.id}')"
+>
+Excluir
+</button>
+
+</div>
+
+${
+f.observacao
+?`
+<div class="note">
+${esc(f.observacao)}
+</div>
+`
+:""
+}
+
+</div>
+
+`).join("")
+}
+
+</div>
+
+`;
+
+}
+
+async function openFotoVisual(id){
+
+const fotos=
+await getAllPhotosDB();
+
+const f=
+fotos.find(
+x=>String(x.id)===
+String(id)
+);
+
+if(!f)return;
+
+const win=
+window.open(
+"",
+"_blank"
+);
+
+if(!win){
+
+toast(
+"Permita a abertura de nova janela para visualizar a foto."
+);
+
+return;
+
+}
+
+win.document.write(`
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+content="width=device-width,initial-scale=1">
+<title>EDIFIQ — Foto</title>
+<style>
+body{
+margin:0;
+background:#090b0e;
+color:#fff;
+font-family:system-ui,sans-serif;
+padding:15px;
+}
+img{
+display:block;
+width:100%;
+max-width:1000px;
+margin:auto;
+border-radius:14px;
+}
+h3{
+max-width:1000px;
+margin:10px auto;
+}
+p{
+max-width:1000px;
+margin:10px auto;
+color:#aaa;
+}
+
+.bootError{display:none;position:fixed;inset:0;z-index:9999;background:#090b0e;color:#fff;padding:24px;font-family:system-ui,-apple-system,sans-serif;align-items:center;justify-content:center;text-align:center}.bootError.show{display:flex}.bootErrorBox{max-width:520px;background:#11151a;border:1px solid #252b33;border-radius:20px;padding:24px;box-shadow:0 12px 30px rgba(0,0,0,.35)}.bootErrorBox h2{margin:0 0 8px;color:#d9ad55}.bootErrorBox p{color:#9ba3ad;line-height:1.5}.bootErrorBox button{border:1px solid #e4c16f;background:linear-gradient(180deg,#d9ad55,#a77a2d);color:#090b0e;border-radius:10px;padding:11px 15px;font-weight:800}.localMode{margin-top:8px}.progressInput{width:100%;accent-color:#d9ad55}.checkPercent{font-size:12px;color:#d9ad55;min-width:45px;text-align:right}.serviceLine{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid #252b33}.serviceLine small{color:#9ba3ad}.pay-person{padding:10px 0;border-top:1px solid var(--line)}.pay-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.pay-summary>div{background:#0d1115;border:1px solid var(--line);border-radius:10px;padding:9px}.pay-value{margin-top:8px}.mini{border:1px solid var(--line);background:#171c22;color:#fff;border-radius:8px;padding:6px 9px}.lockNote{color:#ffb0b5;font-size:12px;margin-top:7px}@media(max-width:600px){.pay-summary{grid-template-columns:1fr 1fr}.pay-summary>div:last-child{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<img src="${esc(f.src)}">
+<h3>${esc(
+f.titulo||
+"Registro fotográfico"
+)}</h3>
+<p>${esc(
+f.data||""
+)}</p>
+<p>${esc(
+f.observacao||""
+)}</p>
+</body>
+</html>
+`);
+
+win.document.close();
+
+}
+
+async function deleteFoto(id){
+
+if(!confirm(
+"Excluir esta foto?"
+))
+return;
+
+try{
+
+await deletePhotoDB(id);
+
+await renderFotos();
+
+toast(
+"Foto excluída."
+);
+
+}catch(err){
+
+console.error(err);
+
+toast(
+"Não foi possível excluir a foto."
+);
+
+}
+
+}
+
+
+/* =========================================================
+   SELETORES
+   ========================================================= */
+
+function fillSelectors(){
+
+const obraIds=[
+"fObra",
+"dObra",
+"oFin",
+"checkObra",
+"fotoObra",
+"pagObra",
+"adiantObra"
+];
+
+obraIds.forEach(id=>{
+
+const el=$(id);
+
+if(!el)return;
+
+const atual=el.value;
+
+const first=
+id==="oFin"
+?"Sem obra"
+:"Selecione a obra";
+
+el.innerHTML=`
+
+<option value="">
+${first}
+</option>
+
+${
+D.obras.map(o=>`
+<option value="${o.id}">
+${esc(o.nome)}
+</option>
+`).join("")
+}
+
+`;
+
+if(atual)
+el.value=atual;
+
+});
+
+const func=$("dFunc");
+
+if(func){
+
+const atual=func.value;
+
+func.innerHTML=`
+
+<option value="">
+Selecione o funcionário
+</option>
+
+${
+D.funcionarios
+.filter(
+f=>f.ativo!==false
+)
+.filter(
+f=>f.registrar_diaria!==false
+)
+.map(f=>`
+<option value="${f.id}">
+${esc(f.nome)}
+</option>
+`).join("")
+}
+
+`;
+
+if(atual)
+func.value=atual;
+
+}
+
+const filter=
+$("finObraFilter");
+
+if(filter){
+
+const atual=
+filter.value;
+
+filter.innerHTML=`
+
+<option value="all">
+Todas as obras
+</option>
+
+${
+D.obras.map(o=>`
+<option value="${o.id}">
+${esc(o.nome)}
+</option>
+`).join("")
+}
+
+`;
+
+if(atual)
+filter.value=atual;
+
+}
+
+const adiantFunc=
+$("adiantFunc");
+
+if(adiantFunc){
+
+const atual=
+adiantFunc.value;
+
+adiantFunc.innerHTML=`
+
+<option value="">
+Selecione o funcionário
+</option>
+
+${
+D.funcionarios
+.filter(
+f=>f.ativo!==false
+)
+.map(f=>`
+<option value="${f.id}">
+${esc(f.nome)}
+</option>
+`).join("")
+}
+
+`;
+
+if(atual)
+adiantFunc.value=atual;
+
+}
+
+}
+
+
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+
+function renderDashboard(){
+
+const contratado=
+D.obras.reduce(
+(a,o)=>a+Number(o.valor||0),
+0
+);
+
+const entradas=
+D.pagamentos.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+const despesas=
+D.gastos.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+$("kObras").textContent=
+D.obras.length;
+
+$("kFunc").textContent=
+D.funcionarios.filter(
+f=>f.ativo!==false
+).length;
+
+$("kContratado").textContent=
+money(contratado);
+
+$("kEntradas").textContent=
+money(entradas);
+
+$("kDespesas").textContent=
+money(despesas);
+
+$("kResultado").textContent=
+money(
+entradas-despesas
+);
+
+}
+
+
+/* =========================================================
+   EXPORTAÇÃO
+   ========================================================= */
+
+function downloadFile(
+content,
+filename,
+type
+){
+
+const blob=new Blob(
+[content],
+{type}
+);
+
+const url=
+URL.createObjectURL(blob);
+
+const a=
+document.createElement("a");
+
+a.href=url;
+
+a.download=filename;
+
+document.body.appendChild(a);
+
+a.click();
+
+a.remove();
+
+setTimeout(()=>{
+URL.revokeObjectURL(url);
+},1000);
+
+}
+
+function exportTable(table){
+
+const data=D[table]||[];
+
+downloadFile(
+JSON.stringify(
+data,
+null,
+2
+),
+`EDIFIQ_${table}.json`,
+"application/json"
+);
+
+toast(
+"Arquivo exportado."
+);
+
+}
+
+async function exportFull(){
+
+let fotos=[];
+
+try{
+
+fotos=
+await getAllPhotosDB();
+
+}catch(e){
+
+console.warn(
+"Não foi possível exportar fotos",
+e
+);
+
+}
+
+const backup={
+
+app:"EDIFIQ",
+
+version:"4.0",
+
+date:
+new Date().toISOString(),
+
+data:D,
+
+fotos:fotos,
+
+funcionarioObras:
+localFuncObras(),
+
+adiantamentosAplicados:
+getAdvanceApplied()
+
+};
+
+downloadFile(
+JSON.stringify(
+backup,
+null,
+2
+),
+"EDIFIQ_backup.json",
+"application/json"
+);
+
+toast(
+"Backup completo criado."
+);
+
+}
+
+function exportExcel(){
+
+if(!window.XLSX){
+
+toast(
+"Excel não carregado."
+);
+
+return;
+
+}
+
+const wb=
+XLSX.utils.book_new();
+
+Object.entries(D).forEach(
+([nome,dados])=>{
+
+const ws=
+XLSX.utils.json_to_sheet(
+dados||[]
+);
+
+XLSX.utils.book_append_sheet(
+wb,
+ws,
+nome.substring(0,31)
+);
+
+}
+);
+
+XLSX.writeFile(
+wb,
+"EDIFIQ_relatorio.xlsx"
+);
+
+toast(
+"Excel exportado."
+);
+
+}
+
+async function importBackup(event){
+
+const file=
+event.target.files?.[0];
+
+if(!file)return;
+
+const reader=
+new FileReader();
+
+reader.onload=async()=>{
+
+try{
+
+const backup=
+JSON.parse(
+reader.result
+);
+
+if(!backup.data){
+
+toast(
+"Backup inválido."
+);
+
+return;
+
+}
+
+if(!confirm(
+"Importar este backup? Os registros serão adicionados ao sistema."
+))
+return;
+
+for(
+const table of[
+"obras",
+"funcionarios",
+"diarias",
+"gastos",
+"pagamentos",
+"checklist"
+]){
+
+const rows=
+backup.data[table]||[];
+
+for(
+const row of rows
+){
+
+const copy={...row};
+
+delete copy.id;
+delete copy.created_at;
+delete copy.updated_at;
+delete copy.user_id;
+
+await insertRow(
+table,
+copy
+);
+
+}
+
+}
+
+if(backup.funcionarioObras){
+
+localStorage.setItem(
+FUNC_OBRA_KEY,
+JSON.stringify(
+backup.funcionarioObras
+)
+);
+
+}
+
+if(backup.adiantamentosAplicados){
+
+localStorage.setItem(
+ADV_KEY,
+JSON.stringify(
+backup.adiantamentosAplicados
+)
+);
+
+}
+
+/*
+ Importação das fotos para o IndexedDB.
+*/
+
+if(
+Array.isArray(
+backup.fotos
+)
+){
+
+for(
+const foto of backup.fotos
+){
+
+try{
+
+await savePhotoDB({
+...foto,
+id:
+foto.id||
+"foto_"+Date.now()+"_"+
+Math.random()
+.toString(36)
+.slice(2)
+});
+
+}catch(err){
+
+console.warn(
+"Erro importando foto",
+err
+);
+
+}
+
+}
+
+}
+
+await loadCloud();
+
+renderAll();
+
+toast(
+"Backup importado."
+);
+
+}catch(e){
+
+console.error(e);
+
+toast(
+"Arquivo de backup inválido."
+);
+
+}
+
+};
+
+reader.readAsText(file);
+
+}
+
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+
+function renderAll(){
+
+renderDashboard();
+
+renderObras();
+
+renderFuncs();
+
+renderPayroll();
+
+renderFinance();
+
+renderChecklist();
+
+renderFaltas();
+
+renderFotos();
+
+fillSelectors();
+
+atualizarCategoriaFinanceira();
+
+}
+
+
+/* =========================================================
+   EVENTOS
+   ========================================================= */
+
+document.addEventListener(
+"change",
+e=>{
+
+if(e.target.id==="dFunc"){
+
+const f=
+D.funcionarios.find(
+x=>String(x.id)===
+String(e.target.value)
+);
+
+if(f){
+
+$("dVal").value=
+f.valor_diaria||"";
+
+$("dObra").value=
+getFuncObra(f.id)||"";
+
+}
+
+}
+
+if(e.target.id==="fTipo"){
+
+atualizarTipoFuncionario();
+
+}
+
+if(e.target.id==="dTipo"){
+
+aplicarTipoDiaria();
+
+}
+
+if(e.target.id==="tFin"){
+
+atualizarCategoriaFinanceira();
+
+}
+
+}
+);
+
+
+/* =========================================================
+   INICIALIZAÇÃO
+   ========================================================= */
+
+window.addEventListener("error",e=>{console.error("EDIFIQ runtime",e.error||e.message); if($("bootError") && !$("app")?.classList.contains("hidden")) showBootError("O EDIFIQ encontrou um erro interno. Recarregue a página. Seus dados locais permanecem neste aparelho.");});
+window.addEventListener("unhandledrejection",e=>{console.error("EDIFIQ rejection",e.reason);});
+
+document.addEventListener("DOMContentLoaded",async()=>{
+  try{
+    const local=localData(); Object.keys(D).forEach(k=>{D[k]=Array.isArray(local[k])?local[k]:[]});
+    renderAll();
+    if("indexedDB" in window){try{await openPhotoDB();}catch(e){console.warn("IndexedDB indisponível",e);}}
+    const ok=await initSupabase();
+    if(!ok) authMsg("Servidor indisponível. Se necessário, use o botão Modo local.");
+    renderAll();
+  }catch(e){
+    console.error("Falha de inicialização",e);
+    try{authMsg("O sistema iniciou com dados locais. Use Modo local se necessário.");renderAll();}catch(_){}
+  }
+});
+
+/* =========================================================
+   GLOBAIS
+   ========================================================= */
+
+window.go=go;
+
+window.login=login;
+window.signup=signup;
+window.resetPassword=
+resetPassword;
+window.logout=logout;
+
+window.openObra=openObra;
+window.openFunc=openFunc;
+window.openDia=openDia;
+window.openFin=openFin;
+window.openCheck=openCheck;
+window.openFoto=openFoto;
+window.openFalta=openFalta;
+
+window.openDiaFuncionario=
+openDiaFuncionario;
+
+window.openCheckForObra=
+openCheckForObra;
+
+window.openFotoForObra=
+openFotoForObra;
+
+window.openPagamentoEquipe=
+openPagamentoEquipe;
+
+window.openPagamentoFuncionario=
+openPagamentoFuncionario;
+
+window.openAdiantamento=
+openAdiantamento;
+
+window.openAdiantamentoFuncionario=
+openAdiantamentoFuncionario;
+window.enterLocalMode=enterLocalMode;
+window.addServicoAdicional=addServicoAdicional;
+window.setChecklistProgress=setChecklistProgress;
+window.previewChecklistPct=previewChecklistPct;
+window.editarChecklist=editarChecklist;
+
+window.updatePagTotal=
+updatePagTotal;
+
+window.selecionarTodosPagamentos=
+selecionarTodosPagamentos;
+
+window.aplicarTipoDiaria=
+aplicarTipoDiaria;
+
+window.closeM=closeM;
+
+window.saveObra=saveObra;
+window.saveFunc=saveFunc;
+window.saveDia=saveDia;
+window.saveFin=saveFin;
+window.saveCheck=saveCheck;
+window.saveFoto=saveFoto;
+window.saveFalta=saveFalta;
+window.deleteFalta=deleteFalta;
+
+window.savePagamentoEquipe=
+savePagamentoEquipe;
+
+window.saveAdiantamento=
+saveAdiantamento;
+
+window.toggleFunc=
+toggleFunc;
+
+window.toggleChecklist=
+toggleChecklist;
+
+window.removeRow=
+removeRow;
+
+window.deleteFoto=
+deleteFoto;
+
+window.openFotoVisual=
+openFotoVisual;
+
+window.exportTable=
+exportTable;
+
+window.exportFull=
+exportFull;
+
+window.exportExcel=
+exportExcel;
+
+window.importBackup=
+importBackup;
+
+
 </script>
+</body>
+</html>
