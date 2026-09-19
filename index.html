@@ -234,6 +234,18 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
   .toast{bottom:72px;font-size:12px;padding:9px 12px;}
 }
 
+
+/* MENU INFERIOR — 4 BOTÕES GRANDES */
+@media(max-width:759px){
+.nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;overflow:visible;padding:6px 8px max(7px,env(safe-area-inset-bottom));}
+.nav button{min-width:0;width:100%;flex:initial;min-height:58px;padding:6px 3px;border-radius:12px;font-size:11px;}
+.nav span{font-size:21px;line-height:22px;margin-bottom:2px}
+.nav button b{font-size:11px}
+.nav button.active{background:rgba(215,168,63,.10)}
+}
+.menuPasta{position:fixed;left:10px;right:10px;bottom:82px;z-index:80;background:rgba(16,19,24,.98);border:1px solid var(--line);border-radius:18px;padding:12px;box-shadow:0 18px 55px rgba(0,0,0,.55);display:none;backdrop-filter:blur(18px)}
+.menuPasta.open{display:block}.menuPastaHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.menuPastaHead strong{display:block;font-size:16px}.menuPastaHead small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.menuPastaGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.menuPastaGrid button{border:1px solid var(--line);background:#0d1115;color:#fff;border-radius:13px;min-height:64px;padding:8px 4px}.menuPastaGrid button span{display:block;font-size:20px;margin-bottom:4px}.menuPastaGrid button b{font-size:11px}
+@media(min-width:760px){.menuPasta{left:auto;right:16px;bottom:auto;top:118px;width:360px}.menuPastaGrid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -256,16 +268,22 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 <section id="app" class="hidden">
 <header class="top"><div class="brand"><div class="logo">Q</div><div><b>EDIFIQ</b><small>Construção Civil · Gestão de Obras e Reformas</small></div></div></header>
 <nav class="nav">
-<button data-p="dashboard" onclick="go('dashboard')"><span>⌂</span>Início</button>
-<button data-p="obras" onclick="go('obras')"><span>🏗️</span>Obras</button>
-<button data-p="funcionarios" onclick="go('funcionarios')"><span>👷</span>Equipe</button>
-<button data-p="financeiro" onclick="go('financeiro')"><span>💰</span>Financeiro</button>
-<button data-p="diarias" onclick="go('diarias')"><span>📅</span>Diárias</button>
-<button data-p="faltas" onclick="go('faltas')"><span>⚠️</span>Faltas</button>
-<button data-p="checklist" onclick="go('checklist')"><span>☑️</span>Checklist</button>
-<button data-p="fotos" onclick="go('fotos')"><span>📸</span>Fotos</button>
-<button data-p="relatorios" onclick="go('relatorios')"><span>📊</span>Relatórios</button>
+<button data-p="dashboard" onclick="go('dashboard')"><span>⌂</span><b>Início</b></button>
+<button data-p="obras" onclick="go('obras')"><span>🏗️</span><b>Obras</b></button>
+<button data-p="checklist" onclick="go('checklist')"><span>☑️</span><b>Checklist</b></button>
+<button type="button" class="menuNavBtn" data-p="menu" onclick="toggleMenuPasta()"><span>📁</span><b>Menu</b></button>
 </nav>
+<div id="menuPasta" class="menuPasta" aria-hidden="true">
+  <div class="menuPastaHead"><div><strong>Menu</strong><small>Outros recursos do EDIFIQ</small></div><button type="button" class="x" onclick="toggleMenuPasta()">×</button></div>
+  <div class="menuPastaGrid">
+    <button onclick="goMenu('funcionarios')"><span>👷</span><b>Equipe</b></button>
+    <button onclick="goMenu('financeiro')"><span>💰</span><b>Financeiro</b></button>
+    <button onclick="goMenu('diarias')"><span>📅</span><b>Diárias</b></button>
+    <button onclick="goMenu('faltas')"><span>⚠️</span><b>Faltas</b></button>
+    <button onclick="goMenu('fotos')"><span>📸</span><b>Fotos</b></button>
+    <button onclick="goMenu('relatorios')"><span>📊</span><b>Relatórios</b></button>
+  </div>
+</div>
 <main class="wrap">
 <section id="dashboard" class="page active">
  <div class="pageTitle"><div><h1>Visão geral</h1><p class="sub">Controle da sua operação</p></div><button class="btn" onclick="logout()">Sair</button></div>
@@ -339,7 +357,8 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 
 <div id="fotoM" class="modal"><div class="modalBox"><div class="modalHead"><h2>Relatório fotográfico</h2><button class="x" onclick="closeM('fotoM')">×</button></div><form onsubmit="saveFoto(event)"><div class="formGrid"><label>Obra<select id="fotoObra" required><option value="">Selecione</option></select></label><label>Data<input id="fotoData" type="date"></label><label class="full">Título<input id="fotoTitulo"></label><label class="full">Fotos<input id="fotoFiles" type="file" accept="image/*" multiple required></label><label class="full">Observação<textarea id="fotoObs"></textarea></label></div><div class="formActions"><button type="button" class="btn" onclick="closeM('fotoM')">Cancelar</button><button class="btn primary">Salvar fotos</button></div></form></div></div>
 
-<div id="pagEquipeM" class="modal"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"></label><label class="full">Descrição<input id="pagDescricao"></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three"><div><small>Diárias</small><b id="pagDiariasTotal">R$ 0,00</b></div><div><small>Adiantamentos</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div><div class="formActions"><button type="button" class="btn" onclick="closeM('pagEquipeM')">Cancelar</button><button class="btn primary">Processar pagamento</button></div></form></div></div>
+<div id="pagEquipeM" class="modal"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"></label><label class="full">Descrição<input id="pagDescricao"></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Adiantamentos</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
+<div class="pay-summary"><div><small>Diárias pendentes</small><b id="pagDiariasTotal">R$ 0,00</b></div></div><div class="formActions"><button type="button" class="btn" onclick="closeM('pagEquipeM')">Cancelar</button><button class="btn primary">Processar pagamento</button></div></form></div></div>
 
 <div id="adiantM" class="modal"><div class="modalBox"><div class="modalHead"><h2>Adiantamento</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveAdiantamento(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" required><option value="">Selecione</option></select></label><label>Valor<input id="adiantValor" type="number" step="0.01" required></label><label>Data<input id="adiantData" type="date"></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="formActions"><button type="button" class="btn" onclick="closeM('adiantM')">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
 
@@ -1100,6 +1119,19 @@ saveAdvanceApplied(data);
    NAVEGAÇÃO
    ========================================================= */
 
+function toggleMenuPasta(){
+const menu=$("menuPasta");
+if(!menu)return;
+const abrir=!menu.classList.contains("open");
+menu.classList.toggle("open",abrir);
+menu.setAttribute("aria-hidden",String(!abrir));
+}
+
+function goMenu(page){
+toggleMenuPasta();
+go(page);
+}
+
 function go(page){
 
 document.querySelectorAll(
@@ -1112,6 +1144,9 @@ const target=$(page);
 
 if(target)
 target.classList.add("active");
+
+const menuPasta=$("menuPasta");
+if(menuPasta){menuPasta.classList.remove("open");menuPasta.setAttribute("aria-hidden","true");}
 
 document.querySelectorAll(
 ".nav"
@@ -3735,7 +3770,7 @@ money(desp);
 $("finRes").textContent=
 money(ent-desp);
 
-renderObraFinance();
+renderObraFinance(obraFilter);
 
 if(!items.length){
 
@@ -3861,7 +3896,7 @@ Excluir
 
 }
 
-function renderObraFinance(){
+function renderObraFinance(obraFilter="all"){
 
 const box=
 $("obraFinanceResumo");
@@ -3876,11 +3911,20 @@ Nenhuma obra cadastrada.
 </p>`;
 
 return;
+}
 
+let obrasFinance=D.obras;
+if(obraFilter!=="all"){
+obrasFinance=obrasFinance.filter(o=>String(o.id)===String(obraFilter));
+}
+
+if(!obrasFinance.length){
+box.innerHTML=`<p class="sub">Nenhum dado financeiro para a obra selecionada.</p>`;
+return;
 }
 
 box.innerHTML=
-D.obras.map(o=>{
+obrasFinance.map(o=>{
 
 const f=
 obraFinanceData(o.id);
@@ -5371,6 +5415,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
    ========================================================= */
 
 window.go=go;
+window.toggleMenuPasta=toggleMenuPasta;
+window.goMenu=goMenu;
 
 window.login=login;
 window.signup=signup;
