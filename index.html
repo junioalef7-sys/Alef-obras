@@ -962,36 +962,22 @@ return {};
 }
 
 function saveLocalData(){
-
 try{
-
-localStorage.setItem(
-LOCAL_KEY,
-JSON.stringify({
-obras:D.obras,
-funcionarios:D.funcionarios,
-diarias:D.diarias,
-gastos:D.gastos,
-pagamentos:D.pagamentos,
-checklist:D.checklist,
-faltas:D.faltas,
-diario:D.diario,
-documentos:D.documentos,
-materiais:D.materiais,
-material_movimentos:D.material_movimentos
-})
-);
-
-}catch(e){
-
-console.warn(
-"Falha no armazenamento local",
-e
-);
-
+  const payload={obras:D.obras,funcionarios:D.funcionarios,diarias:D.diarias,gastos:D.gastos,pagamentos:D.pagamentos,checklist:D.checklist,faltas:D.faltas,diario:D.diario,documentos:(D.documentos||[]).map(d=>{const x={...d};delete x.conteudo;return x;}),materiais:D.materiais,material_movimentos:D.material_movimentos};
+  localStorage.setItem(LOCAL_KEY,JSON.stringify(payload));
+}catch(e){console.warn("Falha no armazenamento local",e)}
 }
 
-}
+// Documentos usam IndexedDB para o arquivo real. Assim PDFs/fotos não estouram o limite do localStorage.
+const DOC_DB="EDIFIQ_DOCUMENTOS_DB_V2";
+const DOC_STORE="arquivos";
+const DOC_META_KEY="EDIFIQ_DOCUMENTOS_META_V2";
+function openDocumentoDB(){return new Promise((resolve,reject)=>{if(!window.indexedDB){reject(new Error("IndexedDB indisponível neste navegador."));return;}const r=indexedDB.open(DOC_DB,1);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(DOC_STORE))db.createObjectStore(DOC_STORE,{keyPath:"id"})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error||new Error("Não foi possível abrir o armazenamento."));})}
+async function putDocumentoArquivo(id,file){const db=await openDocumentoDB();return new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,"readwrite");tx.objectStore(DOC_STORE).put({id:String(id),blob:file,name:file.name,type:file.type||"application/octet-stream",size:file.size});tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)};tx.onabort=()=>{db.close();reject(tx.error||new Error("Gravação cancelada"))}})}
+async function getDocumentoArquivo(id){const db=await openDocumentoDB();return new Promise((resolve,reject)=>{const r=db.transaction(DOC_STORE,"readonly").objectStore(DOC_STORE).get(String(id));r.onsuccess=()=>{db.close();resolve(r.result?.blob||null)};r.onerror=()=>{db.close();reject(r.error)}})}
+async function removeDocumentoArquivo(id){try{const db=await openDocumentoDB();await new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,"readwrite");tx.objectStore(DOC_STORE).delete(String(id));tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close()}catch(e){console.warn("Documento arquivo",e)}}
+function saveDocumentoMeta(){try{localStorage.setItem(DOC_META_KEY,JSON.stringify((D.documentos||[]).map(d=>{const x={...d};delete x.conteudo;return x;})))}catch(e){console.warn("Metadados dos documentos não puderam ser salvos",e)}}
+function loadDocumentoMeta(){try{const x=JSON.parse(localStorage.getItem(DOC_META_KEY)||"[]");if(Array.isArray(x))D.documentos=x}catch(e){console.warn(e)}}
 
 function localFuncObras(){
 
@@ -1431,6 +1417,7 @@ function enterLocalMode(){
   user={id:"local-user",email:"modo-local"};
   $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
   const local=localData(); Object.keys(D).forEach(k=>{D[k]=Array.isArray(local[k])?local[k]:[]});
+  loadDocumentoMeta();
   fillSelectors(); renderAll(); toast("Modo local ativado. Os dados ficam neste aparelho.");
 }
 async function waitForSupabase(timeout=7000){
@@ -5043,7 +5030,7 @@ f.observacao||""
 
 <div class="modal" id="materialM"><div class="modalBox"><div class="modalHead"><h2 id="materialTitle">Comprar material</h2><button class="x" onclick="closeM('materialM')">×</button></div><form onsubmit="saveMaterial(event)"><div class="formGrid"><label>Obra<select id="matObra" required></select></label><label>Material<input id="matNome" required placeholder="Ex.: Cimento CP II"></label><label>Categoria<select id="matCategoria"><option>Material básico</option><option>Acabamento</option><option>Elétrica</option><option>Hidráulica</option><option>Ferramentas</option><option>Outros</option></select></label><label>Unidade<select id="matUnidade"><option>un</option><option>kg</option><option>m</option><option>m²</option><option>m³</option><option>l</option><option>saco</option><option>caixa</option><option>barra</option></select></label><label>Quantidade comprada<input id="matQtd" type="number" min="0.001" step="0.001" required></label><label>Valor unitário (R$)<input id="matValor" type="number" min="0" step="0.01" required></label><label>Estoque mínimo<input id="matMin" type="number" min="0" step="0.001" value="0"></label><label>Data<input id="matData" type="date" required></label><label>Fornecedor<input id="matFornecedor" placeholder="Fornecedor"></label><label class="full">Observação<textarea id="matObs" placeholder="Observação da compra"></textarea></label></div><div class="note">A compra entra automaticamente como despesa de Material no Financeiro da obra.</div><div class="modalActions"><button type="button" class="btn" onclick="closeM('materialM')">Cancelar</button><button type="submit" class="btn gold">Salvar compra</button></div></form></div></div>
 <div class="modal" id="materialMovM"><div class="modalBox"><div class="modalHead"><h2>Movimentar estoque</h2><button class="x" onclick="closeM('materialMovM')">×</button></div><form onsubmit="saveMaterialMov(event)"><div class="formGrid"><label>Material<select id="matMovMaterial" required></select></label><label>Tipo<select id="matMovTipo"><option value="uso">Uso / saída</option><option value="ajuste">Ajuste</option><option value="entrada">Entrada</option></select></label><label>Quantidade<input id="matMovQtd" type="number" min="0.001" step="0.001" required></label><label>Valor unitário (R$)<input id="matMovValor" type="number" min="0" step="0.01"></label><label>Data<input id="matMovData" type="date" required></label><label>Fornecedor<input id="matMovFornecedor" placeholder="Fornecedor, se houver"></label><label class="full">Observação<textarea id="matMovObs" placeholder="Ex.: usado no reboco da obra"></textarea></label></div><div class="note">Entradas adicionais não criam nova despesa automaticamente; compras devem ser registradas pelo botão Comprar material.</div><div class="modalActions"><button type="button" class="btn" onclick="closeM('materialMovM')">Cancelar</button><button type="submit" class="btn gold">Salvar movimentação</button></div></form></div></div>
-<div id="documentoM" class="modal"><div class="modalBox"><div class="modalHead"><h2 id="documentoTitle">Novo documento</h2><button class="x" onclick="closeM('documentoM')">×</button></div><form onsubmit="saveDocumento(event)"><div class="formGrid"><label>Obra<select id="docObra" required></select></label><label>Categoria<select id="docCategoria"><option>Contrato</option><option>Orçamento</option><option>Nota fiscal</option><option>Comprovante</option><option>Medição</option><option>Projeto</option><option>Outros</option></select></label><label>Data<input id="docData" type="date" required></label><label>Nome / título<input id="docTitulo" required placeholder="Ex.: Contrato da obra"></label><label>Fornecedor / origem<input id="docFornecedor" placeholder="Cliente, fornecedor ou responsável"></label><label class="full">Observação<textarea id="docObs" placeholder="Descrição ou referência do documento"></textarea></label><label class="full">Arquivo<input id="docFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt" required></label></div><div class="note">Os documentos são armazenados neste aparelho.</div><div class="modalActions"><button type="button" class="btn" onclick="closeM('documentoM')">Cancelar</button><button type="submit" class="btn gold">Salvar documento</button></div></form></div></div>
+<div id="documentoM" class="modal"><div class="modalBox"><div class="modalHead"><h2 id="documentoTitle">Novo documento</h2><button class="x" onclick="closeM('documentoM')">×</button></div><form onsubmit="saveDocumento(event)"><div class="formGrid"><label>Obra<select id="docObra" required></select></label><label>Categoria<select id="docCategoria"><option>Contrato</option><option>Orçamento</option><option>Nota fiscal</option><option>Comprovante</option><option>Medição</option><option>Projeto</option><option>Outros</option></select></label><label>Data<input id="docData" type="date" required></label><label>Nome / título<input id="docTitulo" required placeholder="Ex.: Contrato da obra"></label><label>Fornecedor / origem<input id="docFornecedor" placeholder="Cliente, fornecedor ou responsável"></label><label class="full">Observação<textarea id="docObs" placeholder="Descrição ou referência do documento"></textarea></label><label class="full">Arquivo<div style="border:1px dashed var(--gold);border-radius:12px;padding:12px;background:#0d1115"><input id="docFile" type="file" accept="*/*" onchange="mostrarArquivoDocumento(this)" required><div id="docFileStatus" style="margin-top:7px;color:var(--muted);font-size:12px;overflow-wrap:anywhere">📎 Toque/clique para selecionar o arquivo</div></div></label></div><div class="note">Os documentos são armazenados neste aparelho.</div><div class="modalActions"><button type="button" class="btn" onclick="closeM('documentoM')">Cancelar</button><button type="submit" class="btn gold">Salvar documento</button></div></form></div></div>
 </body>
 </html>
 `);
@@ -6081,50 +6068,19 @@ function relatorioDiario(){
 /* =========================================================
    DOCUMENTOS DA OBRA
    ========================================================= */
-
-const DOC_DB="EDIFIQ_DOCUMENTOS_DB";
-const DOC_STORE="documentos_arquivos";
-function openDocumentoDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DOC_DB,1);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(DOC_STORE))db.createObjectStore(DOC_STORE,{keyPath:"id"})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
-async function saveDocumentoArquivo(id,file){const db=await openDocumentoDB();return new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,"readwrite");tx.objectStore(DOC_STORE).put({id,blob:file});tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error)}})}
-async function getDocumentoArquivo(id){const db=await openDocumentoDB();return new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,"readonly");const r=tx.objectStore(DOC_STORE).get(id);r.onsuccess=()=>{db.close();resolve(r.result?.blob||null)};r.onerror=()=>{db.close();reject(r.error)}})}
-async function deleteDocumentoArquivo(id){const db=await openDocumentoDB();return new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,"readwrite");tx.objectStore(DOC_STORE).delete(id);tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error)}})}
-
 let editDocumentoId=null;
 function documentoObraNome(id){const o=D.obras.find(x=>String(x.id)===String(id));return o?.nome||'Obra não encontrada'}
 function documentoFmtData(v){if(!v)return '-';const [y,m,d]=String(v).split('-');return y&&m&&d?`${d}/${m}/${y}`:v}
 function documentoTipo(nome=''){const n=String(nome).toLowerCase();if(/pdf/.test(n))return 'PDF';if(/jpe?g|png|webp/.test(n))return 'Imagem';if(/xls/.test(n))return 'Excel';if(/doc/.test(n))return 'Word';if(/txt/.test(n))return 'Texto';return 'Arquivo'}
-function openDocumento(id=null){editDocumentoId=id;fillSelectors();const d=id?D.documentos.find(x=>String(x.id)===String(id)):null;$('documentoTitle').textContent=d?'Editar documento':'Novo documento';const obra=$('docObra');if(obra){obra.innerHTML='<option value="">Selecione a obra</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');obra.value=d?.obra_id||''}$('docCategoria').value=d?.categoria||'Outros';$('docData').value=d?.data||today();$('docTitulo').value=d?.titulo||'';$('docFornecedor').value=d?.fornecedor||'';$('docObs').value=d?.observacao||'';$('docFile').value='';$('docFile').required=!d;openM('documentoM')}
-async function saveDocumento(e){
-e.preventDefault();
-const obra_id=$('docObra').value;
-if(!obra_id){toast('Selecione a obra.');return}
-const input=$('docFile');
-const file=input?.files?.[0]||null;
-if(!editDocumentoId&&!file){toast('Selecione um arquivo para anexar.');return}
-const base={obra_id,data:$('docData').value||today(),categoria:$('docCategoria').value,titulo:$('docTitulo').value.trim(),fornecedor:$('docFornecedor').value.trim(),observacao:$('docObs').value.trim(),updated_at:new Date().toISOString()};
-try{
-if(editDocumentoId){
- const i=D.documentos.findIndex(x=>String(x.id)===String(editDocumentoId)); if(i<0)return;
- const id=D.documentos[i].id;
- if(file){base.nome_arquivo=file.name;base.tipo_mime=file.type||'application/octet-stream';base.tamanho=file.size;await saveDocumentoArquivo(id,file);delete base.conteudo;}
- D.documentos[i]={...D.documentos[i],...base};
-}else{
- const id='doc_'+Date.now()+'_'+Math.random().toString(36).slice(2);
- base.id=id;base.nome_arquivo=file.name;base.tipo_mime=file.type||'application/octet-stream';base.tamanho=file.size;base.created_at=new Date().toISOString();
- await saveDocumentoArquivo(id,file);
- D.documentos.unshift(base);
-}
-saveLocalData();closeM('documentoM');renderAll();toast(editDocumentoId?'Documento atualizado.':'Documento anexado e salvo.');editDocumentoId=null;
-}catch(err){console.error(err);toast('Não foi possível anexar o documento. Verifique o arquivo e tente novamente.')}}
-
+function mostrarArquivoDocumento(input){const box=$("docFileStatus");if(!box)return;const f=input?.files?.[0];if(!f){box.textContent="📎 Toque/clique para selecionar o arquivo";box.style.color="var(--muted)";return;}if(f.size>50*1024*1024){toast("O arquivo ultrapassa o limite de 50 MB.");input.value="";box.textContent="📎 Selecione outro arquivo";return;}box.textContent=`✅ ${f.name} — ${formatBytes(f.size)}`;box.style.color="var(--gold2)"}
+function openDocumento(id=null){editDocumentoId=id;fillSelectors();const d=id?D.documentos.find(x=>String(x.id)===String(id)):null;$("documentoTitle").textContent=d?'Editar documento':'Novo documento';const obra=$("docObra");if(obra){obra.innerHTML='<option value="">Selecione a obra</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');obra.value=d?.obra_id||''}$("docCategoria").value=d?.categoria||'Outros';$("docData").value=d?.data||today();$("docTitulo").value=d?.titulo||'';$("docFornecedor").value=d?.fornecedor||'';$("docObs").value=d?.observacao||'';$("docFile").value='';$("docFile").required=!d;mostrarArquivoDocumento($("docFile"));openM('documentoM')}
+async function saveDocumento(e){e.preventDefault();const obra_id=$("docObra")?.value;if(!obra_id){toast('Selecione a obra.');return}const file=$("docFile")?.files?.[0]||null;if(!editDocumentoId&&!file){toast('Selecione o arquivo para anexar.');return}if(file&&file.size>50*1024*1024){toast('O arquivo ultrapassa o limite de 50 MB.');return}const base={obra_id,data:$("docData").value||today(),categoria:$("docCategoria").value,titulo:$("docTitulo").value.trim(),fornecedor:$("docFornecedor").value.trim(),observacao:$("docObs").value.trim(),updated_at:new Date().toISOString()};try{if(editDocumentoId){const i=D.documentos.findIndex(x=>String(x.id)===String(editDocumentoId));if(i<0)return;const id=D.documentos[i].id;if(file){await putDocumentoArquivo(id,file);base.nome_arquivo=file.name;base.tipo_mime=file.type||'application/octet-stream';base.tamanho=file.size;delete base.conteudo}D.documentos[i]={...D.documentos[i],...base}}else{const id='doc_'+Date.now()+'_'+Math.random().toString(36).slice(2);base.id=id;base.nome_arquivo=file.name;base.tipo_mime=file.type||'application/octet-stream';base.tamanho=file.size;base.created_at=new Date().toISOString();await putDocumentoArquivo(id,file);D.documentos.unshift(base)}saveDocumentoMeta();saveLocalData();closeM('documentoM');renderAll();toast(editDocumentoId?'Documento atualizado e salvo.':'Documento anexado e salvo.');editDocumentoId=null}catch(err){console.error('EDIFIQ documento:',err);toast('Não foi possível anexar o documento. Tente novamente e verifique as permissões de armazenamento do navegador.')}}
 function documentoFiltrados(){const obra=$('docObraFilter')?.value||'all',cat=$('docCategoriaFilter')?.value||'all',q=String($('docBusca')?.value||'').toLowerCase().trim();return [...D.documentos].filter(d=>(obra==='all'||String(d.obra_id)===String(obra))&&(cat==='all'||d.categoria===cat)&&(!q||[d.titulo,d.fornecedor,d.observacao,d.nome_arquivo,documentoObraNome(d.obra_id)].join(' ').toLowerCase().includes(q))).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')))}
 function renderDocumentos(){const box=$('documentosList');if(!box)return;const current=$('docObraFilter')?.value||'all';const sel=$('docObraFilter');if(sel){sel.innerHTML='<option value="all">Todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');if([...sel.options].some(o=>o.value===current))sel.value=current}const items=documentoFiltrados();$('docTotal').textContent=D.documentos.length;$('docObras').textContent=new Set(D.documentos.map(d=>d.obra_id)).size;$('docContratos').textContent=D.documentos.filter(d=>['Contrato','Orçamento'].includes(d.categoria)).length;$('docFinanceiros').textContent=D.documentos.filter(d=>['Nota fiscal','Comprovante'].includes(d.categoria)).length;if(!items.length){box.innerHTML='<div class="card docEmpty">Nenhum documento encontrado. Clique em <b>＋ Documento</b> para cadastrar o primeiro.</div>';return}box.innerHTML=items.map(d=>`<div class="card docCard"><div class="row"><div style="min-width:0"><div class="row" style="justify-content:flex-start;gap:10px"><span class="docFileIcon">${d.categoria==='Contrato'?'📜':d.categoria==='Nota fiscal'?'🧾':d.categoria==='Comprovante'?'💳':d.categoria==='Projeto'?'📐':'📄'}</span><div style="min-width:0"><h2 style="margin:0;overflow-wrap:anywhere">${esc(d.titulo||d.nome_arquivo||'Documento')}</h2><small>${esc(documentoObraNome(d.obra_id))} • ${esc(d.categoria)} • ${documentoFmtData(d.data)}</small></div></div></div><span class="badge">${esc(documentoTipo(d.nome_arquivo||d.tipo_mime))}</span></div><div class="docMeta"><div class="docMetaItem"><small>Arquivo</small><b>${esc(d.nome_arquivo||'-')}</b></div><div class="docMetaItem"><small>Origem</small><b>${esc(d.fornecedor||'-')}</b></div><div class="docMetaItem"><small>Tamanho</small><b>${d.tamanho?formatBytes(d.tamanho):'-'}</b></div></div>${d.observacao?`<div class="docBlock" style="margin-top:10px"><small>${esc(d.observacao)}</small></div>`:''}<div class="docActions"><button class="btn" onclick="visualizarDocumento('${d.id}')">👁️ Visualizar</button><button class="btn" onclick="baixarDocumento('${d.id}')">⬇️ Baixar</button><button class="btn" onclick="openDocumento('${d.id}')">✏️ Editar</button><button class="btn danger" onclick="deleteDocumento('${d.id}')">🗑️ Excluir</button></div><div id="docPreview_${d.id}" class="docPreview" style="display:none"></div></div>`).join('')}
 function formatBytes(n){n=Number(n||0);if(!n)return '0 KB';const u=['B','KB','MB','GB'];const i=Math.min(Math.floor(Math.log(n)/Math.log(1024)),u.length-1);return `${(n/Math.pow(1024,i)).toFixed(i?1:0)} ${u[i]}`}
-async function visualizarDocumento(id){const d=D.documentos.find(x=>String(x.id)===String(id));if(!d)return;const box=$('docPreview_'+id);if(!box)return;if(box.style.display!=='none'){box.style.display='none';return}try{let src=d.conteudo||null;if(!src){const blob=await getDocumentoArquivo(id);if(blob)src=URL.createObjectURL(blob)}if(!src){toast('Arquivo não encontrado.');return}box.style.display='block';if((d.tipo_mime||'').startsWith('image/'))box.innerHTML=`<img src="${src}" style="display:block;width:100%;max-height:520px;object-fit:contain;background:#050709">`;else if(d.tipo_mime==='application/pdf')box.innerHTML=`<iframe src="${src}" title="${esc(d.titulo||'Documento')}" style="width:100%;height:520px;border:0"></iframe>`;else box.innerHTML='<div style="padding:14px;color:#9ba8bd">Pré-visualização não disponível para este formato. Use Baixar.</div>'}catch(err){console.error(err);toast('Não foi possível abrir o documento.')}}
-function baixarDocumento(id){const d=D.documentos.find(x=>String(x.id)===String(id));if(!d)return;(async()=>{try{let src=d.conteudo||null;let revoke=false;if(!src){const blob=await getDocumentoArquivo(id);if(blob){src=URL.createObjectURL(blob);revoke=true}}if(!src){toast('Arquivo não encontrado.');return}const a=document.createElement('a');a.href=src;a.download=d.nome_arquivo||'EDIFIQ_documento';document.body.appendChild(a);a.click();a.remove();if(revoke)setTimeout(()=>URL.revokeObjectURL(src),1000)}catch(err){console.error(err);toast('Não foi possível baixar o documento.')}})()}
-
-async function deleteDocumento(id){const d=D.documentos.find(x=>String(x.id)===String(id));if(!d)return;if(!confirm(`Excluir o documento "${d.titulo||d.nome_arquivo||'Documento'}"?`))return;try{await deleteDocumentoArquivo(id)}catch(e){console.warn(e)}D.documentos=D.documentos.filter(x=>String(x.id)!==String(id));saveLocalData();renderAll();toast('Documento excluído.')}
-
+async function visualizarDocumento(id){const d=D.documentos.find(x=>String(x.id)===String(id));if(!d)return;const box=$("docPreview_"+id);if(!box)return;if(box.style.display!=="none"){box.style.display="none";box.innerHTML="";return}try{let blob=d.conteudo?null:await getDocumentoArquivo(id);if(!blob&&d.conteudo){if(d.conteudo.startsWith('data:')){const res=await fetch(d.conteudo);blob=await res.blob()}}if(!blob){toast('Arquivo deste documento não foi encontrado neste aparelho.');return}const url=URL.createObjectURL(blob);box.style.display='block';if((d.tipo_mime||blob.type||'').startsWith('image/'))box.innerHTML=`<img src="${url}" style="display:block;width:100%;max-height:520px;object-fit:contain;background:#050709">`;else if((d.tipo_mime||blob.type)==='application/pdf')box.innerHTML=`<iframe src="${url}" title="${esc(d.titulo||'Documento')}" style="width:100%;height:430px;border:0"></iframe>`;else box.innerHTML='<div style="padding:14px">Pré-visualização não disponível para este formato. Use <b>Baixar</b>.</div>'}catch(e){console.error(e);toast('Não foi possível abrir o documento.')}}
+async function baixarDocumento(id){const d=D.documentos.find(x=>String(x.id)===String(id));if(!d)return;try{let blob=d.conteudo?null:await getDocumentoArquivo(id);if(!blob&&d.conteudo){const res=await fetch(d.conteudo);blob=await res.blob()}if(!blob){toast('Arquivo não encontrado neste aparelho.');return}const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=d.nome_arquivo||('EDIFIQ_'+id);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}catch(e){console.error(e);toast('Não foi possível baixar o documento.')}}
+async function deleteDocumento(id){const d=D.documentos.find(x=>String(x.id)===String(id));if(!d)return;if(!confirm(`Excluir o documento "${d.titulo||d.nome_arquivo||'Documento'}"?`))return;await removeDocumentoArquivo(id);D.documentos=D.documentos.filter(x=>String(x.id)!==String(id));saveDocumentoMeta();saveLocalData();renderAll();toast('Documento excluído.')}
 
 function materialObraNome(id){return D.obras.find(o=>String(o.id)===String(id))?.nome||"Sem obra"}
 function materialById(id){return D.materiais.find(m=>String(m.id)===String(id))}
@@ -6238,8 +6194,10 @@ window.addEventListener("unhandledrejection",e=>{console.error("EDIFIQ rejection
 
 document.addEventListener("DOMContentLoaded",async()=>{
   try{
+    try{await openDocumentoDB();}catch(e){console.warn("Armazenamento de documentos indisponível",e)}
     // 1) Recupera primeiro os dados que já estavam salvos neste aparelho.
     const local=localData(); Object.keys(D).forEach(k=>{D[k]=Array.isArray(local[k])?local[k]:[]});
+    loadDocumentoMeta();
     renderAll();
     if("indexedDB" in window){try{await openPhotoDB();}catch(e){console.warn("IndexedDB indisponível",e);}}
 
