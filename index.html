@@ -513,7 +513,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 <div id="checkList"></div>
 </section>
 <section class="page" id="materiais">
-<div class="pageTitle"><div><h1>🧱 Materiais e Estoque</h1><p class="sub">Controle de compras, consumo e estoque por obra.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('documentos');openDocumento()">📎 Anexar documento</button><button class="btn gold" onclick="openMaterial()">＋ Lançar material</button></div></div>
+<div class="pageTitle"><div><h1>🧱 Materiais e Estoque</h1><p class="sub">Controle de compras, consumo e estoque por obra.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn gold" onclick="openMaterialSeguro()">＋ Lançar material</button></div></div>
 <div class="materialFilters">
 <label>Obra<select id="matObraFilter" onchange="renderMateriais()"><option value="all">Todas as obras</option></select></label>
 <label>Categoria<select id="matCategoriaFilter" onchange="renderMateriais()"><option value="all">Todas as categorias</option></select></label>
@@ -539,7 +539,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 <div id="fotoList"></div>
 </section>
 <section class="page" id="documentos">
-<div class="pageTitle"><div><h1>📎 Documentos da Obra</h1><p class="sub">Anexe e organize contratos, notas, comprovantes e outros arquivos por obra.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('materiais')">🧱 Materiais</button><button class="btn gold" onclick="openDocumento()">＋ Anexar documento</button></div></div>
+<div class="pageTitle"><div><h1>📎 Documentos da Obra</h1><p class="sub">Anexe e organize contratos, notas, comprovantes e outros arquivos por obra.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn gold" onclick="openDocumentoSeguro()">＋ Anexar documento</button></div></div>
 <div class="toolbar docFilters"><select id="docObraFilter" onchange="renderDocumentos()"><option value="all">Todas as obras</option></select><select id="docCategoriaFilter" onchange="renderDocumentos()"><option value="all">Todas as categorias</option><option>Contrato</option><option>Orçamento</option><option>Nota fiscal</option><option>Comprovante</option><option>Medição</option><option>Projeto</option><option>Outros</option></select><input id="docBusca" oninput="renderDocumentos()" placeholder="Buscar documento, fornecedor ou observação"></div>
 <div class="grid kpis docKpis"><div class="kpi"><small>Documentos</small><strong id="docTotal">0</strong></div><div class="kpi"><small>Obras com documentos</small><strong id="docObras">0</strong></div><div class="kpi"><small>Contratos</small><strong id="docContratos">0</strong></div><div class="kpi"><small>Notas / comprovantes</small><strong id="docFinanceiros">0</strong></div></div>
 <div id="documentosList"></div>
@@ -5081,7 +5081,7 @@ f.observacao||""
 <div class="modal" id="materialMovM"><div class="modalBox"><div class="modalHead"><h2>Movimentar estoque</h2><button class="x" onclick="closeM('materialMovM')">×</button></div><form onsubmit="saveMaterialMov(event)"><div class="formGrid"><label>Material<select id="matMovMaterial" required></select></label><label>Tipo<select id="matMovTipo"><option value="uso">Uso / saída</option><option value="ajuste">Ajuste</option><option value="entrada">Entrada</option></select></label><label>Quantidade<input id="matMovQtd" type="number" min="0.001" step="0.001" required></label><label>Valor unitário (R$)<input id="matMovValor" type="number" min="0" step="0.01"></label><label>Data<input id="matMovData" type="date" required></label><label>Fornecedor<input id="matMovFornecedor" placeholder="Fornecedor, se houver"></label><label class="full">Observação<textarea id="matMovObs" placeholder="Ex.: usado no reboco da obra"></textarea></label></div><div class="note">Entradas adicionais não criam nova despesa automaticamente; compras devem ser registradas pelo botão Comprar material.</div><div class="modalActions"><button type="button" class="btn" onclick="closeM('materialMovM')">Cancelar</button><button type="submit" class="btn gold">Salvar movimentação</button></div></form></div></div>
 <div id="documentoM" class="modal"><div class="modalBox"><div class="modalHead"><h2 id="documentoTitle">Novo documento</h2><button class="x" onclick="closeM('documentoM')">×</button></div><form onsubmit="saveDocumento(event)"><div class="formGrid"><label>Obra<select id="docObra" required></select></label><label>Categoria<select id="docCategoria"><option>Contrato</option><option>Orçamento</option><option>Nota fiscal</option><option>Comprovante</option><option>Medição</option><option>Projeto</option><option>Outros</option></select></label><label>Data<input id="docData" type="date" required></label><label>Nome / título<input id="docTitulo" required placeholder="Ex.: Contrato da obra"></label><label>Fornecedor / origem<input id="docFornecedor" placeholder="Cliente, fornecedor ou responsável"></label><label class="full">Observação<textarea id="docObs" placeholder="Descrição ou referência do documento"></textarea></label><div class="full"><label for="docFile">Anexar arquivo</label><div class="docUploadBox">
 <input id="docFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" onchange="mostrarArquivoDocumento(this)">
-<button type="button" class="docPickButton" onclick="document.getElementById('docFile').click()">📎 SELECIONAR DOCUMENTO</button>
+<button type="button" class="docPickButton" onclick="abrirSeletorDocumento()">📎 SELECIONAR DOCUMENTO</button>
 <div id="docFileStatus" class="docFileStatus">Nenhum arquivo selecionado</div>
 </div></div></div><div class="note">Os documentos são armazenados neste aparelho.</div><div class="modalActions"><button type="button" class="btn" onclick="closeM('documentoM')">Cancelar</button><button type="submit" class="btn gold">Salvar documento</button></div></form></div></div>
 <div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
@@ -6155,6 +6155,38 @@ function mostrarArquivoDocumento(input){
   if(!f){box.textContent="Nenhum arquivo selecionado";box.style.color="var(--muted)";return;}
   if(f.size>50*1024*1024){toast("O documento ultrapassa 50 MB. Escolha um arquivo menor.");input.value="";box.textContent="Nenhum arquivo selecionado";box.style.color="var(--muted)";return;}
   box.textContent=`✅ ${f.name} — ${formatBytes(f.size)}`;box.style.color="var(--gold2)";
+}
+function abrirSeletorDocumento(){
+  const input=document.getElementById("docFile");
+  if(!input){toast("Campo de documento não encontrado.");return false;}
+  try{input.click();return true}catch(err){console.error(err);toast("Não foi possível abrir o seletor de arquivos.");return false;}
+}
+function openDocumentoSeguro(){
+  try{
+    editDocumentoId=null;
+    const modal=document.getElementById("documentoM");
+    if(!modal){toast("Janela de documentos não encontrada.");return;}
+    const obras=Array.isArray(D.obras)?D.obras:[];
+    const obra=document.getElementById("docObra");
+    if(obra) obra.innerHTML='<option value="">Selecione a obra</option>'+obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join("");
+    const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v??""};
+    set("docCategoria","Outros");set("docData",today());set("docTitulo","");set("docFornecedor","");set("docObs","");
+    const file=document.getElementById("docFile");if(file){file.value="";file.required=true;}
+    mostrarArquivoDocumento(file);
+    modal.classList.add("open");
+  }catch(err){console.error("EDIFIQ abrir documento",err);toast("Não foi possível abrir Documentos.");}
+}
+function openMaterialSeguro(){
+  try{
+    const modal=document.getElementById("materialM");
+    if(!modal){toast("Janela de materiais não encontrada.");return;}
+    const obras=Array.isArray(D.obras)?D.obras:[];
+    const obra=document.getElementById("matObra");
+    if(obra) obra.innerHTML='<option value="">Selecione a obra</option>'+obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join("");
+    const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v??""};
+    set("materialTitle","Lançar material");set("matNome","");set("matCategoria","Material básico");set("matUnidade","un");set("matQtd","");set("matValor","");set("matMin","0");set("matData",today());set("matFornecedor","");set("matObs","");
+    modal.classList.add("open");
+  }catch(err){console.error("EDIFIQ abrir material",err);toast("Não foi possível abrir Materiais.");}
 }
 function openDocumento(id=null){editDocumentoId=id;fillSelectors();const d=id?D.documentos.find(x=>String(x.id)===String(id)):null;$("documentoTitle").textContent=d?'Editar documento':'Novo documento';const obra=$("docObra");if(obra){obra.innerHTML='<option value="">Selecione a obra</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');obra.value=d?.obra_id||''}$("docCategoria").value=d?.categoria||'Outros';$("docData").value=d?.data||today();$("docTitulo").value=d?.titulo||'';$("docFornecedor").value=d?.fornecedor||'';$("docObs").value=d?.observacao||'';$("docFile").value='';$("docFile").required=!d;mostrarArquivoDocumento($("docFile"));openM('documentoM')}
 async function saveDocumento(e){
