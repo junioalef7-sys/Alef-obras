@@ -313,6 +313,17 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 .reportAction small{color:var(--muted)}
 .historyFilters{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:10px;margin-top:10px}
 @media(max-width:759px){.homeQuickGridFinal{grid-template-columns:1fr!important}.historyFilters{grid-template-columns:1fr}.reportGrid{grid-template-columns:1fr}.homeQuickGridFinal .homeQuick{min-height:88px}}
+
+/* =========================================================
+   EDIFIQ — RELATÓRIO PARA CLIENTE
+   ========================================================= */
+.reportClientModal .modalBox{max-width:900px;background:#0b1018;border-color:#1e3156}
+.rcHeader{padding:4px 0 12px}.rcHeader h2{font-size:22px!important}.rcHeader p{margin:5px 0 0;color:#9ba8bd;line-height:1.4}
+.rcTabs{display:grid;grid-template-columns:1fr 1fr;background:#15213a;border-radius:14px;padding:4px;margin:10px 0}.rcTab{border:0;background:transparent;color:#9ba8bd;border-radius:11px;padding:11px;font-weight:800}.rcTab.active{background:#0b1018;color:#fff}
+.rcSection{background:#0c1423;border:1px solid #1b3158;border-radius:16px;padding:14px;margin:10px 0}.rcSection h3{margin:0 0 10px;font-size:16px}.rcChecks{display:grid;gap:4px}.rcToggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid #17243a}.rcToggle:first-child{border-top:0}.rcSwitch{position:relative;width:54px;height:31px;flex:0 0 54px}.rcSwitch input{position:absolute;opacity:0;width:0;height:0}.rcSlider{position:absolute;inset:0;border-radius:99px;background:#26344a;border:1px solid #334664;transition:.2s}.rcSlider:before{content:"";position:absolute;width:23px;height:23px;left:3px;top:3px;border-radius:50%;background:#0b1018;transition:.2s}.rcSwitch input:checked+.rcSlider{background:#3d86f5;border-color:#3d86f5}.rcSwitch input:checked+.rcSlider:before{transform:translateX(23px)}
+.rcSummary{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.rcMetric{background:#0b1018;border:1px solid #1b3158;border-radius:14px;padding:12px;text-align:center}.rcMetric small{display:block;color:#9ba8bd;font-weight:800}.rcMetric b{display:block;font-size:23px;margin-top:5px}.rcPreviewTitle{font-size:18px;font-weight:900;text-align:center;letter-spacing:.3px}.rcPreviewMeta{text-align:center;color:#9ba8bd;margin:5px 0 14px}.rcPreviewText{min-height:340px;font-size:13px;line-height:1.5;background:#0b1018;border-color:#1b3158}.rcActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;position:sticky;bottom:0;background:#0b1018;padding-top:10px}.rcActions .btn{min-height:46px}.rcActions .whats{background:#25d366;border-color:#25d366;color:#fff;font-weight:800}.rcHint{font-size:11px;color:#8d9bb0;margin-top:7px}
+@media(max-width:759px){.reportClientModal .modalBox{padding:11px 10px calc(14px + env(safe-area-inset-bottom));}.rcSummary{grid-template-columns:1fr 1fr}.rcMetric b{font-size:19px}.rcSection{padding:11px;border-radius:12px}.rcTabs{font-size:12px}.rcActions{grid-template-columns:1fr 1fr}.rcActions .btn{font-size:12px}.rcPreviewText{min-height:420px}}
+
 </style>
 </head>
 <body>
@@ -483,6 +494,35 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 
 <div id="adiantM" class="modal"><div class="modalBox"><div class="modalHead"><h2>Adiantamento</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveAdiantamento(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" required><option value="">Selecione</option></select></label><label>Valor<input id="adiantValor" type="number" step="0.01" required></label><label>Data<input id="adiantData" type="date"></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="formActions"><button type="button" class="btn" onclick="closeM('adiantM')">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
 
+
+<div id="relatorioClienteM" class="modal reportClientModal">
+ <div class="modalBox">
+  <div class="modalHead rcHeader"><div><h2>📄 Relatório para Cliente</h2><p>Escolha as obras, revise a prévia e edite antes de enviar.</p></div><button class="x" onclick="closeM('relatorioClienteM')">×</button></div>
+  <div class="rcTabs"><button id="rcTabSel" class="rcTab active" type="button" onclick="rcShowTab('sel')">1. Seleção</button><button id="rcTabPrev" class="rcTab" type="button" onclick="rcShowTab('prev')">2. Prévia & Envio</button></div>
+  <div id="rcTabSelection">
+   <div class="rcSection">
+    <div class="formGrid">
+     <label>Cliente<select id="rcCliente" onchange="rcRenderObras()"><option value="">Selecione o cliente</option></select></label>
+     <label>Período inicial<input id="rcInicio" type="date" onchange="rcRefreshPreview()"></label>
+     <label>Período final<input id="rcFim" type="date" onchange="rcRefreshPreview()"></label>
+     <label>Saudação inicial<input id="rcSaudacao" value="Olá! 👋" oninput="rcRefreshPreview()"></label>
+     <label class="full">Próximas etapas<textarea id="rcProximas" placeholder="Ex.: Pintura na próxima semana..." oninput="rcRefreshPreview()"></textarea></label>
+     <label class="full">Observações gerais<textarea id="rcObs" placeholder="Observações para o cliente..." oninput="rcRefreshPreview()"></textarea></label>
+     <label class="full">Mensagem de encerramento<input id="rcEncerramento" value="Qualquer dúvida estou à disposição. 🙌" oninput="rcRefreshPreview()"></label>
+    </div>
+   </div>
+   <div class="rcSection"><div class="row"><h3>👤 Clientes</h3><button class="btn" type="button" onclick="rcSelectAllClientWorks(true)">Todos</button></div><div id="rcClientesInfo" class="sub"></div></div>
+   <div class="rcSection"><div class="row"><h3>🏗️ Obras</h3><button class="btn" type="button" onclick="rcSelectAllClientWorks(false)">Desmarcar</button></div><div id="rcObrasList"></div></div>
+   <div class="rcSection"><h3>Seções incluídas</h3><div id="rcSections" class="rcChecks"></div></div>
+   <div class="formActions"><button type="button" class="btn" onclick="closeM('relatorioClienteM')">Cancelar</button><button type="button" class="btn primary" onclick="rcShowTab('prev')">Gerar Prévia →</button></div>
+  </div>
+  <div id="rcTabPreview" class="hidden">
+   <div class="rcSection"><div class="rcPreviewTitle">RELATÓRIO DE<br>ACOMPANHAMENTO DE OBRA</div><div id="rcPreviewMeta" class="rcPreviewMeta"></div><div id="rcSummary" class="rcSummary"></div></div>
+   <div class="rcSection"><h3>Visualização do Documento (WhatsApp/Texto)</h3><textarea id="rcPreviewText" class="rcPreviewText" oninput="window.__rcManualText=true"></textarea><div class="rcHint">Você pode editar o texto acima antes de copiar, gerar o PDF ou enviar pelo WhatsApp.</div></div>
+   <div class="rcActions"><button class="btn" type="button" onclick="rcShowTab('sel')">← Voltar</button><button class="btn" type="button" onclick="rcExportPDF()">📄 PDF</button><button class="btn" type="button" onclick="rcCopy()">📋 Copiar</button><button class="btn whats" type="button" onclick="rcWhatsApp()">💬 WhatsApp</button></div>
+  </div>
+ </div>
+</div>
 <div id="toast" class="toast"></div>
 <script>
 
@@ -4979,6 +5019,8 @@ toast(
 
 function fillSelectors(){
 
+rcRenderClients();
+
 const obraIds=[
 "fObra",
 "dObra",
@@ -5548,6 +5590,138 @@ function fillHistoricoFuncionarioSelector(){
   if(current && funcionarios.some(f=>String(f.id)===String(current))){
     sel.value=current;
   }
+}
+
+
+/* =========================================================
+   EDIFIQ — RELATÓRIO PARA CLIENTE
+   ========================================================= */
+const RC_DEFAULT_SECTIONS={
+  saudacao:true,resumo:true,andamento:true,dias:true,equipe:true,servicos:true,financeiro:true,pagamentos:true,observacoes:true,proximas:true,final:true,encerramento:true
+};
+window.__rcSections={...RC_DEFAULT_SECTIONS};
+window.__rcManualText=false;
+window.__rcSelected=[];
+
+function rcFmtDate(v){
+  if(!v)return "—";
+  const p=String(v).split('-');
+  return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:String(v);
+}
+function rcDaysDiff(a,b){
+  const x=new Date(`${a}T00:00:00`),y=new Date(`${b}T00:00:00`);
+  if(Number.isNaN(x.getTime())||Number.isNaN(y.getTime()))return 0;
+  return Math.floor((y-x)/86400000)+1;
+}
+function rcInPeriod(date,ini,fim){
+  const d=String(date||'');
+  if(!d)return false;
+  return (!ini||d>=ini)&&(!fim||d<=fim);
+}
+function rcClients(){
+  return [...new Set(D.obras.map(o=>String(o.cliente||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
+function rcClientWorks(){
+  const c=$('rcCliente')?.value||'';
+  return D.obras.filter(o=>!c||String(o.cliente||'').trim()===c);
+}
+function rcRenderClients(){
+  const sel=$('rcCliente');if(!sel)return;
+  const current=sel.value||'';
+  sel.innerHTML='<option value="">Selecione o cliente</option>'+rcClients().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  if(current && rcClients().includes(current))sel.value=current;
+}
+function rcRenderObras(){
+  const box=$('rcObrasList'),info=$('rcClientesInfo');if(!box)return;
+  const works=rcClientWorks();
+  const current=new Set((window.__rcSelected||[]).map(String));
+  if(!current.size)works.forEach(o=>current.add(String(o.id)));
+  window.__rcSelected=works.filter(o=>current.has(String(o.id))).map(o=>String(o.id));
+  if(info)info.textContent=works.length?`${$('rcCliente')?.value||'Todos os clientes'} · ${works.length} obra(s) encontrada(s)`:'Nenhuma obra encontrada para este cliente.';
+  box.innerHTML=works.length?works.map(o=>{const checked=window.__rcSelected.includes(String(o.id));return `<label class="item" style="display:flex;align-items:center;gap:10px;cursor:pointer"><input class="rcObraCheck" type="checkbox" value="${esc(String(o.id))}" ${checked?'checked':''} onchange="rcToggleObra('${esc(String(o.id))}',this.checked)" style="width:20px;height:20px;flex:0 0 20px"><span style="flex:1;min-width:0"><b>${esc(o.nome||'Obra')}</b><br><small>${money(o.valor||0)} · ${esc(statusLabel(o.status))}</small></span></label>`}).join(''):'<div class="empty">Cadastre uma obra com cliente para usar este relatório.</div>';
+  rcRefreshPreview();
+}
+function rcToggleObra(id,checked){
+  const set=new Set((window.__rcSelected||[]).map(String));
+  checked?set.add(String(id)):set.delete(String(id));
+  window.__rcSelected=[...set];
+  rcRefreshPreview();
+}
+function rcSelectAllClientWorks(all){
+  const works=rcClientWorks();
+  window.__rcSelected=all?works.map(o=>String(o.id)):[];
+  document.querySelectorAll('.rcObraCheck').forEach(x=>x.checked=all);
+  rcRefreshPreview();
+}
+function rcSectionControls(){
+  const box=$('rcSections');if(!box)return;
+  const labels={saudacao:'Saudação inicial',resumo:'Resumo do período',andamento:'Andamento da obra',dias:'Dias trabalhados',equipe:'Equipe envolvida',servicos:'Serviços realizados',financeiro:'Resumo financeiro',pagamentos:'Pagamentos recebidos',observacoes:'Observações gerais',proximas:'Próximas etapas',final:'Resumo geral final',encerramento:'Mensagem de encerramento'};
+  box.innerHTML=Object.entries(labels).map(([k,n])=>`<div class="rcToggle"><span>${n}</span><label class="rcSwitch"><input type="checkbox" ${window.__rcSections[k]?'checked':''} onchange="rcSetSection('${k}',this.checked)"><i class="rcSlider"></i></label></div>`).join('');
+}
+function rcSetSection(k,v){window.__rcSections[k]=!!v;window.__rcManualText=false;rcRefreshPreview();}
+function rcSelectedWorks(){const ids=new Set((window.__rcSelected||[]).map(String));return D.obras.filter(o=>ids.has(String(o.id)));}
+function rcData(){
+  const obras=rcSelectedWorks();
+  const ini=$('rcInicio')?.value||'';const fim=$('rcFim')?.value||'';
+  const diarias=D.diarias.filter(d=>obras.some(o=>String(o.id)===String(d.obra_id))&&rcInPeriod(d.data,ini,fim));
+  const dates=[...new Set(diarias.map(d=>String(d.data||'')).filter(Boolean))].sort((a,b)=>b.localeCompare(a));
+  const teamIds=[...new Set(diarias.map(d=>String(d.funcionario_id||'')).filter(Boolean))];
+  const team=teamIds.map(id=>{const f=D.funcionarios.find(x=>String(x.id)===id);const its=diarias.filter(d=>String(d.funcionario_id)===id);return {f,days:new Set(its.map(d=>d.data)).size,items:its};}).filter(x=>x.f);
+  const services=obras.flatMap(o=>servicesForObra(o.id).map(s=>({...s,obra:o}))).filter(s=>rcInPeriod(s.data,ini,fim));
+  const pagamentos=D.pagamentos.filter(p=>obras.some(o=>String(o.id)===String(p.obra_id))).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  const finances=obras.map(o=>({o,f:obraFinanceData(o.id)}));
+  const total=finances.reduce((a,x)=>a+x.f.contrato,0),receita=finances.reduce((a,x)=>a+x.f.receita,0),despesas=finances.reduce((a,x)=>a+x.f.despesas,0),resultado=receita-despesas;
+  const concl=obras.filter(o=>o.status==='concluida').length, andamento=obras.filter(o=>o.status!=='concluida').length;
+  const progress=obras.length?Math.round(obras.reduce((a,o)=>a+obraProgress(o),0)/obras.length):0;
+  return {obras,ini,fim,diarias,dates,team,services,pagamentos,finances,total,receita,despesas,resultado,saldo:Math.max(0,total-receita),concl,andamento,progress};
+}
+function rcBuildText(){
+  const d=rcData(), cliente=$('rcCliente')?.value||'Cliente', ini=d.ini||today(), fim=d.fim||today();
+  const sec=window.__rcSections, lines=[];
+  const add=(x)=>{if(x)lines.push(x)};
+  if(sec.saudacao)add(($('rcSaudacao')?.value||`Olá, ${cliente}! 👋`).trim());
+  add('');add('📋 *RELATÓRIO DE ACOMPANHAMENTO DE OBRA*');add(`Cliente: ${cliente}`);add(`Obra(s): ${d.obras.map(o=>String(o.nome||'').toUpperCase()).join(', ')||'Nenhuma selecionada'}`);add(`Período: ${rcFmtDate(ini)} a ${rcFmtDate(fim)}`);add(`Data de emissão: ${rcFmtDate(today())}`);add('');
+  if(sec.resumo){add('📊 *RESUMO DO PERÍODO*');add(`• ${d.dates.length} dias com atividade`);add(`• ${d.team.length} trabalhadores envolvidos`);add(`• ${d.diarias.length} registros de diárias`);add('• Horas registradas: não informadas no EDIFIQ');add('');}
+  if(sec.andamento){add('🏗️ *ANDAMENTO DA OBRA*');add(`• Obras concluídas: ${d.concl}`);add(`• Obras em andamento: ${d.andamento}`);add(`• Progresso médio do checklist: ${d.progress}%`);d.obras.forEach(o=>add(`• ${o.nome}: ${obraProgress(o)}% — ${statusLabel(o.status)}`));add('');}
+  if(sec.dias){add('📅 *DIAS TRABALHADOS*');add(`Total de dias com atividade: ${d.dates.length}`);d.dates.slice(0,30).forEach(dt=>{const n=new Set(d.diarias.filter(x=>x.data===dt).map(x=>String(x.funcionario_id))).size;add(`• ${rcFmtDate(dt)}: ${n} trabalhador(es)`);});if(d.dates.length>30)add(`• ... e outros ${d.dates.length-30} dias`);add('');}
+  if(sec.equipe){add('👷 *EQUIPE NO PERÍODO*');d.team.forEach(x=>add(`• ${x.f.nome} — ${x.f.funcao||x.f.função||'Função não informada'} — ${x.days} dia(s)`));if(!d.team.length)add('• Nenhum registro de equipe no período.');add('');}
+  if(sec.servicos){add('🔨 *SERVIÇOS REALIZADOS*');d.services.forEach(s=>add(`• ${s.data?rcFmtDate(s.data)+' — ':''}${s.obra?.nome||''}: ${s.nome} — ${money(s.valor||0)}`));if(!d.services.length)add('• Nenhum serviço adicional registrado no período.');add('');}
+  if(sec.financeiro){add('💰 *RESUMO FINANCEIRO*');d.finances.forEach(x=>{add(`*${x.o.nome}*`);add(`• Valor contratado: ${money(x.f.contrato)}`);add(`• Total recebido: ${money(x.f.receita)}`);add(`• Despesas: ${money(x.f.despesas)}`);add(`• Resultado: ${money(x.f.resultado)}`);add(`• Margem de lucro: ${Number(x.f.margemLucro||0).toFixed(1)}%`);add(`• Saldo pendente: ${money(x.f.saldoReceber)}`);add('');});}
+  if(sec.pagamentos){add('📥 *PAGAMENTOS RECEBIDOS*');d.pagamentos.slice(0,60).forEach(p=>add(`• ${rcFmtDate(p.data)} — ${money(p.valor)} — ${p.descricao||'Pagamento recebido'}`));if(!d.pagamentos.length)add('• Nenhum pagamento registrado.');add('');}
+  if(sec.observacoes){const o=($('rcObs')?.value||'').trim();add('📝 *OBSERVAÇÕES GERAIS*');add(o||'• Sem observações gerais.');add('');}
+  if(sec.proximas){const n=($('rcProximas')?.value||'').trim();add('➡️ *PRÓXIMAS ETAPAS*');add(n||'• A definir.');add('');}
+  if(sec.final){add('📊 *RESUMO GERAL DO PERÍODO*');add(`• Valor Total: ${money(d.total)}`);add(`• Total Recebido: ${money(d.receita)}`);add(`• Despesas: ${money(d.despesas)}`);add(`• Resultado: ${money(d.resultado)}`);add(`• Saldo Pendente: ${money(d.saldo)}`);add('');}
+  if(sec.encerramento)add(($('rcEncerramento')?.value||'Qualquer dúvida estou à disposição. 🙌').trim());
+  return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function rcRefreshPreview(){
+  const d=rcData();
+  if($('rcPreviewMeta'))$('rcPreviewMeta').textContent=`Período: ${rcFmtDate(d.ini||today())} a ${rcFmtDate(d.fim||today())}`;
+  if($('rcSummary'))$('rcSummary').innerHTML=`<div class="rcMetric"><small>DIAS</small><b>${d.dates.length}</b></div><div class="rcMetric"><small>EQUIPE</small><b>${d.team.length}</b></div><div class="rcMetric"><small>SERVIÇOS</small><b>${d.services.length}</b></div><div class="rcMetric"><small>PROGRESSO</small><b>${d.progress}%</b></div>`;
+  const ta=$('rcPreviewText');if(ta&&!window.__rcManualText)ta.value=rcBuildText();
+}
+function rcShowTab(tab){
+  const a=$('rcTabSelection'),b=$('rcTabPreview');if(!a||!b)return;
+  const sel=tab==='sel';a.classList.toggle('hidden',!sel);b.classList.toggle('hidden',sel);$('rcTabSel')?.classList.toggle('active',sel);$('rcTabPrev')?.classList.toggle('active',!sel);
+  if(!sel){window.__rcManualText=false;rcRefreshPreview();}
+}
+function openRelatorioCliente(){
+  const m=$('relatorioClienteM');if(!m)return;
+  window.__rcManualText=false;window.__rcSelected=[];window.__rcSections={...RC_DEFAULT_SECTIONS};
+  rcRenderClients();
+  const clients=rcClients();if(clients.length){$('rcCliente').value=clients[0];}
+  const fim=today(),dt=new Date();dt.setDate(dt.getDate()-30);const ini=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  $('rcInicio').value=ini;$('rcFim').value=fim;$('rcSaudacao').value=clients[0]?`Olá, ${clients[0]}! 👋`:'Olá! 👋';$('rcProximas').value='';$('rcObs').value='';$('rcEncerramento').value='Qualquer dúvida estou à disposição. 🙌';
+  rcSectionControls();rcShowTab('sel');rcRenderObras();m.classList.add('open');
+}
+function rcCopy(){const txt=$('rcPreviewText')?.value||'';if(!txt)return;navigator.clipboard?.writeText(txt).then(()=>toast('Relatório copiado.')).catch(()=>{const ta=$('rcPreviewText');ta.select();document.execCommand('copy');toast('Relatório copiado.');});}
+function rcWhatsApp(){const txt=$('rcPreviewText')?.value||'';if(!txt)return;window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');}
+function rcExportPDF(){
+  const txt=$('rcPreviewText')?.value||'';if(!txt)return;
+  const cliente=$('rcCliente')?.value||'Cliente';
+  const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
+  const html=esc(txt).replace(/\n/g,'<br>');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório para ${esc(cliente)}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033;line-height:1.55;max-width:850px;margin:auto}h1{font-size:24px;text-align:center} .box{border:1px solid #d9e0ea;border-radius:14px;padding:24px;white-space:normal}@media print{body{padding:10px}}</style></head><body><h1>EDIFIQ — Relatório para Cliente</h1><div class="box">${html}</div></body></html>`);w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},400);
 }
 
 /* =========================================================
