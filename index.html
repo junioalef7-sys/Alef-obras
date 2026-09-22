@@ -371,6 +371,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
  <div class="homeQuickGrid homeQuickGridFinal">
   <button class="homeQuick" onclick="go('checklist')"><span>☑️</span><b>Checklist das Obras</b><small>Selecione a obra e ajuste o progresso de cada etapa</small></button>
   <button class="homeQuick" onclick="go('relatorios')"><span>📊</span><b>Relatórios</b><small>Backup, importar e exportar PDF, Excel, CSV e JSON</small></button>
+  <button class="homeQuick" onclick="openRelatorioCliente()"><span>📄</span><b>Relatório Cliente</b><small>Monte, revise, copie, gere PDF e envie pelo WhatsApp</small></button>
  </div>
  <button class="analysisFolderBtn" onclick="go('analises')" aria-label="Abrir análises financeiras">
   <span class="analysisFolderIcon">📈</span>
@@ -470,6 +471,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
      <button class="btn reportAction" onclick="exportFull()"><b>🗂️ Exportar JSON / Backup</b><small>Backup completo para recuperação futura.</small></button>
    </div>
  </div>
+ <div class="card"><h2>Relatório para Cliente</h2><p class="sub">Crie um relatório profissional da obra, selecione as informações e envie ao cliente.</p><div class="listActions"><button class="btn gold" onclick="openRelatorioCliente()">📄 Abrir Relatório para Cliente</button></div></div>
  <div class="card"><h2>Equipe</h2><div class="listActions"><button class="btn gold" onclick="openPagamentoEquipe()">💰 Pagamento da equipe</button><button class="btn" onclick="openAdiantamento()">💳 Adiantamento</button><button class="btn" onclick="go('diarias')">📅 Histórico de diárias</button></div></div>
 </section>
 </main></section>
@@ -5706,13 +5708,27 @@ function rcShowTab(tab){
   if(!sel){window.__rcManualText=false;rcRefreshPreview();}
 }
 function openRelatorioCliente(){
-  const m=$('relatorioClienteM');if(!m)return;
-  window.__rcManualText=false;window.__rcSelected=[];window.__rcSections={...RC_DEFAULT_SECTIONS};
+  const m=$('relatorioClienteM');
+  if(!m){toast('Módulo Relatório para Cliente não encontrado.');return;}
+  window.__rcManualText=false;
+  window.__rcSelected=[];
+  window.__rcSections={...RC_DEFAULT_SECTIONS};
   rcRenderClients();
-  const clients=rcClients();if(clients.length){$('rcCliente').value=clients[0];}
-  const fim=today(),dt=new Date();dt.setDate(dt.getDate()-30);const ini=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-  $('rcInicio').value=ini;$('rcFim').value=fim;$('rcSaudacao').value=clients[0]?`Olá, ${clients[0]}! 👋`:'Olá! 👋';$('rcProximas').value='';$('rcObs').value='';$('rcEncerramento').value='Qualquer dúvida estou à disposição. 🙌';
-  rcSectionControls();rcShowTab('sel');rcRenderObras();m.classList.add('open');
+  const clients=rcClients();
+  if(clients.length){$('rcCliente').value=clients[0];}
+  const fim=today(),dt=new Date();
+  dt.setDate(dt.getDate()-30);
+  const ini=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  $('rcInicio').value=ini;
+  $('rcFim').value=fim;
+  $('rcSaudacao').value=clients[0]?`Olá, ${clients[0]}! 👋`:'Olá! 👋';
+  $('rcProximas').value='';
+  $('rcObs').value='';
+  $('rcEncerramento').value='Qualquer dúvida estou à disposição. 🙌';
+  rcSectionControls();
+  rcShowTab('sel');
+  rcRenderObras();
+  m.classList.add('open');
 }
 function rcCopy(){const txt=$('rcPreviewText')?.value||'';if(!txt)return;navigator.clipboard?.writeText(txt).then(()=>toast('Relatório copiado.')).catch(()=>{const ta=$('rcPreviewText');ta.select();document.execCommand('copy');toast('Relatório copiado.');});}
 function rcWhatsApp(){const txt=$('rcPreviewText')?.value||'';if(!txt)return;window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');}
