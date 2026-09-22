@@ -6166,10 +6166,22 @@ function abrirSeletorDocumento(){
   if(!input){toast("Campo de documento não encontrado.");return false;}
   try{input.click();return true}catch(err){console.error(err);toast("Não foi possível abrir o seletor de arquivos.");return false;}
 }
+function garantirModalDocumentos(){
+  let modal=document.getElementById("documentoM");
+  if(modal) return modal;
+  document.body.insertAdjacentHTML("beforeend",`<div id="documentoM" class="modal"><div class="modalBox"><div class="modalHead"><h2 id="documentoTitle">Novo documento</h2><button type="button" class="x" onclick="closeM('documentoM')">×</button></div><form onsubmit="saveDocumento(event)"><div class="formGrid"><label>Obra<select id="docObra" required></select></label><label>Categoria<select id="docCategoria"><option>Contrato</option><option>Orçamento</option><option>Nota fiscal</option><option>Comprovante</option><option>Medição</option><option>Projeto</option><option>Outros</option></select></label><label>Data<input id="docData" type="date" required></label><label>Nome / título<input id="docTitulo" required></label><label>Fornecedor / origem<input id="docFornecedor"></label><label class="full">Observação<textarea id="docObs"></textarea></label><div class="full"><label for="docFile">Anexar arquivo</label><div class="docUploadBox"><input id="docFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" onchange="mostrarArquivoDocumento(this)"><button type="button" class="docPickButton" onclick="abrirSeletorDocumento()">📎 SELECIONAR DOCUMENTO</button><div id="docFileStatus" class="docFileStatus">Nenhum arquivo selecionado</div></div></div></div><div class="modalActions"><button type="button" class="btn" onclick="closeM('documentoM')">Cancelar</button><button type="submit" class="btn gold">Salvar documento</button></div></form></div></div>`);
+  return document.getElementById("documentoM");
+}
+function garantirModalMateriais(){
+  let modal=document.getElementById("materialM");
+  if(modal) return modal;
+  document.body.insertAdjacentHTML("beforeend",`<div id="materialM" class="modal"><div class="modalBox"><div class="modalHead"><h2 id="materialTitle">Lançar material</h2><button type="button" class="x" onclick="closeM('materialM')">×</button></div><form onsubmit="saveMaterial(event)"><div class="formGrid"><label>Obra<select id="matObra" required></select></label><label>Material<input id="matNome" required></label><label>Categoria<select id="matCategoria"><option>Material básico</option><option>Acabamento</option><option>Elétrica</option><option>Hidráulica</option><option>Ferramentas</option><option>Outros</option></select></label><label>Unidade<select id="matUnidade"><option>un</option><option>kg</option><option>m</option><option>m²</option><option>m³</option><option>l</option><option>saco</option><option>caixa</option><option>barra</option></select></label><label>Quantidade comprada<input id="matQtd" type="number" min="0.001" step="0.001" required></label><label>Valor unitário (R$)<input id="matValor" type="number" min="0" step="0.01" required></label><label>Estoque mínimo<input id="matMin" type="number" min="0" step="0.001" value="0"></label><label>Data<input id="matData" type="date" required></label><label>Fornecedor<input id="matFornecedor"></label><label class="full">Observação<textarea id="matObs"></textarea></label></div><div class="modalActions"><button type="button" class="btn" onclick="closeM('materialM')">Cancelar</button><button type="submit" class="btn gold">Salvar material</button></div></form></div></div>`);
+  return document.getElementById("materialM");
+}
 function openDocumentoSeguro(){
   try{
     editDocumentoId=null;
-    const modal=document.getElementById("documentoM");
+    const modal=garantirModalDocumentos();
     if(!modal){toast("Janela de documentos não encontrada.");return;}
     const obras=Array.isArray(D.obras)?D.obras:[];
     const obra=document.getElementById("docObra");
@@ -6183,7 +6195,7 @@ function openDocumentoSeguro(){
 }
 function openMaterialSeguro(){
   try{
-    const modal=document.getElementById("materialM");
+    const modal=garantirModalMateriais();
     if(!modal){toast("Janela de materiais não encontrada.");return;}
     const obras=Array.isArray(D.obras)?D.obras:[];
     const obra=document.getElementById("matObra");
