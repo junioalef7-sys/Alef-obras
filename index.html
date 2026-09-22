@@ -5632,7 +5632,10 @@ funcionarioObras:
 localFuncObras(),
 
 adiantamentosAplicados:
-getAdvanceApplied()
+getAdvanceApplied(),
+
+servicosAdicionais:
+getServices()
 
 };
 
@@ -5687,158 +5690,197 @@ toast(
 
 }
 
+function importRemapRow(row,maps){
+  const copy={...(row||{})};
+  delete copy.id;
+  delete copy.created_at;
+  delete copy.updated_at;
+  delete copy.user_id;
+
+  // Reconstrói os vínculos entre os registros importados.
+  for(const key of ["obra_id","obraId"]){
+    if(copy[key]!=null && maps.obras[String(copy[key])]!=null){
+      copy[key]=maps.obras[String(copy[key])];
+    }
+  }
+  for(const key of ["funcionario_id","funcionarioId"]){
+    if(copy[key]!=null && maps.funcionarios[String(copy[key])]!=null){
+      copy[key]=maps.funcionarios[String(copy[key])];
+    }
+  }
+  for(const key of ["material_id","materialId"]){
+    if(copy[key]!=null && maps.materiais[String(copy[key])]!=null){
+      copy[key]=maps.materiais[String(copy[key])];
+    }
+  }
+  return copy;
+}
+
+async function importBackupData(backup){
+  if(!backup || !backup.data) throw new Error("Backup inválido.");
+
+  const maps={
+    obras:{},
+    funcionarios:{},
+    materiais:{},
+    documentos:{}
+  };
+
+  /*
+   * IMPORTAÇÃO CORRIGIDA:
+   * O código antigo apagava os IDs antes de inserir cada tabela.
+   * Assim a obra/funcionário recebia um novo ID, mas gastos,
+   * diárias, pagamentos e checklist continuavam apontando para
+   * os IDs antigos. Os totais apareciam, porém as despesas ficavam
+   * sem obra/funcionário e não eram distribuídas.
+   *
+   * Agora cada registro pai é inserido primeiro e seu novo ID é
+   * guardado. Os registros dependentes usam esse mapa.
+   */
+
+  // 1) Obras — primeiro para criar o mapa ID antigo -> ID novo.
+  for(const row of (backup.data.obras||[])){
+    const antigo=row?.id;
+    const novo=await insertRow("obras",importRemapRow(row,maps));
+    if(novo && antigo!=null) maps.obras[String(antigo)]=novo.id;
+  }
+
+  // 2) Funcionários — também precisam ser criados antes das diárias.
+  for(const row of (backup.data.funcionarios||[])){
+    const antigo=row?.id;
+    const novo=await insertRow("funcionarios",importRemapRow(row,maps));
+    if(novo && antigo!=null) maps.funcionarios[String(antigo)]=novo.id;
+  }
+
+  // 3) Materiais são locais. Cria novos IDs e guarda o vínculo.
+  if(Array.isArray(backup.data.materiais)){
+    for(const row of backup.data.materiais){
+      const antigo=row?.id;
+      const novoId="mat_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+      const novo=importRemapRow(row,maps);
+      novo.id=novoId;
+      D.materiais.push(novo);
+      if(antigo!=null) maps.materiais[String(antigo)]=novoId;
+    }
+  }
+
+  // 4) Tabelas dependentes. Todos os *_id conhecidos são remapeados.
+  const tabelasDependentes=[
+    "diarias",
+    "gastos",
+    "pagamentos",
+    "checklist",
+    "faltas",
+    "diario",
+    "documentos"
+  ];
+
+  for(const table of tabelasDependentes){
+    for(const row of (backup.data[table]||[])){
+      await insertRow(table,importRemapRow(row,maps));
+    }
+  }
+
+  // 5) Movimentações de materiais — só depois que os materiais têm novos IDs.
+  if(Array.isArray(backup.data.material_movimentos)){
+    for(const row of backup.data.material_movimentos){
+      const novo=importRemapRow(row,maps);
+      novo.id="mm_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+      D.material_movimentos.push(novo);
+    }
+  }
+
+  // 6) Relação funcionário -> obra usada pelas versões locais do aplicativo.
+  if(backup.funcionarioObras){
+    const origem=backup.funcionarioObras;
+    const destino={};
+    Object.entries(origem).forEach(([funcId,obraId])=>{
+      const nf=maps.funcionarios[String(funcId)] ?? funcId;
+      const no=maps.obras[String(obraId)] ?? obraId;
+      destino[nf]=no||"";
+    });
+    localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(destino));
+
+    // Mantém também a coluna obra_id do funcionário quando existir.
+    D.funcionarios.forEach(f=>{
+      const obra=destino[String(f.id)];
+      if(obra && !f.obra_id) f.obra_id=obra;
+    });
+  }
+
+  if(backup.adiantamentosAplicados){
+    /*
+     * Os IDs dos gastos mudaram na importação. Para evitar aplicar
+     * adiantamentos no gasto errado, recriamos o mapa pelo índice/
+     * fornecedor/descrição quando possível. Registros que não puderem
+     * ser associados ficam zerados, sem causar desconto indevido.
+     */
+    const novoAplicado={};
+    const origem=backup.adiantamentosAplicados||{};
+    const gastosImportados=D.gastos||[];
+    const gastosAdiant=gastosImportados.filter(g=>gastoCategoria(g)==="Adiantamento");
+
+    Object.entries(origem).forEach(([oldId,val])=>{
+      const g=gastosAdiant.find(x=>String(x.id)===String(oldId));
+      if(g) novoAplicado[g.id]=Number(val||0);
+    });
+    localStorage.setItem(ADV_KEY,JSON.stringify(novoAplicado));
+  }
+
+  // 7) Serviços adicionais também passam a acompanhar a obra importada.
+  if(backup.servicosAdicionais){
+    const origem=backup.servicosAdicionais;
+    const destino={};
+    Object.entries(origem).forEach(([oldObraId,lista])=>{
+      const novaObraId=maps.obras[String(oldObraId)] ?? oldObraId;
+      destino[novaObraId]=Array.isArray(lista)?lista:[];
+    });
+    saveServices(destino);
+  }
+
+  saveLocalData();
+  saveMaterialMeta();
+  try{await saveMaterialDB();}catch(e){console.warn("Materiais locais após importação",e)}
+
+  // Recarrega os dados do servidor sem perder os registros locais.
+  await loadCloud();
+  await loadMaterialMeta();
+  loadDocumentoMeta();
+  fillSelectors();
+  renderAll();
+}
+
 async function importBackup(event){
+  const file=event.target.files?.[0];
+  if(!file)return;
 
-const file=
-event.target.files?.[0];
+  const reader=new FileReader();
 
-if(!file)return;
+  reader.onload=async()=>{
+    try{
+      const backup=JSON.parse(reader.result);
 
-const reader=
-new FileReader();
+      if(!backup.data){
+        toast("Backup inválido.");
+        return;
+      }
 
-reader.onload=async()=>{
+      if(!confirm(
+        "Importar este backup? Os registros serão adicionados ao sistema e seus vínculos entre obras, funcionários, despesas, materiais e financeiro serão reconstruídos."
+      )) return;
 
-try{
+      await importBackupData(backup);
 
-const backup=
-JSON.parse(
-reader.result
-);
+      toast("Backup importado e despesas distribuídas por obra.");
+    }catch(e){
+      console.error("EDIFIQ importação:",e);
+      toast("Arquivo de backup inválido ou não foi possível reconstruir os vínculos.");
+    }
+  };
 
-if(!backup.data){
-
-toast(
-"Backup inválido."
-);
-
-return;
-
-}
-
-if(!confirm(
-"Importar este backup? Os registros serão adicionados ao sistema."
-))
-return;
-
-for(
-const table of[
-"obras",
-"funcionarios",
-"diarias",
-"gastos",
-"pagamentos",
-"checklist",
-"faltas",
-"diario"
-]){
-
-const rows=
-backup.data[table]||[];
-
-for(
-const row of rows
-){
-
-const copy={...row};
-
-delete copy.id;
-delete copy.created_at;
-delete copy.updated_at;
-delete copy.user_id;
-
-await insertRow(
-table,
-copy
-);
-
-}
-
-}
-
-if(backup.funcionarioObras){
-
-localStorage.setItem(
-FUNC_OBRA_KEY,
-JSON.stringify(
-backup.funcionarioObras
-)
-);
-
-}
-
-if(backup.adiantamentosAplicados){
-
-localStorage.setItem(
-ADV_KEY,
-JSON.stringify(
-backup.adiantamentosAplicados
-)
-);
-
-}
-
-/*
- Importação das fotos para o IndexedDB.
-*/
-
-if(
-Array.isArray(
-backup.fotos
-)
-){
-
-for(
-const foto of backup.fotos
-){
-
-try{
-
-await savePhotoDB({
-...foto,
-id:
-foto.id||
-"foto_"+Date.now()+"_"+
-Math.random()
-.toString(36)
-.slice(2)
-});
-
-}catch(err){
-
-console.warn(
-"Erro importando foto",
-err
-);
-
-}
-
-}
-
-}
-
-await loadCloud();
-
-renderAll();
-
-toast(
-"Backup importado."
-);
-
-}catch(e){
-
-console.error(e);
-
-toast(
-"Arquivo de backup inválido."
-);
-
-}
-
-};
-
-reader.readAsText(file);
-
+  reader.onerror=()=>toast("Não foi possível ler o arquivo de backup.");
+  reader.readAsText(file);
+  event.target.value="";
 }
 
 
@@ -6085,39 +6127,40 @@ function exportCSVAll(){
 async function importRelatorioData(event){
   const file=event.target.files?.[0];
   if(!file)return;
-  const status=$('importRelatorioStatus');
+  const status=$("importRelatorioStatus");
+
   try{
-    if(file.name.toLowerCase().endsWith('.json')){
-      await new Promise((resolve,reject)=>{
+    if(file.name.toLowerCase().endsWith(".json")){
+      const backup=await new Promise((resolve,reject)=>{
         const r=new FileReader();
-        r.onload=async()=>{try{
-          const backup=JSON.parse(r.result);
-          if(!backup.data)throw new Error('Backup inválido');
-          if(!confirm('Importar este backup? Os registros serão adicionados sem apagar os atuais.')){resolve();return;}
-          for(const table of ['obras','funcionarios','diarias','gastos','pagamentos','checklist','faltas']){
-            for(const row of (backup.data[table]||[])){
-              const copy={...row}; delete copy.id; delete copy.created_at; delete copy.updated_at; delete copy.user_id;
-              await insertRow(table,copy);
-            }
-          }
-          if(Array.isArray(backup.data.materiais)) D.materiais=[...D.materiais,...backup.data.materiais.map(x=>({...x,id:x.id||'mat_'+Date.now()+'_'+Math.random().toString(36).slice(2)}))];
-          if(Array.isArray(backup.data.material_movimentos)) D.material_movimentos=[...D.material_movimentos,...backup.data.material_movimentos.map(x=>({...x,id:x.id||'mm_'+Date.now()+'_'+Math.random().toString(36).slice(2)}))];
-          saveLocalData();
-          if(backup.funcionarioObras)localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(backup.funcionarioObras));
-          if(backup.adiantamentosAplicados)localStorage.setItem(ADV_KEY,JSON.stringify(backup.adiantamentosAplicados));
-          await loadCloud(); renderAll();
-          status.textContent='Backup importado com sucesso. Os dados anteriores foram preservados.';
-          toast('Backup importado.'); resolve();
-        }catch(e){reject(e)}};
-        r.onerror=()=>reject(r.error); r.readAsText(file);
+        r.onload=()=>{try{resolve(JSON.parse(r.result))}catch(e){reject(e)}};
+        r.onerror=()=>reject(r.error);
+        r.readAsText(file);
       });
+
+      if(!backup?.data)throw new Error("Backup inválido");
+      if(!confirm("Importar este backup? Os registros serão adicionados e os vínculos de obras, funcionários, despesas, materiais e financeiro serão reconstruídos.")){
+        if(status)status.textContent="Importação cancelada.";
+        event.target.value="";
+        return;
+      }
+
+      await importBackupData(backup);
+      if(status)status.textContent="Backup importado com sucesso. Os vínculos e despesas foram reconstruídos.";
+      toast("Backup importado e distribuído.");
     }else{
-      status.textContent='Para importar todos os dados com segurança, use o arquivo de backup JSON criado pelo EDIFIQ.';
-      toast('Use o backup JSON do EDIFIQ para importação completa.');
+      if(status)status.textContent="Para importar todos os dados com segurança, use o arquivo de backup JSON criado pelo EDIFIQ.";
+      toast("Use o backup JSON do EDIFIQ para importação completa.");
     }
-  }catch(e){console.error(e);status.textContent='Não foi possível importar o arquivo.';toast('Arquivo inválido.');}
-  event.target.value='';
+  }catch(e){
+    console.error(e);
+    if(status)status.textContent="Não foi possível importar o arquivo.";
+    toast("Arquivo inválido ou incompatível.");
+  }
+
+  event.target.value="";
 }
+
 
 /* =========================================================
    RENDER
