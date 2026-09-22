@@ -333,7 +333,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 @media(max-width:759px){.reportClientModal .modalBox{padding:11px 10px calc(14px + env(safe-area-inset-bottom));}.rcSummary{grid-template-columns:1fr 1fr}.rcMetric b{font-size:19px}.rcSection{padding:11px;border-radius:12px}.rcTabs{font-size:12px}.rcActions{grid-template-columns:1fr 1fr}.rcActions .btn{font-size:12px}.rcPreviewText{min-height:420px}}
 
 </style>
-</head>
+<style id="financeiro-avancado-ui">.financeAdvFilters{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px}.financeAdvKpis{grid-template-columns:repeat(4,minmax(0,1fr))}.financeAdvGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.financeAdvCard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px;min-width:0}.financeAdvCard h3{margin:0 0 10px;font-size:15px}.financeCatRow{display:grid;grid-template-columns:110px 1fr 88px;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:12px}.financeCatRow:first-child{border-top:0}.financeBar{height:7px;background:#242a31;border-radius:99px;overflow:hidden}.financeBar i{display:block;height:100%;background:linear-gradient(90deg,#a77a2d,#f0d58d);border-radius:99px}.financeAdvTable{width:100%;overflow:auto}.financeAdvTable table{width:100%;border-collapse:collapse;min-width:620px;font-size:12px}.financeAdvTable th,.financeAdvTable td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.financeAdvTable th{color:var(--muted)}.financeCashRow{display:grid;grid-template-columns:92px 1fr 90px;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:12px}.financeCashPos{color:var(--green)}.financeCashNeg{color:var(--red)}@media(max-width:759px){.financeAdvFilters{grid-template-columns:1fr 1fr}.financeAdvFilters label:first-child{grid-column:1/-1}.financeAdvKpis{grid-template-columns:1fr 1fr}.financeAdvGrid{grid-template-columns:1fr}.financeCatRow{grid-template-columns:88px 1fr 76px;font-size:11px}.financeAdvCard{padding:10px}}</style></head>
 <body>
 <div class="bootError" id="bootError"><div class="bootErrorBox"><h2>EDIFIQ</h2><p id="bootErrorText">O aplicativo encontrou um erro ao iniciar.</p><button onclick="location.reload()">Recarregar</button></div></div>
 <section class="auth" id="auth">
@@ -483,10 +483,10 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 <div id="checkList"></div>
 </section>
 <section class="page" id="financeiro">
-<div class="pageTitle"><h1>Financeiro</h1><button class="btn gold" onclick="openFin()">＋ Lançamento</button></div>
-<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select></div>
-<div class="grid kpis"><div class="kpi"><small>Entradas</small><strong class="green" id="finEnt">R$ 0,00</strong></div><div class="kpi"><small>Despesas</small><strong class="red" id="finDesp">R$ 0,00</strong></div><div class="kpi"><small>Resultado</small><strong class="gold" id="finRes">R$ 0,00</strong></div><div class="kpi"><small>Saldo a receber</small><strong class="gold" id="finReceber">R$ 0,00</strong></div></div>
-<div class="card"><h2>Resumo por obra</h2><div id="obraFinanceResumo"></div></div><div id="finList"></div>
+<div class="pageTitle"><div><h1>💰 Financeiro Avançado</h1><p class="sub">Fluxo de caixa, custos, lucro, margem e resultado por obra.</p></div><button class="btn gold" onclick="openFin()">＋ Lançamento</button></div>
+<div class="financeAdvFilters"><label>Obra<select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select></label><label>Tipo<select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select></label><label>De<input id="finInicio" type="date" onchange="renderFinance()"></label><label>Até<input id="finFim" type="date" onchange="renderFinance()"></label></div>
+<div class="grid kpis financeAdvKpis"><div class="kpi"><small>Valor contratado</small><strong id="finContrato">R$ 0,00</strong></div><div class="kpi"><small>Recebido</small><strong class="green" id="finEnt">R$ 0,00</strong></div><div class="kpi"><small>Despesas</small><strong class="red" id="finDesp">R$ 0,00</strong></div><div class="kpi"><small>Resultado / lucro</small><strong class="gold" id="finRes">R$ 0,00</strong></div><div class="kpi"><small>Margem de lucro</small><strong id="finMargem">0,0%</strong></div><div class="kpi"><small>Saldo a receber</small><strong class="gold" id="finReceber">R$ 0,00</strong></div><div class="kpi"><small>Dias trabalhados</small><strong id="finDias">0</strong></div><div class="kpi"><small>Equipe envolvida</small><strong id="finEquipe">0</strong></div></div>
+<div class="financeAdvGrid"><div class="financeAdvCard"><h3>📊 Composição dos custos</h3><div id="finCategorias"></div></div><div class="financeAdvCard"><h3>💵 Fluxo de caixa por mês</h3><div id="finFluxo"></div></div><div class="financeAdvCard" style="grid-column:1/-1"><h3>🏗️ Resultado por obra</h3><div class="financeAdvTable" id="obraFinanceResumo"></div></div><div class="financeAdvCard" style="grid-column:1/-1"><h3>📋 Lançamentos financeiros</h3><div id="finList"></div></div></div>
 </section>
 <section class="page" id="fotos">
 <div class="pageTitle"><div><h1>Relatórios fotográficos</h1><p class="sub">Fotos organizadas por obra</p></div><button class="btn gold" onclick="openFoto()">＋ Foto</button></div>
@@ -3890,398 +3890,25 @@ renderAll();
 }
 
 function renderFinance(){
-
-const box=$("finList");
-
-if(!box)return;
-
-const obraFilter=
-$("finObraFilter")?.value||
-"all";
-
-const tipoFilter=
-$("finTipoFilter")?.value||
-"all";
-
-let entradas=
-D.pagamentos.map(
-x=>({...x,_tipo:"entrada"})
-);
-
-let despesas=
-D.gastos.map(
-x=>({...x,_tipo:"despesa"})
-);
-
-let items=[
-...entradas,
-...despesas
-];
-
-if(obraFilter!=="all"){
-
-items=items.filter(
-x=>String(x.obra_id)===
-String(obraFilter)
-);
-
+ const box=$("finList"); if(!box)return; const obraFilter=$("finObraFilter")?.value||"all", tipoFilter=$("finTipoFilter")?.value||"all", inicio=$("finInicio")?.value||"", fim=$("finFim")?.value||"";
+ const ok=x=>{const d=String(x.data||"");return(!inicio||d>=inicio)&&(!fim||d<=fim)};
+ const obras=D.obras.filter(o=>obraFilter==="all"||String(o.id)===String(obraFilter));
+ const ps=D.pagamentos.filter(x=>(obraFilter==="all"||String(x.obra_id)===String(obraFilter))&&ok(x)); const gs=D.gastos.filter(x=>(obraFilter==="all"||String(x.obra_id)===String(obraFilter))&&ok(x));
+ const contrato=obras.reduce((a,o)=>a+Number(o.valor||0),0), receita=ps.reduce((a,x)=>a+Number(x.valor||0),0), despesas=gs.reduce((a,x)=>a+Number(x.valor||0),0), resultado=receita-despesas, margem=contrato?resultado/contrato*100:0;
+ const receber=obras.reduce((a,o)=>a+Math.max(0,Number(o.valor||0)-D.pagamentos.filter(x=>String(x.obra_id)===String(o.id)).reduce((z,x)=>z+Number(x.valor||0),0)),0);
+ const dias=new Set(), equipe=new Set(); (D.diario||[]).filter(x=>(obraFilter==="all"||String(x.obra_id)===String(obraFilter))&&ok(x)).forEach(x=>{if(x.data)dias.add(x.data);(x.equipe||[]).forEach(id=>equipe.add(String(id)))}); (D.diarias||[]).filter(x=>(obraFilter==="all"||String(x.obra_id)===String(obraFilter))&&ok(x)&&!(x.falta||x.tipo==="falta")).forEach(x=>{if(x.data)dias.add(x.data);if(x.funcionario_id)equipe.add(String(x.funcionario_id))});
+ if($("finContrato"))$("finContrato").textContent=money(contrato); $("finEnt").textContent=money(receita);$("finDesp").textContent=money(despesas);$("finRes").textContent=money(resultado);$("finRes").className=resultado>=0?"gold":"red";$("finMargem").textContent=margem.toFixed(1)+"%";$("finMargem").className=margem>=0?"green":"red";$("finReceber").textContent=money(receber);$("finDias").textContent=dias.size;$("finEquipe").textContent=equipe.size;
+ const cats={Material:0,"Mão de obra":0,"Serviço terceirizado":0,Outros:0}; gs.forEach(x=>{const c=categoriaFinanceira(x);cats[c]!==undefined?cats[c]+=Number(x.valor||0):cats.Outros+=Number(x.valor||0)}); const cb=$("finCategorias");if(cb){const max=Math.max(...Object.values(cats),1);cb.innerHTML=Object.entries(cats).map(([n,v])=>`<div class="financeCatRow"><b>${esc(n)}</b><div><div class="financeBar"><i style="width:${Math.min(100,v/max*100)}%"></i></div></div><strong class="red">${money(v)}</strong></div>`).join("")}
+ const fluxo={};ps.forEach(x=>{const k=String(x.data||"").slice(0,7)||"Sem data";(fluxo[k]??={e:0,d:0}).e+=Number(x.valor||0)});gs.forEach(x=>{const k=String(x.data||"").slice(0,7)||"Sem data";(fluxo[k]??={e:0,d:0}).d+=Number(x.valor||0)});const fb=$("finFluxo");if(fb){const ks=Object.keys(fluxo).sort().slice(-12);fb.innerHTML=ks.length?ks.map(k=>{const z=fluxo[k],r=z.e-z.d,l=k==="Sem data"?k:k.slice(5)+"/"+k.slice(2,4);return `<div class="financeCashRow"><b>${esc(l)}</b><span><span class="financeCashPos">+${money(z.e)}</span> · <span class="financeCashNeg">−${money(z.d)}</span></span><strong class="${r>=0?"green":"red"}">${money(r)}</strong></div>`}).join(""):'<div class="empty">Nenhum movimento no período.</div>'}
+ renderObraFinance(obraFilter,inicio,fim);
+ let items=[...ps.map(x=>({...x,_tipo:"entrada"})),...gs.map(x=>({...x,_tipo:"despesa"}))];if(tipoFilter!=="all")items=items.filter(x=>x._tipo===tipoFilter);items.sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));if(!items.length){box.innerHTML='<div class="empty">Nenhum lançamento encontrado para os filtros selecionados.</div>';return}box.innerHTML=items.map(x=>{const o=D.obras.find(y=>String(y.id)===String(x.obra_id)),cat=x._tipo==="despesa"?categoriaFinanceira(x):"Receita";return `<div class="card"><div class="row"><div><b>${esc(x.descricao||"Lançamento")}</b><br><small>${esc(o?.nome||"Sem obra")} · ${esc(x.data||"")}</small></div><span class="badge ${x._tipo==="entrada"?"on":"off"}">${x._tipo==="entrada"?"Receita":"Despesa"}</span></div><div class="row" style="margin-top:8px"><small>Categoria: ${esc(cat)}${x.fornecedor?` · ${esc(x.fornecedor)}`:""}</small><strong class="${x._tipo==="entrada"?"green":"red"}">${x._tipo==="entrada"?"+":"−"}${money(x.valor)}</strong></div><div class="listActions"><button class="btn danger" onclick="removeRow('${x._tipo==="entrada"?"pagamentos":"gastos"}','${x.id}')">Excluir</button></div></div>`}).join("");
 }
 
-if(tipoFilter!=="all"){
-
-items=items.filter(
-x=>x._tipo===tipoFilter
-);
-
+function renderObraFinance(obraFilter="all",inicio="",fim=""){
+ const box=$("obraFinanceResumo");if(!box)return;const ok=x=>{const d=String(x.data||"");return(!inicio||d>=inicio)&&(!fim||d<=fim)};const obras=D.obras.filter(o=>obraFilter==="all"||String(o.id)===String(obraFilter));if(!obras.length){box.innerHTML='<div class="empty">Nenhuma obra encontrada.</div>';return}
+ box.innerHTML=`<table><thead><tr><th>Obra</th><th>Contrato</th><th>Recebido</th><th>Despesas</th><th>Resultado</th><th>Margem</th><th>Dias</th></tr></thead><tbody>${obras.map(o=>{const ps=D.pagamentos.filter(x=>String(x.obra_id)===String(o.id)&&ok(x)),gs=D.gastos.filter(x=>String(x.obra_id)===String(o.id)&&ok(x)),r=ps.reduce((a,x)=>a+Number(x.valor||0),0),d=gs.reduce((a,x)=>a+Number(x.valor||0),0),res=r-d,m=Number(o.valor||0)?res/Number(o.valor||0)*100:0,ds=new Set();(D.diario||[]).filter(x=>String(x.obra_id)===String(o.id)&&ok(x)).forEach(x=>x.data&&ds.add(x.data));(D.diarias||[]).filter(x=>String(x.obra_id)===String(o.id)&&ok(x)&&!(x.falta||x.tipo==="falta")).forEach(x=>x.data&&ds.add(x.data));return `<tr><td><b>${esc(o.nome)}</b></td><td>${money(o.valor)}</td><td class="green">${money(r)}</td><td class="red">${money(d)}</td><td class="${res>=0?"green":"red"}">${money(res)}</td><td class="${m>=0?"green":"red"}">${m.toFixed(1)}%</td><td>${ds.size}</td></tr>`}).join("")}</tbody></table>`;
 }
 
-const ent=
-D.pagamentos
-.filter(
-x=>obraFilter==="all"||
-String(x.obra_id)===
-String(obraFilter)
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const desp=
-D.gastos
-.filter(
-x=>obraFilter==="all"||
-String(x.obra_id)===
-String(obraFilter)
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-$("finEnt").textContent=
-money(ent);
-
-$("finDesp").textContent=
-money(desp);
-
-$("finRes").textContent=
-money(ent-desp);
-const receber=obraFilter==="all"
-?D.obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0)
-:obraFinanceData(obraFilter).saldoReceber;
-if($("finReceber"))$("finReceber").textContent=money(receber);
-
-renderObraFinance(obraFilter);
-
-if(!items.length){
-
-box.innerHTML=
-`<div class="empty">
-Nenhum lançamento encontrado.
-</div>`;
-
-return;
-
-}
-
-items.sort((a,b)=>
-String(b.data||"")
-.localeCompare(
-String(a.data||"")
-)
-);
-
-box.innerHTML=
-items.map(x=>{
-
-const obra=
-D.obras.find(
-o=>String(o.id)===
-String(x.obra_id)
-);
-
-const categoria=
-x._tipo==="despesa"
-?categoriaFinanceira(x)
-:"Receita";
-
-return`
-
-<div class="card">
-
-<div class="row">
-
-<div>
-
-<b>${esc(
-x.descricao||
-"Lançamento"
-)}</b>
-
-<br>
-
-<small>
-${esc(
-obra?.nome||
-"Sem obra"
-)}
-</small>
-
-</div>
-
-<span class="badge ${
-x._tipo==="entrada"
-?"on":"off"
-}">
-${
-x._tipo==="entrada"
-?"Receita"
-:"Despesa"
-}
-</span>
-
-</div>
-
-<div class="row"
-style="margin-top:10px">
-
-<span>${esc(
-x.data||""
-)}</span>
-
-<strong class="${
-x._tipo==="entrada"
-?"green":"red"
-}">
-${money(x.valor)}
-</strong>
-
-</div>
-
-<small>
-Categoria: ${esc(
-categoria
-)}
-</small>
-
-${
-x.fornecedor
-?`<br><small>${esc(
-x.fornecedor
-)}</small>`
-:""
-}
-
-<div class="listActions">
-
-<button
-class="btn danger"
-onclick="removeRow(
-'${
-x._tipo==="entrada"
-?"pagamentos"
-:"gastos"
-}',
-'${x.id}'
-)">
-Excluir
-</button>
-
-</div>
-
-</div>
-
-`;
-
-}).join("");
-
-}
-
-function renderObraFinance(obraFilter="all"){
-
-const box=
-$("obraFinanceResumo");
-
-if(!box)return;
-
-if(!D.obras.length){
-
-box.innerHTML=
-`<p class="sub">
-Nenhuma obra cadastrada.
-</p>`;
-
-return;
-}
-
-let obrasFinance=D.obras;
-if(obraFilter!=="all"){
-obrasFinance=obrasFinance.filter(o=>String(o.id)===String(obraFilter));
-}
-
-if(!obrasFinance.length){
-box.innerHTML=`<p class="sub">Nenhum dado financeiro para a obra selecionada.</p>`;
-return;
-}
-
-box.innerHTML=
-obrasFinance.map(o=>{
-
-const f=
-obraFinanceData(o.id);
-
-return`
-
-<div class="item">
-
-<div class="row">
-
-<div>
-
-<b>${esc(o.nome)}</b>
-
-<br>
-
-<small>
-Contrato:
-${money(f.contrato)}
-</small>
-
-</div>
-
-<strong class="${
-f.resultado>=0
-?"green":"red"
-}">
-${money(f.resultado)}
-</strong>
-
-</div>
-
-<div class="finance-line">
-<span>Receita</span>
-<b class="green">
-${money(f.receita)}
-</b>
-</div>
-
-<div class="finance-cat">
-<span>Material</span>
-<span>
-<b>${money(f.material)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.material,
-f.contrato
-)}
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>Mão de obra</span>
-<span>
-<b>${money(f.mao)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.mao,
-f.contrato
-)}
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>
-Serviço terceirizado
-</span>
-<span>
-<b>${money(
-f.terceirizado
-)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.terceirizado,
-f.contrato
-)}
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>
-Outras despesas
-</span>
-<span>
-<b>${money(f.outros)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.outros,
-f.contrato
-)}
-</span>
-</span>
-</div>
-
-<div class="finance-line"
-style="margin-top:8px">
-
-<span>
-Total despesas
-</span>
-
-<b class="red">
-${money(f.despesas)}
-</b>
-
-</div>
-
-<div class="finance-line">
-
-<span>
-Resultado / lucro
-</span>
-
-<b class="${
-f.resultado>=0
-?"green":"red"
-}">
-${money(f.resultado)}
-</b>
-
-</div>
-
-<div class="finance-line">
-<span>Margem de lucro</span>
-<b class="${f.margemLucro>=0?"green":"red"}">
-${Number(f.margemLucro||0).toFixed(2).replace(".",",")}%
-</b>
-</div>
-
-<div class="finance-line">
-
-<span>
-Saldo do contrato
-</span>
-
-<b class="gold">
-${money(f.saldoContrato)}
-</b>
-
-</div>
-
-</div>
-
-`;
-
-}).join("");
-
-}
 
 
 /* =========================================================
