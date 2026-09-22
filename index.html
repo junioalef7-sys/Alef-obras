@@ -7,6 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="EDIFIQ">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>EDIFIQ — Gestão de Obras</title>
 <meta name="edifiq-version" content="2026-09-20-index-final-v6">
@@ -273,6 +274,25 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 .homeQuick:active{transform:scale(.98);border-color:var(--gold);}
 @media(max-width:759px){.homeQuickGrid{gap:8px;margin:10px 0 12px}.homeQuick{min-height:94px;padding:11px;border-radius:13px}.homeQuick span{font-size:24px;margin-bottom:6px}.homeQuick b{font-size:14px}.homeQuick small{font-size:10px}}
 @media(min-width:760px){.homeQuickGrid{grid-template-columns:repeat(4,1fr)}}
+/* EDIFIQ — CORREÇÃO FINAL PARA APP ADICIONADO À TELA DE INÍCIO
+   Evita que o cabeçalho/logo fique escondido atrás da barra de status
+   no iPhone/Android em modo instalado. */
+@media(max-width:759px){
+  .top{
+    padding-top:calc(8px + env(safe-area-inset-top, 0px)) !important;
+    padding-left:calc(10px + env(safe-area-inset-left, 0px)) !important;
+    padding-right:calc(10px + env(safe-area-inset-right, 0px)) !important;
+  }
+  .wrap{
+    padding-left:calc(9px + env(safe-area-inset-left, 0px));
+    padding-right:calc(9px + env(safe-area-inset-right, 0px));
+  }
+  .auth{
+    padding-top:calc(12px + env(safe-area-inset-top, 0px));
+    padding-left:calc(12px + env(safe-area-inset-left, 0px));
+    padding-right:calc(12px + env(safe-area-inset-right, 0px));
+  }
+}
 </style>
 
 <style>
@@ -2105,6 +2125,12 @@ contrato-despesas;
 
 const saldoReceber=Math.max(0,contrato-receita);
 
+/* Margem de lucro sobre o valor contratado.
+   Ex.: resultado de R$ 20.000 em contrato de R$ 100.000 = 20%. */
+const margemLucro=contrato>0
+  ? (resultado/contrato)*100
+  : 0;
+
 return{
 contrato,
 receita,
@@ -2114,6 +2140,7 @@ terceirizado,
 outros,
 despesas,
 resultado,
+margemLucro,
 saldoContrato,
 saldoReceber
 };
@@ -4122,6 +4149,13 @@ ${money(f.resultado)}
 </div>
 
 <div class="finance-line">
+<span>Margem de lucro</span>
+<b class="${f.margemLucro>=0?"green":"red"}">
+${Number(f.margemLucro||0).toFixed(2).replace(".",",")}%
+</b>
+</div>
+
+<div class="finance-line">
 
 <span>
 Saldo do contrato
@@ -5059,8 +5093,6 @@ adiantFunc.value=atual;
    DASHBOARD
    ========================================================= */
 
-fillHistoricoFuncionarioSelector();
-
 function renderDashboard(){
 
 const contratado=
@@ -5420,7 +5452,10 @@ function renderHistoricoDiarias(){
   }
   const ini=$('histInicio')?.value||'';
   const fim=$('histFim')?.value||'';
-  let items=D.diarias.filter(d=>String(d.funcionario_id)===String(funcId));
+  let items=D.diarias.filter(d=>{
+  const id=d.funcionario_id ?? d.funcId ?? d.funcionarioId ?? d.funcionario_id_fk;
+  return String(id)===String(funcId);
+});
   if(ini)items=items.filter(d=>String(d.data||'')>=ini);
   if(fim)items=items.filter(d=>String(d.data||'')<=fim);
   items.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
@@ -5455,9 +5490,21 @@ function renderHistoricoDiarias(){
 function fillHistoricoFuncionarioSelector(){
   const sel=$('histFunc');
   if(!sel)return;
+
   const current=sel.value||'';
-  sel.innerHTML='<option value="">Selecione o funcionário</option>'+D.funcionarios.map(f=>`<option value="${esc(f.id)}">${esc(f.nome||'Funcionário')}</option>`).join('');
-  if(current && D.funcionarios.some(f=>String(f.id)===String(current))) sel.value=current;
+
+  const funcionarios=[...D.funcionarios]
+    .filter(f=>f && f.id!==undefined && f.id!==null && String(f.id)!=="")
+    .sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||""),"pt-BR"));
+
+  sel.innerHTML='<option value="">Selecione o funcionário</option>'+
+    funcionarios.map(f=>
+      `<option value="${esc(String(f.id))}">${esc(f.nome||"Funcionário")}</option>`
+    ).join('');
+
+  if(current && funcionarios.some(f=>String(f.id)===String(current))){
+    sel.value=current;
+  }
 }
 
 /* =========================================================
@@ -5540,6 +5587,7 @@ renderFaltas();
 renderFotos();
 
 fillSelectors();
+fillHistoricoFuncionarioSelector();
 
 atualizarCategoriaFinanceira();
 
