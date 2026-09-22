@@ -293,6 +293,17 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
     padding-right:calc(12px + env(safe-area-inset-right, 0px));
   }
 }
+
+/* EDIFIQ — PASTA DE ANÁLISES FINANCEIRAS */
+.analysisFolderBtn{width:100%;border:1px solid #6d5629;background:linear-gradient(145deg,#1b2026,#0d1115);color:#fff;border-radius:16px;min-height:104px;padding:14px;display:flex;align-items:center;gap:13px;text-align:left;box-shadow:var(--shadow);margin:0 0 12px}
+.analysisFolderBtn:active{transform:scale(.99);border-color:var(--gold)}
+.analysisFolderIcon{width:52px;height:52px;flex:0 0 52px;border-radius:14px;display:grid;place-items:center;background:rgba(217,173,85,.12);border:1px solid #6d5629;font-size:28px}
+.analysisFolderBtn b{display:block;color:var(--gold2);font-size:17px}.analysisFolderBtn small{display:block;color:var(--muted);font-size:11px;margin-top:4px;line-height:1.35}
+.analysisGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.analysisCard{background:linear-gradient(145deg,#141a20,#0d1115);border:1px solid var(--line);border-radius:15px;padding:13px;min-width:0}.analysisCard h3{font-size:14px;margin:0 0 9px;color:var(--gold2)}
+.analysisMetric{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:12px}.analysisMetric:first-of-type{border-top:0}.analysisMetric strong{overflow-wrap:anywhere}
+.analysisBig{font-size:20px;font-weight:900;line-height:1.15;overflow-wrap:anywhere}.analysisSub{font-size:10px;color:var(--muted);margin-top:4px}.analysisBar{height:8px;background:#242a31;border-radius:99px;overflow:hidden;margin-top:7px}.analysisBar i{display:block;height:100%;background:linear-gradient(90deg,#a77a2d,#f0d58b);border-radius:inherit}
+.analysisList .item{margin:7px 0}.analysisList .item .row{align-items:flex-start}.analysisChart{height:170px;display:flex;align-items:flex-end;gap:5px;padding:10px 2px 0;border-top:1px solid var(--line)}.analysisChartBar{flex:1;min-width:4px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}.analysisChartBar i{width:100%;max-width:22px;min-height:3px;background:linear-gradient(180deg,#f0d58b,#a77a2d);border-radius:5px 5px 2px 2px}.analysisChartBar small{font-size:8px;color:var(--muted);white-space:nowrap}.analysisChartBar b{font-size:8px;color:#ddd;white-space:nowrap}.analysisWide{grid-column:1/-1}.analysisFilter{margin-bottom:10px}
+@media(max-width:759px){.analysisFolderBtn{min-height:88px;padding:11px;border-radius:13px}.analysisFolderIcon{width:45px;height:45px;flex-basis:45px;font-size:24px}.analysisFolderBtn b{font-size:14px}.analysisFolderBtn small{font-size:10px}.analysisGrid{grid-template-columns:1fr;gap:8px}.analysisWide{grid-column:auto}.analysisCard{padding:11px;border-radius:12px}.analysisBig{font-size:18px}}
 </style>
 
 <style>
@@ -350,7 +361,32 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
   <button class="homeQuick" onclick="go('checklist')"><span>☑️</span><b>Checklist das Obras</b><small>Selecione a obra e ajuste o progresso de cada etapa</small></button>
   <button class="homeQuick" onclick="go('relatorios')"><span>📊</span><b>Relatórios</b><small>Backup, importar e exportar PDF, Excel, CSV e JSON</small></button>
  </div>
+ <button class="analysisFolderBtn" onclick="go('analises')" aria-label="Abrir análises financeiras">
+  <span class="analysisFolderIcon">📈</span>
+  <span><b>Análises Financeiras</b><small>Resumo do negócio, custos, lucro, margem, recebimentos e desempenho das obras.</small></span>
+ </button>
  <div class="card"><div class="row"><h2>Obras recentes</h2><button class="btn gold" onclick="go('obras');openObra()">＋ Nova obra</button></div><div id="recentes"></div></div>
+</section>
+
+<section id="analises" class="page">
+ <div class="pageTitle"><div><h1>📈 Análises Financeiras</h1><p class="sub">Visão consolidada dos resultados e desempenho das obras.</p></div><button class="btn" onclick="go('dashboard')">← Início</button></div>
+ <div class="toolbar analysisFilter"><select id="analiseObraFilter" onchange="renderAnalises()"><option value="all">Todas as obras</option></select></div>
+ <div class="grid kpis">
+  <div class="kpi"><small>Valor total contratado</small><strong id="anContrato">R$ 0,00</strong></div>
+  <div class="kpi"><small>Receita recebida</small><strong class="green" id="anReceita">R$ 0,00</strong></div>
+  <div class="kpi"><small>Custos totais</small><strong class="red" id="anCustos">R$ 0,00</strong></div>
+  <div class="kpi"><small>Lucro / resultado</small><strong class="gold" id="anLucro">R$ 0,00</strong></div>
+  <div class="kpi"><small>Margem de lucro</small><strong id="anMargem">0,0%</strong></div>
+  <div class="kpi"><small>Saldo a receber</small><strong class="gold" id="anReceber">R$ 0,00</strong></div>
+ </div>
+ <div class="analysisGrid">
+  <div class="analysisCard"><h3>💰 Saúde financeira</h3><div class="analysisBig" id="anSaude">Sem dados</div><div class="analysisSub">Resultado em relação ao valor contratado</div><div class="analysisBar"><i id="anSaudeBar" style="width:0%"></i></div></div>
+  <div class="analysisCard"><h3>🧱 Composição dos custos</h3><div id="anCustosCats"></div></div>
+  <div class="analysisCard analysisWide"><h3>📥 Evolução dos pagamentos recebidos</h3><div id="anChart" class="analysisChart"><div class="empty" style="width:100%;margin:0">Nenhum pagamento registrado.</div></div></div>
+  <div class="analysisCard"><h3>🏆 Top 5 obras por resultado</h3><div id="anTopMais" class="analysisList"></div></div>
+  <div class="analysisCard"><h3>📉 Obras com menor resultado</h3><div id="anTopMenos" class="analysisList"></div></div>
+  <div class="analysisCard analysisWide"><h3>🏗️ Obras em andamento — progresso do checklist</h3><div id="anObrasProgresso" class="analysisList"></div></div>
+ </div>
 </section>
 
 <section id="obras" class="page">
@@ -5024,6 +5060,13 @@ func.value=atual;
 
 }
 
+const analiseFilter=$("analiseObraFilter");
+if(analiseFilter){
+  const atual=analiseFilter.value;
+  analiseFilter.innerHTML=`<option value="all">Todas as obras</option>${D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join("")}`;
+  if(atual)analiseFilter.value=atual;
+}
+
 const filter=
 $("finObraFilter");
 
@@ -5568,9 +5611,55 @@ async function importRelatorioData(event){
    RENDER
    ========================================================= */
 
+
+function renderAnalises(){
+  const obraFilter=$("analiseObraFilter")?.value||"all";
+  let obras=D.obras.slice();
+  if(obraFilter!=="all") obras=obras.filter(o=>String(o.id)===String(obraFilter));
+  const contrato=obras.reduce((a,o)=>a+Number(o.valor||0),0);
+  const receita=obras.reduce((a,o)=>a+obraFinanceData(o.id).receita,0);
+  const custos=obras.reduce((a,o)=>a+obraFinanceData(o.id).despesas,0);
+  const lucro=receita-custos, margem=contrato>0?(lucro/contrato)*100:0;
+  const receber=obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0);
+  if($("anContrato"))$("anContrato").textContent=money(contrato);
+  if($("anReceita"))$("anReceita").textContent=money(receita);
+  if($("anCustos"))$("anCustos").textContent=money(custos);
+  if($("anLucro")){$("anLucro").textContent=money(lucro);$("anLucro").className=lucro>=0?"gold":"red";}
+  if($("anMargem")){$("anMargem").textContent=margem.toFixed(1)+"%";$("anMargem").className=margem>=0?"green":"red";}
+  if($("anReceber"))$("anReceber").textContent=money(receber);
+
+  const saude=$("anSaude"),bar=$("anSaudeBar");
+  if(saude){saude.textContent=!obras.length?"Sem dados":lucro>0?"Resultado positivo":lucro<0?"Resultado negativo":"Resultado zerado";saude.className="analysisBig "+(lucro>0?"green":lucro<0?"red":"");}
+  if(bar)bar.style.width=Math.max(0,Math.min(100,margem))+"%";
+
+  const catTotals={Material:0,"Mão de obra":0,"Serviço terceirizado":0,Outros:0};
+  obras.forEach(o=>{const f=obraFinanceData(o.id);catTotals.Material+=f.material;catTotals["Mão de obra"]+=f.mao;catTotals["Serviço terceirizado"]+=f.terceirizado;catTotals.Outros+=f.outros;});
+  if($("anCustosCats"))$("anCustosCats").innerHTML=Object.entries(catTotals).map(([n,v])=>`<div class="analysisMetric"><span>${esc(n)}</span><strong class="${v>0?'red':''}">${money(v)}</strong></div>`).join("");
+
+  const ranking=obras.map(o=>({o,f:obraFinanceData(o.id)})).sort((a,b)=>b.f.resultado-a.f.resultado);
+  const rankHtml=arr=>!arr.length?'<div class="empty">Nenhuma obra cadastrada.</div>':arr.map((x,i)=>`<div class="item"><div class="row"><div><b>${i+1}. ${esc(x.o.nome)}</b><br><small>${esc(statusLabel(x.o.status))}</small></div><strong class="${x.f.resultado>=0?'green':'red'}">${money(x.f.resultado)}</strong></div><div class="analysisSub">Margem: ${Number(x.f.margemLucro||0).toFixed(1)}% · Receita: ${money(x.f.receita)}</div></div>`).join("");
+  if($("anTopMais"))$("anTopMais").innerHTML=rankHtml(ranking.slice(0,5));
+  if($("anTopMenos"))$("anTopMenos").innerHTML=rankHtml(ranking.slice(-5).reverse());
+
+  const andamento=obras.filter(o=>o.status==="em_andamento");
+  if($("anObrasProgresso"))$("anObrasProgresso").innerHTML=!andamento.length?'<div class="empty">Nenhuma obra em andamento.</div>':andamento.map(o=>{const p=obraProgress(o);return `<div class="item"><div class="row"><b>${esc(o.nome)}</b><strong>${Number(p||0).toFixed(0)}%</strong></div><div class="progress"><i style="width:${Math.max(0,Math.min(100,Number(p||0)))}%"></i></div></div>`}).join("");
+
+  const chart=$("anChart");
+  if(chart){
+    const pagamentos=D.pagamentos.filter(x=>obraFilter==="all"||String(x.obra_id)===String(obraFilter)).slice().sort((a,b)=>String(a.data||"").localeCompare(String(b.data||"")));
+    if(!pagamentos.length) chart.innerHTML='<div class="empty" style="width:100%;margin:0">Nenhum pagamento registrado.</div>';
+    else{
+      const byMonth={};pagamentos.forEach(x=>{const key=String(x.data||"").slice(0,7)||"Sem data";byMonth[key]=(byMonth[key]||0)+Number(x.valor||0);});
+      const vals=Object.values(byMonth),max=Math.max(...vals,1);
+      chart.innerHTML=Object.entries(byMonth).slice(-12).map(([mes,val])=>{const h=Math.max(4,val/max*125);const label=mes==="Sem data"?"—":mes.slice(5)+"/"+mes.slice(2,4);return `<div class="analysisChartBar" title="${esc(money(val))}"><b>${esc(money(val))}</b><i style="height:${h}px"></i><small>${esc(label)}</small></div>`}).join("");
+    }
+  }
+}
+
 function renderAll(){
 
 renderDashboard();
+renderAnalises();
 
 renderObras();
 
