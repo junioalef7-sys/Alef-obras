@@ -1785,6 +1785,9 @@ await loadTable(table);
 
 mergeLocal();
 
+// Remove somente checklists órfãos que ficaram no cache local.
+limparChecklistsOrfaos();
+
 fillSelectors();
 
 }
@@ -2008,6 +2011,184 @@ if(!confirm(
 ))
 return;
 
+/*
+  EXCLUSÃO SEGURA DE OBRA
+  A tabela checklist possui uma chave estrangeira
+  checklist.obra_id -> obras.id. Algumas instalações do
+  Supabase não estão com ON DELETE CASCADE configurado.
+  Por isso, quando uma obra é excluída, removemos primeiro
+  os registros dependentes conhecidos e só depois a obra.
+*/
+if(table==="obras"){
+
+  const obraId=String(id);
+
+  // Limpa o cache local dos registros vinculados à obra.
+  const dependentesLocal=[
+    "checklist",
+    "diarias",
+    "gastos",
+    "pagamentos",
+    "faltas",
+    "documentos"
+  ];
+
+  for(const t of dependentesLocal){
+    if(Array.isArray(D[t])){
+      D[t]=D[t].filter(x=>String(x.obra_id)!==obraId);
+    }
+  }
+
+  // Materiais e movimentações são locais em algumas versões do app.
+  if(Array.isArray(D.materiais)){
+    const materialIds=new Set(
+      D.materiais
+        .filter(x=>String(x.obra_id)===obraId)
+        .map(x=>String(x.id))
+    );
+
+    D.materiais=D.materiais.filter(
+      x=>String(x.obra_id)!==obraId
+    );
+
+    if(Array.isArray(D.material_movimentos)){
+      D.material_movimentos=D.material_movimentos.filter(
+        x=>!materialIds.has(String(x.material_id))
+      );
+    }
+  }
+
+  if(String(id).startsWith("local_")){
+
+    D.obras=D.obras.filter(
+      x=>String(x.id)!==obraId
+    );
+
+    saveLocalData();
+    renderAll();
+
+    toast(
+      "Obra e registros vinculados excluídos com sucesso."
+    );
+
+    return;
+  }
+
+  if(!sb||!user){
+
+    D.obras=D.obras.filter(
+      x=>String(x.id)!==obraId
+    );
+
+    saveLocalData();
+    renderAll();
+
+    toast("Obra excluída neste aparelho.");
+
+    return;
+  }
+
+  try{
+
+    /*
+      Exclui primeiro as linhas que podem possuir FK para obras.
+      O RLS do Supabase continua determinando quais registros
+      pertencem ao usuário logado.
+    */
+    const tabelasDependentes=[
+      "checklist",
+      "diarias",
+      "gastos",
+      "pagamentos",
+      "faltas",
+      "documentos"
+    ];
+
+    for(const t of tabelasDependentes){
+
+      try{
+
+        const{error}=await sb
+          .from(t)
+          .delete()
+          .eq("obra_id",id);
+
+        if(error){
+
+          console.warn(
+            "Não foi possível limpar dependência",
+            t,
+            error.message
+          );
+
+        }
+
+      }catch(e){
+
+        console.warn(
+          "Erro ao limpar dependência",
+          t,
+          e
+        );
+
+      }
+
+    }
+
+    // Agora exclui a obra depois de limpar o checklist e demais vínculos.
+    const{error}=await sb
+      .from("obras")
+      .delete()
+      .eq("id",id);
+
+    if(error){
+
+      try{
+        await loadCloud();
+        renderAll();
+      }catch(_){}
+
+      toast(
+        "Erro ao excluir a obra: "+
+        error.message
+      );
+
+      return;
+    }
+
+    D.obras=D.obras.filter(
+      x=>String(x.id)!==obraId
+    );
+
+    saveLocalData();
+    renderAll();
+
+    toast(
+      "Obra e registros vinculados excluídos com sucesso."
+    );
+
+    return;
+
+  }catch(e){
+
+    console.error(
+      "Erro ao excluir obra",
+      e
+    );
+
+    try{
+      await loadCloud();
+      renderAll();
+    }catch(_){}
+
+    toast(
+      "Não foi possível excluir a obra."
+    );
+
+    return;
+  }
+}
+
 if(String(id).startsWith("local_")){
 
 D[table]=D[table].filter(
@@ -2028,6 +2209,21 @@ return;
 }
 
 try{
+
+if(!sb||!user){
+
+  D[table]=D[table].filter(
+    x=>String(x.id)!==
+    String(id)
+  );
+
+  saveLocalData();
+  renderAll();
+
+  toast("Excluído neste aparelho.");
+
+  return;
+}
 
 const{error}=await sb
 .from(table)
@@ -2059,6 +2255,12 @@ toast(
 );
 
 }catch(e){
+
+console.error(
+"Erro ao excluir",
+table,
+e
+);
 
 toast(
 "Erro ao excluir."
@@ -4448,6 +4650,32 @@ function deleteFalta(id){
 /* =========================================================
    CHECKLIST
    ========================================================= */
+
+/*
+  Limpa somente checklists órfãos do cache local.
+  Não remove nenhum checklist que ainda esteja ligado a uma obra.
+*/
+function limparChecklistsOrfaos(){
+
+  if(!Array.isArray(D.checklist)||
+     !Array.isArray(D.obras))
+    return;
+
+  const ids=new Set(
+    D.obras.map(o=>String(o.id))
+  );
+
+  const antes=D.checklist.length;
+
+  D.checklist=D.checklist.filter(
+    x=>ids.has(String(x.obra_id))
+  );
+
+  if(D.checklist.length!==antes){
+    saveLocalData();
+  }
+
+}
 
 function openCheck(){
 
