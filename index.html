@@ -581,7 +581,7 @@ table{width:100%;border-collapse:collapse}
 </div>
 </section>
 <section class="hidden" id="app">
-<header class="top"><div class="brand"><div class="logo">Q</div><div><b>EDIFIQ</b><small>Gestão de Obras</small></div></div></header>
+<header class="top"><div class="brand"><div class="logo">Q</div><div><b style="font-size:24px;line-height:1">EDIFIQ</b></div></div></header>
 <nav class="nav">
 <button data-p="dashboard" onclick="go('dashboard')"><span>⌂</span><b>Início</b></button>
 <button data-p="obras" onclick="go('obras')"><span>🏗️</span><b>Obras</b></button>
@@ -607,7 +607,7 @@ table{width:100%;border-collapse:collapse}
   <div class="homeProHeader">
     <div class="homeProBrand">
       <div class="homeProLogo">Q</div>
-      <div><b>EDIFIQ</b><small>Construção Civil</small></div>
+      <div><b style="font-size:24px">EDIFIQ</b></div>
     </div>
     <div class="homeProStatus"><span></span> Operação ativa</div>
   </div>
@@ -793,6 +793,15 @@ table{width:100%;border-collapse:collapse}
 </section>
 <section class="page" id="relatorios">
 <div class="pageTitle"><div><h1>Relatórios</h1><p class="sub">Backup, importar e exportar os dados do EDIFIQ.</p></div></div>
+<div class="card dangerDataCard"><h2>🗑️ Apagar dados</h2><p class="sub">Escolha o setor que deseja apagar. O aplicativo pedirá confirmação antes de excluir.</p>
+<div class="reportGrid dataDeleteGrid">
+<button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar dados da Equipe</b><small>Funcionários, diárias, faltas e registros da equipe.</small></button>
+<button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar dados das Obras</b><small>Obras e registros vinculados às obras.</small></button>
+<button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar dados do Financeiro</b><small>Receitas, despesas e pagamentos.</small></button>
+<button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar TODOS os dados</b><small>Apaga todos os dados do aplicativo, mantendo apenas o acesso à conta.</small></button>
+</div>
+<div class="note dangerNote">⚠️ Esta ação não pode ser desfeita. Faça um backup antes de apagar os dados.</div>
+</div>
 <div class="card"><h2>Backup e importação</h2>
 <div class="listActions">
 <button class="btn gold" onclick="exportFull()">💾 Fazer backup completo</button>
@@ -6794,6 +6803,15 @@ function relatorioDiario(){
 .docUploadBox{border:1px dashed #a17d31;border-radius:14px;padding:14px;background:linear-gradient(145deg,#11161b,#0b0f13)}.docUploadBox input[type=file]{display:block;width:100%;min-height:48px;padding:10px;border:1px solid #b78a2e;border-radius:12px;background:#151b21;color:#fff;font-size:13px;cursor:pointer;box-sizing:border-box}.docPickButton{display:flex;align-items:center;justify-content:center;min-height:48px;border:1px solid #b78a2e;border-radius:12px;background:linear-gradient(135deg,#c99a38,#8d6720);color:#fff;font-weight:800;font-size:13px;cursor:pointer;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.22)}.docPickButton:active{transform:scale(.98)}.docFileStatus{margin-top:8px;padding:10px;border-radius:9px;background:#151b21;color:var(--muted);font-size:11px;overflow-wrap:anywhere}
 .materialQuick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:12px}.materialQuick .card{margin:0}
 @media(max-width:759px){.homeMainActions{grid-template-columns:repeat(2,minmax(0,1fr))}.homeAction{min-height:100px;padding:12px}.homeWelcome h2{font-size:19px}.homeTools{grid-template-columns:1fr 1fr}.homeWelcome{padding:15px}.homeBrandMark{width:50px;height:50px;font-size:20px}}
+
+/* EDIFIQ — exclusão de dados por setor */
+.dangerDataCard{border-color:rgba(255,70,70,.38);background:linear-gradient(180deg,rgba(80,15,18,.22),rgba(18,20,25,.9));}
+.dataDeleteGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
+.dataDeleteGrid .btn{min-height:82px;text-align:left;border-color:rgba(255,85,85,.42);}
+.dataDeleteGrid .btn b{display:block;font-size:15px;margin-bottom:5px;}
+.dataDeleteGrid .btn small{display:block;line-height:1.35;opacity:.8;}
+.dangerNote{border-color:rgba(255,85,85,.32);background:rgba(120,20,25,.16);}
+@media(max-width:700px){.dataDeleteGrid{grid-template-columns:1fr;}.dataDeleteGrid .btn{min-height:70px;}}
 </style></head><body><h1>${titulo}</h1><small>Gerado em ${new Date().toLocaleString("pt-BR")}</small><p><b>Registros:</b> ${rows.length} · <b>Dias:</b> ${new Set(rows.map(r=>r.data)).size} · <b>Horas:</b> ${rows.reduce((a,r)=>a+Number(r.horas||0),0).toLocaleString("pt-BR")} h</p>${rows.map(r=>{const names=(r.equipe||[]).map(diarioFuncionarioNome).filter(Boolean);return `<div class="item"><h2>${esc(diarioObraNome(r.obra_id))}</h2><div class="meta">${esc(diarioFmtData(r.data))} · ${esc(r.clima||"Não informado")} · ${Number(r.horas||0).toLocaleString("pt-BR")} h</div><p><span class="tag">Equipe:</span> ${esc(names.join(" · ")||"Não informada")}</p>${r.atividades?`<p><span class="tag">Atividades:</span><br>${esc(r.atividades).replace(/\n/g,"<br>")}</p>`:""}${r.observacoes?`<p><span class="tag">Observações:</span><br>${esc(r.observacoes).replace(/\n/g,"<br>")}</p>`:""}</div>`}).join("")}<div class="foot">EDIFIQ — Gestão de Obras</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
 </body></html>`;
   const w=window.open("","_blank"); if(!w){toast("Permita pop-ups para gerar o relatório.");return;} w.document.write(html);w.document.close();setTimeout(()=>w.print(),350);
@@ -6960,6 +6978,75 @@ async function saveMaterialMov(e){
 }
 
 function deleteMaterial(id){const m=materialById(id);if(!m)return;if(!confirm(`Excluir o material "${m.nome}"? A compra também será retirada do Financeiro.`))return;const movIds=new Set(materialMovs(id).map(x=>String(x.id)));D.material_movimentos=D.material_movimentos.filter(x=>String(x.material_id)!==String(id));D.materiais=D.materiais.filter(x=>String(x.id)!==String(id));D.gastos=D.gastos.filter(x=>!(String(x.material_id)===String(id)||movIds.has(String(x.movimento_id))));saveMaterialMeta();saveLocalData();renderAll();toast('Material excluído.')}
+
+/* =========================================================
+   APAGAR DADOS POR SETOR
+   ========================================================= */
+async function clearDocumentoDB(){
+  try{
+    const db=await openDocumentoDB();
+    await new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,"readwrite");tx.objectStore(DOC_STORE).clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
+    db.close();
+  }catch(e){console.warn("Limpeza de documentos",e)}
+}
+
+async function apagarDadosSetor(setor){
+  const nomes={
+    equipe:'a equipe (funcionários, diárias, faltas e registros da equipe)',
+    obras:'as obras e todos os registros vinculados a elas',
+    financeiro:'os dados financeiros (receitas, despesas, pagamentos e adiantamentos)',
+    geral:'TODOS os dados do aplicativo'
+  };
+  const alvo=nomes[setor];
+  if(!alvo)return;
+  const confirma=prompt(`ATENÇÃO! Você está prestes a apagar ${alvo}.\n\nEsta ação NÃO pode ser desfeita.\n\nDigite APAGAR para confirmar:`);
+  if(String(confirma||'').trim().toUpperCase()!=='APAGAR'){
+    toast('Exclusão cancelada.');
+    return;
+  }
+  try{
+    if(setor==='equipe'){
+      const ids=D.funcionarios.map(x=>x.id).filter(Boolean);
+      D.funcionarios=[]; D.diarias=[]; D.faltas=[]; D.presencas=[];
+      try{localStorage.removeItem(FUNC_OBRA_KEY)}catch(_){ }
+      if(sb&&user){
+        for(const t of ['diarias','faltas','presencas']){try{await sb.from(t).delete().eq('user_id',user.id)}catch(_){} }
+        try{await sb.from('funcionarios').delete().eq('user_id',user.id)}catch(_){}
+      }
+      saveLocalData(); renderAll(); toast('Dados da equipe apagados.'); return;
+    }
+    if(setor==='obras'){
+      D.obras=[]; D.checklist=[]; D.diario=[]; D.documentos=[]; D.materiais=[]; D.material_movimentos=[];
+      if(sb&&user){
+        for(const t of ['checklist','diarias','gastos','pagamentos','faltas','presencas','diario','documentos']){try{await sb.from(t).delete().eq('user_id',user.id)}catch(_){} }
+        try{await sb.from('obras').delete().eq('user_id',user.id)}catch(_){}
+      }
+      try{localStorage.removeItem(SERVICE_KEY)}catch(_){ }
+      try{await clearPhotosDB()}catch(_){ }
+      saveLocalData(); renderAll(); toast('Dados das obras apagados.'); return;
+    }
+    if(setor==='financeiro'){
+      D.gastos=[]; D.pagamentos=[];
+      if(sb&&user){
+        for(const t of ['gastos','pagamentos']){try{await sb.from(t).delete().eq('user_id',user.id)}catch(_){} }
+      }
+      saveLocalData(); renderAll(); toast('Dados do financeiro apagados.'); return;
+    }
+    if(setor==='geral'){
+      D.obras=[]; D.funcionarios=[]; D.diarias=[]; D.gastos=[]; D.pagamentos=[]; D.checklist=[]; D.faltas=[]; D.presencas=[]; D.diario=[]; D.documentos=[]; D.materiais=[]; D.material_movimentos=[];
+      if(sb&&user){
+        for(const t of ['checklist','diarias','gastos','pagamentos','faltas','presencas','diario','documentos','materiais','material_movimentos','obras','funcionarios']){try{await sb.from(t).delete().eq('user_id',user.id)}catch(_){} }
+      }
+      try{localStorage.removeItem(LOCAL_KEY);localStorage.removeItem(FUNC_OBRA_KEY);localStorage.removeItem(ADV_KEY);localStorage.removeItem(SERVICE_KEY);localStorage.removeItem(MATERIAL_META_KEY);localStorage.removeItem(DOC_META_KEY)}catch(_){ }
+      try{await clearPhotosDB()}catch(_){ }
+      try{await clearDocumentoDB()}catch(_){ }
+      saveLocalData(); renderAll(); toast('Todos os dados foram apagados.'); return;
+    }
+  }catch(err){
+    console.error('Erro ao apagar dados:',err);
+    saveLocalData(); renderAll(); toast('Não foi possível concluir a exclusão.');
+  }
+}
 
 function renderAll(){
 
