@@ -343,6 +343,23 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 @media(max-width:390px){.homeMainActions{grid-template-columns:1fr 1fr}.homeAction{min-height:98px}.homeTools{grid-template-columns:1fr}.homeWelcomeTop{gap:9px}.homeBrandMark{width:50px;height:50px;flex-basis:50px}}
 
 .docUploadBox{border:1px dashed #8c6a2d;border-radius:14px;background:#0b1015;padding:4px;overflow:hidden}.docUploadBox input[type=file]{padding:10px;border:0;background:transparent;cursor:pointer}.docFileStatus{padding:10px 12px;font-size:12px;border-top:1px solid #252b33;min-height:38px;display:flex;align-items:center;overflow-wrap:anywhere}.materialCard{border-left:3px solid #8c6a2d}.materialActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.materialActions .btn{flex:1 1 130px}
+
+/* ===== FINANCEIRO PROFISSIONAL ===== */
+.financeToolbar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;align-items:end;margin:12px 0 16px}
+.financeToolbar label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted,#9aa3b2);min-width:0}
+.financeToolbar select,.financeToolbar input{width:100%;min-width:0}
+.financeKpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.financeKpis .kpi strong{font-size:clamp(18px,2vw,26px)}
+.financeGridTop{display:grid;grid-template-columns:1.35fr .85fr;gap:14px;margin:14px 0}
+.financeOverview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.financeOverviewBox{padding:13px;border:1px solid var(--line,#252a33);border-radius:14px;background:rgba(255,255,255,.02)}
+.financeOverviewBox small{display:block;color:var(--muted,#9aa3b2);margin-bottom:6px}.financeOverviewBox b{font-size:18px}
+.financeBar{margin:10px 0}.financeBarTop{display:flex;justify-content:space-between;gap:8px;font-size:13px}.financeBarTrack{height:8px;border-radius:99px;background:#222832;overflow:hidden;margin-top:6px}.financeBarFill{height:100%;border-radius:99px;background:var(--gold,#d7ad58)}
+.financeCatRow{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 0;border-bottom:1px solid var(--line,#252a33)}
+.financeCatRow:last-child{border-bottom:0}.financeCatRow small{color:var(--muted,#9aa3b2)}
+.financePercent{font-size:11px;color:var(--muted,#9aa3b2)}
+@media(max-width:900px){.financeToolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.financeKpis{grid-template-columns:repeat(2,minmax(0,1fr))}.financeGridTop{grid-template-columns:1fr}}
+@media(max-width:560px){.financeToolbar{grid-template-columns:1fr}.financeKpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.financeKpis .kpi{min-width:0}.financeKpis .kpi strong{font-size:18px;overflow-wrap:anywhere}.financeOverview{grid-template-columns:1fr}.financeToolbar .btn{width:100%}}
 </style>
 <style>
 .homeQuickGridFinal{grid-template-columns:1fr 1fr!important;max-width:900px;margin:14px auto}
@@ -758,10 +775,31 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 <div class="card"><h2>Histórico de movimentações</h2><div id="materialMovList"></div></div>
 </section>
 <section class="page" id="financeiro">
-<div class="pageTitle"><div><h1>💰 Financeiro</h1><p class="sub">Lançamentos, despesas, receitas e controle por obra.</p></div><button class="btn gold" onclick="openFin()">＋ Lançamento</button></div>
-<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select></div>
-<div class="grid kpis"><div class="kpi"><small>Entradas</small><strong class="green" id="finEnt">R$ 0,00</strong></div><div class="kpi"><small>Despesas</small><strong class="red" id="finDesp">R$ 0,00</strong></div><div class="kpi"><small>Resultado</small><strong class="gold" id="finRes">R$ 0,00</strong></div><div class="kpi"><small>Saldo a receber</small><strong class="gold" id="finReceber">R$ 0,00</strong></div></div>
-<div class="card"><h2>Resumo por obra</h2><div id="obraFinanceResumo"></div></div><div id="finList"></div>
+<div class="pageTitle"><div><h1>💰 Financeiro</h1><p class="sub">Gestão financeira completa, integrada e separada por obra.</p></div><button class="btn gold" onclick="openFin()">＋ Lançamento</button></div>
+<div class="financeToolbar">
+  <label>Obra<select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select></label>
+  <label>Movimento<select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select></label>
+  <label>Categoria<select id="finCatFilter" onchange="renderFinance()"><option value="all">Todas as categorias</option><option>Material</option><option>Mão de obra</option><option>Serviço terceirizado</option><option>Adiantamento</option><option>Outros</option></select></label>
+  <label>De<input id="finDataIni" type="date" onchange="renderFinance()"></label>
+  <label>Até<input id="finDataFim" type="date" onchange="renderFinance()"></label>
+  <button class="btn" type="button" onclick="limparFiltrosFinanceiros()">Limpar filtros</button>
+</div>
+<div class="grid kpis financeKpis">
+  <div class="kpi"><small>Receitas no período</small><strong class="green" id="finEnt">R$ 0,00</strong></div>
+  <div class="kpi"><small>Despesas no período</small><strong class="red" id="finDesp">R$ 0,00</strong></div>
+  <div class="kpi"><small>Resultado líquido</small><strong class="gold" id="finRes">R$ 0,00</strong></div>
+  <div class="kpi"><small>Saldo a receber</small><strong class="gold" id="finReceber">R$ 0,00</strong></div>
+  <div class="kpi"><small>Valor contratado</small><strong id="finContratado">R$ 0,00</strong></div>
+  <div class="kpi"><small>Custo sobre contrato</small><strong id="finCustoPct">0,0%</strong></div>
+  <div class="kpi"><small>Margem de lucro</small><strong id="finMargem">0,0%</strong></div>
+  <div class="kpi"><small>Lançamentos</small><strong id="finLancamentos">0</strong></div>
+</div>
+<div class="financeGridTop">
+  <div class="card"><div class="row"><div><h2>Visão financeira</h2><small class="sub">Receitas, custos e resultado das obras selecionadas.</small></div></div><div id="finOverview"></div></div>
+  <div class="card"><div class="row"><div><h2>Despesas por categoria</h2><small class="sub">Distribuição dos custos registrados.</small></div></div><div id="finCategorias"></div></div>
+</div>
+<div class="card"><div class="row"><div><h2>Resumo por obra</h2><small class="sub">Cada valor permanece vinculado à respectiva obra.</small></div></div><div id="obraFinanceResumo"></div></div>
+<div class="card"><div class="row"><div><h2>Fluxo financeiro</h2><small class="sub">Movimentações mais recentes primeiro.</small></div><span class="badge" id="finPeriodoBadge">Todos os períodos</span></div><div id="finList"></div></div>
 </section>
 <section class="page" id="fotos">
 <div class="pageTitle"><div><h1>Relatórios fotográficos</h1><p class="sub">Fotos organizadas por obra</p></div><button class="btn gold" onclick="openFoto()">＋ Foto</button></div>
@@ -4389,213 +4427,97 @@ renderAll();
 
 }
 
+function limparFiltrosFinanceiros(){
+  if($('finObraFilter'))$('finObraFilter').value='all';
+  if($('finTipoFilter'))$('finTipoFilter').value='all';
+  if($('finCatFilter'))$('finCatFilter').value='all';
+  if($('finDataIni'))$('finDataIni').value='';
+  if($('finDataFim'))$('finDataFim').value='';
+  renderFinance();
+}
+
+function finInPeriod(x,ini,fim){
+  const d=String(x?.data||'');
+  if(ini && d<ini)return false;
+  if(fim && d>fim)return false;
+  return true;
+}
+
 function renderFinance(){
+  const box=$('finList');
+  if(!box)return;
+  const obraFilter=$('finObraFilter')?.value||'all';
+  const tipoFilter=$('finTipoFilter')?.value||'all';
+  const catFilter=$('finCatFilter')?.value||'all';
+  const ini=$('finDataIni')?.value||'';
+  const fim=$('finDataFim')?.value||'';
 
-const box=$("finList");
+  let entradas=D.pagamentos.map(x=>({...x,_tipo:'entrada'}));
+  let despesas=D.gastos.map(x=>({...x,_tipo:'despesa'}));
+  let items=[...entradas,...despesas].filter(x=>{
+    if(obraFilter!=='all' && String(x.obra_id)!==String(obraFilter))return false;
+    if(tipoFilter!=='all' && x._tipo!==tipoFilter)return false;
+    if(!finInPeriod(x,ini,fim))return false;
+    if(catFilter!=='all' && (x._tipo==='entrada'?'Receita':categoriaFinanceira(x))!==catFilter)return false;
+    return true;
+  });
 
-if(!box)return;
+  const receita=items.filter(x=>x._tipo==='entrada').reduce((a,x)=>a+Number(x.valor||0),0);
+  const despesa=items.filter(x=>x._tipo==='despesa').reduce((a,x)=>a+Number(x.valor||0),0);
+  const resultado=receita-despesa;
+  const obras=obraFilter==='all'?D.obras:D.obras.filter(o=>String(o.id)===String(obraFilter));
+  const contratado=obras.reduce((a,o)=>a+Number(o.valor||0),0);
+  const globalReceita=obras.reduce((a,o)=>a+obraFinanceData(o.id).receita,0);
+  const globalDespesa=obras.reduce((a,o)=>a+obraFinanceData(o.id).despesas,0);
+  const receber=obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0);
+  const custoPct=contratado>0?(globalDespesa/contratado)*100:0;
+  const margem=contratado>0?((globalReceita-globalDespesa)/contratado)*100:0;
 
-const obraFilter=
-$("finObraFilter")?.value||
-"all";
+  if($('finEnt'))$('finEnt').textContent=money(receita);
+  if($('finDesp'))$('finDesp').textContent=money(despesa);
+  if($('finRes')){$('finRes').textContent=money(resultado);$('finRes').className=resultado>=0?'gold':'red';}
+  if($('finReceber'))$('finReceber').textContent=money(receber);
+  if($('finContratado'))$('finContratado').textContent=money(contratado);
+  if($('finCustoPct'))$('finCustoPct').textContent=custoPct.toFixed(1).replace('.',',')+'%';
+  if($('finMargem')){$('finMargem').textContent=margem.toFixed(1).replace('.',',')+'%';$('finMargem').className=margem>=0?'green':'red';}
+  if($('finLancamentos'))$('finLancamentos').textContent=String(items.length);
 
-const tipoFilter=
-$("finTipoFilter")?.value||
-"all";
+  const periodo=(ini||fim)?`${ini?new Date(ini+'T12:00:00').toLocaleDateString('pt-BR'): 'início'} até ${fim?new Date(fim+'T12:00:00').toLocaleDateString('pt-BR'):'hoje'}`:'Todos os períodos';
+  if($('finPeriodoBadge'))$('finPeriodoBadge').textContent=periodo;
 
-let entradas=
-D.pagamentos.map(
-x=>({...x,_tipo:"entrada"})
-);
+  const over=$('finOverview');
+  if(over){
+    const recebGlobal=globalReceita;
+    const progresso=contratado>0?Math.min(100,(recebGlobal/contratado)*100):0;
+    const consumo=contratado>0?Math.min(100,(globalDespesa/contratado)*100):0;
+    over.innerHTML=`<div class="financeOverview">
+      <div class="financeOverviewBox"><small>Recebido acumulado</small><b class="green">${money(recebGlobal)}</b></div>
+      <div class="financeOverviewBox"><small>Despesas acumuladas</small><b class="red">${money(globalDespesa)}</b></div>
+      <div class="financeOverviewBox"><small>Resultado acumulado</small><b class="${recebGlobal-globalDespesa>=0?'green':'red'}">${money(recebGlobal-globalDespesa)}</b></div>
+    </div>
+    <div class="financeBar"><div class="financeBarTop"><span>Recebimento do contrato</span><b>${progresso.toFixed(1).replace('.',',')}%</b></div><div class="financeBarTrack"><div class="financeBarFill" style="width:${progresso}%"></div></div></div>
+    <div class="financeBar"><div class="financeBarTop"><span>Consumo do contrato por despesas</span><b>${consumo.toFixed(1).replace('.',',')}%</b></div><div class="financeBarTrack"><div class="financeBarFill" style="width:${consumo}%"></div></div></div>`;
+  }
 
-let despesas=
-D.gastos.map(
-x=>({...x,_tipo:"despesa"})
-);
+  const cats=['Material','Mão de obra','Serviço terceirizado','Adiantamento','Outros'];
+  const catBox=$('finCategorias');
+  if(catBox){
+    const totalCat=items.filter(x=>x._tipo==='despesa').reduce((a,x)=>a+Number(x.valor||0),0);
+    catBox.innerHTML=cats.map(c=>{
+      const val=items.filter(x=>x._tipo==='despesa' && categoriaFinanceira(x)===c).reduce((a,x)=>a+Number(x.valor||0),0);
+      const pct=totalCat>0?(val/totalCat)*100:0;
+      return `<div class="financeCatRow"><div><b>${c}</b><br><small>${pct.toFixed(1).replace('.',',')}% das despesas filtradas</small></div><strong>${money(val)}</strong></div>`;
+    }).join('');
+  }
 
-let items=[
-...entradas,
-...despesas
-];
-
-if(obraFilter!=="all"){
-
-items=items.filter(
-x=>String(x.obra_id)===
-String(obraFilter)
-);
-
-}
-
-if(tipoFilter!=="all"){
-
-items=items.filter(
-x=>x._tipo===tipoFilter
-);
-
-}
-
-const ent=
-D.pagamentos
-.filter(
-x=>obraFilter==="all"||
-String(x.obra_id)===
-String(obraFilter)
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const desp=
-D.gastos
-.filter(
-x=>obraFilter==="all"||
-String(x.obra_id)===
-String(obraFilter)
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-$("finEnt").textContent=
-money(ent);
-
-$("finDesp").textContent=
-money(desp);
-
-$("finRes").textContent=
-money(ent-desp);
-const receber=obraFilter==="all"
-?D.obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0)
-:obraFinanceData(obraFilter).saldoReceber;
-if($("finReceber"))$("finReceber").textContent=money(receber);
-
-renderObraFinance(obraFilter);
-
-if(!items.length){
-
-box.innerHTML=
-`<div class="empty">
-Nenhum lançamento encontrado.
-</div>`;
-
-return;
-
-}
-
-items.sort((a,b)=>
-String(b.data||"")
-.localeCompare(
-String(a.data||"")
-)
-);
-
-box.innerHTML=
-items.map(x=>{
-
-const obra=
-D.obras.find(
-o=>String(o.id)===
-String(x.obra_id)
-);
-
-const categoria=
-x._tipo==="despesa"
-?categoriaFinanceira(x)
-:"Receita";
-
-return`
-
-<div class="card">
-
-<div class="row">
-
-<div>
-
-<b>${esc(
-x.descricao||
-"Lançamento"
-)}</b>
-
-<br>
-
-<small>
-${esc(
-obra?.nome||
-"Sem obra"
-)}
-</small>
-
-</div>
-
-<span class="badge ${
-x._tipo==="entrada"
-?"on":"off"
-}">
-${
-x._tipo==="entrada"
-?"Receita"
-:"Despesa"
-}
-</span>
-
-</div>
-
-<div class="row"
-style="margin-top:10px">
-
-<span>${esc(
-x.data||""
-)}</span>
-
-<strong class="${
-x._tipo==="entrada"
-?"green":"red"
-}">
-${money(x.valor)}
-</strong>
-
-</div>
-
-<small>
-Categoria: ${esc(
-categoria
-)}
-</small>
-
-${
-x.fornecedor
-?`<br><small>${esc(
-x.fornecedor
-)}</small>`
-:""
-}
-
-<div class="listActions">
-
-<button
-class="btn danger"
-onclick="removeRow(
-'${
-x._tipo==="entrada"
-?"pagamentos"
-:"gastos"
-}',
-'${x.id}'
-)">
-Excluir
-</button>
-
-</div>
-
-</div>
-
-`;
-
-}).join("");
-
+  renderObraFinance(obraFilter);
+  items.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  if(!items.length){box.innerHTML=`<div class="empty">Nenhum lançamento encontrado para os filtros selecionados.</div>`;return;}
+  box.innerHTML=items.map(x=>{
+    const obra=D.obras.find(o=>String(o.id)===String(x.obra_id));
+    const categoria=x._tipo==='despesa'?categoriaFinanceira(x):'Receita';
+    return `<div class="card" style="margin-top:10px"><div class="row"><div style="min-width:0"><b>${esc(x.descricao||'Lançamento')}</b><br><small>${esc(obra?.nome||'Sem obra')} • ${esc(x.data||'')}</small></div><span class="badge ${x._tipo==='entrada'?'on':'off'}">${x._tipo==='entrada'?'Receita':categoria}</span></div><div class="row" style="margin-top:10px"><small>${x.fornecedor?esc(x.fornecedor):'Sem fornecedor'}</small><strong class="${x._tipo==='entrada'?'green':'red'}">${money(x.valor)}</strong></div>${x.observacao?`<small>${esc(x.observacao)}</small>`:''}<div class="listActions"><button class="btn danger" onclick="removeRow('${x._tipo==='entrada'?'pagamentos':'gastos'}','${x.id}')">Excluir</button></div></div>`;
+  }).join('');
 }
 
 function renderObraFinance(obraFilter="all"){
