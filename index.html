@@ -251,7 +251,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 .nav button.active{background:rgba(215,168,63,.10)}
 }
 .menuPasta{position:fixed;left:10px;right:10px;bottom:82px;z-index:80;background:rgba(16,19,24,.98);border:1px solid var(--line);border-radius:18px;padding:12px;box-shadow:0 18px 55px rgba(0,0,0,.55);display:none;backdrop-filter:blur(18px)}
-.menuPasta.open{display:block}.menuPastaHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.menuPastaHead strong{display:block;font-size:16px}.menuPastaHead small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.menuPastaGrid{display:grid;grid-template-columns:1fr;gap:10px}.menuPastaGrid button{border:1px solid var(--line);background:#0d1115;color:#fff;border-radius:14px;min-height:68px;padding:13px 14px;display:flex;align-items:center;justify-content:flex-start;gap:12px;text-align:left;width:100%}.menuPastaGrid button span{display:block;font-size:24px;line-height:1;margin:0;flex:0 0 30px;text-align:center}.menuPastaGrid button b{font-size:15px;letter-spacing:.2px}
+.menuPasta.open{display:block!important}.menuPastaHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.menuPastaHead strong{display:block;font-size:16px}.menuPastaHead small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.menuPastaGrid{display:grid;grid-template-columns:1fr;gap:10px}.menuPastaGrid button{border:1px solid var(--line);background:#0d1115;color:#fff;border-radius:14px;min-height:68px;padding:13px 14px;display:flex;align-items:center;justify-content:flex-start;gap:12px;text-align:left;width:100%}.menuPastaGrid button span{display:block;font-size:24px;line-height:1;margin:0;flex:0 0 30px;text-align:center}.menuPastaGrid button b{font-size:15px;letter-spacing:.2px}
 @media(min-width:760px){.menuPasta{left:auto;right:16px;bottom:auto;top:118px;width:360px}.menuPastaGrid{grid-template-columns:1fr}}
 
 /* EDIFIQ — pastas internas de Obras e Equipe */
@@ -576,6 +576,10 @@ table{width:100%;border-collapse:collapse}
   .modal .card{padding:9px;}
 }
 </style>
+
+<style>
+.homeWorksHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 12px}.homeWorksHead h2{margin:0;font-size:22px}.homeObrasList{display:grid;grid-template-columns:1fr;gap:14px}.homeObraCard{background:linear-gradient(145deg,#15181d,#0d1115);border:1px solid #303740;border-radius:18px;padding:16px;box-shadow:var(--shadow);cursor:pointer}.homeObraTop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.homeObraTitle{font-size:21px;font-weight:900;margin:0}.homeObraClient{font-size:12px;color:var(--muted);margin-top:4px}.homeObraStatus{padding:6px 9px;border-radius:999px;border:1px solid #4b3d22;color:var(--gold2);font-size:10px;font-weight:800;white-space:nowrap}.homeObraProgress{margin:14px 0 10px}.homeObraProgressLine{display:flex;justify-content:space-between;align-items:center;font-size:12px}.homeObraProgressLine b{font-size:20px;color:var(--gold2)}.homeObraBar{height:9px;background:#252b31;border-radius:99px;overflow:hidden;margin-top:7px}.homeObraBar i{display:block;height:100%;background:linear-gradient(90deg,#9b7427,#e4bd59);border-radius:99px}.homeObraStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.homeObraStat{background:#0a0d10;border:1px solid var(--line);border-radius:12px;padding:10px}.homeObraStat small{display:block;font-size:10px;color:var(--muted)}.homeObraStat b{display:block;font-size:15px;margin-top:4px;overflow-wrap:anywhere}.homeObraFoot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;color:var(--muted);font-size:11px}.homeObraFoot .openLink{color:var(--gold2);font-weight:800}.homeEmpty{border:1px dashed #39414a;border-radius:16px;padding:34px 20px;text-align:center;color:var(--muted)}.financeIntegrated{margin-top:12px}.financeIntegrated .analysisCard{min-height:0}@media(max-width:700px){.homeWorksHead{align-items:flex-start}.homeWorksHead h2{font-size:19px}.homeObraCard{padding:13px;border-radius:15px}.homeObraTitle{font-size:18px}.homeObraStats{grid-template-columns:1fr 1fr}.homeObraStat b{font-size:14px}.homeObraStatus{font-size:9px}}
+</style>
 </head>
 <body>
 <div class="bootError" id="bootError"><div class="bootErrorBox"><h2>EDIFIQ</h2><p id="bootErrorText">O aplicativo encontrou um erro ao iniciar.</p><button onclick="location.reload()">Recarregar</button></div></div>
@@ -598,72 +602,31 @@ table{width:100%;border-collapse:collapse}
 <nav class="nav">
 <button data-p="dashboard" onclick="go('dashboard')"><span>⌂</span><b>Início</b></button>
 <button data-p="obras" onclick="go('obras')"><span>🏗️</span><b>Obras</b></button>
-<button data-p="financeiro" onclick="go('financeiro')"><span>💰</span><b>Financeiro</b></button>
-<button data-p="funcionarios" onclick="go('funcionarios')"><span>👷</span><b>Equipe</b></button>
+<button type="button" onclick="toggleMenuPasta()"><span>☰</span><b>Menu</b></button>
 </nav>
-<div aria-hidden="true" class="menuPasta" id="menuPasta" style="display:none!important">
+<div aria-hidden="true" class="menuPasta" id="menuPasta">
 <div class="menuPastaHead"><div><strong>Menu</strong><small>Outros recursos do EDIFIQ</small></div><button class="x" onclick="toggleMenuPasta()" type="button">×</button></div>
 <div class="menuPastaGrid">
-<button onclick="goMenu('funcionarios')"><span>👷</span><b>Equipe</b></button>
-<button onclick="goMenu('financeiro')"><span>💰</span><b>Financeiro</b></button>
+<button onclick="goMenu('obras')"><span>🏗️</span><b>Obras</b></button>
+<button onclick="goMenu('funcionarios')"><span>👷</span><b>Equipe + Folha</b></button>
+<button onclick="goMenu('financeiro')"><span>💰</span><b>Financeiro completo</b></button>
 <button onclick="goMenu('diarias')"><span>📅</span><b>Diárias</b></button>
 <button onclick="goMenu('faltas')"><span>⚠️</span><b>Faltas</b></button>
 <button onclick="goMenu('checklist')"><span>☑️</span><b>Checklist</b></button>
-<button onclick="goMenu('materiais')"><span>🧱</span><b>Materiais</b></button>
-<button onclick="goMenu('relatorios')"><span>📊</span><b>Relatórios</b></button>
+<button onclick="goMenu('materiais')"><span>🧱</span><b>Materiais e estoque</b></button>
+<button onclick="goMenu('diario')"><span>📋</span><b>Diário de obra</b></button>
+<button onclick="goMenu('fotos')"><span>📷</span><b>Relatório fotográfico</b></button>
+<button onclick="goMenu('documentos')"><span>📄</span><b>Documentos</b></button>
+<button onclick="goMenu('resumoGeral')"><span>📊</span><b>Resumo geral</b></button>
+<button onclick="goMenu('relatorios')"><span>📑</span><b>Relatórios / Backup</b></button>
+<button onclick="goMenu('config')"><span>⚙️</span><b>Configurações</b></button>
 </div>
 </div>
 <main class="wrap">
 <section class="page active" id="dashboard">
-<div class="pageTitle"><div><h1>Início</h1><p class="sub">Central de gestão da EDIFIQ — Construção Civil</p></div><button class="btn" onclick="logout()">Sair</button></div>
-<div class="homePro">
-  <div class="homeProHeader">
-    <div class="homeProBrand">
-      <div class="homeProLogo">Q</div>
-      <div><b style="font-size:24px">EDIFIQ</b></div>
-    </div>
-    <div class="homeProStatus"><span></span> Operação ativa</div>
-  </div>
-
-  <div class="homeProTitle">
-    <div><h2>Visão geral</h2><p>Controle sua empresa, obras, equipe e financeiro.</p></div>
-  </div>
-
-  <div class="homeProKpis">
-    <div class="homeProKpi"><span class="homeProKpiIcon">🏗️</span><div><small>Obras</small><b id="kObras">0</b><em><span id="kObrasAndamento">0</span> em andamento</em></div></div>
-    <div class="homeProKpi"><span class="homeProKpiIcon">👷</span><div><small>Equipe ativa</small><b id="kFunc">0</b><em>funcionários</em></div></div>
-    <div class="homeProKpi"><span class="homeProKpiIcon">💰</span><div><small>Entradas</small><b class="green" id="kEntradas">R$ 0,00</b><em>recebido</em></div></div>
-    <div class="homeProKpi"><span class="homeProKpiIcon">📈</span><div><small>Resultado</small><b class="gold" id="kResultado">R$ 0,00</b><em>resultado atual</em></div></div>
-  </div>
-
-  <div class="homeProSection"><div><h3>Menu principal</h3><small>Acesse rapidamente as áreas do EDIFIQ</small></div></div>
-  <div class="edifiqHomeMenu">
-    <button class="edifiqHomeMenuCard featured" onclick="go('obras')"><span class="edifiqMenuIcon">🏗️</span><div><b>Obras</b><small>Projetos, contratos e andamento</small></div><i>›</i></button>
-    <button class="edifiqHomeMenuCard" onclick="go('funcionarios')"><span class="edifiqMenuIcon">👷</span><div><b>Equipe</b><small>Funcionários e folha de pagamento</small></div><i>›</i></button>
-    <button class="edifiqHomeMenuCard" onclick="go('financeiro')"><span class="edifiqMenuIcon">💰</span><div><b>Financeiro</b><small>Receitas, despesas e resultado</small></div><i>›</i></button>
-    <button class="edifiqHomeMenuCard" onclick="go('resumoGeral')"><span class="edifiqMenuIcon">📊</span><div><b>Resumo Geral</b><small>Visão consolidada das obras</small></div><i>›</i></button>
-  </div>
-
-  <div class="homeProSection"><div><h3>Mais recursos</h3><small>Ferramentas de gestão</small></div></div>
-  <div class="homeProTools">
-    <button onclick="go('checklist')"><span>☑️</span><b>Checklist</b><small>Etapas e progresso</small></button>
-    <button onclick="go('materiais')"><span>🧱</span><b>Materiais</b><small>Estoque e compras</small></button>
-    <button onclick="go('diario')"><span>📅</span><b>Diário de Obra</b><small>Registro diário</small></button>
-    <button onclick="go('fotos')"><span>📷</span><b>Fotos</b><small>Relatórios fotográficos</small></button>
-    <button onclick="go('documentos')"><span>📄</span><b>Documentos</b><small>Arquivos por obra</small></button>
-    <button onclick="go('diarias')"><span>💵</span><b>Diárias</b><small>Histórico e pagamentos</small></button>
-    <button onclick="go('faltas')"><span>⚠️</span><b>Faltas</b><small>Presenças e justificativas</small></button>
-    <button onclick="go('analises')"><span>📈</span><b>Análises</b><small>Margem e desempenho</small></button>
-    <button onclick="go('relatorios')"><span>📑</span><b>Relatórios</b><small>Backup e exportação</small></button>
-  </div>
-
-  <div class="homeProBottom">
-    <div class="homeProContract"><small>Valor contratado</small><b id="kContratado">R$ 0,00</b></div>
-    <div class="homeProContract"><small>Despesas</small><b class="red" id="kDespesas">R$ 0,00</b></div>
-  </div>
-
-  <div class="homeRecent card"><div class="row"><h2>Obras recentes</h2><button class="btn gold" onclick="go('obras');openObra()">＋ Nova obra</button></div><div id="recentes"></div></div>
-</div>
+<div class="pageTitle"><div><h1>Início</h1><p class="sub">Suas obras em um só lugar.</p></div><button class="btn" onclick="toggleMenuPasta()">☰ Menu</button></div>
+<div class="homeWorksHead"><div><h2>Obras</h2><p class="sub">Acompanhe contrato, progresso, entradas, despesas e saldo de cada obra.</p></div><button class="btn gold" onclick="go('obras');openObra()">＋ Nova obra</button></div>
+<div id="homeObrasList" class="homeObrasList"></div>
 </section>
 <section class="page" id="resumoGeral">
 <div class="pageTitle"><div><h1>📋 Resumo Geral</h1><p class="sub">Visão consolidada das obras e do desempenho da empresa.</p></div><button class="btn" onclick="go('dashboard')">← Início</button></div>
@@ -680,28 +643,7 @@ table{width:100%;border-collapse:collapse}
 </div>
 <div id="resumoGeralList"></div>
 </section>
-<section class="page" id="analises">
-<div class="pageTitle"><div><h1>📈 Análises Financeiras</h1><p class="sub">Visão consolidada dos resultados e desempenho das obras.</p></div><button class="btn" onclick="go('dashboard')">← Início</button></div>
-<div class="toolbar analysisFilter"><select id="analiseObraFilter" onchange="renderAnalises()"><option value="all">Todas as obras</option></select></div>
-<div class="grid kpis">
-<div class="kpi"><small>Obras em andamento</small><strong id="anObrasAndamento">0</strong></div>
-<div class="kpi"><small>Valor total contratado</small><strong id="anContrato">R$ 0,00</strong></div>
-<div class="kpi"><small>Receita recebida</small><strong class="green" id="anReceita">R$ 0,00</strong></div>
-<div class="kpi"><small>Custos totais</small><strong class="red" id="anCustos">R$ 0,00</strong></div>
-<div class="kpi"><small>Lucro / resultado</small><strong class="gold" id="anLucro">R$ 0,00</strong></div>
-<div class="kpi"><small>Margem de lucro</small><strong id="anMargem">0,0%</strong></div>
-<div class="kpi"><small>Saldo a receber</small><strong class="gold" id="anReceber">R$ 0,00</strong></div>
-</div>
-<div class="analysisGrid">
-<div class="analysisCard"><h3>💰 Saúde financeira</h3><div class="analysisBig" id="anSaude">Sem dados</div><div class="analysisSub">Resultado em relação ao valor contratado</div><div class="analysisBar"><i id="anSaudeBar" style="width:0%"></i></div></div>
-<div class="analysisCard"><h3>🧱 Composição dos custos</h3><div id="anCustosCats"></div></div>
-<div class="analysisCard analysisWide"><h3>📥 Evolução dos pagamentos recebidos</h3><div class="analysisChart" id="anChart"><div class="empty" style="width:100%;margin:0">Nenhum pagamento registrado.</div></div></div>
-<div class="analysisCard"><h3>🏆 Top 5 obras por resultado</h3><div class="analysisList" id="anTopMais"></div></div>
-<div class="analysisCard"><h3>📉 Obras com menor resultado</h3><div class="analysisList" id="anTopMenos"></div></div>
-<div class="analysisCard analysisWide"><h3>🏗️ Obras em andamento — progresso do checklist</h3><div class="analysisList" id="anObrasProgresso"></div></div>
-</div>
-</section>
-<section class="page" id="obras">
+<section class="page" id="analises"><div class="pageTitle"><div><h1>📈 Análises Financeiras</h1><p class="sub">As análises agora ficam integradas diretamente no Financeiro.</p></div><button class="btn gold" onclick="go('financeiro')">Abrir Financeiro</button></div></section><section class="page" id="obras">
 <div class="pageTitle"><h1>Obras</h1><button class="btn gold" onclick="openObra()">＋ Nova obra</button></div>
 <div class="toolbar"><input id="obraSearch" oninput="renderObras()" placeholder="Buscar obra ou cliente"/><button class="btn" onclick="go('documentos')">📄 Documentos da Obra</button></div>
 <div id="obrasList"></div>
@@ -789,10 +731,19 @@ table{width:100%;border-collapse:collapse}
 <div class="card"><h2>Histórico de movimentações</h2><div id="materialMovList"></div></div>
 </section>
 <section class="page" id="financeiro">
-<div class="pageTitle"><div><h1>💰 Financeiro</h1><p class="sub">Lançamentos, despesas, receitas e controle por obra.</p></div><div class="listActions"><button class="btn" onclick="go('analises')">📈 Financeiro Avançado</button><button class="btn gold" onclick="openFin()">＋ Lançamento</button></div></div>
-<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select></div>
+<div class="pageTitle"><div><h1>💰 Financeiro</h1><p class="sub">Controle completo de receitas, despesas, custos, resultado e desempenho por obra.</p></div><button class="btn gold" onclick="openFin()">＋ Lançamento</button></div>
+<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select><select id="finCategoriaFilter" onchange="renderFinance()"><option value="all">Todas as categorias</option><option value="Material">Material</option><option value="Mão de obra">Mão de obra</option><option value="Serviço terceirizado">Serviço terceirizado</option><option value="Adiantamento">Adiantamento</option><option value="Outros">Outros</option></select></div>
 <div class="grid kpis"><div class="kpi"><small>Entradas</small><strong class="green" id="finEnt">R$ 0,00</strong></div><div class="kpi"><small>Despesas</small><strong class="red" id="finDesp">R$ 0,00</strong></div><div class="kpi"><small>Resultado</small><strong class="gold" id="finRes">R$ 0,00</strong></div><div class="kpi"><small>Saldo a receber</small><strong class="gold" id="finReceber">R$ 0,00</strong></div></div>
-<div class="card" style="margin-top:10px"><div class="row"><div><h2>📈 Financeiro Avançado</h2><p class="sub">Margem de lucro, resultado, custos por categoria, saldo a receber, dias trabalhados e desempenho de cada obra.</p></div><button class="btn gold" onclick="go('analises')">Abrir análises</button></div></div><div class="card"><h2>Resumo por obra</h2><div id="obraFinanceResumo"></div></div><div id="finList"></div>
+<div class="analysisGrid financeIntegrated">
+<div class="analysisCard"><h3>💰 Saúde financeira</h3><div class="analysisBig" id="anSaude">Sem dados</div><div class="analysisSub">Resultado em relação ao valor contratado</div><div class="analysisBar"><i id="anSaudeBar" style="width:0%"></i></div></div>
+<div class="analysisCard"><h3>🧱 Custos por categoria</h3><div id="anCustosCats"></div></div>
+<div class="analysisCard analysisWide"><h3>📥 Evolução dos pagamentos recebidos</h3><div class="analysisChart" id="anChart"><div class="empty" style="width:100%;margin:0">Nenhum pagamento registrado.</div></div></div>
+<div class="analysisCard"><h3>📌 Indicadores</h3><div class="analysisMetric"><span>Obras em andamento</span><strong id="anObrasAndamento">0</strong></div><div class="analysisMetric"><span>Valor contratado</span><strong id="anContrato">R$ 0,00</strong></div><div class="analysisMetric"><span>Receita recebida</span><strong class="green" id="anReceita">R$ 0,00</strong></div><div class="analysisMetric"><span>Custos totais</span><strong class="red" id="anCustos">R$ 0,00</strong></div><div class="analysisMetric"><span>Lucro / resultado</span><strong class="gold" id="anLucro">R$ 0,00</strong></div><div class="analysisMetric"><span>Margem de lucro</span><strong id="anMargem">0,0%</strong></div><div class="analysisMetric"><span>Saldo a receber</span><strong class="gold" id="anReceber">R$ 0,00</strong></div></div>
+<div class="analysisCard"><h3>🏆 Obras por resultado</h3><div class="analysisList" id="anTopMais"></div></div>
+<div class="analysisCard"><h3>📉 Menor resultado</h3><div class="analysisList" id="anTopMenos"></div></div>
+<div class="analysisCard analysisWide"><h3>🏗️ Progresso das obras</h3><div class="analysisList" id="anObrasProgresso"></div></div>
+</div>
+<div class="card"><h2>Resumo por obra</h2><div id="obraFinanceResumo"></div></div><div id="finList"></div>
 </section>
 <section class="page" id="fotos">
 <div class="pageTitle"><div><h1>Relatórios fotográficos</h1><p class="sub">Fotos organizadas por obra</p></div><button class="btn gold" onclick="openFoto()">＋ Foto</button></div>
@@ -4938,20 +4889,27 @@ function advanceAmountForEmployeeInRange(funcId,ini,fim){
   return D.gastos.filter(g=>gastoCategoria(g)==="Adiantamento" && String(g.data||"")>=ini && String(g.data||"")<=fim && (normalize(g.fornecedor)===nome||normalize(g.descricao).includes(nome))).reduce((a,g)=>a+Number(g.valor||0),0);
 }
 function renderFechamentoFolha(){
-  const box=$("folhaDetalhes"); if(!box)return; const {ini,fim}=getFolhaRange(); const obra=$("folhaObra")?.value||"all";
-  if($("folhaInicio")&&$("folhaPeriodo")?.value!=="custom"){$("folhaInicio").value=ini;$('folhaFim').value=fim;}
-  const dias=D.diarias.filter(d=>String(d.data||"")>=ini&&String(d.data||"")<=fim&&(obra==="all"||String(d.obra_id)===String(obra)));
-  const empIds=[...new Set(dias.map(d=>String(d.funcionario_id)))];
-  const bruto=dias.reduce((a,d)=>a+diariaValor(d),0);
-  const adiant=empIds.reduce((a,id)=>a+advanceAmountForEmployeeInRange(id,ini,fim),0);
-  const pago=dias.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);
-  const pendente=dias.filter(d=>!diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
-  const liquido=Math.max(0,bruto-adiant);
-  $("folhaFuncionarios").textContent=empIds.length; $("folhaDiarias").textContent=dias.length; $("folhaBruto").textContent=money(bruto); $("folhaAdiant").textContent=money(adiant); $("folhaLiquido").textContent=money(liquido); $("folhaPendente").textContent=money(Math.max(0,pendente-adiant));
-  const rows=empIds.map(id=>{const f=D.funcionarios.find(x=>String(x.id)===id);const ds=dias.filter(d=>String(d.funcionario_id)===id);const b=ds.reduce((a,d)=>a+diariaValor(d),0);const adv=advanceAmountForEmployeeInRange(id,ini,fim);const liq=Math.max(0,b-adv);const pag=ds.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);return {f,ds,b,adv,liq,pag};}).sort((a,b)=>String(a.f?.nome||"").localeCompare(String(b.f?.nome||""),'pt-BR'));
-  if(!rows.length){box.innerHTML='<div class="empty">Nenhum lançamento de equipe no período selecionado.</div>';return;}
-  box.innerHTML=`<div class="tableWrap"><table class="folhaTable"><thead><tr><th>Funcionário</th><th>Obra</th><th>Diárias</th><th>Bruto</th><th>Adiant.</th><th>Líquido</th><th>Pago</th><th>Pendente</th></tr></thead><tbody>${rows.map(r=>{const obras=[...new Set(r.ds.map(d=>D.obras.find(o=>String(o.id)===String(d.obra_id))?.nome||'Sem obra'))].join(', ');return `<tr><td><b>${esc(r.f?.nome||'Funcionário')}</b><br><small>${esc(r.f?.funcao||'')}</small></td><td>${esc(obras)}</td><td>${r.ds.length}</td><td>${money(r.b)}</td><td>${money(r.adv)}</td><td><b class="green">${money(r.liq)}</b></td><td>${money(r.pag)}</td><td class="gold">${money(Math.max(0,r.liq-r.pag))}</td></tr>`}).join('')}</tbody></table></div>`;
+  try{
+    const box=$("folhaDetalhes"); if(!box) return;
+    fillSelectors();
+    const {ini,fim}=getFolhaRange();
+    const obra=$("folhaObra")?.value||"all";
+    if($("folhaInicio")&&$("folhaPeriodo")?.value!=="custom"){$("folhaInicio").value=ini;$("folhaFim").value=fim;}
+    const dias=D.diarias.filter(d=>{const data=String(d?.data||""); return data>=ini&&data<=fim&&(obra==="all"||String(d?.obra_id)===String(obra));});
+    const empIds=[...new Set(dias.map(d=>String(d.funcionario_id||"")))].filter(Boolean);
+    const bruto=dias.reduce((a,d)=>a+diariaValor(d),0);
+    const adiant=empIds.reduce((a,id)=>a+advanceAmountForEmployeeInRange(id,ini,fim),0);
+    const pago=dias.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);
+    const pendente=dias.filter(d=>!diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
+    const liquido=Math.max(0,bruto-adiant);
+    $("folhaFuncionarios").textContent=empIds.length; $("folhaDiarias").textContent=dias.length; $("folhaBruto").textContent=money(bruto); $("folhaAdiant").textContent=money(adiant); $("folhaLiquido").textContent=money(liquido); $("folhaPendente").textContent=money(Math.max(0,pendente-adiant));
+    const rows=empIds.map(id=>{const f=D.funcionarios.find(x=>String(x.id)===id);const ds=dias.filter(d=>String(d.funcionario_id)===id);const b=ds.reduce((a,d)=>a+diariaValor(d),0);const adv=advanceAmountForEmployeeInRange(id,ini,fim);const liq=Math.max(0,b-adv);const pag=ds.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);return {f,ds,b,adv,liq,pag};}).sort((a,b)=>String(a.f?.nome||"").localeCompare(String(b.f?.nome||""),'pt-BR'));
+    if(!rows.length){box.innerHTML='<div class="empty">Nenhum lançamento de equipe no período selecionado.</div>';return;}
+    box.innerHTML=`<div class="tableWrap"><table class="folhaTable"><thead><tr><th>Funcionário</th><th>Obra</th><th>Diárias</th><th>Bruto</th><th>Adiant.</th><th>Líquido</th><th>Pago</th><th>Pendente</th></tr></thead><tbody>${rows.map(r=>{const obras=[...new Set(r.ds.map(d=>D.obras.find(o=>String(o.id)===String(d.obra_id))?.nome||'Sem obra'))].join(', ');return `<tr><td><b>${esc(r.f?.nome||'Funcionário')}</b><br><small>${esc(r.f?.funcao||'')}</small></td><td>${esc(obras)}</td><td>${r.ds.length}</td><td>${money(r.b)}</td><td>${money(r.adv)}</td><td><b class="green">${money(r.liq)}</b></td><td>${money(r.pag)}</td><td class="gold">${money(Math.max(0,r.liq-r.pag))}</td></tr>`}).join('')}</tbody></table></div>`;
+    try{saveLocalData();}catch(e){}
+  }catch(err){ console.error('EDIFIQ folha',err); const box=$("folhaDetalhes"); if(box)box.innerHTML='<div class="empty">Não foi possível atualizar a folha agora. Tente novamente.</div>'; toast('Erro ao atualizar a folha de pagamento.'); }
 }
+
 function renderEquipeOverview(){
   const ativos=D.funcionarios.filter(f=>f.ativo!==false).length; if($("eqAtivos"))$("eqAtivos").textContent=ativos;
   const {ini,fim}=getPeriodDates(15); const ds=D.diarias.filter(d=>String(d.data||"")>=ini&&String(d.data||"")<=fim); const bruto=ds.reduce((a,d)=>a+diariaValor(d),0); const pago=ds.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0); const ids=[...new Set(ds.map(d=>String(d.funcionario_id)))]; const adv=ids.reduce((a,id)=>a+advanceAmountForEmployeeInRange(id,ini,fim),0); const pend=Math.max(0,bruto-pago-adv);
@@ -5921,7 +5879,20 @@ adiantFunc.value=atual;
    DASHBOARD
    ========================================================= */
 
+function renderHomeObras(){
+  const box=$("homeObrasList"); if(!box)return;
+  if(!D.obras.length){box.innerHTML='<div class="homeEmpty"><b>Nenhuma obra cadastrada.</b><div style="margin-top:7px">Cadastre sua primeira obra para acompanhar contrato, progresso e financeiro nesta tela.</div></div>';return;}
+  const obras=[...D.obras].sort((a,b)=>String(b.created_at||b.data_inicio||"").localeCompare(String(a.created_at||a.data_inicio||"")));
+  box.innerHTML=obras.map(o=>{
+    const f=obraFinanceData(o.id)||{};
+    const progresso=Number(o.progresso||o.progressoChecklist||0);
+    const status=statusLabel(o.status);
+    return `<article class="homeObraCard" onclick="go('obras')"><div class="homeObraTop"><div><h3 class="homeObraTitle">${esc(o.nome||'Obra sem nome')}</h3><div class="homeObraClient">${esc(o.cliente||o.endereco||'')}</div></div><span class="homeObraStatus">${esc(status)}</span></div><div class="homeObraProgress"><div class="homeObraProgressLine"><span>Progresso da obra</span><b>${progresso}%</b></div><div class="homeObraBar"><i style="width:${Math.max(0,Math.min(100,progresso))}%"></i></div></div><div class="homeObraStats"><div class="homeObraStat"><small>Valor do contrato</small><b>${money(Number(o.valor||0))}</b></div><div class="homeObraStat"><small>Entradas</small><b class="green">${money(Number(f.receita||0))}</b></div><div class="homeObraStat"><small>Despesas</small><b class="red">${money(Number(f.despesas||0))}</b></div><div class="homeObraStat"><small>Saldo</small><b class="gold">${money(Number(f.resultado||0))}</b></div></div><div class="homeObraFoot"><span>${esc(o.endereco||'')}</span><span class="openLink">Ver obra ›</span></div></article>`;
+  }).join('');
+}
+
 function renderDashboard(){
+ renderHomeObras();
  const contratado=D.obras.reduce((a,o)=>a+Number(o.valor||0),0);
  const entradas=D.pagamentos.reduce((a,x)=>a+Number(x.valor||0),0);
  const despesas=D.gastos.reduce((a,x)=>a+Number(x.valor||0),0);
