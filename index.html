@@ -770,7 +770,8 @@ table{width:100%;border-collapse:collapse}
   window.addEventListener('resize',fitKpiNumbers);
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitKpiNumbers);
   var obs=new MutationObserver(function(){fitKpiNumbers();});
-  obs.observe(document.body,{subtree:true,childList:true,characterData:true});
+  function startObserver(){ if(document.body) obs.observe(document.body,{subtree:true,childList:true,characterData:true}); }
+  if(document.body) startObserver(); else document.addEventListener("DOMContentLoaded",startObserver,{once:true});
   setTimeout(fitKpiNumbers,100);
   setTimeout(fitKpiNumbers,500);
 })();
@@ -6052,7 +6053,7 @@ f.observacao||""
       return true;}catch(e){console.error(e);return false;}
   };
 })();
-</script>
+<\/script>
 </body>
 </html>
 `);
@@ -6952,7 +6953,7 @@ function rcExportPDF(){
       return true;}catch(e){console.error(e);return false;}
   };
 })();
-</script>
+<\/script>
 </body></html>`);w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},400);
 }
 
@@ -6991,7 +6992,7 @@ function exportPDF(){
       return true;}catch(e){console.error(e);return false;}
   };
 })();
-</script>
+<\/script>
 </body></html>`);
   w.document.close();
   setTimeout(()=>{try{w.print()}catch(e){}},350);
@@ -7333,7 +7334,7 @@ function relatorioDiario(){
       return true;}catch(e){console.error(e);return false;}
   };
 })();
-</script>
+<\/script>
 </body></html>`;
   const w=window.open("","_blank"); if(!w){toast("Permita pop-ups para gerar o relatório.");return;} w.document.write(html);w.document.close();setTimeout(()=>w.print(),350);
 }
@@ -7660,39 +7661,33 @@ atualizarCategoriaFinanceira();
 window.addEventListener("error",e=>{console.error("EDIFIQ runtime",e.error||e.message);});
 window.addEventListener("unhandledrejection",e=>{console.error("EDIFIQ rejection",e.reason);});
 
-document.addEventListener("DOMContentLoaded",async()=>{
+document.addEventListener("DOMContentLoaded",()=>{
+  // Most important: show the login immediately. Nothing from IndexedDB or Supabase
+  // is allowed to block the first screen.
   try{
-    try{await openDocumentoDB();}catch(e){console.warn("Armazenamento de documentos indisponível",e)}
-    // 1) Recupera primeiro os dados que já estavam salvos neste aparelho.
-    const local=localData(); Object.keys(D).forEach(k=>{D[k]=Array.isArray(local[k])?local[k]:[]});
-    auditEDIFIQ(); saveSafeSnapshot("estado inicial carregado");
-    loadDocumentoMeta();
-    await loadMaterialMeta();
-    await limparFuncionariosSemIdentificacao();
-    renderAll();
-    if("indexedDB" in window){try{await openPhotoDB();}catch(e){console.warn("IndexedDB indisponível",e);}}
-
-    // 2) Em seguida tenta recuperar automaticamente a sessão e os dados da nuvem.
-    // Se o servidor estiver indisponível, os dados locais continuam preservados.
-    try{
-      if(await ensureSupabaseClient()){
-        const result=await Promise.race([sb.auth.getSession(),new Promise(resolve=>setTimeout(()=>resolve({data:{session:null},timeout:true}),5000))]);
-        if(result?.data?.session){
-          user=result.data.session.user;
-          $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
-          await loadCloud();
-          await limparFuncionariosSemIdentificacao();
-          saveLocalData();
-          renderAll();
-        }
-      }
-    }catch(cloudErr){console.warn("Recuperação da nuvem indisponível; mantendo dados locais.",cloudErr);}
-
+    $("auth")?.classList.remove("hidden");
+    $("app")?.classList.add("hidden");
     renderAll();
   }catch(e){
-    console.error("Falha de inicialização",e);
-    try{authMsg("O sistema iniciou com os dados salvos neste aparelho.");renderAll();}catch(_){}
+    console.error("EDIFIQ initial render",e);
+    try{authMsg("O aplicativo iniciou. Você pode tentar entrar novamente.");}catch(_){}
   }
+
+  // Restore local data in the background.
+  (async()=>{
+    try{
+      const local=localData();
+      Object.keys(D).forEach(k=>{D[k]=Array.isArray(local[k])?local[k]:[]});
+      auditEDIFIQ();
+      loadDocumentoMeta();
+      try{await loadMaterialMeta();}catch(e){console.warn("Materiais indisponíveis",e);}
+      try{await limparFuncionariosSemIdentificacao();}catch(e){console.warn("Limpeza da equipe",e);}
+      renderAll();
+      if("indexedDB" in window){try{await openPhotoDB();}catch(e){console.warn("IndexedDB indisponível",e);}}
+    }catch(e){
+      console.error("Falha ao carregar dados locais",e);
+    }
+  })();
 });
 
 /* =========================================================
