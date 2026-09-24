@@ -775,6 +775,16 @@ table{width:100%;border-collapse:collapse}
   setTimeout(fitKpiNumbers,500);
 })();
 </script>
+<style id="edifiq-login-final-fix">
+.auth{min-height:100dvh;display:grid;place-items:center;padding:clamp(16px,5vw,32px);box-sizing:border-box}
+.authBox{width:min(470px,92vw);padding:clamp(24px,6vw,34px);border-radius:24px;box-sizing:border-box}
+.authLogoSimple h1{font-size:clamp(34px,9vw,48px)!important;line-height:1;margin:0 0 22px!important;letter-spacing:clamp(4px,1.4vw,7px)!important}
+.authBox label{font-size:clamp(13px,3.5vw,15px);margin-top:14px}
+.authBox input{width:100%;box-sizing:border-box;min-height:50px!important;font-size:16px!important;padding:12px 14px!important;border-radius:12px!important}
+.authBtns{gap:10px;margin-top:18px}
+.authBtns .btn{min-height:48px!important;font-size:15px!important}
+@media(max-width:390px){.auth{padding:14px}.authBox{width:94vw;padding:22px 16px}.authLogoSimple h1{font-size:36px!important;margin-bottom:18px!important}.authBox input{min-height:48px!important}.authBtns .btn{min-height:46px!important}}
+</style>
 </head>
 <body>
 <div class="bootError" id="bootError"><div class="bootErrorBox"><h2>EDIFIQ</h2><p id="bootErrorText">O aplicativo encontrou um erro ao iniciar.</p><button onclick="location.reload()">Recarregar</button></div></div>
@@ -2132,38 +2142,44 @@ async function initSupabase(){
 }
 
 async function login(){
-
-if(!(await ensureSupabaseClient())){authMsg("Não foi possível carregar o servidor. Use o modo local.");return;}
-
-const email=
-$("email").value.trim();
-
-const password=
-$("password").value;
-
-if(!email||!password){
-
-authMsg(
-"Informe e-mail e senha."
-);
-
-return;
-
-}
-
-authMsg("Entrando...");
-
-const{error}=
-await sb.auth.signInWithPassword({
-email,
-password
-});
-
-if(error)
-authMsg(error.message);
-else
-authMsg("");
-
+  const email=$("email")?.value.trim()||"";
+  const password=$("password")?.value||"";
+  if(!email||!password){authMsg("Informe e-mail e senha.");return;}
+  const btn=document.querySelector('#auth .authBtns .primary');
+  if(btn){btn.disabled=true;btn.textContent="Entrando...";}
+  authMsg("Conectando ao EDIFIQ...");
+  try{
+    let session=null, loginError=null;
+    try{
+      if(await ensureSupabaseClient()){
+        const result=await sb.auth.signInWithPassword({email,password});
+        session=result?.data?.session||null; loginError=result?.error||null;
+      }
+    }catch(e){loginError=e;}
+    if(!session){
+      const msg=String(loginError?.message||"");
+      if(/invalid login credentials/i.test(msg)){authMsg("E-mail ou senha incorretos.");return;}
+      if(/email not confirmed/i.test(msg)){authMsg("Confirme seu e-mail antes de entrar.");return;}
+      try{
+        const response=await fetch(SUPA_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPA_KEY},body:JSON.stringify({email,password})});
+        const data=await response.json().catch(()=>({}));
+        if(!response.ok||!data.access_token||!data.user){
+          const raw=String(data.error_description||data.msg||data.message||"");
+          authMsg(/invalid login credentials/i.test(raw)?"E-mail ou senha incorretos.":(raw||"Não foi possível entrar agora. Verifique sua conexão e tente novamente."));return;
+        }
+        session={access_token:data.access_token,refresh_token:data.refresh_token,user:data.user};
+        try{if(sb?.auth?.setSession&&data.refresh_token)await sb.auth.setSession({access_token:data.access_token,refresh_token:data.refresh_token});}catch(e){}
+      }catch(e){console.error("EDIFIQ login REST",e);authMsg("Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.");return;}
+    }
+    if(!session?.user){authMsg("Login não concluído. Verifique o e-mail e a senha.");return;}
+    user=session.user; $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden"); authMsg("");
+    try{
+      if(sb?.auth?.setSession&&session.refresh_token)await sb.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token});
+      await loadCloud(); await limparFuncionariosSemIdentificacao(); saveLocalData();
+    }catch(e){console.warn("Sincronização após login indisponível",e);toast("Login realizado. Dados locais mantidos.");}
+    renderAll(); window.scrollTo({top:0,behavior:"instant"});
+  }catch(err){console.error("EDIFIQ login",err);authMsg("Não foi possível entrar agora. Verifique sua conexão e tente novamente.");}
+  finally{if(btn){btn.disabled=false;btn.textContent="Entrar";}}
 }
 
 async function signup(){
