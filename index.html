@@ -726,6 +726,146 @@ table{width:100%;border-collapse:collapse}
   .edifiqBrandDrawer small{font-size:11px!important;}
 }
 </style>
+<style id="edifiq-login-mobile-fix">
+/* EDIFIQ — LOGIN PROFISSIONAL PARA CELULAR */
+.auth{
+  min-height:100svh;
+  min-height:100dvh;
+  width:100%;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px max(16px, env(safe-area-inset-left, 0px)) calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.authBox{
+  width:min(560px, 100%);
+  box-sizing:border-box;
+  background:linear-gradient(180deg,#12171c 0%,#0f1318 100%);
+  border:1px solid #2b333c;
+  border-radius:28px;
+  padding:30px 30px 28px;
+  box-shadow:0 22px 60px rgba(0,0,0,.42);
+}
+.authLogoSimple{
+  margin:0 0 28px;
+  text-align:center;
+}
+.authLogoSimple h1{
+  color:#d9ad55;
+  font-size:44px !important;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:8px;
+  margin:0 !important;
+  text-shadow:0 2px 18px rgba(217,173,85,.12);
+}
+.authBox label{
+  display:block;
+  color:#aeb6c0;
+  font-size:16px;
+  font-weight:600;
+  margin:0 0 8px;
+}
+.authBox input{
+  width:100%;
+  min-height:58px;
+  box-sizing:border-box;
+  border-radius:14px;
+  border:1px solid #39414a;
+  background:#f7f9bd;
+  color:#090b0e;
+  font-size:18px;
+  padding:0 16px;
+  outline:none;
+  margin:0 0 18px;
+}
+.authBox input:focus{
+  border-color:#d9ad55;
+  box-shadow:0 0 0 3px rgba(217,173,85,.16);
+}
+.authBtns{
+  display:grid;
+  gap:11px;
+  margin-top:4px;
+}
+.authBtns .btn{
+  width:100%;
+  min-height:56px;
+  border-radius:14px;
+  font-size:16px;
+  font-weight:700;
+  padding:12px 16px;
+}
+.authBtns .btn.primary{
+  min-height:60px;
+  font-size:18px;
+}
+.authBtns .btn:disabled{
+  opacity:.7;
+  cursor:wait;
+}
+#authMsg{
+  min-height:22px;
+  margin:12px 0 0;
+  line-height:1.4;
+}
+
+@media (max-width:759px){
+  .auth{
+    align-items:center;
+    padding:14px 9px calc(14px + env(safe-area-inset-bottom,0px));
+  }
+  .authBox{
+    width:100%;
+    min-height:0;
+  }
+  .authBox{
+    width:100%;
+    max-width:560px;
+    border-radius:24px;
+    padding:26px 20px 22px;
+  }
+  .authLogoSimple{
+    margin-bottom:24px;
+  }
+  .authLogoSimple h1{
+    font-size:38px !important;
+    letter-spacing:7px;
+  }
+  .authBox label{
+    font-size:15px;
+    margin-bottom:7px;
+  }
+  .authBox input{
+    min-height:58px;
+    font-size:17px;
+    margin-bottom:16px;
+    border-radius:13px;
+  }
+  .authBtns{
+    gap:10px;
+  }
+  .authBtns .btn{
+    min-height:54px;
+    font-size:16px;
+  }
+  .authBtns .btn.primary{
+    min-height:58px;
+    font-size:18px;
+  }
+}
+
+@media (max-width:390px){
+  .auth{padding-left:9px;padding-right:9px;}
+  .authBox{padding:23px 16px 19px;border-radius:21px;}
+  .authLogoSimple{margin-bottom:21px;}
+  .authLogoSimple h1{font-size:34px !important;letter-spacing:6px;}
+  .authBox input{min-height:54px;font-size:16px;margin-bottom:14px;}
+  .authBtns .btn{min-height:50px;font-size:15px;}
+  .authBtns .btn.primary{min-height:55px;font-size:17px;}
+}
+</style>
 </head>
 <body>
 <div class="bootError" id="bootError"><div class="bootErrorBox"><h2>EDIFIQ</h2><p id="bootErrorText">O aplicativo encontrou um erro ao iniciar.</p><button onclick="location.reload()">Recarregar</button></div></div>
@@ -735,10 +875,10 @@ table{width:100%;border-collapse:collapse}
 <label>E-mail</label><input autocomplete="email" id="email" placeholder="seu@email.com" type="email"/>
 <label>Senha</label><input autocomplete="current-password" id="password" placeholder="••••••••" type="password"/>
 <div class="authBtns">
-<button class="btn primary" onclick="login()">Entrar</button>
-<button class="btn" onclick="signup()">Criar conta</button>
-<button class="btn" onclick="resetPassword()">Esqueci a senha</button>
-<button class="btn localMode" id="localModeBtn" onclick="enterLocalMode()">Entrar no modo local</button>
+<button class="btn primary" type="button" onclick="login()">Entrar</button>
+<button class="btn" type="button" onclick="signup()">Criar conta</button>
+<button class="btn" type="button" onclick="resetPassword()">Esqueci a senha</button>
+<button class="btn localMode" id="localModeBtn" type="button" onclick="enterLocalMode()">Entrar no modo local</button>
 </div>
 <p class="sub" id="authMsg" style="text-align:center"></p>
 </div>
@@ -2078,38 +2218,84 @@ async function initSupabase(){
 }
 
 async function login(){
+  const email=$("email")?.value.trim()||"";
+  const password=$("password")?.value||"";
+  if(!email||!password){ authMsg("Informe e-mail e senha."); return; }
 
-if(!(await ensureSupabaseClient())){authMsg("Não foi possível carregar o servidor. Use o modo local.");return;}
+  const btn=document.querySelector('#auth .authBtns .primary');
+  if(btn){btn.disabled=true;btn.textContent="Entrando...";}
+  authMsg("Conectando ao EDIFIQ...");
 
-const email=
-$("email").value.trim();
+  try{
+    let session=null, loginError=null;
 
-const password=
-$("password").value;
+    // Caminho principal: cliente oficial do Supabase.
+    try{
+      if(await ensureSupabaseClient()){
+        const result=await sb.auth.signInWithPassword({email,password});
+        session=result?.data?.session||null;
+        loginError=result?.error||null;
+      }
+    }catch(e){
+      loginError=e;
+    }
 
-if(!email||!password){
+    // Fallback: autenticação REST direta. Isso evita que uma falha no carregamento
+    // do SDK impeça o usuário de entrar no aplicativo.
+    if(!session){
+      const msg=String(loginError?.message||"");
+      const isCredentialError=/invalid login credentials|email not confirmed|invalid email/i.test(msg);
+      if(isCredentialError){
+        authMsg(msg.includes("Invalid login credentials")||/invalid login credentials/i.test(msg) ? "E-mail ou senha incorretos." : msg);
+        return;
+      }
+      try{
+        const response=await fetch(SUPA_URL+"/auth/v1/token?grant_type=password",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","apikey":SUPA_KEY},
+          body:JSON.stringify({email,password})
+        });
+        const data=await response.json().catch(()=>({}));
+        if(!response.ok || !data.access_token || !data.user){
+          const raw=String(data.error_description||data.msg||data.message||"");
+          authMsg(/invalid login credentials/i.test(raw) ? "E-mail ou senha incorretos." : (raw||"Não foi possível entrar agora. Verifique sua conexão e tente novamente."));
+          return;
+        }
+        session={access_token:data.access_token,refresh_token:data.refresh_token,user:data.user};
+        try{
+          await ensureSupabaseClient();
+          if(sb?.auth?.setSession && data.refresh_token) await sb.auth.setSession({access_token:data.access_token,refresh_token:data.refresh_token});
+        }catch(e){ console.warn("Sessão local do SDK não foi restaurada",e); }
+      }catch(e){
+        console.error("EDIFIQ login REST",e);
+        authMsg("Não foi possível entrar agora. Verifique sua conexão e tente novamente.");
+        return;
+      }
+    }
 
-authMsg(
-"Informe e-mail e senha."
-);
+    if(!session?.user){ authMsg("Login não concluído. Verifique o e-mail e a senha."); return; }
 
-return;
-
-}
-
-authMsg("Entrando...");
-
-const{error}=
-await sb.auth.signInWithPassword({
-email,
-password
-});
-
-if(error)
-authMsg(error.message);
-else
-authMsg("");
-
+    user=session.user;
+    $("auth")?.classList.add("hidden");
+    $("app")?.classList.remove("hidden");
+    authMsg("");
+    try{
+      if(sb?.auth?.setSession && session.refresh_token) await sb.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token});
+      await loadCloud();
+      await limparFuncionariosSemIdentificacao();
+      saveLocalData();
+    }catch(cloudErr){
+      console.warn("Login concluído; sincronização da nuvem falhou.",cloudErr);
+      toast("Login realizado. Os dados locais continuam disponíveis.");
+    }
+    renderAll();
+    window.scrollTo({top:0,behavior:"instant"});
+  }catch(err){
+    console.error("EDIFIQ login",err);
+    authMsg("Não foi possível entrar agora. Verifique sua conexão e tente novamente.");
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="Entrar";}
+  }
 }
 
 async function signup(){
@@ -5971,7 +6157,7 @@ f.observacao||""
       return true;}catch(e){console.error(e);return false;}
   };
 })();
-</script>
+<\/script>
 </body>
 </html>
 `);
@@ -6818,7 +7004,7 @@ function rcExportPDF(){
       return true;}catch(e){console.error(e);return false;}
   };
 })();
-</script>
+<\/script>
 </body></html>`);w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},400);
 }
 
@@ -6857,7 +7043,7 @@ function exportPDF(){
       return true;}catch(e){console.error(e);return false;}
   };
 })();
-</script>
+<\/script>
 </body></html>`);
   w.document.close();
   setTimeout(()=>{try{w.print()}catch(e){}},350);
@@ -7199,7 +7385,7 @@ function relatorioDiario(){
       return true;}catch(e){console.error(e);return false;}
   };
 })();
-</script>
+<\/script>
 </body></html>`;
   const w=window.open("","_blank"); if(!w){toast("Permita pop-ups para gerar o relatório.");return;} w.document.write(html);w.document.close();setTimeout(()=>w.print(),350);
 }
@@ -7561,6 +7747,16 @@ document.addEventListener("DOMContentLoaded",async()=>{
   }
 });
 
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter" && $("auth") && !$("auth").classList.contains("hidden")){
+    const active=document.activeElement;
+    if(active && (active.id==="email" || active.id==="password")){
+      e.preventDefault();
+      login();
+    }
+  }
+});
+
 /* =========================================================
    GLOBAIS
    ========================================================= */
@@ -7684,8 +7880,14 @@ window.renderDocumentos=renderDocumentos;
 window.visualizarDocumento=visualizarDocumento;
 window.baixarDocumento=baixarDocumento;
 window.deleteDocumento=deleteDocumento;
-document.addEventListener("DOMContentLoaded",restoreTheme);
-</script>
+document.addEventListener("DOMContentLoaded",()=>{
+  restoreTheme();
+  ["email","password"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();login();}});
+  });
+});
+<\/script>
 <div class="modal" id="diarioM"><div class="modalBox"><div class="modalHead"><h2 id="diarioTitle">Registro do dia</h2><button class="x" onclick="closeM('diarioM')">×</button></div>
 <form onsubmit="saveDiario(event)">
 <input id="diarioId" type="hidden"/>
