@@ -714,12 +714,28 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 <div id="obrasList"></div>
 </section>
 <section class="page" id="funcionarios">
-<div class="pageTitle"><h1>Funcionários</h1><button class="btn gold" onclick="openFunc()">＋ Funcionário</button></div>
+<div class="pageTitle"><div><h1>Equipe</h1><p class="sub">Gestão completa da equipe, diárias, folha, pagamentos, adiantamentos e faltas.</p></div><button class="btn gold" onclick="openFunc()">＋ Funcionário</button></div>
 <div class="toolbar"><select id="funcFilter" onchange="renderFuncs()"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select></div>
+<div class="grid kpis equipeKpis">
+<div class="kpi"><small>Equipe ativa</small><strong id="eqAtivos">0</strong></div>
+<div class="kpi"><small>Diárias pendentes</small><strong id="eqPendentes">R$ 0,00</strong></div>
+<div class="kpi"><small>Adiantamentos disponíveis</small><strong id="eqAdiantamentos">R$ 0,00</strong></div>
+<div class="kpi"><small>Folha líquida</small><strong class="gold" id="eqFolha">R$ 0,00</strong></div>
+</div>
+<div class="card">
+<h2>📋 Folha de Pagamento</h2>
+<p class="sub">Confira as diárias pendentes, adiantamentos e o valor líquido antes de processar os pagamentos.</p>
+<div class="listActions">
+<button class="btn gold" onclick="openFolhaPagamento()">📋 Abrir folha de pagamento</button>
+<button class="btn" onclick="openPagamentoEquipe()">💰 Processar pagamento</button>
+<button class="btn" onclick="openAdiantamento()">💳 Registrar adiantamento</button>
+<button class="btn" onclick="openFalta()">⚠️ Registrar falta</button>
+</div>
+</div>
 <div id="funcList"></div>
 </section>
 <section class="page" id="diarias">
-<div class="pageTitle"><div><h1>Diárias</h1><p class="sub">Registro, acompanhamento e histórico individual por funcionário.</p></div><button class="btn gold" onclick="openDia()">＋ Diária</button></div>
+<div class="pageTitle"><div><h1>📋 Folha de Pagamento</h1><p class="sub">Controle de diárias pendentes, período da folha e histórico individual por funcionário.</p></div><div class="listActions"><button class="btn gold" onclick="openPagamentoEquipe()">💰 Processar folha</button><button class="btn" onclick="openDia()">＋ Diária</button></div></div>
 <div class="toolbar"><select id="payPeriod" onchange="renderPayroll()"><option value="dia">Hoje</option><option selected="" value="semana">Semana</option><option value="quinzena">Últimos 14 dias</option><option value="mes">Mês</option><option value="todos">Todos</option></select></div>
 <div class="grid kpis"><div class="kpi"><small>Total pendente</small><strong id="payTotal">R$ 0,00</strong></div><div class="kpi"><small>Registros pendentes</small><strong id="payCount">0</strong></div></div>
 <div id="diaList"></div>
@@ -830,7 +846,8 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 </div>
 </div>
 <div class="card"><h2>Relatório para Cliente</h2><p class="sub">Crie um relatório profissional da obra, selecione as informações e envie ao cliente.</p><div class="listActions"><button class="btn gold" onclick="openRelatorioCliente()">📄 Abrir Relatório para Cliente</button></div></div>
-<div class="card"><h2>Equipe</h2><div class="listActions"><button class="btn gold" onclick="openPagamentoEquipe()">💰 Pagamento da equipe</button><button class="btn" onclick="openAdiantamento()">💳 Adiantamento</button><button class="btn" onclick="go('diarias')">📅 Histórico de diárias</button></div></div>
+<div class="card"><h2>👷 Equipe e Folha de Pagamento</h2><p class="sub">Acesso rápido para administrar funcionários, folha, diárias, adiantamentos e faltas.</p><div class="listActions"><button class="btn gold" onclick="go('funcionarios')">👷 Abrir Equipe</button><button class="btn gold" onclick="openFolhaPagamento()">📋 Folha de pagamento</button><button class="btn" onclick="openPagamentoEquipe()">💰 Processar pagamento</button><button class="btn" onclick="openAdiantamento()">💳 Adiantamento</button><button class="btn" onclick="go('faltas')">⚠️ Faltas</button></div></div>
+<div class="card"><h2>⚠️ Gerenciamento de dados</h2><p class="sub">Ações destrutivas protegidas por confirmação. Digite <b>APAGAR</b> para confirmar.</p><div class="listActions"><button class="btn danger" onclick="apagarDadosEquipeSeguro()">🗑️ Apagar dados da equipe</button><button class="btn danger" onclick="apagarDadosObraSeguro()">🗑️ Apagar dados de uma obra</button><button class="btn danger" onclick="apagarTodosDadosSeguro()">⚠️ Apagar todos os dados</button></div></div>
 </section>
 </main></section>
 <!-- MODAIS -->
@@ -6287,6 +6304,116 @@ async function importRelatorioData(event){
 
 
 /* =========================================================
+   FOLHA / EQUIPE — resumo e ações seguras
+   ========================================================= */
+function openFolhaPagamento(){
+  go("diarias");
+  setTimeout(()=>{
+    const el=$("payPeriod");
+    if(el) el.value="mes";
+    renderPayroll();
+  },50);
+}
+
+function renderEquipeResumo(){
+  const ativos=D.funcionarios.filter(f=>f.ativo!==false).length;
+  const pendentes=D.funcionarios.reduce((a,f)=>a+getPendingTotal(f.id),0);
+  const adiant=D.funcionarios.reduce((a,f)=>a+getEmployeeAdvances(f.id).reduce((s,x)=>s+Number(x.disponivel||0),0),0);
+  const folha=D.funcionarios.filter(f=>f.ativo!==false).reduce((a,f)=>a+calcFuncionarioPagamento(f.id).net,0);
+  if($("eqAtivos")) $("eqAtivos").textContent=ativos;
+  if($("eqPendentes")) $("eqPendentes").textContent=money(pendentes);
+  if($("eqAdiantamentos")) $("eqAdiantamentos").textContent=money(adiant);
+  if($("eqFolha")) $("eqFolha").textContent=money(folha);
+}
+
+async function apagarDadosEquipeSeguro(){
+  if(!D.funcionarios.length){toast("Não há dados de equipe para apagar.");return;}
+  if(!confirm("ATENÇÃO: isso apagará funcionários, diárias, faltas, adiantamentos e pagamentos/despesas de mão de obra relacionados à equipe. Deseja continuar?")) return;
+  const palavra=prompt('Para confirmar, digite exatamente APAGAR');
+  if(palavra!=="APAGAR"){toast("Exclusão cancelada. A palavra de confirmação não confere.");return;}
+
+  const funcIds=new Set(D.funcionarios.map(f=>String(f.id)));
+  const nomes=new Set(D.funcionarios.map(f=>normalize(f.nome)));
+  D.diarias=D.diarias.filter(d=>!funcIds.has(String(d.funcionario_id)));
+  D.faltas=D.faltas.filter(f=>!funcIds.has(String(f.funcionario_id)));
+  D.gastos=D.gastos.filter(g=>{
+    const cat=gastoCategoria(g);
+    const nome=normalize(g.fornecedor);
+    const desc=normalize(g.descricao);
+    return !(cat==="Mão de obra" || cat==="Adiantamento") || !(nomes.has(nome) || [...nomes].some(n=>n && desc.includes(n)));
+  });
+  D.funcionarios=[];
+  localStorage.removeItem(ADV_KEY);
+  localStorage.removeItem(FUNC_OBRA_KEY);
+
+  if(sb&&user){
+    for(const t of ["faltas","diarias","funcionarios"]){
+      try{await sb.from(t).delete().eq("user_id",user.id);}catch(e){console.warn("Exclusão cloud",t,e);}
+    }
+    try{
+      const {data:gastos}=await sb.from("gastos").select("id,fornecedor,descricao,categoria").eq("user_id",user.id);
+      for(const g of (gastos||[])){
+        const cat=gastoCategoria(g),nome=normalize(g.fornecedor),desc=normalize(g.descricao);
+        if((cat==="Mão de obra"||cat==="Adiantamento") && (nomes.has(nome)||[...nomes].some(n=>n&&desc.includes(n)))) await sb.from("gastos").delete().eq("id",g.id);
+      }
+    }catch(e){console.warn("Exclusão cloud de gastos",e);}
+  }
+  saveLocalData(); renderAll(); toast("Dados da equipe apagados com sucesso.");
+}
+
+async function apagarDadosObraSeguro(){
+  if(!D.obras.length){toast("Não há obras cadastradas.");return;}
+  const lista=D.obras.map((o,i)=>`${i+1} — ${o.nome}`).join("\n");
+  const escolha=prompt(`Digite o número da obra que deseja apagar:\n\n${lista}`);
+  const idx=Number(escolha)-1;
+  if(!Number.isInteger(idx)||!D.obras[idx]){toast("Exclusão cancelada. Obra inválida.");return;}
+  const obra=D.obras[idx];
+  if(!confirm(`Apagar a obra "${obra.nome}" e todos os registros vinculados a ela?`))return;
+  const palavra=prompt('Para confirmar, digite exatamente APAGAR');
+  if(palavra!=="APAGAR"){toast("Exclusão cancelada. A palavra de confirmação não confere.");return;}
+  await excluirObraSemConfirmacao(obra.id);
+}
+
+async function excluirObraSemConfirmacao(id){
+  const obraId=String(id);
+  const dependentes=["checklist","diarias","gastos","pagamentos","faltas","documentos"];
+  for(const t of dependentes) if(Array.isArray(D[t])) D[t]=D[t].filter(x=>String(x.obra_id)!==obraId);
+  if(Array.isArray(D.materiais)){
+    const mids=new Set(D.materiais.filter(x=>String(x.obra_id)===obraId).map(x=>String(x.id)));
+    D.materiais=D.materiais.filter(x=>String(x.obra_id)!==obraId);
+    D.material_movimentos=D.material_movimentos.filter(x=>!mids.has(String(x.material_id)));
+  }
+  D.obras=D.obras.filter(x=>String(x.id)!==obraId);
+  if(sb&&user&&!String(id).startsWith("local_")){
+    for(const t of dependentes){try{await sb.from(t).delete().eq("obra_id",id);}catch(e){console.warn("Exclusão cloud",t,e);}}
+    try{await sb.from("obras").delete().eq("id",id);}catch(e){console.warn("Exclusão cloud obra",e);}
+  }
+  saveLocalData(); renderAll(); toast("Obra e dados vinculados apagados com sucesso.");
+}
+
+async function apagarTodosDadosSeguro(){
+  if(!confirm("ATENÇÃO MÁXIMA: todos os dados do EDIFIQ serão apagados deste aparelho e, quando possível, da conta sincronizada. Esta ação não pode ser desfeita. Continuar?"))return;
+  const palavra=prompt('Para confirmar a exclusão total, digite exatamente APAGAR');
+  if(palavra!=="APAGAR"){toast("Exclusão total cancelada.");return;}
+  if(sb&&user){
+    const tabelas=["checklist","diarias","gastos","pagamentos","faltas","funcionarios","obras","documentos"];
+    for(const t of tabelas){try{await sb.from(t).delete().eq("user_id",user.id);}catch(e){console.warn("Exclusão total cloud",t,e);}}
+  }
+  for(const k of Object.keys(D)) if(Array.isArray(D[k])) D[k]=[];
+  localStorage.removeItem(LOCAL_KEY);
+  localStorage.removeItem(FUNC_OBRA_KEY);
+  localStorage.removeItem(ADV_KEY);
+  localStorage.removeItem(SERVICE_KEY);
+  localStorage.removeItem(DOC_META_KEY);
+  try{
+    const db=await openDocumentoDB();
+    await new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,"readwrite");tx.objectStore(DOC_STORE).clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
+    db.close();
+  }catch(e){console.warn("Limpeza de documentos",e);}
+  saveLocalData(); renderAll(); toast("Todos os dados foram apagados.");
+}
+
+/* =========================================================
    RENDER
    ========================================================= */
 
@@ -6712,6 +6839,7 @@ renderAnalises();
 renderObras();
 
 renderFuncs();
+renderEquipeResumo();
 
 renderPayroll();
 
