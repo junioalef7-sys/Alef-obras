@@ -73,7 +73,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
  .financeQuick .btn:last-child{grid-column:1/-1}
 }
 
-@media(min-width:760px){.kpis{grid-template-columns:repeat(4,1fr)}.photoGrid{grid-template-columns:repeat(4,1fr)}.nav{position:sticky;top:57px;bottom:auto;border-top:0;border-bottom:1px solid var(--line);grid-template-columns:repeat(9,1fr)}.wrap{padding-bottom:30px}.modal{align-items:center}.modalBox{border-radius:20px}}
+@media(min-width:760px){.kpis{grid-template-columns:repeat(4,1fr)}.photoGrid{grid-template-columns:repeat(4,1fr)}.nav{position:fixed!important;left:0;right:0;bottom:0!important;top:auto!important;z-index:90;border-top:1px solid var(--line);border-bottom:0;grid-template-columns:repeat(4,minmax(0,1fr));padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:rgba(12,15,19,.98)}.nav button{min-height:54px;font-size:13px}.nav span{font-size:22px;line-height:24px}.wrap{padding-bottom:125px}.modal{align-items:center}.modalBox{border-radius:20px}}
 
 .bootError{display:none;position:fixed;inset:0;z-index:9999;background:#090b0e;color:#fff;padding:24px;font-family:system-ui,-apple-system,sans-serif;align-items:center;justify-content:center;text-align:center}.bootError.show{display:flex}.bootErrorBox{max-width:520px;background:#11151a;border:1px solid #252b33;border-radius:20px;padding:24px;box-shadow:0 12px 30px rgba(0,0,0,.35)}.bootErrorBox h2{margin:0 0 8px;color:#d9ad55}.bootErrorBox p{color:#9ba3ad;line-height:1.5}.bootErrorBox button{border:1px solid #e4c16f;background:linear-gradient(180deg,#d9ad55,#a77a2d);color:#090b0e;border-radius:10px;padding:11px 15px;font-weight:800}.localMode{margin-top:8px}.progressInput{width:100%;accent-color:#d9ad55}.checkPercent{font-size:12px;color:#d9ad55;min-width:45px;text-align:right}.serviceLine{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid #252b33}.serviceLine small{color:#9ba3ad}.pay-person{padding:10px 0;border-top:1px solid var(--line)}.pay-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.pay-summary>div{background:#0d1115;border:1px solid var(--line);border-radius:10px;padding:9px}.pay-value{margin-top:8px}.mini{border:1px solid var(--line);background:#171c22;color:#fff;border-radius:8px;padding:6px 9px}.lockNote{color:#ffb0b5;font-size:12px;margin-top:7px}@media(max-width:600px){.pay-summary{grid-template-columns:1fr 1fr}.pay-summary>div:last-child{grid-column:1/-1}}
 
@@ -83,6 +83,8 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
    ========================================================= */
 @media (max-width:759px){
   html,body{width:100%;max-width:100%;overflow-x:hidden;}
+  #app{padding-top:env(safe-area-inset-top);}
+  .wrap{padding-top:calc(12px + env(safe-area-inset-top));}
   #app,.wrap,.page{width:100%;max-width:100%;min-width:0;}
   .wrap{padding:12px 10px 105px;}
   .top{padding:10px 12px;}
@@ -786,6 +788,10 @@ table{width:100%;border-collapse:collapse}
 .authBtns .btn{min-height:48px!important;font-size:15px!important}
 @media(max-width:390px){.auth{padding:14px}.authBox{width:94vw;padding:22px 16px}.authLogoSimple h1{font-size:36px!important;margin-bottom:18px!important}.authBox input{min-height:48px!important}.authBtns .btn{min-height:46px!important}}
 </style>
+<style id="edifiq-final-layout-fix">
+@media(max-width:759px){#app{padding-top:env(safe-area-inset-top)}.wrap{padding-top:calc(14px + env(safe-area-inset-top));padding-bottom:calc(100px + env(safe-area-inset-bottom))}.page{scroll-margin-top:12px}.pageTitle{padding-top:2px}.paymentHistoryItem{overflow:hidden}.pay-history-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}.pay-history-grid>div{background:#0d1115;border:1px solid var(--line);border-radius:9px;padding:8px;min-width:0}.pay-history-grid small,.pay-history-grid b{display:block;overflow-wrap:anywhere}.extraPayList,.extraPayHistory{margin-top:8px;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:#0b0f13}.extraPayList .serviceLine,.extraPayHistory .serviceLine{border-top:1px solid var(--line)}#pagEquipeM .pay-summary{grid-template-columns:1fr 1fr}.historyFilters{display:grid;grid-template-columns:1fr;gap:8px}}
+@media(min-width:760px){.pay-history-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.pay-history-grid>div{background:#0d1115;border:1px solid var(--line);border-radius:10px;padding:9px}.extraPayList,.extraPayHistory{margin-top:9px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#0b0f13}}
+</style>
 </head>
 <body>
 <div class="bootError" id="bootError"><div class="bootErrorBox"><h2>EDIFIQ</h2><p id="bootErrorText">O aplicativo encontrou um erro ao iniciar.</p><button onclick="location.reload()">Recarregar</button></div></div>
@@ -928,10 +934,12 @@ table{width:100%;border-collapse:collapse}
 <div class="kpi"><small>Funcionários</small><strong id="folhaFuncionarios">0</strong></div>
 <div class="kpi"><small>Diárias</small><strong id="folhaDiarias">0</strong></div>
 <div class="kpi"><small>Valor bruto</small><strong id="folhaBruto">R$ 0,00</strong></div>
+<div class="kpi"><small>Extras / bônus</small><strong class="gold" id="folhaExtras">R$ 0,00</strong></div>
 <div class="kpi"><small>Adiantamentos</small><strong id="folhaAdiant">R$ 0,00</strong></div>
 <div class="kpi"><small>Líquido total</small><strong id="folhaLiquido">R$ 0,00</strong></div>
 <div class="kpi"><small>Saldo pendente</small><strong id="folhaPendente">R$ 0,00</strong></div>
 </div><div id="folhaDetalhes"></div></div>
+<div class="card" id="historicoPagamentosCard"><div class="row"><div><h2>Histórico de pagamentos</h2><p class="sub">Mostra separadamente diárias, serviços extras, bônus, adiantamentos e o líquido pago.</p></div><button class="btn" type="button" onclick="renderHistoricoPagamentos()">Atualizar</button></div><div class="historyFilters"><label>Funcionário<select id="histPagFunc" onchange="renderHistoricoPagamentos()"><option value="all">Todos os funcionários</option></select></label><label>Obra<select id="histPagObra" onchange="renderHistoricoPagamentos()"><option value="all">Todas as obras</option></select></label></div><div id="historicoPagamentosList"></div></div>
 </section>
 <section class="page" id="diarias">
 <div class="pageTitle"><div><h1>Diárias</h1><p class="sub">Registro, acompanhamento e histórico individual por funcionário.</p></div><button class="btn gold" onclick="openDia()">＋ Diária</button></div>
@@ -1034,8 +1042,7 @@ table{width:100%;border-collapse:collapse}
 <div class="modal" id="checkM"><div class="modalBox"><div class="modalHead"><h2>Adicionar etapa</h2><button class="x" onclick="closeM('checkM')">×</button></div><form onsubmit="saveCheck(event)"><div class="formGrid"><label>Obra<select id="checkObra" required=""><option value="">Selecione</option></select></label><label class="full">Etapa<input id="checkDesc" placeholder="Ex.: Reboco concluído" required=""/></label></div><div class="formActions"><button class="btn" onclick="closeM('checkM')" type="button">Cancelar</button><button class="btn primary">Adicionar</button></div></form></div></div>
 <div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" step="0.01" type="number"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Mão de obra</option><option>Serviço terceirizado</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
 <div class="modal" id="fotoM"><div class="modalBox"><div class="modalHead"><h2>Relatório fotográfico</h2><button class="x" onclick="closeM('fotoM')">×</button></div><form onsubmit="saveFoto(event)"><div class="formGrid"><label>Obra<select id="fotoObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="fotoData" type="date"/></label><label class="full">Título<input id="fotoTitulo"/></label><label class="full">Fotos<input accept="image/*" id="fotoFiles" multiple="" required="" type="file"/></label><label class="full">Observação<textarea id="fotoObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('fotoM')" type="button">Cancelar</button><button class="btn primary">Salvar fotos</button></div></form></div></div>
-<div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Adiantamentos</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
-<div class="pay-summary"><div><small>Diárias pendentes</small><b id="pagDiariasTotal">R$ 0,00</b></div></div><div class="formActions"><button class="btn" onclick="closeM('pagEquipeM')" type="button">Cancelar</button><button class="btn primary">Processar pagamento</button></div></form></div></div>
+<div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Diárias</small><b id="pagDiariasTotal">R$ 0,00</b></div><div><small>Serviços extras / bônus</small><b id="pagExtrasTotal" class="gold">R$ 0,00</b></div><div><small>Bruto</small><b id="pagTotal">R$ 0,00</b></div><div><small>Adiantamentos</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido a pagar</small><b id="pagLiquidoTotal" class="green">R$ 0,00</b></div></div><div class="formActions"><button class="btn" onclick="closeM('pagEquipeM')" type="button">Cancelar</button><button class="btn primary">Processar pagamento</button></div></form></div></div>
 <div class="modal" id="adiantM"><div class="modalBox"><div class="modalHead"><h2>Adiantamento</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveAdiantamento(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required=""><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" required=""><option value="">Selecione</option></select></label><label>Valor<input id="adiantValor" required="" step="0.01" type="number"/></label><label>Data<input id="adiantData" type="date"/></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('adiantM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
 <div class="modal reportClientModal" id="relatorioClienteM">
 <div class="modalBox">
@@ -1088,7 +1095,9 @@ presencas:[],
 diario:[],
 documentos:[],
 materiais:[],
-material_movimentos:[]
+material_movimentos:[],
+servicosExtras:[],
+historicoPagamentos:[]
 };
 
 const LOCAL_KEY="edifiq_local_v3";
@@ -1491,7 +1500,7 @@ function localData(){
 }
 
 function saveLocalData(){
-  const payload={obras:D.obras,funcionarios:D.funcionarios,diarias:D.diarias,gastos:D.gastos,pagamentos:D.pagamentos,checklist:D.checklist,faltas:D.faltas,presencas:D.presencas||[],diario:D.diario,documentos:(D.documentos||[]).map(d=>({...d})),materiais:D.materiais,material_movimentos:D.material_movimentos};
+  const payload={obras:D.obras,funcionarios:D.funcionarios,diarias:D.diarias,gastos:D.gastos,pagamentos:D.pagamentos,checklist:D.checklist,faltas:D.faltas,presencas:D.presencas||[],diario:D.diario,documentos:(D.documentos||[]).map(d=>({...d})),materiais:D.materiais,material_movimentos:D.material_movimentos,servicosExtras:D.servicosExtras||[],historicoPagamentos:D.historicoPagamentos||[]};
   let savedAny=false;
   try{ localStorage.setItem(LOCAL_KEY,JSON.stringify(payload)); savedAny=true; }catch(e){ console.warn("Cache principal cheio; usando backup por tabela.",e); }
   for(const [table,rows] of Object.entries(payload)){
@@ -4061,6 +4070,17 @@ toast(
 
 }
 
+function renderHistoricoPagamentos(){
+  const box=$("historicoPagamentosList"); if(!box)return;
+  D.historicoPagamentos=Array.isArray(D.historicoPagamentos)?D.historicoPagamentos:[];
+  const sf=$("histPagFunc")?.value||"all", so=$("histPagObra")?.value||"all";
+  if($("histPagFunc")){const cur=$("histPagFunc").value;$("histPagFunc").innerHTML='<option value="all">Todos os funcionários</option>'+D.funcionarios.map(f=>`<option value="${esc(f.id)}">${esc(f.nome||"Sem nome")}</option>`).join("");if([...$("histPagFunc").options].some(o=>o.value===cur))$("histPagFunc").value=cur;}
+  if($("histPagObra")){const cur=$("histPagObra").value;$("histPagObra").innerHTML='<option value="all">Todas as obras</option>'+D.obras.map(o=>`<option value="${esc(o.id)}">${esc(o.nome||"Sem nome")}</option>`).join("");if([...$("histPagObra").options].some(o=>o.value===cur))$("histPagObra").value=cur;}
+  let rows=D.historicoPagamentos.filter(x=>(sf==="all"||String(x.funcionario_id)===String(sf))&&(so==="all"||String(x.obra_id)===String(so))).slice().sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
+  if(!rows.length){box.innerHTML='<div class="empty">Nenhum pagamento processado ainda.</div>';return;}
+  box.innerHTML=rows.map(x=>{const f=D.funcionarios.find(v=>String(v.id)===String(x.funcionario_id));const o=D.obras.find(v=>String(v.id)===String(x.obra_id));const extras=Array.isArray(x.extras)?x.extras:[];return `<div class="item paymentHistoryItem"><div class="row"><div><b>${esc(f?.nome||x.funcionario_nome||"Funcionário")}</b><br><small>${esc(o?.nome||x.obra_nome||"Sem obra")} · ${esc(x.data||"")}</small></div><strong class="green">${money(x.liquido)}</strong></div><div class="pay-history-grid"><div><small>Diárias</small><b>${money(x.diarias)}</b></div><div><small>Extras / bônus</small><b class="gold">${money(x.extrasTotal)}</b></div><div><small>Adiantamento</small><b class="red">${money(x.adiantamento)}</b></div><div><small>Líquido</small><b class="green">${money(x.liquido)}</b></div></div>${extras.length?`<div class="extraPayHistory">${extras.map(e=>`<div class="serviceLine"><span><b>${esc(e.tipo||"Serviço extra")}</b><small>${esc(e.descricao||"")}</small></span><strong class="gold">${money(e.valor)}</strong></div>`).join("")}</div>`:""}<small class="sub">${esc(x.descricao||"Pagamento de equipe")}</small></div>`}).join("");
+}
+
 function renderPayroll(){
 
 const box=$("diaList");
@@ -4201,33 +4221,12 @@ obra?.nome||
 </div>
 
 <div class="pay-summary">
-
-<div>
-<small>Diárias</small><br>
-<b>${money(
-resumo.pending
-)}</b>
+<div><small>Diárias</small><br><b>${money(resumo.pendingDiarias)}</b></div>
+<div><small>Serviços extras / bônus</small><br><b class="gold">${money(resumo.extrasTotal)}</b></div>
+<div><small>Adiantamento</small><br><b class="red">${money(resumo.advance)}</b></div>
+<div><small>Líquido</small><br><b class="green">${money(resumo.net)}</b></div>
 </div>
-
-<div>
-<small>Adiantamento</small><br>
-<b class="red">
-${money(
-resumo.advance
-)}
-</b>
-</div>
-
-<div>
-<small>Líquido</small><br>
-<b class="green">
-${money(
-resumo.net
-)}
-</b>
-</div>
-
-</div>
+${resumo.extrasPendentes?.length?`<div class="extraPayList">${resumo.extrasPendentes.map(x=>`<div class="serviceLine"><span><b>${esc(x.tipo||'Serviço extra')}</b><small>${esc(x.descricao||'')}</small></span><strong class="gold">${money(x.valor)}</strong></div>`).join('')}</div>`:''}
 
 <div class="pay-value">
 
@@ -4272,6 +4271,7 @@ function updatePagTotal(){
 
 let total=0;
 let diarias=0;
+let extras=0;
 let adiant=0;
 
 document.querySelectorAll(
@@ -4293,11 +4293,9 @@ adiant+=resumo.advance;
 
 });
 
-$("pagTotal").textContent=
-money(total);
-
-$("pagDiariasTotal").textContent=
-money(diarias);
+$("pagTotal").textContent=money(diarias+extras);
+$("pagDiariasTotal").textContent=money(diarias);
+if($("pagExtrasTotal"))$("pagExtrasTotal").textContent=money(extras);
 
 $("pagAdiantTotal").textContent=
 money(adiant);
@@ -4321,8 +4319,8 @@ $("pagObs").value="";
 
 fillPagamentoFuncionarios();
 
-$("pagTotal").textContent=
-money(0);
+$("pagTotal").textContent=money(0);
+if($("pagExtrasTotal"))$("pagExtrasTotal").textContent=money(0);
 
 $("pagDiariasTotal").textContent=
 money(0);
@@ -4451,6 +4449,8 @@ for(const extra of (item.resumo.extrasPendentes||[])){
   const gasto=(D.gastos||[]).find(g=>String(g.servico_extra_id||'')===String(extra.id));
   if(gasto)gasto.status='pago';
 }
+D.historicoPagamentos=Array.isArray(D.historicoPagamentos)?D.historicoPagamentos:[];
+D.historicoPagamentos.push({id:'hp_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),funcionario_id:item.id,funcionario_nome:item.f.nome,obra_id:item.obraId,obra_nome:D.obras.find(o=>String(o.id)===String(item.obraId))?.nome||'',data,descricao,diarias:Number(item.resumo.pendingDiarias||0),extrasTotal:Number(item.resumo.extrasTotal||0),extras:(item.resumo.extrasPendentes||[]).map(x=>({id:x.id,tipo:x.tipo,descricao:x.descricao,valor:Number(x.valor||0)})),adiantamento:Number(item.resumo.advance||0),liquido:Number(item.resumo.net||0)});
 
 aplicarAdiantamentos(item.id,item.resumo.allocations);
 }
@@ -5244,27 +5244,66 @@ function renderFechamentoFolha(){
     fillSelectors();
     const {ini,fim}=getFolhaRange();
     const obra=$("folhaObra")?.value||"all";
-    if($("folhaInicio")&&$("folhaPeriodo")?.value!=="custom"){$("folhaInicio").value=ini;$("folhaFim").value=fim;}
+    if($("folhaInicio")&&$("folhaPeriodo")?.value!=="custom"){$("folhaInicio").value=ini;$('folhaFim').value=fim;}
     const dias=D.diarias.filter(d=>{const data=String(d?.data||""); return data>=ini&&data<=fim&&(obra==="all"||String(d?.obra_id)===String(obra));});
-    const empIds=[...new Set(dias.map(d=>String(d.funcionario_id||"")))].filter(Boolean);
-    const bruto=dias.reduce((a,d)=>a+diariaValor(d),0);
+    const extras=(D.servicosExtras||[]).filter(x=>{const data=String(x?.data||"");return data>=ini&&data<=fim&&(obra==="all"||String(x?.obra_id||x?.obraId)===String(obra));});
+    const empIds=[...new Set([...dias.map(d=>String(d.funcionario_id||"")),...extras.map(x=>String(x.funcionario_id||x.funcionarioId||""))])].filter(Boolean);
+    const brutoDiarias=dias.reduce((a,d)=>a+diariaValor(d),0);
+    const extrasTotal=extras.reduce((a,x)=>a+Number(x.valor||0),0);
+    const bruto=brutoDiarias+extrasTotal;
     const adiant=empIds.reduce((a,id)=>a+advanceAmountForEmployeeInRange(id,ini,fim),0);
-    const pago=dias.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);
-    const pendente=dias.filter(d=>!diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
+    const pagoDiarias=dias.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);
+    const pagoExtras=extras.filter(x=>String(x.status||'pendente')==='pago').reduce((a,x)=>a+Number(x.valor||0),0);
+    const pago=pagoDiarias+pagoExtras;
+    const pendExtras=extras.filter(x=>String(x.status||'pendente')!=='pago').reduce((a,x)=>a+Number(x.valor||0),0);
+    const pendente=dias.filter(d=>!diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0)+pendExtras;
     const liquido=Math.max(0,bruto-adiant);
-    $("folhaFuncionarios").textContent=empIds.length; $("folhaDiarias").textContent=dias.length; $("folhaBruto").textContent=money(bruto); $("folhaAdiant").textContent=money(adiant); $("folhaLiquido").textContent=money(liquido); $("folhaPendente").textContent=money(Math.max(0,pendente-adiant));
-    const rows=empIds.map(id=>{const f=D.funcionarios.find(x=>String(x.id)===id);const ds=dias.filter(d=>String(d.funcionario_id)===id);const b=ds.reduce((a,d)=>a+diariaValor(d),0);const adv=advanceAmountForEmployeeInRange(id,ini,fim);const liq=Math.max(0,b-adv);const pag=ds.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);return {f,ds,b,adv,liq,pag};}).sort((a,b)=>String(a.f?.nome||"").localeCompare(String(b.f?.nome||""),'pt-BR'));
+    if($("folhaFuncionarios"))$("folhaFuncionarios").textContent=empIds.length;
+    if($("folhaDiarias"))$("folhaDiarias").textContent=dias.length;
+    if($("folhaBruto"))$("folhaBruto").textContent=money(bruto);
+    if($("folhaExtras"))$("folhaExtras").textContent=money(extrasTotal);
+    if($("folhaAdiant"))$("folhaAdiant").textContent=money(adiant);
+    if($("folhaLiquido"))$("folhaLiquido").textContent=money(liquido);
+    if($("folhaPendente"))$("folhaPendente").textContent=money(Math.max(0,pendente-adiant));
+    const rows=empIds.map(id=>{
+      const f=D.funcionarios.find(x=>String(x.id)===id);
+      const ds=dias.filter(d=>String(d.funcionario_id)===id);
+      const ex=extras.filter(x=>String(x.funcionario_id||x.funcionarioId)===id);
+      const bDiarias=ds.reduce((a,d)=>a+diariaValor(d),0);
+      const exTotal=ex.reduce((a,x)=>a+Number(x.valor||0),0);
+      const b=bDiarias+exTotal;
+      const adv=advanceAmountForEmployeeInRange(id,ini,fim);
+      const liq=Math.max(0,b-adv);
+      const pagDiarias=ds.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);
+      const pagExtras=ex.filter(x=>String(x.status||'pendente')==='pago').reduce((a,x)=>a+Number(x.valor||0),0);
+      const pag=pagDiarias+pagExtras;
+      return {f,ds,ex,b,bDiarias,exTotal,adv,liq,pag,pagDiarias,pagExtras};
+    }).sort((a,b)=>String(a.f?.nome||"").localeCompare(String(b.f?.nome||""),'pt-BR'));
     if(!rows.length){box.innerHTML='<div class="empty">Nenhum lançamento de equipe no período selecionado.</div>';return;}
-    box.innerHTML=`<div class="tableWrap"><table class="folhaTable"><thead><tr><th>Funcionário</th><th>Obra</th><th>Diárias</th><th>Bruto</th><th>Adiant.</th><th>Líquido</th><th>Pago</th><th>Pendente</th></tr></thead><tbody>${rows.map(r=>{const obras=[...new Set(r.ds.map(d=>D.obras.find(o=>String(o.id)===String(d.obra_id))?.nome||'Sem obra'))].join(', ');return `<tr><td><b>${esc(r.f?.nome||'Funcionário')}</b><br><small>${esc(r.f?.funcao||'')}</small></td><td>${esc(obras)}</td><td>${r.ds.length}</td><td>${money(r.b)}</td><td>${money(r.adv)}</td><td><b class="green">${money(r.liq)}</b></td><td>${money(r.pag)}</td><td class="gold">${money(Math.max(0,r.liq-r.pag))}</td></tr>`}).join('')}</tbody></table></div>`;
+    box.innerHTML=`<div class="tableWrap"><table class="folhaTable"><thead><tr><th>Funcionário</th><th>Obra</th><th>Diárias</th><th>Extras / bônus</th><th>Bruto</th><th>Adiant.</th><th>Líquido</th><th>Pago</th><th>Pendente</th></tr></thead><tbody>${rows.map(r=>{const obras=[...new Set([...r.ds.map(d=>D.obras.find(o=>String(o.id)===String(d.obra_id))?.nome||''),...r.ex.map(x=>D.obras.find(o=>String(o.id)===String(x.obra_id||x.obraId))?.nome||'')].filter(Boolean))].join(', ')||'Sem obra';const extraInfo=r.ex.length?`<br><small class="gold">${r.ex.map(x=>`${esc(x.tipo||'Extra')}: ${esc(x.descricao||'')} (${money(x.valor)})`).join('<br>')}</small>`:'';return `<tr><td><b>${esc(r.f?.nome||'Funcionário')}</b><br><small>${esc(r.f?.funcao||'')}</small></td><td>${esc(obras)}</td><td>${r.ds.length}<br>${money(r.bDiarias)}</td><td><b class="gold">${money(r.exTotal)}</b>${extraInfo}</td><td>${money(r.b)}</td><td>${money(r.adv)}</td><td><b class="green">${money(r.liq)}</b></td><td>${money(r.pag)}</td><td class="gold">${money(Math.max(0,r.liq-r.pag))}</td></tr>`}).join('')}</tbody></table></div>`;
     try{saveLocalData();}catch(e){}
   }catch(err){ console.error('EDIFIQ folha',err); const box=$("folhaDetalhes"); if(box)box.innerHTML='<div class="empty">Não foi possível atualizar a folha agora. Tente novamente.</div>'; toast('Erro ao atualizar a folha de pagamento.'); }
 }
 
 function renderEquipeOverview(){
-  const ativos=D.funcionarios.filter(f=>f.ativo!==false).length; if($("eqAtivos"))$("eqAtivos").textContent=ativos;
-  const {ini,fim}=getPeriodDates(15); const ds=D.diarias.filter(d=>String(d.data||"")>=ini&&String(d.data||"")<=fim); const bruto=ds.reduce((a,d)=>a+diariaValor(d),0); const pago=ds.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0); const ids=[...new Set(ds.map(d=>String(d.funcionario_id)))]; const adv=ids.reduce((a,id)=>a+advanceAmountForEmployeeInRange(id,ini,fim),0); const pend=Math.max(0,bruto-pago-adv);
-  if($("eqDiasPeriodo"))$("eqDiasPeriodo").textContent=ds.length; if($("eqBrutoPeriodo"))$("eqBrutoPeriodo").textContent=money(bruto); if($("eqPagoPeriodo"))$("eqPagoPeriodo").textContent=money(pago); if($("eqAdiantPeriodo"))$("eqAdiantPeriodo").textContent=money(adv); if($("eqPendentePeriodo"))$("eqPendentePeriodo").textContent=money(pend);
-  const fo=$("folhaObra"); if(fo){const cur=fo.value||"all";fo.innerHTML='<option value="all">Todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');if([...fo.options].some(x=>x.value===cur))fo.value=cur;}
+  const ativos=D.funcionarios.filter(f=>f.ativo!==false).length;
+  if($("eqAtivos"))$("eqAtivos").textContent=ativos;
+  const {ini,fim}=getPeriodDates(15);
+  const ds=D.diarias.filter(d=>String(d.data||"")>=ini&&String(d.data||"")<=fim);
+  const ex=(D.servicosExtras||[]).filter(x=>String(x.data||"")>=ini&&String(x.data||"")<=fim);
+  const brutoDiarias=ds.reduce((a,d)=>a+diariaValor(d),0);
+  const extras=ex.reduce((a,x)=>a+Number(x.valor||0),0);
+  const bruto=brutoDiarias+extras;
+  const pago=ds.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0)+ex.filter(x=>String(x.status||'pendente')==='pago').reduce((a,x)=>a+Number(x.valor||0),0);
+  const ids=[...new Set([...ds.map(d=>String(d.funcionario_id)),...ex.map(x=>String(x.funcionario_id||x.funcionarioId))])].filter(Boolean);
+  const adv=ids.reduce((a,id)=>a+advanceAmountForEmployeeInRange(id,ini,fim),0);
+  const pend=Math.max(0,bruto-pago-adv);
+  if($("eqDiasPeriodo"))$("eqDiasPeriodo").textContent=ds.length;
+  if($("eqBrutoPeriodo"))$("eqBrutoPeriodo").textContent=money(bruto);
+  if($("eqPagoPeriodo"))$("eqPagoPeriodo").textContent=money(pago);
+  if($("eqAdiantPeriodo"))$("eqAdiantPeriodo").textContent=money(adv);
+  if($("eqPendentePeriodo"))$("eqPendentePeriodo").textContent=money(pend);
+  const fo=$("folhaObra");if(fo){const cur=fo.value||"all";fo.innerHTML='<option value="all">Todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');if([...fo.options].some(x=>x.value===cur))fo.value=cur;}
   renderFechamentoFolha();
 }
 
@@ -7053,7 +7092,7 @@ async function importRelatorioData(event){
 
 
 function renderAnalises(){
-  const obraFilter=$("analiseObraFilter")?.value||"all";
+  const obraFilter=$("finObraFilter")?.value||$("analiseObraFilter")?.value||"all";
   let obras=D.obras.slice();
   if(obraFilter!=="all") obras=obras.filter(o=>String(o.id)===String(obraFilter));
   const contrato=obras.reduce((a,o)=>a+Number(o.valor||0),0);
@@ -7580,6 +7619,8 @@ renderAnalises();
 renderObras();
 
 renderFuncs();
+
+renderHistoricoPagamentos();
 
 renderPayroll();
 renderEquipeOverview();
