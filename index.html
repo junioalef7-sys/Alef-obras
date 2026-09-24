@@ -605,7 +605,7 @@ table{width:100%;border-collapse:collapse}
 <div class="menuPastaHead"><div><strong>Menu</strong><small>Outros recursos do EDIFIQ</small></div><button class="x" onclick="toggleMenuPasta()" type="button">×</button></div>
 <div class="menuPastaGrid">
 <button onclick="goMenu('obras')"><span>🏗️</span><b>Obras</b></button>
-<button onclick="goMenu('resumoGeral')"><span>📊</span><b>Resumo Geral</b></button>
+<button onclick="goMenu('resumoGeral')"><span>◉</span><b>Visão Geral</b></button>
 <button onclick="goMenu('funcionarios')"><span>👷</span><b>Equipe</b></button>
 <button onclick="goMenu('financeiro')"><span>💰</span><b>Financeiro</b></button>
 <button onclick="goMenu('diarias')"><span>📅</span><b>Diárias</b></button>
@@ -618,31 +618,32 @@ table{width:100%;border-collapse:collapse}
 </div>
 <main class="wrap">
 <section class="page active" id="dashboard">
-<div class="pageTitle"><div><h1>Início</h1><p class="sub">Visão rápida das suas obras, contratos e equipe.</p></div><button class="btn" onclick="logout()">Sair</button></div>
-<div class="homeNP">
-  <div class="homeNPHead">
-    <div><span class="homeNPEyebrow">EDIFIQ — CONSTRUÇÃO CIVIL</span><h2>Resumo das obras</h2><p>Acompanhe contratos, recebimentos, equipe e progresso em um só lugar.</p></div>
-    <button class="homeNPAdd" type="button" onclick="go('obras');openObra()">＋ Nova obra</button>
+<div class="edifiqHome">
+  <div class="edifiqHomeHeader">
+    <div>
+      <div class="edifiqHomeEyebrow">EDIFIQ • CONSTRUÇÃO CIVIL</div>
+      <h1>Minhas obras</h1>
+      <p>Acompanhe rapidamente contratos, recebimentos, equipe e andamento.</p>
+    </div>
+    <button class="edifiqHomeNew" type="button" onclick="go('obras');openObra()">＋ Nova obra</button>
   </div>
-
-  <div class="homeNPKpis">
-    <div class="homeNPKpi"><span>💰</span><div><small>Total de contratos</small><b id="kContratado">R$ 0,00</b></div></div>
-    <div class="homeNPKpi receive"><span>↗</span><div><small>Total a receber</small><b id="kReceber">R$ 0,00</b></div></div>
-    <div class="homeNPKpi active"><span>🏗️</span><div><small>Obras ativas</small><b id="kObrasAndamento">0</b></div></div>
-    <div class="homeNPKpi team"><span>👷</span><div><small>Funcionários</small><b id="kFunc">0</b></div></div>
+  <div class="edifiqHomeStats">
+    <div class="edifiqStat"><span class="blue">R$</span><div><small>Total contratado</small><b id="kContratado">R$ 0,00</b></div></div>
+    <div class="edifiqStat"><span class="green">↗</span><div><small>Total a receber</small><b id="kReceber">R$ 0,00</b></div></div>
+    <div class="edifiqStat"><span class="cyan">▦</span><div><small>Obras ativas</small><b id="kObrasAndamento">0</b></div></div>
+    <div class="edifiqStat"><span class="gold">♙</span><div><small>Funcionários</small><b id="kFunc">0</b></div></div>
   </div>
-
-  <div class="homeNPSection"><div><h2>Obras</h2><span>Progresso e informações principais</span></div><button class="homeNPLink" type="button" onclick="go('obras')">Ver todas ›</button></div>
-  <div id="homeObrasList" class="homeNPObras"></div>
+  <div class="edifiqWorksTitle"><div><h2>Obras</h2><span>Visão rápida de cada obra</span></div><button type="button" onclick="go('obras')">Ver todas ›</button></div>
+  <div id="homeObrasList" class="edifiqWorks"></div>
 </div>
 </section>
 <section class="page" id="resumoGeral">
-<div class="pageTitle"><div><h1>📊 Resumo Geral</h1><p class="sub">Painel consolidado de contratos, recebimentos, custos, equipe e andamento.</p></div><button class="btn" onclick="go('dashboard')">← Início</button></div>
+<div class="pageTitle"><div><h1>Visão Geral</h1><p class="sub">Indicadores gerais da sua operação, obras e resultados.</p></div><button class="btn" onclick="go('dashboard')">← Início</button></div>
 <div class="summaryToolbar">
 <select id="resumoStatusFilter" onchange="renderResumoGeral()"><option value="all">Todas as obras</option><option value="em_andamento">Em andamento</option><option value="planejada">Planejadas</option><option value="concluida">Concluídas</option><option value="pausada">Pausadas</option></select>
 <input id="resumoBusca" oninput="renderResumoGeral()" placeholder="Buscar obra ou cliente"/>
 </div>
-<div class="rgHero"><div><span>VISÃO CONSOLIDADA</span><h2>Resumo financeiro e operacional</h2><p>Todos os valores abaixo são calculados diretamente dos registros das obras, financeiro e equipe.</p></div><button class="btn gold" type="button" onclick="renderResumoGeral()">↻ Atualizar</button></div>
+<div class="rgHero"><div><span>PAINEL DE GESTÃO</span><h2>Acompanhamento geral</h2><p>Uma visão clara dos principais números das obras, financeiro e equipe.</p></div><button class="btn gold" type="button" onclick="renderResumoGeral()">↻ Atualizar</button></div>
 <div class="summaryTotals rgTotals">
 <div class="summaryTotal"><small>Obras</small><b id="rgObrasTotal">0</b><em id="rgObrasStatus">0 em andamento</em></div>
 <div class="summaryTotal"><small>Valor contratado</small><b id="rgContrato">R$ 0,00</b><em id="rgContratoMedia">Ticket médio: R$ 0,00</em></div>
@@ -768,10 +769,33 @@ table{width:100%;border-collapse:collapse}
 <div class="card"><h2>Histórico de movimentações</h2><div id="materialMovList"></div></div>
 </section>
 <section class="page" id="financeiro">
-<div class="pageTitle"><div><h1>💰 Financeiro</h1><p class="sub">Lançamentos, despesas, receitas e controle por obra.</p></div><div class="listActions"><button class="btn" onclick="go('analises')">📈 Financeiro Avançado</button><button class="btn gold" onclick="openFin()">＋ Lançamento</button></div></div>
-<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select></div>
-<div class="grid kpis"><div class="kpi"><small>Entradas</small><strong class="green" id="finEnt">R$ 0,00</strong></div><div class="kpi"><small>Despesas</small><strong class="red" id="finDesp">R$ 0,00</strong></div><div class="kpi"><small>Resultado</small><strong class="gold" id="finRes">R$ 0,00</strong></div><div class="kpi"><small>Saldo a receber</small><strong class="gold" id="finReceber">R$ 0,00</strong></div></div>
-<div class="card" style="margin-top:10px"><div class="row"><div><h2>📈 Financeiro Avançado</h2><p class="sub">Margem de lucro, resultado, custos por categoria, saldo a receber, dias trabalhados e desempenho de cada obra.</p></div><button class="btn gold" onclick="go('analises')">Abrir análises</button></div></div><div class="card"><h2>Resumo por obra</h2><div id="obraFinanceResumo"></div></div><div id="finList"></div>
+<div class="pageTitle"><div><h1>Financeiro</h1><p class="sub">Controle completo de receitas, despesas, custos e valores a receber.</p></div><div class="listActions"><button class="btn" onclick="go('analises')">📈 Análises</button><button class="btn gold" onclick="openFin()">＋ Lançamento</button></div></div>
+<div class="financeHero"><div><span>CONTROLE FINANCEIRO</span><h2>Visão financeira das obras</h2><p>Acompanhe entradas, custos, resultado e saldo de cada obra em um único painel.</p></div></div>
+<div class="toolbar financeFilters">
+<label>Obra<select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select></label>
+<label>Tipo<select id="finTipoFilter" onchange="renderFinance()"><option value="all">Todos os lançamentos</option><option value="entrada">Receitas</option><option value="despesa">Despesas</option></select></label>
+<label>Categoria<select id="finCategoriaFilter" onchange="renderFinance()"><option value="all">Todas as categorias</option><option value="Material">Material</option><option value="Mão de obra">Mão de obra</option><option value="Serviço terceirizado">Serviço terceirizado</option><option value="Adiantamento">Adiantamento</option><option value="Outros">Outros</option></select></label>
+<label>Buscar<input id="finBusca" oninput="renderFinance()" placeholder="Descrição ou fornecedor"></label>
+</div>
+<div class="financeKpis">
+<div class="financeKpi"><small>Receitas</small><b class="green" id="finEnt">R$ 0,00</b><span>Valores recebidos</span></div>
+<div class="financeKpi"><small>Despesas</small><b class="red" id="finDesp">R$ 0,00</b><span>Total de custos</span></div>
+<div class="financeKpi"><small>Resultado</small><b class="gold" id="finRes">R$ 0,00</b><span>Receitas − despesas</span></div>
+<div class="financeKpi"><small>A receber</small><b class="gold" id="finReceber">R$ 0,00</b><span>Saldo dos contratos</span></div>
+<div class="financeKpi"><small>Contratado</small><b id="finContratado">R$ 0,00</b><span>Valor dos contratos</span></div>
+<div class="financeKpi"><small>Margem</small><b id="finMargem">0,0%</b><span>Resultado / contratado</span></div>
+</div>
+<div class="financeCards">
+<div class="financeMini"><span>🧱</span><div><small>Material</small><b id="finCatMaterial">R$ 0,00</b></div></div>
+<div class="financeMini"><span>👷</span><div><small>Mão de obra</small><b id="finCatMao">R$ 0,00</b></div></div>
+<div class="financeMini"><span>🔧</span><div><small>Terceiros</small><b id="finCatTerc">R$ 0,00</b></div></div>
+<div class="financeMini"><span>↗</span><div><small>Adiantamentos</small><b id="finCatAdiant">R$ 0,00</b></div></div>
+<div class="financeMini"><span>•</span><div><small>Outros</small><b id="finCatOutros">R$ 0,00</b></div></div>
+</div>
+<div class="card financeAnalysisLink"><div><h2>Desempenho financeiro</h2><p class="sub">Veja margem, evolução dos recebimentos, custos por categoria e desempenho individual das obras.</p></div><button class="btn gold" onclick="go('analises')">Abrir análises financeiras</button></div>
+<div class="card financeByWork"><div class="row"><div><h2>Resumo financeiro por obra</h2><small class="sub">Contrato, recebido, a receber, despesas e resultado.</small></div></div><div id="obraFinanceResumo"></div></div>
+<div class="financeListTitle"><div><h2>Lançamentos</h2><small>Mais recentes primeiro</small></div></div>
+<div id="finList"></div>
 </section>
 <section class="page" id="fotos">
 <div class="pageTitle"><div><h1>Relatórios fotográficos</h1><p class="sub">Fotos organizadas por obra</p></div><button class="btn gold" onclick="openFoto()">＋ Foto</button></div>
@@ -4492,212 +4516,47 @@ renderAll();
 }
 
 function renderFinance(){
-
-const box=$("finList");
-
-if(!box)return;
-
-const obraFilter=
-$("finObraFilter")?.value||
-"all";
-
-const tipoFilter=
-$("finTipoFilter")?.value||
-"all";
-
-let entradas=
-D.pagamentos.map(
-x=>({...x,_tipo:"entrada"})
-);
-
-let despesas=
-D.gastos.map(
-x=>({...x,_tipo:"despesa"})
-);
-
-let items=[
-...entradas,
-...despesas
-];
-
-if(obraFilter!=="all"){
-
-items=items.filter(
-x=>String(x.obra_id)===
-String(obraFilter)
-);
-
-}
-
-if(tipoFilter!=="all"){
-
-items=items.filter(
-x=>x._tipo===tipoFilter
-);
-
-}
-
-const ent=
-D.pagamentos
-.filter(
-x=>obraFilter==="all"||
-String(x.obra_id)===
-String(obraFilter)
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const desp=
-D.gastos
-.filter(
-x=>obraFilter==="all"||
-String(x.obra_id)===
-String(obraFilter)
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-$("finEnt").textContent=
-money(ent);
-
-$("finDesp").textContent=
-money(desp);
-
-$("finRes").textContent=
-money(ent-desp);
-const receber=obraFilter==="all"
-?D.obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0)
-:obraFinanceData(obraFilter).saldoReceber;
-if($("finReceber"))$("finReceber").textContent=money(receber);
-
-renderObraFinance(obraFilter);
-
-if(!items.length){
-
-box.innerHTML=
-`<div class="empty">
-Nenhum lançamento encontrado.
-</div>`;
-
-return;
-
-}
-
-items.sort((a,b)=>
-String(b.data||"")
-.localeCompare(
-String(a.data||"")
-)
-);
-
-box.innerHTML=
-items.map(x=>{
-
-const obra=
-D.obras.find(
-o=>String(o.id)===
-String(x.obra_id)
-);
-
-const categoria=
-x._tipo==="despesa"
-?categoriaFinanceira(x)
-:"Receita";
-
-return`
-
-<div class="card">
-
-<div class="row">
-
-<div>
-
-<b>${esc(
-x.descricao||
-"Lançamento"
-)}</b>
-
-<br>
-
-<small>
-${esc(
-obra?.nome||
-"Sem obra"
-)}
-</small>
-
-</div>
-
-<span class="badge ${
-x._tipo==="entrada"
-?"on":"off"
-}">
-${
-x._tipo==="entrada"
-?"Receita"
-:"Despesa"
-}
-</span>
-
-</div>
-
-<div class="row"
-style="margin-top:10px">
-
-<span>${esc(
-x.data||""
-)}</span>
-
-<strong class="${
-x._tipo==="entrada"
-?"green":"red"
-}">
-${money(x.valor)}
-</strong>
-
-</div>
-
-<small>
-Categoria: ${esc(
-categoria
-)}
-</small>
-
-${
-x.fornecedor
-?`<br><small>${esc(
-x.fornecedor
-)}</small>`
-:""
-}
-
-<div class="listActions">
-
-<button
-class="btn danger"
-onclick="removeRow(
-'${
-x._tipo==="entrada"
-?"pagamentos"
-:"gastos"
-}',
-'${x.id}'
-)">
-Excluir
-</button>
-
-</div>
-
-</div>
-
-`;
-
-}).join("");
-
+ const box=$('finList'); if(!box)return;
+ const obraFilter=$('finObraFilter')?.value||'all';
+ const tipoFilter=$('finTipoFilter')?.value||'all';
+ const catFilter=$('finCategoriaFilter')?.value||'all';
+ const busca=($('finBusca')?.value||'').trim().toLowerCase();
+ let items=[...D.pagamentos.map(x=>({...x,_tipo:'entrada'})),...D.gastos.map(x=>({...x,_tipo:'despesa'}))];
+ items=items.filter(x=>{
+   if(obraFilter!=='all'&&String(x.obra_id)!==String(obraFilter))return false;
+   if(tipoFilter!=='all'&&x._tipo!==tipoFilter)return false;
+   const cat=x._tipo==='despesa'?categoriaFinanceira(x):'Receita';
+   if(catFilter!=='all'&&cat!==catFilter)return false;
+   if(busca){const t=`${x.descricao||''} ${x.fornecedor||''} ${cat}`.toLowerCase();if(!t.includes(busca))return false;}
+   return true;
+ });
+ const obrasFiltradas=obraFilter==='all'?D.obras:D.obras.filter(o=>String(o.id)===String(obraFilter));
+ const contratado=obrasFiltradas.reduce((a,o)=>a+Number(o.valor||0),0);
+ const ent=items.filter(x=>x._tipo==='entrada').reduce((a,x)=>a+Number(x.valor||0),0);
+ const desp=items.filter(x=>x._tipo==='despesa').reduce((a,x)=>a+Number(x.valor||0),0);
+ const despesasTodas=D.gastos.filter(x=>obraFilter==='all'||String(x.obra_id)===String(obraFilter));
+ const catTotal=(name)=>despesasTodas.reduce((a,x)=>a+((name==='Adiantamento'?gastoCategoria(x)==='Adiantamento':categoriaFinanceira(x)===name)?Number(x.valor||0):0),0);
+ const receber=obrasFiltradas.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0);
+ const margem=contratado>0?((ent-desp)/contratado)*100:0;
+ if($('finEnt'))$('finEnt').textContent=money(ent);
+ if($('finDesp'))$('finDesp').textContent=money(desp);
+ if($('finRes')){$('finRes').textContent=money(ent-desp);$('finRes').className=(ent-desp)>=0?'gold':'red';}
+ if($('finReceber'))$('finReceber').textContent=money(receber);
+ if($('finContratado'))$('finContratado').textContent=money(contratado);
+ if($('finMargem')){$('finMargem').textContent=margem.toFixed(1)+'%';$('finMargem').className=margem>=0?'green':'red';}
+ if($('finCatMaterial'))$('finCatMaterial').textContent=money(catTotal('Material'));
+ if($('finCatMao'))$('finCatMao').textContent=money(catTotal('Mão de obra'));
+ if($('finCatTerc'))$('finCatTerc').textContent=money(catTotal('Serviço terceirizado'));
+ if($('finCatAdiant'))$('finCatAdiant').textContent=money(catTotal('Adiantamento'));
+ if($('finCatOutros'))$('finCatOutros').textContent=money(catTotal('Outros'));
+ renderObraFinance(obraFilter);
+ if(!items.length){box.innerHTML='<div class="empty">Nenhum lançamento encontrado com os filtros atuais.</div>';return;}
+ items.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+ box.innerHTML=items.map(x=>{
+   const obra=D.obras.find(o=>String(o.id)===String(x.obra_id));
+   const categoria=x._tipo==='despesa'?categoriaFinanceira(x):'Receita';
+   return `<div class="card financeLaunch"><div class="row"><div><b>${esc(x.descricao||'Lançamento')}</b><br><small>${esc(obra?.nome||'Sem obra')}</small></div><span class="badge ${x._tipo==='entrada'?'on':'off'}">${x._tipo==='entrada'?'Receita':'Despesa'}</span></div><div class="row" style="margin-top:10px"><span>${esc(x.data||'')}</span><strong class="${x._tipo==='entrada'?'green':'red'}">${money(x.valor)}</strong></div><small>Categoria: ${esc(categoria)}${x.fornecedor?` · ${esc(x.fornecedor)}`:''}</small><div class="listActions"><button class="btn danger" onclick="removeRow('${x._tipo==='entrada'?'pagamentos':'gastos'}','${x.id}')">Excluir</button></div></div>`;
+ }).join('');
 }
 
 function renderObraFinance(obraFilter="all"){
@@ -5913,8 +5772,6 @@ function formatDateBR(v){
 
 function renderDashboard(){
  const contratado=D.obras.reduce((a,o)=>a+Number(o.valor||0),0);
- const entradas=D.pagamentos.reduce((a,x)=>a+Number(x.valor||0),0);
- const despesas=D.gastos.reduce((a,x)=>a+Number(x.valor||0),0);
  const receber=D.obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0);
  const andamento=D.obras.filter(o=>String(o.status)==='em_andamento').length;
  const ativos=D.funcionarios.filter(f=>f.ativo!==false).length;
@@ -5926,26 +5783,14 @@ function renderDashboard(){
  if(box){
    const obras=D.obras.slice().sort((a,b)=>String(b.updated_at||b.created_at||b.data_inicio||'').localeCompare(String(a.updated_at||a.created_at||a.data_inicio||'')));
    box.innerHTML=obras.length?obras.map(o=>{
-      const p=Math.max(0,Math.min(100,Number(obraProgress(o)||0)));
-      const f=obraFinanceData(o.id);
-      const status=String(o.status||'em_andamento');
-      const statusText=statusLabel(status);
-      return `<article class="homeNPObra">
-        <div class="homeNPObraTop"><div class="homeNPObraTitle"><h3>${esc(o.nome||'Obra sem nome')}</h3><p>${esc(o.cliente||'Cliente não informado')}</p></div><span class="homeNPStatus ${status==='concluida'?'done':''}">${esc(statusText)}</span></div>
-        <div class="homeNPProgress"><div class="row"><small>Progresso da obra</small><strong>${p.toFixed(0)}%</strong></div><div class="homeNPBar"><i style="width:${p}%"></i></div></div>
-        <div class="homeNPInfo">
-          <div><small>Cliente / empresa</small><b>${esc(o.cliente||'Não informado')}</b></div>
-          <div><small>Início</small><b>${esc(formatDateBR(o.data_inicio)||'Não informado')}</b></div>
-          <div><small>Término</small><b>${esc(formatDateBR(o.data_fim)||'Sem previsão')}</b></div>
-          <div><small>Valor do contrato</small><b class="money">${money(f.contrato)}</b></div>
-        </div>
-        <div class="homeNPObraActions"><button class="btn" type="button" onclick="openObra('${o.id}')">Abrir obra</button><button class="btn gold" type="button" onclick="openCheckForObra('${o.id}')">Checklist</button></div>
-      </article>`;
-   }).join(''):'<div class="empty">Nenhuma obra cadastrada. Toque em “Nova obra” para começar.</div>';
+     const p=Math.max(0,Math.min(100,Number(obraProgress(o)||0)));
+     const f=obraFinanceData(o.id);
+     const status=String(o.status||'em_andamento');
+     return `<article class="edifiqWork" onclick="openObra('${o.id}')"><div class="edifiqWorkHead"><div><h3>${esc(o.nome||'Obra sem nome')}</h3><p>${esc(o.cliente||'Cliente não informado')}</p></div><span class="edifiqWorkStatus">${esc(statusLabel(status))}</span></div><div class="edifiqWorkProgress"><div class="row"><small>Progresso da obra</small><b>${p.toFixed(0)}%</b></div><div class="edifiqWorkBar"><i style="width:${p}%"></i></div></div><div class="edifiqWorkInfo"><div><small>Cliente / empresa</small><b>${esc(o.cliente||'Não informado')}</b></div><div><small>Início</small><b>${esc(formatDateBR(o.data_inicio)||'Não informado')}</b></div><div><small>Término</small><b>${esc(formatDateBR(o.data_fim)||'Sem previsão')}</b></div><div><small>Valor do contrato</small><b class="money">${money(f.contrato)}</b></div></div></article>`;
+   }).join(''):'<div class="empty">Nenhuma obra cadastrada.</div>';
  }
  renderResumoGeral();
 }
-
 
 /* =========================================================
    EXPORTAÇÃO
@@ -6852,6 +6697,31 @@ function relatorioDiario(){
 /* EDIFIQ — HOME ESTILO NO PRUMO / VISÃO MOBILE */
 .homeNP{max-width:1100px;margin:0 auto;padding:2px 0 18px}.homeNPHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 14px}.homeNPEyebrow{display:block;color:var(--gold2);font-size:9px;font-weight:900;letter-spacing:1.5px;margin-bottom:4px}.homeNPHead h2{margin:0;font-size:21px}.homeNPHead p{margin:4px 0 0;color:var(--muted);font-size:11px}.homeNPAdd{border:1px solid #8b6d2d;background:linear-gradient(145deg,#d9ad55,#9d752c);color:#171717;border-radius:12px;padding:11px 14px;font-weight:900;white-space:nowrap}.homeNPKpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}.homeNPKpi{min-width:0;min-height:82px;display:flex;align-items:center;gap:11px;padding:13px;border:1px solid #26354e;border-radius:16px;background:linear-gradient(145deg,#121a2b,#0d1422);box-shadow:var(--shadow)}.homeNPKpi>span{width:42px;height:42px;flex:0 0 42px;border-radius:13px;display:grid;place-items:center;background:rgba(59,130,246,.13);font-size:22px;color:#3b82f6}.homeNPKpi.receive>span{background:rgba(34,197,94,.12);color:#22c55e}.homeNPKpi.active>span{background:rgba(14,165,233,.12);color:#0ea5e9}.homeNPKpi.team>span{background:rgba(245,158,11,.12);color:#f59e0b}.homeNPKpi small{display:block;color:#93a1b6;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.homeNPKpi b{display:block;font-size:18px;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.homeNPKpi.receive b{color:#22c55e}.homeNPKpi.active b{color:#3b82f6}.homeNPKpi.team b{color:#f59e0b}.homeNPSection{display:flex;align-items:end;justify-content:space-between;gap:8px;margin:4px 2px 9px}.homeNPSection h2{margin:0;font-size:18px}.homeNPSection span{display:block;color:var(--muted);font-size:10px;margin-top:3px}.homeNPLink{background:transparent;border:0;color:#60a5fa;font-weight:800;font-size:11px;padding:5px;cursor:pointer}.homeNPObras{display:grid;grid-template-columns:1fr;gap:13px}.homeNPObra{border:1px solid #22314b;border-left:5px solid #3b82f6;border-radius:17px;background:linear-gradient(145deg,#121a2a,#0c1320);padding:16px;box-shadow:0 10px 24px rgba(0,0,0,.18)}.homeNPObraTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.homeNPObraTitle{min-width:0}.homeNPObraTitle h3{margin:0;color:#fff;font-size:19px;line-height:1.2;overflow-wrap:anywhere}.homeNPObraTitle p{margin:4px 0 0;color:#91a0b5;font-size:12px}.homeNPStatus{border-radius:999px;padding:7px 11px;background:#19243a;color:#e7edf7;font-size:11px;font-weight:900;white-space:nowrap}.homeNPStatus.done{background:#16a34a;color:#fff}.homeNPProgress{margin:16px 0 14px}.homeNPProgress .row{margin-bottom:6px}.homeNPProgress small{color:#94a3b8;font-size:11px}.homeNPProgress strong{color:#60a5fa;font-size:13px}.homeNPBar{height:9px;background:#17233a;border-radius:99px;overflow:hidden}.homeNPBar i{display:block;height:100%;background:#3b82f6;border-radius:99px}.homeNPInfo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.homeNPInfo div{min-width:0}.homeNPInfo small{display:block;color:#8190a5;font-size:9px;margin-bottom:4px}.homeNPInfo b{display:block;color:#e6edf7;font-size:12px;overflow-wrap:anywhere}.homeNPInfo .money{color:#60a5fa;font-size:14px}.homeNPObraActions{display:flex;gap:7px;margin-top:13px}.homeNPObraActions button{flex:1;min-height:38px}.rgHero{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;margin:10px 0 12px;border:1px solid #6b5427;border-radius:16px;background:linear-gradient(135deg,#1b1710,#111820)}.rgHero>div span{color:var(--gold2);font-size:9px;font-weight:900;letter-spacing:1.4px}.rgHero h2{margin:4px 0 0;font-size:18px}.rgHero p{margin:4px 0 0;color:var(--muted);font-size:10px}.rgTotals{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px}.rgTotals .summaryTotal em{display:block;color:var(--muted);font-size:9px;font-style:normal;margin-top:4px}.rgGrid{display:grid;grid-template-columns:1.15fr .85fr;gap:10px;margin-bottom:10px}.rgPanel{margin:0}.rgOpGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.rgOpGrid>div{padding:10px;border:1px solid var(--line);border-radius:10px;background:#0b1015}.rgOpGrid small{display:block;color:var(--muted);font-size:9px}.rgOpGrid b{display:block;font-size:16px;margin-top:3px}.rgCat{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)}.rgCat:last-child{border-bottom:0}.rgCat small{display:block;color:#cbd5e1;font-size:10px}.rgCat b{font-size:11px}.rgCatBar{height:6px;background:#18202a;border-radius:99px;overflow:hidden;margin-top:5px}.rgCatBar i{display:block;height:100%;background:#3b82f6;border-radius:99px}.rgObraCard{background:linear-gradient(145deg,#111923,#0c1219);border:1px solid #26354e;border-radius:15px;padding:14px;margin-top:10px}.rgObraHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.rgObraHead h3{margin:0;font-size:16px}.rgObraHead p{margin:3px 0 0;color:var(--muted);font-size:10px}.rgObraMeta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:11px}.rgObraMeta div{padding:8px;background:#0a0f14;border:1px solid var(--line);border-radius:9px}.rgObraMeta small{display:block;color:var(--muted);font-size:8px}.rgObraMeta b{display:block;margin-top:3px;font-size:11px;overflow-wrap:anywhere}.rgObraCosts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:7px}.rgObraCosts div{padding:7px 8px;border-radius:8px;background:#101720}.rgObraCosts small{display:block;color:#8291a5;font-size:8px}.rgObraCosts b{display:block;margin-top:2px;font-size:10px}.rgObraFoot{margin-top:10px}.rgObraFoot .progress{height:8px}.rgObraFoot .row{margin-bottom:5px}.rgObraFoot small{font-size:9px}.rgObraFoot b{font-size:11px;color:#60a5fa}
 @media(max-width:759px){.homeNP{padding-top:0}.homeNPHead{align-items:flex-start}.homeNPHead h2{font-size:18px}.homeNPHead p{font-size:10px;max-width:230px}.homeNPAdd{padding:9px 10px;font-size:10px}.homeNPKpis{grid-template-columns:1fr 1fr;gap:7px;margin-bottom:15px}.homeNPKpi{min-height:72px;padding:9px;border-radius:13px;gap:8px}.homeNPKpi>span{width:32px;height:32px;flex-basis:32px;border-radius:10px;font-size:17px}.homeNPKpi small{font-size:8px}.homeNPKpi b{font-size:14px}.homeNPSection h2{font-size:16px}.homeNPObra{padding:13px;border-radius:14px}.homeNPObraTitle h3{font-size:16px}.homeNPObraTitle p{font-size:10px}.homeNPStatus{padding:6px 8px;font-size:9px}.homeNPProgress{margin:13px 0 12px}.homeNPInfo{grid-template-columns:1fr 1fr;gap:9px}.homeNPInfo div:last-child{grid-column:1/-1}.homeNPInfo small{font-size:8px}.homeNPInfo b{font-size:11px}.homeNPInfo .money{font-size:13px}.homeNPObraActions{margin-top:11px}.rgHero{padding:12px;border-radius:13px}.rgHero h2{font-size:15px}.rgHero p{font-size:9px}.rgTotals{grid-template-columns:1fr 1fr;gap:7px}.rgTotals .summaryTotal{padding:9px}.rgTotals .summaryTotal b{font-size:14px}.rgGrid{grid-template-columns:1fr;gap:8px}.rgOpGrid{gap:6px}.rgObraMeta{grid-template-columns:1fr 1fr}.rgObraCosts{grid-template-columns:1fr 1fr}.rgObraCard{padding:11px}.rgObraHead h3{font-size:14px}}
+
+/* ===== AJUSTES SOLICITADOS — HOME + FINANCEIRO ===== */
+.edifiqHome{max-width:1080px;margin:0 auto;padding:2px 0 18px}
+.edifiqHomeHeader{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:4px 0 18px}
+.edifiqHomeEyebrow{font-size:9px;font-weight:900;letter-spacing:1.8px;color:var(--gold2);margin-bottom:5px}
+.edifiqHomeHeader h1{margin:0;font-size:25px;letter-spacing:-.3px}
+.edifiqHomeHeader p{margin:5px 0 0;color:var(--muted);font-size:11px}
+.edifiqHomeNew{border:1px solid #b98a35;background:linear-gradient(145deg,#e5bf69,#9b7128);color:#171717;border-radius:12px;padding:11px 15px;font-weight:900;white-space:nowrap;box-shadow:0 8px 18px rgba(0,0,0,.16)}
+.edifiqHomeStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:20px}
+.edifiqStat{min-width:0;display:flex;align-items:center;gap:11px;padding:13px;border:1px solid #26354e;border-radius:15px;background:linear-gradient(145deg,#121a2a,#0c1320);box-shadow:0 8px 20px rgba(0,0,0,.14)}
+.edifiqStat>span{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:12px;background:#18284a;color:#60a5fa;font-size:19px;font-weight:900}
+.edifiqStat>span.green{background:#0d3028;color:#35d27c}.edifiqStat>span.cyan{background:#103047;color:#2db8ff}.edifiqStat>span.gold{background:#322816;color:#e4b85e}
+.edifiqStat small{display:block;color:#93a1b6;font-size:9px}.edifiqStat b{display:block;font-size:17px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.edifiqStat:nth-child(2) b{color:#35d27c}.edifiqStat:nth-child(3) b{color:#60a5fa}.edifiqStat:nth-child(4) b{color:#e4b85e}
+.edifiqWorksTitle{display:flex;align-items:end;justify-content:space-between;gap:10px;margin:0 2px 10px}.edifiqWorksTitle h2{margin:0;font-size:18px}.edifiqWorksTitle span{display:block;color:var(--muted);font-size:10px;margin-top:3px}.edifiqWorksTitle button{border:0;background:none;color:#60a5fa;font-weight:900;font-size:11px;padding:5px}
+.edifiqWorks{display:grid;grid-template-columns:1fr;gap:12px}
+.edifiqWork{border:1px solid #26354e;border-left:4px solid #3b82f6;border-radius:17px;background:linear-gradient(145deg,#121a2a,#0b121d);padding:16px;box-shadow:0 10px 24px rgba(0,0,0,.16);cursor:pointer}
+.edifiqWork:hover{border-color:#3b82f6;transform:translateY(-1px)}
+.edifiqWorkHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.edifiqWorkHead h3{margin:0;font-size:20px;line-height:1.2}.edifiqWorkHead p{margin:5px 0 0;color:#9aa8bc;font-size:12px}
+.edifiqWorkStatus{font-size:10px;font-weight:900;color:#dce6f3;background:#19243a;border-radius:999px;padding:6px 9px;white-space:nowrap}
+.edifiqWorkProgress{margin:17px 0 15px}.edifiqWorkProgress .row{margin-bottom:6px}.edifiqWorkProgress small{color:#9aa8bc;font-size:10px}.edifiqWorkProgress b{color:#60a5fa;font-size:13px}.edifiqWorkBar{height:9px;background:#17233a;border-radius:99px;overflow:hidden}.edifiqWorkBar i{display:block;height:100%;background:#3b82f6;border-radius:99px}
+.edifiqWorkInfo{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:10px}.edifiqWorkInfo div{min-width:0}.edifiqWorkInfo small{display:block;color:#8190a5;font-size:8px;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}.edifiqWorkInfo b{display:block;color:#edf3fa;font-size:12px;overflow-wrap:anywhere}.edifiqWorkInfo .money{color:#60a5fa;font-size:14px}
+.financeHero{padding:15px 16px;margin:0 0 12px;border:1px solid #3d3220;border-radius:16px;background:linear-gradient(135deg,#1b1710,#111820)}.financeHero span{font-size:9px;color:var(--gold2);font-weight:900;letter-spacing:1.5px}.financeHero h2{margin:4px 0 0;font-size:18px}.financeHero p{margin:4px 0 0;color:var(--muted);font-size:10px}
+.financeFilters{display:grid;grid-template-columns:1fr 1fr 1fr 1.5fr;gap:9px;align-items:end}.financeFilters label{min-width:0}.financeKpis{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:10px 0}.financeKpi{padding:12px;border:1px solid var(--line);border-radius:14px;background:#11161b}.financeKpi small{display:block;color:#94a3b8;font-size:9px}.financeKpi b{display:block;font-size:18px;margin-top:4px}.financeKpi span{display:block;color:#718096;font-size:8px;margin-top:3px}.financeCards{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px}.financeMini{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--line);border-radius:12px;background:#0f151b}.financeMini>span{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:#172033;font-size:15px}.financeMini small{display:block;color:#8795a8;font-size:8px}.financeMini b{display:block;font-size:11px;margin-top:2px}.financeAnalysisLink{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.financeAnalysisLink h2{margin:0;font-size:15px}.financeAnalysisLink p{margin:4px 0 0}.financeByWork{margin-bottom:10px}.financeListTitle{display:flex;align-items:end;justify-content:space-between;margin:15px 2px 8px}.financeListTitle h2{margin:0;font-size:17px}.financeListTitle small{color:var(--muted);font-size:9px}
+@media(max-width:759px){.edifiqHome{padding-top:0}.edifiqHomeHeader{margin-bottom:13px;align-items:flex-start}.edifiqHomeHeader h1{font-size:21px}.edifiqHomeHeader p{font-size:9px;max-width:240px}.edifiqHomeNew{padding:9px 10px;font-size:10px}.edifiqHomeStats{grid-template-columns:1fr 1fr;gap:7px;margin-bottom:15px}.edifiqStat{min-height:66px;padding:9px;border-radius:13px;gap:8px}.edifiqStat>span{width:31px;height:31px;flex-basis:31px;border-radius:9px;font-size:14px}.edifiqStat small{font-size:8px}.edifiqStat b{font-size:13px}.edifiqWork{padding:13px;border-radius:14px}.edifiqWorkHead h3{font-size:16px}.edifiqWorkHead p{font-size:10px}.edifiqWorkStatus{font-size:8px;padding:5px 7px}.edifiqWorkProgress{margin:13px 0}.edifiqWorkInfo{grid-template-columns:1fr 1fr;gap:9px}.edifiqWorkInfo small{font-size:7px}.edifiqWorkInfo b{font-size:10px}.edifiqWorkInfo .money{font-size:12px}.financeHero{padding:12px;border-radius:13px}.financeHero h2{font-size:15px}.financeHero p{font-size:9px}.financeFilters{grid-template-columns:1fr 1fr;gap:7px}.financeFilters label:last-child{grid-column:1/-1}.financeKpis{grid-template-columns:1fr 1fr;gap:7px}.financeKpi{padding:9px}.financeKpi b{font-size:15px}.financeCards{grid-template-columns:1fr 1fr;gap:7px}.financeMini{padding:8px}.financeMini>span{width:27px;height:27px;flex-basis:27px;font-size:13px}.financeMini b{font-size:10px}.financeAnalysisLink{align-items:flex-start;flex-direction:column}.financeAnalysisLink .btn{width:100%}}
+@media(max-width:390px){.edifiqHomeStats{gap:6px}.edifiqStat{padding:8px}.edifiqStat b{font-size:12px}.edifiqWorkInfo{gap:7px}}
 </style></head><body><h1>${titulo}</h1><small>Gerado em ${new Date().toLocaleString("pt-BR")}</small><p><b>Registros:</b> ${rows.length} · <b>Dias:</b> ${new Set(rows.map(r=>r.data)).size} · <b>Horas:</b> ${rows.reduce((a,r)=>a+Number(r.horas||0),0).toLocaleString("pt-BR")} h</p>${rows.map(r=>{const names=(r.equipe||[]).map(diarioFuncionarioNome).filter(Boolean);return `<div class="item"><h2>${esc(diarioObraNome(r.obra_id))}</h2><div class="meta">${esc(diarioFmtData(r.data))} · ${esc(r.clima||"Não informado")} · ${Number(r.horas||0).toLocaleString("pt-BR")} h</div><p><span class="tag">Equipe:</span> ${esc(names.join(" · ")||"Não informada")}</p>${r.atividades?`<p><span class="tag">Atividades:</span><br>${esc(r.atividades).replace(/\n/g,"<br>")}</p>`:""}${r.observacoes?`<p><span class="tag">Observações:</span><br>${esc(r.observacoes).replace(/\n/g,"<br>")}</p>`:""}</div>`}).join("")}<div class="foot">EDIFIQ — Gestão de Obras</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
 </body></html>`;
   const w=window.open("","_blank"); if(!w){toast("Permita pop-ups para gerar o relatório.");return;} w.document.write(html);w.document.close();setTimeout(()=>w.print(),350);
