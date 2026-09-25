@@ -2626,44 +2626,167 @@ async function initSupabase(){
 }
 
 async function login(){
-  const email=$("email")?.value.trim()||"";
+  const email=($("email")?.value||"").trim().toLowerCase();
   const password=$("password")?.value||"";
-  if(!email||!password){authMsg("Informe e-mail e senha.");return;}
+
+  if(!email||!password){
+    authMsg("Informe e-mail e senha.");
+    return;
+  }
+
   const btn=document.querySelector('#auth .authBtns .primary');
   if(btn){btn.disabled=true;btn.textContent="Entrando...";}
   authMsg("Conectando ao EDIFIQ...");
+
+  const finishLogin=async(session)=>{
+    if(!session?.user){
+      authMsg("Login não concluído. Verifique o e-mail e a senha.");
+      return false;
+    }
+
+    user=session.user;
+
+    // Mostra o aplicativo imediatamente após a autenticação.
+    $("auth")?.classList.add("hidden");
+    $("app")?.classList.remove("hidden");
+    authMsg("");
+
+    // Mantém a sessão no Supabase quando o cliente estiver disponível.
+    try{
+      if(sb?.auth?.setSession && session.access_token && session.refresh_token){
+        await sb.auth.setSession({
+          access_token:session.access_token,
+          refresh_token:session.refresh_token
+        });
+      }
+    }catch(e){
+      console.warn("Não foi possível persistir a sessão do Supabase:",e);
+    }
+
+    // A sincronização não pode impedir a entrada no aplicativo.
+    try{
+      if(sb){
+        await Promise.race([
+          loadCloud(),
+          new Promise(resolve=>setTimeout(resolve,7000))
+        ]);
+      }
+      await limparFuncionariosSemIdentificacao();
+      saveLocalData();
+    }catch(e){
+      console.warn("Sincronização após login indisponível:",e);
+      toast("Login realizado. Dados locais mantidos.");
+    }
+
+    try{ renderAll(); }catch(e){ console.warn("Renderização após login:",e); }
+    window.scrollTo({top:0,behavior:"instant"});
+    return true;
+  };
+
   try{
-    let session=null, loginError=null;
+    // 1) Tenta o endpoint oficial de autenticação diretamente.
+    // Isso evita que uma falha no carregamento do SDK impeça o login.
+    let response=null;
+    let data=null;
+
+    try{
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),12000);
+
+      response=await fetch(
+        SUPA_URL+"/auth/v1/token?grant_type=password",
+        {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "apikey":SUPA_KEY,
+            "Authorization":"Bearer "+SUPA_KEY
+          },
+          body:JSON.stringify({email,password}),
+          signal:controller.signal
+        }
+      );
+
+      clearTimeout(timer);
+      data=await response.json().catch(()=>({}));
+    }catch(restErr){
+      console.warn("Login REST indisponível:",restErr);
+    }
+
+    if(response?.ok && data?.access_token && data?.user){
+      const session={
+        access_token:data.access_token,
+        refresh_token:data.refresh_token,
+        user:data.user
+      };
+
+      // Carrega o cliente apenas depois que o login já foi validado.
+      try{ await ensureSupabaseClient(); }catch(e){ console.warn("SDK Supabase:",e); }
+
+      await finishLogin(session);
+      return;
+    }
+
+    // 2) Se o endpoint REST não respondeu, tenta o SDK.
+    if(response && !response.ok){
+      const raw=String(
+        data?.error_description ||
+        data?.msg ||
+        data?.message ||
+        data?.error ||
+        ""
+      );
+
+      if(/invalid login credentials/i.test(raw)){
+        authMsg("E-mail ou senha incorretos.");
+        return;
+      }
+      if(/email not confirmed/i.test(raw)){
+        authMsg("Confirme seu e-mail antes de entrar.");
+        return;
+      }
+      if(/email provider is disabled/i.test(raw)){
+        authMsg("O login por e-mail está desativado no Supabase.");
+        return;
+      }
+      if(raw){
+        authMsg(raw);
+        return;
+      }
+    }
+
     try{
       if(await ensureSupabaseClient()){
         const result=await sb.auth.signInWithPassword({email,password});
-        session=result?.data?.session||null; loginError=result?.error||null;
-      }
-    }catch(e){loginError=e;}
-    if(!session){
-      const msg=String(loginError?.message||"");
-      if(/invalid login credentials/i.test(msg)){authMsg("E-mail ou senha incorretos.");return;}
-      if(/email not confirmed/i.test(msg)){authMsg("Confirme seu e-mail antes de entrar.");return;}
-      try{
-        const response=await fetch(SUPA_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPA_KEY},body:JSON.stringify({email,password})});
-        const data=await response.json().catch(()=>({}));
-        if(!response.ok||!data.access_token||!data.user){
-          const raw=String(data.error_description||data.msg||data.message||"");
-          authMsg(/invalid login credentials/i.test(raw)?"E-mail ou senha incorretos.":(raw||"Não foi possível entrar agora. Verifique sua conexão e tente novamente."));return;
+
+        if(result?.error){
+          const msg=String(result.error.message||"");
+          if(/invalid login credentials/i.test(msg)){
+            authMsg("E-mail ou senha incorretos.");
+          }else if(/email not confirmed/i.test(msg)){
+            authMsg("Confirme seu e-mail antes de entrar.");
+          }else{
+            authMsg(msg||"Não foi possível entrar agora. Verifique sua conexão.");
+          }
+          return;
         }
-        session={access_token:data.access_token,refresh_token:data.refresh_token,user:data.user};
-        try{if(sb?.auth?.setSession&&data.refresh_token)await sb.auth.setSession({access_token:data.access_token,refresh_token:data.refresh_token});}catch(e){}
-      }catch(e){console.error("EDIFIQ login REST",e);authMsg("Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.");return;}
+
+        if(result?.data?.session){
+          await finishLogin(result.data.session);
+          return;
+        }
+      }
+    }catch(e){
+      console.error("EDIFIQ login SDK:",e);
     }
-    if(!session?.user){authMsg("Login não concluído. Verifique o e-mail e a senha.");return;}
-    user=session.user; $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden"); authMsg("");
-    try{
-      if(sb?.auth?.setSession&&session.refresh_token)await sb.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token});
-      await loadCloud(); await limparFuncionariosSemIdentificacao(); saveLocalData();
-    }catch(e){console.warn("Sincronização após login indisponível",e);toast("Login realizado. Dados locais mantidos.");}
-    renderAll(); window.scrollTo({top:0,behavior:"instant"});
-  }catch(err){console.error("EDIFIQ login",err);authMsg("Não foi possível entrar agora. Verifique sua conexão e tente novamente.");}
-  finally{if(btn){btn.disabled=false;btn.textContent="Entrar";}}
+
+    authMsg("Não foi possível conectar ao servidor. Confira a internet ou use 'Entrar no modo local'.");
+  }catch(err){
+    console.error("EDIFIQ login:",err);
+    authMsg("Não foi possível entrar agora. Verifique sua conexão e tente novamente.");
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="Entrar";}
+  }
 }
 
 async function signup(){
@@ -8364,6 +8487,18 @@ window.goMenu=goMenu;
 
 window.login=login;
 window.signup=signup;
+
+document.addEventListener("DOMContentLoaded",()=>{
+  ["email","password"].forEach(id=>{
+    const el=$(id);
+    el?.addEventListener("keydown",e=>{
+      if(e.key==="Enter"){
+        e.preventDefault();
+        login();
+      }
+    });
+  });
+});
 window.resetPassword=
 resetPassword;
 window.logout=logout;
