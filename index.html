@@ -1097,6 +1097,60 @@ body{min-height:100vh;min-height:100dvh}
 }
 </style>
 
+
+<style id="edifiq-equipe-profissional">
+/* EDIFIQ — Equipe profissional: cartões, hierarquia e leitura rápida */
+.equipeHistoricos{margin-top:14px}
+.equipeHistoricos .sectionHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.equipeHistoryTabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;padding:4px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}
+.historyTab{border:0;background:transparent;color:var(--muted);padding:11px 10px;border-radius:10px;font-weight:800;cursor:pointer}
+.historyTab.active{background:var(--gold);color:#111}
+.equipeHistoryFilters{display:grid!important;grid-template-columns:1.4fr 1fr 1fr!important;gap:8px!important;margin-bottom:10px}
+.historySummaryGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.historyMetric{border:1px solid var(--line);background:rgba(255,255,255,.025);border-radius:12px;padding:10px;min-width:0}
+.historyMetric small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.historyMetric b{display:block;margin-top:3px;font-size:16px;overflow-wrap:anywhere}
+.historyCard{border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.018));border-radius:15px;padding:12px;margin-bottom:9px;box-shadow:0 5px 16px rgba(0,0,0,.08)}
+.historyCardTop{display:flex;align-items:center;gap:9px;min-width:0}
+.historyAvatar{width:38px;height:38px;flex:0 0 38px;border-radius:11px;display:grid;place-items:center;background:rgba(59,130,246,.16);color:#60a5fa;font-weight:900;font-size:16px}
+.historyAvatar.diary{font-size:17px}
+.historyIdentity{flex:1;min-width:0}
+.historyIdentity b{display:block;font-size:14px;line-height:1.2;overflow-wrap:anywhere}
+.historyIdentity small{display:block;color:var(--muted);margin-top:3px;font-size:10px;line-height:1.25;overflow-wrap:anywhere}
+.historyStatus{font-size:9px;font-weight:900;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.historyStatus.paid{background:rgba(34,197,94,.14);color:#4ade80}
+.historyStatus.pending{background:rgba(245,158,11,.14);color:#fbbf24}
+.historyDataGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+.historyDataGrid>div{min-width:0;padding:8px;border-radius:9px;background:rgba(0,0,0,.12);border:1px solid rgba(255,255,255,.045)}
+.historyDataGrid small{display:block;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.03em}
+.historyDataGrid b{display:block;margin-top:3px;font-size:11px;line-height:1.2;overflow-wrap:anywhere;word-break:break-word}
+/* Funcionários: grade compacta e profissional */
+#funcionarios #funcList{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+#funcionarios #funcList>.card{margin:0!important;min-width:0!important;overflow:hidden!important;padding:12px!important}
+#funcionarios #funcList .row{gap:7px!important}
+#funcionarios #funcList h3{font-size:15px!important;margin:0 0 3px!important;overflow-wrap:anywhere!important}
+#funcionarios #funcList .three{grid-template-columns:1fr 1fr!important;gap:6px!important;margin-top:8px!important}
+#funcionarios #funcList .three>div{padding:7px!important;border:1px solid rgba(255,255,255,.05);border-radius:9px;min-width:0}
+#funcionarios #funcList .three>div:last-child{grid-column:1/-1}
+#funcionarios #funcList .pay-summary{grid-template-columns:1fr 1fr!important;gap:6px!important;margin-top:7px!important}
+#funcionarios #funcList .pay-summary>div{padding:7px!important;min-width:0}
+#funcionarios #funcList .listActions{grid-template-columns:1fr 1fr!important;gap:6px!important}
+#funcionarios #funcList .listActions .btn{padding:8px 5px!important;font-size:10px!important;min-width:0!important}
+@media(max-width:520px){
+ .equipeHistoryFilters{grid-template-columns:1fr 1fr!important}
+ .equipeHistoryFilters label:first-child{grid-column:1/-1}
+ .historySummaryGrid{gap:6px}
+ .historyMetric{padding:8px}
+ .historyMetric b{font-size:14px}
+ #funcionarios #funcList{gap:8px!important}
+ #funcionarios #funcList>.card{padding:9px!important}
+ #funcionarios #funcList .three{grid-template-columns:1fr!important}
+ #funcionarios #funcList .three>div:last-child{grid-column:auto}
+ #funcionarios #funcList .pay-summary{grid-template-columns:1fr 1fr!important}
+}
+@media(max-width:360px){#funcionarios #funcList{grid-template-columns:1fr!important}}
+</style>
+
 </head>
 <body>
 <div class="bootError" id="bootError"><div class="bootErrorBox"><h2>EDIFIQ</h2><p id="bootErrorText">O aplicativo encontrou um erro ao iniciar.</p><button onclick="location.reload()">Recarregar</button></div></div>
@@ -1243,6 +1297,34 @@ body{min-height:100vh;min-height:100dvh}
 <div class="kpi"><small>Líquido total</small><strong id="folhaLiquido">R$ 0,00</strong></div>
 <div class="kpi"><small>Saldo pendente</small><strong id="folhaPendente">R$ 0,00</strong></div>
 </div><div id="folhaDetalhes"></div></div>
+
+<div class="card equipeHistoricos" id="equipeHistoricosCard">
+  <div class="sectionHead">
+    <div><h2>📚 Histórico da equipe</h2><p class="sub">Consulte pagamentos e diárias por funcionário, período e status.</p></div>
+  </div>
+  <div class="equipeHistoryTabs">
+    <button class="historyTab active" id="histTabPag" type="button" onclick="showEquipeHistoryTab('pag')">💰 Pagamentos</button>
+    <button class="historyTab" id="histTabDia" type="button" onclick="showEquipeHistoryTab('dia')">📅 Diárias</button>
+  </div>
+  <div id="equipeHistoryPag">
+    <div class="historyFilters equipeHistoryFilters">
+      <label>Funcionário<select id="histPagFunc" onchange="renderHistoricoPagamentos()"><option value="">Todos os funcionários</option></select></label>
+      <label>De<input id="histPagInicio" type="date" onchange="renderHistoricoPagamentos()"></label>
+      <label>Até<input id="histPagFim" type="date" onchange="renderHistoricoPagamentos()"></label>
+    </div>
+    <div class="historySummaryGrid" id="histPagResumo"></div>
+    <div id="histPagList"></div>
+  </div>
+  <div id="equipeHistoryDia" class="hidden">
+    <div class="historyFilters equipeHistoryFilters">
+      <label>Funcionário<select id="histFunc2" onchange="renderHistoricoDiariasPro()"><option value="">Todos os funcionários</option></select></label>
+      <label>De<input id="histInicio2" type="date" onchange="renderHistoricoDiariasPro()"></label>
+      <label>Até<input id="histFim2" type="date" onchange="renderHistoricoDiariasPro()"></label>
+    </div>
+    <div class="historySummaryGrid" id="histDiaResumo"></div>
+    <div id="histDiaList"></div>
+  </div>
+</div>
 </section>
 <section class="page" id="diarias">
 <div class="pageTitle"><div><h1>Diárias</h1><p class="sub">Registro, acompanhamento e histórico individual por funcionário.</p></div><button class="btn gold" onclick="openDia()">＋ Diária</button></div>
@@ -5577,6 +5659,8 @@ function renderEquipeOverview(){
   if($("eqDiasPeriodo"))$("eqDiasPeriodo").textContent=ds.length; if($("eqBrutoPeriodo"))$("eqBrutoPeriodo").textContent=money(bruto); if($("eqPagoPeriodo"))$("eqPagoPeriodo").textContent=money(pago); if($("eqAdiantPeriodo"))$("eqAdiantPeriodo").textContent=money(adv); if($("eqPendentePeriodo"))$("eqPendentePeriodo").textContent=money(pend);
   const fo=$("folhaObra"); if(fo){const cur=fo.value||"all";fo.innerHTML='<option value="all">Todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');if([...fo.options].some(x=>x.value===cur))fo.value=cur;}
   renderFechamentoFolha();
+  fillEquipeHistorySelectors();
+  renderHistoricoPagamentos();
 }
 
 /* =========================================================
@@ -7023,6 +7107,71 @@ async function importBackup(event){
   event.target.value="";
 }
 
+
+/* =========================================================
+   CENTRAL PROFISSIONAL DE HISTÓRICOS DA EQUIPE
+   ========================================================= */
+function showEquipeHistoryTab(tab){
+  const pag=$('equipeHistoryPag'), dia=$('equipeHistoryDia');
+  const tp=$('histTabPag'), td=$('histTabDia');
+  if(!pag||!dia)return;
+  const isPag=tab!=='dia';
+  pag.classList.toggle('hidden',!isPag); dia.classList.toggle('hidden',isPag);
+  tp?.classList.toggle('active',isPag); td?.classList.toggle('active',!isPag);
+  if(isPag) renderHistoricoPagamentos(); else renderHistoricoDiariasPro();
+}
+function fillEquipeHistorySelectors(){
+  const opts=D.funcionarios.slice().sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR')).map(f=>`<option value="${esc(String(f.id))}">${esc(f.nome||'Funcionário')}</option>`).join('');
+  ['histPagFunc','histFunc2'].forEach(id=>{const el=$(id);if(!el)return;const cur=el.value;el.innerHTML='<option value="">Todos os funcionários</option>'+opts;if(cur)el.value=cur;});
+}
+function pagamentoEquipeHistorico(){
+  const arr=[];
+  for(const g of (D.gastos||[])){
+    const cat=categoriaFinanceira(g);
+    if(cat!=='Mão de obra')continue;
+    const nome=String(g.fornecedor||'').trim();
+    if(!nome)continue;
+    const f=D.funcionarios.find(x=>normalize(x.nome)===normalize(nome));
+    if(!f)continue;
+    arr.push({g,f,obra:D.obras.find(o=>String(o.id)===String(g.obra_id))});
+  }
+  return arr.sort((a,b)=>String(b.g?.data||'').localeCompare(String(a.g?.data||'')));
+}
+function renderHistoricoPagamentos(){
+  fillEquipeHistorySelectors();
+  const box=$('histPagList'), resumoBox=$('histPagResumo'); if(!box)return;
+  const fid=$('histPagFunc')?.value||'', ini=$('histPagInicio')?.value||'', fim=$('histPagFim')?.value||'';
+  let items=pagamentoEquipeHistorico();
+  if(fid)items=items.filter(x=>String(x.f.id)===String(fid));
+  if(ini)items=items.filter(x=>String(x.g.data||'')>=ini);
+  if(fim)items=items.filter(x=>String(x.g.data||'')<=fim);
+  const total=items.reduce((a,x)=>a+Number(x.g.valor||0),0);
+  const qtd=items.length;
+  const pessoas=new Set(items.map(x=>String(x.f.id))).size;
+  if(resumoBox)resumoBox.innerHTML=`<div class="historyMetric"><small>Pagamentos</small><b>${qtd}</b></div><div class="historyMetric"><small>Funcionários</small><b>${pessoas}</b></div><div class="historyMetric"><small>Total pago</small><b class="green">${money(total)}</b></div>`;
+  if(!items.length){box.innerHTML='<div class="empty">Nenhum pagamento encontrado com os filtros selecionados.</div>';return;}
+  box.innerHTML=items.map(x=>`<article class="historyCard paymentHistoryCard">
+    <div class="historyCardTop"><div class="historyAvatar">${esc(String(x.f.nome||'F').trim().charAt(0).toUpperCase())}</div><div class="historyIdentity"><b>${esc(x.f.nome)}</b><small>${esc(x.f.funcao||'Funcionário')} · ${esc(x.obra?.nome||'Obra não definida')}</small></div><span class="historyStatus paid">Pago</span></div>
+    <div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(x.g.data||''))}</b></div><div><small>Valor</small><b class="green">${money(x.g.valor)}</b></div><div><small>Categoria</small><b>Mão de obra</b></div><div><small>Descrição</small><b>${esc(x.g.descricao||'Pagamento de equipe')}</b></div></div>
+  </article>`).join('');
+}
+function renderHistoricoDiariasPro(){
+  fillEquipeHistorySelectors();
+  const box=$('histDiaList'), resumoBox=$('histDiaResumo'); if(!box)return;
+  const fid=$('histFunc2')?.value||'', ini=$('histInicio2')?.value||'', fim=$('histFim2')?.value||'';
+  let items=(D.diarias||[]).slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  if(fid)items=items.filter(d=>String(d.funcionario_id??d.funcId??d.funcionarioId)===String(fid));
+  if(ini)items=items.filter(d=>String(d.data||'')>=ini);
+  if(fim)items=items.filter(d=>String(d.data||'')<=fim);
+  const total=items.reduce((a,d)=>a+diariaValor(d),0), pag=items.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0), pend=total-pag;
+  if(resumoBox)resumoBox.innerHTML=`<div class="historyMetric"><small>Registros</small><b>${items.length}</b></div><div class="historyMetric"><small>Valor total</small><b>${money(total)}</b></div><div class="historyMetric"><small>Pendente</small><b class="gold">${money(pend)}</b></div>`;
+  if(!items.length){box.innerHTML='<div class="empty">Nenhuma diária encontrada com os filtros selecionados.</div>';return;}
+  box.innerHTML=items.map(d=>{const f=D.funcionarios.find(x=>String(x.id)===String(d.funcionario_id??d.funcId??d.funcionarioId));const o=D.obras.find(x=>String(x.id)===String(d.obra_id));const v=diariaValor(d);const pago=diariaEstaPaga(d);return `<article class="historyCard diaryHistoryCard">
+    <div class="historyCardTop"><div class="historyAvatar diary">📅</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${pago?'paid':'pending'}">${pago?'Pago':'Pendente'}</span></div>
+    <div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data||''))}</b></div><div><small>Valor</small><b class="gold">${money(v)}</b></div><div><small>Quantidade</small><b>${Number(d.qtd||1).toLocaleString('pt-BR')}</b></div><div><small>Observação</small><b>${esc(d.observacao||'—')}</b></div></div>
+  </article>`}).join('');
+}
+function formatDateBR(v){if(!v)return '—';const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:String(v);}
 
 /* =========================================================
    HISTÓRICO INDIVIDUAL DE DIÁRIAS
