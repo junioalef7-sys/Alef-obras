@@ -1458,6 +1458,8 @@ function saveSafeSnapshot(label="estado anterior"){
 function readSafeSnapshot(){
   try{const x=JSON.parse(localStorage.getItem(SAFE_SNAPSHOT_KEY)||"null");return x?.data||null}catch(e){return null}
 }
+let obraSaveBusy=false;
+function stateCountsFrom(state){const out={};for(const k of Object.keys(D))out[k]=Array.isArray(state?.[k])?state[k].length:0;return out}
 function stateCounts(){const out={};for(const k of Object.keys(D))out[k]=Array.isArray(D[k])?D[k].length:0;return out}
 function restoreStateSnapshot(snapshot){
   if(!snapshot)return false;
@@ -2331,6 +2333,15 @@ async function loadTable(table){
 
 async function loadCloud(){
   if(!sb||!user)return;
+  // Nunca sincroniza no meio do cadastro/edição de uma obra. Isso evita corrida
+  // entre o INSERT da obra e uma leitura da nuvem que poderia reverter a memória.
+  if(obraSaveBusy){
+    await new Promise(resolve=>{
+      const started=Date.now();
+      const tick=()=>{ if(!obraSaveBusy || Date.now()-started>10000) resolve(); else setTimeout(tick,80); };
+      tick();
+    });
+  }
   // Protege o estado antes de qualquer sincronização. Se o servidor responder incompleto,
   // o conjunto atual será preservado e poderá ser restaurado automaticamente.
   const estadoAntesCloud=stateCounts();
@@ -2862,85 +2873,64 @@ openM("obraM");
 }
 
 async function saveObra(e){
+  e.preventDefault();
+  if(obraSaveBusy) return;
+  const nome=$("oNome").value.trim();
+  if(!nome){ toast("Informe o nome da obra."); return; }
 
-e.preventDefault();
+  const row={
+    nome,
+    cliente:$('oCli').value.trim(),
+    endereco:$('oLoc').value.trim(),
+    valor:Number($('oVal').value||0),
+    status:$('oStatus').value,
+    data_inicio:$('oIni').value||null,
+    data_fim:$('oFim').value||null,
+    tipo_servico:$('oTipo').value.trim(),
+    observacoes:$('oObs').value.trim()
+  };
 
-const nome=
-$("oNome").value.trim();
+  const isNew=!editObraId;
+  const antes=cloneState();
+  if(!antes){ toast("Não foi possível proteger os dados atuais. Tente novamente."); return; }
+  if(isNew) saveSafeSnapshot("antes de cadastrar nova obra");
+  obraSaveBusy=true;
 
-if(!nome){
+  try{
+    const result=isNew
+      ? await insertRow("obras",row)
+      : await updateRow("obras",editObraId,row);
 
-toast(
-"Informe o nome da obra."
-);
+    if(!result) throw new Error("Não foi possível salvar a obra.");
 
-return;
+    if(isNew) await ensureDefaultChecklist(result.id);
 
-}
+    // Segurança adicional: nenhuma tabela que já possuía dados pode diminuir durante o cadastro.
+    const antesCounts=stateCountsFrom(antes);
+    const depois=stateCounts();
+    const perda=[];
+    for(const k of Object.keys(antesCounts)){
+      if((depois[k]||0)<(antesCounts[k]||0)) perda.push(k);
+    }
+    if(perda.length){
+      restoreStateSnapshot(antes);
+      throw new Error("Foi detectada uma alteração inesperada nos dados: "+perda.join(", "));
+    }
 
-const row={
-nome,
-cliente:
-$("oCli").value.trim(),
-endereco:
-$("oLoc").value.trim(),
-valor:
-Number($("oVal").value||0),
-status:
-$("oStatus").value,
-data_inicio:
-$("oIni").value||null,
-data_fim:
-$("oFim").value||null,
-tipo_servico:
-$("oTipo").value.trim(),
-observacoes:
-$("oObs").value.trim()
-};
-
-let result=null;
-
-// Protege os dados atuais antes de criar/alterar uma obra. Uma nova obra nunca pode substituir registros existentes.
-const estadoAntesObra=stateCounts();
-if(!editObraId) saveSafeSnapshot("antes de cadastrar nova obra");
-saveLocalData();
-
-if(editObraId){
-
-result=await updateRow(
-"obras",
-editObraId,
-row
-);
-
-}else{
-
-result=await insertRow(
-"obras",
-row
-);
-
-}
-
-if(result){
-  if(!editObraId) await ensureDefaultChecklist(result.id);
-  // Verifica imediatamente se algum conjunto existente encolheu durante a gravação.
-  if(!editObraId) protectAgainstUnexpectedLoss(estadoAntesObra,{obras:1});
-  // Grava novamente todo o conjunto após a inclusão, mantendo obras, financeiro, equipe e demais módulos.
-  saveLocalData();
-
-closeM("obraM");
-
-toast(
-editObraId
-?"Obra atualizada."
-:"Obra criada com sucesso."
-);
-
-editObraId=null;
-
-}
-
+    saveLocalData();
+    closeM("obraM");
+    toast(isNew?"Obra criada com sucesso. Os dados das outras obras foram preservados.":"Obra atualizada.");
+    editObraId=null;
+    fillSelectors();
+    renderAll();
+  }catch(err){
+    console.error("EDIFIQ saveObra",err);
+    // Se qualquer etapa falhar, restaura exatamente o estado anterior ao cadastro.
+    restoreStateSnapshot(antes);
+    toast("Não foi possível concluir o cadastro. Os dados anteriores foram preservados.");
+  }finally{
+    obraSaveBusy=false;
+  }
 }
 
 function statusLabel(s){
@@ -6116,6 +6106,30 @@ f.observacao||""
   };
 })();
 <\/script>
+
+<style id="edifiq-mobile-final-fix">
+/* EDIFIQ — ajuste final de viewport/celular */
+html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;}
+*,*::before,*::after{box-sizing:border-box;}
+@media(max-width:759px){
+  body{margin:0;padding:0;min-height:100dvh;}
+  #app{padding-top:0!important;min-height:100dvh;}
+  .wrap{padding-top:6px!important;padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important;}
+  .top{padding-top:calc(6px + env(safe-area-inset-top,0px))!important;min-height:52px;}
+  .page{padding-top:2px!important;margin-top:0!important;}
+  .pageTitle{margin-top:0!important;padding-top:0!important;}
+  .pageTitle h1{line-height:1.15;margin-top:0;}
+  .card,.kpi,.grid,.toolbar,.listActions{min-width:0;max-width:100%;}
+  input,select,textarea,button{max-width:100%;font-size:16px;}
+  .grid,.analysisGrid{grid-template-columns:minmax(0,1fr)!important;}
+  .nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;z-index:9999!important;padding-bottom:env(safe-area-inset-bottom,0px)!important;}
+  .modalBox{max-width:100vw!important;width:100%!important;}
+}
+@media(min-width:760px){
+  .nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;z-index:9999!important;}
+  .wrap{padding-bottom:100px!important;}
+}
+</style>
 </body>
 </html>
 `);
@@ -7016,6 +7030,30 @@ function rcExportPDF(){
   };
 })();
 <\/script>
+
+<style id="edifiq-mobile-final-fix">
+/* EDIFIQ — ajuste final de viewport/celular */
+html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;}
+*,*::before,*::after{box-sizing:border-box;}
+@media(max-width:759px){
+  body{margin:0;padding:0;min-height:100dvh;}
+  #app{padding-top:0!important;min-height:100dvh;}
+  .wrap{padding-top:6px!important;padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important;}
+  .top{padding-top:calc(6px + env(safe-area-inset-top,0px))!important;min-height:52px;}
+  .page{padding-top:2px!important;margin-top:0!important;}
+  .pageTitle{margin-top:0!important;padding-top:0!important;}
+  .pageTitle h1{line-height:1.15;margin-top:0;}
+  .card,.kpi,.grid,.toolbar,.listActions{min-width:0;max-width:100%;}
+  input,select,textarea,button{max-width:100%;font-size:16px;}
+  .grid,.analysisGrid{grid-template-columns:minmax(0,1fr)!important;}
+  .nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;z-index:9999!important;padding-bottom:env(safe-area-inset-bottom,0px)!important;}
+  .modalBox{max-width:100vw!important;width:100%!important;}
+}
+@media(min-width:760px){
+  .nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;z-index:9999!important;}
+  .wrap{padding-bottom:100px!important;}
+}
+</style>
 </body></html>`);w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},400);
 }
 
@@ -7055,6 +7093,30 @@ function exportPDF(){
   };
 })();
 <\/script>
+
+<style id="edifiq-mobile-final-fix">
+/* EDIFIQ — ajuste final de viewport/celular */
+html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;}
+*,*::before,*::after{box-sizing:border-box;}
+@media(max-width:759px){
+  body{margin:0;padding:0;min-height:100dvh;}
+  #app{padding-top:0!important;min-height:100dvh;}
+  .wrap{padding-top:6px!important;padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important;}
+  .top{padding-top:calc(6px + env(safe-area-inset-top,0px))!important;min-height:52px;}
+  .page{padding-top:2px!important;margin-top:0!important;}
+  .pageTitle{margin-top:0!important;padding-top:0!important;}
+  .pageTitle h1{line-height:1.15;margin-top:0;}
+  .card,.kpi,.grid,.toolbar,.listActions{min-width:0;max-width:100%;}
+  input,select,textarea,button{max-width:100%;font-size:16px;}
+  .grid,.analysisGrid{grid-template-columns:minmax(0,1fr)!important;}
+  .nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;z-index:9999!important;padding-bottom:env(safe-area-inset-bottom,0px)!important;}
+  .modalBox{max-width:100vw!important;width:100%!important;}
+}
+@media(min-width:760px){
+  .nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;z-index:9999!important;}
+  .wrap{padding-bottom:100px!important;}
+}
+</style>
 </body></html>`);
   w.document.close();
   setTimeout(()=>{try{w.print()}catch(e){}},350);
@@ -7416,6 +7478,30 @@ function relatorioDiario(){
   };
 })();
 <\/script>
+
+<style id="edifiq-mobile-final-fix">
+/* EDIFIQ — ajuste final de viewport/celular */
+html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;}
+*,*::before,*::after{box-sizing:border-box;}
+@media(max-width:759px){
+  body{margin:0;padding:0;min-height:100dvh;}
+  #app{padding-top:0!important;min-height:100dvh;}
+  .wrap{padding-top:6px!important;padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important;}
+  .top{padding-top:calc(6px + env(safe-area-inset-top,0px))!important;min-height:52px;}
+  .page{padding-top:2px!important;margin-top:0!important;}
+  .pageTitle{margin-top:0!important;padding-top:0!important;}
+  .pageTitle h1{line-height:1.15;margin-top:0;}
+  .card,.kpi,.grid,.toolbar,.listActions{min-width:0;max-width:100%;}
+  input,select,textarea,button{max-width:100%;font-size:16px;}
+  .grid,.analysisGrid{grid-template-columns:minmax(0,1fr)!important;}
+  .nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;z-index:9999!important;padding-bottom:env(safe-area-inset-bottom,0px)!important;}
+  .modalBox{max-width:100vw!important;width:100%!important;}
+}
+@media(min-width:760px){
+  .nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;z-index:9999!important;}
+  .wrap{padding-bottom:100px!important;}
+}
+</style>
 </body></html>`;
   const w=window.open("","_blank"); if(!w){toast("Permita pop-ups para gerar o relatório.");return;} w.document.write(html);w.document.close();setTimeout(()=>w.print(),350);
 }
@@ -7938,5 +8024,29 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   };
 })();
 </script>
+
+<style id="edifiq-mobile-final-fix">
+/* EDIFIQ — ajuste final de viewport/celular */
+html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;}
+*,*::before,*::after{box-sizing:border-box;}
+@media(max-width:759px){
+  body{margin:0;padding:0;min-height:100dvh;}
+  #app{padding-top:0!important;min-height:100dvh;}
+  .wrap{padding-top:6px!important;padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important;}
+  .top{padding-top:calc(6px + env(safe-area-inset-top,0px))!important;min-height:52px;}
+  .page{padding-top:2px!important;margin-top:0!important;}
+  .pageTitle{margin-top:0!important;padding-top:0!important;}
+  .pageTitle h1{line-height:1.15;margin-top:0;}
+  .card,.kpi,.grid,.toolbar,.listActions{min-width:0;max-width:100%;}
+  input,select,textarea,button{max-width:100%;font-size:16px;}
+  .grid,.analysisGrid{grid-template-columns:minmax(0,1fr)!important;}
+  .nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;z-index:9999!important;padding-bottom:env(safe-area-inset-bottom,0px)!important;}
+  .modalBox{max-width:100vw!important;width:100%!important;}
+}
+@media(min-width:760px){
+  .nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;z-index:9999!important;}
+  .wrap{padding-bottom:100px!important;}
+}
+</style>
 </body>
 </html>
