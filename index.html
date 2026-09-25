@@ -5829,26 +5829,19 @@ function renderFechamentoFolha(){
       return;
     }
 
-    box.innerHTML=`<div class="tableWrap"><table class="folhaTable">
-      <thead><tr>
-        <th>Funcionário</th><th>Obra</th><th>Diárias</th><th>Bruto</th>
-        <th>Adiant.</th><th>Líquido</th><th>Pago</th><th>Pendente</th>
-      </tr></thead>
-      <tbody>
+    box.innerHTML=`
+      <div class="folhaMobileList">
         ${rows.map(r=>`
-          <tr>
-            <td><b>${esc(r.f.nome||"Funcionário")}</b><br><small>${esc(r.f.funcao||"")}</small></td>
-            <td>${esc(r.obrasDaFolha.join(", ")||"Sem obra")}</td>
-            <td>${r.ds.length}</td>
-            <td>${money(r.bruto)}</td>
-            <td>${money(r.adiant)}</td>
-            <td><b class="green">${money(r.liquido)}</b></td>
-            <td>${money(r.pago)}</td>
-            <td class="${r.pendente>0?"gold":""}">${money(r.pendente)}</td>
-          </tr>
+          <div class="folhaMobilePerson">
+            <div class="folhaMobileHead"><div><b>${esc(r.f.nome||"Funcionário")}</b><small>${esc(r.f.funcao||"Função não informada")}</small></div><span>${r.ds.length} diária${r.ds.length===1?"":"s"}</span></div>
+            <div class="folhaMobileMeta"><span><small>Obra</small><b>${esc(r.obrasDaFolha.join(", ")||"Sem obra")}</b></span><span><small>Bruto</small><b>${money(r.bruto)}</b></span><span><small>Adiant.</small><b>${money(r.adiant)}</b></span><span><small>Líquido</small><b class="green">${money(r.liquido)}</b></span><span><small>Pago</small><b>${money(r.pago)}</b></span><span><small>Pendente</small><b class="${r.pendente>0?"gold":""}">${money(r.pendente)}</b></span></div>
+          </div>
         `).join("")}
-      </tbody>
-    </table></div>`;
+      </div>
+      <div class="tableWrap folhaDesktopTable"><table class="folhaTable">
+        <thead><tr><th>Funcionário</th><th>Obra</th><th>Diárias</th><th>Bruto</th><th>Adiant.</th><th>Líquido</th><th>Pago</th><th>Pendente</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr><td><b>${esc(r.f.nome||"Funcionário")}</b><br><small>${esc(r.f.funcao||"")}</small></td><td>${esc(r.obrasDaFolha.join(", ")||"Sem obra")}</td><td>${r.ds.length}</td><td>${money(r.bruto)}</td><td>${money(r.adiant)}</td><td><b class="green">${money(r.liquido)}</b></td><td>${money(r.pago)}</td><td class="${r.pendente>0?"gold":""}">${money(r.pendente)}</td></tr>`).join("")}</tbody>
+      </table></div>`;
   }catch(err){
     console.error("EDIFIQ folha",err);
     const box=$("folhaDetalhes");
@@ -6663,6 +6656,41 @@ f.observacao||""
 <\/script>
 <style id="edifiq-final-demand-ajustes">
 .obrasSelectorToolbar{align-items:end;gap:10px;flex-wrap:wrap}.obrasSelectorToolbar label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:800;color:var(--muted)}.obrasSelectorToolbar select{min-width:260px}.obraDataGrid{grid-template-columns:repeat(3,minmax(0,1fr))}.obraModeloCard{width:100%}.obraModeloPanel .obraModeloList{max-height:520px;overflow:auto}.equipeHistoryTabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.folhaTable tbody tr{display:table-row!important;visibility:visible!important;opacity:1!important}.folhaTable tbody td{display:table-cell!important}@media(max-width:700px){.obrasSelectorToolbar{display:grid!important;grid-template-columns:1fr}.obrasSelectorToolbar label,.obrasSelectorToolbar select,.obrasSelectorToolbar input,.obrasSelectorToolbar .btn{width:100%!important;min-width:0!important}.obraDataGrid{grid-template-columns:1fr 1fr!important}.equipeHistoryTabs{display:grid;grid-template-columns:1fr 1fr}.equipeHistoryTabs .historyTab:last-child{grid-column:1/-1}.folhaTable{min-width:760px!important}}
+
+<style id="edifiq-menu-folha-final">
+@media(max-width:759px){
+  /* Menu: botões maiores, mantendo a logo inteira e segura no topo */
+  .edifiqDrawer{width:min(330px,88vw)!important;max-width:330px!important;}
+  .edifiqDrawerHead{padding:max(12px,env(safe-area-inset-top)) 12px 10px!important;min-height:64px!important;}
+  .edifiqDrawerLogo{width:44px!important;height:44px!important;flex-basis:44px!important;font-size:20px!important;}
+  .edifiqBrandDrawer{gap:9px!important;}
+  .edifiqBrandDrawer strong{font-size:17px!important;line-height:1.05!important;}
+  .edifiqBrandDrawer small{font-size:10px!important;}
+  .edifiqDrawerHead .x{width:34px!important;height:34px!important;flex-basis:34px!important;}
+  .edifiqDrawerScroll{height:calc(100dvh - max(64px,calc(64px + env(safe-area-inset-top))))!important;padding:9px 8px calc(12px + env(safe-area-inset-bottom))!important;}
+  .edifiqMenuList{gap:4px!important;}
+  .edifiqMenuItem,.edifiqDataRow,.edifiqExit{min-height:44px!important;height:44px!important;padding:6px 10px!important;border-radius:10px!important;gap:9px!important;}
+  .edifiqMenuItem span{width:21px!important;flex-basis:21px!important;font-size:18px!important;}
+  .edifiqMenuItem b,.edifiqDataRow b,.edifiqExit b{font-size:12px!important;line-height:1.1!important;}
+  .edifiqDataRow span:first-child,.edifiqExit span{font-size:19px!important;}
+  .edifiqDrawerAccount{margin:10px 9px 4px!important;padding:10px 0 9px!important;}
+  .edifiqAvatar{width:38px!important;height:38px!important;flex-basis:38px!important;}
+
+  /* Fechamento de folha: cada funcionário fica em uma linha/cartão, sem corte lateral */
+  .folhaDesktopTable{display:none!important;}
+  .folhaMobileList{display:flex!important;flex-direction:column!important;gap:8px!important;width:100%!important;}
+  .folhaMobilePerson{display:block!important;width:100%!important;box-sizing:border-box!important;background:#11161c!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:10px!important;overflow:hidden!important;}
+  .folhaMobileHead{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;border-bottom:1px solid var(--line)!important;padding-bottom:8px!important;margin-bottom:8px!important;}
+  .folhaMobileHead>div{min-width:0!important;}
+  .folhaMobileHead b{display:block!important;font-size:14px!important;overflow-wrap:anywhere!important;}
+  .folhaMobileHead small{display:block!important;color:var(--muted)!important;font-size:10px!important;margin-top:2px!important;overflow-wrap:anywhere!important;}
+  .folhaMobileHead>span{flex:0 0 auto!important;color:var(--gold2)!important;font-size:10px!important;font-weight:800!important;}
+  .folhaMobileMeta{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important;}
+  .folhaMobileMeta span{min-width:0!important;background:#0d1115!important;border-radius:8px!important;padding:7px!important;}
+  .folhaMobileMeta small{display:block!important;color:var(--muted)!important;font-size:9px!important;}
+  .folhaMobileMeta b{display:block!important;font-size:11px!important;margin-top:2px!important;overflow-wrap:anywhere!important;}
+}
+@media(min-width:760px){.folhaMobileList{display:none!important;}}
 </style>
 </body>
 </html>
