@@ -928,7 +928,7 @@ table{width:100%;border-collapse:collapse}
 </div></div>
 <div id="funcList"></div>
 <div class="card" id="folhaEquipeCard">
-<div class="row"><div><h2>Fechamento de folha</h2><p class="sub">Consolidação de 15 ou 30 dias, com funcionários, diárias, bruto, adiantamentos e líquido.</p></div><button class="btn gold" onclick="renderFechamentoFolha()">Atualizar folha</button></div>
+<div class="row"><div><h2>Fechamento de folha</h2><p class="sub">Consolidação de 15 ou 30 dias, com funcionários, diárias, bruto, adiantamentos e líquido.</p></div><button class="btn gold" onclick="renderFechamentoFolha()">↻ Atualizar folha de pagamento</button></div>
 <div class="toolbar folhaToolbar"><label>Período<select id="folhaPeriodo" onchange="renderFechamentoFolha()"><option value="15">15 dias</option><option value="30">30 dias</option><option value="custom">Personalizado</option></select></label><label>Obra<select id="folhaObra" onchange="renderFechamentoFolha()"><option value="all">Todas as obras</option></select></label><label>De<input id="folhaInicio" type="date" onchange="renderFechamentoFolha()"></label><label>Até<input id="folhaFim" type="date" onchange="renderFechamentoFolha()"></label></div>
 <div class="grid kpis folhaKpis">
 <div class="kpi"><small>Funcionários</small><strong id="folhaFuncionarios">0</strong></div>
@@ -939,7 +939,7 @@ table{width:100%;border-collapse:collapse}
 <div class="kpi"><small>Líquido total</small><strong id="folhaLiquido">R$ 0,00</strong></div>
 <div class="kpi"><small>Saldo pendente</small><strong id="folhaPendente">R$ 0,00</strong></div>
 </div><div id="folhaDetalhes"></div></div>
-<div class="card" id="historicoPagamentosCard"><div class="row"><div><h2>Histórico de pagamentos</h2><p class="sub">Mostra separadamente diárias, serviços extras, bônus, adiantamentos e o líquido pago.</p></div><button class="btn" type="button" onclick="renderHistoricoPagamentos()">Atualizar</button></div><div class="historyFilters"><label>Funcionário<select id="histPagFunc" onchange="renderHistoricoPagamentos()"><option value="all">Todos os funcionários</option></select></label><label>Obra<select id="histPagObra" onchange="renderHistoricoPagamentos()"><option value="all">Todas as obras</option></select></label></div><div id="historicoPagamentosList"></div></div>
+<div class="card" id="historicoPagamentosCard"><div class="row"><div><h2>Histórico de pagamentos</h2><p class="sub">Mostra separadamente diárias, serviços extras, bônus, adiantamentos e o líquido pago.</p></div><button class="btn" type="button" onclick="renderHistoricoPagamentos()">↻ Atualizar histórico</button></div><div class="historyFilters"><label>Funcionário<select id="histPagFunc" onchange="renderHistoricoPagamentos()"><option value="all">Todos os funcionários</option></select></label><label>Obra<select id="histPagObra" onchange="renderHistoricoPagamentos()"><option value="all">Todas as obras</option></select></label></div><div id="historicoPagamentosList"></div></div>
 </section>
 <section class="page" id="diarias">
 <div class="pageTitle"><div><h1>Diárias</h1><p class="sub">Registro, acompanhamento e histórico individual por funcionário.</p></div><button class="btn gold" onclick="openDia()">＋ Diária</button></div>
@@ -4071,14 +4071,57 @@ toast(
 }
 
 function renderHistoricoPagamentos(){
-  const box=$("historicoPagamentosList"); if(!box)return;
+  const box=$("historicoPagamentosList");
+  if(!box)return;
   D.historicoPagamentos=Array.isArray(D.historicoPagamentos)?D.historicoPagamentos:[];
-  const sf=$("histPagFunc")?.value||"all", so=$("histPagObra")?.value||"all";
-  if($("histPagFunc")){const cur=$("histPagFunc").value;$("histPagFunc").innerHTML='<option value="all">Todos os funcionários</option>'+D.funcionarios.map(f=>`<option value="${esc(f.id)}">${esc(f.nome||"Sem nome")}</option>`).join("");if([...$("histPagFunc").options].some(o=>o.value===cur))$("histPagFunc").value=cur;}
-  if($("histPagObra")){const cur=$("histPagObra").value;$("histPagObra").innerHTML='<option value="all">Todas as obras</option>'+D.obras.map(o=>`<option value="${esc(o.id)}">${esc(o.nome||"Sem nome")}</option>`).join("");if([...$("histPagObra").options].some(o=>o.value===cur))$("histPagObra").value=cur;}
-  let rows=D.historicoPagamentos.filter(x=>(sf==="all"||String(x.funcionario_id)===String(sf))&&(so==="all"||String(x.obra_id)===String(so))).slice().sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
-  if(!rows.length){box.innerHTML='<div class="empty">Nenhum pagamento processado ainda.</div>';return;}
-  box.innerHTML=rows.map(x=>{const f=D.funcionarios.find(v=>String(v.id)===String(x.funcionario_id));const o=D.obras.find(v=>String(v.id)===String(x.obra_id));const extras=Array.isArray(x.extras)?x.extras:[];return `<div class="item paymentHistoryItem"><div class="row"><div><b>${esc(f?.nome||x.funcionario_nome||"Funcionário")}</b><br><small>${esc(o?.nome||x.obra_nome||"Sem obra")} · ${esc(x.data||"")}</small></div><strong class="green">${money(x.liquido)}</strong></div><div class="pay-history-grid"><div><small>Diárias</small><b>${money(x.diarias)}</b></div><div><small>Extras / bônus</small><b class="gold">${money(x.extrasTotal)}</b></div><div><small>Adiantamento</small><b class="red">${money(x.adiantamento)}</b></div><div><small>Líquido</small><b class="green">${money(x.liquido)}</b></div></div>${extras.length?`<div class="extraPayHistory">${extras.map(e=>`<div class="serviceLine"><span><b>${esc(e.tipo||"Serviço extra")}</b><small>${esc(e.descricao||"")}</small></span><strong class="gold">${money(e.valor)}</strong></div>`).join("")}</div>`:""}<small class="sub">${esc(x.descricao||"Pagamento de equipe")}</small></div>`}).join("");
+  const sf=$("histPagFunc")?.value||"all";
+  const so=$("histPagObra")?.value||"all";
+
+  // Recria os filtros preservando exatamente a seleção atual.
+  if($("histPagFunc")){
+    const cur=String(sf);
+    $("histPagFunc").innerHTML='<option value="all">Todos os funcionários</option>'+
+      D.funcionarios.map(f=>`<option value="${esc(f.id)}">${esc(f.nome||"Sem nome")}</option>`).join("");
+    if([...$("histPagFunc").options].some(o=>o.value===cur))$("histPagFunc").value=cur;
+  }
+  if($("histPagObra")){
+    const cur=String(so);
+    $("histPagObra").innerHTML='<option value="all">Todas as obras</option>'+
+      D.obras.map(o=>`<option value="${esc(o.id)}">${esc(o.nome||"Sem nome")}</option>`).join("");
+    if([...$("histPagObra").options].some(o=>o.value===cur))$("histPagObra").value=cur;
+  }
+
+  // O histórico oficial é gravado localmente. Também aceita registros antigos
+  // que possam ter funcionário/obra em camelCase.
+  let rows=D.historicoPagamentos.map(x=>({...x}));
+  rows=rows.filter(x=>
+    (sf==="all"||String(x.funcionario_id??x.funcionarioId)===String(sf)) &&
+    (so==="all"||String(x.obra_id??x.obraId)===String(so))
+  ).sort((a,b)=>String(b.data||b.data_pagamento||"").localeCompare(String(a.data||a.data_pagamento||"")));
+
+  if(!rows.length){
+    const nome=sf!=="all"?(D.funcionarios.find(f=>String(f.id)===String(sf))?.nome||""):"";
+    box.innerHTML=`<div class="empty">${nome?`Nenhum pagamento encontrado para <b>${esc(nome)}</b>.`:'Nenhum pagamento processado ainda.'}</div>`;
+    return;
+  }
+
+  box.innerHTML=rows.map(x=>{
+    const fid=x.funcionario_id??x.funcionarioId;
+    const oid=x.obra_id??x.obraId;
+    const f=D.funcionarios.find(v=>String(v.id)===String(fid));
+    const o=D.obras.find(v=>String(v.id)===String(oid));
+    const extras=Array.isArray(x.extras)?x.extras:[];
+    const diarias=Number(x.diarias||0);
+    const extrasTotal=Number(x.extrasTotal||extras.reduce((a,e)=>a+Number(e.valor||0),0));
+    const adiantamento=Number(x.adiantamento||0);
+    const liquido=Number(x.liquido??Math.max(0,diarias+extrasTotal-adiantamento));
+    return `<div class="item paymentHistoryItem">
+      <div class="row"><div><b>${esc(f?.nome||x.funcionario_nome||x.funcionarioName||"Funcionário")}</b><br><small>${esc(o?.nome||x.obra_nome||"Sem obra")} · ${esc(x.data||x.data_pagamento||"")}</small></div><strong class="green">${money(liquido)}</strong></div>
+      <div class="pay-history-grid"><div><small>Diárias</small><b>${money(diarias)}</b></div><div><small>Extras / bônus</small><b class="gold">${money(extrasTotal)}</b></div><div><small>Adiantamento</small><b class="red">${money(adiantamento)}</b></div><div><small>Líquido</small><b class="green">${money(liquido)}</b></div></div>
+      ${extras.length?`<div class="extraPayHistory">${extras.map(e=>`<div class="serviceLine"><span><b>${esc(e.tipo||"Serviço extra")}</b><small>${esc(e.descricao||"")}</small></span><strong class="gold">${money(e.valor)}</strong></div>`).join("")}</div>`:""}
+      <small class="sub">${esc(x.descricao||"Pagamento de equipe")}</small>
+    </div>`;
+  }).join("");
 }
 
 function renderPayroll(){
@@ -4268,41 +4311,21 @@ updatePagTotal();
 }
 
 function updatePagTotal(){
-
-let total=0;
-let diarias=0;
-let extras=0;
-let adiant=0;
-
-document.querySelectorAll(
-".pag-check"
-).forEach(ch=>{
-
-if(!ch.checked)return;
-
-const id=ch.dataset.id;
-
-const resumo=
-calcFuncionarioPagamento(id);
-
-total+=resumo.net;
-
-diarias+=resumo.pending;
-
-adiant+=resumo.advance;
-
-});
-
-$("pagTotal").textContent=money(diarias+extras);
-$("pagDiariasTotal").textContent=money(diarias);
-if($("pagExtrasTotal"))$("pagExtrasTotal").textContent=money(extras);
-
-$("pagAdiantTotal").textContent=
-money(adiant);
-
-$("pagLiquidoTotal").textContent=
-money(total);
-
+  let total=0, diarias=0, extras=0, adiant=0;
+  document.querySelectorAll('.pag-check').forEach(ch=>{
+    if(!ch.checked)return;
+    const id=ch.dataset.id;
+    const resumo=calcFuncionarioPagamento(id);
+    diarias += Number(resumo.pendingDiarias||0);
+    extras += Number(resumo.extrasTotal||0);
+    adiant += Number(resumo.advance||0);
+    total += Number(resumo.net||0);
+  });
+  if($("pagTotal"))$("pagTotal").textContent=money(diarias+extras);
+  if($("pagDiariasTotal"))$("pagDiariasTotal").textContent=money(diarias);
+  if($("pagExtrasTotal"))$("pagExtrasTotal").textContent=money(extras);
+  if($("pagAdiantTotal"))$("pagAdiantTotal").textContent=money(adiant);
+  if($("pagLiquidoTotal"))$("pagLiquidoTotal").textContent=money(total);
 }
 
 function openPagamentoEquipe(){
@@ -7348,7 +7371,26 @@ function relatorioDiario(){
 </style><style id="edifiq-home-fixes">
 /* Ajuste final dos 4 indicadores da tela inicial */
 @media (max-width:700px){.homeKpi strong,.homeKpi .value,.home-kpi strong,.home-card strong{font-size:clamp(15px,4.2vw,22px)!important;line-height:1.05!important;letter-spacing:-.35px!important;white-space:nowrap!important}.homeKpi small,.home-kpi small{font-size:11px!important}.homeKpi,.home-kpi{min-width:0!important;overflow:hidden!important}}
-</style></head><body><h1>${titulo}</h1><small>Gerado em ${new Date().toLocaleString("pt-BR")}</small><p><b>Registros:</b> ${rows.length} · <b>Dias:</b> ${new Set(rows.map(r=>r.data)).size} · <b>Horas:</b> ${rows.reduce((a,r)=>a+Number(r.horas||0),0).toLocaleString("pt-BR")} h</p>${rows.map(r=>{const names=(r.equipe||[]).map(diarioFuncionarioNome).filter(Boolean);return `<div class="item"><h2>${esc(diarioObraNome(r.obra_id))}</h2><div class="meta">${esc(diarioFmtData(r.data))} · ${esc(r.clima||"Não informado")} · ${Number(r.horas||0).toLocaleString("pt-BR")} h</div><p><span class="tag">Equipe:</span> ${esc(names.join(" · ")||"Não informada")}</p>${r.atividades?`<p><span class="tag">Atividades:</span><br>${esc(r.atividades).replace(/\n/g,"<br>")}</p>`:""}${r.observacoes?`<p><span class="tag">Observações:</span><br>${esc(r.observacoes).replace(/\n/g,"<br>")}</p>`:""}</div>`}).join("")}<div class="foot">EDIFIQ — Gestão de Obras</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
+</style>
+<style id="edifiq-ajustes-finais-2026-09-24">
+/* Ajuste fino de tela: conteúdo mobile mais para cima, sem cortar a barra superior. */
+@media(max-width:759px){
+  #app{padding-top:0!important;}
+  .wrap{padding-top:4px!important;padding-bottom:calc(92px + env(safe-area-inset-bottom))!important;}
+  .pageTitle{margin-top:0!important;padding-top:0!important;}
+  .homeV2,.edHomeHeader{margin-top:4px!important;}
+}
+/* Desktop: os quatro indicadores da tela inicial usam números maiores. */
+@media(min-width:760px){
+  .edHomeKpi strong,.homeKpi strong,.home-kpi strong,.home-card strong{font-size:clamp(22px,2.1vw,30px)!important;line-height:1.05!important;letter-spacing:-.6px!important;}
+  .edHomeKpi small,.homeKpi small,.home-kpi small{font-size:13px!important;}
+  /* Equipe: números menores e proporcionais nos cartões de resumo. */
+  .equipeKpis .kpi strong{font-size:18px!important;line-height:1.05!important;letter-spacing:-.25px!important;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;}
+  .folhaKpis .kpi strong{font-size:17px!important;line-height:1.05!important;letter-spacing:-.2px!important;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;}
+  .equipeKpis .kpi small,.folhaKpis .kpi small{font-size:11px!important;}
+}
+</style>
+</head><body><h1>${titulo}</h1><small>Gerado em ${new Date().toLocaleString("pt-BR")}</small><p><b>Registros:</b> ${rows.length} · <b>Dias:</b> ${new Set(rows.map(r=>r.data)).size} · <b>Horas:</b> ${rows.reduce((a,r)=>a+Number(r.horas||0),0).toLocaleString("pt-BR")} h</p>${rows.map(r=>{const names=(r.equipe||[]).map(diarioFuncionarioNome).filter(Boolean);return `<div class="item"><h2>${esc(diarioObraNome(r.obra_id))}</h2><div class="meta">${esc(diarioFmtData(r.data))} · ${esc(r.clima||"Não informado")} · ${Number(r.horas||0).toLocaleString("pt-BR")} h</div><p><span class="tag">Equipe:</span> ${esc(names.join(" · ")||"Não informada")}</p>${r.atividades?`<p><span class="tag">Atividades:</span><br>${esc(r.atividades).replace(/\n/g,"<br>")}</p>`:""}${r.observacoes?`<p><span class="tag">Observações:</span><br>${esc(r.observacoes).replace(/\n/g,"<br>")}</p>`:""}</div>`}).join("")}<div class="foot">EDIFIQ — Gestão de Obras</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
 <script id="edifiq-servico-extra-link">
 (function(){
   // Vincula serviços extras à folha/financeiro sem substituir dados existentes.
