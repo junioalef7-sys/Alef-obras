@@ -1572,7 +1572,7 @@ body{min-height:100vh;min-height:100dvh}
 </section>
 <section class="page" id="documentos">
 <div class="pageTitle"><div><h1>📎 Documentos da Obra</h1><p class="sub">Anexe e organize contratos, notas, comprovantes e outros arquivos por obra.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn gold" onclick="openDocumentoSeguro()">＋ Anexar documento</button></div></div>
-<div class="toolbar docFilters"><select id="docObraFilter" onchange="renderDocumentos()"><option value="all">Todas as obras</option></select><select id="docCategoriaFilter" onchange="renderDocumentos()"><option value="all">Todas as categorias</option><option>Contrato</option><option>Orçamento</option><option>Nota fiscal</option><option>Comprovante</option><option>Medição</option><option>Projeto</option><option>Outros</option></select><input id="docBusca" oninput="renderDocumentos()" placeholder="Buscar documento, fornecedor ou observação"><button type="button" class="btn gold docContractBtn" onclick="mostrarContratosDocumentos()">📜 Ver contratos</button></div>
+<div class="toolbar docFilters"><select id="docObraFilter" onchange="renderDocumentos()"><option value="all">Todas as obras</option></select><select id="docCategoriaFilter" onchange="renderDocumentos()"><option value="all">Todas as categorias</option><option>Contrato</option><option>Orçamento</option><option>Nota fiscal</option><option>Comprovante</option><option>Medição</option><option>Projeto</option><option>Outros</option></select><input id="docBusca" oninput="renderDocumentos()" placeholder="Buscar documento, fornecedor ou observação"><button type="button" class="btn gold docContractBtn" onclick="window.mostrarContratosDocumentos()">📜 Ver contratos</button></div>
 <div id="docContractSummary" class="docContractSummary"></div>
 <div class="grid kpis docKpis"><div class="kpi"><small>Documentos</small><strong id="docTotal">0</strong></div><div class="kpi"><small>Obras com documentos</small><strong id="docObras">0</strong></div><div class="kpi"><small>Contratos</small><strong id="docContratos">0</strong></div><div class="kpi"><small>Notas / comprovantes</small><strong id="docFinanceiros">0</strong></div></div>
 <div id="documentosList"></div>
@@ -8239,7 +8239,7 @@ function relatorioDiario(){
 .docContractItem small{display:block;margin-top:4px;line-height:1.35;overflow-wrap:anywhere}
 .docContractValue{margin-top:9px;font-size:15px;font-weight:800;color:var(--gold2)}
 .docContractCount{font-size:11px;color:var(--muted)}
-@media(max-width:759px){.docContractGrid{grid-template-columns:1fr}.docContractBtn{width:100%}.docContractHead{align-items:flex-start;flex-direction:column}}
+@media(max-width:759px){.docContractGrid{grid-template-columns:1fr}.docContractBtn{width:100%;min-height:44px;touch-action:manipulation}.docContractHead{align-items:flex-start;flex-direction:column}}
 
 /* Ajustes Documentos da Obra — mobile */
 .docCard .row>div:first-child{min-width:0;flex:1}
@@ -8373,12 +8373,30 @@ async function saveDocumento(e){
 
 function documentoFiltrados(){const obra=$('docObraFilter')?.value||'all',cat=$('docCategoriaFilter')?.value||'all',q=String($('docBusca')?.value||'').toLowerCase().trim();return [...D.documentos].filter(d=>(obra==='all'||String(d.obra_id)===String(obra))&&(cat==='all'||d.categoria===cat)&&(!q||[d.titulo,d.fornecedor,d.observacao,d.nome_arquivo,documentoObraNome(d.obra_id)].join(' ').toLowerCase().includes(q))).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')))}
 function mostrarContratosDocumentos(){
-  const cat=$("docCategoriaFilter"), box=$("docContractSummary");
-  if(cat) cat.value='Contrato';
-  if(box) box.classList.add('isVisible');
-  renderDocumentos();
-  try{document.getElementById('documentos')?.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}
+  try{
+    const cat=$("docCategoriaFilter"), box=$("docContractSummary"), list=$("documentosList");
+    if(cat) cat.value='Contrato';
+    if(box){
+      box.classList.add('isVisible');
+      box.style.display='block';
+    }
+    renderDocumentos();
+    // Garante que a lista permaneça somente com contratos após a atualização dos filtros.
+    const sel=$("docCategoriaFilter");
+    if(sel) sel.value='Contrato';
+    const items=documentoFiltrados();
+    if(list && !items.length){
+      list.innerHTML='<div class="card docEmpty">Nenhum contrato cadastrado para as obras.</div>';
+    }
+    setTimeout(()=>{
+      try{document.getElementById('docContractSummary')?.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}
+    },50);
+  }catch(e){
+    console.error('EDIFIQ ver contratos:',e);
+    toast('Não foi possível abrir os contratos.');
+  }
 }
+window.mostrarContratosDocumentos=mostrarContratosDocumentos;
 function renderResumoContratos(){
   const box=$("docContractSummary"); if(!box)return;
   const contratos=(D.documentos||[]).filter(d=>d.categoria==='Contrato');
