@@ -1385,10 +1385,11 @@ body{min-height:100vh;min-height:100dvh}
 
   /* Quatro indicadores da tela Início: cartões e números bem maiores. */
   .edHomeKpis{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important}
-  .edHomeKpi{min-height:132px!important;padding:18px!important;border-radius:20px!important;gap:14px!important}
-  .edHomeKpiIcon{width:58px!important;height:58px!important;flex-basis:58px!important;border-radius:16px!important;font-size:30px!important}
-  .edHomeKpi small{font-size:15px!important}
-  .edHomeKpi strong{font-size:30px!important;line-height:1.08!important;letter-spacing:-.7px!important;margin-top:9px!important}
+  .edHomeKpi{min-height:146px!important;padding:20px!important;border-radius:20px!important;gap:15px!important}
+  .edHomeKpiIcon{width:62px!important;height:62px!important;flex:0 0 62px!important;border-radius:17px!important;font-size:31px!important}
+  .edHomeKpi small{font-size:clamp(15px,1.25vw,19px)!important;line-height:1.08!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;font-weight:800!important}
+  .edHomeKpi strong{font-size:clamp(28px,2.35vw,38px)!important;line-height:1.04!important;letter-spacing:-1px!important;margin-top:10px!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important}
+  .edHomeKpi>div:last-child{min-width:0!important;overflow:visible!important}
 }
 
 /* Menu lateral: mantém a marca inteira sem corte. */
@@ -1422,6 +1423,14 @@ body{min-height:100vh;min-height:100dvh}
   .edifiqDrawerScroll{height:calc(100dvh - 99px)!important;padding:12px 10px 20px!important}
   .folhaFuncionarioTop{display:block}.folhaFuncionarioObra{max-width:none;text-align:left;margin-top:5px}.folhaFuncionarioGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.folhaFuncionarioGrid>div{padding:6px}.folhaFuncionarioGrid b{font-size:11px}
   .edHomeKpi strong{font-size:22px!important}
+}
+</style>
+
+<style id="edifiq-kpi-sync-final">
+@media (min-width:760px){
+  .edHomeKpi{overflow:visible!important}
+  .edHomeKpi small{max-width:none!important}
+  .edHomeKpi strong{max-width:none!important}
 }
 </style>
 </head>
@@ -2793,7 +2802,7 @@ function bindSupabaseAuth(){
       user=session?.user||null;
       if(user){
         $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
-        await loadCloud(); renderAll();
+        await loadCloud(); renderAll(); startEdifiqRealtime();
       }else{
         $("auth")?.classList.remove("hidden"); $("app")?.classList.add("hidden");
       }
@@ -2810,6 +2819,71 @@ async function ensureSupabaseClient(){
   return true;
 }
 
+/* =========================================================
+   SINCRONIZAÇÃO EM TEMPO REAL — celular ↔ computador
+   Usa Supabase Realtime quando o usuário está autenticado.
+   Cada alteração feita em qualquer dispositivo chega aos demais
+   sem precisar atualizar a página. Há uma recarga periódica leve
+   como fallback caso o canal fique desconectado.
+   ========================================================= */
+const EDIFIQ_REALTIME_TABLES=["obras","funcionarios","diarias","gastos","pagamentos","checklist","documentos","faltas"];
+let edifiqRealtimeChannel=null;
+let edifiqRealtimeRefreshTimer=null;
+let edifiqRealtimeUserId=null;
+let edifiqRealtimeLastEvent=0;
+
+function stopEdifiqRealtime(){
+  try{ if(edifiqRealtimeRefreshTimer){clearInterval(edifiqRealtimeRefreshTimer);edifiqRealtimeRefreshTimer=null;} }catch(_){ }
+  try{ if(edifiqRealtimeChannel&&sb?.removeChannel) sb.removeChannel(edifiqRealtimeChannel); }catch(_){ }
+  edifiqRealtimeChannel=null;
+  edifiqRealtimeUserId=null;
+}
+
+function startEdifiqRealtime(){
+  if(!sb||!user?.id||!sb.channel) return false;
+  if(edifiqRealtimeChannel && edifiqRealtimeUserId===String(user.id)) return true;
+  stopEdifiqRealtime();
+  edifiqRealtimeUserId=String(user.id);
+
+  const channelName=`edifiq-sync-${String(user.id).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,32)}`;
+  const ch=sb.channel(channelName);
+  EDIFIQ_REALTIME_TABLES.forEach(table=>{
+    ch.on('postgres_changes',{event:'*',schema:'public',table,filter:`user_id=eq.${user.id}`},payload=>{
+      edifiqRealtimeLastEvent=Date.now();
+      const tipo=payload?.eventType;
+      const row=payload?.new||payload?.old;
+      if(!row?.id) return;
+      const idx=D[table].findIndex(x=>String(x.id)===String(row.id));
+      if(tipo==='DELETE'){
+        if(idx>=0) D[table].splice(idx,1);
+      }else if(idx>=0){
+        D[table][idx]={...D[table][idx],...payload.new};
+      }else if(payload.new){
+        D[table].unshift(payload.new);
+      }
+      saveLocalData();
+      try{renderAll();}catch(e){console.warn('Render realtime',e);}
+    });
+  });
+
+  ch.subscribe(status=>{
+    if(status==='SUBSCRIBED'){
+      console.info('EDIFIQ: sincronização em tempo real ativa.');
+    }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+      console.warn('EDIFIQ Realtime:',status);
+    }
+  });
+  edifiqRealtimeChannel=ch;
+
+  // Fallback: se o Realtime não estiver habilitado para alguma tabela,
+  // uma consulta leve mantém os dois dispositivos sincronizados.
+  edifiqRealtimeRefreshTimer=setInterval(async()=>{
+    if(!sb||!user?.id||document.hidden) return;
+    try{ await loadCloud(); renderAll(); }catch(e){ console.warn('Fallback de sincronização:',e); }
+  },5000);
+  return true;
+}
+
 async function initSupabase(){
   // A interface aparece primeiro; o Supabase é opcional para impedir tela branca/offline.
   try{
@@ -2820,7 +2894,7 @@ async function initSupabase(){
     const result=await Promise.race([sb.auth.getSession(),new Promise(resolve=>setTimeout(()=>resolve({data:{session:null},timeout:true}),8000))]);
     if(result?.data?.session){
       user=result.data.session.user; $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
-      await loadCloud(); renderAll();
+      await loadCloud(); renderAll(); startEdifiqRealtime();
     }
     return true;
   }catch(err){
@@ -3076,6 +3150,7 @@ authMsg(
 }
 
 async function logout(){
+  stopEdifiqRealtime();
 
 if(sb)
 await sb.auth.signOut();
