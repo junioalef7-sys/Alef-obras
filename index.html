@@ -2423,7 +2423,9 @@ return status==="pago" ||
        status==="quitado" ||
        status==="liquidado" ||
        d?.pago===true ||
-       d?.paga===true;
+       d?.paga===true ||
+       (Number(d?.qtd_paga||0) >= Number(d?.qtd||1)) ||
+       (Number(d?.valor_baixado||0) >= Number(d?.valor_diaria||0) * Number(d?.qtd||1) && Number(d?.valor_baixado||0) > 0);
 }
 
 function getPendingDiarias(funcId){
@@ -5184,7 +5186,7 @@ for(const diaria of item.pendingItems){
   const atualizado=await updateRow(
     "diarias",
     diaria.id,
-    {status:"pago",pago:true,data_pagamento:data}
+    {status:"pago",pago:true,paga:true,qtd_paga:Number(diaria.qtd||1),valor_baixado:diariaValor(diaria),data_pagamento:data,pago_em:data}
   );
   // Garantia local: o fechamento nunca deve continuar mostrando a diária
   // como pendente se o pagamento já foi processado no aparelho.
@@ -5193,7 +5195,10 @@ for(const diaria of item.pendingItems){
     localDia.status="pago";
     localDia.pago=true;
     localDia.paga=true;
+    localDia.qtd_paga=Number(localDia.qtd||1);
+    localDia.valor_baixado=diariaValor(localDia);
     localDia.data_pagamento=data;
+    localDia.pago_em=data;
   }
   if(atualizado)baixados++;
 }
