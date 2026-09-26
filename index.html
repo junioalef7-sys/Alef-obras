@@ -2326,12 +2326,7 @@ const usado=Math.max(
   Number(g.aplicado||0)
 );
 
-const quitado =
-  String(g.status||'').toLowerCase()==='quitado' ||
-  String(g.status||'').toLowerCase()==='pago' ||
-  g.adiantamento_quitado===true;
-
-const disponivel=quitado ? 0 : Math.max(0,valor-usado);
+const disponivel=Math.max(0,valor-usado);
 
 return{
 ...g,
@@ -2424,9 +2419,6 @@ allocations.forEach(a=>{
       adv.status='quitado';
       adv.adiantamento_quitado=true;
       adv.data_quitacao=today();
-    }else{
-      adv.status='pendente';
-      adv.adiantamento_quitado=false;
     }
   }
 });
@@ -5501,92 +5493,217 @@ renderAll();
 }
 
 function renderFinance(){
-  const box=$("finList");
-  if(!box)return;
 
-  const obraFilter=$("finObraFilter")?.value||"all";
-  const tipoFilter=$("finTipoFilter")?.value||"all";
-  const categoriaFilter=$("finCategoriaFilter")?.value||"all";
+const box=$("finList");
 
-  const obraIdOf=x=>String(x?.obra_id??x?.obraId??"");
-  const inObra=x=>obraFilter==="all"||obraIdOf(x)===String(obraFilter);
-  const isCategoria=x=>categoriaFinanceira(x)===categoriaFilter;
+if(!box)return;
 
-  const entradas=(D.pagamentos||[]).map(x=>({...x,_tipo:"entrada"}));
-  const despesas=(D.gastos||[]).map(x=>({...x,_tipo:"despesa"}));
-  let items=[...entradas,...despesas];
+const obraFilter=
+$("finObraFilter")?.value||
+"all";
 
-  // Filtro por obra: quando uma obra é selecionada, nenhum lançamento de outra obra aparece.
-  items=items.filter(inObra);
+const tipoFilter=
+$("finTipoFilter")?.value||
+"all";
+const categoriaFilter=
+$("finCategoriaFilter")?.value||
+"all";
 
-  // Filtro por tipo.
-  if(tipoFilter!=="all") items=items.filter(x=>x._tipo===tipoFilter);
+let entradas=
+D.pagamentos.map(
+x=>({...x,_tipo:"entrada"})
+);
 
-  // Filtro por categoria: categorias pertencem às despesas. Quando uma categoria
-  // específica é escolhida, o extrato mostra somente despesas daquela categoria.
-  if(categoriaFilter!=="all"){
-    items=items.filter(x=>x._tipo==="despesa"&&isCategoria(x));
-  }
+let despesas=
+D.gastos.map(
+x=>({...x,_tipo:"despesa"})
+);
 
-  // Os cartões de entrada continuam mostrando toda a receita da obra selecionada.
-  const ent=(D.pagamentos||[])
-    .filter(inObra)
-    .reduce((a,x)=>a+Number(x.valor||0),0);
+let items=[
+...entradas,
+...despesas
+];
 
-  const desp=(D.gastos||[])
-    .filter(x=>inObra(x)&&(categoriaFilter==="all"||isCategoria(x)))
-    .reduce((a,x)=>a+Number(x.valor||0),0);
+if(obraFilter!=="all"){
 
-  if($("finEnt"))$("finEnt").textContent=money(ent);
-  if($("finDesp"))$("finDesp").textContent=money(desp);
-  if($("finRes"))$("finRes").textContent=money(ent-desp);
+items=items.filter(
+x=>String(x.obra_id)===
+String(obraFilter)
+);
 
-  const receber=obraFilter==="all"
-    ?(D.obras||[]).reduce((a,o)=>a+Number(obraFinanceData(o.id).saldoReceber||0),0)
-    :Number(obraFinanceData(obraFilter).saldoReceber||0);
-  if($("finReceber"))$("finReceber").textContent=money(receber);
+}
 
-  const obrasBase=obraFilter==="all"?(D.obras||[]):(D.obras||[]).filter(o=>String(o.id)===String(obraFilter));
-  const nObras=Math.max(obrasBase.length,1);
-  const contratoBase=obrasBase.reduce((a,o)=>a+Number(o.valor||0),0);
-  if($("finMediaObra"))$("finMediaObra").textContent=money(ent/nObras);
-  if($("finMediaDespesa"))$("finMediaDespesa").textContent=money(desp/nObras);
-  if($("finComprometimento"))$("finComprometimento").textContent=(contratoBase>0?(desp/contratoBase*100):0).toFixed(1).replace(".",",")+"%";
+if(tipoFilter!=="all"){
 
-  // Resumo detalhado fica restrito à obra escolhida.
-  renderObraFinance(obraFilter);
+items=items.filter(
+x=>x._tipo===tipoFilter
+);
 
-  if(!items.length){
-    box.innerHTML=`<div class="empty">Nenhum lançamento encontrado para os filtros selecionados.</div>`;
-    return;
-  }
+}
 
-  items.sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
+const ent=
+D.pagamentos
+.filter(
+x=>obraFilter==="all"||
+String(x.obra_id)===
+String(obraFilter)
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
 
-  box.innerHTML=items.map(x=>{
-    const obra=(D.obras||[]).find(o=>String(o.id)===obraIdOf(x));
-    const categoria=x._tipo==="despesa"?categoriaFinanceira(x):"Receita";
-    const tipoLabel=x._tipo==="entrada"?"Receita":"Despesa";
-    return `
-      <div class="card">
-        <div class="row">
-          <div>
-            <b>${esc(x.descricao||"Lançamento")}</b><br>
-            <small>${esc(obra?.nome||"Sem obra")}</small>
-          </div>
-          <span class="badge ${x._tipo==="entrada"?"on":"off"}">${tipoLabel}</span>
-        </div>
-        <div class="row" style="margin-top:10px">
-          <span>${esc(x.data||"")}</span>
-          <strong class="${x._tipo==="entrada"?"green":"red"}">${money(x.valor)}</strong>
-        </div>
-        <small>Categoria: ${esc(categoria)}</small>
-        ${x.fornecedor?`<br><small>${esc(x.fornecedor)}</small>`:""}
-        <div class="listActions">
-          <button class="btn danger" onclick="removeRow('${x._tipo==="entrada"?"pagamentos":"gastos"}','${x.id}')">Excluir</button>
-        </div>
-      </div>`;
-  }).join("");
+const desp=
+D.gastos
+.filter(x=>
+  (obraFilter==="all"||String(x.obra_id)===String(obraFilter)) &&
+  (categoriaFilter==="all"||categoriaFinanceira(x)===categoriaFilter)
+)
+.reduce((a,x)=>a+Number(x.valor||0),0);
+
+$("finEnt").textContent=
+money(ent);
+
+$("finDesp").textContent=
+money(desp);
+
+$("finRes").textContent=
+money(ent-desp);
+const receber=obraFilter==="all"
+?D.obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0)
+:obraFinanceData(obraFilter).saldoReceber;
+if($("finReceber"))$("finReceber").textContent=money(receber);
+const obrasBase=obraFilter==="all"?D.obras:D.obras.filter(o=>String(o.id)===String(obraFilter));
+const nObras=Math.max(obrasBase.length,1);
+const contratoBase=obrasBase.reduce((a,o)=>a+Number(o.valor||0),0);
+if($("finMediaObra"))$("finMediaObra").textContent=money(ent/nObras);
+if($("finMediaDespesa"))$("finMediaDespesa").textContent=money(desp/nObras);
+if($("finComprometimento"))$("finComprometimento").textContent=(contratoBase>0?(desp/contratoBase*100):0).toFixed(1).replace(".",",")+"%";
+
+renderObraFinance(obraFilter);
+
+if(!items.length){
+
+box.innerHTML=
+`<div class="empty">
+Nenhum lançamento encontrado.
+</div>`;
+
+return;
+
+}
+
+items.sort((a,b)=>
+String(b.data||"")
+.localeCompare(
+String(a.data||"")
+)
+);
+
+box.innerHTML=
+items.map(x=>{
+
+const obra=
+D.obras.find(
+o=>String(o.id)===
+String(x.obra_id)
+);
+
+const categoria=
+x._tipo==="despesa"
+?categoriaFinanceira(x)
+:"Receita";
+
+return`
+
+<div class="card">
+
+<div class="row">
+
+<div>
+
+<b>${esc(
+x.descricao||
+"Lançamento"
+)}</b>
+
+<br>
+
+<small>
+${esc(
+obra?.nome||
+"Sem obra"
+)}
+</small>
+
+</div>
+
+<span class="badge ${
+x._tipo==="entrada"
+?"on":"off"
+}">
+${
+x._tipo==="entrada"
+?"Receita"
+:"Despesa"
+}
+</span>
+
+</div>
+
+<div class="row"
+style="margin-top:10px">
+
+<span>${esc(
+x.data||""
+)}</span>
+
+<strong class="${
+x._tipo==="entrada"
+?"green":"red"
+}">
+${money(x.valor)}
+</strong>
+
+</div>
+
+<small>
+Categoria: ${esc(
+categoria
+)}
+</small>
+
+${
+x.fornecedor
+?`<br><small>${esc(
+x.fornecedor
+)}</small>`
+:""
+}
+
+<div class="listActions">
+
+<button
+class="btn danger"
+onclick="removeRow(
+'${
+x._tipo==="entrada"
+?"pagamentos"
+:"gastos"
+}',
+'${x.id}'
+)">
+Excluir
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}).join("");
+
 }
 
 function renderObraFinance(obraFilter="all"){
@@ -5837,11 +5954,7 @@ function advanceAmountForEmployeeInRange(funcId,ini,fim){
       Number(g.adiantamento_aplicado||0),
       Number(g.aplicado||0)
     );
-    const quitado =
-      String(g.status||'').toLowerCase()==='quitado' ||
-      String(g.status||'').toLowerCase()==='pago' ||
-      g.adiantamento_quitado===true;
-    return a+(quitado ? 0 : Math.max(0,original-usado));
+    return a+Math.max(0,original-usado);
   },0);
 }
 function atualizarFolha(){
@@ -7720,40 +7833,71 @@ function rcExportPDF(){
 function exportPDF(){
   const w=window.open('','_blank');
   if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
-  const rows=(arr)=>arr.map(x=>`<tr>${Object.values(x||{}).map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('');
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#222}h1{margin:0 0 5px}h2{margin-top:28px}small{color:#666}.meta{margin-bottom:20px}table{border-collapse:collapse;width:100%;font-size:10px}th,td{border:1px solid #ccc;padding:5px;text-align:left;vertical-align:top}th{background:#eee}@media print{button{display:none}}</style><style id="edifiq-home-fixes">
-/* Ajuste final dos 4 indicadores da tela inicial */
-@media (max-width:700px){.homeKpi strong,.homeKpi .value,.home-kpi strong,.home-card strong{font-size:clamp(15px,4.2vw,22px)!important;line-height:1.05!important;letter-spacing:-.35px!important;white-space:nowrap!important}.homeKpi small,.home-kpi small{font-size:11px!important}.homeKpi,.home-kpi{min-width:0!important;overflow:hidden!important}}
-</style></head><body><h1>EDIFIQ — Relatório</h1><div class="meta">Gerado em ${new Date().toLocaleString('pt-BR')}</div><h2>Obras</h2><table><thead><tr>${Object.keys(D.obras[0]||{Nome:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.obras)}</tbody></table><h2>Funcionários</h2><table><thead><tr>${Object.keys(D.funcionarios[0]||{Nome:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.funcionarios)}</tbody></table><h2>Diárias</h2><table><thead><tr>${Object.keys(D.diarias[0]||{Data:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.diarias)}</tbody></table><h2>Financeiro</h2><table><thead><tr>${Object.keys(D.gastos[0]||{Descrição:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.gastos)}</tbody></table><h2>Checklist</h2><table><thead><tr>${Object.keys(D.checklist[0]||{Etapa:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.checklist)}</tbody></table><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
-<script id="edifiq-servico-extra-link">
-(function(){
-  // Vincula serviços extras à folha/financeiro sem substituir dados existentes.
-  window.edifiqRegistrarServicoExtra = function(servico){
-    try{
-      if(!servico || !servico.valor) return false;
-      const d=typeof D!=="undefined"?D:null; if(!d) return false;
-      d.servicosExtras=Array.isArray(d.servicosExtras)?d.servicosExtras:[];
-      const id=servico.id||('sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
-      const item={...servico,id,valor:Number(servico.valor)||0,folhaAplicado:false,financeiroAplicado:false};
-      d.servicosExtras.push(item);
-      if(typeof save==='function') save(); else if(typeof persist==='function') persist();
-      return id;
-    }catch(e){console.error('Serviço extra:',e);return false;}
+
+  const nomeObra=(id)=>{
+    const o=(D.obras||[]).find(x=>String(x.id)===String(id));
+    return o?.nome||'Sem obra';
   };
-  window.edifiqAplicarServicoExtra = function(id){
-    try{const d=typeof D!=="undefined"?D:null;if(!d)return false;const x=(d.servicosExtras||[]).find(v=>v.id===id);if(!x||x.financeiroAplicado)return false;
-      d.gastos=Array.isArray(d.gastos)?d.gastos:[];
-      d.gastos.push({id:'g_'+Date.now(),data:new Date().toISOString().slice(0,10),descricao:'Serviço extra — '+(x.descricao||''),valor:Number(x.valor)||0,categoria:'Mão de obra',obraId:x.obraId||x.obra_id||'',funcionarioId:x.funcionarioId||x.funcionario_id||''});
-      x.financeiroAplicado=true;x.folhaAplicado=!!(x.funcionarioId||x.funcionario_id);
-      if(typeof save==='function')save();else if(typeof persist==='function')persist();
-      return true;}catch(e){console.error(e);return false;}
+  const nomeFunc=(id)=>{
+    const f=(D.funcionarios||[]).find(x=>String(x.id)===String(id));
+    return f?.nome||'Sem funcionário';
   };
-})();
-<\/script>
-</body></html>`);
-  w.document.close();
+  const fmtMoney=(v)=>money(Number(v||0));
+  const escHtml=(v)=>esc(v);
+  const rows=(arr,columns)=>{
+    const data=Array.isArray(arr)?arr:[];
+    if(!data.length)return '<tr><td colspan="99" class="emptyCell">Nenhum registro.</td></tr>';
+    return data.map(x=>`<tr>${columns.map(c=>`<td>${escHtml(c.value(x))}</td>`).join('')}</tr>`).join('');
+  };
+  const table=(title,columns,arr)=>`<section><h2>${escHtml(title)}</h2><table><thead><tr>${columns.map(c=>`<th>${escHtml(c.label)}</th>`).join('')}</tr></thead><tbody>${rows(arr,columns)}</tbody></table></section>`;
+
+  const contratado=(D.obras||[]).reduce((a,o)=>a+Number(o.valor||0),0);
+  const entradas=(D.pagamentos||[]).reduce((a,x)=>a+Number(x.valor||0),0);
+  const despesas=(D.gastos||[]).reduce((a,x)=>a+Number(x.valor||0),0);
+  const resultado=entradas-despesas;
+  const presentes=(D.presencas||[]).filter(x=>String(x.status||'').toLowerCase()==='presente').length;
+  const faltas=(D.faltas||[]).length || (D.presencas||[]).filter(x=>['falta','justificada','injustificada'].includes(String(x.status||'').toLowerCase())).length;
+
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório Completo</title>
+  <style>
+  body{font-family:Arial,sans-serif;padding:28px;color:#222;line-height:1.35}
+  h1{margin:0 0 5px;text-align:center}h2{margin:26px 0 8px;border-bottom:2px solid #ddd;padding-bottom:5px}
+  .meta{text-align:center;color:#666;margin-bottom:18px}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:15px 0 22px}
+  .kpi{border:1px solid #ddd;border-radius:8px;padding:10px}.kpi small{display:block;color:#666}.kpi b{font-size:17px}
+  table{border-collapse:collapse;width:100%;font-size:9px;margin-bottom:16px}th,td{border:1px solid #ccc;padding:5px;text-align:left;vertical-align:top;word-break:break-word}th{background:#eee}
+  .emptyCell{text-align:center;color:#777}.foot{margin-top:30px;text-align:center;color:#777;font-size:10px}
+  @media print{body{padding:10px}.summary{grid-template-columns:repeat(4,1fr)}button{display:none}}
+  </style></head><body>
+  <h1>EDIFIQ — Relatório Completo</h1>
+  <div class="meta">Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+  <div class="summary">
+    <div class="kpi"><small>Obras</small><b>${D.obras?.length||0}</b></div>
+    <div class="kpi"><small>Funcionários</small><b>${D.funcionarios?.length||0}</b></div>
+    <div class="kpi"><small>Valor contratado</small><b>${fmtMoney(contratado)}</b></div>
+    <div class="kpi"><small>Resultado</small><b>${fmtMoney(resultado)}</b></div>
+    <div class="kpi"><small>Receitas</small><b>${fmtMoney(entradas)}</b></div>
+    <div class="kpi"><small>Despesas</small><b>${fmtMoney(despesas)}</b></div>
+    <div class="kpi"><small>Presenças</small><b>${presentes}</b></div>
+    <div class="kpi"><small>Faltas</small><b>${faltas}</b></div>
+  </div>
+  ${table('Obras',[{label:'Nome',value:x=>x.nome},{label:'Cliente',value:x=>x.cliente},{label:'Status',value:x=>x.status},{label:'Contrato',value:x=>fmtMoney(x.valor)},{label:'Endereço',value:x=>x.endereco||x.localizacao}],D.obras)}
+  ${table('Funcionários',[{label:'Nome',value:x=>x.nome},{label:'Função',value:x=>x.funcao||x.cargo},{label:'Telefone',value:x=>x.telefone},{label:'Pagamento',value:x=>x.tipo_pagamento},{label:'Obra',value:x=>nomeObra(x.obra_id)},{label:'Ativo',value:x=>x.ativo===false?'Não':'Sim'}],D.funcionarios)}
+  ${table('Diárias',[{label:'Data',value:x=>x.data},{label:'Funcionário',value:x=>nomeFunc(x.funcionario_id)},{label:'Obra',value:x=>nomeObra(x.obra_id)},{label:'Valor',value:x=>fmtMoney(Number(x.qtd??x.quantidade??1)*Number(x.valor_diaria||0))},{label:'Status',value:x=>x.status||'Pendente'},{label:'Observação',value:x=>x.observacao}],D.diarias)}
+  ${table('Presença',[{label:'Data',value:x=>x.data},{label:'Funcionário',value:x=>nomeFunc(x.funcionario_id)},{label:'Obra',value:x=>nomeObra(x.obra_id)},{label:'Status',value:x=>x.status},{label:'Observação',value:x=>x.observacao}],D.presencas)}
+  ${table('Faltas',[{label:'Data',value:x=>x.data},{label:'Funcionário',value:x=>nomeFunc(x.funcionario_id)},{label:'Obra',value:x=>nomeObra(x.obra_id)},{label:'Tipo',value:x=>x.tipo||x.status},{label:'Observação',value:x=>x.observacao}],D.faltas)}
+  ${table('Receitas / Pagamentos',[{label:'Data',value:x=>x.data},{label:'Obra',value:x=>nomeObra(x.obra_id)},{label:'Descrição',value:x=>x.descricao},{label:'Valor',value:x=>fmtMoney(x.valor)},{label:'Fornecedor',value:x=>x.fornecedor}],D.pagamentos)}
+  ${table('Despesas / Financeiro',[{label:'Data',value:x=>x.data},{label:'Obra',value:x=>nomeObra(x.obra_id)},{label:'Categoria',value:x=>x.categoria||gastoCategoria?.(x)||''},{label:'Descrição',value:x=>x.descricao},{label:'Valor',value:x=>fmtMoney(x.valor)},{label:'Fornecedor',value:x=>x.fornecedor}],D.gastos)}
+  ${table('Checklist',[{label:'Obra',value:x=>nomeObra(x.obra_id)},{label:'Etapa',value:x=>x.tarefa||x.descricao},{label:'Progresso',value:x=>(x.progresso??x.pct??x.percentual??0)+'%'},{label:'Concluído',value:x=>x.concluida?'Sim':'Não'}],D.checklist)}
+  ${table('Diário de Obra',[{label:'Data',value:x=>x.data},{label:'Obra',value:x=>nomeObra(x.obra_id)},{label:'Clima',value:x=>x.clima},{label:'Horas',value:x=>x.horas},{label:'Atividades',value:x=>x.atividades},{label:'Observações',value:x=>x.observacoes}],D.diario)}
+  ${table('Documentos',[{label:'Data',value:x=>x.data},{label:'Obra',value:x=>nomeObra(x.obra_id)},{label:'Categoria',value:x=>x.categoria},{label:'Nome',value:x=>x.nome||x.nome_arquivo},{label:'Descrição',value:x=>x.descricao||x.observacao}],D.documentos)}
+  ${table('Materiais',[{label:'Obra',value:x=>nomeObra(x.obra_id)},{label:'Material',value:x=>x.nome||x.descricao},{label:'Unidade',value:x=>x.unidade},{label:'Quantidade',value:x=>x.quantidade},{label:'Valor',value:x=>fmtMoney(x.valor||x.preco)}],D.materiais)}
+  ${table('Movimentações de Materiais',[{label:'Data',value:x=>x.data},{label:'Obra',value:x=>nomeObra(x.obra_id)},{label:'Material',value:x=>x.material_id},{label:'Tipo',value:x=>x.tipo},{label:'Quantidade',value:x=>x.quantidade}],D.material_movimentos)}
+  <div class="foot">EDIFIQ — Construção Civil · Relatório gerado pelo sistema</div>
+  </body></html>`;
+  w.document.write(html);w.document.close();
   setTimeout(()=>{try{w.print()}catch(e){}},350);
 }
+
 function exportCSVAll(){
   const blocks=[];
   for(const [name,arr] of Object.entries(D)){
@@ -7886,8 +8030,7 @@ function renderResumoGeral(){
   const chart=$('vgChartSvg');
   if(chart){const byMonth={};pagamentos.slice().sort((a,b)=>String(a.data||'').localeCompare(String(b.data||''))).forEach(x=>{const k=String(x.data||'').slice(0,7)||'Sem data';byMonth[k]=(byMonth[k]||0)+Number(x.valor||0);});const entries=Object.entries(byMonth).slice(-12);if(!entries.length){chart.innerHTML='<div class="empty">Nenhum pagamento recebido registrado.</div>';}else{let acc=0;const vals=entries.map(([,v])=>(acc+=v,acc)),max=Math.max(...vals,1),W=900,H=300,P=42;const pts=vals.map((v,i)=>[P+(entries.length===1?0:(W-2*P)*i/(entries.length-1)),H-P-(H-2*P)*(v/max)]);const line=pts.map(p=>p.join(',')).join(' '),area=`${P},${H-P} ${line} ${pts[pts.length-1][0]},${H-P}`;chart.innerHTML=`<div class="vgChartWrap"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polygon points="${area}" class="area"/><polyline points="${line}" class="line"/>${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" class="dot"><title>${esc(money(vals[i]))}</title></circle>`).join('')}</svg><div class="vgChartLabels">${entries.map(([k])=>`<span>${k==='Sem data'?'—':k.slice(5)}/${k.slice(2,4)}</span>`).join('')}</div><div class="vgChartMax">${money(max)}</div></div>`;}}
   const ranking=obras.map(o=>({o,f:obraFinanceData(o.id)})).sort((a,b)=>Number(b.f.resultado||0)-Number(a.f.resultado||0));
-  const rankHtml=arr=>!arr.length?'<div class="empty">Nenhuma obra cadastrada.</div>':arr.map(x=>`<div class="vgWorkCard"><div class="vgWorkHead"><div><b>${esc(x.o.nome||'Obra')}</b><small>${esc(x.o.cliente||'')}</small></div><span>${esc(statusLabel(x.o.status))}</span></div><div class="vgWorkMoney"><span>Terceirizados: <b class="gold">${money(x.f.terceirizado||0)}</b></span><span>Lucro: <b class="green">${money(x.f.resultado||0)}</b> <b class="green">${Number(x.f.margemLucro||0).toFixed(1)}%</b></span></div><div class="vgWorkFoot"><span>Recebido: <b class="green">${money(x.f.receita||0)}</b></span><span>A Receber: <b class="gold">${money(x.f.saldoReceber||0)}</b></span></div></div>`).join('');if($('vgTopMais'))$('vgTopMais').innerHTML=rankHtml(ranking.slice(0,5));
-  if($('vgTopMenos'))$('vgTopMenos').innerHTML=rankHtml(ranking.slice(-5).reverse());
+  const rankHtml=arr=>!arr.length?'<div class="empty">Nenhuma obra cadastrada.</div>':arr.map(x=>`<div class="vgWorkCard"><div class="vgWorkHead"><div><b>${esc(x.o.nome||'Obra')}</b><small>${esc(x.o.cliente||'')}</small></div><span>${esc(statusLabel(x.o.status))}</span></div><div class="vgWorkMoney"><span>Terceirizados: <b class="gold">${money(x.f.terceirizado||0)}</b></span><span>Lucro: <b class="green">${money(x.f.resultado||0)}</b> <b class="green">${Number(x.f.margemLucro||0).toFixed(1)}%</b></span></div><div class="vgWorkFoot"><span>Recebido: <b class="green">${money(x.f.receita||0)}</b></span><span>A Receber: <b class="gold">${money(x.f.saldoReceber||0)}</b></span></div></div>`).join('');set('vgTopMais',rankHtml(ranking.slice(0,5)));set('vgTopMenos',rankHtml(ranking.slice(-5).reverse()));
 }
 
 
