@@ -1534,6 +1534,70 @@ body{min-height:100vh;min-height:100dvh}
 }
 </style>
 
+
+<style id="edifiq-dias-obras-modelo">
+.diasObraHeader{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:18px}
+.diasObraHeader h3{margin:0;font-size:28px;color:#f8fafc}
+.diasObraHeader p{margin:5px 0 0;color:#94a3b8;font-size:18px}
+.diasObraAdd{white-space:nowrap;font-size:16px;padding:13px 18px}
+.diasObraSummary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.diasObraSummary>div,.diasMoneyGrid>div,.diasPeriodGrid>div{
+  background:#0d1629;border-radius:14px;padding:14px;text-align:center
+}
+.diasObraSummary small,.diasMoneyGrid small,.diasPeriodGrid small{display:block;color:#94a3b8;font-size:15px}
+.diasObraSummary b{display:block;color:#3b82f6;font-size:24px;margin-top:5px}
+.diasObraWorker{background:#17223d;border:1px solid #1f3768;border-radius:22px;padding:22px;margin-bottom:16px}
+.diasObraWorkerTop h4{margin:0;color:#f8fafc;font-size:25px}
+.diasObraWorkerTop p{margin:4px 0 9px;color:#94a3b8;font-size:17px}
+.diasObraRate{display:inline-block;background:#1b2a4b;border-radius:18px;padding:5px 12px;color:#dbe4f4;font-size:14px}
+.diasObraCountRow{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:17px 0;font-size:18px;color:#f8fafc}
+.diasObraCountRow span{padding:7px 13px;border:1px solid #20375f;border-radius:18px}
+.diasObraCountRow .active{background:#3b82f6;border-color:#3b82f6}
+.diasObraActions{display:flex;gap:10px}
+.diasMiniBtn{width:72px;height:58px;border-radius:18px;border:1px solid #1f3768;background:#0a1225;color:#fff;font-size:34px}
+.diasMiniBtn.plus{background:#3b82f6;border-color:#3b82f6}
+.diasObraDivider{height:1px;background:#1d3155;margin:20px 0}
+.diasOcorrencia{background:transparent;border:1px solid #ef4444;color:#ef4444;border-radius:17px;padding:12px 20px;font-size:19px}
+.diasMoneyGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.diasMoneyGrid .saldo{grid-column:1/2;background:#123642}
+.diasMoneyGrid b,.diasPeriodGrid b{display:block;margin-top:5px;font-size:25px}
+.diasPeriodGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.diasPeriodGrid span{display:block;color:#94a3b8;font-size:14px;margin-top:5px}
+.diasObraPayment{display:grid;grid-template-columns:1fr 58px;gap:10px;margin-top:18px}
+.diasObraPayment .btn{height:54px;font-size:18px}
+.diasHistoryBtn{border:1px solid #1f3768;border-radius:16px;background:#0a1225;color:#fff;font-size:24px}
+.diasObraTotal{display:flex;justify-content:space-between;align-items:center;padding:20px 0;border-top:1px solid #1f3768;font-size:24px;font-weight:800}
+.diasObraTotal b{font-size:31px;color:#3b82f6}
+.diasObraHistory{margin-top:20px;padding-top:22px;border-top:1px solid #1f3768}
+.diasObraHistory h3{margin:0 0 14px;font-size:22px;color:#94a3b8}
+.diasHistoryCard{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:14px;background:#111a2e;border:1px solid #1f3768;border-radius:20px;padding:18px;margin-bottom:12px}
+.diasHistoryCard h4{margin:0;font-size:20px;color:#f8fafc}
+.diasHistoryCard small{color:#94a3b8}
+.diasHistoryCard span{border:1px solid #20375f;border-radius:18px;padding:8px 12px;color:#f8fafc}
+.diasHistoryCard b{font-size:22px;color:#3b82f6}
+@media(max-width:600px){
+  .diasObraHeader{align-items:flex-end}
+  .diasObraHeader h3{font-size:22px}
+  .diasObraHeader p{font-size:14px}
+  .diasObraAdd{font-size:13px;padding:10px 12px}
+  .diasObraWorker{padding:16px;border-radius:18px}
+  .diasObraWorkerTop h4{font-size:21px}
+  .diasObraWorkerTop p{font-size:15px}
+  .diasObraCountRow{font-size:15px;gap:8px}
+  .diasObraCountRow span{padding:6px 10px}
+  .diasMiniBtn{width:58px;height:50px;font-size:29px}
+  .diasOcorrencia{font-size:16px;padding:10px 15px}
+  .diasMoneyGrid small,.diasPeriodGrid small,.diasObraSummary small{font-size:13px}
+  .diasMoneyGrid b,.diasPeriodGrid b{font-size:21px}
+  .diasObraPayment .btn{font-size:15px;height:48px}
+  .diasObraTotal{font-size:18px}
+  .diasObraTotal b{font-size:24px}
+  .diasHistoryCard{grid-template-columns:1fr auto;gap:8px;padding:15px}
+  .diasHistoryCard b{grid-column:2;grid-row:1/3;font-size:19px}
+  .diasHistoryCard span{grid-column:1;justify-self:start}
+}
+</style>
+
 </head>
 <body>
 <div class="bootError" id="bootError"><div class="bootErrorBox"><h2>EDIFIQ</h2><p id="bootErrorText">O aplicativo encontrou um erro ao iniciar.</p><button onclick="location.reload()">Recarregar</button></div></div>
@@ -4199,12 +4263,117 @@ function renderObras(){
       porFunc[nome].valor+=diariaValor(d);
     });
     const categoriasHtml=Object.entries(porFunc).sort((a,b)=>a[0].localeCompare(b[0],'pt-BR')).map(([func,v])=>`<div class="obraModeloRow"><span><b>${esc(func)}</b><br><small>Total de diárias: ${v.qtd.toLocaleString('pt-BR')}</small></span><b>${money(v.valor)}</b></div>`).join('');
-    const diasHtml=x.dias.length
-      ? `<div class="obraDataGrid" style="margin-bottom:12px"><div class="obraDataItem"><small>Total de diárias</small><b>${diasQtdTotal.toLocaleString('pt-BR')}</b></div><div class="obraDataItem"><small>Valor total das diárias</small><b>${money(x.dias.reduce((a,d)=>a+diariaValor(d),0))}</b></div></div><h4 style="margin:10px 0">Diárias por função</h4><div class="obraModeloList">${categoriasHtml}</div><h4 style="margin:16px 0 10px">Lançamentos</h4><div class="obraModeloList">${x.dias.slice().sort((a,b)=>String(b.data||"").localeCompare(String(a.data||""))).slice(0,30).map(d=>{
-          const func=D.funcionarios.find(ff=>String(ff.id)===String(d.funcionario_id));
-          return `<div class="obraModeloRow"><span><b>${esc(func?.nome||"Funcionário")}</b><br><small>${esc(func?.funcao||"Função não informada")} • ${formatDateBR(d.data)} • ${Number(d.qtd??d.quantidade??1)} diária(s)</small></span><b>${money(diariaValor(d))}</b></div>`;
-        }).join("")}</div>`
-      : '<div class="obraModeloEmpty">Nenhuma diária registrada nesta obra.</div>';
+    const funcsObra=D.funcionarios.filter(fu=>{
+      if(fu.ativo===false) return false;
+      return x.dias.some(d=>String(d.funcionario_id)===String(fu.id));
+    });
+
+    const diasHtml=`
+      <div class="diasObraHeader">
+        <div>
+          <h3>Dias Trabalhados</h3>
+          <p>Resumo por Trabalhador</p>
+        </div>
+        <button class="btn gold diasObraAdd" onclick="openDiaObra('${esc(String(o.id))}')">＋ Adicionar Dia</button>
+      </div>
+
+      <div class="diasObraSummary">
+        <div><small>Total de diárias</small><b>${diasQtdTotal.toLocaleString('pt-BR')}</b></div>
+        <div><small>Total da mão de obra</small><b>${money(x.dias.reduce((a,d)=>a+diariaValor(d),0))}</b></div>
+      </div>
+
+      <div class="diasObraWorkers">
+        ${
+          funcsObra.length
+          ? funcsObra.map(fu=>{
+              const registros=x.dias.filter(d=>String(d.funcionario_id)===String(fu.id));
+              const qtd=registros.reduce((a,d)=>a+Number(d.qtd??d.quantidade??1),0);
+              const inteiros=registros.reduce((a,d)=>a+(Number(d.qtd??d.quantidade??1)===1?1:0),0);
+              const meios=registros.reduce((a,d)=>a+(Number(d.qtd??d.quantidade??1)===0.5?1:0),0);
+              const valor=registros.reduce((a,d)=>a+diariaValor(d),0);
+              const pago=registros.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);
+              const saldo=valor-pago;
+              const hoje=registros.filter(d=>String(d.data||"")===today()).reduce((a,d)=>a+Number(d.qtd??d.quantidade??1),0);
+              const semana=registros.filter(d=>{
+                const dt=new Date(`${d.data}T00:00:00`);
+                const n=new Date(); const day=n.getDay(); const ini=new Date(n.getFullYear(),n.getMonth(),n.getDate()-(day===0?6:day-1));
+                return dt>=ini;
+              }).filter(d=>!diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
+              const quinzena=registros.filter(d=>{
+                const dt=new Date(`${d.data}T00:00:00`);
+                const n=new Date(); const ini=new Date(n.getFullYear(),n.getMonth(),n.getDate()-14);
+                return dt>=ini && !diariaEstaPaga(d);
+              }).reduce((a,d)=>a+diariaValor(d),0);
+
+              return `
+              <div class="diasObraWorker">
+                <div class="diasObraWorkerTop">
+                  <div>
+                    <h4>${esc(fu.nome||"Funcionário")}</h4>
+                    <p>${esc(fu.funcao||"Função não informada")}</p>
+                    <span class="diasObraRate">${esc(fu.pagamento_tipo==="diaria"||!fu.pagamento_tipo?"Diária":String(fu.pagamento_tipo))} &nbsp; ${money(fu.valor_diaria||0)}/dia</span>
+                  </div>
+                </div>
+
+                <div class="diasObraCountRow">
+                  <span>${qtd.toLocaleString('pt-BR')} dia(s)</span>
+                  <span class="active">${inteiros} inteiro(s)</span>
+                  <span>${meios} meio(s)</span>
+                </div>
+
+                <div class="diasObraActions">
+                  <button class="diasMiniBtn minus" onclick="openDiaObra('${esc(String(o.id))}');setTimeout(()=>{if($('dFunc'))$('dFunc').value='${esc(String(fu.id))}'},70)">−</button>
+                  <button class="diasMiniBtn plus" onclick="openDiaFuncionario('${esc(String(fu.id))}');setTimeout(()=>{if($('dObra'))$('dObra').value='${esc(String(o.id))}'},70)">＋</button>
+                </div>
+
+                <div class="diasObraDivider"></div>
+
+                <button class="diasOcorrencia" onclick="openFalta('${esc(String(fu.id))}')">◫ &nbsp; Ocorrência</button>
+
+                <div class="diasObraDivider"></div>
+
+                <div class="diasMoneyGrid">
+                  <div><small>Diárias</small><b class="blue">${money(valor)}</b></div>
+                  <div><small>Já Pago</small><b class="green">${money(pago)}</b></div>
+                  <div class="saldo"><small>Saldo</small><b class="${saldo>0?'gold':'green'}">${money(saldo)}</b></div>
+                </div>
+
+                <div class="diasObraDivider"></div>
+
+                <div class="diasPeriodGrid">
+                  <div><small>Esta Semana</small><b class="blue">${money(semana)}</b><span>pendente(s)</span></div>
+                  <div><small>Quinzena</small><b class="blue">${money(quinzena)}</b><span>pendente(s)</span></div>
+                </div>
+
+                <div class="diasObraPayment">
+                  <button class="btn" onclick="openPagamentoFuncionario('${esc(String(fu.id))}')">＄ &nbsp; Pagamento em dia</button>
+                  <button class="diasHistoryBtn" onclick="go('diarias')">◷</button>
+                </div>
+              </div>`;
+            }).join("")
+          : '<div class="obraModeloEmpty">Nenhum funcionário possui diária registrada nesta obra.</div>'
+        }
+      </div>
+
+      <div class="diasObraTotal">
+        <span>Total Mão de Obra:</span>
+        <b>${money(x.dias.reduce((a,d)=>a+diariaValor(d),0))}</b>
+      </div>
+
+      <div class="diasObraHistory">
+        <h3>Histórico de Dias por Trabalhador</h3>
+        ${
+          funcsObra.length
+          ? funcsObra.map(fu=>{
+              const registros=x.dias.filter(d=>String(d.funcionario_id)===String(fu.id));
+              const qtd=registros.reduce((a,d)=>a+Number(d.qtd??d.quantidade??1),0);
+              const valor=registros.reduce((a,d)=>a+diariaValor(d),0);
+              return `<div class="diasHistoryCard"><div><h4>${esc(fu.nome||"Funcionário")}</h4><small>${esc(fu.funcao||"Função não informada")}</small></div><span>${qtd.toLocaleString('pt-BR')} dia(s)</span><b>${money(valor)}</b></div>`;
+            }).join("")
+          : '<div class="obraModeloEmpty">Sem histórico.</div>'
+        }
+      </div>
+    `;
 
     const gastosHtml=x.gastos.length
       ? `<div class="obraModeloList">${x.gastos.slice().sort((a,b)=>String(b.data||"").localeCompare(String(a.data||""))).slice(0,40).map(g=>
@@ -4880,6 +5049,13 @@ $("diaValorInfo").textContent=
 
 function atualizarTipoDiaria(){
 aplicarTipoDiaria();
+}
+
+function openDiaObra(obraId){
+  openDia();
+  setTimeout(()=>{
+    if($("dObra")) $("dObra").value=String(obraId||"");
+  },60);
 }
 
 function openDiaFuncionario(id){
