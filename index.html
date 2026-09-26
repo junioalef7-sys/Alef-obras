@@ -4321,6 +4321,109 @@ function renderObras(){
     </div></article>`;
 }
 
+function openFunc(id=null){
+  editFuncId=id;
+  const f=D.funcionarios.find(x=>String(x.id)===String(id));
+  $("funcTitle").textContent=id?"Editar funcionário":"Novo funcionário";
+  $("fNome").value=f?.nome||"";
+  $("fFunc").value=f?.funcao||"";
+  $("fTel").value=f?.telefone||"";
+  $("fTipo").value=f?.tipo_pagamento||"diaria";
+  $("fDia").value=f?.valor_diaria??"";
+  $("fSal").value=f?.salario_mensal??"";
+  $("fPag").value=f?.dia_pagamento??"";
+  $("fAtivo").value=f?.ativo===false?"false":"true";
+  const registra = (f?.registrar_diaria===false || String(f?.registrar_diaria||"").toLowerCase() in {nao:1,"não":1,false:1,"0":1}) ? "false" : "true";
+  $("fDiariaRegistro").value=registra;
+  const sel=$("fObra");
+  if(sel){
+    sel.innerHTML='<option value="">Sem obra</option>'+(D.obras||[]).map(o=>`<option value="${esc(o.id)}">${esc(o.nome||"Obra")}</option>`).join("");
+    sel.value=String(f?.obra_id||getFuncObra(id)||"");
+  }
+  openM("funcM");
+}
+
+async function saveFunc(e){
+  e?.preventDefault?.();
+  const nome=String($("fNome")?.value||"").trim();
+  if(!nome){toast("Informe o nome do funcionário.");return false;}
+  const obraRaw=$("fObra")?.value||"";
+  const row={
+    nome,
+    funcao:String($("fFunc")?.value||"").trim(),
+    telefone:String($("fTel")?.value||"").trim(),
+    tipo_pagamento:$("fTipo")?.value||"diaria",
+    valor_diaria:Number($("fDia")?.value||0),
+    salario_mensal:Number($("fSal")?.value||0),
+    dia_pagamento:$("fPag")?.value?Number($("fPag").value):null,
+    ativo:$("fAtivo")?.value!=="false",
+    registrar_diaria:$("fDiariaRegistro")?.value==="false"?"nao":"sim",
+    obra_id:obraRaw?Number(obraRaw):null
+  };
+  try{
+    let saved;
+    if(editFuncId){
+      saved=await updateRow("funcionarios",editFuncId,row);
+      setFuncObra(editFuncId,obraRaw||"");
+      toast("Funcionário atualizado com sucesso.");
+    }else{
+      saved=await insertRow("funcionarios",row);
+      if(saved?.id) setFuncObra(saved.id,obraRaw||"");
+      toast("Funcionário cadastrado com sucesso.");
+    }
+    closeM("funcM");
+    editFuncId=null;
+    renderAll();
+    return saved||true;
+  }catch(err){
+    console.error("Erro ao salvar funcionário",err);
+    toast("Não foi possível salvar o funcionário.");
+    return false;
+  }
+}
+
+async function toggleFunc(id){
+  const f=D.funcionarios.find(x=>String(x.id)===String(id));
+  if(!f)return;
+  await updateRow("funcionarios",id,{ativo:f.ativo===false});
+  toast(f.ativo===false?"Funcionário ativado.":"Funcionário desativado.");
+  renderAll();
+}
+
+async function excluirFuncionario(id){
+  const f=D.funcionarios.find(x=>String(x.id)===String(id));
+  if(!f){toast("Funcionário não encontrado.");return false;}
+  if(!confirm(`Excluir o funcionário "${f.nome||"Funcionário"}"?\n\nOs registros de diárias, faltas, adiantamentos e pagamentos vinculados também serão removidos.`)) return false;
+  const childTables=["diarias","faltas","adiantamentos","pagamentos"];
+  const idStr=String(id);
+  // Remove primeiro do estado local para a interface não ficar com referências quebradas.
+  childTables.forEach(t=>{if(Array.isArray(D[t]))D[t]=D[t].filter(x=>String(x.funcionario_id)!==idStr);});
+  try{
+    if(String(id).startsWith("local_") || !sb || !user){
+      D.funcionarios=D.funcionarios.filter(x=>String(x.id)!==idStr);
+      const mapa=localFuncObras(); delete mapa[idStr]; localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(mapa));
+      saveLocalData(); renderAll(); toast("Funcionário excluído com sucesso."); return true;
+    }
+    for(const table of childTables){
+      const {error}=await sb.from(table).delete().eq("funcionario_id",id);
+      if(error) console.warn("Dependência não removida",table,error.message);
+    }
+    const {error}=await sb.from("funcionarios").delete().eq("id",id);
+    if(error){
+      await loadCloud(); renderAll();
+      toast("Erro ao excluir: "+error.message);
+      return false;
+    }
+    D.funcionarios=D.funcionarios.filter(x=>String(x.id)!==idStr);
+    const mapa=localFuncObras(); delete mapa[idStr]; localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(mapa));
+    saveLocalData(); renderAll(); toast("Funcionário excluído com sucesso."); return true;
+  }catch(err){
+    console.error("Erro ao excluir funcionário",err);
+    try{await loadCloud();renderAll();}catch(_){ }
+    toast("Não foi possível excluir o funcionário."); return false;
+  }
+}
+
 function renderFuncs(){
 
 const box=$("funcList");
@@ -4487,7 +4590,7 @@ ${money(resumo.net)}
 <div class="pastaInterna">
 <div class="pastaInternaHead">📁 Pasta da equipe</div>
 <div class="pastaInternaGrid">
-${f.registrar_diaria!==false?`<button class="btn gold" onclick="go('diarias')">📅 Diárias</button>`:`<button class="btn" onclick="go('diarias')">📅 Diárias</button>`}
+${(f.registrar_diaria!==false && String(f.registrar_diaria).toLowerCase()!=="nao" && String(f.registrar_diaria).toLowerCase()!=="não")?`<button class="btn gold" onclick="go('diarias')">📅 Diárias</button>`:`<button class="btn" onclick="go('diarias')">📅 Diárias</button>`}
 <button class="btn gold" onclick="go('faltas')">⚠️ Faltas</button>
 </div>
 </div>
