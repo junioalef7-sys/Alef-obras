@@ -693,6 +693,26 @@ table{width:100%;border-collapse:collapse}
  .edHomeWorksHead h2{font-size:18px}.edHomeWorkCard{border-left-width:6px;border-radius:18px;padding:15px}.edHomeWorkIcon{width:48px;height:48px;flex-basis:48px;border-radius:15px;font-size:23px}.edHomeWorkName{font-size:18px}.edHomeWorkType{font-size:13px}.edHomeStatus{font-size:12px;padding:7px 11px}.edHomeProgress{margin:16px 0 14px}.edHomeProgressHead{font-size:13px}.edHomeProgressHead b{font-size:18px}.edHomeProgressBar{height:12px}.edHomeWorkMeta{font-size:13px}.edHomeMoney{font-size:17px}
 }
 @media(max-width:390px){.edHomeBrandName{font-size:20px}.edHomePremium{font-size:10px}.edHomeKpi{padding:10px}.edHomeKpiIcon{width:43px;height:43px;flex-basis:43px}.edHomeKpi small{font-size:12px}.edHomeKpi strong{font-size:18px}.edHomeSelect{font-size:13px}}
+
+<style id="edifiq-servicos-extras-mobile">
+/* Serviços adicionais — organização responsiva */
+.obraExtraSummary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 12px}
+.obraExtraSummary>div{min-width:0;background:#0d1115;border:1px solid var(--line);border-radius:12px;padding:10px 11px}
+.obraExtraSummary small{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}
+.obraExtraSummary b{display:block;overflow-wrap:anywhere;font-size:15px}
+.obraExtraList{display:flex;flex-direction:column;gap:8px}
+.obraExtraRow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;background:#0d1115;border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+.obraExtraIdentity{display:flex;align-items:center;gap:10px;min-width:0}
+.obraExtraIcon{width:32px;height:32px;flex:0 0 32px;border-radius:9px;display:grid;place-items:center;background:rgba(217,173,85,.12);border:1px solid rgba(217,173,85,.28);color:var(--gold2);font-weight:900}
+.obraExtraIdentity b{display:block;overflow-wrap:anywhere;line-height:1.25}
+.obraExtraIdentity small{display:block;color:var(--muted);margin-top:3px}
+.obraExtraRow>strong{white-space:nowrap;color:var(--gold2);font-size:14px}
+@media(max-width:759px){
+  .obraExtraSummary{grid-template-columns:1fr 1fr}
+  .obraExtraSummary>div:last-child{grid-column:1/-1}
+  .obraExtraRow{align-items:flex-start}
+  .obraExtraRow>strong{font-size:13px}
+}
 </style>
 <style id="edifiq-home-fixes">
 /* Ajuste final dos 4 indicadores da tela inicial */
@@ -3988,11 +4008,13 @@ function renderObras(){
         ).join("")}</div>`
       : '<div class="obraModeloEmpty">Nenhum gasto registrado nesta obra.</div>';
 
-    const servicosHtml=x.extras.length
-      ? `<div class="obraModeloList">${x.extras.map(s=>
-          `<div class="obraModeloRow"><span><b>${esc(s.nome||"Serviço adicional")}</b><br><small>${formatDateBR(s.data)}</small></span><b>${money(s.valor)}</b></div>`
+    const extrasTotal=x.extras.reduce((a,s)=>a+Number(s.valor||0),0);
+    const extrasHtml=x.extras.length
+      ? `<div class="obraExtraList">${x.extras.slice().sort((a,b)=>String(b.data||"").localeCompare(String(a.data||""))).map(s=>
+          `<div class="obraExtraRow"><div class="obraExtraIdentity"><div class="obraExtraIcon">＋</div><div><b>${esc(s.nome||"Serviço adicional")}</b><small>${formatDateBR(s.data)}</small></div></div><strong>${money(s.valor)}</strong></div>`
         ).join("")}</div>`
       : '<div class="obraModeloEmpty">Nenhum serviço adicional cadastrado.</div>';
+    const servicosHtml=`<div class="obraExtraSummary"><div><small>Serviços</small><b>${x.extras.length}</b></div><div><small>Total adicional</small><b>${money(extrasTotal)}</b></div><div><small>Contrato atual</small><b>${money(o.valor)}</b></div></div>${extrasHtml}`;
 
     const repassesHtml=x.repasses.length
       ? `<div class="obraModeloList">${x.repasses.slice().sort((a,b)=>String(b.data||"").localeCompare(String(a.data||""))).map(r=>
