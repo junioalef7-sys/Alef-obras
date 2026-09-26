@@ -1382,6 +1382,7 @@ body{min-height:100vh;min-height:100dvh}
     <button class="edifiqMenuItem" onclick="goMenu('fotos')"><span>▧</span><b>Relatório Fotográfico</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('documentos')"><span>▤</span><b>Documentos</b></button>
     <button class="edifiqMenuItem" onclick="openRelatorioCliente();toggleMenuPasta()"><span>▧</span><b>Relatório para Cliente</b></button>
+     <button class="edifiqMenuItem" onclick="openRelatorioTrabalhador();toggleMenuPasta()"><span>♙</span><b>Relatório do Trabalhador</b></button>
     <button class="edifiqMenuItem" onclick="openPagamentoEquipe();toggleMenuPasta()"><span>＄</span><b>Pagamento da Equipe</b></button>
     <button class="edifiqMenuItem" onclick="openAdiantamento();toggleMenuPasta()"><span>＋</span><b>Adiantamento</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('diarias')"><span>📅</span><b>Histórico de Diárias</b></button>
@@ -1630,7 +1631,7 @@ body{min-height:100vh;min-height:100dvh}
 </section>
 <section class="page" id="financeiro">
 <div class="pageTitle"><div><h1>💰 Financeiro</h1><p class="sub">Painel financeiro completo, moderno e separado por obra.</p></div><button class="btn gold" onclick="openFin()">＋ Lançamento</button></div>
-<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select><select id="finCategoriaFilter" onchange="renderFinance()"><option value="all">Todas as categorias</option><option value="Material">Material</option><option value="Combustível">Combustível</option><option value="Mão de obra">Mão de obra</option><option value="Locação">Locação</option><option value="Serviço terceirizado">Serviço terceirizado</option><option value="Adiantamento">Adiantamento</option><option value="Outros">Outros</option></select></div>
+<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select><select id="finCategoriaFilter" onchange="renderFinance()"><option value="all">Todas as categorias</option><option value="Material">Material</option><option value="Combustível">Combustível</option><option value="Mão de obra">Mão de obra</option><option value="Locação">Locação</option><option value="Serviço terceirizado">Serviço terceirizado</option><option value="Adiantamento">Adiantamento</option><option value="Ferramentas e equipamentos">Ferramentas e equipamentos</option><option value="Transporte">Transporte</option><option value="Outros">Outros</option></select></div>
 <div class="financeModernHead">
 <div class="financeModernCard"><span class="fmLabel">Entradas</span><strong class="fmValue green" id="finEnt">R$ 0,00</strong></div>
 <div class="financeModernCard"><span class="fmLabel">Despesas</span><strong class="fmValue red" id="finDesp">R$ 0,00</strong></div>
@@ -1671,7 +1672,7 @@ body{min-height:100vh;min-height:100dvh}
 <div class="modal" id="presencaM"><div class="modalBox"><div class="modalHead"><h2>Registrar presença</h2><button class="x" onclick="closeM('presencaM')">×</button></div><form onsubmit="savePresenca(event)"><div class="formGrid"><label>Funcionário<select id="presFunc" required><option value="">Selecione</option></select></label><label>Obra<select id="presObra"><option value="">Selecione</option></select></label><label>Data<input id="presData" type="date" required></label><label>Status<select id="presStatus"><option value="presente">Presente</option><option value="justificada">Ausência justificada</option><option value="injustificada">Ausência injustificada</option></select></label><label class="full">Observação<textarea id="presObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('presencaM')" type="button">Cancelar</button><button class="btn primary">Salvar presença</button></div></form></div></div>
 <div class="modal" id="faltaM"><div class="modalBox"><div class="modalHead"><h2>Registrar falta</h2><button class="x" onclick="closeM('faltaM')">×</button></div><form onsubmit="saveFalta(event)"><div class="formGrid"><label>Funcionário<select id="faltaFunc" required=""><option value="">Selecione</option></select></label><label>Data<input id="faltaData" required="" type="date"/></label><label>Tipo<select id="faltaTipo"><option value="falta">Falta</option><option value="justificada">Falta justificada</option><option value="atestado">Atestado</option></select></label><label>Observação<input id="faltaObs"/></label></div><div class="formActions"><button class="btn" onclick="closeM('faltaM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
 <div class="modal" id="checkM"><div class="modalBox"><div class="modalHead"><h2>Adicionar etapa</h2><button class="x" onclick="closeM('checkM')">×</button></div><form onsubmit="saveCheck(event)"><div class="formGrid"><label>Obra<select id="checkObra" required=""><option value="">Selecione</option></select></label><label class="full">Etapa<input id="checkDesc" placeholder="Ex.: Reboco concluído" required=""/></label></div><div class="formActions"><button class="btn" onclick="closeM('checkM')" type="button">Cancelar</button><button class="btn primary">Adicionar</button></div></form></div></div>
-<div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" step="0.01" type="number"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Combustível</option><option>Mão de obra</option><option>Locação</option><option>Serviço terceirizado</option><option>Adiantamento</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
+<div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" step="0.01" type="number"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Combustível</option><option>Mão de obra</option><option>Locação</option><option>Serviço terceirizado</option><option>Adiantamento</option><option>Ferramentas e equipamentos</option><option>Transporte</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
 <div class="modal" id="fotoM"><div class="modalBox"><div class="modalHead"><h2>Relatório fotográfico</h2><button class="x" onclick="closeM('fotoM')">×</button></div><form onsubmit="saveFoto(event)"><div class="formGrid"><label>Obra<select id="fotoObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="fotoData" type="date"/></label><label class="full">Título<input id="fotoTitulo"/></label><label class="full">Fotos<input accept="image/*" id="fotoFiles" multiple="" required="" type="file"/></label><label class="full">Observação<textarea id="fotoObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('fotoM')" type="button">Cancelar</button><button class="btn primary">Salvar fotos</button></div></form></div></div>
 <div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Adiantamentos</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
 <div class="pay-summary"><div><small>Diárias pendentes</small><b id="pagDiariasTotal">R$ 0,00</b></div></div><div class="formActions"><button class="btn" onclick="closeM('pagEquipeM')" type="button">Cancelar</button><button class="btn primary">Processar pagamento</button></div></form></div></div>
@@ -2277,6 +2278,8 @@ function gastoSubcategoria(g){
   const text=(c+' '+d).trim();
   if(c.includes('combust')||text.includes('combustivel')||text.includes('gasolina')||text.includes('diesel')||text.includes('abastecimento')) return 'Combustível';
   if(c.includes('loca')||text.includes('locacao')||text.includes('aluguel')||text.includes('maquina alugada')||text.includes('equipamento alugado')) return 'Locação';
+  if(c.includes('ferrament')||c.includes('equipamento')||text.includes('ferramenta')||text.includes('ferramentas')||text.includes('equipamento')||text.includes('equipamentos')) return 'Ferramentas e equipamentos';
+  if(c.includes('transport')||text.includes('transporte')||text.includes('frete')||text.includes('frete')) return 'Transporte';
   if(c.includes('material')||text.includes('material')) return 'Material';
   if(c.includes('mao')||text.includes('pagamento de equipe')||text.includes('pagamento de diaria')||text.includes('pagamento de diária')||text.includes('mao de obra')) return 'Mão de obra';
   if(c.includes('terceir')||text.includes('servico terceirizado')) return 'Serviço terceirizado';
@@ -2286,11 +2289,7 @@ function gastoSubcategoria(g){
 
 function gastoCategoria(g){
   const sub=gastoSubcategoria(g);
-  if(sub==='Adiantamento')return 'Adiantamento';
-  if(sub==='Material')return 'Material';
-  if(sub==='Mão de obra')return 'Mão de obra';
-  if(sub==='Serviço terceirizado')return 'Serviço terceirizado';
-  return 'Outros';
+  return sub;
 }
 
 function categoriaFinanceira(g){
@@ -2506,7 +2505,7 @@ function openBackupConfig(){
       <div class="modalHead"><div><h2>💾 Backup</h2><p class="sub">Central de proteção, recuperação e exportação dos dados do EDIFIQ.</p></div><button class="x" onclick="closeM('edBackupConfigModal')">×</button></div>
       <div class="card"><h3>Proteção dos dados</h3><p class="sub">O backup não substitui nem apaga os dados atuais. A importação também preserva os registros existentes e mescla somente o que for necessário.</p><div class="listActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar backup</button><input id="backupImportFile" accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importRelatorioData(event)" style="display:none" type="file"/></div></div>
       <div class="card"><h3>Exportar relatórios</h3><div class="reportGrid"><button class="btn reportAction" onclick="exportPDF()"><b>📄 Exportar PDF</b><small>Relatório pronto para salvar ou compartilhar.</small></button><button class="btn reportAction" onclick="exportExcel()"><b>📊 Exportar Excel</b><small>Obras, equipe, diárias, financeiro e checklist.</small></button><button class="btn reportAction" onclick="exportCSVAll()"><b>📁 Exportar CSV</b><small>Dados compatíveis com planilhas.</small></button><button class="btn reportAction" onclick="exportFull()"><b>🗂️ Exportar JSON</b><small>Backup completo para recuperação futura.</small></button></div></div>
-      <div class="card"><h3>📊 Acesso rápido aos relatórios</h3><p class="sub">Os recursos continuam no menu principal, mas também ficam centralizados aqui para consulta e exportação.</p><div class="reportGrid"><button class="btn reportAction" type="button" onclick="openRelatorioCliente()"><b>📄 Relatório para Cliente</b><small>Gerar acompanhamento por obra e cliente.</small></button><button class="btn reportAction" type="button" onclick="openPagamentoEquipe()"><b>👷 Pagamento da Equipe</b><small>Folha, diárias, adiantamentos e líquido.</small></button><button class="btn reportAction" type="button" onclick="openAdiantamento()"><b>＋ Adiantamento</b><small>Registrar e controlar adiantamentos.</small></button><button class="btn reportAction" type="button" onclick="go('diarias');closeM('edBackupConfigModal')"><b>📅 Histórico de Diárias</b><small>Consultar os registros por período e obra.</small></button></div></div>
+      <div class="card"><h3>📊 Acesso rápido aos relatórios</h3><p class="sub">Os recursos continuam no menu principal, mas também ficam centralizados aqui para consulta e exportação.</p><div class="reportGrid"><button class="btn reportAction" type="button" onclick="openRelatorioCliente()"><b>📄 Relatório para Cliente</b><small>Gerar acompanhamento por obra e cliente.</small></button><button class="btn reportAction" type="button" onclick="openRelatorioTrabalhador()"><b>👷 Relatório do Trabalhador</b><small>Dados cadastrais, dias, obras, pagamentos e fechamento.</small></button><button class="btn reportAction" type="button" onclick="openPagamentoEquipe()"><b>👷 Pagamento da Equipe</b><small>Folha, diárias, adiantamentos e líquido.</small></button><button class="btn reportAction" type="button" onclick="openAdiantamento()"><b>＋ Adiantamento</b><small>Registrar e controlar adiantamentos.</small></button><button class="btn reportAction" type="button" onclick="go('diarias');closeM('edBackupConfigModal')"><b>📅 Histórico de Diárias</b><small>Consultar os registros por período e obra.</small></button></div></div>
       <div class="card dangerDataCard"><h3>🗑️ Apagar dados</h3><p class="sub">Escolha o setor que deseja apagar. O aplicativo pedirá confirmação antes de excluir.</p><div class="reportGrid dataDeleteGrid"><button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar Equipe</b><small>Funcionários, diárias, faltas e registros.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar Obras</b><small>Obras e registros vinculados.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar Financeiro</b><small>Receitas, despesas e pagamentos.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar Tudo</b><small>Apaga todos os dados do aplicativo.</small></button></div><div class="note dangerNote">⚠️ Esta ação não pode ser desfeita. Faça um backup antes de apagar.</div></div>
       <div class="note" id="backupStatus">Backup centralizado: seus dados atuais permanecem preservados.</div>
     </div>`;
@@ -3769,12 +3768,11 @@ x=>categoriaFinanceira(x)==="Outros"
 
 const combustivel=gastos.filter(x=>gastoSubcategoria(x)==="Combustível").reduce((a,x)=>a+Number(x.valor||0),0);
 const locacao=gastos.filter(x=>gastoSubcategoria(x)==="Locação").reduce((a,x)=>a+Number(x.valor||0),0);
+const ferramentasEquipamentos=gastos.filter(x=>gastoSubcategoria(x)==="Ferramentas e equipamentos").reduce((a,x)=>a+Number(x.valor||0),0);
+const transporte=gastos.filter(x=>gastoSubcategoria(x)==="Transporte").reduce((a,x)=>a+Number(x.valor||0),0);
 
 const despesas=
-material+
-mao+
-terceirizado+
-outros;
+gastos.reduce((a,x)=>a+Number(x.valor||0),0);
 
 const resultado=
 receita-despesas;
@@ -3996,17 +3994,32 @@ function diasTrabalhadosPorObra(obraId){
   const registros=(D.diarias||[]).filter(d=>String(d.obra_id)===String(obraId));
   const porFunc={};
   const pares=new Set();
+
+  // Cria primeiro todas as funções dos funcionários vinculados à obra,
+  // mesmo que ainda não tenham diária registrada no período.
+  (D.funcionarios||[]).forEach(f=>{
+    const obraFunc=getFuncObra(f.id);
+    if(String(obraFunc)===String(obraId)){
+      const funcao=String(f.funcao||f.função||'Não informada').trim()||'Não informada';
+      const key=normalize(funcao)||'nao-informada';
+      if(!porFunc[key])porFunc[key]={funcao,dias:new Set(),funcionarios:new Set()};
+      porFunc[key].funcionarios.add(String(f.id));
+    }
+  });
+
   registros.forEach(d=>{
     const fid=String(d.funcionario_id??d.funcId??d.funcionarioId??'');
     const data=String(d.data||'');
     if(!fid||!data)return;
     pares.add(fid+'|'+data);
     const f=D.funcionarios.find(x=>String(x.id)===fid);
-    const funcao=f?.funcao||'Não informada';
+    const funcao=String(f?.funcao||f?.função||'Não informada').trim()||'Não informada';
     const key=normalize(funcao)||'nao-informada';
-    if(!porFunc[key])porFunc[key]={funcao, dias:new Set()};
+    if(!porFunc[key])porFunc[key]={funcao,dias:new Set(),funcionarios:new Set()};
     porFunc[key].dias.add(fid+'|'+data);
+    porFunc[key].funcionarios.add(fid);
   });
+
   const totais={servente:0,pintor:0,pedreiro:0,geral:pares.size,outros:0};
   Object.values(porFunc).forEach(x=>{
     const k=normalize(x.funcao);
@@ -4021,7 +4034,7 @@ function diasTrabalhadosPorObra(obraId){
 
 function obraGastosResumo(obraId){
   const gs=(D.gastos||[]).filter(g=>String(g.obra_id)===String(obraId));
-  const out={Material:0,'Combustível':0,'Mão de obra':0,'Locação':0,'Serviço terceirizado':0,Adiantamento:0,Outros:0};
+  const out={Material:0,'Combustível':0,'Mão de obra':0,'Locação':0,'Serviço terceirizado':0,Adiantamento:0,'Ferramentas e equipamentos':0,Transporte:0,Outros:0};
   gs.forEach(g=>{const k=gastoSubcategoria(g);out[k]=(out[k]||0)+Number(g.valor||0);});
   return out;
 }
@@ -4059,14 +4072,18 @@ function renderObras(){
   const status=statusLabel(o.status);
   const tabs=[['dados','Dados'],['dias','Dias'],['gastos','Gastos'],['servicos','Serviços+'],['repasses','Repasses'],['pagamentos','Pagamentos'],['resumo','Resumo'],['checklist','Checklist'],['auditoria','Auditoria']];
   const diasResumo=diasTrabalhadosPorObra(o.id), gc=obraGastosResumo(o.id);
-  const diasHtml=x.dias.length?`<div class="obraDataGrid">
+  const funcoesObra=Object.values(diasResumo.porFunc||{}).sort((a,b)=>String(a.funcao||'').localeCompare(String(b.funcao||''),'pt-BR'));
+  const funcoesHtml=funcoesObra.length?`<div class="obraDataGrid obraFuncoesGrid">
+    ${funcoesObra.map(x=>`<div class="obraDataItem"><small>${esc(x.funcao)}</small><b>${x.dias.size} dia(s)</b><span class="muted">${x.funcionarios?.size||0} funcionário(s)</span></div>`).join('')}
+  </div>`:'<div class="obraModeloEmpty">Nenhuma função cadastrada para esta obra.</div>';
+  const diasHtml=(x.dias.length||funcoesObra.length)?`<div class="obraDataGrid">
     <div class="obraDataItem"><small>Total de dias trabalhados</small><b>${diasResumo.totais.geral}</b></div>
-    <div class="obraDataItem"><small>Serventes</small><b>${diasResumo.totais.servente}</b></div>
-    <div class="obraDataItem"><small>Pintores</small><b>${diasResumo.totais.pintor}</b></div>
-    <div class="obraDataItem"><small>Pedreiros</small><b>${diasResumo.totais.pedreiro}</b></div>
-    <div class="obraDataItem"><small>Outras funções</small><b>${diasResumo.totais.outros}</b></div>
+    <div class="obraDataItem"><small>Funções cadastradas</small><b>${funcoesObra.length}</b></div>
+    <div class="obraDataItem"><small>Funcionários na obra</small><b>${[...new Set(funcoesObra.flatMap(v=>[...(v.funcionarios||[]) ]))].length}</b></div>
     <div class="obraDataItem"><small>Registros de diárias</small><b>${x.dias.length}</b></div>
-  </div><div class="obraModeloList" style="margin-top:12px">${x.dias.slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||''))).slice(0,50).map(d=>{const func=D.funcionarios.find(ff=>String(ff.id)===String(d.funcionario_id));return `<div class="obraModeloRow"><span><b>${esc(func?.nome||'Funcionário')}</b><br><small>${formatDateBR(d.data)} • ${esc(func?.funcao||'Função não informada')} • ${Number(d.qtd??d.quantidade??1)} diária(s)</small></span><b>${money(diariaValor(d))}</b></div>`;}).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum dia trabalhado registrado nesta obra.</div>';
+  </div>
+  <h4 style="margin:14px 0 8px">Funções dos profissionais</h4>${funcoesHtml}
+  <div class="obraModeloList" style="margin-top:12px">${x.dias.length?x.dias.slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||''))).slice(0,80).map(d=>{const func=D.funcionarios.find(ff=>String(ff.id)===String(d.funcionario_id));return `<div class="obraModeloRow"><span><b>${esc(func?.nome||'Funcionário')}</b><br><small>${formatDateBR(d.data)} • ${esc(func?.funcao||func?.função||'Função não informada')} • ${Number(d.qtd??d.quantidade??1)} diária(s)</small></span><b>${money(diariaValor(d))}</b></div>`;}).join(''):'<div class="obraModeloEmpty">Nenhum dia trabalhado registrado nesta obra.</div>'}</div>`:'<div class="obraModeloEmpty">Nenhuma função ou dia trabalhado registrado nesta obra.</div>';
   const gastosHtml=`<div class="obraDataGrid">${Object.entries(gc).map(([k,v])=>`<div class="obraDataItem"><small>${k}</small><b>${money(v)}</b></div>`).join('')}<div class="obraDataItem"><small>Total de gastos</small><b class="red">${money(Object.values(gc).reduce((a,v)=>a+v,0))}</b></div></div><div class="obraModeloList" style="margin-top:12px">${x.gastos.length?x.gastos.slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||''))).slice(0,60).map(g=>`<div class="obraModeloRow"><span><b>${esc(g.descricao||'Despesa')}</b><br><small>${formatDateBR(g.data)} • ${esc(gastoSubcategoria(g))}${g.fornecedor?' • '+esc(g.fornecedor):''}</small></span><b>${money(g.valor)}</b></div>`).join(''):'<div class="obraModeloEmpty">Nenhum gasto registrado nesta obra.</div>'}</div>`;
   const servicosHtml=x.extras.length?`<div class="obraModeloList">${x.extras.map(s=>`<div class="obraModeloRow"><span><b>${esc(s.nome||'Serviço adicional')}</b><br><small>${formatDateBR(s.data)}</small></span><b>${money(s.valor)}</b></div>`).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum serviço adicional cadastrado.</div>';
   const repassesHtml=x.repasses.length?`<div class="obraModeloList">${x.repasses.slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||''))).map(r=>`<div class="obraModeloRow"><span><b>${esc(r.descricao||'Repasse recebido')}</b><br><small>${formatDateBR(r.data)} • Repasse de serviço</small></span><b>${money(r.valor)}</b></div>`).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum repasse/recebimento registrado nesta obra.</div>';
@@ -4084,7 +4101,7 @@ function renderObras(){
       <div class="obraModeloPanel" data-panel="servicos" style="display:none"><div class="obraInfoCard"><h3>Serviços adicionais</h3>${servicosHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="addServicoAdicional('${esc(String(o.id))}')">＋ Adicionar serviço</button></div></div></div>
       <div class="obraModeloPanel" data-panel="repasses" style="display:none"><div class="obraInfoCard"><h3>Repasses de serviços</h3>${repassesHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="go('financeiro')">Abrir recebimentos</button></div></div></div>
       <div class="obraModeloPanel" data-panel="pagamentos" style="display:none"><div class="obraInfoCard"><h3>Pagamentos da equipe</h3>${pagamentosHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="openPagamentoEquipe()">Pagamento da equipe</button></div></div></div>
-      <div class="obraModeloPanel" data-panel="resumo" style="display:none"><div class="obraInfoCard"><h3>Resumo geral detalhado</h3><div class="obraDataGrid"><div class="obraDataItem"><small>Valor contratado</small><b>${money(f.contrato)}</b></div><div class="obraDataItem"><small>Já recebido</small><b class="green">${money(f.receita)}</b></div><div class="obraDataItem"><small>Total gasto</small><b class="red">${money(f.despesas)}</b></div><div class="obraDataItem"><small>Material</small><b>${money(f.material)}</b></div><div class="obraDataItem"><small>Mão de obra</small><b>${money(f.mao)}</b></div><div class="obraDataItem"><small>Terceirizado</small><b>${money(f.terceirizado)}</b></div><div class="obraDataItem"><small>Combustível</small><b>${money(f.combustivel||0)}</b></div><div class="obraDataItem"><small>Locação</small><b>${money(f.locacao||0)}</b></div><div class="obraDataItem"><small>Outros gastos</small><b>${money(f.outros)}</b></div><div class="obraDataItem"><small>Lucro / resultado</small><b class="gold">${money(f.resultado)}</b></div><div class="obraDataItem"><small>Falta receber</small><b>${money(f.saldoReceber)}</b></div><div class="obraDataItem"><small>Margem de lucro</small><b>${margem.toFixed(1).replace('.',',')}%</b></div><div class="obraDataItem"><small>Saldo do contrato após gastos</small><b>${money(f.saldoContrato)}</b></div></div></div></div>
+      <div class="obraModeloPanel" data-panel="resumo" style="display:none"><div class="obraInfoCard"><h3>Resumo geral detalhado</h3><div class="obraDataGrid"><div class="obraDataItem"><small>Valor contratado</small><b>${money(f.contrato)}</b></div><div class="obraDataItem"><small>Já recebido</small><b class="green">${money(f.receita)}</b></div><div class="obraDataItem"><small>Total gasto</small><b class="red">${money(f.despesas)}</b></div><div class="obraDataItem"><small>Material</small><b>${money(f.material)}</b></div><div class="obraDataItem"><small>Mão de obra</small><b>${money(f.mao)}</b></div><div class="obraDataItem"><small>Terceirizado</small><b>${money(f.terceirizado)}</b></div><div class="obraDataItem"><small>Combustível</small><b>${money(f.combustivel||0)}</b></div><div class="obraDataItem"><small>Locação</small><b>${money(f.locacao||0)}</b></div><div class="obraDataItem"><small>Ferramentas e equipamentos</small><b>${money(f.ferramentasEquipamentos||0)}</b></div><div class="obraDataItem"><small>Transporte</small><b>${money(f.transporte||0)}</b></div><div class="obraDataItem"><small>Outros gastos</small><b>${money(f.outros)}</b></div><div class="obraDataItem"><small>Lucro / resultado</small><b class="gold">${money(f.resultado)}</b></div><div class="obraDataItem"><small>Falta receber</small><b>${money(f.saldoReceber)}</b></div><div class="obraDataItem"><small>Margem de lucro</small><b>${margem.toFixed(1).replace('.',',')}%</b></div><div class="obraDataItem"><small>Saldo do contrato após gastos</small><b>${money(f.saldoContrato)}</b></div></div></div></div>
       <div class="obraModeloPanel" data-panel="checklist" style="display:none"><div class="obraInfoCard"><h3>Checklist da obra — editável</h3>${checklistHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="openCheckForObra('${esc(String(o.id))}')">＋ Adicionar / editar checklist</button></div></div></div>
       <div class="obraModeloPanel" data-panel="auditoria" style="display:none"><div class="obraInfoCard"><h3>Auditoria da obra</h3>${auditHtml}<div class="obraDataGrid" style="margin-top:14px"><div class="obraDataItem"><small>Diárias</small><b>${x.dias.length}</b></div><div class="obraDataItem"><small>Gastos</small><b>${x.gastos.length}</b></div><div class="obraDataItem"><small>Checklist</small><b>${x.checks.length}</b></div><div class="obraDataItem"><small>Serviços adicionais</small><b>${x.extras.length}</b></div></div></div></div>
     </div></article>`;
@@ -4532,10 +4549,9 @@ const box=$("pagFuncionarios");
 
 if(!box)return;
 
+// Todos os funcionários cadastrados aparecem no fechamento.
 const funcs=
-D.funcionarios.filter(
-f=>f.ativo!==false
-);
+[...(D.funcionarios||[])];
 
 if(!funcs.length){
 
@@ -4582,6 +4598,7 @@ type="checkbox"
 class="pag-check"
 data-id="${f.id}"
 onchange="updatePagTotal()"
+${f.ativo===false?"disabled":""}
 ${
 selectedId&&
 String(selectedId)===
@@ -5197,7 +5214,8 @@ valor,
 fornecedor:
 $("forFin").value.trim(),
 observacao:
-$("obsFin").value.trim()
+$("obsFin").value.trim(),
+categoria
 }
 );
 
@@ -5549,6 +5567,16 @@ f.contrato
 )}
 </span>
 </span>
+</div>
+
+<div class="finance-cat">
+<span>Ferramentas e equipamentos</span>
+<span><b>${money(f.ferramentasEquipamentos||0)}</b><br><span class="finance-percent">${pctText(f.ferramentasEquipamentos||0,f.contrato)}</span></span>
+</div>
+
+<div class="finance-cat">
+<span>Transporte</span>
+<span><b>${money(f.transporte||0)}</b><br><span class="finance-percent">${pctText(f.transporte||0,f.contrato)}</span></span>
 </div>
 
 <div class="finance-cat">
@@ -8555,5 +8583,226 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   };
 })();
 </script>
+
+<style id="edifiq-relatorio-trabalhador-fix">
+/* Relatório do Trabalhador — formato de seleção + prévia */
+.workerReportModal .modalBox{width:min(860px,96vw);max-height:94dvh;overflow:auto;background:#090d16;border:1px solid #1c315c;border-radius:18px}
+.workerReportModal .modalHead{padding:22px 24px 16px;border-bottom:1px solid #1b315b}
+.workerReportModal .modalHead h2{font-size:25px;margin:0}
+.workerReportModal .modalHead p{margin:7px 0 0;color:#8f9db5;font-size:14px;line-height:1.45}
+.wrTabs{display:grid;grid-template-columns:1fr 1fr;margin:18px 20px 0;background:#172445;border-radius:16px;padding:4px}
+.wrTab{border:0;background:transparent;color:#657492;padding:13px 12px;border-radius:13px;font-weight:900;font-size:15px}
+.wrTab.active{background:#090d16;color:#fff}
+.wrBody{padding:20px}
+.wrSectionTitle{font-size:18px;font-weight:900;margin:0 0 10px}
+.wrWorkers{border:1px solid #1b315b;border-radius:16px;overflow:auto;max-height:265px}
+.wrWorker{display:flex;align-items:center;gap:12px;width:100%;padding:15px 16px;border:0;border-bottom:1px solid #182744;background:#0b101b;color:#fff;text-align:left;cursor:pointer}
+.wrWorker:last-child{border-bottom:0}
+.wrWorker.active{background:#101a2d;box-shadow:inset 3px 0 0 #3d83f7}
+.wrAvatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#152b50;color:#9ec2ff;font-weight:900;flex:0 0 42px}
+.wrWorker b{font-size:15px}.wrWorker small{display:block;color:#91a0b9;margin-top:4px;font-size:12px}
+.wrCheck{margin-left:auto;width:22px;height:22px;accent-color:#4285f4}
+.wrPeriodGrid{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0 18px}
+.wrPeriodBtn{border:1px solid #1d396c;background:#0b101b;color:#fff;border-radius:14px;padding:11px 15px;font-weight:900;font-size:12px;letter-spacing:.2px}
+.wrPeriodBtn.active{background:#173b75;border-color:#4b83dc}
+.wrDates{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.wrDates label,.wrField label{display:flex;flex-direction:column;gap:7px;color:#8e9db5;font-weight:800;font-size:13px}
+.wrDates input,.wrSelect{height:52px;background:#0b101b;border:1px solid #1d396c;border-radius:14px;color:#fff;padding:0 13px;font-size:15px;box-sizing:border-box}
+.wrChecks{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px;padding:15px;border:1px solid #1b315b;border-radius:16px}
+.wrCheckOpt{display:flex;align-items:center;gap:9px;color:#f0f4fb;font-size:14px}
+.wrCheckOpt input{width:20px;height:20px;accent-color:#4285f4}
+.wrActions{display:flex;gap:10px;padding:16px 20px;border-top:1px solid #1b315b}
+.wrActions .btn{flex:1;min-height:52px;border-radius:14px;font-size:15px}
+.wrPreview{background:#fff;color:#172033;border-radius:14px;padding:22px;line-height:1.5}
+.wrPreview h1{font-size:23px;margin:0 0 4px}.wrPreview h2{font-size:17px;margin:20px 0 8px;border-bottom:1px solid #dce2ea;padding-bottom:6px}
+.wrPreview .wrMeta{color:#64748b;font-size:12px}.wrPreview .wrKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.wrPreview .wrKpi{border:1px solid #d9e0ea;border-radius:10px;padding:10px}.wrPreview .wrKpi small{display:block;color:#64748b;font-size:10px}.wrPreview .wrKpi b{font-size:16px}
+.wrPreview table{width:100%;border-collapse:collapse;font-size:12px}.wrPreview th,.wrPreview td{border:1px solid #dce2ea;padding:7px;text-align:left;vertical-align:top}.wrPreview th{background:#f3f6fa}
+.wrPreview .wrGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.wrPreview .wrInfo{border:1px solid #dce2ea;border-radius:10px;padding:10px}.wrPreview .wrInfo small{display:block;color:#64748b}
+@media(max-width:700px){
+ .workerReportModal .modalBox{width:100vw;max-height:100dvh;border-radius:0}
+ .workerReportModal .modalHead{padding:18px 16px 14px}.workerReportModal .modalHead h2{font-size:20px}
+ .wrBody{padding:14px}.wrTabs{margin:12px 12px 0}.wrTab{font-size:13px;padding:11px 8px}
+ .wrDates,.wrChecks{grid-template-columns:1fr}.wrPeriodGrid{gap:7px}.wrPeriodBtn{flex:1 1 42%;padding:10px 8px}
+ .wrActions{padding:12px;position:sticky;bottom:0;background:#090d16}.wrActions .btn{min-height:48px;font-size:13px}
+ .wrPreview{padding:14px}.wrPreview .wrKpis{grid-template-columns:1fr 1fr}.wrPreview .wrGrid{grid-template-columns:1fr}
+}
+</style>
+<script id="edifiq-relatorio-trabalhador">
+(function(){
+  const RT_SECTIONS={cadastro:true,obras:true,dias:true,folha:true,faltas:true,adiant:true,pagamentos:true,extras:true,resumo:true};
+  window.__rtSections={...RT_SECTIONS};
+  window.__rtFuncId='';
+  window.__rtPeriod='mes';
+
+  function rtFuncs(){return [...(D.funcionarios||[])].sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR'));}
+  function rtFmt(v){return v?formatDateBR(v):'—';}
+  function rtMoney(v){return money(Number(v||0));}
+  function rtMatchEmployee(x,f){
+    const id=String(f?.id||'');
+    const xid=String(x?.funcionario_id??x?.funcionarioId??x?.funcId??'');
+    const nome=normalize(f?.nome||'');
+    return xid===id || (nome && (normalize(x?.fornecedor||'')===nome || normalize(x?.descricao||'').includes(nome)));
+  }
+  function rtRange(){
+    const mode=window.__rtPeriod||'mes';
+    const now=new Date(); now.setHours(0,0,0,0);
+    const fim=now.toISOString().slice(0,10);
+    const ini=new Date(now);
+    if(mode==='semana'){ini.setDate(now.getDate()-6);}
+    else if(mode==='quinzena'){ini.setDate(now.getDate()-14);}
+    else if(mode==='mes'){ini.setDate(now.getDate()-29);}
+    else if(mode==='custom'){
+      return {ini:$('rtInicio')?.value||fim,fim:$('rtFim')?.value||fim};
+    }
+    return {ini:ini.toISOString().slice(0,10),fim};
+  }
+  function rtInRange(v,r){const d=String(v||'');return (!d||d>=r.ini&&d<=r.fim);}
+  function rtData(){
+    const f=(D.funcionarios||[]).find(x=>String(x.id)===String(window.__rtFuncId));
+    if(!f)return null;
+    const r=rtRange();
+    const diarias=(D.diarias||[]).filter(d=>rtMatchEmployee(d,f)&&rtInRange(d.data,r));
+    const faltas=(D.faltas||[]).filter(x=>rtMatchEmployee(x,f)&&rtInRange(x.data,r));
+    const presencas=(D.presencas||[]).filter(x=>rtMatchEmployee(x,f)&&rtInRange(x.data,r));
+    const adiantamentos=(D.gastos||[]).filter(g=>gastoCategoria(g)==='Adiantamento'&&rtMatchEmployee(g,f)&&rtInRange(g.data,r));
+    const pagamentos=(D.gastos||[]).filter(g=>gastoCategoria(g)==='Mão de obra'&&rtMatchEmployee(g,f)&&rtInRange(g.data,r));
+    const extras=(D.servicosExtras||[]).filter(x=>String(x.funcionario_id??x.funcionarioId??'')===String(f.id)&&rtInRange(x.data,r));
+    const obraIds=new Set();
+    [diarias,faltas,presencas,adiantamentos,pagamentos].forEach(arr=>arr.forEach(x=>{if(x.obra_id!=null)obraIds.add(String(x.obra_id));}));
+    extras.forEach(x=>{if(x.obra_id!=null||x.obraId!=null)obraIds.add(String(x.obra_id??x.obraId));});
+    const current=getFuncObra(f.id); if(current)obraIds.add(String(current));
+    const obras=[...(D.obras||[])].filter(o=>obraIds.has(String(o.id)));
+    const diasTrabalhados=new Set(diarias.map(d=>String(d.data||''))).size;
+    const brutoDiarias=diarias.reduce((a,d)=>a+diariaValor(d),0);
+    const pagDiarias=diarias.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);
+    const pendDiarias=diarias.filter(d=>!diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
+    const totalAdiant=adiantamentos.reduce((a,g)=>a+Number(g.valor||0),0);
+    const totalPagamentos=pagamentos.reduce((a,g)=>a+Number(g.valor||0),0);
+    const totalExtras=extras.reduce((a,x)=>a+Number(x.valor||0),0);
+    return {f,r,diarias,faltas,presencas,adiantamentos,pagamentos,extras,obras,diasTrabalhados,brutoDiarias,pagDiarias,pendDiarias,totalAdiant,totalPagamentos,totalExtras};
+  }
+  function rtEnsureModal(){
+    let m=$('relatorioTrabalhadorM');
+    if(m)return m;
+    document.body.insertAdjacentHTML('beforeend',`
+      <div class="modal workerReportModal" id="relatorioTrabalhadorM">
+       <div class="modalBox">
+        <div class="modalHead"><div><h2>👷 Relatório do Trabalhador</h2><p>Selecione o período e o trabalhador para gerar o fechamento completo.</p></div><button class="x" type="button" onclick="closeM('relatorioTrabalhadorM')">×</button></div>
+        <div class="wrTabs"><button id="rtTabSel" class="wrTab active" type="button" onclick="rtShowTab('sel')">1. Seleção</button><button id="rtTabPrev" class="wrTab" type="button" onclick="rtShowTab('prev')">2. Prévia &amp; Envio</button></div>
+        <div id="rtTabSelection" class="wrBody">
+          <div class="wrSectionTitle">Trabalhador</div>
+          <div id="rtWorkers" class="wrWorkers"></div>
+          <div style="margin-top:18px" class="wrSectionTitle">Período</div>
+          <div class="wrPeriodGrid">
+            <button class="wrPeriodBtn" type="button" data-rt-period="semana" onclick="rtSetPeriod('semana')">ESTA SEMANA</button>
+            <button class="wrPeriodBtn" type="button" data-rt-period="quinzena" onclick="rtSetPeriod('quinzena')">ESTA QUINZENA</button>
+            <button class="wrPeriodBtn" type="button" data-rt-period="mes" onclick="rtSetPeriod('mes')">ESTE MÊS</button>
+            <button class="wrPeriodBtn" type="button" data-rt-period="custom" onclick="rtSetPeriod('custom')">PERSONALIZADO</button>
+          </div>
+          <div class="wrDates"><label>Início<input id="rtInicio" type="date" onchange="rtSetPeriod('custom')"></label><label>Fim<input id="rtFim" type="date" onchange="rtSetPeriod('custom')"></label></div>
+          <div style="margin-top:18px" class="wrSectionTitle">Informações no relatório</div>
+          <div id="rtSections" class="wrChecks"></div>
+        </div>
+        <div id="rtTabPreview" class="wrBody" style="display:none">
+          <div id="rtPreview" class="wrPreview"></div>
+        </div>
+        <div class="wrActions">
+          <button class="btn" type="button" onclick="closeM('relatorioTrabalhadorM')">Cancelar</button>
+          <button class="btn gold" type="button" onclick="rtGeneratePreview()">Gerar Prévia →</button>
+          <button class="btn" type="button" onclick="rtPrint()">🖨️ Imprimir / PDF</button>
+          <button class="btn" type="button" onclick="rtWhatsApp()">WhatsApp</button>
+        </div>
+       </div>
+      </div>`);
+    return $('relatorioTrabalhadorM');
+  }
+  function rtRenderWorkers(){
+    const box=$('rtWorkers');if(!box)return;
+    const fs=rtFuncs();
+    box.innerHTML=fs.length?fs.map(f=>{
+      const active=String(f.id)===String(window.__rtFuncId);
+      const obra=getFuncObra(f.id),o=(D.obras||[]).find(x=>String(x.id)===String(obra));
+      return `<button class="wrWorker ${active?'active':''}" type="button" onclick="rtSelectFunc('${String(f.id).replace(/'/g,"\\'")}')"><span class="wrAvatar">${esc(String(f.nome||'F').trim().charAt(0).toUpperCase())}</span><span><b>${esc(f.nome||'Funcionário')}</b><small>${esc(f.funcao||f.função||'Função não informada')} · ${esc(o?.nome||'Sem obra')} · ${f.ativo===false?'Inativo':'Ativo'}</small></span><input class="wrCheck" type="radio" name="rtFunc" ${active?'checked':''} onclick="event.stopPropagation();rtSelectFunc('${String(f.id).replace(/'/g,"\\'")}')"></button>`;
+    }).join(''):'<div class="empty">Nenhum funcionário cadastrado.</div>';
+  }
+  function rtRenderSections(){
+    const box=$('rtSections');if(!box)return;
+    const labels={cadastro:'Dados cadastrais e função',obras:'Obras e vínculos',dias:'Dias trabalhados e diárias',folha:'Resumo da folha',faltas:'Faltas e afastamentos',adiant:'Adiantamentos',pagamentos:'Pagamentos realizados',extras:'Produção / extras',resumo:'Resumo financeiro'};
+    box.innerHTML=Object.entries(labels).map(([k,n])=>`<label class="wrCheckOpt"><input type="checkbox" ${window.__rtSections[k]?'checked':''} onchange="window.__rtSections['${k}']=this.checked"><span>${n}</span></label>`).join('');
+  }
+  function rtSyncDates(){
+    const r=rtRange();
+    if($('rtInicio'))$('rtInicio').value=r.ini;
+    if($('rtFim'))$('rtFim').value=r.fim;
+    document.querySelectorAll('[data-rt-period]').forEach(b=>b.classList.toggle('active',b.dataset.rtPeriod===window.__rtPeriod));
+  }
+  window.rtSetPeriod=function(mode){window.__rtPeriod=mode;rtSyncDates();};
+  window.rtSelectFunc=function(id){window.__rtFuncId=String(id);rtRenderWorkers();rtGeneratePreview(false);};
+  window.rtShowTab=function(tab){
+    const sel=tab==='sel';
+    $('rtTabSelection').style.display=sel?'block':'none';
+    $('rtTabPreview').style.display=sel?'none':'block';
+    $('rtTabSel').classList.toggle('active',sel);$('rtTabPrev').classList.toggle('active',!sel);
+    if(!sel)rtGeneratePreview(false);
+  };
+  function rtEscLines(v){return esc(v==null?'—':String(v)).replace(/\n/g,'<br>');}
+  function rtBuildHtml(){
+    const d=rtData();
+    if(!d)return '<div class="empty">Selecione um trabalhador.</div>';
+    const s=window.__rtSections, f=d.f, r=d.r;
+    const works=d.obras.map(o=>`<div class="wrInfo"><small>Obra</small><b>${esc(o.nome||'Obra')}</b><br><small>Cliente</small><b>${esc(o.cliente||'—')}</b><br><small>Status</small><b>${esc(statusLabel(o.status))}</b></div>`).join('')||'<div class="wrInfo">Nenhuma obra vinculada no período.</div>';
+    const diasRows=d.diarias.slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||''))).map(x=>`<tr><td>${rtFmt(x.data)}</td><td>${esc((D.obras.find(o=>String(o.id)===String(x.obra_id))||{}).nome||'—')}</td><td>${esc(f.funcao||'—')}</td><td>${Number(x.qtd??x.quantidade??1)}</td><td>${rtMoney(diariaValor(x))}</td><td>${diariaEstaPaga(x)?'Pago':'Pendente'}</td></tr>`).join('');
+    const faltaRows=d.faltas.map(x=>`<tr><td>${rtFmt(x.data)}</td><td>${esc({falta:'Falta',justificada:'Falta justificada',atestado:'Atestado'}[x.tipo]||x.tipo||'Falta')}</td><td>${rtEscLines(x.observacao)}</td></tr>`).join('');
+    const pagRows=d.pagamentos.map(x=>`<tr><td>${rtFmt(x.data)}</td><td>${rtMoney(x.valor)}</td><td>${rtEscLines(x.descricao)}</td><td>${esc((D.obras.find(o=>String(o.id)===String(x.obra_id))||{}).nome||'—')}</td></tr>`).join('');
+    const advRows=d.adiantamentos.map(x=>`<tr><td>${rtFmt(x.data)}</td><td>${rtMoney(x.valor)}</td><td>${rtEscLines(x.observacao||x.descricao)}</td><td>${esc((D.obras.find(o=>String(o.id)===String(x.obra_id))||{}).nome||'—')}</td></tr>`).join('');
+    const extraRows=d.extras.map(x=>`<tr><td>${rtFmt(x.data)}</td><td>${esc(x.tipo||'Serviço extra')}</td><td>${rtEscLines(x.descricao)}</td><td>${rtMoney(x.valor)}</td><td>${esc(x.status||'—')}</td></tr>`).join('');
+    const sections=[];
+    if(s.cadastro)sections.push(`<h2>👤 Dados do trabalhador</h2><div class="wrGrid"><div class="wrInfo"><small>Nome</small><b>${esc(f.nome||'—')}</b></div><div class="wrInfo"><small>Função</small><b>${esc(f.funcao||f.função||'Não informada')}</b></div><div class="wrInfo"><small>Telefone</small><b>${esc(f.telefone||f.tel||'—')}</b></div><div class="wrInfo"><small>Status</small><b>${f.ativo===false?'Inativo':'Ativo'}</b></div><div class="wrInfo"><small>Tipo de pagamento</small><b>${esc(f.tipo_pagamento||'—')}</b></div><div class="wrInfo"><small>Valor da diária</small><b>${f.valor_diaria!=null?rtMoney(f.valor_diaria):'—'}</b></div><div class="wrInfo"><small>Salário mensal</small><b>${f.salario_mensal!=null?rtMoney(f.salario_mensal):'—'}</b></div><div class="wrInfo"><small>Dia de pagamento</small><b>${esc(f.dia_pagamento||'—')}</b></div><div class="wrInfo"><small>Registrar diária</small><b>${f.registrar_diaria===false?'Não':'Sim'}</b></div></div>`);
+    if(s.obras)sections.push(`<h2>🏗️ Obras e vínculos</h2><div class="wrGrid">${works}</div>`);
+    if(s.dias)sections.push(`<h2>📅 Dias trabalhados e diárias</h2><div class="wrKpis"><div class="wrKpi"><small>DIAS TRABALHADOS</small><b>${d.diasTrabalhados}</b></div><div class="wrKpi"><small>REGISTROS</small><b>${d.diarias.length}</b></div><div class="wrKpi"><small>BRUTO</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrKpi"><small>PENDENTE</small><b>${rtMoney(d.pendDiarias)}</b></div></div>${diasRows?`<table><thead><tr><th>Data</th><th>Obra</th><th>Função</th><th>Qtd.</th><th>Valor</th><th>Status</th></tr></thead><tbody>${diasRows}</tbody></table>`:'<p>Nenhuma diária no período.</p>'}`);
+    if(s.folha)sections.push(`<h2>💰 Resumo da folha</h2><div class="wrGrid"><div class="wrInfo"><small>Bruto das diárias</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrInfo"><small>Diárias já pagas</small><b>${rtMoney(d.pagDiarias)}</b></div><div class="wrInfo"><small>Diárias pendentes</small><b>${rtMoney(d.pendDiarias)}</b></div><div class="wrInfo"><small>Adiantamentos no período</small><b>${rtMoney(d.totalAdiant)}</b></div><div class="wrInfo"><small>Pagamentos registrados</small><b>${rtMoney(d.totalPagamentos)}</b></div><div class="wrInfo"><small>Produção / extras</small><b>${rtMoney(d.totalExtras)}</b></div></div>`);
+    if(s.faltas)sections.push(`<h2>⚠️ Faltas e afastamentos</h2><div class="wrKpis"><div class="wrKpi"><small>REGISTROS</small><b>${d.faltas.length}</b></div><div class="wrKpi"><small>PRESENÇAS</small><b>${d.presencas.filter(x=>String(x.status||'presente')==='presente').length}</b></div></div>${faltaRows?`<table><thead><tr><th>Data</th><th>Tipo</th><th>Observação</th></tr></thead><tbody>${faltaRows}</tbody></table>`:'<p>Nenhuma falta/afastamento no período.</p>'}`);
+    if(s.adiant)sections.push(`<h2>💳 Adiantamentos</h2>${advRows?`<table><thead><tr><th>Data</th><th>Valor</th><th>Observação</th><th>Obra</th></tr></thead><tbody>${advRows}</tbody></table>`:'<p>Nenhum adiantamento no período.</p>'}`);
+    if(s.pagamentos)sections.push(`<h2>💵 Pagamentos realizados</h2>${pagRows?`<table><thead><tr><th>Data</th><th>Valor</th><th>Descrição</th><th>Obra</th></tr></thead><tbody>${pagRows}</tbody></table>`:'<p>Nenhum pagamento de equipe encontrado no período.</p>'}`);
+    if(s.extras)sections.push(`<h2>🏆 Produção / Extras</h2>${extraRows?`<table><thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Status</th></tr></thead><tbody>${extraRows}</tbody></table>`:'<p>Nenhum serviço extra registrado no período.</p>'}`);
+    if(s.resumo){
+      const totalPrevisto=d.brutoDiarias+d.totalExtras;
+      const saldoPendente=Math.max(0,totalPrevisto-d.pagDiarias-d.totalPagamentos);
+      sections.push(`<h2>📊 Resumo financeiro do período</h2><div class="wrKpis"><div class="wrKpi"><small>DIÁRIAS</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrKpi"><small>EXTRAS</small><b>${rtMoney(d.totalExtras)}</b></div><div class="wrKpi"><small>ADIANTAMENTOS</small><b>${rtMoney(d.totalAdiant)}</b></div><div class="wrKpi"><small>PAGAMENTOS</small><b>${rtMoney(d.totalPagamentos+d.pagDiarias)}</b></div></div><div class="wrGrid"><div class="wrInfo"><small>Total de valores gerados</small><b>${rtMoney(totalPrevisto)}</b></div><div class="wrInfo"><small>Saldo estimado pendente</small><b>${rtMoney(saldoPendente)}</b></div></div>`);
+    }
+    return `<h1>Relatório do Trabalhador — ${esc(f.nome||'Funcionário')}</h1><div class="wrMeta">Período: ${rtFmt(r.ini)} a ${rtFmt(r.fim)} · Gerado em ${new Date().toLocaleString('pt-BR')}</div>${sections.join('')}`;
+  }
+  window.rtGeneratePreview=function(showTab=true){
+    if(!window.__rtFuncId){toast('Selecione um trabalhador.');return;}
+    const p=$('rtPreview');if(p)p.innerHTML=rtBuildHtml();
+    if(showTab)rtShowTab('prev');
+  };
+  window.rtPrint=function(){
+    if(!window.__rtFuncId){toast('Selecione um trabalhador.');return;}
+    rtGeneratePreview(false);
+    const d=rtData(),html=$('rtPreview')?.innerHTML||'';
+    const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
+    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório do Trabalhador</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#172033;line-height:1.5;max-width:950px;margin:auto}h1{font-size:24px}h2{font-size:17px;margin-top:22px;border-bottom:1px solid #ddd;padding-bottom:6px}.wrMeta{color:#64748b;font-size:12px}.wrKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.wrKpi,.wrInfo{border:1px solid #d9e0ea;border-radius:10px;padding:10px}.wrKpi small,.wrInfo small{display:block;color:#64748b;font-size:10px}.wrGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #d9e0ea;padding:6px;text-align:left;vertical-align:top}th{background:#f3f6fa}@media print{body{padding:8px}}</style></head><body>${html}</body></html>`);
+    w.document.close();setTimeout(()=>w.print(),300);
+  };
+  window.rtWhatsApp=function(){
+    if(!window.__rtFuncId){toast('Selecione um trabalhador.');return;}
+    const d=rtData();const txt=`RELATÓRIO DO TRABALHADOR — ${d.f.nome}\nPeríodo: ${rtFmt(d.r.ini)} a ${rtFmt(d.r.fim)}\nFunção: ${d.f.funcao||'Não informada'}\nDias trabalhados: ${d.diasTrabalhados}\nDiárias: ${rtMoney(d.brutoDiarias)}\nAdiantamentos: ${rtMoney(d.totalAdiant)}\nPagamentos: ${rtMoney(d.totalPagamentos+d.pagDiarias)}\nExtras: ${rtMoney(d.totalExtras)}\nFaltas/afastamentos: ${d.faltas.length}`;
+    window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+  };
+  window.openRelatorioTrabalhador=function(){
+    const m=rtEnsureModal();
+    const fs=rtFuncs();
+    window.__rtFuncId=fs[0]?String(fs[0].id):'';
+    window.__rtPeriod='mes';
+    window.__rtSections={...RT_SECTIONS};
+    rtRenderWorkers();rtRenderSections();rtSyncDates();
+    if($('rtPreview'))$('rtPreview').innerHTML='';
+    rtShowTab('sel');m.classList.add('open');
+  };
+})();
+</script>
+
 </body>
 </html>
