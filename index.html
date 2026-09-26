@@ -296,11 +296,6 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 
 
 /* STATUS DE SINCRONIZAÇÃO — celular ↔ computador */
-#edifiqSyncStatus{position:fixed;right:12px;bottom:86px;z-index:75;display:none;align-items:center;gap:5px;padding:6px 9px;border:1px solid var(--line);border-radius:999px;background:rgba(12,15,19,.92);color:#9ba8bd;font-size:10px;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.2);backdrop-filter:blur(10px)}
-#edifiqSyncStatus.ok{color:#6fe39b;border-color:#24563e}
-#edifiqSyncStatus.warn{color:#f0c35c;border-color:#5d4b24}
-@media(min-width:760px){#edifiqSyncStatus{display:flex;bottom:82px;right:18px}}
-@media(max-width:759px){#edifiqSyncStatus{display:flex;right:8px;bottom:78px;font-size:9px;padding:5px 7px}}
 
 /* MENU INFERIOR — 4 BOTÕES GRANDES */
 @media(max-width:759px){
@@ -1476,7 +1471,6 @@ body{min-height:100vh;min-height:100dvh}
 <button data-p="funcionarios" onclick="go('funcionarios')"><span>👥</span><b>Equipe</b></button>
 <button type="button" onclick="toggleMenuPasta()"><span>☰</span><b>Menu</b></button>
 </nav>
-<div id="edifiqSyncStatus" aria-live="polite" title="Status da sincronização">☁️ Sincronizando</div>
 <div aria-hidden="true" class="menuPasta edifiqDrawer" id="menuPasta">
 <div class="menuPastaHead edifiqDrawerHead">
   <div class="edifiqBrandDrawer"><div class="edifiqDrawerLogo">Q</div><div><strong>EDIFIQ</strong><small>Gestão de Obras</small></div></div>
@@ -4195,11 +4189,16 @@ ${money(f.saldoContrato)}
 
 }
 
+const EDIFIQ_OBRA_TAB_STATE=window.EDIFIQ_OBRA_TAB_STATE||{};
+window.EDIFIQ_OBRA_TAB_STATE=EDIFIQ_OBRA_TAB_STATE;
+
 function obraTab(id,tab){
-  const card=document.querySelector(`[data-obra-card="${CSS.escape(String(id))}"]`);
+  const key=String(id);
+  EDIFIQ_OBRA_TAB_STATE[key]=tab||'dados';
+  const card=[...document.querySelectorAll('.obraModeloCard')].find(el=>String(el.dataset.obraCard)===key);
   if(!card)return;
-  card.querySelectorAll(".obraModeloTab").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
-  card.querySelectorAll(".obraModeloPanel").forEach(p=>p.style.display=p.dataset.panel===tab?"block":"none");
+  card.querySelectorAll('.obraModeloTab').forEach(b=>b.classList.toggle('active',b.dataset.tab===EDIFIQ_OBRA_TAB_STATE[key]));
+  card.querySelectorAll('.obraModeloPanel').forEach(p=>p.style.display=p.dataset.panel===EDIFIQ_OBRA_TAB_STATE[key]?'block':'none');
 }
 
 function obraModeloData(o){
@@ -4350,21 +4349,22 @@ function renderObras(){
   const checklistHtml=x.checks.length?`<div class="obraModeloList">${x.checks.map(c=>{const pct=Math.max(0,Math.min(100,Number(c.progresso??((c.concluida||c.concluido)?100:0))));return `<div class="obraModeloRow"><span><b>${esc(c.tarefa||c.descricao||c.nome||c.titulo||'Item')}</b><br><small>${pct}% concluído</small></span><b class="blue">${pct}%</b></div>`;}).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum item de checklist cadastrado.</div>';
 
   const auditoriaFuncoes=funcoesObra.map(v=>`<div class="auditFunctionRow"><span>${esc(v.funcao)}</span><strong>${v.dias.size} dia(s)</strong></div>`).join('');
+  const activeObraTab=EDIFIQ_OBRA_TAB_STATE[String(o.id)]||'dados';
   const auditHtml=`<div class="auditHero"><div><small>Total de dias trabalhados</small><strong>${totalDias}</strong></div><div><small>Registros de diárias</small><strong>${x.dias.length}</strong></div></div><h3 class="obraModelSubTitle">Quantidade de dias por função</h3><div class="auditFunctionList">${auditoriaFuncoes||'<div class="obraModeloEmpty">Nenhuma função com dias registrados.</div>'}</div><div class="obraAuditChecks"><span>Gastos registrados <b>${x.gastos.length}</b></span><span>Checklist <b>${x.checks.length}</b></span><span>Serviços adicionais <b>${x.extras.length}</b></span><span>Recebimentos <b>${pagamentos.length}</b></span></div>`;
 
   box.innerHTML=`<article class="card obraModeloCard" data-obra-card="${esc(String(o.id))}">
     <div class="obraDetailHero"><div class="obraDetailCrumbs"><span class="homeIcon">⌂</span><span class="sep">›</span><span>Obras</span><span class="sep">›</span><strong>${esc(o.nome||'Obra sem nome')}</strong></div><div class="obraDetailMain"><div class="obraDetailTitleWrap"><div class="obraDetailTitle"><h2>${esc(o.nome||'Obra sem nome')}</h2><p>Cliente: ${esc(o.cliente||'Não informado')}</p></div></div><div class="obraDetailActions"><button class="edit" type="button" onclick="openObra('${esc(String(o.id))}')" title="Editar obra">✎</button><button class="delete" type="button" onclick="removeRow('obras','${esc(String(o.id))}')" title="Excluir obra">🗑️</button></div></div></div>
-    <div class="obraModeloTabs">${tabs.map(([id,label],i)=>`<button type="button" class="obraModeloTab ${i===0?'active':''}" data-tab="${id}" onclick="obraTab('${esc(String(o.id))}','${id}')">${label}</button>`).join('')}</div>
+    <div class="obraModeloTabs">${tabs.map(([id,label])=>`<button type="button" class="obraModeloTab ${activeObraTab===id?'active':''}" data-tab="${id}" onclick="obraTab('${esc(String(o.id))}','${id}')">${label}</button>`).join('')}</div>
     <div class="obraModeloBody">
-      <div class="obraModeloPanel" data-panel="dados"><div class="obraInfoCard"><h3>Informações da Obra</h3><div class="obraDataGrid"><div class="obraDataItem"><small>Tipo de Serviço</small><b>${esc(o.tipo_servico||'Não informado')}</b></div><div class="obraDataItem"><small>Status</small><b>${esc(status)}</b></div><div class="obraDataItem"><small>Valor Contratado</small><b class="blue">${money(o.valor)}</b></div><div class="obraDataItem"><small>Endereço</small><b>${esc(o.endereco||'Não informado')}</b></div><div class="obraDataItem"><small>Data de Início</small><b>${ini}</b></div><div class="obraDataItem"><small>Data de Término</small><b>${fim}</b></div></div><div class="obraProgressWrap"><div class="obraProgressLine"><small>Progresso da obra</small><b>${p}%</b></div><div class="progress"><i style="width:${p}%"></i></div></div>${o.observacoes?`<div class="note" style="margin-top:16px">${esc(o.observacoes)}</div>`:''}</div></div>
-      <div class="obraModeloPanel" data-panel="dias" style="display:none"><div class="obraInfoCard">${diasHtml}</div></div>
-      <div class="obraModeloPanel" data-panel="gastos" style="display:none"><div class="obraInfoCard"><h3>Gastos e Custos</h3>${gastosHtml}</div></div>
-      <div class="obraModeloPanel" data-panel="servicos" style="display:none"><div class="obraInfoCard"><h3>Serviços Adicionais</h3>${servicosHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="addServicoAdicional('${esc(String(o.id))}')">＋ Adicionar serviço</button></div></div></div>
-      <div class="obraModeloPanel" data-panel="repasses" style="display:none"><div class="obraInfoCard">${repassesHtml}</div></div>
-      <div class="obraModeloPanel" data-panel="pagamentos" style="display:none"><div class="obraInfoCard"><h3>Pagamentos Recebidos</h3>${pagamentosHtml}</div></div>
-      <div class="obraModeloPanel" data-panel="resumo" style="display:none"><div class="obraInfoCard obraSummaryWrap">${resumoHtml}</div></div>
-      <div class="obraModeloPanel" data-panel="checklist" style="display:none"><div class="obraInfoCard"><h3>Checklist da obra — editável</h3>${checklistHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="openCheckForObra('${esc(String(o.id))}')">＋ Adicionar / editar checklist</button></div></div></div>
-      <div class="obraModeloPanel" data-panel="auditoria" style="display:none"><div class="obraInfoCard"><h3>Auditoria da obra</h3>${auditHtml}</div></div>
+      <div class="obraModeloPanel" data-panel="dados" style="display:${activeObraTab==='dados'?'block':'none'}"><div class="obraInfoCard"><h3>Informações da Obra</h3><div class="obraDataGrid"><div class="obraDataItem"><small>Tipo de Serviço</small><b>${esc(o.tipo_servico||'Não informado')}</b></div><div class="obraDataItem"><small>Status</small><b>${esc(status)}</b></div><div class="obraDataItem"><small>Valor Contratado</small><b class="blue">${money(o.valor)}</b></div><div class="obraDataItem"><small>Endereço</small><b>${esc(o.endereco||'Não informado')}</b></div><div class="obraDataItem"><small>Data de Início</small><b>${ini}</b></div><div class="obraDataItem"><small>Data de Término</small><b>${fim}</b></div></div><div class="obraProgressWrap"><div class="obraProgressLine"><small>Progresso da obra</small><b>${p}%</b></div><div class="progress"><i style="width:${p}%"></i></div></div>${o.observacoes?`<div class="note" style="margin-top:16px">${esc(o.observacoes)}</div>`:''}</div></div>
+      <div class="obraModeloPanel" data-panel="dias" style="display:${activeObraTab==='dias'?'block':'none'}"><div class="obraInfoCard">${diasHtml}</div></div>
+      <div class="obraModeloPanel" data-panel="gastos" style="display:${activeObraTab==='gastos'?'block':'none'}"><div class="obraInfoCard"><h3>Gastos e Custos</h3>${gastosHtml}</div></div>
+      <div class="obraModeloPanel" data-panel="servicos" style="display:${activeObraTab==='servicos'?'block':'none'}"><div class="obraInfoCard"><h3>Serviços Adicionais</h3>${servicosHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="addServicoAdicional('${esc(String(o.id))}')">＋ Adicionar serviço</button></div></div></div>
+      <div class="obraModeloPanel" data-panel="repasses" style="display:${activeObraTab==='repasses'?'block':'none'}"><div class="obraInfoCard">${repassesHtml}</div></div>
+      <div class="obraModeloPanel" data-panel="pagamentos" style="display:${activeObraTab==='pagamentos'?'block':'none'}"><div class="obraInfoCard"><h3>Pagamentos Recebidos</h3>${pagamentosHtml}</div></div>
+      <div class="obraModeloPanel" data-panel="resumo" style="display:${activeObraTab==='resumo'?'block':'none'}"><div class="obraInfoCard obraSummaryWrap">${resumoHtml}</div></div>
+      <div class="obraModeloPanel" data-panel="checklist" style="display:${activeObraTab==='checklist'?'block':'none'}"><div class="obraInfoCard"><h3>Checklist da obra — editável</h3>${checklistHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="openCheckForObra('${esc(String(o.id))}')">＋ Adicionar / editar checklist</button></div></div></div>
+      <div class="obraModeloPanel" data-panel="auditoria" style="display:${activeObraTab==='auditoria'?'block':'none'}"><div class="obraInfoCard"><h3>Auditoria da obra</h3>${auditHtml}</div></div>
     </div></article>`;
 }
 
