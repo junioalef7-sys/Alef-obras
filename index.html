@@ -1572,7 +1572,7 @@ body{min-height:100vh;min-height:100dvh}
 </section>
 <section class="page" id="documentos">
 <div class="pageTitle"><div><h1>📎 Documentos da Obra</h1><p class="sub">Anexe e organize contratos, notas, comprovantes e outros arquivos por obra.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn gold" onclick="openDocumentoSeguro()">＋ Anexar documento</button></div></div>
-<div class="toolbar docFilters"><select id="docObraFilter" onchange="renderDocumentos()"><option value="all">Todas as obras</option></select><select id="docCategoriaFilter" onchange="renderDocumentos()"><option value="all">Todas as categorias</option><option>Contrato</option><option>Orçamento</option><option>Nota fiscal</option><option>Comprovante</option><option>Medição</option><option>Projeto</option><option>Outros</option></select><input id="docBusca" oninput="renderDocumentos()" placeholder="Buscar documento, fornecedor ou observação"><button type="button" class="btn gold docContractBtn" onclick="window.mostrarContratosDocumentos()">📜 Ver contratos</button></div>
+<div class="toolbar docFilters"><select id="docObraFilter" onchange="renderDocumentos()"><option value="all">Todas as obras</option></select><select id="docCategoriaFilter" onchange="renderDocumentos()"><option value="all">Todas as categorias</option><option>Contrato</option><option>Orçamento</option><option>Nota fiscal</option><option>Comprovante</option><option>Medição</option><option>Projeto</option><option>Outros</option></select><input id="docBusca" oninput="renderDocumentos()" placeholder="Buscar documento, fornecedor ou observação"><button type="button" class="btn gold docContractBtn" onclick="mostrarContratosDocumentos()">📜 Ver contratos</button></div>
 <div id="docContractSummary" class="docContractSummary"></div>
 <div class="grid kpis docKpis"><div class="kpi"><small>Documentos</small><strong id="docTotal">0</strong></div><div class="kpi"><small>Obras com documentos</small><strong id="docObras">0</strong></div><div class="kpi"><small>Contratos</small><strong id="docContratos">0</strong></div><div class="kpi"><small>Notas / comprovantes</small><strong id="docFinanceiros">0</strong></div></div>
 <div id="documentosList"></div>
@@ -3256,14 +3256,21 @@ if(table==="obras"){
 
   const obraId=String(id);
 
-  // Mantém um snapshot local até a exclusão remota terminar.
-  // Assim, se o Supabase recusar a operação, os dados locais não somem.
-  const snapshotObra=JSON.parse(JSON.stringify({
-    checklist:D.checklist||[],diarias:D.diarias||[],gastos:D.gastos||[],
-    pagamentos:D.pagamentos||[],faltas:D.faltas||[],documentos:D.documentos||[],
-    materiais:D.materiais||[],material_movimentos:D.material_movimentos||[],
-    servicosExtras:D.servicosExtras||[]
-  }));
+  // Limpa o cache local dos registros vinculados à obra.
+  const dependentesLocal=[
+    "checklist",
+    "diarias",
+    "gastos",
+    "pagamentos",
+    "faltas",
+    "documentos"
+  ];
+
+  for(const t of dependentesLocal){
+    if(Array.isArray(D[t])){
+      D[t]=D[t].filter(x=>String(x.obra_id)!==obraId);
+    }
+  }
 
   // Materiais e movimentações são locais em algumas versões do app.
   if(Array.isArray(D.materiais)){
@@ -3369,10 +3376,10 @@ if(table==="obras"){
 
     if(error){
 
-      // Restaura os dados locais porque a exclusão remota não foi concluída.
-      Object.assign(D,JSON.parse(JSON.stringify(snapshotObra)));
-      saveLocalData();
-      try{ await loadCloud(); renderAll(); }catch(_){}
+      try{
+        await loadCloud();
+        renderAll();
+      }catch(_){}
 
       toast(
         "Erro ao excluir a obra: "+
@@ -3381,12 +3388,6 @@ if(table==="obras"){
 
       return;
     }
-
-    // Somente depois da confirmação do servidor, remove os vínculos locais.
-    for(const t of ["checklist","diarias","gastos","pagamentos","faltas","documentos"]){
-      if(Array.isArray(D[t])) D[t]=D[t].filter(x=>String(x.obra_id)!==obraId);
-    }
-    if(Array.isArray(D.servicosExtras)) D.servicosExtras=D.servicosExtras.filter(x=>String(x.obra_id??x.obraId)!==obraId);
 
     D.obras=D.obras.filter(
       x=>String(x.id)!==obraId
@@ -5927,12 +5928,27 @@ function upsertPresencaFromRegistro({funcionario_id,obra_id,data,status='present
   return row;
 }
 function syncPresenceFromDaily(row){
-  if(!row?.funcionario_id||!row?.data)return;
-  upsertPresencaFromRegistro({funcionario_id:row.funcionario_id,obra_id:row.obra_id,data:row.data,status:'presente',observacao:row.observacao||'Diária registrada',source:'diaria',source_id:row.id});
+  if(!row)return;
+  const funcionario_id=row.funcionario_id??row.funcId??row.funcionarioId??row.funcionario_id_fk;
+  const data=row.data||row.data_registro||row.date;
+  if(!funcionario_id||!data)return null;
+  const obra_id=(row.obra_id??row.obraId??getFuncObra(funcionario_id))||null;
+  return upsertPresencaFromRegistro({funcionario_id,obra_id,data,status:'presente',observacao:row.observacao||'Diária registrada',source:'diaria',source_id:row.id||''});
 }
 function syncPresenceFromAbsence(row){
-  if(!row?.funcionario_id||!row?.data)return;
-  upsertPresencaFromRegistro({funcionario_id:row.funcionario_id,obra_id:row.obra_id,data:row.data,status:'falta',observacao:`${row.tipo||'Falta'}${row.observacao?' — '+row.observacao:''}`,source:'falta',source_id:row.id});
+  if(!row)return;
+  const funcionario_id=row.funcionario_id??row.funcId??row.funcionarioId??row.funcionario_id_fk;
+  const data=row.data||row.data_registro||row.date;
+  if(!funcionario_id||!data)return null;
+  const obra_id=(row.obra_id??row.obraId??getFuncObra(funcionario_id))||null;
+  return upsertPresencaFromRegistro({funcionario_id,obra_id,data,status:'falta',observacao:`${row.tipo||'Falta'}${row.observacao?' — '+row.observacao:''}`,source:'falta',source_id:row.id||''});
+}
+function sincronizarPresencasRegistros(){
+  ensurePresencas();
+  // Reconstrói a Presença a partir das fontes oficiais. Isso corrige registros
+  // antigos que foram lançados antes da sincronização existir.
+  (D.diarias||[]).forEach(syncPresenceFromDaily);
+  (D.faltas||[]).forEach(syncPresenceFromAbsence);
 }
 function fillPresencaSelectors(){
   const f=$("presFunc"), o=$("presObra"); if(!f||!o)return;
@@ -7349,8 +7365,7 @@ async function importBackupData(backup){
     obras:{},
     funcionarios:{},
     materiais:{},
-    documentos:{},
-    gastos:{}
+    documentos:{}
   };
 
   /*
@@ -7404,9 +7419,7 @@ async function importBackupData(backup){
 
   for(const table of tabelasDependentes){
     for(const row of (backup.data[table]||[])){
-      const antigo=row?.id;
-      const novo=await insertRow(table,importRemapRow(row,maps));
-      if(table==='gastos' && novo && antigo!=null) maps.gastos[String(antigo)]=novo.id;
+      await insertRow(table,importRemapRow(row,maps));
     }
   }
 
@@ -7450,28 +7463,13 @@ async function importBackupData(backup){
     const gastosAdiant=gastosImportados.filter(g=>gastoCategoria(g)==="Adiantamento");
 
     Object.entries(origem).forEach(([oldId,val])=>{
-      const novoId=maps.gastos[String(oldId)];
-      if(novoId!=null) novoAplicado[novoId]=Number(val||0);
+      const g=gastosAdiant.find(x=>String(x.id)===String(oldId));
+      if(g) novoAplicado[g.id]=Number(val||0);
     });
     localStorage.setItem(ADV_KEY,JSON.stringify(novoAplicado));
   }
 
-  // 7) Fotos — o backup já carrega as imagens do IndexedDB.
-  // Restaura cada foto no banco local, sem depender apenas do localStorage.
-  if(Array.isArray(backup.fotos) && backup.fotos.length){
-    let fotosRestauradas=0;
-    for(const foto of backup.fotos){
-      try{
-        await savePhotoDB(foto);
-        fotosRestauradas++;
-      }catch(e){
-        console.warn('Foto não restaurada:',e);
-      }
-    }
-    if(fotosRestauradas) console.info(`EDIFIQ: ${fotosRestauradas} foto(s) restaurada(s) do backup.`);
-  }
-
-  // 8) Serviços adicionais também passam a acompanhar a obra importada.
+  // 7) Serviços adicionais também passam a acompanhar a obra importada.
   if(backup.servicosAdicionais){
     const origem=backup.servicosAdicionais;
     const destino={};
@@ -7515,7 +7513,7 @@ async function importBackup(event){
 
       await importBackupData(backup);
 
-      toast("Backup importado com vínculos, adiantamentos e fotos restaurados.");
+      toast("Backup importado e despesas distribuídas por obra.");
     }catch(e){
       console.error("EDIFIQ importação:",e);
       toast("Arquivo de backup inválido ou não foi possível reconstruir os vínculos.");
@@ -7553,6 +7551,7 @@ function fillEquipeHistorySelectors(){
   ['histPagFunc','histFunc2','histPresFunc'].forEach(id=>{const el=$(id);if(!el)return;const cur=el.value;el.innerHTML='<option value="">Todos os funcionários</option>'+opts;if(cur)el.value=cur;});
 }
 function renderHistoricoPresencas(){
+  sincronizarPresencasRegistros();
   fillEquipeHistorySelectors();
   const box=$('histPresList'), resumo=$('histPresResumo'); if(!box)return;
   const fid=$('histPresFunc')?.value||'', status=$('histPresStatus')?.value||'', ini=$('histPresInicio')?.value||'', fim=$('histPresFim')?.value||'';
@@ -8256,7 +8255,7 @@ function relatorioDiario(){
 .docContractItem small{display:block;margin-top:4px;line-height:1.35;overflow-wrap:anywhere}
 .docContractValue{margin-top:9px;font-size:15px;font-weight:800;color:var(--gold2)}
 .docContractCount{font-size:11px;color:var(--muted)}
-@media(max-width:759px){.docContractGrid{grid-template-columns:1fr}.docContractBtn{width:100%;min-height:44px;touch-action:manipulation}.docContractHead{align-items:flex-start;flex-direction:column}}
+@media(max-width:759px){.docContractGrid{grid-template-columns:1fr}.docContractBtn{width:100%}.docContractHead{align-items:flex-start;flex-direction:column}}
 
 /* Ajustes Documentos da Obra — mobile */
 .docCard .row>div:first-child{min-width:0;flex:1}
@@ -8390,30 +8389,12 @@ async function saveDocumento(e){
 
 function documentoFiltrados(){const obra=$('docObraFilter')?.value||'all',cat=$('docCategoriaFilter')?.value||'all',q=String($('docBusca')?.value||'').toLowerCase().trim();return [...D.documentos].filter(d=>(obra==='all'||String(d.obra_id)===String(obra))&&(cat==='all'||d.categoria===cat)&&(!q||[d.titulo,d.fornecedor,d.observacao,d.nome_arquivo,documentoObraNome(d.obra_id)].join(' ').toLowerCase().includes(q))).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')))}
 function mostrarContratosDocumentos(){
-  try{
-    const cat=$("docCategoriaFilter"), box=$("docContractSummary"), list=$("documentosList");
-    if(cat) cat.value='Contrato';
-    if(box){
-      box.classList.add('isVisible');
-      box.style.display='block';
-    }
-    renderDocumentos();
-    // Garante que a lista permaneça somente com contratos após a atualização dos filtros.
-    const sel=$("docCategoriaFilter");
-    if(sel) sel.value='Contrato';
-    const items=documentoFiltrados();
-    if(list && !items.length){
-      list.innerHTML='<div class="card docEmpty">Nenhum contrato cadastrado para as obras.</div>';
-    }
-    setTimeout(()=>{
-      try{document.getElementById('docContractSummary')?.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}
-    },50);
-  }catch(e){
-    console.error('EDIFIQ ver contratos:',e);
-    toast('Não foi possível abrir os contratos.');
-  }
+  const cat=$("docCategoriaFilter"), box=$("docContractSummary");
+  if(cat) cat.value='Contrato';
+  if(box) box.classList.add('isVisible');
+  renderDocumentos();
+  try{document.getElementById('documentos')?.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}
 }
-window.mostrarContratosDocumentos=mostrarContratosDocumentos;
 function renderResumoContratos(){
   const box=$("docContractSummary"); if(!box)return;
   const contratos=(D.documentos||[]).filter(d=>d.categoria==='Contrato');
@@ -8571,6 +8552,7 @@ async function apagarDadosSetor(setor){
 
 function renderAll(){
  auditEDIFIQ();
+ sincronizarPresencasRegistros();
 
 renderDashboard();
 renderResumoGeral();
@@ -8773,6 +8755,7 @@ window.saveObra=saveObra;
 window.saveFunc=saveFunc;
 window.openPresenca=openPresenca;
 window.savePresenca=savePresenca;
+window.sincronizarPresencasRegistros=sincronizarPresencasRegistros;
 window.renderFechamentoFolha=renderFechamentoFolha;
 window.saveDia=saveDia;
 window.saveFin=saveFin;
