@@ -3014,7 +3014,7 @@ async function loadCloud(){
   const estadoAntesCloud=stateCounts();
   saveSafeSnapshot("antes da sincronização com a nuvem");
   saveLocalData();
-  for(const table of ["obras","funcionarios","diarias","gastos","pagamentos","checklist","documentos","faltas"]){
+  for(const table of ["obras","funcionarios","diarias","gastos","pagamentos","checklist","documentos","faltas","presencas"]){
     await loadTable(table);
   }
   mergeLocal();
@@ -8558,7 +8558,17 @@ async function apagarDadosSetor(setor){
   }
 }
 
+function sincronizarHistoricoPresenca(){
+  ensurePresencas();
+  // Recria/atualiza a Presença a partir dos registros que já existem.
+  // Isso também recupera históricos antigos que foram cadastrados antes da integração.
+  (D.diarias||[]).forEach(row=>syncPresenceFromDaily(row));
+  (D.faltas||[]).forEach(row=>syncPresenceFromAbsence(row));
+  return D.presencas;
+}
+
 function renderAll(){
+ sincronizarHistoricoPresenca();
  auditEDIFIQ();
 
 renderDashboard();
