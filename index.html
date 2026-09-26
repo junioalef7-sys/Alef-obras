@@ -1384,23 +1384,31 @@ body{min-height:100vh;min-height:100dvh}
   </div>
 </section>
 <section class="page" id="resumoGeral">
-<div class="pageTitle"><div><h1>📋 Resumo Geral</h1><p class="sub">Visão consolidada das obras e do desempenho da empresa.</p></div><button class="btn" onclick="go('dashboard')">← Início</button></div>
-<div class="summaryToolbar">
-<select id="resumoStatusFilter" onchange="renderResumoGeral()"><option value="all">Todas as obras</option><option value="em_andamento">Em andamento</option><option value="planejada">Planejadas</option><option value="concluida">Concluídas</option><option value="pausada">Pausadas</option></select>
-<input id="resumoBusca" oninput="renderResumoGeral()" placeholder="Buscar obra ou cliente"/>
+<div class="pageTitle"><div><h1>📋 Visão geral do negócio</h1><p class="sub">Resumo rápido das obras, equipe e resultado financeiro.</p></div><button class="btn" onclick="go('dashboard')">← Início</button></div>
+<div class="dashboardHero"><div class="heroLine"><div><h2>Visão geral do negócio</h2><p>Resumo rápido das obras, equipe e resultado financeiro.</p></div><span class="heroBadge">EDIFIQ</span></div></div>
+<div class="grid kpis">
+<div class="kpi"><small>Obras</small><strong id="vgObras">0</strong></div><div class="kpi"><small>Funcionários ativos</small><strong id="vgFunc">0</strong></div><div class="kpi"><small>Contratado</small><strong id="vgContratado">R$ 0,00</strong></div><div class="kpi"><small>Entradas</small><strong class="green" id="vgEntradas">R$ 0,00</strong></div><div class="kpi"><small>Despesas</small><strong class="red" id="vgDespesas">R$ 0,00</strong></div><div class="kpi"><small>Resultado</small><strong class="gold" id="vgResultado">R$ 0,00</strong></div>
 </div>
-<div class="summaryTotals">
-<div class="summaryTotal"><small>Obras em andamento</small><b id="rgObrasAndamento">0</b></div>
-<div class="summaryTotal"><small>Valor contratado</small><b id="rgContrato">R$ 0,00</b></div>
-<div class="summaryTotal"><small>Recebido</small><b class="green" id="rgReceita">R$ 0,00</b></div>
-<div class="summaryTotal"><small>Despesas</small><b class="red" id="rgDespesas">R$ 0,00</b></div>
-<div class="summaryTotal"><small>Resultado</small><b class="gold" id="rgResultado">R$ 0,00</b></div>
+<div class="dashboardExtra">
+<div class="dashMini"><small>Obras em andamento</small><b id="vgObrasAndamento">0</b></div>
+<div class="dashMini"><small>Saldo a receber</small><b class="gold" id="vgReceber">R$ 0,00</b></div>
+<div class="dashMini"><small>Margem geral</small><b id="vgMargem">0,0%</b></div>
+<div class="dashMini"><small>Dias trabalhados</small><b id="vgDias">0</b></div>
 </div>
-<div id="resumoGeralList"></div>
+<div class="homeQuickGrid homeQuickGridFinal">
+<button class="homeQuick" onclick="go('checklist')"><span>☑️</span><b>Checklist das Obras</b><small>Selecione a obra e ajuste o progresso de cada etapa</small></button>
+<button class="homeQuick" onclick="go('relatorios')"><span>📊</span><b>Relatórios</b><small>Backup, importar e exportar PDF, Excel, CSV e JSON</small></button>
+<button class="homeQuick" onclick="openRelatorioCliente()"><span>📄</span><b>Relatório Cliente</b><small>Monte, revise, copie, gere PDF e envie pelo WhatsApp</small></button>
+</div>
+<div class="card"><h3>Obras em andamento</h3><div id="vgObrasLista"></div></div>
 </section>
 <section class="page" id="analises"><div class="pageTitle"><div><h1>📈 Análises Financeiras</h1><p class="sub">As análises agora ficam integradas diretamente no Financeiro.</p></div><button class="btn gold" onclick="go('financeiro')">Abrir Financeiro</button></div></section><section class="page" id="obras">
 <div class="pageTitle"><h1>Obras</h1><button class="btn gold" onclick="openObra()">＋ Nova obra</button></div>
-<div class="toolbar"><input id="obraSearch" oninput="renderObras()" placeholder="Buscar obra ou cliente"/><button class="btn" onclick="go('documentos')">📄 Documentos da Obra</button></div>
+<div class="toolbar">
+  <label style="flex:1;min-width:220px"><span class="sub">Obra para visualizar</span><select id="obraSelecionada" onchange="window.__obraSelecionada=this.value;renderObras()"><option value="">Selecione uma obra</option></select></label>
+  <input id="obraSearch" oninput="renderObras()" placeholder="Buscar obra ou cliente"/>
+  <button class="btn" onclick="go('documentos')">📄 Documentos da Obra</button>
+</div>
 <div id="obrasList"></div>
 </section>
 <section class="page" id="funcionarios">
@@ -1431,11 +1439,13 @@ body{min-height:100vh;min-height:100dvh}
 
 <div class="card equipeHistoricos" id="equipeHistoricosCard">
   <div class="sectionHead">
-    <div><h2>📚 Histórico da equipe</h2><p class="sub">Consulte pagamentos e diárias por funcionário, período e status.</p></div>
+    <div><h2>📚 Histórico da equipe</h2><p class="sub">Consulte pagamentos, diárias e presença por funcionário e período.</p></div>
+    <button class="btn gold" type="button" onclick="openPresenca()">✓ Registrar presença</button>
   </div>
   <div class="equipeHistoryTabs">
     <button class="historyTab active" id="histTabPag" type="button" onclick="showEquipeHistoryTab('pag')">💰 Pagamentos</button>
     <button class="historyTab" id="histTabDia" type="button" onclick="showEquipeHistoryTab('dia')">📅 Diárias</button>
+    <button class="historyTab" id="histTabPres" type="button" onclick="showEquipeHistoryTab('pres')">✓ Presença</button>
   </div>
   <div id="equipeHistoryPag">
     <div class="historyFilters equipeHistoryFilters">
@@ -1454,6 +1464,16 @@ body{min-height:100vh;min-height:100dvh}
     </div>
     <div class="historySummaryGrid" id="histDiaResumo"></div>
     <div id="histDiaList"></div>
+  </div>
+  <div id="equipeHistoryPres" class="hidden">
+    <div class="historyFilters equipeHistoryFilters">
+      <label>Funcionário<select id="histPresFunc" onchange="renderHistoricoPresencas()"><option value="">Todos os funcionários</option></select></label>
+      <label>Status<select id="histPresStatus" onchange="renderHistoricoPresencas()"><option value="">Todos</option><option value="presente">Presente</option><option value="falta">Falta</option><option value="folga">Folga</option></select></label>
+      <label>De<input id="histPresInicio" type="date" onchange="renderHistoricoPresencas()"></label>
+      <label>Até<input id="histPresFim" type="date" onchange="renderHistoricoPresencas()"></label>
+    </div>
+    <div class="historySummaryGrid" id="histPresResumo"></div>
+    <div id="histPresList"></div>
   </div>
 </div>
 </section>
@@ -3908,7 +3928,21 @@ function renderObras(){
   if(!box)return;
 
   const search=$("obraSearch")?.value.trim().toLowerCase()||"";
-  const obras=D.obras.filter(o=>{
+  const allObras=D.obras||[];
+  const sel=$("obraSelecionada");
+  const current=window.__obraSelecionada||sel?.value||"";
+  if(sel){
+    const keep=current&&allObras.some(o=>String(o.id)===String(current))?current:(allObras[0]?.id?String(allObras[0].id):"");
+    sel.innerHTML='<option value="">Selecione uma obra</option>'+allObras.map(o=>`<option value="${esc(String(o.id))}">${esc(o.nome||"Obra sem nome")}</option>`).join('');
+    sel.value=keep;
+    window.__obraSelecionada=keep;
+  }
+  const selected=window.__obraSelecionada||sel?.value||"";
+  if(!selected){
+    box.innerHTML='<div class="empty">Selecione uma obra acima para visualizar as informações. As obras não serão exibidas todas ao mesmo tempo.</div>';
+    return;
+  }
+  const obras=allObras.filter(o=>String(o.id)===String(selected)).filter(o=>{
     const texto=`${o.nome||""} ${o.cliente||""}`.toLowerCase();
     return !search||texto.includes(search);
   });
@@ -3931,10 +3965,20 @@ function renderObras(){
       ["checklist","Checklist"],["auditoria","Auditoria"]
     ];
 
+    const diasQtdTotal=x.dias.reduce((a,d)=>a+Number(d.qtd??d.quantidade??1),0);
+    const porFunc={};
+    x.dias.forEach(d=>{
+      const func=D.funcionarios.find(ff=>String(ff.id)===String(d.funcionario_id));
+      const nome=String(func?.funcao||'Função não informada').trim()||'Função não informada';
+      if(!porFunc[nome])porFunc[nome]={qtd:0,valor:0};
+      porFunc[nome].qtd+=Number(d.qtd??d.quantidade??1);
+      porFunc[nome].valor+=diariaValor(d);
+    });
+    const categoriasHtml=Object.entries(porFunc).sort((a,b)=>a[0].localeCompare(b[0],'pt-BR')).map(([func,v])=>`<div class="obraModeloRow"><span><b>${esc(func)}</b><br><small>Total de diárias: ${v.qtd.toLocaleString('pt-BR')}</small></span><b>${money(v.valor)}</b></div>`).join('');
     const diasHtml=x.dias.length
-      ? `<div class="obraModeloList">${x.dias.slice().sort((a,b)=>String(b.data||"").localeCompare(String(a.data||""))).slice(0,30).map(d=>{
+      ? `<div class="obraDataGrid" style="margin-bottom:12px"><div class="obraDataItem"><small>Total de diárias</small><b>${diasQtdTotal.toLocaleString('pt-BR')}</b></div><div class="obraDataItem"><small>Valor total das diárias</small><b>${money(x.dias.reduce((a,d)=>a+diariaValor(d),0))}</b></div></div><h4 style="margin:10px 0">Diárias por função</h4><div class="obraModeloList">${categoriasHtml}</div><h4 style="margin:16px 0 10px">Lançamentos</h4><div class="obraModeloList">${x.dias.slice().sort((a,b)=>String(b.data||"").localeCompare(String(a.data||""))).slice(0,30).map(d=>{
           const func=D.funcionarios.find(ff=>String(ff.id)===String(d.funcionario_id));
-          return `<div class="obraModeloRow"><span><b>${esc(func?.nome||"Funcionário")}</b><br><small>${formatDateBR(d.data)} • ${Number(d.qtd??d.quantidade??1)} diária(s)</small></span><b>${money(diariaValor(d))}</b></div>`;
+          return `<div class="obraModeloRow"><span><b>${esc(func?.nome||"Funcionário")}</b><br><small>${esc(func?.funcao||"Função não informada")} • ${formatDateBR(d.data)} • ${Number(d.qtd??d.quantidade??1)} diária(s)</small></span><b>${money(diariaValor(d))}</b></div>`;
         }).join("")}</div>`
       : '<div class="obraModeloEmpty">Nenhuma diária registrada nesta obra.</div>';
 
@@ -5885,8 +5929,19 @@ function getFolhaRange(){
   const mode=$("folhaPeriodo")?.value||"15"; if(mode==="custom") return {ini:$("folhaInicio")?.value||today(),fim:$("folhaFim")?.value||today()}; return getPeriodDates(mode);
 }
 function advanceAmountForEmployeeInRange(funcId,ini,fim){
-  const f=D.funcionarios.find(x=>String(x.id)===String(funcId)); if(!f)return 0; const nome=normalize(f.nome);
-  return D.gastos.filter(g=>gastoCategoria(g)==="Adiantamento" && String(g.data||"")>=ini && String(g.data||"")<=fim && (normalize(g.fornecedor)===nome||normalize(g.descricao).includes(nome))).reduce((a,g)=>a+Number(g.valor||0),0);
+  const f=D.funcionarios.find(x=>String(x.id)===String(funcId)); if(!f)return 0;
+  const nome=normalize(f.nome);
+  const applied=getAdvanceApplied();
+  return D.gastos.filter(g=>{
+    if(gastoCategoria(g)!=="Adiantamento")return false;
+    const data=String(g.data||"");
+    if(data<ini||data>fim)return false;
+    return normalize(g.fornecedor)===nome||normalize(g.descricao).includes(nome);
+  }).reduce((a,g)=>{
+    const original=Math.max(0,Number(g.valor||0));
+    const usado=Math.min(original,Math.max(0,Number(applied[g.id]||0)));
+    return a+Math.max(0,original-usado);
+  },0);
 }
 function atualizarFolha(){
   try{
@@ -7420,18 +7475,49 @@ async function importBackup(event){
    CENTRAL PROFISSIONAL DE HISTÓRICOS DA EQUIPE
    ========================================================= */
 function showEquipeHistoryTab(tab){
-  const pag=$('equipeHistoryPag'), dia=$('equipeHistoryDia');
-  const tp=$('histTabPag'), td=$('histTabDia');
+  const pag=$('equipeHistoryPag'), dia=$('equipeHistoryDia'), pres=$('equipeHistoryPres');
+  const tp=$('histTabPag'), td=$('histTabDia'), tr=$('histTabPres');
   if(!pag||!dia)return;
-  const isPag=tab!=='dia';
-  pag.classList.toggle('hidden',!isPag); dia.classList.toggle('hidden',isPag);
-  tp?.classList.toggle('active',isPag); td?.classList.toggle('active',!isPag);
-  if(isPag) renderHistoricoPagamentos(); else renderHistoricoDiariasPro();
+  const isPag=tab==='pag';
+  const isDia=tab==='dia';
+  const isPres=tab==='pres';
+  pag.classList.toggle('hidden',!isPag);
+  dia.classList.toggle('hidden',!isDia);
+  pres?.classList.toggle('hidden',!isPres);
+  tp?.classList.toggle('active',isPag);
+  td?.classList.toggle('active',isDia);
+  tr?.classList.toggle('active',isPres);
+  if(isPag) renderHistoricoPagamentos();
+  else if(isDia) renderHistoricoDiariasPro();
+  else renderHistoricoPresencas();
 }
 function fillEquipeHistorySelectors(){
   const opts=D.funcionarios.slice().sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR')).map(f=>`<option value="${esc(String(f.id))}">${esc(f.nome||'Funcionário')}</option>`).join('');
-  ['histPagFunc','histFunc2'].forEach(id=>{const el=$(id);if(!el)return;const cur=el.value;el.innerHTML='<option value="">Todos os funcionários</option>'+opts;if(cur)el.value=cur;});
+  ['histPagFunc','histFunc2','histPresFunc'].forEach(id=>{const el=$(id);if(!el)return;const cur=el.value;el.innerHTML='<option value="">Todos os funcionários</option>'+opts;if(cur)el.value=cur;});
 }
+function renderHistoricoPresencas(){
+  fillEquipeHistorySelectors();
+  const box=$('histPresList'), resumo=$('histPresResumo'); if(!box)return;
+  const fid=$('histPresFunc')?.value||'', status=$('histPresStatus')?.value||'', ini=$('histPresInicio')?.value||'', fim=$('histPresFim')?.value||'';
+  let items=(D.presencas||[]).slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  if(fid)items=items.filter(x=>String(x.funcionario_id||'')===String(fid));
+  if(status)items=items.filter(x=>String(x.status||'presente')===status);
+  if(ini)items=items.filter(x=>String(x.data||'')>=ini);
+  if(fim)items=items.filter(x=>String(x.data||'')<=fim);
+  const presentes=items.filter(x=>String(x.status||'presente')==='presente').length;
+  const faltas=items.filter(x=>String(x.status||'')==='falta').length;
+  if(resumo)resumo.innerHTML=`<div class="historyMetric"><small>Registros</small><b>${items.length}</b></div><div class="historyMetric"><small>Presenças</small><b class="green">${presentes}</b></div><div class="historyMetric"><small>Faltas</small><b class="red">${faltas}</b></div>`;
+  if(!items.length){box.innerHTML='<div class="empty">Nenhum registro de presença encontrado com os filtros selecionados.</div>';return;}
+  box.innerHTML=items.map(x=>{
+    const f=D.funcionarios.find(y=>String(y.id)===String(x.funcionario_id));
+    const o=D.obras.find(y=>String(y.id)===String(x.obra_id));
+    const st=String(x.status||'presente');
+    const label=st==='presente'?'Presente':st==='falta'?'Falta':st==='folga'?'Folga':st;
+    const cls=st==='presente'?'paid':st==='falta'?'pending':'';
+    return `<article class="historyCard"><div class="historyCardTop"><div class="historyAvatar">✓</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(f?.funcao||'Função não informada')} · ${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${cls}">${esc(label)}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(x.data||''))}</b></div><div><small>Obra</small><b>${esc(o?.nome||'—')}</b></div><div><small>Status</small><b>${esc(label)}</b></div><div><small>Observação</small><b>${esc(x.observacao||'—')}</b></div></div></article>`;
+  }).join('');
+}
+
 function pagamentoEquipeHistorico(){
   const arr=[];
   for(const g of (D.gastos||[])){
@@ -7876,47 +7962,23 @@ function equipeObra(obraId){
 }
 
 function renderResumoGeral(){
- const box=$('resumoGeralList'); if(!box)return;
- const status=$('resumoStatusFilter')?.value||'all';
- const busca=($('resumoBusca')?.value||'').trim().toLowerCase();
- let obras=D.obras.filter(o=>{
-   const okStatus=status==='all'||String(o.status)===status;
-   const texto=`${o.nome||''} ${o.cliente||''}`.toLowerCase();
-   return okStatus&&(!busca||texto.includes(busca));
- });
- const total=obras.reduce((a,o)=>a+Number(o.valor||0),0);
- const receita=obras.reduce((a,o)=>a+obraFinanceData(o.id).receita,0);
- const despesas=obras.reduce((a,o)=>a+obraFinanceData(o.id).despesas,0);
- const resultado=receita-despesas;
-   const obrasAndamento=obras.filter(o=>o.status==='em_andamento').length;
-  if($('rgObrasAndamento'))$('rgObrasAndamento').textContent=obrasAndamento;
-if($('rgContrato'))$('rgContrato').textContent=money(total);
- if($('rgReceita'))$('rgReceita').textContent=money(receita);
- if($('rgDespesas'))$('rgDespesas').textContent=money(despesas);
- if($('rgResultado')){$('rgResultado').textContent=money(resultado);$('rgResultado').className=resultado>=0?'gold':'red';}
- if(!obras.length){box.innerHTML='<div class="summaryEmpty">Nenhuma obra encontrada.</div>';return;}
- box.innerHTML=obras.map(o=>{
-   const f=obraFinanceData(o.id);
-   const p=Number(obraProgress(o)||0);
-   const dias=diasTrabalhadosObra(o.id);
-   const equipe=equipeObra(o.id);
-   const margem=Number(f.margemLucro||0);
-   return `<div class="summaryCard">
-    <div class="summaryTop"><div><h3>${esc(o.nome||'Obra sem nome')}</h3><small>${esc(o.cliente||'Cliente não informado')}</small></div><span class="badge ${o.status==='concluida'?'on':''}">${esc(statusLabel(o.status))}</span></div>
-    <div class="summaryGrid">
-      <div class="summaryMetric"><small>Contrato</small><b>${money(f.contrato)}</b></div>
-      <div class="summaryMetric"><small>Recebido</small><b class="green">${money(f.receita)}</b></div>
-      <div class="summaryMetric"><small>Despesas</small><b class="red">${money(f.despesas)}</b></div>
-      <div class="summaryMetric"><small>Resultado</small><b class="${f.resultado>=0?'green':'red'}">${money(f.resultado)}</b></div>
-      <div class="summaryMetric"><small>Saldo a receber</small><b class="gold">${money(f.saldoReceber)}</b></div>
-      <div class="summaryMetric"><small>Margem</small><b class="${margem>=0?'green':'red'}">${margem.toFixed(1)}%</b></div>
-      <div class="summaryMetric"><small>Dias trabalhados</small><b>${dias}</b></div>
-      <div class="summaryMetric"><small>Equipe no período</small><b>${equipe}</b></div>
-    </div>
-    <div class="summaryProgress"><div class="row"><small>Progresso do checklist</small><b class="gold">${p.toFixed(0)}%</b></div><div class="progress"><i style="width:${Math.max(0,Math.min(100,p))}%"></i></div></div>
-   </div>`;
- }).join('');
+  const obras=D.obras||[], funcs=D.funcionarios||[], gastos=D.gastos||[], pagamentos=D.pagamentos||[];
+  const contratado=obras.reduce((a,o)=>a+Number(o.valor||0),0);
+  const entradas=pagamentos.reduce((a,x)=>a+Number(x.valor||0),0);
+  const despesas=gastos.reduce((a,x)=>a+Number(x.valor||0),0);
+  const resultado=entradas-despesas;
+  const receber=obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0);
+  const margem=contratado>0?(resultado/contratado)*100:0;
+  const andamento=obras.filter(o=>o.status==='em_andamento').length;
+  const dias=new Set((D.diarias||[]).map(d=>String(d.data||'')).filter(Boolean)).size;
+  const set=(id,val)=>{const el=$(id);if(el)el.textContent=val;};
+  set('vgObras',obras.length);set('vgFunc',funcs.filter(f=>f.ativo!==false).length);set('vgContratado',money(contratado));set('vgEntradas',money(entradas));set('vgDespesas',money(despesas));set('vgResultado',money(resultado));set('vgObrasAndamento',andamento);set('vgReceber',money(receber));set('vgMargem',margem.toFixed(1)+'%');set('vgDias',dias);
+  const r=$('vgResultado');if(r)r.className=resultado>=0?'gold':'red';
+  const m=$('vgMargem');if(m)m.className=margem>=0?'green':'red';
+  const list=$('vgObrasLista');
+  if(list)list.innerHTML=obras.filter(o=>o.status==='em_andamento').map(o=>{const p=Math.max(0,Math.min(100,Number(obraProgress(o)||0)));return `<button class="edKpiWork" type="button" onclick="go('obras');setTimeout(()=>{window.__obraSelecionada='${String(o.id).replace(/'/g,"\'")}';renderObras()},50)"><div><b>${esc(o.nome||'Obra sem nome')}</b><small>${esc(statusLabel(o.status))}</small></div><span>${p}%</span></button>`}).join('')||'<div class="empty">Nenhuma obra em andamento.</div>';
 }
+
 
 /* =========================================================
    DIÁRIO DE OBRA — integrado à versão atual
