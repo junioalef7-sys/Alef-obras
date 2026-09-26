@@ -5928,27 +5928,12 @@ function upsertPresencaFromRegistro({funcionario_id,obra_id,data,status='present
   return row;
 }
 function syncPresenceFromDaily(row){
-  if(!row)return;
-  const funcionario_id=row.funcionario_id??row.funcId??row.funcionarioId??row.funcionario_id_fk;
-  const data=row.data||row.data_registro||row.date;
-  if(!funcionario_id||!data)return null;
-  const obra_id=(row.obra_id??row.obraId??getFuncObra(funcionario_id))||null;
-  return upsertPresencaFromRegistro({funcionario_id,obra_id,data,status:'presente',observacao:row.observacao||'Diária registrada',source:'diaria',source_id:row.id||''});
+  if(!row?.funcionario_id||!row?.data)return;
+  upsertPresencaFromRegistro({funcionario_id:row.funcionario_id,obra_id:row.obra_id,data:row.data,status:'presente',observacao:row.observacao||'Diária registrada',source:'diaria',source_id:row.id});
 }
 function syncPresenceFromAbsence(row){
-  if(!row)return;
-  const funcionario_id=row.funcionario_id??row.funcId??row.funcionarioId??row.funcionario_id_fk;
-  const data=row.data||row.data_registro||row.date;
-  if(!funcionario_id||!data)return null;
-  const obra_id=(row.obra_id??row.obraId??getFuncObra(funcionario_id))||null;
-  return upsertPresencaFromRegistro({funcionario_id,obra_id,data,status:'falta',observacao:`${row.tipo||'Falta'}${row.observacao?' — '+row.observacao:''}`,source:'falta',source_id:row.id||''});
-}
-function sincronizarPresencasRegistros(){
-  ensurePresencas();
-  // Reconstrói a Presença a partir das fontes oficiais. Isso corrige registros
-  // antigos que foram lançados antes da sincronização existir.
-  (D.diarias||[]).forEach(syncPresenceFromDaily);
-  (D.faltas||[]).forEach(syncPresenceFromAbsence);
+  if(!row?.funcionario_id||!row?.data)return;
+  upsertPresencaFromRegistro({funcionario_id:row.funcionario_id,obra_id:row.obra_id,data:row.data,status:'falta',observacao:`${row.tipo||'Falta'}${row.observacao?' — '+row.observacao:''}`,source:'falta',source_id:row.id});
 }
 function fillPresencaSelectors(){
   const f=$("presFunc"), o=$("presObra"); if(!f||!o)return;
@@ -7551,7 +7536,6 @@ function fillEquipeHistorySelectors(){
   ['histPagFunc','histFunc2','histPresFunc'].forEach(id=>{const el=$(id);if(!el)return;const cur=el.value;el.innerHTML='<option value="">Todos os funcionários</option>'+opts;if(cur)el.value=cur;});
 }
 function renderHistoricoPresencas(){
-  sincronizarPresencasRegistros();
   fillEquipeHistorySelectors();
   const box=$('histPresList'), resumo=$('histPresResumo'); if(!box)return;
   const fid=$('histPresFunc')?.value||'', status=$('histPresStatus')?.value||'', ini=$('histPresInicio')?.value||'', fim=$('histPresFim')?.value||'';
@@ -8271,6 +8255,30 @@ function relatorioDiario(){
   .docActions .btn:last-child{grid-column:1/-1}
   .docPreview iframe,.docPreview embed{height:300px}
 }
+
+/* EDIFIQ — Obras: ajuste final para celular */
+@media (max-width: 640px){
+  #obras .pageTitle{gap:8px;align-items:center;flex-wrap:wrap}
+  #obras .pageTitle h1{font-size:22px;margin:0}
+  #obras .pageTitle .btn{min-height:42px;padding:9px 12px}
+  #obras .toolbar{display:grid;grid-template-columns:1fr;gap:9px}
+  #obras .toolbar label{min-width:0!important;width:100%}
+  #obras .toolbar input,#obras .toolbar select,#obras .toolbar .btn{width:100%;box-sizing:border-box;min-height:42px}
+  .obraModeloCard{border-radius:14px;overflow:hidden}
+  .obraModeloTop{gap:10px;align-items:flex-start}
+  .obraModeloTitle h2{font-size:19px;line-height:1.2;word-break:break-word}
+  .obraModeloActions{display:flex;gap:6px;flex-shrink:0}
+  .obraModeloActions .btn{min-width:42px;min-height:42px;padding:8px}
+  .obraModeloTabs{display:flex;gap:6px;overflow-x:auto;padding:8px 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .obraModeloTabs::-webkit-scrollbar{display:none}
+  .obraModeloTab{flex:0 0 auto;min-height:40px;padding:8px 11px;white-space:nowrap}
+  .obraDataGrid{grid-template-columns:1fr!important;gap:8px!important}
+  .obraDataItem{min-width:0}
+  .obraModeloRow{gap:8px;align-items:flex-start}
+  .obraModeloRow>span{min-width:0;overflow-wrap:anywhere}
+  .obraModeloRow>b{white-space:nowrap}
+  .obraExtraSummary{grid-template-columns:1fr!important}
+}
 </style></head><body><h1>${titulo}</h1><small>Gerado em ${new Date().toLocaleString("pt-BR")}</small><p><b>Registros:</b> ${rows.length} · <b>Dias:</b> ${new Set(rows.map(r=>r.data)).size} · <b>Horas:</b> ${rows.reduce((a,r)=>a+Number(r.horas||0),0).toLocaleString("pt-BR")} h</p>${rows.map(r=>{const names=(r.equipe||[]).map(diarioFuncionarioNome).filter(Boolean);return `<div class="item"><h2>${esc(diarioObraNome(r.obra_id))}</h2><div class="meta">${esc(diarioFmtData(r.data))} · ${esc(r.clima||"Não informado")} · ${Number(r.horas||0).toLocaleString("pt-BR")} h</div><p><span class="tag">Equipe:</span> ${esc(names.join(" · ")||"Não informada")}</p>${r.atividades?`<p><span class="tag">Atividades:</span><br>${esc(r.atividades).replace(/\n/g,"<br>")}</p>`:""}${r.observacoes?`<p><span class="tag">Observações:</span><br>${esc(r.observacoes).replace(/\n/g,"<br>")}</p>`:""}</div>`}).join("")}<div class="foot">EDIFIQ — Gestão de Obras</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
 <script id="edifiq-servico-extra-link">
 (function(){
@@ -8552,7 +8560,6 @@ async function apagarDadosSetor(setor){
 
 function renderAll(){
  auditEDIFIQ();
- sincronizarPresencasRegistros();
 
 renderDashboard();
 renderResumoGeral();
@@ -8755,7 +8762,6 @@ window.saveObra=saveObra;
 window.saveFunc=saveFunc;
 window.openPresenca=openPresenca;
 window.savePresenca=savePresenca;
-window.sincronizarPresencasRegistros=sincronizarPresencasRegistros;
 window.renderFechamentoFolha=renderFechamentoFolha;
 window.saveDia=saveDia;
 window.saveFin=saveFin;
