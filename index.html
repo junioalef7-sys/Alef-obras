@@ -1333,6 +1333,57 @@ body{min-height:100vh;min-height:100dvh}
 }
 </style>
 
+<style id="edifiq-ajustes-folha-menu-botoes">
+/* AJUSTE FINAL EDIFIQ — folha, logo do menu e botões azuis */
+.btn,.btn.gold,.btn.primary,.btn.danger{
+  background:#1677e8!important;
+  background-image:none!important;
+  color:#fff!important;
+  border-color:#1677e8!important;
+  font-weight:700;
+}
+.btn:hover,.btn:active,.btn:focus{background:#0f66cc!important;color:#fff!important;border-color:#0f66cc!important}
+.nav button{color:#fff!important}
+.nav button.active{background:#1677e8!important;color:#fff!important;border-radius:10px}
+.menuPastaGrid button{background:#1677e8!important;color:#fff!important;border-color:#1677e8!important}
+.edifiqMenuItem{background:transparent!important;color:#fff!important}
+.edifiqMenuItem:hover,.edifiqMenuItem.active{background:#1677e8!important;color:#fff!important}
+.edifiqDrawerHead .x{background:#1677e8!important;color:#fff!important;border-color:#1677e8!important}
+.edifiqDrawerHead{height:112px!important;padding:16px 18px!important;overflow:hidden}
+.edifiqDrawerLogo{width:48px!important;height:48px!important;border-radius:13px!important;font-size:22px!important;flex:0 0 48px!important;overflow:hidden!important}
+.edifiqBrandDrawer{gap:10px!important;min-width:0}
+.edifiqBrandDrawer strong{font-size:21px!important;line-height:1!important}
+.edifiqBrandDrawer small{font-size:11px!important;margin-top:4px!important}
+.edifiqDrawerHead .x{width:38px!important;height:38px!important;font-size:23px!important;flex:0 0 38px!important}
+.edifiqDrawerScroll{height:calc(100dvh - 113px)!important;padding-top:14px!important}
+.folhaTodosFuncionarios{display:grid;gap:10px;margin-top:10px}
+.folhaTodosHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:#0d1728;border:1px solid #1e3964;color:#fff}
+.folhaTodosHeader span{font-size:12px;color:#b9c7da}
+.folhaFuncionarioCard{background:#111a28;border:1px solid #233e68;border-radius:14px;padding:12px}
+.folhaFuncionarioTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.folhaFuncionarioNome b{display:block;font-size:15px;color:#fff}
+.folhaFuncionarioNome small{display:block;margin-top:4px;color:#aebbd0;font-size:11px}
+.folhaFuncionarioObra{font-size:11px;color:#d6e3f5;text-align:right;max-width:45%;overflow-wrap:anywhere}
+.folhaFuncionarioGrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-top:10px}
+.folhaFuncionarioGrid>div{background:#0b1320;border:1px solid #1e3150;border-radius:9px;padding:7px;min-width:0}
+.folhaFuncionarioGrid small{display:block;color:#91a2bb;font-size:9px}
+.folhaFuncionarioGrid b{display:block;margin-top:3px;color:#fff;font-size:12px;white-space:nowrap}
+@media(max-width:759px){
+  .edifiqDrawer{width:min(520px,90vw)!important}
+  .edifiqDrawerHead{height:98px!important;padding:12px 14px!important}
+  .edifiqDrawerLogo{width:42px!important;height:42px!important;flex-basis:42px!important;font-size:19px!important;border-radius:11px!important}
+  .edifiqBrandDrawer{gap:8px!important}
+  .edifiqBrandDrawer strong{font-size:19px!important}
+  .edifiqBrandDrawer small{font-size:10px!important;margin-top:3px!important}
+  .edifiqDrawerHead .x{width:34px!important;height:34px!important;flex-basis:34px!important;font-size:21px!important}
+  .edifiqDrawerScroll{height:calc(100dvh - 99px)!important;padding:12px 10px 20px!important}
+  .folhaFuncionarioTop{display:block}
+  .folhaFuncionarioObra{max-width:none;text-align:left;margin-top:5px}
+  .folhaFuncionarioGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+  .folhaFuncionarioGrid>div{padding:6px}
+  .folhaFuncionarioGrid b{font-size:11px}
+}
+</style>
 </head>
 <body>
 <div class="bootError" id="bootError"><div class="bootErrorBox"><h2>EDIFIQ</h2><p id="bootErrorText">O aplicativo encontrou um erro ao iniciar.</p><button onclick="location.reload()">Recarregar</button></div></div>
@@ -5717,7 +5768,26 @@ function renderFechamentoFolha(){
     // O fechamento sempre parte de TODOS os funcionários cadastrados.
     // Se uma obra for selecionada, somente as diárias daquela obra entram
     // nos cálculos; o funcionário continua aparecendo mesmo com zero diário.
-    const funcionarios=[...(D.funcionarios||[])];
+    // Lista SEMPRE todos os funcionários cadastrados, inclusive inativos e sem diária no período.
+    // Junta memória + backup local para evitar que uma sincronização parcial esconda cadastros.
+    let funcionarios=[];
+    try{
+      const local=typeof localData==='function'?localData():{};
+      const memoria=Array.isArray(D.funcionarios)?D.funcionarios:[];
+      const cache=Array.isArray(local?.funcionarios)?local.funcionarios:[];
+      const porId=new Map();
+      [...cache,...memoria].forEach(f=>{
+        if(!f)return;
+        const chave=String(f.id||'').trim() || ('nome:'+normalize(f.nome));
+        if(!chave || chave==='nome:')return;
+        porId.set(chave,{...(porId.get(chave)||{}),...f});
+      });
+      funcionarios=[...porId.values()];
+    }catch(_){
+      funcionarios=[...(D.funcionarios||[])];
+    }
+    funcionarios.sort((a,b)=>normalize(a.nome).localeCompare(normalize(b.nome),'pt-BR'));
+
     const dias=(D.diarias||[]).filter(d=>{
       const data=String(d?.data||"");
       return data>=ini&&data<=fim&&(obra==="all"||String(d?.obra_id)===String(obra));
@@ -5767,26 +5837,25 @@ function renderFechamentoFolha(){
       return;
     }
 
-    box.innerHTML=`<div class="tableWrap"><table class="folhaTable">
-      <thead><tr>
-        <th>Funcionário</th><th>Obra</th><th>Diárias</th><th>Bruto</th>
-        <th>Adiant.</th><th>Líquido</th><th>Pago</th><th>Pendente</th>
-      </tr></thead>
-      <tbody>
-        ${rows.map(r=>`
-          <tr>
-            <td><b>${esc(r.f.nome||"Funcionário")}</b><br><small>${esc(r.f.funcao||"")}</small></td>
-            <td>${esc(r.obrasDaFolha.join(", ")||"Sem obra")}</td>
-            <td>${r.ds.length}</td>
-            <td>${money(r.bruto)}</td>
-            <td>${money(r.adiant)}</td>
-            <td><b class="green">${money(r.liquido)}</b></td>
-            <td>${money(r.pago)}</td>
-            <td class="${r.pendente>0?"gold":""}">${money(r.pendente)}</td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table></div>`;
+    box.innerHTML=`<div class="folhaTodosFuncionarios">
+      <div class="folhaTodosHeader"><b>Todos os funcionários cadastrados</b><span>${rows.length} funcionário(s)</span></div>
+      ${rows.map(r=>`
+        <div class="folhaFuncionarioCard">
+          <div class="folhaFuncionarioTop">
+            <div class="folhaFuncionarioNome"><b>${esc(r.f.nome||"Funcionário")}</b><small>${esc(r.f.funcao||"Função não informada")} · ${r.f.ativo===false?'Inativo':'Ativo'}</small></div>
+            <div class="folhaFuncionarioObra">🏗️ ${esc(r.obrasDaFolha.join(", ")||"Sem obra")}</div>
+          </div>
+          <div class="folhaFuncionarioGrid">
+            <div><small>Diárias</small><b>${r.ds.length}</b></div>
+            <div><small>Bruto</small><b>${money(r.bruto)}</b></div>
+            <div><small>Adiantamento</small><b>${money(r.adiant)}</b></div>
+            <div><small>Líquido</small><b class="green">${money(r.liquido)}</b></div>
+            <div><small>Pago</small><b>${money(r.pago)}</b></div>
+            <div><small>Pendente</small><b class="${r.pendente>0?'gold':''}">${money(r.pendente)}</b></div>
+          </div>
+        </div>
+      `).join("")}
+    </div>`;
   }catch(err){
     console.error("EDIFIQ folha",err);
     const box=$("folhaDetalhes");
