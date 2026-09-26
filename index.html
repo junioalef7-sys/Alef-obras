@@ -3256,21 +3256,14 @@ if(table==="obras"){
 
   const obraId=String(id);
 
-  // Limpa o cache local dos registros vinculados à obra.
-  const dependentesLocal=[
-    "checklist",
-    "diarias",
-    "gastos",
-    "pagamentos",
-    "faltas",
-    "documentos"
-  ];
-
-  for(const t of dependentesLocal){
-    if(Array.isArray(D[t])){
-      D[t]=D[t].filter(x=>String(x.obra_id)!==obraId);
-    }
-  }
+  // Mantém um snapshot local até a exclusão remota terminar.
+  // Assim, se o Supabase recusar a operação, os dados locais não somem.
+  const snapshotObra=JSON.parse(JSON.stringify({
+    checklist:D.checklist||[],diarias:D.diarias||[],gastos:D.gastos||[],
+    pagamentos:D.pagamentos||[],faltas:D.faltas||[],documentos:D.documentos||[],
+    materiais:D.materiais||[],material_movimentos:D.material_movimentos||[],
+    servicosExtras:D.servicosExtras||[]
+  }));
 
   // Materiais e movimentações são locais em algumas versões do app.
   if(Array.isArray(D.materiais)){
@@ -3376,10 +3369,10 @@ if(table==="obras"){
 
     if(error){
 
-      try{
-        await loadCloud();
-        renderAll();
-      }catch(_){}
+      // Restaura os dados locais porque a exclusão remota não foi concluída.
+      Object.assign(D,JSON.parse(JSON.stringify(snapshotObra)));
+      saveLocalData();
+      try{ await loadCloud(); renderAll(); }catch(_){}
 
       toast(
         "Erro ao excluir a obra: "+
@@ -3388,6 +3381,12 @@ if(table==="obras"){
 
       return;
     }
+
+    // Somente depois da confirmação do servidor, remove os vínculos locais.
+    for(const t of ["checklist","diarias","gastos","pagamentos","faltas","documentos"]){
+      if(Array.isArray(D[t])) D[t]=D[t].filter(x=>String(x.obra_id)!==obraId);
+    }
+    if(Array.isArray(D.servicosExtras)) D.servicosExtras=D.servicosExtras.filter(x=>String(x.obra_id??x.obraId)!==obraId);
 
     D.obras=D.obras.filter(
       x=>String(x.id)!==obraId
