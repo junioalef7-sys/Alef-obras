@@ -3981,107 +3981,41 @@ done/itens.length*100
 
 function obraFinanceData(obraId){
 
-const obra=D.obras.find(
-o=>String(o.id)===
-String(obraId)
-);
+const obra=D.obras.find(o=>String(o.id)===String(obraId));
+const contrato=Number(obra?.valor||0);
 
-const contrato=
-Number(obra?.valor||0);
+const receita=(D.pagamentos||[])
+.filter(x=>String(x.obra_id)===String(obraId))
+.reduce((a,x)=>a+Number(x.valor||0),0);
 
-const receita=
-D.pagamentos
-.filter(x=>
-String(x.obra_id)===
-String(obraId)
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
+const gastos=(D.gastos||[]).filter(x=>String(x.obra_id)===String(obraId));
+const somaCategoria=(nome)=>gastos
+.filter(x=>gastoSubcategoria(x)===nome)
+.reduce((a,x)=>a+Number(x.valor||0),0);
 
-const gastos=
-D.gastos.filter(
-x=>String(x.obra_id)===
-String(obraId)
-);
+// Cada categoria é calculada separadamente. Isso evita que adiantamentos,
+// ferramentas, transporte e locação sejam indevidamente somados em "Outros"
+// ou incorporados à mão de obra.
+const material=somaCategoria('Material');
+const combustivel=somaCategoria('Combustível');
+const mao=somaCategoria('Mão de obra');
+const locacao=somaCategoria('Locação');
+const terceirizado=somaCategoria('Serviço terceirizado');
+const adiantamento=somaCategoria('Adiantamento');
+const ferramentasEquipamentos=somaCategoria('Ferramentas e equipamentos');
+const transporte=somaCategoria('Transporte');
+const outros=somaCategoria('Outros');
 
-const material=
-gastos
-.filter(
-x=>categoriaFinanceira(x)==="Material"
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const mao=
-gastos
-.filter(
-x=>categoriaFinanceira(x)==="Mão de obra"
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const terceirizado=
-gastos
-.filter(
-x=>categoriaFinanceira(x)==="Serviço terceirizado"
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const outros=
-gastos
-.filter(
-x=>categoriaFinanceira(x)==="Outros"
-)
-.reduce(
-(a,x)=>a+Number(x.valor||0),
-0
-);
-
-const combustivel=gastos.filter(x=>gastoSubcategoria(x)==="Combustível").reduce((a,x)=>a+Number(x.valor||0),0);
-const locacao=gastos.filter(x=>gastoSubcategoria(x)==="Locação").reduce((a,x)=>a+Number(x.valor||0),0);
-const ferramentasEquipamentos=gastos.filter(x=>gastoSubcategoria(x)==="Ferramentas e equipamentos").reduce((a,x)=>a+Number(x.valor||0),0);
-const transporte=gastos.filter(x=>gastoSubcategoria(x)==="Transporte").reduce((a,x)=>a+Number(x.valor||0),0);
-
-const despesas=
-gastos.reduce((a,x)=>a+Number(x.valor||0),0);
-
-const resultado=
-receita-despesas;
-
-const saldoContrato=
-contrato-despesas;
-
+const despesas=gastos.reduce((a,x)=>a+Number(x.valor||0),0);
+const resultado=receita-despesas;
+const saldoContrato=contrato-despesas;
 const saldoReceber=Math.max(0,contrato-receita);
-
-/* Margem de lucro sobre o valor contratado.
-   Ex.: resultado de R$ 20.000 em contrato de R$ 100.000 = 20%. */
-const margemLucro=contrato>0
-  ? (resultado/contrato)*100
-  : 0;
+const margemLucro=contrato>0?(resultado/contrato)*100:0;
 
 return{
-contrato,
-receita,
-material,
-mao,
-terceirizado,
-outros,
-despesas,
-resultado,
-margemLucro,
-saldoContrato,
-saldoReceber,
-combustivel,
-locacao
+  contrato,receita,material,combustivel,mao,locacao,terceirizado,
+  adiantamento,ferramentasEquipamentos,transporte,outros,despesas,
+  resultado,margemLucro,saldoContrato,saldoReceber
 };
 
 }
@@ -5860,9 +5794,22 @@ f.contrato
 </div>
 
 <div class="finance-cat">
-<span>
-Outras despesas
-</span>
+<span>Combustível</span>
+<span><b>${money(f.combustivel||0)}</b><br><span class="finance-percent">${pctText(f.combustivel||0,f.contrato)}</span></span>
+</div>
+
+<div class="finance-cat">
+<span>Locação</span>
+<span><b>${money(f.locacao||0)}</b><br><span class="finance-percent">${pctText(f.locacao||0,f.contrato)}</span></span>
+</div>
+
+<div class="finance-cat">
+<span>Adiantamento</span>
+<span><b>${money(f.adiantamento||0)}</b><br><span class="finance-percent">${pctText(f.adiantamento||0,f.contrato)}</span></span>
+</div>
+
+<div class="finance-cat">
+<span>Outras despesas</span>
 <span>
 <b>${money(f.outros)}</b>
 <br>
@@ -8083,9 +8030,14 @@ function renderResumoGeral(){
 
   // Categorias de custo — usa a mesma classificação já utilizada pelo Financeiro.
   const cat={
-    'Mão de Obra':0,
-    'Materiais e Compras':0,
-    'Serviços Terceirizados':0,
+    'Material':0,
+    'Mão de obra':0,
+    'Serviço terceirizado':0,
+    'Combustível':0,
+    'Locação':0,
+    'Adiantamento':0,
+    'Ferramentas e equipamentos':0,
+    'Transporte':0,
     'Outros':0
   };
   const gastos=(D.gastos||[]).filter(g=>{
@@ -8093,15 +8045,27 @@ function renderResumoGeral(){
     return obras.some(o=>String(o.id)===String(g.obra_id));
   });
   gastos.forEach(g=>{
-    const raw=String(typeof gastoSubcategoria==='function'?gastoSubcategoria(g):(g.categoria||'Outros')).toLowerCase();
+    const raw=String(typeof gastoSubcategoria==='function'?gastoSubcategoria(g):(g.categoria||'Outros'));
     const v=moneyN(g.valor);
-    if(raw.includes('mão')||raw.includes('mao'))cat['Mão de Obra']+=v;
-    else if(raw.includes('material')||raw.includes('compra'))cat['Materiais e Compras']+=v;
-    else if(raw.includes('terceir')||raw.includes('serviço terce'))cat['Serviços Terceirizados']+=v;
+    if(Object.prototype.hasOwnProperty.call(cat,raw)) cat[raw]+=v;
     else cat['Outros']+=v;
   });
-  const costColors={'Mão de Obra':'blue','Materiais e Compras':'gold','Serviços Terceirizados':'red','Outros':'green'};
-  const costDesc={'Mão de Obra':'Diárias, salários e produção/extras','Materiais e Compras':'Gastos com material de construção','Serviços Terceirizados':'Pagamentos feitos a terceiros','Outros':'Outros custos registrados nas obras'};
+  const costColors={
+    'Mão de obra':'blue','Material':'gold','Serviço terceirizado':'red',
+    'Combustível':'blue','Locação':'gold','Adiantamento':'red',
+    'Ferramentas e equipamentos':'green','Transporte':'blue','Outros':'green'
+  };
+  const costDesc={
+    'Mão de obra':'Diárias, salários e produção/extras',
+    'Material':'Materiais e compras para as obras',
+    'Serviço terceirizado':'Pagamentos feitos a terceiros',
+    'Combustível':'Combustível e abastecimento',
+    'Locação':'Locações utilizadas nas obras',
+    'Adiantamento':'Adiantamentos registrados para a equipe',
+    'Ferramentas e equipamentos':'Ferramentas e equipamentos',
+    'Transporte':'Fretes, deslocamentos e transporte',
+    'Outros':'Outros custos registrados nas obras'
+  };
   const cg=$('rgCostGrid');
   if(cg){
     cg.innerHTML=Object.entries(cat).filter(([,v])=>v>0).map(([name,v])=>{
