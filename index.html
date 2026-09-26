@@ -8632,6 +8632,110 @@ document.addEventListener("DOMContentLoaded",async()=>{
    GLOBAIS
    ========================================================= */
 
+
+/* =========================================================
+   CORREÇÃO — EQUIPE: EDITAR / DESATIVAR / EXCLUIR
+   ========================================================= */
+function openFunc(id=null){
+  editFuncId = id ? String(id) : null;
+  const modal=$('funcM');
+  if(!modal)return;
+  const title=$('funcTitle');
+  if(title) title.textContent = editFuncId ? 'Editar funcionário' : 'Novo funcionário';
+
+  const obraSel=$('fObra');
+  if(obraSel){
+    obraSel.innerHTML='<option value="">Selecione a obra</option>'+
+      (D.obras||[]).map(o=>`<option value="${esc(String(o.id))}">${esc(o.nome||'Obra')}</option>`).join('');
+  }
+
+  const f=editFuncId ? (D.funcionarios||[]).find(x=>String(x.id)===editFuncId) : null;
+  $('fNome').value=f?.nome||'';
+  $('fFunc').value=f?.funcao||f?.função||'';
+  $('fTel').value=f?.telefone||f?.tel||'';
+  $('fTipo').value=f?.tipo_pagamento||'diaria';
+  $('fDia').value=f?.valor_diaria??'';
+  $('fSal').value=f?.salario_mensal??'';
+  $('fPag').value=f?.dia_pagamento??'';
+  $('fAtivo').value=String(f?.ativo!==false);
+  $('fDiariaRegistro').value=String(f?.registrar_diaria!==false);
+  if(obraSel) obraSel.value=String(getFuncObra(editFuncId)||f?.obra_id||'');
+  openM('funcM');
+}
+
+async function saveFunc(e){
+  e.preventDefault();
+  const nome=$('fNome')?.value.trim();
+  if(!nome){toast('Informe o nome do funcionário.');return;}
+  const row={
+    nome,
+    funcao:$('fFunc')?.value.trim()||'',
+    telefone:$('fTel')?.value.trim()||'',
+    tipo_pagamento:$('fTipo')?.value||'diaria',
+    valor_diaria:Number($('fDia')?.value||0),
+    salario_mensal:Number($('fSal')?.value||0),
+    dia_pagamento:$('fPag')?.value?Number($('fPag').value):null,
+    ativo:$('fAtivo')?.value!=='false',
+    registrar_diaria:$('fDiariaRegistro')?.value!=='false',
+    obra_id:$('fObra')?.value||null
+  };
+  let result;
+  if(editFuncId){
+    result=await updateRow('funcionarios',editFuncId,row);
+  }else{
+    result=await insertRow('funcionarios',row);
+  }
+  if(!result)return;
+  editFuncId=null;
+  closeM('funcM');
+  renderAll();
+  toast('Funcionário salvo com sucesso.');
+}
+
+async function toggleFunc(id){
+  const f=(D.funcionarios||[]).find(x=>String(x.id)===String(id));
+  if(!f){toast('Funcionário não encontrado.');return;}
+  const novo=f.ativo===false;
+  const acao=novo?'ativar':'desativar';
+  if(!confirm(`Deseja ${acao} ${f.nome||'este funcionário'}?`))return;
+  const result=await updateRow('funcionarios',f.id,{ativo:novo});
+  if(result){renderAll();toast(`Funcionário ${novo?'ativado':'desativado'} com sucesso.`);}
+}
+
+async function excluirFuncionario(id){
+  const f=(D.funcionarios||[]).find(x=>String(x.id)===String(id));
+  if(!f){toast('Funcionário não encontrado.');return;}
+  if(!confirm(`Excluir definitivamente o funcionário ${f.nome||''}?`))return;
+
+  // Remove registros dependentes locais para não deixar dados órfãos.
+  const dependentes=['diarias','faltas'];
+  for(const t of dependentes){
+    if(Array.isArray(D[t])) D[t]=D[t].filter(x=>String(x.funcionario_id)!==String(id));
+  }
+  if(Array.isArray(D.adiantamentos)) D.adiantamentos=D.adiantamentos.filter(x=>String(x.funcionario_id)!==String(id));
+  if(Array.isArray(D.servicosExtras)) D.servicosExtras=D.servicosExtras.filter(x=>String(x.funcionario_id||x.funcionarioId)!==String(id));
+
+  // Para a tabela principal, removeRow cuida do Supabase e do fallback local.
+  const antes=D.funcionarios.length;
+  await removeRow('funcionarios',id);
+  if(D.funcionarios.length<antes){
+    saveLocalData();
+    renderAll();
+    toast('Funcionário excluído com sucesso.');
+  }
+}
+
+async function limparFuncionariosSemIdentificacao(){
+  const invalidos=(D.funcionarios||[]).filter(f=>!String(f.nome||'').trim());
+  for(const f of invalidos){
+    D.funcionarios=D.funcionarios.filter(x=>String(x.id)!==String(f.id));
+    if(sb&&user&&!String(f.id).startsWith('local_')){
+      try{await sb.from('funcionarios').delete().eq('id',f.id).eq('user_id',user.id);}catch(_){ }
+    }
+  }
+  if(invalidos.length)saveLocalData();
+}
+
 window.go=go;
 window.toggleMenuPasta=toggleMenuPasta;
 window.excluirFuncionario=excluirFuncionario;
