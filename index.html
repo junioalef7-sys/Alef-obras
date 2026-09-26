@@ -2048,7 +2048,7 @@ function localData(){
 }
 
 function saveLocalData(){
-  const payload={obras:D.obras,funcionarios:D.funcionarios,diarias:D.diarias,gastos:D.gastos,pagamentos:D.pagamentos,checklist:D.checklist,faltas:D.faltas,presencas:D.presencas||[],diario:D.diario,documentos:(D.documentos||[]).map(d=>({...d})),materiais:D.materiais,material_movimentos:D.material_movimentos};
+  const payload={obras:D.obras,funcionarios:D.funcionarios,diarias:D.diarias,gastos:D.gastos,pagamentos:D.pagamentos,checklist:D.checklist,faltas:D.faltas,presencas:D.presencas||[],diario:D.diario,documentos:(D.documentos||[]).map(d=>({...d})),materiais:D.materiais,material_movimentos:D.material_movimentos,servicosExtras:Array.isArray(D.servicosExtras)?D.servicosExtras:[]};
   let savedAny=false;
   try{ localStorage.setItem(LOCAL_KEY,JSON.stringify(payload)); savedAny=true; }catch(e){ console.warn("Cache principal cheio; usando backup por tabela.",e); }
   for(const [table,rows] of Object.entries(payload)){
@@ -7346,6 +7346,10 @@ function importRemapRow(row,maps){
 async function importBackupData(backup){
   if(!backup || !backup.data) throw new Error("Backup inválido.");
 
+  // Protege o estado atual antes de qualquer importação. Se algo falhar,
+  // o usuário continua com o estado anterior preservado localmente.
+  saveSafeSnapshot("antes da importação de backup");
+
   const maps={
     obras:{},
     funcionarios:{},
@@ -7398,6 +7402,7 @@ async function importBackupData(backup){
     "pagamentos",
     "checklist",
     "faltas",
+    "presencas",
     "diario",
     "documentos"
   ];
@@ -7436,22 +7441,35 @@ async function importBackupData(backup){
   }
 
   if(backup.adiantamentosAplicados){
-    /*
-     * Os IDs dos gastos mudaram na importação. Para evitar aplicar
-     * adiantamentos no gasto errado, recriamos o mapa pelo índice/
-     * fornecedor/descrição quando possível. Registros que não puderem
-     * ser associados ficam zerados, sem causar desconto indevido.
-     */
+    // O ID do gasto muda na importação; por isso usamos a ordem dos
+    // adiantamentos do próprio backup para transportar a baixa aplicada.
     const novoAplicado={};
     const origem=backup.adiantamentosAplicados||{};
-    const gastosImportados=D.gastos||[];
-    const gastosAdiant=gastosImportados.filter(g=>gastoCategoria(g)==="Adiantamento");
-
-    Object.entries(origem).forEach(([oldId,val])=>{
-      const g=gastosAdiant.find(x=>String(x.id)===String(oldId));
-      if(g) novoAplicado[g.id]=Number(val||0);
+    const origemIds=Object.keys(origem);
+    const gastosNovos=(D.gastos||[]).filter(g=>gastoCategoria(g)==="Adiantamento");
+    const gastosOriginais=(backup.data.gastos||[]).filter(g=>gastoCategoria(g)==="Adiantamento");
+    gastosOriginais.forEach((g,i)=>{
+      const val=Number(origem[String(g.id)]||0);
+      const novo=gastosNovos[i];
+      if(novo && val>0) novoAplicado[novo.id]=Math.min(Number(novo.valor||0),val);
     });
     localStorage.setItem(ADV_KEY,JSON.stringify(novoAplicado));
+  }
+
+  // Serviços extras ficam fora de D em versões antigas; quando vierem no
+  // backup, recriamos os vínculos com os novos IDs de obra/funcionário.
+  if(Array.isArray(backup.data.servicosExtras)){
+    D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];
+    backup.data.servicosExtras.forEach(item=>{
+      const x={...item};
+      delete x.id;
+      if(x.obra_id!=null) x.obra_id=maps.obras[String(x.obra_id)]??x.obra_id;
+      if(x.obraId!=null) x.obraId=maps.obras[String(x.obraId)]??x.obraId;
+      if(x.funcionario_id!=null) x.funcionario_id=maps.funcionarios[String(x.funcionario_id)]??x.funcionario_id;
+      if(x.funcionarioId!=null) x.funcionarioId=maps.funcionarios[String(x.funcionarioId)]??x.funcionarioId;
+      x.id='sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+      D.servicosExtras.push(x);
+    });
   }
 
   // 7) Serviços adicionais também passam a acompanhar a obra importada.
