@@ -1318,6 +1318,87 @@ body{min-height:100vh;min-height:100dvh}
 }
 </style>
 
+
+<style id="edifiq-ajuste-resumo-obras">
+/* Resumo de Obras no mesmo padrão visual do Resumo Financeiro enviado */
+.obraResumoModelo{display:grid;gap:16px}
+.obraResumoModelo>h3{margin:0 0 2px;font-size:24px;color:#f8fafc}
+.obraResumoSection{
+  background:#111a2e;
+  border:2px solid #1f3768;
+  border-radius:24px;
+  padding:28px;
+}
+.obraResumoSection>h4{margin:0 0 22px;font-size:26px;color:#f8fafc}
+.obraResumoValueGrid{display:grid;gap:16px}
+.obraResumoValueCard{
+  background:#0d1629;
+  border-radius:20px;
+  padding:24px 20px;
+  text-align:center;
+}
+.obraResumoValueCard small{display:block;color:#94a3b8;font-size:18px}
+.obraResumoValueCard strong{display:block;font-size:40px;margin-top:8px;line-height:1.1}
+.obraResumoModelo .blue{color:#3b82f6}
+.obraResumoModelo .green{color:#22c55e}
+.obraResumoModelo .red{color:#ef4444}
+.obraResumoProgressHead{display:flex;justify-content:space-between;gap:10px;margin:20px 0 8px;color:#94a3b8;font-size:18px}
+.obraResumoProgressHead b{color:#f8fafc}
+.obraResumoProgress{height:13px;background:#182642;border-radius:20px;overflow:hidden}
+.obraResumoProgress i{display:block;height:100%;background:#3b82f6;border-radius:20px}
+.obraResumoLine{
+  display:flex;justify-content:space-between;align-items:center;gap:16px;
+  padding:12px 0;color:#94a3b8;font-size:20px;
+}
+.obraResumoLine strong,.obraResumoLine>b{color:#f8fafc;font-size:27px}
+.obraResumoResultado{background:linear-gradient(145deg,#08191b,#0d1d20);border-color:#1f4c4d}
+.obraResumoResultado .obraResumoLine strong{font-size:34px}
+.obraResumoTotal{
+  border-top:1px solid #20345e;margin-top:10px;padding-top:20px;
+  display:flex;justify-content:space-between;gap:16px;align-items:center;
+  font-size:22px;color:#f8fafc;font-weight:800;
+}
+.obraResumoTotal strong{font-size:30px;color:#f8fafc}
+
+/* Números do Resumo Geral menores e mais equilibrados */
+.rgStatCard strong{font-size:36px}
+.rgStatCard{min-height:145px;padding:22px}
+.rgMoneyCard strong{font-size:34px}
+.rgWorkHead b{font-size:21px}
+.rgWorkMoney b{font-size:20px}
+.rgWorkFoot b{font-size:18px}
+
+/* Botões do módulo Obras mais compactos */
+.obraModeloTabs{gap:5px;padding:9px}
+.obraModeloTab{font-size:14px;padding:9px 12px;min-height:38px}
+.obraModeloActions .btn{min-width:42px;min-height:40px;height:40px;padding:7px 10px}
+
+@media(max-width:600px){
+  .obraResumoSection{padding:20px;border-radius:20px}
+  .obraResumoSection>h4{font-size:22px;margin-bottom:17px}
+  .obraResumoValueCard{padding:19px 14px;border-radius:17px}
+  .obraResumoValueCard small{font-size:16px}
+  .obraResumoValueCard strong{font-size:30px}
+  .obraResumoProgressHead{font-size:16px}
+  .obraResumoLine{font-size:17px;padding:10px 0}
+  .obraResumoLine strong,.obraResumoLine>b{font-size:22px}
+  .obraResumoResultado .obraResumoLine strong{font-size:28px}
+  .obraResumoTotal{font-size:19px}
+  .obraResumoTotal strong{font-size:25px}
+  .rgStatCard{min-height:112px;padding:15px;border-radius:18px}
+  .rgStatCard strong{font-size:28px}
+  .rgStatCard small{font-size:13px}
+  .rgStatCard span{font-size:24px}
+  .rgMoneyCard strong{font-size:29px}
+  .rgWorkCard{padding:18px}
+  .rgWorkHead b{font-size:18px}
+  .rgWorkMoney,.rgWorkFoot{font-size:16px}
+  .rgWorkMoney b,.rgWorkFoot b{font-size:17px}
+  .obraModeloTab{font-size:12px;padding:7px 9px;min-height:36px}
+  .obraModeloActions .btn{min-width:38px;min-height:38px;height:38px;padding:6px 8px}
+}
+</style>
+
 </head>
 <body>
 <div class="bootError" id="bootError"><div class="bootErrorBox"><h2>EDIFIQ</h2><p id="bootErrorText">O aplicativo encontrou um erro ao iniciar.</p><button onclick="location.reload()">Recarregar</button></div></div>
@@ -4082,16 +4163,57 @@ function renderObras(){
             <div class="obraInfoCard"><h3>Pagamentos da Equipe</h3>${pagamentosHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="openPagamentoEquipe()">Pagamento da equipe</button></div></div>
           </div>
           <div class="obraModeloPanel" data-panel="resumo" style="display:none">
-            <div class="obraInfoCard">
+            <div class="obraResumoModelo">
               <h3>Resumo Financeiro</h3>
-              <div class="obraDataGrid">
-                <div class="obraDataItem"><small>Valor contratado</small><b class="blue">${money(o.valor)}</b></div>
-                <div class="obraDataItem"><small>Recebido</small><b>${money(f.receita)}</b></div>
-                <div class="obraDataItem"><small>Despesas</small><b>${money(f.despesas)}</b></div>
-                <div class="obraDataItem"><small>Saldo a receber</small><b>${money(f.saldoReceber)}</b></div>
-                <div class="obraDataItem"><small>Resultado / lucro</small><b>${money(f.resultado)}</b></div>
-                <div class="obraDataItem"><small>Saldo do contrato</small><b>${money(f.saldoContrato)}</b></div>
-              </div>
+
+              <section class="obraResumoSection">
+                <h4>Valores da Obra</h4>
+                <div class="obraResumoValueGrid">
+                  <div class="obraResumoValueCard">
+                    <small>Valor Total da Obra</small>
+                    <strong class="blue">${money(f.contrato||0)}</strong>
+                  </div>
+                  <div class="obraResumoValueCard">
+                    <small>Já Recebi</small>
+                    <strong class="green">${money(f.receita||0)}</strong>
+                  </div>
+                  <div class="obraResumoValueCard">
+                    <small>Falta Receber</small>
+                    <strong class="green">${money(f.saldoReceber||0)}</strong>
+                  </div>
+                </div>
+                <div class="obraResumoProgressHead">
+                  <span>Progresso de Recebimento</span>
+                  <b>${(f.contrato>0?Math.min(100,(f.receita/f.contrato)*100):0).toFixed(1)}%</b>
+                </div>
+                <div class="obraResumoProgress">
+                  <i style="width:${Math.max(0,Math.min(100,f.contrato>0?(f.receita/f.contrato)*100:0))}%"></i>
+                </div>
+              </section>
+
+              <section class="obraResumoSection obraResumoResultado">
+                <h4>Resultado</h4>
+                <div class="obraResumoLine"><span>Lucro</span><strong class="${f.resultado>=0?'green':'red'}">${money(f.resultado||0)}</strong></div>
+                <div class="obraResumoLine"><span>Margem</span><b class="${f.margemLucro>=0?'green':'red'}">${Number(f.margemLucro||0).toFixed(1)}%</b></div>
+              </section>
+
+              <section class="obraResumoSection">
+                <h4>Projeções</h4>
+                <div class="obraResumoLine"><span>Lucro por Semana</span><strong>${money(f.resultado||0)}</strong></div>
+                <div class="obraResumoLine"><span>Dias Trabalhados</span><strong>${diasTrabalhadosObra(o.id)}</strong></div>
+                <div class="obraResumoLine"><span>Gastos Registrados</span><strong>${x.gastos.length}</strong></div>
+                <div class="obraResumoLine"><span>Serviços Adicionais</span><strong>${x.extras.length}</strong></div>
+                <div class="obraResumoLine"><span>Serviços Terceirizados</span><strong>${x.gastos.filter(g=>gastoCategoria(g)==="Serviço terceirizado").length}</strong></div>
+              </section>
+
+              <section class="obraResumoSection">
+                <h4>Detalhamento de Custos</h4>
+                <div class="obraResumoLine"><span>Mão de Obra</span><strong class="blue">${money(f.mao||0)}</strong></div>
+                <div class="obraResumoLine"><span>Gastos com Materiais</span><strong class="blue">${money(f.material||0)}</strong></div>
+                <div class="obraResumoLine"><span>Serviços Adicionais</span><strong class="blue">${money(x.extras.reduce((a,s)=>a+Number(s.valor||0),0))}</strong></div>
+                <div class="obraResumoLine"><span>Terceirizados/Repasses</span><strong class="blue">${money(f.terceirizado||0)}</strong></div>
+                <div class="obraResumoTotal"><span>Total de Custos</span><strong>${money(f.despesas||0)}</strong></div>
+              </section>
             </div>
           </div>
           <div class="obraModeloPanel" data-panel="checklist" style="display:none">
