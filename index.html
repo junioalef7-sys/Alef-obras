@@ -7350,7 +7350,8 @@ async function importBackupData(backup){
     obras:{},
     funcionarios:{},
     materiais:{},
-    documentos:{}
+    documentos:{},
+    gastos:{}
   };
 
   /*
@@ -7404,7 +7405,9 @@ async function importBackupData(backup){
 
   for(const table of tabelasDependentes){
     for(const row of (backup.data[table]||[])){
-      await insertRow(table,importRemapRow(row,maps));
+      const antigo=row?.id;
+      const novo=await insertRow(table,importRemapRow(row,maps));
+      if(table==='gastos' && novo && antigo!=null) maps.gastos[String(antigo)]=novo.id;
     }
   }
 
@@ -7448,13 +7451,28 @@ async function importBackupData(backup){
     const gastosAdiant=gastosImportados.filter(g=>gastoCategoria(g)==="Adiantamento");
 
     Object.entries(origem).forEach(([oldId,val])=>{
-      const g=gastosAdiant.find(x=>String(x.id)===String(oldId));
-      if(g) novoAplicado[g.id]=Number(val||0);
+      const novoId=maps.gastos[String(oldId)];
+      if(novoId!=null) novoAplicado[novoId]=Number(val||0);
     });
     localStorage.setItem(ADV_KEY,JSON.stringify(novoAplicado));
   }
 
-  // 7) Serviços adicionais também passam a acompanhar a obra importada.
+  // 7) Fotos — o backup já carrega as imagens do IndexedDB.
+  // Restaura cada foto no banco local, sem depender apenas do localStorage.
+  if(Array.isArray(backup.fotos) && backup.fotos.length){
+    let fotosRestauradas=0;
+    for(const foto of backup.fotos){
+      try{
+        await savePhotoDB(foto);
+        fotosRestauradas++;
+      }catch(e){
+        console.warn('Foto não restaurada:',e);
+      }
+    }
+    if(fotosRestauradas) console.info(`EDIFIQ: ${fotosRestauradas} foto(s) restaurada(s) do backup.`);
+  }
+
+  // 8) Serviços adicionais também passam a acompanhar a obra importada.
   if(backup.servicosAdicionais){
     const origem=backup.servicosAdicionais;
     const destino={};
@@ -7498,7 +7516,7 @@ async function importBackup(event){
 
       await importBackupData(backup);
 
-      toast("Backup importado e despesas distribuídas por obra.");
+      toast("Backup importado com vínculos, adiantamentos e fotos restaurados.");
     }catch(e){
       console.error("EDIFIQ importação:",e);
       toast("Arquivo de backup inválido ou não foi possível reconstruir os vínculos.");
