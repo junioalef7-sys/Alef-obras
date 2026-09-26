@@ -4764,8 +4764,16 @@ const box=$("pagFuncionarios");
 if(!box)return;
 
 // Todos os funcionários cadastrados aparecem no fechamento.
-const funcs=
-[...(D.funcionarios||[])];
+let funcs=[];
+try{
+ const local=typeof localData==='function'?localData():{};
+ const cache=Array.isArray(local?.funcionarios)?local.funcionarios:[];
+ const memoria=Array.isArray(D.funcionarios)?D.funcionarios:[];
+ const map=new Map();
+ [...cache,...memoria].forEach(f=>{if(!f)return;const k=String(f.id||'').trim()||('nome:'+normalize(f.nome));if(k&&k!=='nome:')map.set(k,{...(map.get(k)||{}),...f});});
+ funcs=[...map.values()];
+}catch(_){funcs=[...(D.funcionarios||[])];}
+funcs.sort((a,b)=>normalize(a.nome).localeCompare(normalize(b.nome),'pt-BR'));
 
 if(!funcs.length){
 
@@ -4827,12 +4835,7 @@ String(f.id)
 
 <br>
 
-<small>
-${esc(
-obra?.nome||
-"Sem obra"
-)}
-</small>
+<small>${esc(f.funcao||"Função não informada")} · ${esc(obra?.nome||"Sem obra")}</small>
 
 </span>
 
@@ -6950,18 +6953,20 @@ Selecione o funcionário
 </option>
 
 ${
-D.funcionarios
-.filter(
-f=>f.ativo!==false
-)
-.filter(
-f=>f.registrar_diaria!==false
-)
-.map(f=>`
-<option value="${f.id}">
-${esc(f.nome)}
-</option>
-`).join("")
+(()=>{
+ let lista=[];
+ try{
+  const local=typeof localData==='function'?localData():{};
+  const cache=Array.isArray(local?.funcionarios)?local.funcionarios:[];
+  const memoria=Array.isArray(D.funcionarios)?D.funcionarios:[];
+  const map=new Map();
+  [...cache,...memoria].forEach(f=>{if(!f)return;const k=String(f.id||'').trim()||('nome:'+normalize(f.nome));if(k&&k!=='nome:')map.set(k,{...(map.get(k)||{}),...f});});
+  lista=[...map.values()];
+ }catch(_){lista=[...(D.funcionarios||[])];}
+ lista=lista.filter(f=>f.ativo!==false&&f.registrar_diaria!==false);
+ lista.sort((a,b)=>normalize(a.funcao||'Função não informada').localeCompare(normalize(b.funcao||'Função não informada'),'pt-BR')||normalize(a.nome).localeCompare(normalize(b.nome),'pt-BR'));
+ return lista.map(f=>`<option value="${f.id}">${esc(f.nome)} — ${esc(f.funcao||'Função não informada')}</option>`).join('');
+})()
 }
 
 `;
@@ -7806,7 +7811,7 @@ function rcExportPDF(){
   const cliente=$('rcCliente')?.value||'Cliente';
   const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
   const html=esc(txt).replace(/\n/g,'<br>');
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório para ${esc(cliente)}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033;line-height:1.55;max-width:850px;margin:auto}h1{font-size:24px;text-align:center} .box{border:1px solid #d9e0ea;border-radius:14px;padding:24px;white-space:normal}@media print{body{padding:10px}}</style></head><body><h1>EDIFIQ — Relatório para Cliente</h1><div class="box">${html}</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório para ${esc(cliente)}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033;line-height:1.55;max-width:850px;margin:auto}h1{font-size:24px;text-align:center} .box{border:1px solid #d9e0ea;border-radius:14px;padding:24px;white-space:normal}@media print{body{padding:10px}}.diarioFuncGroup{margin:10px 0 5px;padding:7px 10px;border-left:3px solid var(--gold);background:#151a20;color:var(--gold2);border-radius:8px;font-size:11px;text-transform:uppercase;letter-spacing:.4px}.diarioTeamItem small{display:block;color:var(--muted);margin-top:2px}.pay-person-head small{line-height:1.35;display:inline-block;margin-top:2px}</style></head><body><h1>EDIFIQ — Relatório para Cliente</h1><div class="box">${html}</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
 <script id="edifiq-servico-extra-link">
 (function(){
   // Vincula serviços extras à folha/financeiro sem substituir dados existentes.
@@ -8141,8 +8146,11 @@ function renderDiarioEquipeModal(selected=[]){
   let funcs=D.funcionarios.filter(f=>f.ativo!==false && String(getFuncObra(f.id))===String(obraId));
   if(!funcs.length) funcs=D.funcionarios.filter(f=>f.ativo!==false);
   if(!funcs.length){box.innerHTML='<div class="empty">Nenhum funcionário ativo cadastrado.</div>';return;}
+  funcs.sort((a,b)=>normalize(a.funcao||'Função não informada').localeCompare(normalize(b.funcao||'Função não informada'),'pt-BR')||normalize(a.nome).localeCompare(normalize(b.nome),'pt-BR'));
   const set=new Set((selected||[]).map(String));
-  box.innerHTML=funcs.map(f=>`<label class="diarioTeamItem"><input class="diario-func-check" type="checkbox" value="${esc(f.id)}" ${set.has(String(f.id))?'checked':''}><span><b>${esc(f.nome)}</b><small>${esc(f.funcao||"Função não informada")}</small></span></label>`).join("");
+  let ultimaFunc=null; const html=[];
+  funcs.forEach(f=>{const funcao=(f.funcao||'Função não informada').trim()||'Função não informada'; if(funcao!==ultimaFunc){html.push(`<div class="diarioFuncGroup"><b>${esc(funcao)}</b></div>`);ultimaFunc=funcao;} html.push(`<label class="diarioTeamItem"><input class="diario-func-check" type="checkbox" value="${esc(f.id)}" ${set.has(String(f.id))?'checked':''}><span><b>${esc(f.nome)}</b><small>${esc(funcao)}</small></span></label>`);});
+  box.innerHTML=html.join('');
 }
 
 function openDiario(id=null){
