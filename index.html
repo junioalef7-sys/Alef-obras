@@ -5152,21 +5152,70 @@ for(const item of processados){
 
 const observacao=`Diárias pendentes: ${money(item.resumo.pending)}. Adiantamento abatido: ${money(item.resumo.advance)}. Valor líquido: ${money(item.resumo.net)}.${obs?" "+obs:""}`;
 
-/* Serviços extras já foram lançados no Financeiro no momento do lançamento.
-   Aqui entra somente a parcela nova de diárias que ainda precisa ser paga. */
+/*
+   RATEIO POR OBRA:
+   As diárias carregam a obra em que foram registradas. O pagamento não
+   pode usar somente getFuncObra(), porque um mesmo funcionário pode ter
+   trabalhado em várias obras no mesmo período.
+
+   O adiantamento já foi lançado como gasto na obra de origem. Portanto,
+   na baixa das diárias lançamos somente o valor líquido de cada obra:
+   diárias da obra - adiantamentos daquela mesma obra.
+*/
 const extrasPagosTotal=(item.resumo.extrasPendentes||[]).reduce((a,x)=>a+Number(x.valor||0),0);
-const valorNovoPagamento=Math.max(0,Number(item.resumo.net||0)-extrasPagosTotal);
-if(valorNovoPagamento>0){
-const result=await insertRow("gastos",{
-obra_id:item.obraId,
-data,
-descricao:`[Mão de obra] ${descricao} - ${item.f.nome}`,
-valor:valorNovoPagamento,
-fornecedor:item.f.nome,
-observacao,
-categoria:"Mão de obra"
-});
-if(!result){falhas++;continue;}
+const diariaPorObra={};
+for(const diaria of item.pendingItems){
+  const oid=String(diaria.obra_id||item.obraId||fallbackObra||'');
+  if(!oid) continue;
+  diariaPorObra[oid]=(diariaPorObra[oid]||0)+diariaValor(diaria);
+}
+
+const adiantPorObra={};
+for(const adv of (item.resumo.advances||[])){
+  const usar=Number(adv.disponivel||0);
+  if(usar<=0) continue;
+  const oid=String(adv.obra_id||'');
+  if(oid) adiantPorObra[oid]=(adiantPorObra[oid]||0)+usar;
+}
+
+let restoAdiantSemObra=Number(item.resumo.advance||0);
+for(const [oid,bruto] of Object.entries(diariaPorObra)){
+  const abatidoObra=Math.min(bruto,Number(adiantPorObra[oid]||0));
+  restoAdiantSemObra=Math.max(0,restoAdiantSemObra-abatidoObra);
+  const valorObra=Math.max(0,bruto-abatidoObra);
+  if(valorObra<=0) continue;
+  const result=await insertRow("gastos",{
+    obra_id:oid,
+    data,
+    descricao:`[Mão de obra] ${descricao} - ${item.f.nome}`,
+    valor:valorObra,
+    fornecedor:item.f.nome,
+    funcionario_id:item.id,
+    observacao:`Obra de origem das diárias: ${oid}. ${observacao}`.trim(),
+    categoria:"Mão de obra",
+    tipo:"pagamento_equipe",
+    referencia_funcionario_id:item.id
+  });
+  if(!result){falhas++;}
+}
+
+/* Se houver adiantamento sem obra de origem, não o redistribuímos
+   arbitrariamente. O adiantamento permanece registrado na obra em que
+   foi lançado (quando existir), evitando misturar custos entre obras. */
+if(Object.keys(diariaPorObra).length===0 && extrasPagosTotal>0 && item.obraId){
+  const result=await insertRow("gastos",{
+    obra_id:item.obraId,
+    data,
+    descricao:`[Serviço/Equipe] ${descricao} - ${item.f.nome}`,
+    valor:Math.max(0,Number(item.resumo.net||0)),
+    fornecedor:item.f.nome,
+    funcionario_id:item.id,
+    observacao,
+    categoria:"Mão de obra",
+    tipo:"pagamento_equipe",
+    referencia_funcionario_id:item.id
+  });
+  if(!result)falhas++;
 }
 
 /* Baixa as diárias mesmo se a atualização no servidor falhar. */
