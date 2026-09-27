@@ -2623,7 +2623,7 @@ function openBackupConfig(){
     m.className='modal open';
     m.innerHTML=`<div class="modalBox" style="max-width:720px;max-height:90vh;overflow:auto">
       <div class="modalHead"><div><h2>💾 Backup</h2><p class="sub">Central de proteção, recuperação e exportação dos dados do EDIFIQ.</p></div><button class="x" onclick="closeM('edBackupConfigModal')">×</button></div>
-      <div class="card"><h3>Proteção dos dados</h3><p class="sub">O backup não substitui nem apaga os dados atuais. A importação também preserva os registros existentes e mescla somente o que for necessário.</p><div class="listActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar backup</button><input id="backupImportFile" accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importRelatorioData(event)" style="display:none" type="file"/></div></div>
+      <div class="card"><h3>Proteção dos dados</h3><p class="sub">O backup não substitui nem apaga os dados atuais. A importação também preserva os registros existentes e mescla somente o que for necessário.</p><div class="listActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar backup</button><input id="backupImportFile" accept=".json,application/json,text/json" onchange="importRelatorioData(event)" style="display:none" type="file"/></div></div>
       <div class="card"><h3>Exportar relatórios</h3><div class="reportGrid"><button class="btn reportAction" onclick="exportPDF()"><b>📄 Exportar PDF</b><small>Relatório pronto para salvar ou compartilhar.</small></button><button class="btn reportAction" onclick="exportExcel()"><b>📊 Exportar Excel</b><small>Obras, equipe, diárias, financeiro e checklist.</small></button><button class="btn reportAction" onclick="exportCSVAll()"><b>📁 Exportar CSV</b><small>Dados compatíveis com planilhas.</small></button><button class="btn reportAction" onclick="exportFull()"><b>🗂️ Exportar JSON</b><small>Backup completo para recuperação futura.</small></button></div></div>
       <div class="card"><h3>📊 Acesso rápido aos relatórios</h3><p class="sub">Os recursos continuam no menu principal, mas também ficam centralizados aqui para consulta e exportação.</p><div class="reportGrid"><button class="btn reportAction" type="button" onclick="openRelatorioCliente()"><b>📄 Relatório para Cliente</b><small>Gerar acompanhamento por obra e cliente.</small></button><button class="btn reportAction" type="button" onclick="openRelatorioTrabalhador()"><b>👷 Relatório do Trabalhador</b><small>Dados cadastrais, dias, obras, pagamentos e fechamento.</small></button><button class="btn reportAction" type="button" onclick="openPagamentoEquipe()"><b>👷 Pagamento da Equipe</b><small>Folha, diárias, adiantamentos e líquido.</small></button><button class="btn reportAction" type="button" onclick="openAdiantamento()"><b>＋ Adiantamento</b><small>Registrar e controlar adiantamentos.</small></button><button class="btn reportAction" type="button" onclick="go('diarias');closeM('edBackupConfigModal')"><b>📅 Histórico de Diárias</b><small>Consultar os registros por período e obra.</small></button></div></div>
       <div class="card dangerDataCard"><h3>🗑️ Apagar dados</h3><p class="sub">Escolha o setor que deseja apagar. O aplicativo pedirá confirmação antes de excluir.</p><div class="reportGrid dataDeleteGrid"><button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar Equipe</b><small>Funcionários, diárias, faltas e registros.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar Obras</b><small>Obras e registros vinculados.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar Financeiro</b><small>Receitas, despesas e pagamentos.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar Tudo</b><small>Apaga todos os dados do aplicativo.</small></button></div><div class="note dangerNote">⚠️ Esta ação não pode ser desfeita. Faça um backup antes de apagar.</div></div>
@@ -7488,7 +7488,10 @@ adiantamentosAplicados:
 getAdvanceApplied(),
 
 servicosAdicionais:
-getServices()
+getServices(),
+
+paidDiarias:
+getPaidDiariasMap()
 
 };
 
@@ -7572,6 +7575,82 @@ function importRemapRow(row,maps){
     }
   }
   return copy;
+}
+
+function normalizarBackupEDIFIQ(bruto){
+  if(!bruto || typeof bruto!=="object" || Array.isArray(bruto)){
+    throw new Error("Formato de backup inválido.");
+  }
+
+  const tabelas=[
+    "obras","funcionarios","diarias","gastos","pagamentos",
+    "checklist","faltas","presencas","diario","documentos",
+    "materiais","material_movimentos"
+  ];
+
+  let fonte=
+    (bruto.data && typeof bruto.data==="object" && !Array.isArray(bruto.data)) ? bruto.data :
+    (bruto.dados && typeof bruto.dados==="object" && !Array.isArray(bruto.dados)) ? bruto.dados :
+    (bruto.estado && typeof bruto.estado==="object" && !Array.isArray(bruto.estado)) ? bruto.estado :
+    (bruto.state && typeof bruto.state==="object" && !Array.isArray(bruto.state)) ? bruto.state :
+    (bruto.database && typeof bruto.database==="object" && !Array.isArray(bruto.database)) ? bruto.database :
+    (bruto.D && typeof bruto.D==="object" && !Array.isArray(bruto.D)) ? bruto.D :
+    bruto;
+
+  if(fonte && fonte.data && typeof fonte.data==="object" && !Array.isArray(fonte.data)){
+    const temTabela=tabelas.some(t=>Object.prototype.hasOwnProperty.call(fonte,t));
+    if(!temTabela) fonte=fonte.data;
+  }
+
+  const data={};
+  let total=0;
+
+  for(const tabela of tabelas){
+    let rows=fonte?.[tabela];
+
+    if(!Array.isArray(rows)){
+      const aliases={
+        funcionarios:["equipe","funcs","trabalhadores"],
+        diarias:["dias","presencas_diarias"],
+        gastos:["despesas"],
+        pagamentos:["recebimentos","receitas_pagamentos"],
+        checklist:["checklists"],
+        faltas:["ausencias"],
+        presencas:["presenca"],
+        diario:["diarios"],
+        documentos:["docs"],
+        materiais:["estoque"],
+        material_movimentos:["movimentos_materiais"]
+      };
+      for(const alias of (aliases[tabela]||[])){
+        if(Array.isArray(fonte?.[alias])){ rows=fonte[alias]; break; }
+      }
+    }
+
+    data[tabela]=Array.isArray(rows) ? rows : [];
+    total+=data[tabela].length;
+  }
+
+  if(total===0) throw new Error("Backup EDIFIQ sem registros.");
+
+  return {
+    app:"EDIFIQ",
+    version:String(bruto.version||"legado"),
+    date:bruto.date||bruto.dataBackup||bruto.created_at||null,
+    data,
+    fotos:Array.isArray(bruto.fotos)?bruto.fotos:(Array.isArray(bruto.photos)?bruto.photos:[]),
+    funcionarioObras:
+      (bruto.funcionarioObras && typeof bruto.funcionarioObras==="object") ? bruto.funcionarioObras :
+      ((bruto.funcionario_obras && typeof bruto.funcionario_obras==="object") ? bruto.funcionario_obras : {}),
+    adiantamentosAplicados:
+      (bruto.adiantamentosAplicados && typeof bruto.adiantamentosAplicados==="object") ? bruto.adiantamentosAplicados : {},
+    servicosAdicionais:
+      (bruto.servicosAdicionais && typeof bruto.servicosAdicionais==="object") ? bruto.servicosAdicionais :
+      ((bruto.servicos_adicionais && typeof bruto.servicos_adicionais==="object") ? bruto.servicos_adicionais : {}),
+    paidDiarias:
+      (bruto.paidDiarias && typeof bruto.paidDiarias==="object") ? bruto.paidDiarias :
+      ((bruto.diariasBaixadas && typeof bruto.diariasBaixadas==="object") ? bruto.diariasBaixadas : {})
+  };
 }
 
 async function importBackupData(backup){
@@ -7675,6 +7754,18 @@ async function importBackupData(backup){
       if(novoId) atual[String(novoId)]=Number(val||0);
     }
     localStorage.setItem(ADV_KEY,JSON.stringify(atual));
+  }
+
+  // Diárias já baixadas: preserva o fechamento da folha após a restauração.
+  if(backup.paidDiarias && typeof backup.paidDiarias==="object"){
+    const atual=getPaidDiariasMap();
+    for(const [oldId,val] of Object.entries(backup.paidDiarias)){
+      if(!val) continue;
+      const novoId=maps.diarias[String(oldId)];
+      if(novoId) atual[String(novoId)]=true;
+      else if(D.diarias.some(x=>String(x.id)===String(oldId))) atual[String(oldId)]=true;
+    }
+    try{localStorage.setItem(PAID_DIARIAS_KEY,JSON.stringify(atual));}catch(e){}
   }
 
   // Serviços adicionais acompanham o novo ID da obra.
