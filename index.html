@@ -5130,7 +5130,8 @@ if(!f||f.ativo===false)continue;
 const pendingItems=getPendingDiarias(id);
 const pending= pendingItems.reduce((a,d)=>a+diariaValor(d),0);
 const extrasPendentes=(D.servicosExtras||[]).filter(x=>String(x.funcionario_id||x.funcionarioId)===String(id)&&String(x.status||'pendente')!=='pago');
-if(pending<=0 && !extrasPendentes.length)continue;
+const advancesAtuais=getEmployeeAdvances(id);
+if(pending<=0 && !extrasPendentes.length && !advancesAtuais.length)continue;
 
 const resumo=calcFuncionarioPagamento(id);
 const obraId=getFuncObra(id)||fallbackObra;
@@ -5190,7 +5191,8 @@ for(const extra of (item.resumo.extrasPendentes||[])){
   if(gasto)gasto.status='pago';
 }
 
-aplicarAdiantamentos(item.id,item.resumo.allocations);
+/* QUITAÇÃO TOTAL DO FUNCIONÁRIO: todo adiantamento existente é baixado,
+   não apenas o valor usado no cálculo do líquido. Assim a nova folha começa do zero. */
 const advAplicados=getAdvanceApplied();
 const nomeFunc=normalize(item.f.nome);
 for(const g of (D.gastos||[])){
@@ -5204,6 +5206,8 @@ for(const g of (D.gastos||[])){
   g.aplicado=true;
   g.valor_baixado=valor;
   g.data_pagamento=data;
+  g.funcionario_id=item.id;
+  if(!g.data_pagamento) g.data_pagamento=data;
 }
 for(const a of (D.adiantamentos||[])){
   if(String(a.funcionario_id)!==String(item.id)) continue;
@@ -5211,6 +5215,8 @@ for(const a of (D.adiantamentos||[])){
   a.status="pago"; a.aplicado=true; a.valor_baixado=valor; a.data_pagamento=data;
 }
 saveAdvanceApplied(advAplicados);
+/* Recalcula imediatamente o estado local: adiantamentos pagos não podem
+   voltar para pendente na Gestão, Folha ou Diárias. */
 saveLocalData();
 }
 
@@ -5386,6 +5392,9 @@ descricao:
 valor,
 fornecedor:
 nome,
+funcionario_id,
+status:"pendente",
+aplicado:false,
 observacao:obs
 }
 );
@@ -9128,7 +9137,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     const brutoDiarias=diarias.reduce((a,d)=>a+diariaValor(d),0);
     const pagDiarias=diarias.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);
     const pendDiarias=diarias.filter(d=>!diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
-    const totalAdiant=adiantamentos.reduce((a,g)=>a+Number(g.valor||0),0);
+    const totalAdiant=adiantamentos.filter(g=>{const st=String(g.status||'').toLowerCase(); return st!=='pago'&&st!=='quitado'&&st!=='liquidado'&&Number(getAdvanceApplied()[g.id]||0)<Number(g.valor||0);}).reduce((a,g)=>a+Math.max(0,Number(g.valor||0)-Number(getAdvanceApplied()[g.id]||0)),0);
     const totalPagamentos=pagamentos.reduce((a,g)=>a+Number(g.valor||0),0);
     const totalExtras=extras.reduce((a,x)=>a+Number(x.valor||0),0);
     return {f,r,diarias,faltas,presencas,adiantamentos,pagamentos,extras,obras,diasTrabalhados,brutoDiarias,pagDiarias,pendDiarias,totalAdiant,totalPagamentos,totalExtras};
