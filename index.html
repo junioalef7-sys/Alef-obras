@@ -7561,6 +7561,11 @@ function importRemapRow(row,maps){
       copy[key]=maps.funcionarios[String(copy[key])];
     }
   }
+  for(const key of ["gasto_id","gastoId"]){
+    if(copy[key]!=null && maps.gastos[String(copy[key])] != null){
+      copy[key]=maps.gastos[String(copy[key])];
+    }
+  }
   for(const key of ["material_id","materialId"]){
     if(copy[key]!=null && maps.materiais[String(copy[key])]!=null){
       copy[key]=maps.materiais[String(copy[key])];
@@ -7576,7 +7581,13 @@ async function importBackupData(backup){
     obras:{},
     funcionarios:{},
     materiais:{},
-    documentos:{}
+    documentos:{},
+    gastos:{},
+    pagamentos:{},
+    checklist:{},
+    diarias:{},
+    faltas:{},
+    diario:{}
   };
 
   /*
@@ -7618,10 +7629,12 @@ async function importBackupData(backup){
   }
 
   // 4) Tabelas dependentes. Todos os *_id conhecidos são remapeados.
+  // 4) Demais tabelas: importar uma por uma e guardar também os novos IDs.
+  // Isso evita que referências internas apontem para IDs antigos do backup.
   const tabelasDependentes=[
-    "diarias",
     "gastos",
     "pagamentos",
+    "diarias",
     "checklist",
     "faltas",
     "diario",
@@ -7630,7 +7643,9 @@ async function importBackupData(backup){
 
   for(const table of tabelasDependentes){
     for(const row of (backup.data[table]||[])){
-      await insertRow(table,importRemapRow(row,maps));
+      const antigo=row?.id;
+      const novo=await insertRow(table,importRemapRow(row,maps));
+      if(novo && antigo!=null && maps[table]) maps[table][String(antigo)]=novo.id;
     }
   }
 
@@ -7689,6 +7704,15 @@ async function importBackupData(backup){
       destino[novaObraId]=Array.isArray(lista)?lista:[];
     });
     saveServices(destino);
+  }
+
+  // 8) Fotos: o backup pode carregar as fotos do IndexedDB.
+  if(Array.isArray(backup.fotos) && backup.fotos.length && typeof savePhotoDB==='function'){
+    for(const foto of backup.fotos){
+      try{
+        await savePhotoDB({...foto,id:foto?.id || ('foto_'+Date.now()+'_'+Math.random().toString(36).slice(2))});
+      }catch(err){ console.warn('Foto não importada:',err); }
+    }
   }
 
   saveLocalData();
@@ -8172,8 +8196,13 @@ async function importRelatorioData(event){
     if(!limpo)throw new Error("Arquivo vazio");
 
     let bruto;
-    try{ bruto=JSON.parse(limpo); }
-    catch(e){ throw new Error("O arquivo não contém um JSON válido"); }
+    try{
+      bruto=JSON.parse(limpo);
+    }catch(e){
+      // Alguns compartilhamentos no celular acrescentam vírgula antes de } ou ].
+      try{ bruto=JSON.parse(limpo.replace(/,\s*([}\]])/g,"$1")); }
+      catch(e2){ throw new Error("O arquivo não contém um JSON válido"); }
+    }
 
     const backup=normalizarBackupEDIFIQ(bruto);
     if(!backup?.data || typeof backup.data!=="object")throw new Error("Backup EDIFIQ sem dados");
