@@ -2579,26 +2579,27 @@ advances
 
 }
 
-function aplicarAdiantamentos(
-funcId,
-allocations
-){
-
-if(!allocations?.length)return;
-
-const data=
-getAdvanceApplied();
-
-allocations.forEach(a=>{
-
-data[a.id]=
-Number(data[a.id]||0)+
-Number(a.valor||0);
-
-});
-
-saveAdvanceApplied(data);
-
+function aplicarAdiantamentos(funcId,allocations){
+  const data=getAdvanceApplied();
+  const ids=new Set();
+  (allocations||[]).forEach(a=>{
+    if(a?.id!=null){
+      const id=String(a.id); ids.add(id);
+      const g=(D.gastos||[]).find(x=>String(x.id)===id);
+      const valor=Number(g?.valor||a.valor||0);
+      data[id]=Math.max(Number(data[id]||0),valor);
+      if(g){ g.status='pago'; g.data_pagamento=today(); }
+    }
+  });
+  // Mantém a fonte de adiantamentos da equipe coerente com os gastos usados na folha.
+  (D.adiantamentos||[]).forEach(a=>{
+    if(String(a.funcionario_id)===String(funcId)){
+      const valor=Number(a.valor||0);
+      a.status='pago'; a.aplicado=true; a.aplicado_em=today(); a.valor_baixado=valor;
+    }
+  });
+  saveAdvanceApplied(data);
+  saveLocalData();
 }
 
 
@@ -5191,15 +5192,26 @@ for(const extra of (item.resumo.extrasPendentes||[])){
 
 aplicarAdiantamentos(item.id,item.resumo.allocations);
 const advAplicados=getAdvanceApplied();
-for(const adv of (item.resumo.advances||[])){
-  const g=(D.gastos||[]).find(x=>String(x.id)===String(adv.id));
-  if(g){
-    advAplicados[g.id]=Number(g.valor||0);
-    g.status="pago";
-    g.data_pagamento=data;
-  }
+const nomeFunc=normalize(item.f.nome);
+for(const g of (D.gastos||[])){
+  if(gastoCategoria(g)!=="Adiantamento") continue;
+  const pertence=String(g.funcionario_id||"")===String(item.id) || normalize(g.fornecedor)===nomeFunc || normalize(g.descricao).includes(nomeFunc);
+  if(!pertence) continue;
+  const valor=Number(g.valor||0);
+  if(valor<=0) continue;
+  advAplicados[g.id]=valor;
+  g.status="pago";
+  g.aplicado=true;
+  g.valor_baixado=valor;
+  g.data_pagamento=data;
+}
+for(const a of (D.adiantamentos||[])){
+  if(String(a.funcionario_id)!==String(item.id)) continue;
+  const valor=Number(a.valor||0);
+  a.status="pago"; a.aplicado=true; a.valor_baixado=valor; a.data_pagamento=data;
 }
 saveAdvanceApplied(advAplicados);
+saveLocalData();
 }
 
 closeM("pagEquipeM");
@@ -5998,7 +6010,13 @@ function getFolhaRange(){
 }
 function advanceAmountForEmployeeInRange(funcId,ini,fim){
   const f=D.funcionarios.find(x=>String(x.id)===String(funcId)); if(!f)return 0; const nome=normalize(f.nome);
-  return D.gastos.filter(g=>gastoCategoria(g)==="Adiantamento" && String(g.data||"")>=ini && String(g.data||"")<=fim && (normalize(g.fornecedor)===nome||normalize(g.descricao).includes(nome))).reduce((a,g)=>a+Number(g.valor||0),0);
+  const applied=getAdvanceApplied();
+  return D.gastos.filter(g=>{
+    if(gastoCategoria(g)!=="Adiantamento") return false;
+    if(String(g.status||"").toLowerCase()==="pago" || String(g.status||"").toLowerCase()==="quitado" || String(g.status||"").toLowerCase()==="liquidado") return false;
+    if(Number(g.valor||0)>0 && Number(applied[g.id]||0)>=Number(g.valor||0)) return false;
+    return String(g.data||"")>=ini && String(g.data||"")<=fim && (normalize(g.fornecedor)===nome||normalize(g.descricao).includes(nome));
+  }).reduce((a,g)=>a+Math.max(0,Number(g.valor||0)-Number(applied[g.id]||0)),0);
 }
 function atualizarFolha(){
   try{
