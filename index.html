@@ -7711,10 +7711,10 @@ async function importBackup(event){
 
   reader.onload=async()=>{
     try{
-      const backup=JSON.parse(reader.result);
+      const backup=normalizarBackupEDIFIQ(JSON.parse(String(reader.result||"").replace(/^\uFEFF/,"").trim()));
 
-      if(!backup.data){
-        toast("Backup inválido.");
+      if(!backup?.data){
+        toast("Backup EDIFIQ inválido.");
         return;
       }
 
@@ -8118,41 +8118,86 @@ function exportCSVAll(){
   downloadFile(blocks.join('\n'),'EDIFIQ_dados.csv','text/csv;charset=utf-8');
   toast('CSV exportado.');
 }
+function normalizarBackupEDIFIQ(obj){
+  // Aceita backups do EDIFIQ atuais e de versões anteriores.
+  if(!obj) throw new Error("Arquivo vazio");
+
+  // Backup completo atual: {app:"EDIFIQ", data:{...}}
+  if(obj.data && typeof obj.data === "object" && !Array.isArray(obj.data)){
+    return {...obj, app:obj.app||"EDIFIQ"};
+  }
+
+  // Alguns backups/exportações antigas gravavam as tabelas diretamente na raiz.
+  const tabelas=["obras","funcionarios","diarias","gastos","pagamentos","checklist","faltas","documentos","materiais","material_movimentos","presencas","diario"];
+  const temTabela=tabelas.some(k=>Array.isArray(obj[k]));
+  if(temTabela){
+    const data={};
+    tabelas.forEach(k=>{if(Array.isArray(obj[k]))data[k]=obj[k];});
+    return {app:"EDIFIQ",version:obj.version||"legacy",date:obj.date||new Date().toISOString(),data,funcionarioObras:obj.funcionarioObras,adiantamentosAplicados:obj.adiantamentosAplicados,servicosAdicionais:obj.servicosAdicionais,fotos:obj.fotos};
+  }
+
+  // Também aceita exportação de uma única tabela feita pelo próprio EDIFIQ.
+  if(Array.isArray(obj) && obj.length>=0){
+    throw new Error("Este é um arquivo de tabela, não um backup completo");
+  }
+
+  throw new Error("Formato de backup EDIFIQ não reconhecido");
+}
+
 async function importRelatorioData(event){
   const file=event.target.files?.[0];
   if(!file)return;
   const status=$("importRelatorioStatus");
+  const nome=String(file.name||"").toLowerCase();
 
   try{
-    if(file.name.toLowerCase().endsWith(".json")){
-      const backup=await new Promise((resolve,reject)=>{
-        const r=new FileReader();
-        r.onload=()=>{try{resolve(JSON.parse(r.result))}catch(e){reject(e)}};
-        r.onerror=()=>reject(r.error);
-        r.readAsText(file);
-      });
-
-      if(!backup?.data)throw new Error("Backup inválido");
-      if(!confirm("Importar este backup? Os registros serão adicionados e os vínculos de obras, funcionários, despesas, materiais e financeiro serão reconstruídos.")){
-        if(status)status.textContent="Importação cancelada.";
-        event.target.value="";
-        return;
-      }
-
-      await importBackupData(backup);
-      if(status)status.textContent="Backup importado com sucesso. Os vínculos e despesas foram reconstruídos.";
-      toast("Backup importado e distribuído.");
-    }else{
-      if(status)status.textContent="Para importar todos os dados com segurança, use o arquivo de backup JSON criado pelo EDIFIQ.";
-      toast("Use o backup JSON do EDIFIQ para importação completa.");
+    // A importação completa é feita pelo JSON criado em “Fazer backup completo”.
+    // Não dependemos apenas da extensão: alguns celulares alteram o MIME/extensão.
+    const ehJson=nome.endsWith(".json") || String(file.type||"").toLowerCase().includes("json") || !nome.includes(".");
+    if(!ehJson){
+      if(status)status.textContent="Para restauração completa, selecione o arquivo EDIFIQ_backup.json criado em Fazer backup completo.";
+      toast("Selecione o backup completo EDIFIQ_backup.json.");
+      return;
     }
-  }catch(e){
-    console.error(e);
-    if(status)status.textContent="Não foi possível importar o arquivo.";
-    toast("Arquivo inválido ou incompatível.");
-  }
 
-  event.target.value="";
+    const texto=await new Promise((resolve,reject)=>{
+      const r=new FileReader();
+      r.onload=()=>resolve(String(r.result||""));
+      r.onerror=()=>reject(r.error||new Error("Falha ao ler arquivo"));
+      r.readAsText(file,"utf-8");
+    });
+
+    // Remove BOM/espacos que podem ser adicionados ao compartilhar o arquivo no celular.
+    const limpo=texto.replace(/^\uFEFF/,"").trim();
+    if(!limpo)throw new Error("Arquivo vazio");
+
+    let bruto;
+    try{ bruto=JSON.parse(limpo); }
+    catch(e){ throw new Error("O arquivo não contém um JSON válido"); }
+
+    const backup=normalizarBackupEDIFIQ(bruto);
+    if(!backup?.data || typeof backup.data!=="object")throw new Error("Backup EDIFIQ sem dados");
+
+    const quantidade=Object.values(backup.data).reduce((n,v)=>n+(Array.isArray(v)?v.length:0),0);
+    if(!quantidade)throw new Error("Backup sem registros para importar");
+
+    if(!confirm(`Importar este backup do EDIFIQ?\n\nForam encontrados ${quantidade} registros. Os dados atuais serão preservados e os registros do backup serão adicionados, com reconstrução dos vínculos.`)){
+      if(status)status.textContent="Importação cancelada.";
+      return;
+    }
+
+    if(status)status.textContent="Importando dados…";
+    await importBackupData(backup);
+    if(status)status.textContent=`Backup importado com sucesso (${quantidade} registros).`;
+    toast("Backup do EDIFIQ importado com sucesso.");
+  }catch(e){
+    console.error("EDIFIQ importação:",e);
+    if(status)status.textContent="Arquivo incompatível. Use o backup completo criado pelo EDIFIQ (EDIFIQ_backup.json).";
+    toast("Não foi possível importar este arquivo. Verifique se é o backup completo do EDIFIQ.");
+  }finally{
+    // Permite selecionar novamente o mesmo arquivo.
+    event.target.value="";
+  }
 }
 
 
