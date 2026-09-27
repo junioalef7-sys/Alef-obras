@@ -2918,7 +2918,7 @@ function startEdifiqRealtime(){
   edifiqRealtimeRefreshTimer=setInterval(syncNow,5000);
   if(!window.__edifiqSyncEventsBound){
     window.__edifiqSyncEventsBound=true;
-    window.addEventListener('online',()=>{ setTimeout(async()=>{ await retryLocalCloudRows(); await retrySyncQueue(); await syncNow(); },250); });
+    window.addEventListener('online',()=>{ setTimeout(syncNow,250); });
     document.addEventListener('visibilitychange',()=>{ if(!document.hidden) setTimeout(syncNow,150); });
   }
   setTimeout(syncNow,150);
@@ -3209,9 +3209,7 @@ function mergeLocal(){
   const x=localData();
   for(const table of Object.keys(D)){
     if(!Array.isArray(x[table])) continue;
-    const localRowsRaw=x[table];
-    const tomb=edifiqTombstones()[table]||{};
-    const localRows=localRowsRaw.filter(r=>!tomb[String(r.id)]);
+    const localRows=x[table];
     const localById=new Map(localRows.map(r=>[String(r.id),r]));
     const cloudRows=Array.isArray(D[table])?D[table]:[];
     // Nunca substitui silenciosamente dados locais por uma lista menor vinda da nuvem.
@@ -3251,7 +3249,6 @@ async function loadTable(table){
 
 async function loadCloud(){
   if(!sb||!user)return;
-  if(navigator.onLine!==false){ await retryLocalCloudRows(); await retrySyncQueue(); }
   // Protege o estado antes de qualquer sincronização. Se o servidor responder incompleto,
   // o conjunto atual será preservado e poderá ser restaurado automaticamente.
   const estadoAntesCloud=stateCounts();
@@ -3268,78 +3265,25 @@ async function loadCloud(){
   saveLocalData();
 }
 
-async 
-/* ===== EDIFIQ OFFLINE-FIRST SYNC QUEUE ===== */
-const EDIFIQ_SYNC_QUEUE_KEY='EDIFIQ_SYNC_QUEUE_V3';
-const EDIFIQ_SYNC_TOMBSTONES_KEY='EDIFIQ_SYNC_TOMBSTONES_V3';
-function edifiqSyncQueue(){try{return JSON.parse(localStorage.getItem(EDIFIQ_SYNC_QUEUE_KEY)||'[]')||[]}catch{return[]}}
-function saveEdifiqSyncQueue(q){try{localStorage.setItem(EDIFIQ_SYNC_QUEUE_KEY,JSON.stringify(q||[]))}catch(e){console.warn('Fila offline',e)}}
-function edifiqTombstones(){try{return JSON.parse(localStorage.getItem(EDIFIQ_SYNC_TOMBSTONES_KEY)||'{}')||{}}catch{return{}}}
-function saveEdifiqTombstones(x){try{localStorage.setItem(EDIFIQ_SYNC_TOMBSTONES_KEY,JSON.stringify(x||{}))}catch(e){console.warn('Tombstones offline',e)}}
-function queueSyncOp(op){
-  const q=edifiqSyncQueue();
-  const key=`${op.type}:${op.table}:${op.id}`;
-  const idx=q.findIndex(x=>`${x.type}:${x.table}:${x.id}`===key);
-  if(idx>=0) q[idx]={...q[idx],...op,queued_at:q[idx].queued_at||Date.now()}; else q.push({...op,queued_at:Date.now()});
-  saveEdifiqSyncQueue(q);
-}
-function markSyncPending(table,id){
-  const row=D[table]?.find(x=>String(x.id)===String(id));
-  if(row) row._sync_pendente=true;
-  saveLocalData();
-}
-function markTombstone(table,id){
-  const t=edifiqTombstones(); if(!t[table]) t[table]={}; t[table][String(id)]=Date.now(); saveEdifiqTombstones(t);
-}
-function clearTombstone(table,id){
-  const t=edifiqTombstones(); if(t[table]){delete t[table][String(id)];saveEdifiqTombstones(t)}
-}
-async function retrySyncQueue(){
-  if(!sb||!user?.id||navigator.onLine===false) return;
-  let q=edifiqSyncQueue(); if(!q.length) return;
-  const remaining=[];
-  for(const op of q){
-    try{
-      if(op.type==='update'){
-        const {data,error}=await sb.from(op.table).update({...op.row}).eq('id',op.id).select().single();
-        if(error) throw error;
-        const idx=D[op.table]?.findIndex(x=>String(x.id)===String(op.id));
-        if(idx>=0) D[op.table][idx]={...data,_sync_pendente:false};
-        clearTombstone(op.table,op.id);
-      }else if(op.type==='delete'){
-        const {error}=await sb.from(op.table).delete().eq('id',op.id);
-        if(error) throw error;
-        D[op.table]=(D[op.table]||[]).filter(x=>String(x.id)!==String(op.id));
-        clearTombstone(op.table,op.id);
-      }
-    }catch(e){ remaining.push(op); console.warn('Fila offline ainda pendente',op.table,op.type,e?.message||e); }
-  }
-  saveEdifiqSyncQueue(remaining); saveLocalData();
-}
-
-function retryLocalCloudRows(){
-  if(!sb||!user?.id||navigator.onLine===false) return Promise.resolve();
-  const tables=["obras","funcionarios","diarias","gastos","pagamentos","checklist","faltas","documentos"];
-  const run=async()=>{
-    for(const table of tables){
-      const rows=Array.isArray(D[table])?D[table]:[];
-      const locals=rows.filter(r=>String(r?.id||'').startsWith('local_'));
-      for(const local of locals){
-        try{
-          const payload={...local,user_id:user.id}; delete payload.id; delete payload._sync_pendente;
-          const {data,error}=await sb.from(table).insert(payload).select().single();
-          if(!error&&data){
-            const idx=D[table].findIndex(x=>String(x.id)===String(local.id));
-            if(idx>=0) D[table][idx]={...data,_sync_pendente:false};
-            const q=edifiqSyncQueue().filter(x=>!(String(x.table)===String(table)&&String(x.id)===String(local.id))); saveEdifiqSyncQueue(q);
-          }
-        }catch(e){ console.warn('Retry cloud',table,e); }
-      }
+async function retryLocalCloudRows(){
+  if(!sb||!user?.id) return;
+  const tables=["obras","funcionarios","diarias","gastos","pagamentos","checklist","faltas"];
+  for(const table of tables){
+    const rows=Array.isArray(D[table])?D[table]:[];
+    const locals=rows.filter(r=>String(r?.id||'').startsWith('local_'));
+    for(const local of locals){
+      try{
+        const payload={...local,user_id:user.id};
+        delete payload.id;
+        const {data,error}=await sb.from(table).insert(payload).select().single();
+        if(!error&&data){
+          const idx=D[table].findIndex(x=>String(x.id)===String(local.id));
+          if(idx>=0) D[table][idx]=data;
+          saveLocalData();
+        }
+      }catch(e){ console.warn('Retry cloud',table,e); }
     }
-    await retrySyncQueue();
-    saveLocalData();
-  };
-  return run();
+  }
 }
 
 async function insertRow(
@@ -3407,7 +3351,6 @@ Object.entries(payload)
 
 for(const tentativa of attempts){
 
-if(navigator.onLine===false) break;
 try{
 
 const{data,error}=
@@ -3492,7 +3435,7 @@ const anterior={...D[table][index]};
 D[table][index]={
 ...D[table][index],
 ...row,
-_sync_pendente:true
+_sync_pendente:String(id).startsWith('local_') ? true : D[table][index]._sync_pendente
 };
 saveLocalData();
 renderAll();
@@ -3501,9 +3444,8 @@ if(String(id).startsWith("local_")){
 return D[table][index];
 }
 
-if(!sb||!user||navigator.onLine===false){
-  if(!String(id).startsWith('local_')) queueSyncOp({type:'update',table,id:String(id),row:{...row}});
-  return D[table][index];
+if(!sb||!user){
+return D[table][index];
 }
 
 try{
@@ -3541,19 +3483,13 @@ return data;
 console.warn("Supabase recusou atualização",table,error?.message);
 }
 
-queueSyncOp({type:'update',table,id:String(id),row:{...row}});
-D[table][index]._sync_pendente=true;
-saveLocalData();
-toast("Atualizado neste aparelho. Será sincronizado quando a conexão voltar.");
+toast("Atualizado no aparelho. O servidor recusou a alteração.");
 return D[table][index];
 
 }catch(e){
 
 console.warn("Erro Supabase ao atualizar",table,e);
-queueSyncOp({type:'update',table,id:String(id),row:{...row}});
-D[table][index]._sync_pendente=true;
-saveLocalData();
-toast("Atualizado neste aparelho. Será sincronizado quando a conexão voltar.");
+toast("Atualizado no aparelho. Não foi possível sincronizar agora.");
 return D[table][index];
 
 }
@@ -3790,12 +3726,14 @@ const{error}=await sb
 .eq("id",id);
 
 if(error){
-  queueSyncOp({type:'delete',table,id:String(id)});
-  markTombstone(table,id);
-  D[table]=D[table].filter(x=>String(x.id)!==String(id));
-  saveLocalData(); renderAll();
-  toast("Excluído neste aparelho. Será sincronizado quando a conexão voltar.");
-  return;
+
+toast(
+"Erro ao excluir: "+
+error.message
+);
+
+return;
+
 }
 
 D[table]=D[table].filter(
