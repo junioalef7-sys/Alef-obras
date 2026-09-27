@@ -1850,6 +1850,10 @@ material_movimentos:[]
 const LOCAL_KEY="edifiq_local_v3";
 const FUNC_OBRA_KEY="edifiq_func_obras_v2";
 const ADV_KEY="edifiq_adiantamentos_aplicados_v1";
+const PAID_DIARIAS_KEY="edifiq_diarias_baixadas_v2";
+function getPaidDiariasMap(){try{return JSON.parse(localStorage.getItem(PAID_DIARIAS_KEY)||"{}");}catch(_){return {};}}
+function markDiariasPaid(ids){const m=getPaidDiariasMap();(ids||[]).forEach(id=>{if(id!=null)m[String(id)]=true;});try{localStorage.setItem(PAID_DIARIAS_KEY,JSON.stringify(m));}catch(_){}return m;}
+function isDiariaMarkedPaid(id){return !!getPaidDiariasMap()[String(id)];}
 const SERVICE_KEY="edifiq_servicos_adicionais_v1";
 const DEFAULT_CHECKLIST=["Gabarito","Locação","Alvenaria","Chapisco","Reboco","Pintura","Limpeza","Final da obra"];
 
@@ -2432,6 +2436,7 @@ d.valor_diaria||0
 
 function diariaEstaPaga(d){
 
+if(isDiariaMarkedPaid(d?.id)) return true;
 const status=String(d?.status||"pendente").trim().toLowerCase();
 
 return status==="pago" ||
@@ -2478,11 +2483,9 @@ const applied=getAdvanceApplied();
 return D.gastos
 .filter(g=>{
 
-if(
-gastoCategoria(g)!=="Adiantamento"
-){
-return false;
-}
+if(gastoCategoria(g)!=="Adiantamento") return false;
+if(String(g.status||"").toLowerCase()==="pago") return false;
+if(Number(g.valor||0)>0 && Number(applied[g.id]||0)>=Number(g.valor||0)) return false;
 
 const fornecedor=
 normalize(g.fornecedor);
@@ -5169,17 +5172,13 @@ for(const diaria of item.pendingItems){
   const atualizado=await updateRow(
     "diarias",
     diaria.id,
-    {status:"pago",pago:true,data_pagamento:data}
+    {status:"pago",pago:true,paga:true,data_pagamento:data}
   );
-  // Garantia local: o fechamento nunca deve continuar mostrando a diária
-  // como pendente se o pagamento já foi processado no aparelho.
   const localDia=D.diarias.find(d=>String(d.id)===String(diaria.id));
   if(localDia){
-    localDia.status="pago";
-    localDia.pago=true;
-    localDia.paga=true;
-    localDia.data_pagamento=data;
+    localDia.status="pago"; localDia.pago=true; localDia.paga=true; localDia.data_pagamento=data;
   }
+  markDiariasPaid([diaria.id]);
   if(atualizado)baixados++;
 }
 
@@ -5191,6 +5190,16 @@ for(const extra of (item.resumo.extrasPendentes||[])){
 }
 
 aplicarAdiantamentos(item.id,item.resumo.allocations);
+const advAplicados=getAdvanceApplied();
+for(const adv of (item.resumo.advances||[])){
+  const g=(D.gastos||[]).find(x=>String(x.id)===String(adv.id));
+  if(g){
+    advAplicados[g.id]=Number(g.valor||0);
+    g.status="pago";
+    g.data_pagamento=data;
+  }
+}
+saveAdvanceApplied(advAplicados);
 }
 
 closeM("pagEquipeM");
@@ -6050,12 +6059,13 @@ function renderFechamentoFolha(){
     const rows=funcionarios.map(f=>{
       const id=String(f.id);
       const ds=dias.filter(d=>String(d.funcionario_id)===id);
-      const bruto=ds.reduce((a,d)=>a+diariaValor(d),0);
+      const dsPendentes=ds.filter(d=>!diariaEstaPaga(d));
+      const bruto=dsPendentes.reduce((a,d)=>a+diariaValor(d),0);
       const adiant=advanceAmountForEmployeeInRange(id,ini,fim);
       const pago=ds.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);
-      const pendenteDiarias=ds.filter(d=>!diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
+      const pendenteDiarias=bruto;
       const liquido=Math.max(0,bruto-adiant);
-      const pendente=Math.max(0,liquido-pago);
+      const pendente=Math.max(0,liquido);
 
       const obraFunc=getFuncObra(id);
       const obrasDaFolha=[...new Set(
@@ -6080,7 +6090,7 @@ function renderFechamentoFolha(){
     const pendente=rows.reduce((a,r)=>a+r.pendente,0);
 
     if($("folhaFuncionarios"))$("folhaFuncionarios").textContent=rows.length;
-    if($("folhaDiarias"))$("folhaDiarias").textContent=dias.length;
+    if($("folhaDiarias"))$("folhaDiarias").textContent=dias.filter(d=>!diariaEstaPaga(d)).length;
     if($("folhaBruto"))$("folhaBruto").textContent=money(bruto);
     if($("folhaAdiant"))$("folhaAdiant").textContent=money(adiant);
     if($("folhaLiquido"))$("folhaLiquido").textContent=money(liquido);
@@ -6119,7 +6129,15 @@ function renderFechamentoFolha(){
 }
 function renderEquipeOverview(){
   const ativos=D.funcionarios.filter(f=>f.ativo!==false).length; if($("eqAtivos"))$("eqAtivos").textContent=ativos;
-  const {ini,fim}=getPeriodDates(15); const ds=D.diarias.filter(d=>String(d.data||"")>=ini&&String(d.data||"")<=fim); const bruto=ds.reduce((a,d)=>a+diariaValor(d),0); const pago=ds.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0); const ids=[...new Set(ds.map(d=>String(d.funcionario_id)))]; const adv=ids.reduce((a,id)=>a+advanceAmountForEmployeeInRange(id,ini,fim),0); const pend=Math.max(0,bruto-pago-adv);
+  const {ini,fim}=getPeriodDates(15);
+  const ds=D.diarias.filter(d=>String(d.data||"")>=ini&&String(d.data||"")<=fim);
+  const pendentes=ds.filter(d=>!diariaEstaPaga(d));
+  const pagos=ds.filter(diariaEstaPaga);
+  const bruto=pendentes.reduce((a,d)=>a+diariaValor(d),0);
+  const pago=pagos.reduce((a,d)=>a+diariaValor(d),0);
+  const ids=[...new Set(ds.map(d=>String(d.funcionario_id)))];
+  const adv=ids.reduce((a,id)=>a+advanceAmountForEmployeeInRange(id,ini,fim),0);
+  const pend=Math.max(0,bruto-adv);
   if($("eqDiasPeriodo"))$("eqDiasPeriodo").textContent=ds.length; if($("eqBrutoPeriodo"))$("eqBrutoPeriodo").textContent=money(bruto); if($("eqPagoPeriodo"))$("eqPagoPeriodo").textContent=money(pago); if($("eqAdiantPeriodo"))$("eqAdiantPeriodo").textContent=money(adv); if($("eqPendentePeriodo"))$("eqPendentePeriodo").textContent=money(pend);
   const fo=$("folhaObra"); if(fo){const cur=fo.value||"all";fo.innerHTML='<option value="all">Todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');if([...fo.options].some(x=>x.value===cur))fo.value=cur;}
   renderFechamentoFolha();
