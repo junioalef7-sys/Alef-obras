@@ -1986,6 +1986,7 @@ body{min-height:100vh;min-height:100dvh}
 </div>
 </div>
 <div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 
 const SUPA_URL="https://lwqntzwajjgkvtynwdjg.supabase.co";
@@ -1995,6 +1996,240 @@ let sb=null;
 let user=null;
 let editObraId=null;
 let editFuncId=null;
+
+/* =========================================================
+   AUTENTICAÇÃO EDIFIQ — correção do botão "Entrar"
+   ========================================================= */
+function authMsg(msg, type=""){
+  const el=$("authMsg");
+  if(!el) return;
+  el.textContent=msg||"";
+  el.className="sub "+(type||"");
+}
+
+async function ensureSupabaseClient(){
+  if(sb) return true;
+  try{
+    if(!window.supabase || typeof window.supabase.createClient!=="function"){
+      authMsg("Não foi possível carregar o serviço de login. Verifique a internet e tente novamente.","error");
+      return false;
+    }
+    sb=window.supabase.createClient(SUPA_URL,SUPA_KEY,{
+      auth:{
+        persistSession:true,
+        autoRefreshToken:true,
+        detectSessionInUrl:true,
+        storage:window.localStorage
+      }
+    });
+    bindAuthState();
+    return true;
+  }catch(e){
+    console.error("Supabase:",e);
+    authMsg("Não foi possível iniciar o login. Tente novamente.","error");
+    return false;
+  }
+}
+
+function showApp(){
+  $("auth")?.classList.add("hidden");
+  $("app")?.classList.remove("hidden");
+}
+
+function showAuth(){
+  $("app")?.classList.add("hidden");
+  $("auth")?.classList.remove("hidden");
+}
+
+function mergeRows(localRows, cloudRows){
+  const out=new Map();
+  [...(localRows||[]),...(cloudRows||[])].forEach(row=>{
+    const key=String(row?.id ?? JSON.stringify(row));
+    out.set(key,{...(out.get(key)||{}),...(row||{})});
+  });
+  return [...out.values()];
+}
+
+async function loadCloud(){
+  if(!sb || !user) return false;
+  const tables=["obras","funcionarios","diarias","gastos","pagamentos","checklist","faltas","presencas"];
+  let loaded=false;
+  for(const table of tables){
+    try{
+      const {data,error}=await sb.from(table).select("*").eq("user_id",user.id);
+      if(error){
+        console.warn("EDIFIQ: não foi possível carregar",table,error.message||error);
+        continue;
+      }
+      if(Array.isArray(data) && data.length){
+        D[table]=mergeRows(D[table],data);
+        loaded=true;
+      }
+    }catch(e){
+      console.warn("EDIFIQ: erro ao carregar",table,e);
+    }
+  }
+  return loaded;
+}
+
+async function login(){
+  const email=String($("email")?.value||"").trim().toLowerCase();
+  const password=String($("password")?.value||"");
+  if(!email || !email.includes("@")){
+    authMsg("Digite um e-mail válido.","error");
+    $("email")?.focus();
+    return false;
+  }
+  if(!password){
+    authMsg("Digite sua senha.","error");
+    $("password")?.focus();
+    return false;
+  }
+
+  authMsg("Entrando...");
+  const ok=await ensureSupabaseClient();
+  if(!ok) return false;
+
+  try{
+    const {data,error}=await sb.auth.signInWithPassword({email,password});
+    if(error) throw error;
+
+    user=data?.user||data?.session?.user||null;
+    if(!user){
+      authMsg("Login não concluído. Tente novamente.","error");
+      return false;
+    }
+
+    localStorage.setItem("EDIFIQ_AUTH_MODE","cloud");
+    showApp();
+    authMsg("");
+    try{
+      await loadCloud();
+      await limparFuncionariosSemIdentificacao();
+      saveLocalData();
+      renderAll();
+    }catch(e){
+      console.warn("Login feito, mas a sincronização inicial falhou:",e);
+      renderAll();
+    }
+    toast("Login realizado com sucesso.");
+    return true;
+  }catch(error){
+    console.error("EDIFIQ login:",error);
+    const msg=String(error?.message||"").toLowerCase();
+    if(msg.includes("invalid login credentials")){
+      authMsg("E-mail ou senha incorretos.","error");
+    }else if(msg.includes("email not confirmed")){
+      authMsg("Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada.","error");
+    }else if(msg.includes("failed to fetch") || msg.includes("network")){
+      authMsg("Sem conexão com o servidor. Você pode usar o modo local.","error");
+    }else{
+      authMsg(error?.message||"Não foi possível entrar.","error");
+    }
+    return false;
+  }
+}
+
+async function signup(){
+  const email=String($("email")?.value||"").trim().toLowerCase();
+  const password=String($("password")?.value||"");
+  if(!email || !email.includes("@")){
+    authMsg("Digite um e-mail válido para criar a conta.","error");
+    return false;
+  }
+  if(password.length<6){
+    authMsg("A senha precisa ter pelo menos 6 caracteres.","error");
+    return false;
+  }
+  authMsg("Criando conta...");
+  const ok=await ensureSupabaseClient();
+  if(!ok) return false;
+
+  try{
+    const redirectTo=window.location.origin+window.location.pathname;
+    const {data,error}=await sb.auth.signUp({
+      email,
+      password,
+      options:{emailRedirectTo:redirectTo}
+    });
+    if(error) throw error;
+
+    if(data?.session){
+      user=data.user||data.session.user;
+      localStorage.setItem("EDIFIQ_AUTH_MODE","cloud");
+      showApp();
+      await loadCloud();
+      saveLocalData();
+      renderAll();
+      toast("Conta criada com sucesso.");
+    }else{
+      authMsg("Conta criada. Confirme seu e-mail e depois entre no aplicativo.","success");
+    }
+    return true;
+  }catch(error){
+    console.error("EDIFIQ signup:",error);
+    authMsg(error?.message||"Não foi possível criar a conta.","error");
+    return false;
+  }
+}
+
+async function resetPassword(){
+  const email=String($("email")?.value||"").trim().toLowerCase();
+  if(!email || !email.includes("@")){
+    authMsg("Digite seu e-mail para receber o link de recuperação.","error");
+    $("email")?.focus();
+    return false;
+  }
+  authMsg("Enviando link de recuperação...");
+  const ok=await ensureSupabaseClient();
+  if(!ok) return false;
+
+  try{
+    const redirectTo=window.location.origin+window.location.pathname;
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo});
+    if(error) throw error;
+    authMsg("Link de recuperação enviado para seu e-mail.","success");
+    return true;
+  }catch(error){
+    console.error("EDIFIQ reset:",error);
+    authMsg(error?.message||"Não foi possível enviar o link.","error");
+    return false;
+  }
+}
+
+async function logout(){
+  try{ if(sb) await sb.auth.signOut(); }catch(e){console.warn("Logout:",e);}
+  user=null;
+  localStorage.removeItem("EDIFIQ_AUTH_MODE");
+  showAuth();
+  authMsg("");
+  renderAll();
+}
+
+function enterLocalMode(){
+  user=null;
+  localStorage.setItem("EDIFIQ_AUTH_MODE","local");
+  showApp();
+  authMsg("");
+  try{renderAll();toast("Modo local ativado. Os dados ficam salvos neste aparelho.");}catch(e){console.error(e);}
+  return true;
+}
+
+/* Se a sessão expirar, volta somente para o login sem apagar os dados locais. */
+async function bindAuthState(){
+  if(!sb || !sb.auth || window.__edifiqAuthBound) return;
+  window.__edifiqAuthBound=true;
+  sb.auth.onAuthStateChange(async (_event,session)=>{
+    if(session?.user){
+      user=session.user;
+      localStorage.setItem("EDIFIQ_AUTH_MODE","cloud");
+      showApp();
+    }else if(localStorage.getItem("EDIFIQ_AUTH_MODE")==="cloud"){
+      user=null;
+      showAuth();
+    }
+  });
+}
 
 const D={
 obras:[],
@@ -2889,14 +3124,20 @@ document.addEventListener("DOMContentLoaded",async()=>{
     // Se o servidor estiver indisponível, os dados locais continuam preservados.
     try{
       if(await ensureSupabaseClient()){
-        const result=await Promise.race([sb.auth.getSession(),new Promise(resolve=>setTimeout(()=>resolve({data:{session:null},timeout:true}),5000))]);
+        const result=await Promise.race([
+          sb.auth.getSession(),
+          new Promise(resolve=>setTimeout(()=>resolve({data:{session:null},timeout:true}),5000))
+        ]);
         if(result?.data?.session){
           user=result.data.session.user;
-          $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
+          localStorage.setItem("EDIFIQ_AUTH_MODE","cloud");
+          showApp();
           await loadCloud();
           await limparFuncionariosSemIdentificacao();
           saveLocalData();
           renderAll();
+        }else if(localStorage.getItem("EDIFIQ_AUTH_MODE")==="local"){
+          enterLocalMode();
         }
       }
     }catch(cloudErr){console.warn("Recuperação da nuvem indisponível; mantendo dados locais.",cloudErr);}
