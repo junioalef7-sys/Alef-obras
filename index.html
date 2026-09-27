@@ -2623,7 +2623,7 @@ function openBackupConfig(){
     m.className='modal open';
     m.innerHTML=`<div class="modalBox" style="max-width:720px;max-height:90vh;overflow:auto">
       <div class="modalHead"><div><h2>💾 Backup</h2><p class="sub">Central de proteção, recuperação e exportação dos dados do EDIFIQ.</p></div><button class="x" onclick="closeM('edBackupConfigModal')">×</button></div>
-      <div class="card"><h3>Proteção dos dados</h3><p class="sub">O backup não substitui nem apaga os dados atuais. A importação também preserva os registros existentes e mescla somente o que for necessário.</p><div class="listActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar backup</button><input id="backupImportFile" accept=".json,application/json,text/json" onchange="importRelatorioData(event)" style="display:none" type="file"/></div></div>
+      <div class="card"><h3>Proteção dos dados</h3><p class="sub">O backup não substitui nem apaga os dados atuais. A importação também preserva os registros existentes e mescla somente o que for necessário.</p><div class="listActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar backup</button><input id="backupImportFile" accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importRelatorioData(event)" style="display:none" type="file"/></div></div>
       <div class="card"><h3>Exportar relatórios</h3><div class="reportGrid"><button class="btn reportAction" onclick="exportPDF()"><b>📄 Exportar PDF</b><small>Relatório pronto para salvar ou compartilhar.</small></button><button class="btn reportAction" onclick="exportExcel()"><b>📊 Exportar Excel</b><small>Obras, equipe, diárias, financeiro e checklist.</small></button><button class="btn reportAction" onclick="exportCSVAll()"><b>📁 Exportar CSV</b><small>Dados compatíveis com planilhas.</small></button><button class="btn reportAction" onclick="exportFull()"><b>🗂️ Exportar JSON</b><small>Backup completo para recuperação futura.</small></button></div></div>
       <div class="card"><h3>📊 Acesso rápido aos relatórios</h3><p class="sub">Os recursos continuam no menu principal, mas também ficam centralizados aqui para consulta e exportação.</p><div class="reportGrid"><button class="btn reportAction" type="button" onclick="openRelatorioCliente()"><b>📄 Relatório para Cliente</b><small>Gerar acompanhamento por obra e cliente.</small></button><button class="btn reportAction" type="button" onclick="openRelatorioTrabalhador()"><b>👷 Relatório do Trabalhador</b><small>Dados cadastrais, dias, obras, pagamentos e fechamento.</small></button><button class="btn reportAction" type="button" onclick="openPagamentoEquipe()"><b>👷 Pagamento da Equipe</b><small>Folha, diárias, adiantamentos e líquido.</small></button><button class="btn reportAction" type="button" onclick="openAdiantamento()"><b>＋ Adiantamento</b><small>Registrar e controlar adiantamentos.</small></button><button class="btn reportAction" type="button" onclick="go('diarias');closeM('edBackupConfigModal')"><b>📅 Histórico de Diárias</b><small>Consultar os registros por período e obra.</small></button></div></div>
       <div class="card dangerDataCard"><h3>🗑️ Apagar dados</h3><p class="sub">Escolha o setor que deseja apagar. O aplicativo pedirá confirmação antes de excluir.</p><div class="reportGrid dataDeleteGrid"><button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar Equipe</b><small>Funcionários, diárias, faltas e registros.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar Obras</b><small>Obras e registros vinculados.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar Financeiro</b><small>Receitas, despesas e pagamentos.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar Tudo</b><small>Apaga todos os dados do aplicativo.</small></button></div><div class="note dangerNote">⚠️ Esta ação não pode ser desfeita. Faça um backup antes de apagar.</div></div>
@@ -7488,10 +7488,7 @@ adiantamentosAplicados:
 getAdvanceApplied(),
 
 servicosAdicionais:
-getServices(),
-
-paidDiarias:
-getPaidDiariasMap()
+getServices()
 
 };
 
@@ -7564,11 +7561,6 @@ function importRemapRow(row,maps){
       copy[key]=maps.funcionarios[String(copy[key])];
     }
   }
-  for(const key of ["gasto_id","gastoId"]){
-    if(copy[key]!=null && maps.gastos[String(copy[key])] != null){
-      copy[key]=maps.gastos[String(copy[key])];
-    }
-  }
   for(const key of ["material_id","materialId"]){
     if(copy[key]!=null && maps.materiais[String(copy[key])]!=null){
       copy[key]=maps.materiais[String(copy[key])];
@@ -7577,301 +7569,590 @@ function importRemapRow(row,maps){
   return copy;
 }
 
-function normalizarBackupEDIFIQ(bruto){
-  if(!bruto || typeof bruto!=="object" || Array.isArray(bruto)){
-    throw new Error("Formato de backup inválido.");
+async function importBackupData(backup){
+  if(!backup || !backup.data) throw new Error("Backup inválido.");
+
+  const maps={
+    obras:{},
+    funcionarios:{},
+    materiais:{},
+    documentos:{}
+  };
+
+  /*
+   * IMPORTAÇÃO CORRIGIDA:
+   * O código antigo apagava os IDs antes de inserir cada tabela.
+   * Assim a obra/funcionário recebia um novo ID, mas gastos,
+   * diárias, pagamentos e checklist continuavam apontando para
+   * os IDs antigos. Os totais apareciam, porém as despesas ficavam
+   * sem obra/funcionário e não eram distribuídas.
+   *
+   * Agora cada registro pai é inserido primeiro e seu novo ID é
+   * guardado. Os registros dependentes usam esse mapa.
+   */
+
+  // 1) Obras — primeiro para criar o mapa ID antigo -> ID novo.
+  for(const row of (backup.data.obras||[])){
+    const antigo=row?.id;
+    const novo=await insertRow("obras",importRemapRow(row,maps));
+    if(novo && antigo!=null) maps.obras[String(antigo)]=novo.id;
   }
 
-  const tabelas=[
-    "obras","funcionarios","diarias","gastos","pagamentos",
-    "checklist","faltas","presencas","diario","documentos",
-    "materiais","material_movimentos"
+  // 2) Funcionários — também precisam ser criados antes das diárias.
+  for(const row of (backup.data.funcionarios||[])){
+    const antigo=row?.id;
+    const novo=await insertRow("funcionarios",importRemapRow(row,maps));
+    if(novo && antigo!=null) maps.funcionarios[String(antigo)]=novo.id;
+  }
+
+  // 3) Materiais são locais. Cria novos IDs e guarda o vínculo.
+  if(Array.isArray(backup.data.materiais)){
+    for(const row of backup.data.materiais){
+      const antigo=row?.id;
+      const novoId="mat_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+      const novo=importRemapRow(row,maps);
+      novo.id=novoId;
+      D.materiais.push(novo);
+      if(antigo!=null) maps.materiais[String(antigo)]=novoId;
+    }
+  }
+
+  // 4) Tabelas dependentes. Todos os *_id conhecidos são remapeados.
+  const tabelasDependentes=[
+    "diarias",
+    "gastos",
+    "pagamentos",
+    "checklist",
+    "faltas",
+    "diario",
+    "documentos"
   ];
 
-  let fonte=
-    (bruto.data && typeof bruto.data==="object" && !Array.isArray(bruto.data)) ? bruto.data :
-    (bruto.dados && typeof bruto.dados==="object" && !Array.isArray(bruto.dados)) ? bruto.dados :
-    (bruto.estado && typeof bruto.estado==="object" && !Array.isArray(bruto.estado)) ? bruto.estado :
-    (bruto.state && typeof bruto.state==="object" && !Array.isArray(bruto.state)) ? bruto.state :
-    (bruto.database && typeof bruto.database==="object" && !Array.isArray(bruto.database)) ? bruto.database :
-    (bruto.D && typeof bruto.D==="object" && !Array.isArray(bruto.D)) ? bruto.D :
-    bruto;
-
-  if(fonte && fonte.data && typeof fonte.data==="object" && !Array.isArray(fonte.data)){
-    const temTabela=tabelas.some(t=>Object.prototype.hasOwnProperty.call(fonte,t));
-    if(!temTabela) fonte=fonte.data;
-  }
-
-  const data={};
-  let total=0;
-
-  for(const tabela of tabelas){
-    let rows=fonte?.[tabela];
-
-    if(!Array.isArray(rows)){
-      const aliases={
-        funcionarios:["equipe","funcs","trabalhadores"],
-        diarias:["dias","presencas_diarias"],
-        gastos:["despesas"],
-        pagamentos:["recebimentos","receitas_pagamentos"],
-        checklist:["checklists"],
-        faltas:["ausencias"],
-        presencas:["presenca"],
-        diario:["diarios"],
-        documentos:["docs"],
-        materiais:["estoque"],
-        material_movimentos:["movimentos_materiais"]
-      };
-      for(const alias of (aliases[tabela]||[])){
-        if(Array.isArray(fonte?.[alias])){ rows=fonte[alias]; break; }
-      }
+  for(const table of tabelasDependentes){
+    for(const row of (backup.data[table]||[])){
+      await insertRow(table,importRemapRow(row,maps));
     }
-
-    data[tabela]=Array.isArray(rows) ? rows : [];
-    total+=data[tabela].length;
   }
 
-  if(total===0) throw new Error("Backup EDIFIQ sem registros.");
-
-  return {
-    app:"EDIFIQ",
-    version:String(bruto.version||"legado"),
-    date:bruto.date||bruto.dataBackup||bruto.created_at||null,
-    data,
-    fotos:Array.isArray(bruto.fotos)?bruto.fotos:(Array.isArray(bruto.photos)?bruto.photos:[]),
-    funcionarioObras:
-      (bruto.funcionarioObras && typeof bruto.funcionarioObras==="object") ? bruto.funcionarioObras :
-      ((bruto.funcionario_obras && typeof bruto.funcionario_obras==="object") ? bruto.funcionario_obras : {}),
-    adiantamentosAplicados:
-      (bruto.adiantamentosAplicados && typeof bruto.adiantamentosAplicados==="object") ? bruto.adiantamentosAplicados : {},
-    servicosAdicionais:
-      (bruto.servicosAdicionais && typeof bruto.servicosAdicionais==="object") ? bruto.servicosAdicionais :
-      ((bruto.servicos_adicionais && typeof bruto.servicos_adicionais==="object") ? bruto.servicos_adicionais : {}),
-    paidDiarias:
-      (bruto.paidDiarias && typeof bruto.paidDiarias==="object") ? bruto.paidDiarias :
-      ((bruto.diariasBaixadas && typeof bruto.diariasBaixadas==="object") ? bruto.diariasBaixadas : {})
-  };
-}
-
-async function importBackupData(backup){
-  if(!backup || !backup.data || typeof backup.data!=="object") throw new Error("Backup EDIFIQ inválido.");
-
-  const maps={obras:{},funcionarios:{},materiais:{},gastos:{},pagamentos:{},checklist:{},diarias:{},faltas:{},diario:{},documentos:{},presencas:{}};
-  const makeLocalId=()=>`local_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-  const arr=(table)=>Array.isArray(backup.data[table])?backup.data[table]:[];
-  const ensureTable=(table)=>{if(!Array.isArray(D[table]))D[table]=[]};
-
-  // Importação OFFLINE-FIRST:
-  // 1) não depende do Supabase para concluir a restauração;
-  // 2) preserva os registros atuais;
-  // 3) evita duplicar registros que já existem pelo mesmo ID;
-  // 4) cria novos IDs locais e remapeia todos os vínculos.
-  const upsertLocal=async(table,row,map)=>{
-    ensureTable(table);
-    const antigo=row?.id!=null?String(row.id):"";
-    if(antigo){
-      const existente=D[table].find(x=>String(x.id)===antigo);
-      if(existente){
-        map[antigo]=existente.id;
-        return existente;
-      }
+  // 5) Movimentações de materiais — só depois que os materiais têm novos IDs.
+  if(Array.isArray(backup.data.material_movimentos)){
+    for(const row of backup.data.material_movimentos){
+      const novo=importRemapRow(row,maps);
+      novo.id="mm_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+      D.material_movimentos.push(novo);
     }
-    const novo={...row};
-    delete novo.created_at;
-    delete novo.updated_at;
-    delete novo.user_id;
-    novo.id=makeLocalId();
-    novo._sync_pendente=true;
-    D[table].unshift(novo);
-    if(antigo)map[antigo]=novo.id;
-    return novo;
-  };
-
-  const remap=(row)=>{
-    const copy={...(row||{})};
-    delete copy.user_id;
-    delete copy.created_at;
-    delete copy.updated_at;
-    for(const key of ["obra_id","obraId"]) if(copy[key]!=null && maps.obras[String(copy[key])]!==undefined) copy[key]=maps.obras[String(copy[key])];
-    for(const key of ["funcionario_id","funcionarioId"]) if(copy[key]!=null && maps.funcionarios[String(copy[key])]!==undefined) copy[key]=maps.funcionarios[String(copy[key])];
-    for(const key of ["gasto_id","gastoId"]) if(copy[key]!=null && maps.gastos[String(copy[key])]!==undefined) copy[key]=maps.gastos[String(copy[key])];
-    for(const key of ["material_id","materialId"]) if(copy[key]!=null && maps.materiais[String(copy[key])]!==undefined) copy[key]=maps.materiais[String(copy[key])];
-    return copy;
-  };
-
-  // Pais primeiro: obras e funcionários.
-  for(const row of arr("obras")) await upsertLocal("obras",row,maps.obras);
-  for(const row of arr("funcionarios")) await upsertLocal("funcionarios",remap(row),maps.funcionarios);
-
-  // Materiais são armazenados localmente/IndexedDB.
-  ensureTable("materiais");
-  for(const row of arr("materiais")){
-    const antigo=row?.id!=null?String(row.id):"";
-    if(antigo){
-      const existente=D.materiais.find(x=>String(x.id)===antigo);
-      if(existente){maps.materiais[antigo]=existente.id;continue;}
-    }
-    const novo=remap(row);
-    novo.id=makeLocalId();
-    D.materiais.unshift(novo);
-    if(antigo)maps.materiais[antigo]=novo.id;
   }
 
-  // Tabelas dependentes.
-  for(const table of ["gastos","pagamentos","diarias","checklist","faltas","diario","documentos","presencas"]){
-    for(const row of arr(table)) await upsertLocal(table,remap(row),maps[table]||{});
+  // 6) Relação funcionário -> obra usada pelas versões locais do aplicativo.
+  if(backup.funcionarioObras){
+    const origem=backup.funcionarioObras;
+    const destino={};
+    Object.entries(origem).forEach(([funcId,obraId])=>{
+      const nf=maps.funcionarios[String(funcId)] ?? funcId;
+      const no=maps.obras[String(obraId)] ?? obraId;
+      destino[nf]=no||"";
+    });
+    localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(destino));
+
+    // Mantém também a coluna obra_id do funcionário quando existir.
+    D.funcionarios.forEach(f=>{
+      const obra=destino[String(f.id)];
+      if(obra && !f.obra_id) f.obra_id=obra;
+    });
   }
 
-  // Movimentações de materiais.
-  ensureTable("material_movimentos");
-  for(const row of arr("material_movimentos")){
-    const novo=remap(row);
-    const antigo=row?.id!=null?String(row.id):"";
-    const existente=antigo?D.material_movimentos.find(x=>String(x.id)===antigo):null;
-    if(existente) continue;
-    novo.id=makeLocalId();
-    D.material_movimentos.unshift(novo);
+  if(backup.adiantamentosAplicados){
+    /*
+     * Os IDs dos gastos mudaram na importação. Para evitar aplicar
+     * adiantamentos no gasto errado, recriamos o mapa pelo índice/
+     * fornecedor/descrição quando possível. Registros que não puderem
+     * ser associados ficam zerados, sem causar desconto indevido.
+     */
+    const novoAplicado={};
+    const origem=backup.adiantamentosAplicados||{};
+    const gastosImportados=D.gastos||[];
+    const gastosAdiant=gastosImportados.filter(g=>gastoCategoria(g)==="Adiantamento");
+
+    Object.entries(origem).forEach(([oldId,val])=>{
+      const g=gastosAdiant.find(x=>String(x.id)===String(oldId));
+      if(g) novoAplicado[g.id]=Number(val||0);
+    });
+    localStorage.setItem(ADV_KEY,JSON.stringify(novoAplicado));
   }
 
-  // Relação funcionário -> obra.
-  if(backup.funcionarioObras && typeof backup.funcionarioObras==="object"){
-    const atual=(()=>{try{return JSON.parse(localStorage.getItem(FUNC_OBRA_KEY)||"{}")}catch{return{}}})();
-    for(const [oldFunc,oldObra] of Object.entries(backup.funcionarioObras)){
-      const nf=maps.funcionarios[String(oldFunc)] ?? oldFunc;
-      const no=maps.obras[String(oldObra)] ?? oldObra;
-      atual[String(nf)]=no||"";
-      const f=D.funcionarios.find(x=>String(x.id)===String(nf));
-      if(f && no && !f.obra_id) f.obra_id=no;
-    }
-    localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(atual));
-  }
-
-  // Adiantamentos aplicados: remapeia os IDs de gastos quando possível.
-  if(backup.adiantamentosAplicados && typeof backup.adiantamentosAplicados==="object"){
-    const atual=(()=>{try{return JSON.parse(localStorage.getItem(ADV_KEY)||"{}")}catch{return{}}})();
-    for(const [oldId,val] of Object.entries(backup.adiantamentosAplicados)){
-      const novoId=maps.gastos[String(oldId)];
-      if(novoId) atual[String(novoId)]=Number(val||0);
-    }
-    localStorage.setItem(ADV_KEY,JSON.stringify(atual));
-  }
-
-  // Diárias já baixadas: preserva o fechamento da folha após a restauração.
-  if(backup.paidDiarias && typeof backup.paidDiarias==="object"){
-    const atual=getPaidDiariasMap();
-    for(const [oldId,val] of Object.entries(backup.paidDiarias)){
-      if(!val) continue;
-      const novoId=maps.diarias[String(oldId)];
-      if(novoId) atual[String(novoId)]=true;
-      else if(D.diarias.some(x=>String(x.id)===String(oldId))) atual[String(oldId)]=true;
-    }
-    try{localStorage.setItem(PAID_DIARIAS_KEY,JSON.stringify(atual));}catch(e){}
-  }
-
-  // Serviços adicionais acompanham o novo ID da obra.
-  if(backup.servicosAdicionais && typeof backup.servicosAdicionais==="object"){
-    const atual=getServices();
-    for(const [oldObraId,lista] of Object.entries(backup.servicosAdicionais)){
+  // 7) Serviços adicionais também passam a acompanhar a obra importada.
+  if(backup.servicosAdicionais){
+    const origem=backup.servicosAdicionais;
+    const destino={};
+    Object.entries(origem).forEach(([oldObraId,lista])=>{
       const novaObraId=maps.obras[String(oldObraId)] ?? oldObraId;
-      if(!Array.isArray(atual[novaObraId])) atual[novaObraId]=[];
-      const existentes=new Set(atual[novaObraId].map(x=>JSON.stringify(x)));
-      for(const item of (Array.isArray(lista)?lista:[])){
-        const sig=JSON.stringify(item);
-        if(!existentes.has(sig)){atual[novaObraId].push(item);existentes.add(sig);}
-      }
-    }
-    saveServices(atual);
+      destino[novaObraId]=Array.isArray(lista)?lista:[];
+    });
+    saveServices(destino);
   }
 
-  // Fotos: importa no IndexedDB sem duplicar pelo ID e remapeia a obra.
-  if(Array.isArray(backup.fotos) && backup.fotos.length && typeof savePhotoDB==='function'){
-    let fotosAtuais=[];
-    try{fotosAtuais=await getAllPhotosDB();}catch(e){console.warn("Não foi possível consultar fotos existentes",e)}
-    const ids=new Set(fotosAtuais.map(x=>String(x.id)));
-    for(const foto of backup.fotos){
-      if(!foto) continue;
-      const novo={...foto};
-      if(novo.obra_id!=null && maps.obras[String(novo.obra_id)]!==undefined) novo.obra_id=maps.obras[String(novo.obra_id)];
-      if(!novo.id || ids.has(String(novo.id))) continue;
-      try{await savePhotoDB(novo);ids.add(String(novo.id));}catch(err){console.warn("Foto não importada:",err)}
-    }
-  }
-
-  // Salva imediatamente no aparelho. Não chama loadCloud(), pois isso poderia
-  // substituir a restauração local por um estado antigo do servidor.
-  auditEDIFIQ();
   saveLocalData();
   saveMaterialMeta();
   try{await saveMaterialDB();}catch(e){console.warn("Materiais locais após importação",e)}
+
+  // Recarrega os dados do servidor sem perder os registros locais.
+  await loadCloud();
+  await loadMaterialMeta();
   loadDocumentoMeta();
   fillSelectors();
   renderAll();
-
-  // Se houver internet/login, tenta enviar as linhas locais para a nuvem.
-  // A restauração já está concluída mesmo que o servidor esteja indisponível.
-  try{retryLocalCloudRows().catch(e=>console.warn("Sincronização pós-importação",e));}catch(e){console.warn("Sincronização pós-importação",e)}
-  saveLocalData();
 }
 
+async function importBackup(event){
+  const file=event.target.files?.[0];
+  if(!file)return;
+
+  const reader=new FileReader();
+
+  reader.onload=async()=>{
+    try{
+      const backup=JSON.parse(reader.result);
+
+      if(!backup.data){
+        toast("Backup inválido.");
+        return;
+      }
+
+      if(!confirm(
+        "Importar este backup? Os registros serão adicionados ao sistema e seus vínculos entre obras, funcionários, despesas, materiais e financeiro serão reconstruídos."
+      )) return;
+
+      await importBackupData(backup);
+
+      toast("Backup importado e despesas distribuídas por obra.");
+    }catch(e){
+      console.error("EDIFIQ importação:",e);
+      toast("Arquivo de backup inválido ou não foi possível reconstruir os vínculos.");
+    }
+  };
+
+  reader.onerror=()=>toast("Não foi possível ler o arquivo de backup.");
+  reader.readAsText(file);
+  event.target.value="";
+}
+
+
+/* =========================================================
+   CENTRAL PROFISSIONAL DE HISTÓRICOS DA EQUIPE
+   ========================================================= */
+function showEquipeHistoryTab(tab){
+  const pag=$('equipeHistoryPag'), dia=$('equipeHistoryDia'), freq=$('equipeHistoryFreq');
+  const tp=$('histTabPag'), td=$('histTabDia'), tf=$('histTabFreq');
+  if(!pag||!dia||!freq)return;
+  const mode=tab==='dia'?'dia':(tab==='freq'?'freq':'pag');
+  pag.classList.toggle('hidden',mode!=='pag'); dia.classList.toggle('hidden',mode!=='dia'); freq.classList.toggle('hidden',mode!=='freq');
+  tp?.classList.toggle('active',mode==='pag'); td?.classList.toggle('active',mode==='dia'); tf?.classList.toggle('active',mode==='freq');
+  if(mode==='pag')renderHistoricoPagamentos(); else if(mode==='dia')renderHistoricoDiariasPro(); else renderHistoricoFrequencia();
+}
+function fillEquipeHistorySelectors(){
+  const opts=D.funcionarios.slice().sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR')).map(f=>`<option value="${esc(String(f.id))}">${esc(f.nome||'Funcionário')}</option>`).join('');
+  ['histPagFunc','histFunc2','histFreqFunc'].forEach(id=>{const el=$(id);if(!el)return;const cur=el.value;el.innerHTML='<option value="">Todos os funcionários</option>'+opts;if(cur)el.value=cur;});
+  const oo=$('histFreqObra'); if(oo){const cur=oo.value;oo.innerHTML='<option value="">Todas as obras</option>'+(D.obras||[]).map(o=>`<option value="${esc(String(o.id))}">${esc(o.nome||'Obra')}</option>`).join('');if(cur)oo.value=cur;}
+}
+function renderHistoricoFrequencia(){
+  fillEquipeHistorySelectors();
+  const box=$('histFreqList'), resumo=$('histFreqResumo'); if(!box)return;
+  const fid=$('histFreqFunc')?.value||'', oid=$('histFreqObra')?.value||'', ini=$('histFreqInicio')?.value||'', fim=$('histFreqFim')?.value||'';
+  const map=new Map();
+  const add=(funcId,data,obraId,status,obs)=>{
+    const id=String(funcId||''), dt=String(data||''); if(!id||!dt)return;
+    if(ini&&dt<ini||fim&&dt>fim)return;
+    if(fid&&id!==String(fid))return;
+    if(oid&&String(obraId||'')!==String(oid))return;
+    const key=id+'|'+dt+'|'+String(obraId||'');
+    const prev=map.get(key);
+    const rank={falta:3,atestado:3,justificada:3,trabalhou:2,presente:2};
+    if(!prev||((rank[status]||1)>(rank[prev.status]||1)))map.set(key,{funcId:id,data:dt,obraId:obraId||'',status,obs:obs||''});
+  };
+  (D.diarias||[]).forEach(d=>add(d.funcionario_id??d.funcId??d.funcionarioId,d.data,d.obra_id,'trabalhou',d.observacao));
+  (D.presencas||[]).forEach(d=>{if(String(d.status||'presente').toLowerCase()==='presente')add(d.funcionario_id,d.data,d.obra_id,'presente',d.observacao);});
+  (D.faltas||[]).forEach(d=>add(d.funcionario_id,d.data,d.obra_id,d.tipo||'falta',d.observacao));
+  const items=[...map.values()].sort((a,b)=>String(b.data).localeCompare(String(a.data))||String(a.funcId).localeCompare(String(b.funcId)));
+  const trabalhados=items.filter(x=>x.status==='trabalhou'||x.status==='presente').length, faltas=items.filter(x=>['falta','justificada','atestado'].includes(x.status)).length, pessoas=new Set(items.map(x=>x.funcId)).size;
+  if(resumo)resumo.innerHTML=`<div class="historyMetric"><small>Dias registrados</small><b>${items.length}</b></div><div class="historyMetric"><small>Dias trabalhados</small><b class="green">${trabalhados}</b></div><div class="historyMetric"><small>Faltas / afastamentos</small><b class="red">${faltas}</b></div>`;
+  if(!items.length){box.innerHTML='<div class="empty">Nenhum registro de trabalho ou falta encontrado com os filtros selecionados.</div>';return;}
+  box.innerHTML=items.map(x=>{const f=D.funcionarios.find(y=>String(y.id)===x.funcId),o=D.obras.find(y=>String(y.id)===String(x.obraId));const falta=['falta','justificada','atestado'].includes(x.status);const label={falta:'Falta',justificada:'Falta justificada',atestado:'Atestado',trabalhou:'Trabalhou',presente:'Trabalhou'}[x.status]||x.status;return `<article class="historyCard"><div class="historyCardTop"><div class="historyAvatar">${falta?'⚠️':'✓'}</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(f?.funcao||'Função não informada')} · ${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${falta?'pending':'paid'}">${label}</span></div><div class="historyDataGrid"><div><small>Dia</small><b>${esc(formatDateBR(x.data))}</b></div><div><small>Obra</small><b>${esc(o?.nome||'—')}</b></div><div><small>Função</small><b>${esc(f?.funcao||'—')}</b></div><div><small>Observação</small><b>${esc(x.obs||'—')}</b></div></div></article>`;}).join('');
+}
+
+function pagamentoEquipeHistorico(){
+  const arr=[];
+  for(const g of (D.gastos||[])){
+    const cat=categoriaFinanceira(g);
+    if(cat!=='Mão de obra')continue;
+    const nome=String(g.fornecedor||'').trim();
+    if(!nome)continue;
+    const f=D.funcionarios.find(x=>normalize(x.nome)===normalize(nome));
+    if(!f)continue;
+    arr.push({g,f,obra:D.obras.find(o=>String(o.id)===String(g.obra_id))});
+  }
+  return arr.sort((a,b)=>String(b.g?.data||'').localeCompare(String(a.g?.data||'')));
+}
+function renderHistoricoPagamentos(){
+  fillEquipeHistorySelectors();
+  const box=$('histPagList'), resumoBox=$('histPagResumo'); if(!box)return;
+  const fid=$('histPagFunc')?.value||'', ini=$('histPagInicio')?.value||'', fim=$('histPagFim')?.value||'';
+  let items=pagamentoEquipeHistorico();
+  if(fid)items=items.filter(x=>String(x.f.id)===String(fid));
+  if(ini)items=items.filter(x=>String(x.g.data||'')>=ini);
+  if(fim)items=items.filter(x=>String(x.g.data||'')<=fim);
+  const total=items.reduce((a,x)=>a+Number(x.g.valor||0),0);
+  const qtd=items.length;
+  const pessoas=new Set(items.map(x=>String(x.f.id))).size;
+  if(resumoBox)resumoBox.innerHTML=`<div class="historyMetric"><small>Pagamentos</small><b>${qtd}</b></div><div class="historyMetric"><small>Funcionários</small><b>${pessoas}</b></div><div class="historyMetric"><small>Total pago</small><b class="green">${money(total)}</b></div>`;
+  if(!items.length){box.innerHTML='<div class="empty">Nenhum pagamento encontrado com os filtros selecionados.</div>';return;}
+  box.innerHTML=items.map(x=>`<article class="historyCard paymentHistoryCard">
+    <div class="historyCardTop"><div class="historyAvatar">${esc(String(x.f.nome||'F').trim().charAt(0).toUpperCase())}</div><div class="historyIdentity"><b>${esc(x.f.nome)}</b><small>${esc(x.f.funcao||'Funcionário')} · ${esc(x.obra?.nome||'Obra não definida')}</small></div><span class="historyStatus paid">Pago</span></div>
+    <div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(x.g.data||''))}</b></div><div><small>Valor</small><b class="green">${money(x.g.valor)}</b></div><div><small>Categoria</small><b>Mão de obra</b></div><div><small>Descrição</small><b>${esc(x.g.descricao||'Pagamento de equipe')}</b></div></div>
+  </article>`).join('');
+}
+function renderHistoricoDiariasPro(){
+  fillEquipeHistorySelectors();
+  const box=$('histDiaList'), resumoBox=$('histDiaResumo'); if(!box)return;
+  const fid=$('histFunc2')?.value||'', ini=$('histInicio2')?.value||'', fim=$('histFim2')?.value||'';
+  let items=(D.diarias||[]).slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  if(fid)items=items.filter(d=>String(d.funcionario_id??d.funcId??d.funcionarioId)===String(fid));
+  if(ini)items=items.filter(d=>String(d.data||'')>=ini);
+  if(fim)items=items.filter(d=>String(d.data||'')<=fim);
+  const total=items.reduce((a,d)=>a+diariaValor(d),0), pag=items.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0), pend=total-pag;
+  if(resumoBox)resumoBox.innerHTML=`<div class="historyMetric"><small>Registros</small><b>${items.length}</b></div><div class="historyMetric"><small>Valor total</small><b>${money(total)}</b></div><div class="historyMetric"><small>Pendente</small><b class="gold">${money(pend)}</b></div>`;
+  if(!items.length){box.innerHTML='<div class="empty">Nenhuma diária encontrada com os filtros selecionados.</div>';return;}
+  box.innerHTML=items.map(d=>{const f=D.funcionarios.find(x=>String(x.id)===String(d.funcionario_id??d.funcId??d.funcionarioId));const o=D.obras.find(x=>String(x.id)===String(d.obra_id));const v=diariaValor(d);const pago=diariaEstaPaga(d);return `<article class="historyCard diaryHistoryCard">
+    <div class="historyCardTop"><div class="historyAvatar diary">📅</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${pago?'paid':'pending'}">${pago?'Pago':'Pendente'}</span></div>
+    <div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data||''))}</b></div><div><small>Valor</small><b class="gold">${money(v)}</b></div><div><small>Quantidade</small><b>${Number(d.qtd||1).toLocaleString('pt-BR')}</b></div><div><small>Observação</small><b>${esc(d.observacao||'—')}</b></div></div>
+  </article>`}).join('');
+}
+function formatDateBR(v){if(!v)return '—';const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:String(v);}
+
+/* =========================================================
+   HISTÓRICO INDIVIDUAL DE DIÁRIAS
+   ========================================================= */
+function renderHistoricoDiarias(){
+  const box=$('histDiarias');
+  const sel=$('histFunc');
+  if(!box||!sel)return;
+  const funcId=sel.value||'';
+  if(!funcId){
+    box.innerHTML='Selecione um funcionário para visualizar o histórico.';
+    return;
+  }
+  const ini=$('histInicio')?.value||'';
+  const fim=$('histFim')?.value||'';
+  let items=D.diarias.filter(d=>{
+  const id=d.funcionario_id ?? d.funcId ?? d.funcionarioId ?? d.funcionario_id_fk;
+  return String(id)===String(funcId);
+});
+  if(ini)items=items.filter(d=>String(d.data||'')>=ini);
+  if(fim)items=items.filter(d=>String(d.data||'')<=fim);
+  items.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  const f=D.funcionarios.find(x=>String(x.id)===String(funcId));
+  const total=items.reduce((a,d)=>a+diariaValor(d),0);
+  const pend=items.filter(d=>!diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
+  const pag=items.filter(d=>diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
+  if(!items.length){
+    box.innerHTML=`<div><b>${esc(f?.nome||'Funcionário')}</b><br><small>Nenhuma diária encontrada no período selecionado.</small></div>`;
+    return;
+  }
+  box.innerHTML=`
+    <div class="three">
+      <div><small>Total</small><br><b>${money(total)}</b></div>
+      <div><small>Pendente</small><br><b class="gold">${money(pend)}</b></div>
+      <div><small>Pago</small><br><b class="green">${money(pag)}</b></div>
+    </div>
+    <div style="overflow:auto;margin-top:10px">
+      ${items.map(d=>{
+        const o=D.obras.find(x=>String(x.id)===String(d.obra_id));
+        const v=diariaValor(d);
+        const status=diariaEstaPaga(d)?'Pago':'Pendente';
+        return `<div class="historyRow" style="display:grid;grid-template-columns:90px 1fr auto;gap:10px;align-items:center;border-top:1px solid var(--line);padding:9px 0">
+          <span>${esc(d.data||'')}</span>
+          <span><b>${esc(o?.nome||'Sem obra')}</b><br><small>${esc(d.observacao||'')}</small></span>
+          <span><b class="${status==='Pago'?'green':'gold'}">${money(v)}</b><br><small>${status}</small></span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function fillHistoricoFuncionarioSelector(){
+  const sel=$('histFunc');
+  if(!sel)return;
+
+  const current=sel.value||'';
+
+  const funcionarios=[...D.funcionarios]
+    .filter(f=>f && f.id!==undefined && f.id!==null && String(f.id)!=="")
+    .sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||""),"pt-BR"));
+
+  sel.innerHTML='<option value="">Selecione o funcionário</option>'+
+    funcionarios.map(f=>
+      `<option value="${esc(String(f.id))}">${esc(f.nome||"Funcionário")}</option>`
+    ).join('');
+
+  if(current && funcionarios.some(f=>String(f.id)===String(current))){
+    sel.value=current;
+  }
+}
+
+
+/* =========================================================
+   EDIFIQ — RELATÓRIO PARA CLIENTE
+   ========================================================= */
+const RC_DEFAULT_SECTIONS={
+  saudacao:true,resumo:true,andamento:true,dias:true,equipe:true,servicos:true,financeiro:true,pagamentos:true,observacoes:true,proximas:true,final:true,encerramento:true
+};
+window.__rcSections={...RC_DEFAULT_SECTIONS};
+window.__rcManualText=false;
+window.__rcSelected=[];
+
+function rcFmtDate(v){
+  if(!v)return "—";
+  const p=String(v).split('-');
+  return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:String(v);
+}
+function rcDaysDiff(a,b){
+  const x=new Date(`${a}T00:00:00`),y=new Date(`${b}T00:00:00`);
+  if(Number.isNaN(x.getTime())||Number.isNaN(y.getTime()))return 0;
+  return Math.floor((y-x)/86400000)+1;
+}
+function rcInPeriod(date,ini,fim){
+  const d=String(date||'');
+  if(!d)return false;
+  return (!ini||d>=ini)&&(!fim||d<=fim);
+}
+function rcClients(){
+  return [...new Set(D.obras.map(o=>String(o.cliente||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
+function rcClientWorks(){
+  const c=$('rcCliente')?.value||'';
+  return D.obras.filter(o=>!c||String(o.cliente||'').trim()===c);
+}
+function rcRenderClients(){
+  const sel=$('rcCliente');if(!sel)return;
+  const current=sel.value||'';
+  sel.innerHTML='<option value="">Selecione o cliente</option>'+rcClients().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  if(current && rcClients().includes(current))sel.value=current;
+}
+function rcRenderObras(){
+  const box=$('rcObrasList'),info=$('rcClientesInfo');if(!box)return;
+  const works=rcClientWorks();
+  const current=new Set((window.__rcSelected||[]).map(String));
+  if(!current.size)works.forEach(o=>current.add(String(o.id)));
+  window.__rcSelected=works.filter(o=>current.has(String(o.id))).map(o=>String(o.id));
+  if(info)info.textContent=works.length?`${$('rcCliente')?.value||'Todos os clientes'} · ${works.length} obra(s) encontrada(s)`:'Nenhuma obra encontrada para este cliente.';
+  box.innerHTML=works.length?works.map(o=>{const checked=window.__rcSelected.includes(String(o.id));return `<label class="item" style="display:flex;align-items:center;gap:10px;cursor:pointer"><input class="rcObraCheck" type="checkbox" value="${esc(String(o.id))}" ${checked?'checked':''} onchange="rcToggleObra('${esc(String(o.id))}',this.checked)" style="width:20px;height:20px;flex:0 0 20px"><span style="flex:1;min-width:0"><b>${esc(o.nome||'Obra')}</b><br><small>${money(o.valor||0)} · ${esc(statusLabel(o.status))}</small></span></label>`}).join(''):'<div class="empty">Cadastre uma obra com cliente para usar este relatório.</div>';
+  rcRefreshPreview();
+}
+function rcToggleObra(id,checked){
+  const set=new Set((window.__rcSelected||[]).map(String));
+  checked?set.add(String(id)):set.delete(String(id));
+  window.__rcSelected=[...set];
+  rcRefreshPreview();
+}
+function rcSelectAllClientWorks(all){
+  const works=rcClientWorks();
+  window.__rcSelected=all?works.map(o=>String(o.id)):[];
+  document.querySelectorAll('.rcObraCheck').forEach(x=>x.checked=all);
+  rcRefreshPreview();
+}
+function rcSectionControls(){
+  const box=$('rcSections');if(!box)return;
+  const labels={saudacao:'Saudação inicial',resumo:'Resumo do período',andamento:'Andamento da obra',dias:'Dias trabalhados',equipe:'Equipe envolvida',servicos:'Serviços realizados',financeiro:'Resumo financeiro',pagamentos:'Pagamentos recebidos',observacoes:'Observações gerais',proximas:'Próximas etapas',final:'Resumo geral final',encerramento:'Mensagem de encerramento'};
+  box.innerHTML=Object.entries(labels).map(([k,n])=>`<div class="rcToggle"><span>${n}</span><label class="rcSwitch"><input type="checkbox" ${window.__rcSections[k]?'checked':''} onchange="rcSetSection('${k}',this.checked)"><i class="rcSlider"></i></label></div>`).join('');
+}
+function rcSetSection(k,v){window.__rcSections[k]=!!v;window.__rcManualText=false;rcRefreshPreview();}
+function rcSelectedWorks(){const ids=new Set((window.__rcSelected||[]).map(String));return D.obras.filter(o=>ids.has(String(o.id)));}
+function rcData(){
+  const obras=rcSelectedWorks();
+  const ini=$('rcInicio')?.value||'';const fim=$('rcFim')?.value||'';
+  const diarias=D.diarias.filter(d=>obras.some(o=>String(o.id)===String(d.obra_id))&&rcInPeriod(d.data,ini,fim));
+  const dates=[...new Set(diarias.map(d=>String(d.data||'')).filter(Boolean))].sort((a,b)=>b.localeCompare(a));
+  const teamIds=[...new Set(diarias.map(d=>String(d.funcionario_id||'')).filter(Boolean))];
+  const team=teamIds.map(id=>{const f=D.funcionarios.find(x=>String(x.id)===id);const its=diarias.filter(d=>String(d.funcionario_id)===id);return {f,days:new Set(its.map(d=>d.data)).size,items:its};}).filter(x=>x.f);
+  const services=obras.flatMap(o=>servicesForObra(o.id).map(s=>({...s,obra:o}))).filter(s=>rcInPeriod(s.data,ini,fim));
+  const pagamentos=D.pagamentos.filter(p=>obras.some(o=>String(o.id)===String(p.obra_id))).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  const finances=obras.map(o=>({o,f:obraFinanceData(o.id)}));
+  const total=finances.reduce((a,x)=>a+x.f.contrato,0),receita=finances.reduce((a,x)=>a+x.f.receita,0),despesas=finances.reduce((a,x)=>a+x.f.despesas,0),resultado=receita-despesas;
+  const concl=obras.filter(o=>o.status==='concluida').length, andamento=obras.filter(o=>o.status!=='concluida').length;
+  const progress=obras.length?Math.round(obras.reduce((a,o)=>a+obraProgress(o),0)/obras.length):0;
+  return {obras,ini,fim,diarias,dates,team,services,pagamentos,finances,total,receita,despesas,resultado,saldo:Math.max(0,total-receita),concl,andamento,progress};
+}
+function rcBuildText(){
+  const d=rcData(), cliente=$('rcCliente')?.value||'Cliente', ini=d.ini||today(), fim=d.fim||today();
+  const sec=window.__rcSections, lines=[];
+  const add=(x)=>{if(x)lines.push(x)};
+  if(sec.saudacao)add(($('rcSaudacao')?.value||`Olá, ${cliente}! 👋`).trim());
+  add('');add('📋 *RELATÓRIO DE ACOMPANHAMENTO DE OBRA*');add(`Cliente: ${cliente}`);add(`Obra(s): ${d.obras.map(o=>String(o.nome||'').toUpperCase()).join(', ')||'Nenhuma selecionada'}`);add(`Período: ${rcFmtDate(ini)} a ${rcFmtDate(fim)}`);add(`Data de emissão: ${rcFmtDate(today())}`);add('');
+  if(sec.resumo){add('📊 *RESUMO DO PERÍODO*');add(`• ${d.dates.length} dias com atividade`);add(`• ${d.team.length} trabalhadores envolvidos`);add(`• ${d.diarias.length} registros de diárias`);add('• Horas registradas: não informadas no EDIFIQ');add('');}
+  if(sec.andamento){add('🏗️ *ANDAMENTO DA OBRA*');add(`• Obras concluídas: ${d.concl}`);add(`• Obras em andamento: ${d.andamento}`);add(`• Progresso médio do checklist: ${d.progress}%`);d.obras.forEach(o=>add(`• ${o.nome}: ${obraProgress(o)}% — ${statusLabel(o.status)}`));add('');}
+  if(sec.dias){add('📅 *DIAS TRABALHADOS*');add(`Total de dias com atividade: ${d.dates.length}`);d.dates.slice(0,30).forEach(dt=>{const n=new Set(d.diarias.filter(x=>x.data===dt).map(x=>String(x.funcionario_id))).size;add(`• ${rcFmtDate(dt)}: ${n} trabalhador(es)`);});if(d.dates.length>30)add(`• ... e outros ${d.dates.length-30} dias`);add('');}
+  if(sec.equipe){add('👷 *EQUIPE NO PERÍODO*');d.team.forEach(x=>add(`• ${x.f.nome} — ${x.f.funcao||x.f.função||'Função não informada'} — ${x.days} dia(s)`));if(!d.team.length)add('• Nenhum registro de equipe no período.');add('');}
+  if(sec.servicos){add('🔨 *SERVIÇOS REALIZADOS*');d.services.forEach(s=>add(`• ${s.data?rcFmtDate(s.data)+' — ':''}${s.obra?.nome||''}: ${s.nome} — ${money(s.valor||0)}`));if(!d.services.length)add('• Nenhum serviço adicional registrado no período.');add('');}
+  if(sec.financeiro){add('💰 *RESUMO FINANCEIRO*');d.finances.forEach(x=>{add(`*${x.o.nome}*`);add(`• Valor contratado: ${money(x.f.contrato)}`);add(`• Total recebido: ${money(x.f.receita)}`);add(`• Despesas: ${money(x.f.despesas)}`);add(`• Resultado: ${money(x.f.resultado)}`);add(`• Margem de lucro: ${Number(x.f.margemLucro||0).toFixed(1)}%`);add(`• Saldo pendente: ${money(x.f.saldoReceber)}`);add('');});}
+  if(sec.pagamentos){add('📥 *PAGAMENTOS RECEBIDOS*');d.pagamentos.slice(0,60).forEach(p=>add(`• ${rcFmtDate(p.data)} — ${money(p.valor)} — ${p.descricao||'Pagamento recebido'}`));if(!d.pagamentos.length)add('• Nenhum pagamento registrado.');add('');}
+  if(sec.observacoes){const o=($('rcObs')?.value||'').trim();add('📝 *OBSERVAÇÕES GERAIS*');add(o||'• Sem observações gerais.');add('');}
+  if(sec.proximas){const n=($('rcProximas')?.value||'').trim();add('➡️ *PRÓXIMAS ETAPAS*');add(n||'• A definir.');add('');}
+  if(sec.final){add('📊 *RESUMO GERAL DO PERÍODO*');add(`• Valor Total: ${money(d.total)}`);add(`• Total Recebido: ${money(d.receita)}`);add(`• Despesas: ${money(d.despesas)}`);add(`• Resultado: ${money(d.resultado)}`);add(`• Saldo Pendente: ${money(d.saldo)}`);add('');}
+  if(sec.encerramento)add(($('rcEncerramento')?.value||'Qualquer dúvida estou à disposição. 🙌').trim());
+  return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function rcRefreshPreview(){
+  const d=rcData();
+  if($('rcPreviewMeta'))$('rcPreviewMeta').textContent=`Período: ${rcFmtDate(d.ini||today())} a ${rcFmtDate(d.fim||today())}`;
+  if($('rcSummary'))$('rcSummary').innerHTML=`<div class="rcMetric"><small>DIAS</small><b>${d.dates.length}</b></div><div class="rcMetric"><small>EQUIPE</small><b>${d.team.length}</b></div><div class="rcMetric"><small>SERVIÇOS</small><b>${d.services.length}</b></div><div class="rcMetric"><small>PROGRESSO</small><b>${d.progress}%</b></div>`;
+  const ta=$('rcPreviewText');if(ta&&!window.__rcManualText)ta.value=rcBuildText();
+}
+function rcShowTab(tab){
+  const a=$('rcTabSelection'),b=$('rcTabPreview');if(!a||!b)return;
+  const sel=tab==='sel';a.classList.toggle('hidden',!sel);b.classList.toggle('hidden',sel);$('rcTabSel')?.classList.toggle('active',sel);$('rcTabPrev')?.classList.toggle('active',!sel);
+  if(!sel){window.__rcManualText=false;rcRefreshPreview();}
+}
+function openRelatorioCliente(){
+  const m=$('relatorioClienteM');
+  if(!m){toast('Módulo Relatório para Cliente não encontrado.');return;}
+  window.__rcManualText=false;
+  window.__rcSelected=[];
+  window.__rcSections={...RC_DEFAULT_SECTIONS};
+  rcRenderClients();
+  const clients=rcClients();
+  if(clients.length){$('rcCliente').value=clients[0];}
+  const fim=today(),dt=new Date();
+  dt.setDate(dt.getDate()-30);
+  const ini=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  $('rcInicio').value=ini;
+  $('rcFim').value=fim;
+  $('rcSaudacao').value=clients[0]?`Olá, ${clients[0]}! 👋`:'Olá! 👋';
+  $('rcProximas').value='';
+  $('rcObs').value='';
+  $('rcEncerramento').value='Qualquer dúvida estou à disposição. 🙌';
+  rcSectionControls();
+  rcShowTab('sel');
+  rcRenderObras();
+  m.classList.add('open');
+}
+function rcCopy(){const txt=$('rcPreviewText')?.value||'';if(!txt)return;navigator.clipboard?.writeText(txt).then(()=>toast('Relatório copiado.')).catch(()=>{const ta=$('rcPreviewText');ta.select();document.execCommand('copy');toast('Relatório copiado.');});}
+function rcWhatsApp(){const txt=$('rcPreviewText')?.value||'';if(!txt)return;window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');}
+function rcExportPDF(){
+  const txt=$('rcPreviewText')?.value||'';if(!txt)return;
+  const cliente=$('rcCliente')?.value||'Cliente';
+  const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
+  const html=esc(txt).replace(/\n/g,'<br>');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório para ${esc(cliente)}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033;line-height:1.55;max-width:850px;margin:auto}h1{font-size:24px;text-align:center} .box{border:1px solid #d9e0ea;border-radius:14px;padding:24px;white-space:normal}@media print{body{padding:10px}}</style></head><body><h1>EDIFIQ — Relatório para Cliente</h1><div class="box">${html}</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
+<script id="edifiq-servico-extra-link">
+(function(){
+  // Vincula serviços extras à folha/financeiro sem substituir dados existentes.
+  window.edifiqRegistrarServicoExtra = function(servico){
+    try{
+      if(!servico || !servico.valor) return false;
+      const d=typeof D!=="undefined"?D:null; if(!d) return false;
+      d.servicosExtras=Array.isArray(d.servicosExtras)?d.servicosExtras:[];
+      const id=servico.id||('sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
+      const item={...servico,id,valor:Number(servico.valor)||0,folhaAplicado:false,financeiroAplicado:false};
+      d.servicosExtras.push(item);
+      if(typeof save==='function') save(); else if(typeof persist==='function') persist();
+      return id;
+    }catch(e){console.error('Serviço extra:',e);return false;}
+  };
+  window.edifiqAplicarServicoExtra = function(id){
+    try{const d=typeof D!=="undefined"?D:null;if(!d)return false;const x=(d.servicosExtras||[]).find(v=>v.id===id);if(!x||x.financeiroAplicado)return false;
+      d.gastos=Array.isArray(d.gastos)?d.gastos:[];
+      d.gastos.push({id:'g_'+Date.now(),data:new Date().toISOString().slice(0,10),descricao:'Serviço extra — '+(x.descricao||''),valor:Number(x.valor)||0,categoria:'Mão de obra',obraId:x.obraId||x.obra_id||'',funcionarioId:x.funcionarioId||x.funcionario_id||''});
+      x.financeiroAplicado=true;x.folhaAplicado=!!(x.funcionarioId||x.funcionario_id);
+      if(typeof save==='function')save();else if(typeof persist==='function')persist();
+      return true;}catch(e){console.error(e);return false;}
+  };
+})();
+<\/script>
+</body></html>`);w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},400);
+}
+
+/* =========================================================
+   RELATÓRIOS — PDF / CSV / IMPORTAÇÃO
+   ========================================================= */
+function exportPDF(){
+  const w=window.open('','_blank');
+  if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
+  const rows=(arr)=>arr.map(x=>`<tr>${Object.values(x||{}).map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#222}h1{margin:0 0 5px}h2{margin-top:28px}small{color:#666}.meta{margin-bottom:20px}table{border-collapse:collapse;width:100%;font-size:10px}th,td{border:1px solid #ccc;padding:5px;text-align:left;vertical-align:top}th{background:#eee}@media print{button{display:none}}</style></head><body><h1>EDIFIQ — Relatório</h1><div class="meta">Gerado em ${new Date().toLocaleString('pt-BR')}</div><h2>Obras</h2><table><thead><tr>${Object.keys(D.obras[0]||{Nome:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.obras)}</tbody></table><h2>Funcionários</h2><table><thead><tr>${Object.keys(D.funcionarios[0]||{Nome:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.funcionarios)}</tbody></table><h2>Diárias</h2><table><thead><tr>${Object.keys(D.diarias[0]||{Data:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.diarias)}</tbody></table><h2>Financeiro</h2><table><thead><tr>${Object.keys(D.gastos[0]||{Descrição:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.gastos)}</tbody></table><h2>Checklist</h2><table><thead><tr>${Object.keys(D.checklist[0]||{Etapa:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.checklist)}</tbody></table><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
+<script id="edifiq-servico-extra-link">
+(function(){
+  // Vincula serviços extras à folha/financeiro sem substituir dados existentes.
+  window.edifiqRegistrarServicoExtra = function(servico){
+    try{
+      if(!servico || !servico.valor) return false;
+      const d=typeof D!=="undefined"?D:null; if(!d) return false;
+      d.servicosExtras=Array.isArray(d.servicosExtras)?d.servicosExtras:[];
+      const id=servico.id||('sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
+      const item={...servico,id,valor:Number(servico.valor)||0,folhaAplicado:false,financeiroAplicado:false};
+      d.servicosExtras.push(item);
+      if(typeof save==='function') save(); else if(typeof persist==='function') persist();
+      return id;
+    }catch(e){console.error('Serviço extra:',e);return false;}
+  };
+  window.edifiqAplicarServicoExtra = function(id){
+    try{const d=typeof D!=="undefined"?D:null;if(!d)return false;const x=(d.servicosExtras||[]).find(v=>v.id===id);if(!x||x.financeiroAplicado)return false;
+      d.gastos=Array.isArray(d.gastos)?d.gastos:[];
+      d.gastos.push({id:'g_'+Date.now(),data:new Date().toISOString().slice(0,10),descricao:'Serviço extra — '+(x.descricao||''),valor:Number(x.valor)||0,categoria:'Mão de obra',obraId:x.obraId||x.obra_id||'',funcionarioId:x.funcionarioId||x.funcionario_id||''});
+      x.financeiroAplicado=true;x.folhaAplicado=!!(x.funcionarioId||x.funcionario_id);
+      if(typeof save==='function')save();else if(typeof persist==='function')persist();
+      return true;}catch(e){console.error(e);return false;}
+  };
+})();
+<\/script>
+</body></html>`);
+  w.document.close();
+  setTimeout(()=>{try{w.print()}catch(e){}},350);
+}
+function exportCSVAll(){
+  const blocks=[];
+  for(const [name,arr] of Object.entries(D)){
+    blocks.push(`### ${name}`);
+    if(!Array.isArray(arr)||!arr.length){blocks.push('');continue;}
+    const keys=[...new Set(arr.flatMap(x=>Object.keys(x||{})))];
+    blocks.push(keys.map(k=>`"${String(k).replace(/"/g,'""')}"`).join(';'));
+    for(const x of arr){blocks.push(keys.map(k=>`"${String(x?.[k]??'').replace(/"/g,'""').replace(/\n/g,' ')}"`).join(';'));}
+  }
+  downloadFile(blocks.join('\n'),'EDIFIQ_dados.csv','text/csv;charset=utf-8');
+  toast('CSV exportado.');
+}
 async function importRelatorioData(event){
   const file=event.target.files?.[0];
   if(!file)return;
   const status=$("importRelatorioStatus");
-  const nome=String(file.name||"").toLowerCase();
 
   try{
-    // A importação completa é feita pelo JSON criado em “Fazer backup completo”.
-    // Não dependemos apenas da extensão: alguns celulares alteram o MIME/extensão.
-    const ehJson=nome.endsWith(".json") || String(file.type||"").toLowerCase().includes("json") || !nome.includes(".");
-    if(!ehJson){
-      if(status)status.textContent="Para restauração completa, selecione o arquivo EDIFIQ_backup.json criado em Fazer backup completo.";
-      toast("Selecione o backup completo EDIFIQ_backup.json.");
-      return;
+    if(file.name.toLowerCase().endsWith(".json")){
+      const backup=await new Promise((resolve,reject)=>{
+        const r=new FileReader();
+        r.onload=()=>{try{resolve(JSON.parse(r.result))}catch(e){reject(e)}};
+        r.onerror=()=>reject(r.error);
+        r.readAsText(file);
+      });
+
+      if(!backup?.data)throw new Error("Backup inválido");
+      if(!confirm("Importar este backup? Os registros serão adicionados e os vínculos de obras, funcionários, despesas, materiais e financeiro serão reconstruídos.")){
+        if(status)status.textContent="Importação cancelada.";
+        event.target.value="";
+        return;
+      }
+
+      await importBackupData(backup);
+      if(status)status.textContent="Backup importado com sucesso. Os vínculos e despesas foram reconstruídos.";
+      toast("Backup importado e distribuído.");
+    }else{
+      if(status)status.textContent="Para importar todos os dados com segurança, use o arquivo de backup JSON criado pelo EDIFIQ.";
+      toast("Use o backup JSON do EDIFIQ para importação completa.");
     }
-
-    const texto=await new Promise((resolve,reject)=>{
-      const r=new FileReader();
-      r.onload=()=>resolve(String(r.result||""));
-      r.onerror=()=>reject(r.error||new Error("Falha ao ler arquivo"));
-      r.readAsText(file,"utf-8");
-    });
-
-    // Remove BOM/espacos que podem ser adicionados ao compartilhar o arquivo no celular.
-    const limpo=texto.replace(/^\uFEFF/,"").trim();
-    if(!limpo)throw new Error("Arquivo vazio");
-
-    let bruto;
-    try{
-      bruto=JSON.parse(limpo);
-    }catch(e){
-      // Alguns compartilhamentos no celular acrescentam vírgula antes de } ou ].
-      try{ bruto=JSON.parse(limpo.replace(/,\s*([}\]])/g,"$1")); }
-      catch(e2){ throw new Error("O arquivo não contém um JSON válido"); }
-    }
-
-    const backup=normalizarBackupEDIFIQ(bruto);
-    if(!backup?.data || typeof backup.data!=="object")throw new Error("Backup EDIFIQ sem dados");
-
-    const quantidade=Object.values(backup.data).reduce((n,v)=>n+(Array.isArray(v)?v.length:0),0);
-    if(!quantidade)throw new Error("Backup sem registros para importar");
-
-    if(!confirm(`Importar este backup do EDIFIQ?\n\nForam encontrados ${quantidade} registros. Os dados atuais serão preservados e os registros do backup serão adicionados, com reconstrução dos vínculos.`)){
-      if(status)status.textContent="Importação cancelada.";
-      return;
-    }
-
-    if(status)status.textContent="Importando dados…";
-    await importBackupData(backup);
-    if(status)status.textContent=`Backup importado com sucesso (${quantidade} registros).`;
-    toast("Backup do EDIFIQ importado com sucesso.");
   }catch(e){
-    console.error("EDIFIQ importação:",e);
-    if(status)status.textContent="Arquivo incompatível. Use o backup completo criado pelo EDIFIQ (EDIFIQ_backup.json).";
-    toast("Não foi possível importar este arquivo. Verifique se é o backup completo do EDIFIQ.");
-  }finally{
-    // Permite selecionar novamente o mesmo arquivo.
-    event.target.value="";
+    console.error(e);
+    if(status)status.textContent="Não foi possível importar o arquivo.";
+    toast("Arquivo inválido ou incompatível.");
   }
+
+  event.target.value="";
 }
 
 
