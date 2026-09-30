@@ -2918,7 +2918,7 @@ function startEdifiqRealtime(){
   edifiqRealtimeRefreshTimer=setInterval(syncNow,5000);
   if(!window.__edifiqSyncEventsBound){
     window.__edifiqSyncEventsBound=true;
-    window.addEventListener('online',()=>{ setTimeout(async()=>{ await retryLocalCloudRows(); await retrySyncQueue(); await syncNow(); },250); });
+    window.addEventListener('online',()=>{ setTimeout(syncNow,250); });
     document.addEventListener('visibilitychange',()=>{ if(!document.hidden) setTimeout(syncNow,150); });
   }
   setTimeout(syncNow,150);
@@ -3209,9 +3209,7 @@ function mergeLocal(){
   const x=localData();
   for(const table of Object.keys(D)){
     if(!Array.isArray(x[table])) continue;
-    const localRowsRaw=x[table];
-    const tomb=edifiqTombstones()[table]||{};
-    const localRows=localRowsRaw.filter(r=>!tomb[String(r.id)]);
+    const localRows=x[table];
     const localById=new Map(localRows.map(r=>[String(r.id),r]));
     const cloudRows=Array.isArray(D[table])?D[table]:[];
     // Nunca substitui silenciosamente dados locais por uma lista menor vinda da nuvem.
@@ -3251,7 +3249,6 @@ async function loadTable(table){
 
 async function loadCloud(){
   if(!sb||!user)return;
-  if(navigator.onLine!==false){ await retryLocalCloudRows(); await retrySyncQueue(); }
   // Protege o estado antes de qualquer sincronização. Se o servidor responder incompleto,
   // o conjunto atual será preservado e poderá ser restaurado automaticamente.
   const estadoAntesCloud=stateCounts();
@@ -3268,78 +3265,25 @@ async function loadCloud(){
   saveLocalData();
 }
 
-async 
-/* ===== EDIFIQ OFFLINE-FIRST SYNC QUEUE ===== */
-const EDIFIQ_SYNC_QUEUE_KEY='EDIFIQ_SYNC_QUEUE_V3';
-const EDIFIQ_SYNC_TOMBSTONES_KEY='EDIFIQ_SYNC_TOMBSTONES_V3';
-function edifiqSyncQueue(){try{return JSON.parse(localStorage.getItem(EDIFIQ_SYNC_QUEUE_KEY)||'[]')||[]}catch{return[]}}
-function saveEdifiqSyncQueue(q){try{localStorage.setItem(EDIFIQ_SYNC_QUEUE_KEY,JSON.stringify(q||[]))}catch(e){console.warn('Fila offline',e)}}
-function edifiqTombstones(){try{return JSON.parse(localStorage.getItem(EDIFIQ_SYNC_TOMBSTONES_KEY)||'{}')||{}}catch{return{}}}
-function saveEdifiqTombstones(x){try{localStorage.setItem(EDIFIQ_SYNC_TOMBSTONES_KEY,JSON.stringify(x||{}))}catch(e){console.warn('Tombstones offline',e)}}
-function queueSyncOp(op){
-  const q=edifiqSyncQueue();
-  const key=`${op.type}:${op.table}:${op.id}`;
-  const idx=q.findIndex(x=>`${x.type}:${x.table}:${x.id}`===key);
-  if(idx>=0) q[idx]={...q[idx],...op,queued_at:q[idx].queued_at||Date.now()}; else q.push({...op,queued_at:Date.now()});
-  saveEdifiqSyncQueue(q);
-}
-function markSyncPending(table,id){
-  const row=D[table]?.find(x=>String(x.id)===String(id));
-  if(row) row._sync_pendente=true;
-  saveLocalData();
-}
-function markTombstone(table,id){
-  const t=edifiqTombstones(); if(!t[table]) t[table]={}; t[table][String(id)]=Date.now(); saveEdifiqTombstones(t);
-}
-function clearTombstone(table,id){
-  const t=edifiqTombstones(); if(t[table]){delete t[table][String(id)];saveEdifiqTombstones(t)}
-}
-async function retrySyncQueue(){
-  if(!sb||!user?.id||navigator.onLine===false) return;
-  let q=edifiqSyncQueue(); if(!q.length) return;
-  const remaining=[];
-  for(const op of q){
-    try{
-      if(op.type==='update'){
-        const {data,error}=await sb.from(op.table).update({...op.row}).eq('id',op.id).select().single();
-        if(error) throw error;
-        const idx=D[op.table]?.findIndex(x=>String(x.id)===String(op.id));
-        if(idx>=0) D[op.table][idx]={...data,_sync_pendente:false};
-        clearTombstone(op.table,op.id);
-      }else if(op.type==='delete'){
-        const {error}=await sb.from(op.table).delete().eq('id',op.id);
-        if(error) throw error;
-        D[op.table]=(D[op.table]||[]).filter(x=>String(x.id)!==String(op.id));
-        clearTombstone(op.table,op.id);
-      }
-    }catch(e){ remaining.push(op); console.warn('Fila offline ainda pendente',op.table,op.type,e?.message||e); }
-  }
-  saveEdifiqSyncQueue(remaining); saveLocalData();
-}
-
-function retryLocalCloudRows(){
-  if(!sb||!user?.id||navigator.onLine===false) return Promise.resolve();
-  const tables=["obras","funcionarios","diarias","gastos","pagamentos","checklist","faltas","documentos"];
-  const run=async()=>{
-    for(const table of tables){
-      const rows=Array.isArray(D[table])?D[table]:[];
-      const locals=rows.filter(r=>String(r?.id||'').startsWith('local_'));
-      for(const local of locals){
-        try{
-          const payload={...local,user_id:user.id}; delete payload.id; delete payload._sync_pendente;
-          const {data,error}=await sb.from(table).insert(payload).select().single();
-          if(!error&&data){
-            const idx=D[table].findIndex(x=>String(x.id)===String(local.id));
-            if(idx>=0) D[table][idx]={...data,_sync_pendente:false};
-            const q=edifiqSyncQueue().filter(x=>!(String(x.table)===String(table)&&String(x.id)===String(local.id))); saveEdifiqSyncQueue(q);
-          }
-        }catch(e){ console.warn('Retry cloud',table,e); }
-      }
+async function retryLocalCloudRows(){
+  if(!sb||!user?.id) return;
+  const tables=["obras","funcionarios","diarias","gastos","pagamentos","checklist","faltas"];
+  for(const table of tables){
+    const rows=Array.isArray(D[table])?D[table]:[];
+    const locals=rows.filter(r=>String(r?.id||'').startsWith('local_'));
+    for(const local of locals){
+      try{
+        const payload={...local,user_id:user.id};
+        delete payload.id;
+        const {data,error}=await sb.from(table).insert(payload).select().single();
+        if(!error&&data){
+          const idx=D[table].findIndex(x=>String(x.id)===String(local.id));
+          if(idx>=0) D[table][idx]=data;
+          saveLocalData();
+        }
+      }catch(e){ console.warn('Retry cloud',table,e); }
     }
-    await retrySyncQueue();
-    saveLocalData();
-  };
-  return run();
+  }
 }
 
 async function insertRow(
@@ -3407,7 +3351,6 @@ Object.entries(payload)
 
 for(const tentativa of attempts){
 
-if(navigator.onLine===false) break;
 try{
 
 const{data,error}=
@@ -3492,7 +3435,7 @@ const anterior={...D[table][index]};
 D[table][index]={
 ...D[table][index],
 ...row,
-_sync_pendente:true
+_sync_pendente:String(id).startsWith('local_') ? true : D[table][index]._sync_pendente
 };
 saveLocalData();
 renderAll();
@@ -3501,9 +3444,8 @@ if(String(id).startsWith("local_")){
 return D[table][index];
 }
 
-if(!sb||!user||navigator.onLine===false){
-  if(!String(id).startsWith('local_')) queueSyncOp({type:'update',table,id:String(id),row:{...row}});
-  return D[table][index];
+if(!sb||!user){
+return D[table][index];
 }
 
 try{
@@ -3541,19 +3483,13 @@ return data;
 console.warn("Supabase recusou atualização",table,error?.message);
 }
 
-queueSyncOp({type:'update',table,id:String(id),row:{...row}});
-D[table][index]._sync_pendente=true;
-saveLocalData();
-toast("Atualizado neste aparelho. Será sincronizado quando a conexão voltar.");
+toast("Atualizado no aparelho. O servidor recusou a alteração.");
 return D[table][index];
 
 }catch(e){
 
 console.warn("Erro Supabase ao atualizar",table,e);
-queueSyncOp({type:'update',table,id:String(id),row:{...row}});
-D[table][index]._sync_pendente=true;
-saveLocalData();
-toast("Atualizado neste aparelho. Será sincronizado quando a conexão voltar.");
+toast("Atualizado no aparelho. Não foi possível sincronizar agora.");
 return D[table][index];
 
 }
@@ -3790,12 +3726,14 @@ const{error}=await sb
 .eq("id",id);
 
 if(error){
-  queueSyncOp({type:'delete',table,id:String(id)});
-  markTombstone(table,id);
-  D[table]=D[table].filter(x=>String(x.id)!==String(id));
-  saveLocalData(); renderAll();
-  toast("Excluído neste aparelho. Será sincronizado quando a conexão voltar.");
-  return;
+
+toast(
+"Erro ao excluir: "+
+error.message
+);
+
+return;
+
 }
 
 D[table]=D[table].filter(
@@ -5185,25 +5123,41 @@ let total=0,diariasTotal=0,adiantTotal=0,quantidade=0;
 const processados=[];
 
 for(const check of checks){
-const id=check.dataset.id;
-const f=D.funcionarios.find(x=>String(x.id)===String(id));
-if(!f||f.ativo===false)continue;
+  const id=check.dataset.id;
+  const f=D.funcionarios.find(x=>String(x.id)===String(id));
+  if(!f||f.ativo===false)continue;
 
-const pendingItems=getPendingDiarias(id);
-const pending= pendingItems.reduce((a,d)=>a+diariaValor(d),0);
-const extrasPendentes=(D.servicosExtras||[]).filter(x=>String(x.funcionario_id||x.funcionarioId)===String(id)&&String(x.status||'pendente')!=='pago');
-const advancesAtuais=getEmployeeAdvances(id);
-if(pending<=0 && !extrasPendentes.length && !advancesAtuais.length)continue;
+  const pendingItems=getPendingDiarias(id);
+  const pendingDiarias=pendingItems.reduce((a,d)=>a+diariaValor(d),0);
+  const extrasPendentes=(D.servicosExtras||[]).filter(x=>String(x.funcionario_id||x.funcionarioId)===String(id)&&String(x.status||'pendente')!=='pago');
+  const advancesAtuais=getEmployeeAdvances(id);
+  if(pendingDiarias<=0 && !extrasPendentes.length && !advancesAtuais.length)continue;
 
-const resumo=calcFuncionarioPagamento(id);
-const obraId=getFuncObra(id)||fallbackObra;
-if(!obraId){toast(`Defina uma obra para ${f.nome} antes de pagar.`);continue;}
+  const resumo=calcFuncionarioPagamento(id);
 
-processados.push({id,f,resumo,pendingItems,obraId});
-total+=resumo.net;
-diariasTotal+=resumo.pending;
-adiantTotal+=resumo.advance;
-quantidade++;
+  /*
+    IMPORTANTE: a obra do pagamento não vem mais de getFuncObra(id).
+    Cada diária já possui sua própria obra_id. O pagamento é dividido
+    exatamente pelas obras onde as diárias foram registradas.
+  */
+  const gruposObra=new Map();
+  for(const diaria of pendingItems){
+    const obraId=String(diaria.obra_id||fallbackObra||"");
+    if(!obraId)continue;
+    const valor=diariaValor(diaria);
+    gruposObra.set(obraId,(gruposObra.get(obraId)||0)+valor);
+  }
+
+  if(pendingDiarias>0 && gruposObra.size===0){
+    toast(`Não foi possível identificar a obra das diárias de ${f.nome}.`);
+    continue;
+  }
+
+  processados.push({id,f,resumo,pendingItems,gruposObra,pendingDiarias});
+  total+=resumo.net;
+  diariasTotal+=resumo.pendingDiarias;
+  adiantTotal+=resumo.advance;
+  quantidade++;
 }
 
 if(!processados.length){toast("Nenhum funcionário selecionado possui diária pendente e obra definida.");return;}
@@ -5212,140 +5166,120 @@ let falhas=0,baixados=0;
 
 for(const item of processados){
 
-const observacao=`Diárias pendentes: ${money(item.resumo.pending)}. Adiantamento abatido: ${money(item.resumo.advance)}. Valor líquido: ${money(item.resumo.net)}.${obs?" "+obs:""}`;
+  const observacaoBase=`Diárias pendentes: ${money(item.resumo.pendingDiarias)}. Adiantamento abatido: ${money(item.resumo.advance)}. Valor líquido: ${money(item.resumo.net)}.${obs?" "+obs:""}`;
 
-/*
-   RATEIO POR OBRA:
-   As diárias carregam a obra em que foram registradas. O pagamento não
-   pode usar somente getFuncObra(), porque um mesmo funcionário pode ter
-   trabalhado em várias obras no mesmo período.
+  /*
+    Serviços extras já possuem lançamento financeiro próprio.
+    Portanto, nesta etapa lançamos somente o valor líquido das diárias.
+    O abatimento de adiantamento é distribuído proporcionalmente entre
+    as obras das diárias, mantendo cada despesa na obra correta.
+  */
+  const netDiarias=Math.max(0,Number(item.pendingDiarias||0)-Number(item.resumo.advance||0));
+  const grupos=[...item.gruposObra.entries()];
+  let restanteNet=netDiarias;
+  let restanteBruto=item.pendingDiarias;
+  let falhaFuncionario=false;
 
-   O adiantamento já foi lançado como gasto na obra de origem. Portanto,
-   na baixa das diárias lançamos somente o valor líquido de cada obra:
-   diárias da obra - adiantamentos daquela mesma obra.
-*/
-const extrasPagosTotal=(item.resumo.extrasPendentes||[]).reduce((a,x)=>a+Number(x.valor||0),0);
-const diariaPorObra={};
-for(const diaria of item.pendingItems){
-  const oid=String(diaria.obra_id||item.obraId||fallbackObra||'');
-  if(!oid) continue;
-  diariaPorObra[oid]=(diariaPorObra[oid]||0)+diariaValor(diaria);
-}
+  for(let i=0;i<grupos.length;i++){
+    const [obraId,brutoObra]=grupos[i];
+    let valorObra;
 
-const adiantPorObra={};
-for(const adv of (item.resumo.advances||[])){
-  const usar=Number(adv.disponivel||0);
-  if(usar<=0) continue;
-  const oid=String(adv.obra_id||'');
-  if(oid) adiantPorObra[oid]=(adiantPorObra[oid]||0)+usar;
-}
+    if(i===grupos.length-1){
+      valorObra=Math.max(0,restanteNet);
+    }else if(restanteBruto>0){
+      valorObra=Math.max(0,brutoObra*(netDiarias/item.pendingDiarias));
+      valorObra=Math.min(valorObra,restanteNet);
+    }else{
+      valorObra=0;
+    }
 
-let restoAdiantSemObra=Number(item.resumo.advance||0);
-for(const [oid,bruto] of Object.entries(diariaPorObra)){
-  const abatidoObra=Math.min(bruto,Number(adiantPorObra[oid]||0));
-  restoAdiantSemObra=Math.max(0,restoAdiantSemObra-abatidoObra);
-  const valorObra=Math.max(0,bruto-abatidoObra);
-  if(valorObra<=0) continue;
-  const result=await insertRow("gastos",{
-    obra_id:oid,
-    data,
-    descricao:`[Mão de obra] ${descricao} - ${item.f.nome}`,
-    valor:valorObra,
-    fornecedor:item.f.nome,
-    funcionario_id:item.id,
-    observacao:`Obra de origem das diárias: ${oid}. ${observacao}`.trim(),
-    categoria:"Mão de obra",
-    tipo:"pagamento_equipe",
-    referencia_funcionario_id:item.id
-  });
-  if(!result){falhas++;}
-}
+    restanteNet=Math.max(0,restanteNet-valorObra);
+    restanteBruto=Math.max(0,restanteBruto-brutoObra);
 
-/* Se houver adiantamento sem obra de origem, não o redistribuímos
-   arbitrariamente. O adiantamento permanece registrado na obra em que
-   foi lançado (quando existir), evitando misturar custos entre obras. */
-if(Object.keys(diariaPorObra).length===0 && extrasPagosTotal>0 && item.obraId){
-  const result=await insertRow("gastos",{
-    obra_id:item.obraId,
-    data,
-    descricao:`[Serviço/Equipe] ${descricao} - ${item.f.nome}`,
-    valor:Math.max(0,Number(item.resumo.net||0)),
-    fornecedor:item.f.nome,
-    funcionario_id:item.id,
-    observacao,
-    categoria:"Mão de obra",
-    tipo:"pagamento_equipe",
-    referencia_funcionario_id:item.id
-  });
-  if(!result)falhas++;
-}
+    if(valorObra<=0)continue;
 
-/* Baixa as diárias mesmo se a atualização no servidor falhar. */
-for(const diaria of item.pendingItems){
-  const atualizado=await updateRow(
-    "diarias",
-    diaria.id,
-    {status:"pago",pago:true,paga:true,data_pagamento:data}
-  );
-  const localDia=D.diarias.find(d=>String(d.id)===String(diaria.id));
-  if(localDia){
-    localDia.status="pago"; localDia.pago=true; localDia.paga=true; localDia.data_pagamento=data;
+    const obraObj=D.obras.find(o=>String(o.id)===String(obraId));
+    const nomeObra=obraObj?.nome||"Obra";
+    const result=await insertRow("gastos",{
+      obra_id:obraId,
+      data,
+      descricao:`[Mão de obra] ${descricao} - ${item.f.nome}`,
+      valor:valorObra,
+      fornecedor:item.f.nome,
+      funcionario_id:item.id,
+      observacao:`Obra das diárias: ${nomeObra}. ${observacaoBase}`,
+      categoria:"Mão de obra"
+    });
+
+    if(!result){falhas++;falhaFuncionario=true;break;}
   }
-  markDiariasPaid([diaria.id]);
-  if(atualizado)baixados++;
-}
 
-for(const extra of (item.resumo.extrasPendentes||[])){
-  extra.status='pago';
-  extra.data_pagamento=data;
-  const gasto=(D.gastos||[]).find(g=>String(g.servico_extra_id||'')===String(extra.id));
-  if(gasto)gasto.status='pago';
-}
+  if(falhaFuncionario){
+    /* Não baixa as diárias deste funcionário se algum lançamento financeiro falhou. */
+    continue;
+  }
 
-/* QUITAÇÃO TOTAL DO FUNCIONÁRIO: todo adiantamento existente é baixado,
-   não apenas o valor usado no cálculo do líquido. Assim a nova folha começa do zero. */
-const advAplicados=getAdvanceApplied();
-const nomeFunc=normalize(item.f.nome);
-for(const g of (D.gastos||[])){
-  if(gastoCategoria(g)!=="Adiantamento") continue;
-  const pertence=String(g.funcionario_id||"")===String(item.id) || normalize(g.fornecedor)===nomeFunc || normalize(g.descricao).includes(nomeFunc);
-  if(!pertence) continue;
-  const valor=Number(g.valor||0);
-  if(valor<=0) continue;
-  advAplicados[g.id]=valor;
-  g.status="pago";
-  g.aplicado=true;
-  g.valor_baixado=valor;
-  g.data_pagamento=data;
-  g.funcionario_id=item.id;
-  if(!g.data_pagamento) g.data_pagamento=data;
-}
-for(const a of (D.adiantamentos||[])){
-  if(String(a.funcionario_id)!==String(item.id)) continue;
-  const valor=Number(a.valor||0);
-  a.status="pago"; a.aplicado=true; a.valor_baixado=valor; a.data_pagamento=data;
-}
-saveAdvanceApplied(advAplicados);
-/* Recalcula imediatamente o estado local: adiantamentos pagos não podem
-   voltar para pendente na Gestão, Folha ou Diárias. */
-saveLocalData();
+  /* Baixa cada diária usando a própria obra_id já registrada. */
+  for(const diaria of item.pendingItems){
+    const atualizado=await updateRow(
+      "diarias",
+      diaria.id,
+      {status:"pago",pago:true,paga:true,data_pagamento:data}
+    );
+    const localDia=D.diarias.find(d=>String(d.id)===String(diaria.id));
+    if(localDia){
+      localDia.status="pago";
+      localDia.pago=true;
+      localDia.paga=true;
+      localDia.data_pagamento=data;
+    }
+    markDiariasPaid([diaria.id]);
+    if(atualizado)baixados++;
+  }
+
+  for(const extra of (item.resumo.extrasPendentes||[])){
+    extra.status='pago';
+    extra.data_pagamento=data;
+    const gasto=(D.gastos||[]).find(g=>String(g.servico_extra_id||'')===String(extra.id));
+    if(gasto)gasto.status='pago';
+  }
+
+  /* Mantém a quitação dos adiantamentos exatamente como já funcionava. */
+  const advAplicados=getAdvanceApplied();
+  const nomeFunc=normalize(item.f.nome);
+  for(const g of (D.gastos||[])){
+    if(gastoCategoria(g)!=="Adiantamento") continue;
+    const pertence=String(g.funcionario_id||"")===String(item.id) || normalize(g.fornecedor)===nomeFunc || normalize(g.descricao).includes(nomeFunc);
+    if(!pertence) continue;
+    const valor=Number(g.valor||0);
+    if(valor<=0)continue;
+    advAplicados[g.id]=valor;
+    g.status="pago";
+    g.aplicado=true;
+    g.valor_baixado=valor;
+    g.data_pagamento=data;
+    g.funcionario_id=item.id;
+  }
+  for(const a of (D.adiantamentos||[])){
+    if(String(a.funcionario_id)!==String(item.id))continue;
+    const valor=Number(a.valor||0);
+    a.status="pago";
+    a.aplicado=true;
+    a.valor_baixado=valor;
+    a.data_pagamento=data;
+  }
+  saveAdvanceApplied(advAplicados);
+  saveLocalData();
 }
 
 closeM("pagEquipeM");
-
-/*
-  Não recarrega o Supabase imediatamente aqui.
-  Se o servidor tiver recusado alguma atualização, o estado local
-  já foi salvo por updateRow/insertRow. O mergeLocal corrigido acima
-  preserva esse estado quando a próxima sincronização ocorrer.
-*/
 saveLocalData();
 renderAll();
 
 if(falhas>0){
-toast(`${quantidade-falhas} pagamento(s) processado(s). ${falhas} aguardando sincronização.`);
+  toast(`${quantidade-falhas} pagamento(s) processado(s). ${falhas} lançamento(s) financeiro(s) aguardando sincronização.`);
 }else{
-toast(`${quantidade} pagamento(s) processado(s). ${baixados} diária(s) baixada(s). Total líquido: ${money(total)}. As diárias pagas saíram do pendente.`);
+  toast(`${quantidade} pagamento(s) processado(s). ${baixados} diária(s) baixada(s). Total líquido: ${money(total)}. Cada despesa foi vinculada à obra da respectiva diária.`);
 }
 
 }catch(err){
@@ -6507,38 +6441,20 @@ function renderChecklist(){
   const avg=total?Math.round(itens.reduce((a,x)=>a+Number(x.progresso??((x.concluida||x.concluido)?100:0)),0)/total):0;
   box.innerHTML=`<div class="card"><div class="row"><div><h3>${esc(o.nome)}</h3><small>${total} etapa(s)</small></div><strong class="gold">${avg}%</strong></div><div class="progress"><i style="width:${avg}%"></i></div>${itens.length?itens.map(item=>{const pct=Math.max(0,Math.min(100,Number(item.progresso??((item.concluida||item.concluido)?100:0))));return `<div class="check-item" style="display:block"><div class="row"><div style="display:flex;align-items:center;gap:8px;flex:1"><input type="checkbox" ${pct>=100?'checked':''} onchange="toggleChecklist('${item.id}',this.checked)"><span>${esc(item.tarefa||item.descricao||'Etapa')}</span></div><span class="checkPercent" id="cp_${item.id}">${pct}%</span><button class="mini" onclick="editarChecklist('${item.id}')">Editar</button><button class="mini" onclick="removeRow('checklist','${item.id}')">Excluir</button></div><div class="checkProgressBox"><div class="progress"><i id="cbar_${item.id}" style="width:${pct}%"></i></div></div><div class="checkProgressControls">
   <input id="cpr_${item.id}" class="progressInput" type="range" min="0" max="100" step="1" value="${pct}" aria-label="Progresso da etapa" oninput="previewChecklistPct('${item.id}',this.value)" onchange="setChecklistProgress('${item.id}',this.value)">
-  <input id="cpn_${item.id}" class="progressNumber" type="text" inputmode="decimal" value="${pct}%" aria-label="Porcentagem da etapa" oninput="previewChecklistPct('${item.id}',this.value)" onchange="setChecklistProgressFromNumber('${item.id}',this.value)">
+  <input id="cpn_${item.id}" class="progressNumber" type="number" min="0" max="100" step="1" value="${pct}" aria-label="Porcentagem da etapa" oninput="previewChecklistPct('${item.id}',this.value)" onchange="setChecklistProgressFromNumber('${item.id}',this.value)">
 </div></div>`}).join(''):'<div class="empty">Nenhuma etapa cadastrada para esta obra.</div>'}<div class="listActions"><button class="btn gold" onclick="openCheckForObra('${o.id}')">＋ Adicionar etapa</button></div></div>`;
 }
 
-function parseChecklistPct(value){
-  if(value===null||value===undefined)return 0;
-  let s=String(value).trim().replace("%","").replace(",",".");
-  if(s==="")return 0;
-  let n=Number(s);
-  if(!Number.isFinite(n))return 0;
-  return Math.max(0,Math.min(100,n));
-}
-function previewChecklistBar(id,value){const el=$("cbar_"+id);if(el)el.style.width=parseChecklistPct(value)+"%";}
 function previewChecklistPct(id,value){
-  const pct=parseChecklistPct(value);
-  const bar=$("cbar_"+id);if(bar)bar.style.width=pct+"%";
-  const label=$("cp_"+id);if(label)label.textContent=Math.round(pct)+"%";
-  const range=$("cpr_"+id);if(range && document.activeElement!==range)range.value=pct;
-  const num=$("cpn_"+id);if(num && document.activeElement!==num)num.value=Math.round(pct)+"%";
+  const pct=Math.max(0,Math.min(100,Number(value)||0));
+  const el=$("cp_"+id); if(el)el.textContent=pct+"%";
+  const bar=$("cbar_"+id); if(bar)bar.style.width=pct+"%";
+  const range=$("cpr_"+id); if(range && document.activeElement!==range)range.value=pct;
+  const num=$("cpn_"+id); if(num && document.activeElement!==num)num.value=pct;
 }
-async function setChecklistProgress(id,value){
-  const pct=parseChecklistPct(value);
-  const item=D.checklist.find(x=>String(x.id)===String(id));
-  if(item){item.progresso=pct;item.concluida=pct>=100;}
-  try{
-    await updateRow("checklist",id,{progresso:pct,concluida:pct>=100});
-    saveLocalData();
-    toast("Progresso atualizado para "+Math.round(pct)+"%.");
-  }catch(e){toast("Erro ao salvar progresso: "+(e.message||e));}
-  renderObras();renderChecklist();
-}
-function setChecklistProgressFromNumber(id,value){const pct=parseChecklistPct(value);previewChecklistPct(id,pct);setChecklistProgress(id,pct);}
+function previewChecklistBar(id,value){const el=$("cbar_"+id);if(el)el.style.width=Math.max(0,Math.min(100,Number(value)||0))+"%";}
+async function setChecklistProgress(id,value){const pct=Math.max(0,Math.min(100,Number(value)||0));await updateRow("checklist",id,{progresso:pct,concluida:pct>=100});renderObras();renderChecklist();}
+function setChecklistProgressFromNumber(id,value){const pct=Math.max(0,Math.min(100,Number(value)||0));previewChecklistPct(id,pct);setChecklistProgress(id,pct);}
 async function editarChecklist(id){const item=D.checklist.find(x=>String(x.id)===String(id));if(!item)return;const tarefa=prompt("Editar etapa:",item.tarefa||item.descricao||"");if(tarefa===null||!tarefa.trim())return;await updateRow("checklist",id,{tarefa:tarefa.trim()});renderChecklist();}
 
 
@@ -7579,11 +7495,6 @@ function importRemapRow(row,maps){
       copy[key]=maps.funcionarios[String(copy[key])];
     }
   }
-  for(const key of ["gasto_id","gastoId"]){
-    if(copy[key]!=null && maps.gastos[String(copy[key])] != null){
-      copy[key]=maps.gastos[String(copy[key])];
-    }
-  }
   for(const key of ["material_id","materialId"]){
     if(copy[key]!=null && maps.materiais[String(copy[key])]!=null){
       copy[key]=maps.materiais[String(copy[key])];
@@ -7593,212 +7504,589 @@ function importRemapRow(row,maps){
 }
 
 async function importBackupData(backup){
-  if(!backup || !backup.data || typeof backup.data!=="object") throw new Error("Backup EDIFIQ inválido.");
+  if(!backup || !backup.data) throw new Error("Backup inválido.");
 
-  const maps={obras:{},funcionarios:{},materiais:{},gastos:{},pagamentos:{},checklist:{},diarias:{},faltas:{},diario:{},documentos:{},presencas:{}};
-  const makeLocalId=()=>`local_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-  const arr=(table)=>Array.isArray(backup.data[table])?backup.data[table]:[];
-  const ensureTable=(table)=>{if(!Array.isArray(D[table]))D[table]=[]};
-
-  // Importação OFFLINE-FIRST:
-  // 1) não depende do Supabase para concluir a restauração;
-  // 2) preserva os registros atuais;
-  // 3) evita duplicar registros que já existem pelo mesmo ID;
-  // 4) cria novos IDs locais e remapeia todos os vínculos.
-  const upsertLocal=async(table,row,map)=>{
-    ensureTable(table);
-    const antigo=row?.id!=null?String(row.id):"";
-    if(antigo){
-      const existente=D[table].find(x=>String(x.id)===antigo);
-      if(existente){
-        map[antigo]=existente.id;
-        return existente;
-      }
-    }
-    const novo={...row};
-    delete novo.created_at;
-    delete novo.updated_at;
-    delete novo.user_id;
-    novo.id=makeLocalId();
-    novo._sync_pendente=true;
-    D[table].unshift(novo);
-    if(antigo)map[antigo]=novo.id;
-    return novo;
+  const maps={
+    obras:{},
+    funcionarios:{},
+    materiais:{},
+    documentos:{}
   };
 
-  const remap=(row)=>{
-    const copy={...(row||{})};
-    delete copy.user_id;
-    delete copy.created_at;
-    delete copy.updated_at;
-    for(const key of ["obra_id","obraId"]) if(copy[key]!=null && maps.obras[String(copy[key])]!==undefined) copy[key]=maps.obras[String(copy[key])];
-    for(const key of ["funcionario_id","funcionarioId"]) if(copy[key]!=null && maps.funcionarios[String(copy[key])]!==undefined) copy[key]=maps.funcionarios[String(copy[key])];
-    for(const key of ["gasto_id","gastoId"]) if(copy[key]!=null && maps.gastos[String(copy[key])]!==undefined) copy[key]=maps.gastos[String(copy[key])];
-    for(const key of ["material_id","materialId"]) if(copy[key]!=null && maps.materiais[String(copy[key])]!==undefined) copy[key]=maps.materiais[String(copy[key])];
-    return copy;
-  };
+  /*
+   * IMPORTAÇÃO CORRIGIDA:
+   * O código antigo apagava os IDs antes de inserir cada tabela.
+   * Assim a obra/funcionário recebia um novo ID, mas gastos,
+   * diárias, pagamentos e checklist continuavam apontando para
+   * os IDs antigos. Os totais apareciam, porém as despesas ficavam
+   * sem obra/funcionário e não eram distribuídas.
+   *
+   * Agora cada registro pai é inserido primeiro e seu novo ID é
+   * guardado. Os registros dependentes usam esse mapa.
+   */
 
-  // Pais primeiro: obras e funcionários.
-  for(const row of arr("obras")) await upsertLocal("obras",row,maps.obras);
-  for(const row of arr("funcionarios")) await upsertLocal("funcionarios",remap(row),maps.funcionarios);
+  // 1) Obras — primeiro para criar o mapa ID antigo -> ID novo.
+  for(const row of (backup.data.obras||[])){
+    const antigo=row?.id;
+    const novo=await insertRow("obras",importRemapRow(row,maps));
+    if(novo && antigo!=null) maps.obras[String(antigo)]=novo.id;
+  }
 
-  // Materiais são armazenados localmente/IndexedDB.
-  ensureTable("materiais");
-  for(const row of arr("materiais")){
-    const antigo=row?.id!=null?String(row.id):"";
-    if(antigo){
-      const existente=D.materiais.find(x=>String(x.id)===antigo);
-      if(existente){maps.materiais[antigo]=existente.id;continue;}
+  // 2) Funcionários — também precisam ser criados antes das diárias.
+  for(const row of (backup.data.funcionarios||[])){
+    const antigo=row?.id;
+    const novo=await insertRow("funcionarios",importRemapRow(row,maps));
+    if(novo && antigo!=null) maps.funcionarios[String(antigo)]=novo.id;
+  }
+
+  // 3) Materiais são locais. Cria novos IDs e guarda o vínculo.
+  if(Array.isArray(backup.data.materiais)){
+    for(const row of backup.data.materiais){
+      const antigo=row?.id;
+      const novoId="mat_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+      const novo=importRemapRow(row,maps);
+      novo.id=novoId;
+      D.materiais.push(novo);
+      if(antigo!=null) maps.materiais[String(antigo)]=novoId;
     }
-    const novo=remap(row);
-    novo.id=makeLocalId();
-    D.materiais.unshift(novo);
-    if(antigo)maps.materiais[antigo]=novo.id;
   }
 
-  // Tabelas dependentes.
-  for(const table of ["gastos","pagamentos","diarias","checklist","faltas","diario","documentos","presencas"]){
-    for(const row of arr(table)) await upsertLocal(table,remap(row),maps[table]||{});
-  }
+  // 4) Tabelas dependentes. Todos os *_id conhecidos são remapeados.
+  const tabelasDependentes=[
+    "diarias",
+    "gastos",
+    "pagamentos",
+    "checklist",
+    "faltas",
+    "diario",
+    "documentos"
+  ];
 
-  // Movimentações de materiais.
-  ensureTable("material_movimentos");
-  for(const row of arr("material_movimentos")){
-    const novo=remap(row);
-    const antigo=row?.id!=null?String(row.id):"";
-    const existente=antigo?D.material_movimentos.find(x=>String(x.id)===antigo):null;
-    if(existente) continue;
-    novo.id=makeLocalId();
-    D.material_movimentos.unshift(novo);
-  }
-
-  // Relação funcionário -> obra.
-  if(backup.funcionarioObras && typeof backup.funcionarioObras==="object"){
-    const atual=(()=>{try{return JSON.parse(localStorage.getItem(FUNC_OBRA_KEY)||"{}")}catch{return{}}})();
-    for(const [oldFunc,oldObra] of Object.entries(backup.funcionarioObras)){
-      const nf=maps.funcionarios[String(oldFunc)] ?? oldFunc;
-      const no=maps.obras[String(oldObra)] ?? oldObra;
-      atual[String(nf)]=no||"";
-      const f=D.funcionarios.find(x=>String(x.id)===String(nf));
-      if(f && no && !f.obra_id) f.obra_id=no;
+  for(const table of tabelasDependentes){
+    for(const row of (backup.data[table]||[])){
+      await insertRow(table,importRemapRow(row,maps));
     }
-    localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(atual));
   }
 
-  // Adiantamentos aplicados: remapeia os IDs de gastos quando possível.
-  if(backup.adiantamentosAplicados && typeof backup.adiantamentosAplicados==="object"){
-    const atual=(()=>{try{return JSON.parse(localStorage.getItem(ADV_KEY)||"{}")}catch{return{}}})();
-    for(const [oldId,val] of Object.entries(backup.adiantamentosAplicados)){
-      const novoId=maps.gastos[String(oldId)];
-      if(novoId) atual[String(novoId)]=Number(val||0);
+  // 5) Movimentações de materiais — só depois que os materiais têm novos IDs.
+  if(Array.isArray(backup.data.material_movimentos)){
+    for(const row of backup.data.material_movimentos){
+      const novo=importRemapRow(row,maps);
+      novo.id="mm_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+      D.material_movimentos.push(novo);
     }
-    localStorage.setItem(ADV_KEY,JSON.stringify(atual));
   }
 
-  // Serviços adicionais acompanham o novo ID da obra.
-  if(backup.servicosAdicionais && typeof backup.servicosAdicionais==="object"){
-    const atual=getServices();
-    for(const [oldObraId,lista] of Object.entries(backup.servicosAdicionais)){
+  // 6) Relação funcionário -> obra usada pelas versões locais do aplicativo.
+  if(backup.funcionarioObras){
+    const origem=backup.funcionarioObras;
+    const destino={};
+    Object.entries(origem).forEach(([funcId,obraId])=>{
+      const nf=maps.funcionarios[String(funcId)] ?? funcId;
+      const no=maps.obras[String(obraId)] ?? obraId;
+      destino[nf]=no||"";
+    });
+    localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(destino));
+
+    // Mantém também a coluna obra_id do funcionário quando existir.
+    D.funcionarios.forEach(f=>{
+      const obra=destino[String(f.id)];
+      if(obra && !f.obra_id) f.obra_id=obra;
+    });
+  }
+
+  if(backup.adiantamentosAplicados){
+    /*
+     * Os IDs dos gastos mudaram na importação. Para evitar aplicar
+     * adiantamentos no gasto errado, recriamos o mapa pelo índice/
+     * fornecedor/descrição quando possível. Registros que não puderem
+     * ser associados ficam zerados, sem causar desconto indevido.
+     */
+    const novoAplicado={};
+    const origem=backup.adiantamentosAplicados||{};
+    const gastosImportados=D.gastos||[];
+    const gastosAdiant=gastosImportados.filter(g=>gastoCategoria(g)==="Adiantamento");
+
+    Object.entries(origem).forEach(([oldId,val])=>{
+      const g=gastosAdiant.find(x=>String(x.id)===String(oldId));
+      if(g) novoAplicado[g.id]=Number(val||0);
+    });
+    localStorage.setItem(ADV_KEY,JSON.stringify(novoAplicado));
+  }
+
+  // 7) Serviços adicionais também passam a acompanhar a obra importada.
+  if(backup.servicosAdicionais){
+    const origem=backup.servicosAdicionais;
+    const destino={};
+    Object.entries(origem).forEach(([oldObraId,lista])=>{
       const novaObraId=maps.obras[String(oldObraId)] ?? oldObraId;
-      if(!Array.isArray(atual[novaObraId])) atual[novaObraId]=[];
-      const existentes=new Set(atual[novaObraId].map(x=>JSON.stringify(x)));
-      for(const item of (Array.isArray(lista)?lista:[])){
-        const sig=JSON.stringify(item);
-        if(!existentes.has(sig)){atual[novaObraId].push(item);existentes.add(sig);}
-      }
-    }
-    saveServices(atual);
+      destino[novaObraId]=Array.isArray(lista)?lista:[];
+    });
+    saveServices(destino);
   }
 
-  // Fotos: importa no IndexedDB sem duplicar pelo ID e remapeia a obra.
-  if(Array.isArray(backup.fotos) && backup.fotos.length && typeof savePhotoDB==='function'){
-    let fotosAtuais=[];
-    try{fotosAtuais=await getAllPhotosDB();}catch(e){console.warn("Não foi possível consultar fotos existentes",e)}
-    const ids=new Set(fotosAtuais.map(x=>String(x.id)));
-    for(const foto of backup.fotos){
-      if(!foto) continue;
-      const novo={...foto};
-      if(novo.obra_id!=null && maps.obras[String(novo.obra_id)]!==undefined) novo.obra_id=maps.obras[String(novo.obra_id)];
-      if(!novo.id || ids.has(String(novo.id))) continue;
-      try{await savePhotoDB(novo);ids.add(String(novo.id));}catch(err){console.warn("Foto não importada:",err)}
-    }
-  }
-
-  // Salva imediatamente no aparelho. Não chama loadCloud(), pois isso poderia
-  // substituir a restauração local por um estado antigo do servidor.
-  auditEDIFIQ();
   saveLocalData();
   saveMaterialMeta();
   try{await saveMaterialDB();}catch(e){console.warn("Materiais locais após importação",e)}
+
+  // Recarrega os dados do servidor sem perder os registros locais.
+  await loadCloud();
+  await loadMaterialMeta();
   loadDocumentoMeta();
   fillSelectors();
   renderAll();
-
-  // Se houver internet/login, tenta enviar as linhas locais para a nuvem.
-  // A restauração já está concluída mesmo que o servidor esteja indisponível.
-  try{retryLocalCloudRows().catch(e=>console.warn("Sincronização pós-importação",e));}catch(e){console.warn("Sincronização pós-importação",e)}
-  saveLocalData();
 }
 
+async function importBackup(event){
+  const file=event.target.files?.[0];
+  if(!file)return;
+
+  const reader=new FileReader();
+
+  reader.onload=async()=>{
+    try{
+      const backup=JSON.parse(reader.result);
+
+      if(!backup.data){
+        toast("Backup inválido.");
+        return;
+      }
+
+      if(!confirm(
+        "Importar este backup? Os registros serão adicionados ao sistema e seus vínculos entre obras, funcionários, despesas, materiais e financeiro serão reconstruídos."
+      )) return;
+
+      await importBackupData(backup);
+
+      toast("Backup importado e despesas distribuídas por obra.");
+    }catch(e){
+      console.error("EDIFIQ importação:",e);
+      toast("Arquivo de backup inválido ou não foi possível reconstruir os vínculos.");
+    }
+  };
+
+  reader.onerror=()=>toast("Não foi possível ler o arquivo de backup.");
+  reader.readAsText(file);
+  event.target.value="";
+}
+
+
+/* =========================================================
+   CENTRAL PROFISSIONAL DE HISTÓRICOS DA EQUIPE
+   ========================================================= */
+function showEquipeHistoryTab(tab){
+  const pag=$('equipeHistoryPag'), dia=$('equipeHistoryDia'), freq=$('equipeHistoryFreq');
+  const tp=$('histTabPag'), td=$('histTabDia'), tf=$('histTabFreq');
+  if(!pag||!dia||!freq)return;
+  const mode=tab==='dia'?'dia':(tab==='freq'?'freq':'pag');
+  pag.classList.toggle('hidden',mode!=='pag'); dia.classList.toggle('hidden',mode!=='dia'); freq.classList.toggle('hidden',mode!=='freq');
+  tp?.classList.toggle('active',mode==='pag'); td?.classList.toggle('active',mode==='dia'); tf?.classList.toggle('active',mode==='freq');
+  if(mode==='pag')renderHistoricoPagamentos(); else if(mode==='dia')renderHistoricoDiariasPro(); else renderHistoricoFrequencia();
+}
+function fillEquipeHistorySelectors(){
+  const opts=D.funcionarios.slice().sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR')).map(f=>`<option value="${esc(String(f.id))}">${esc(f.nome||'Funcionário')}</option>`).join('');
+  ['histPagFunc','histFunc2','histFreqFunc'].forEach(id=>{const el=$(id);if(!el)return;const cur=el.value;el.innerHTML='<option value="">Todos os funcionários</option>'+opts;if(cur)el.value=cur;});
+  const oo=$('histFreqObra'); if(oo){const cur=oo.value;oo.innerHTML='<option value="">Todas as obras</option>'+(D.obras||[]).map(o=>`<option value="${esc(String(o.id))}">${esc(o.nome||'Obra')}</option>`).join('');if(cur)oo.value=cur;}
+}
+function renderHistoricoFrequencia(){
+  fillEquipeHistorySelectors();
+  const box=$('histFreqList'), resumo=$('histFreqResumo'); if(!box)return;
+  const fid=$('histFreqFunc')?.value||'', oid=$('histFreqObra')?.value||'', ini=$('histFreqInicio')?.value||'', fim=$('histFreqFim')?.value||'';
+  const map=new Map();
+  const add=(funcId,data,obraId,status,obs)=>{
+    const id=String(funcId||''), dt=String(data||''); if(!id||!dt)return;
+    if(ini&&dt<ini||fim&&dt>fim)return;
+    if(fid&&id!==String(fid))return;
+    if(oid&&String(obraId||'')!==String(oid))return;
+    const key=id+'|'+dt+'|'+String(obraId||'');
+    const prev=map.get(key);
+    const rank={falta:3,atestado:3,justificada:3,trabalhou:2,presente:2};
+    if(!prev||((rank[status]||1)>(rank[prev.status]||1)))map.set(key,{funcId:id,data:dt,obraId:obraId||'',status,obs:obs||''});
+  };
+  (D.diarias||[]).forEach(d=>add(d.funcionario_id??d.funcId??d.funcionarioId,d.data,d.obra_id,'trabalhou',d.observacao));
+  (D.presencas||[]).forEach(d=>{if(String(d.status||'presente').toLowerCase()==='presente')add(d.funcionario_id,d.data,d.obra_id,'presente',d.observacao);});
+  (D.faltas||[]).forEach(d=>add(d.funcionario_id,d.data,d.obra_id,d.tipo||'falta',d.observacao));
+  const items=[...map.values()].sort((a,b)=>String(b.data).localeCompare(String(a.data))||String(a.funcId).localeCompare(String(b.funcId)));
+  const trabalhados=items.filter(x=>x.status==='trabalhou'||x.status==='presente').length, faltas=items.filter(x=>['falta','justificada','atestado'].includes(x.status)).length, pessoas=new Set(items.map(x=>x.funcId)).size;
+  if(resumo)resumo.innerHTML=`<div class="historyMetric"><small>Dias registrados</small><b>${items.length}</b></div><div class="historyMetric"><small>Dias trabalhados</small><b class="green">${trabalhados}</b></div><div class="historyMetric"><small>Faltas / afastamentos</small><b class="red">${faltas}</b></div>`;
+  if(!items.length){box.innerHTML='<div class="empty">Nenhum registro de trabalho ou falta encontrado com os filtros selecionados.</div>';return;}
+  box.innerHTML=items.map(x=>{const f=D.funcionarios.find(y=>String(y.id)===x.funcId),o=D.obras.find(y=>String(y.id)===String(x.obraId));const falta=['falta','justificada','atestado'].includes(x.status);const label={falta:'Falta',justificada:'Falta justificada',atestado:'Atestado',trabalhou:'Trabalhou',presente:'Trabalhou'}[x.status]||x.status;return `<article class="historyCard"><div class="historyCardTop"><div class="historyAvatar">${falta?'⚠️':'✓'}</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(f?.funcao||'Função não informada')} · ${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${falta?'pending':'paid'}">${label}</span></div><div class="historyDataGrid"><div><small>Dia</small><b>${esc(formatDateBR(x.data))}</b></div><div><small>Obra</small><b>${esc(o?.nome||'—')}</b></div><div><small>Função</small><b>${esc(f?.funcao||'—')}</b></div><div><small>Observação</small><b>${esc(x.obs||'—')}</b></div></div></article>`;}).join('');
+}
+
+function pagamentoEquipeHistorico(){
+  const arr=[];
+  for(const g of (D.gastos||[])){
+    const cat=categoriaFinanceira(g);
+    if(cat!=='Mão de obra')continue;
+    const nome=String(g.fornecedor||'').trim();
+    if(!nome)continue;
+    const f=D.funcionarios.find(x=>normalize(x.nome)===normalize(nome));
+    if(!f)continue;
+    arr.push({g,f,obra:D.obras.find(o=>String(o.id)===String(g.obra_id))});
+  }
+  return arr.sort((a,b)=>String(b.g?.data||'').localeCompare(String(a.g?.data||'')));
+}
+function renderHistoricoPagamentos(){
+  fillEquipeHistorySelectors();
+  const box=$('histPagList'), resumoBox=$('histPagResumo'); if(!box)return;
+  const fid=$('histPagFunc')?.value||'', ini=$('histPagInicio')?.value||'', fim=$('histPagFim')?.value||'';
+  let items=pagamentoEquipeHistorico();
+  if(fid)items=items.filter(x=>String(x.f.id)===String(fid));
+  if(ini)items=items.filter(x=>String(x.g.data||'')>=ini);
+  if(fim)items=items.filter(x=>String(x.g.data||'')<=fim);
+  const total=items.reduce((a,x)=>a+Number(x.g.valor||0),0);
+  const qtd=items.length;
+  const pessoas=new Set(items.map(x=>String(x.f.id))).size;
+  if(resumoBox)resumoBox.innerHTML=`<div class="historyMetric"><small>Pagamentos</small><b>${qtd}</b></div><div class="historyMetric"><small>Funcionários</small><b>${pessoas}</b></div><div class="historyMetric"><small>Total pago</small><b class="green">${money(total)}</b></div>`;
+  if(!items.length){box.innerHTML='<div class="empty">Nenhum pagamento encontrado com os filtros selecionados.</div>';return;}
+  box.innerHTML=items.map(x=>`<article class="historyCard paymentHistoryCard">
+    <div class="historyCardTop"><div class="historyAvatar">${esc(String(x.f.nome||'F').trim().charAt(0).toUpperCase())}</div><div class="historyIdentity"><b>${esc(x.f.nome)}</b><small>${esc(x.f.funcao||'Funcionário')} · ${esc(x.obra?.nome||'Obra não definida')}</small></div><span class="historyStatus paid">Pago</span></div>
+    <div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(x.g.data||''))}</b></div><div><small>Valor</small><b class="green">${money(x.g.valor)}</b></div><div><small>Categoria</small><b>Mão de obra</b></div><div><small>Descrição</small><b>${esc(x.g.descricao||'Pagamento de equipe')}</b></div></div>
+  </article>`).join('');
+}
+function renderHistoricoDiariasPro(){
+  fillEquipeHistorySelectors();
+  const box=$('histDiaList'), resumoBox=$('histDiaResumo'); if(!box)return;
+  const fid=$('histFunc2')?.value||'', ini=$('histInicio2')?.value||'', fim=$('histFim2')?.value||'';
+  let items=(D.diarias||[]).slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  if(fid)items=items.filter(d=>String(d.funcionario_id??d.funcId??d.funcionarioId)===String(fid));
+  if(ini)items=items.filter(d=>String(d.data||'')>=ini);
+  if(fim)items=items.filter(d=>String(d.data||'')<=fim);
+  const total=items.reduce((a,d)=>a+diariaValor(d),0), pag=items.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0), pend=total-pag;
+  if(resumoBox)resumoBox.innerHTML=`<div class="historyMetric"><small>Registros</small><b>${items.length}</b></div><div class="historyMetric"><small>Valor total</small><b>${money(total)}</b></div><div class="historyMetric"><small>Pendente</small><b class="gold">${money(pend)}</b></div>`;
+  if(!items.length){box.innerHTML='<div class="empty">Nenhuma diária encontrada com os filtros selecionados.</div>';return;}
+  box.innerHTML=items.map(d=>{const f=D.funcionarios.find(x=>String(x.id)===String(d.funcionario_id??d.funcId??d.funcionarioId));const o=D.obras.find(x=>String(x.id)===String(d.obra_id));const v=diariaValor(d);const pago=diariaEstaPaga(d);return `<article class="historyCard diaryHistoryCard">
+    <div class="historyCardTop"><div class="historyAvatar diary">📅</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${pago?'paid':'pending'}">${pago?'Pago':'Pendente'}</span></div>
+    <div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data||''))}</b></div><div><small>Valor</small><b class="gold">${money(v)}</b></div><div><small>Quantidade</small><b>${Number(d.qtd||1).toLocaleString('pt-BR')}</b></div><div><small>Observação</small><b>${esc(d.observacao||'—')}</b></div></div>
+  </article>`}).join('');
+}
+function formatDateBR(v){if(!v)return '—';const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:String(v);}
+
+/* =========================================================
+   HISTÓRICO INDIVIDUAL DE DIÁRIAS
+   ========================================================= */
+function renderHistoricoDiarias(){
+  const box=$('histDiarias');
+  const sel=$('histFunc');
+  if(!box||!sel)return;
+  const funcId=sel.value||'';
+  if(!funcId){
+    box.innerHTML='Selecione um funcionário para visualizar o histórico.';
+    return;
+  }
+  const ini=$('histInicio')?.value||'';
+  const fim=$('histFim')?.value||'';
+  let items=D.diarias.filter(d=>{
+  const id=d.funcionario_id ?? d.funcId ?? d.funcionarioId ?? d.funcionario_id_fk;
+  return String(id)===String(funcId);
+});
+  if(ini)items=items.filter(d=>String(d.data||'')>=ini);
+  if(fim)items=items.filter(d=>String(d.data||'')<=fim);
+  items.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  const f=D.funcionarios.find(x=>String(x.id)===String(funcId));
+  const total=items.reduce((a,d)=>a+diariaValor(d),0);
+  const pend=items.filter(d=>!diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
+  const pag=items.filter(d=>diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
+  if(!items.length){
+    box.innerHTML=`<div><b>${esc(f?.nome||'Funcionário')}</b><br><small>Nenhuma diária encontrada no período selecionado.</small></div>`;
+    return;
+  }
+  box.innerHTML=`
+    <div class="three">
+      <div><small>Total</small><br><b>${money(total)}</b></div>
+      <div><small>Pendente</small><br><b class="gold">${money(pend)}</b></div>
+      <div><small>Pago</small><br><b class="green">${money(pag)}</b></div>
+    </div>
+    <div style="overflow:auto;margin-top:10px">
+      ${items.map(d=>{
+        const o=D.obras.find(x=>String(x.id)===String(d.obra_id));
+        const v=diariaValor(d);
+        const status=diariaEstaPaga(d)?'Pago':'Pendente';
+        return `<div class="historyRow" style="display:grid;grid-template-columns:90px 1fr auto;gap:10px;align-items:center;border-top:1px solid var(--line);padding:9px 0">
+          <span>${esc(d.data||'')}</span>
+          <span><b>${esc(o?.nome||'Sem obra')}</b><br><small>${esc(d.observacao||'')}</small></span>
+          <span><b class="${status==='Pago'?'green':'gold'}">${money(v)}</b><br><small>${status}</small></span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function fillHistoricoFuncionarioSelector(){
+  const sel=$('histFunc');
+  if(!sel)return;
+
+  const current=sel.value||'';
+
+  const funcionarios=[...D.funcionarios]
+    .filter(f=>f && f.id!==undefined && f.id!==null && String(f.id)!=="")
+    .sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||""),"pt-BR"));
+
+  sel.innerHTML='<option value="">Selecione o funcionário</option>'+
+    funcionarios.map(f=>
+      `<option value="${esc(String(f.id))}">${esc(f.nome||"Funcionário")}</option>`
+    ).join('');
+
+  if(current && funcionarios.some(f=>String(f.id)===String(current))){
+    sel.value=current;
+  }
+}
+
+
+/* =========================================================
+   EDIFIQ — RELATÓRIO PARA CLIENTE
+   ========================================================= */
+const RC_DEFAULT_SECTIONS={
+  saudacao:true,resumo:true,andamento:true,dias:true,equipe:true,servicos:true,financeiro:true,pagamentos:true,observacoes:true,proximas:true,final:true,encerramento:true
+};
+window.__rcSections={...RC_DEFAULT_SECTIONS};
+window.__rcManualText=false;
+window.__rcSelected=[];
+
+function rcFmtDate(v){
+  if(!v)return "—";
+  const p=String(v).split('-');
+  return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:String(v);
+}
+function rcDaysDiff(a,b){
+  const x=new Date(`${a}T00:00:00`),y=new Date(`${b}T00:00:00`);
+  if(Number.isNaN(x.getTime())||Number.isNaN(y.getTime()))return 0;
+  return Math.floor((y-x)/86400000)+1;
+}
+function rcInPeriod(date,ini,fim){
+  const d=String(date||'');
+  if(!d)return false;
+  return (!ini||d>=ini)&&(!fim||d<=fim);
+}
+function rcClients(){
+  return [...new Set(D.obras.map(o=>String(o.cliente||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
+function rcClientWorks(){
+  const c=$('rcCliente')?.value||'';
+  return D.obras.filter(o=>!c||String(o.cliente||'').trim()===c);
+}
+function rcRenderClients(){
+  const sel=$('rcCliente');if(!sel)return;
+  const current=sel.value||'';
+  sel.innerHTML='<option value="">Selecione o cliente</option>'+rcClients().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  if(current && rcClients().includes(current))sel.value=current;
+}
+function rcRenderObras(){
+  const box=$('rcObrasList'),info=$('rcClientesInfo');if(!box)return;
+  const works=rcClientWorks();
+  const current=new Set((window.__rcSelected||[]).map(String));
+  if(!current.size)works.forEach(o=>current.add(String(o.id)));
+  window.__rcSelected=works.filter(o=>current.has(String(o.id))).map(o=>String(o.id));
+  if(info)info.textContent=works.length?`${$('rcCliente')?.value||'Todos os clientes'} · ${works.length} obra(s) encontrada(s)`:'Nenhuma obra encontrada para este cliente.';
+  box.innerHTML=works.length?works.map(o=>{const checked=window.__rcSelected.includes(String(o.id));return `<label class="item" style="display:flex;align-items:center;gap:10px;cursor:pointer"><input class="rcObraCheck" type="checkbox" value="${esc(String(o.id))}" ${checked?'checked':''} onchange="rcToggleObra('${esc(String(o.id))}',this.checked)" style="width:20px;height:20px;flex:0 0 20px"><span style="flex:1;min-width:0"><b>${esc(o.nome||'Obra')}</b><br><small>${money(o.valor||0)} · ${esc(statusLabel(o.status))}</small></span></label>`}).join(''):'<div class="empty">Cadastre uma obra com cliente para usar este relatório.</div>';
+  rcRefreshPreview();
+}
+function rcToggleObra(id,checked){
+  const set=new Set((window.__rcSelected||[]).map(String));
+  checked?set.add(String(id)):set.delete(String(id));
+  window.__rcSelected=[...set];
+  rcRefreshPreview();
+}
+function rcSelectAllClientWorks(all){
+  const works=rcClientWorks();
+  window.__rcSelected=all?works.map(o=>String(o.id)):[];
+  document.querySelectorAll('.rcObraCheck').forEach(x=>x.checked=all);
+  rcRefreshPreview();
+}
+function rcSectionControls(){
+  const box=$('rcSections');if(!box)return;
+  const labels={saudacao:'Saudação inicial',resumo:'Resumo do período',andamento:'Andamento da obra',dias:'Dias trabalhados',equipe:'Equipe envolvida',servicos:'Serviços realizados',financeiro:'Resumo financeiro',pagamentos:'Pagamentos recebidos',observacoes:'Observações gerais',proximas:'Próximas etapas',final:'Resumo geral final',encerramento:'Mensagem de encerramento'};
+  box.innerHTML=Object.entries(labels).map(([k,n])=>`<div class="rcToggle"><span>${n}</span><label class="rcSwitch"><input type="checkbox" ${window.__rcSections[k]?'checked':''} onchange="rcSetSection('${k}',this.checked)"><i class="rcSlider"></i></label></div>`).join('');
+}
+function rcSetSection(k,v){window.__rcSections[k]=!!v;window.__rcManualText=false;rcRefreshPreview();}
+function rcSelectedWorks(){const ids=new Set((window.__rcSelected||[]).map(String));return D.obras.filter(o=>ids.has(String(o.id)));}
+function rcData(){
+  const obras=rcSelectedWorks();
+  const ini=$('rcInicio')?.value||'';const fim=$('rcFim')?.value||'';
+  const diarias=D.diarias.filter(d=>obras.some(o=>String(o.id)===String(d.obra_id))&&rcInPeriod(d.data,ini,fim));
+  const dates=[...new Set(diarias.map(d=>String(d.data||'')).filter(Boolean))].sort((a,b)=>b.localeCompare(a));
+  const teamIds=[...new Set(diarias.map(d=>String(d.funcionario_id||'')).filter(Boolean))];
+  const team=teamIds.map(id=>{const f=D.funcionarios.find(x=>String(x.id)===id);const its=diarias.filter(d=>String(d.funcionario_id)===id);return {f,days:new Set(its.map(d=>d.data)).size,items:its};}).filter(x=>x.f);
+  const services=obras.flatMap(o=>servicesForObra(o.id).map(s=>({...s,obra:o}))).filter(s=>rcInPeriod(s.data,ini,fim));
+  const pagamentos=D.pagamentos.filter(p=>obras.some(o=>String(o.id)===String(p.obra_id))).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  const finances=obras.map(o=>({o,f:obraFinanceData(o.id)}));
+  const total=finances.reduce((a,x)=>a+x.f.contrato,0),receita=finances.reduce((a,x)=>a+x.f.receita,0),despesas=finances.reduce((a,x)=>a+x.f.despesas,0),resultado=receita-despesas;
+  const concl=obras.filter(o=>o.status==='concluida').length, andamento=obras.filter(o=>o.status!=='concluida').length;
+  const progress=obras.length?Math.round(obras.reduce((a,o)=>a+obraProgress(o),0)/obras.length):0;
+  return {obras,ini,fim,diarias,dates,team,services,pagamentos,finances,total,receita,despesas,resultado,saldo:Math.max(0,total-receita),concl,andamento,progress};
+}
+function rcBuildText(){
+  const d=rcData(), cliente=$('rcCliente')?.value||'Cliente', ini=d.ini||today(), fim=d.fim||today();
+  const sec=window.__rcSections, lines=[];
+  const add=(x)=>{if(x)lines.push(x)};
+  if(sec.saudacao)add(($('rcSaudacao')?.value||`Olá, ${cliente}! 👋`).trim());
+  add('');add('📋 *RELATÓRIO DE ACOMPANHAMENTO DE OBRA*');add(`Cliente: ${cliente}`);add(`Obra(s): ${d.obras.map(o=>String(o.nome||'').toUpperCase()).join(', ')||'Nenhuma selecionada'}`);add(`Período: ${rcFmtDate(ini)} a ${rcFmtDate(fim)}`);add(`Data de emissão: ${rcFmtDate(today())}`);add('');
+  if(sec.resumo){add('📊 *RESUMO DO PERÍODO*');add(`• ${d.dates.length} dias com atividade`);add(`• ${d.team.length} trabalhadores envolvidos`);add(`• ${d.diarias.length} registros de diárias`);add('• Horas registradas: não informadas no EDIFIQ');add('');}
+  if(sec.andamento){add('🏗️ *ANDAMENTO DA OBRA*');add(`• Obras concluídas: ${d.concl}`);add(`• Obras em andamento: ${d.andamento}`);add(`• Progresso médio do checklist: ${d.progress}%`);d.obras.forEach(o=>add(`• ${o.nome}: ${obraProgress(o)}% — ${statusLabel(o.status)}`));add('');}
+  if(sec.dias){add('📅 *DIAS TRABALHADOS*');add(`Total de dias com atividade: ${d.dates.length}`);d.dates.slice(0,30).forEach(dt=>{const n=new Set(d.diarias.filter(x=>x.data===dt).map(x=>String(x.funcionario_id))).size;add(`• ${rcFmtDate(dt)}: ${n} trabalhador(es)`);});if(d.dates.length>30)add(`• ... e outros ${d.dates.length-30} dias`);add('');}
+  if(sec.equipe){add('👷 *EQUIPE NO PERÍODO*');d.team.forEach(x=>add(`• ${x.f.nome} — ${x.f.funcao||x.f.função||'Função não informada'} — ${x.days} dia(s)`));if(!d.team.length)add('• Nenhum registro de equipe no período.');add('');}
+  if(sec.servicos){add('🔨 *SERVIÇOS REALIZADOS*');d.services.forEach(s=>add(`• ${s.data?rcFmtDate(s.data)+' — ':''}${s.obra?.nome||''}: ${s.nome} — ${money(s.valor||0)}`));if(!d.services.length)add('• Nenhum serviço adicional registrado no período.');add('');}
+  if(sec.financeiro){add('💰 *RESUMO FINANCEIRO*');d.finances.forEach(x=>{add(`*${x.o.nome}*`);add(`• Valor contratado: ${money(x.f.contrato)}`);add(`• Total recebido: ${money(x.f.receita)}`);add(`• Despesas: ${money(x.f.despesas)}`);add(`• Resultado: ${money(x.f.resultado)}`);add(`• Margem de lucro: ${Number(x.f.margemLucro||0).toFixed(1)}%`);add(`• Saldo pendente: ${money(x.f.saldoReceber)}`);add('');});}
+  if(sec.pagamentos){add('📥 *PAGAMENTOS RECEBIDOS*');d.pagamentos.slice(0,60).forEach(p=>add(`• ${rcFmtDate(p.data)} — ${money(p.valor)} — ${p.descricao||'Pagamento recebido'}`));if(!d.pagamentos.length)add('• Nenhum pagamento registrado.');add('');}
+  if(sec.observacoes){const o=($('rcObs')?.value||'').trim();add('📝 *OBSERVAÇÕES GERAIS*');add(o||'• Sem observações gerais.');add('');}
+  if(sec.proximas){const n=($('rcProximas')?.value||'').trim();add('➡️ *PRÓXIMAS ETAPAS*');add(n||'• A definir.');add('');}
+  if(sec.final){add('📊 *RESUMO GERAL DO PERÍODO*');add(`• Valor Total: ${money(d.total)}`);add(`• Total Recebido: ${money(d.receita)}`);add(`• Despesas: ${money(d.despesas)}`);add(`• Resultado: ${money(d.resultado)}`);add(`• Saldo Pendente: ${money(d.saldo)}`);add('');}
+  if(sec.encerramento)add(($('rcEncerramento')?.value||'Qualquer dúvida estou à disposição. 🙌').trim());
+  return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function rcRefreshPreview(){
+  const d=rcData();
+  if($('rcPreviewMeta'))$('rcPreviewMeta').textContent=`Período: ${rcFmtDate(d.ini||today())} a ${rcFmtDate(d.fim||today())}`;
+  if($('rcSummary'))$('rcSummary').innerHTML=`<div class="rcMetric"><small>DIAS</small><b>${d.dates.length}</b></div><div class="rcMetric"><small>EQUIPE</small><b>${d.team.length}</b></div><div class="rcMetric"><small>SERVIÇOS</small><b>${d.services.length}</b></div><div class="rcMetric"><small>PROGRESSO</small><b>${d.progress}%</b></div>`;
+  const ta=$('rcPreviewText');if(ta&&!window.__rcManualText)ta.value=rcBuildText();
+}
+function rcShowTab(tab){
+  const a=$('rcTabSelection'),b=$('rcTabPreview');if(!a||!b)return;
+  const sel=tab==='sel';a.classList.toggle('hidden',!sel);b.classList.toggle('hidden',sel);$('rcTabSel')?.classList.toggle('active',sel);$('rcTabPrev')?.classList.toggle('active',!sel);
+  if(!sel){window.__rcManualText=false;rcRefreshPreview();}
+}
+function openRelatorioCliente(){
+  const m=$('relatorioClienteM');
+  if(!m){toast('Módulo Relatório para Cliente não encontrado.');return;}
+  window.__rcManualText=false;
+  window.__rcSelected=[];
+  window.__rcSections={...RC_DEFAULT_SECTIONS};
+  rcRenderClients();
+  const clients=rcClients();
+  if(clients.length){$('rcCliente').value=clients[0];}
+  const fim=today(),dt=new Date();
+  dt.setDate(dt.getDate()-30);
+  const ini=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  $('rcInicio').value=ini;
+  $('rcFim').value=fim;
+  $('rcSaudacao').value=clients[0]?`Olá, ${clients[0]}! 👋`:'Olá! 👋';
+  $('rcProximas').value='';
+  $('rcObs').value='';
+  $('rcEncerramento').value='Qualquer dúvida estou à disposição. 🙌';
+  rcSectionControls();
+  rcShowTab('sel');
+  rcRenderObras();
+  m.classList.add('open');
+}
+function rcCopy(){const txt=$('rcPreviewText')?.value||'';if(!txt)return;navigator.clipboard?.writeText(txt).then(()=>toast('Relatório copiado.')).catch(()=>{const ta=$('rcPreviewText');ta.select();document.execCommand('copy');toast('Relatório copiado.');});}
+function rcWhatsApp(){const txt=$('rcPreviewText')?.value||'';if(!txt)return;window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');}
+function rcExportPDF(){
+  const txt=$('rcPreviewText')?.value||'';if(!txt)return;
+  const cliente=$('rcCliente')?.value||'Cliente';
+  const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
+  const html=esc(txt).replace(/\n/g,'<br>');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório para ${esc(cliente)}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033;line-height:1.55;max-width:850px;margin:auto}h1{font-size:24px;text-align:center} .box{border:1px solid #d9e0ea;border-radius:14px;padding:24px;white-space:normal}@media print{body{padding:10px}}</style></head><body><h1>EDIFIQ — Relatório para Cliente</h1><div class="box">${html}</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
+<script id="edifiq-servico-extra-link">
+(function(){
+  // Vincula serviços extras à folha/financeiro sem substituir dados existentes.
+  window.edifiqRegistrarServicoExtra = function(servico){
+    try{
+      if(!servico || !servico.valor) return false;
+      const d=typeof D!=="undefined"?D:null; if(!d) return false;
+      d.servicosExtras=Array.isArray(d.servicosExtras)?d.servicosExtras:[];
+      const id=servico.id||('sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
+      const item={...servico,id,valor:Number(servico.valor)||0,folhaAplicado:false,financeiroAplicado:false};
+      d.servicosExtras.push(item);
+      if(typeof save==='function') save(); else if(typeof persist==='function') persist();
+      return id;
+    }catch(e){console.error('Serviço extra:',e);return false;}
+  };
+  window.edifiqAplicarServicoExtra = function(id){
+    try{const d=typeof D!=="undefined"?D:null;if(!d)return false;const x=(d.servicosExtras||[]).find(v=>v.id===id);if(!x||x.financeiroAplicado)return false;
+      d.gastos=Array.isArray(d.gastos)?d.gastos:[];
+      d.gastos.push({id:'g_'+Date.now(),data:new Date().toISOString().slice(0,10),descricao:'Serviço extra — '+(x.descricao||''),valor:Number(x.valor)||0,categoria:'Mão de obra',obraId:x.obraId||x.obra_id||'',funcionarioId:x.funcionarioId||x.funcionario_id||''});
+      x.financeiroAplicado=true;x.folhaAplicado=!!(x.funcionarioId||x.funcionario_id);
+      if(typeof save==='function')save();else if(typeof persist==='function')persist();
+      return true;}catch(e){console.error(e);return false;}
+  };
+})();
+<\/script>
+</body></html>`);w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},400);
+}
+
+/* =========================================================
+   RELATÓRIOS — PDF / CSV / IMPORTAÇÃO
+   ========================================================= */
+function exportPDF(){
+  const w=window.open('','_blank');
+  if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
+  const rows=(arr)=>arr.map(x=>`<tr>${Object.values(x||{}).map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#222}h1{margin:0 0 5px}h2{margin-top:28px}small{color:#666}.meta{margin-bottom:20px}table{border-collapse:collapse;width:100%;font-size:10px}th,td{border:1px solid #ccc;padding:5px;text-align:left;vertical-align:top}th{background:#eee}@media print{button{display:none}}</style></head><body><h1>EDIFIQ — Relatório</h1><div class="meta">Gerado em ${new Date().toLocaleString('pt-BR')}</div><h2>Obras</h2><table><thead><tr>${Object.keys(D.obras[0]||{Nome:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.obras)}</tbody></table><h2>Funcionários</h2><table><thead><tr>${Object.keys(D.funcionarios[0]||{Nome:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.funcionarios)}</tbody></table><h2>Diárias</h2><table><thead><tr>${Object.keys(D.diarias[0]||{Data:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.diarias)}</tbody></table><h2>Financeiro</h2><table><thead><tr>${Object.keys(D.gastos[0]||{Descrição:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.gastos)}</tbody></table><h2>Checklist</h2><table><thead><tr>${Object.keys(D.checklist[0]||{Etapa:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.checklist)}</tbody></table><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
+<script id="edifiq-servico-extra-link">
+(function(){
+  // Vincula serviços extras à folha/financeiro sem substituir dados existentes.
+  window.edifiqRegistrarServicoExtra = function(servico){
+    try{
+      if(!servico || !servico.valor) return false;
+      const d=typeof D!=="undefined"?D:null; if(!d) return false;
+      d.servicosExtras=Array.isArray(d.servicosExtras)?d.servicosExtras:[];
+      const id=servico.id||('sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
+      const item={...servico,id,valor:Number(servico.valor)||0,folhaAplicado:false,financeiroAplicado:false};
+      d.servicosExtras.push(item);
+      if(typeof save==='function') save(); else if(typeof persist==='function') persist();
+      return id;
+    }catch(e){console.error('Serviço extra:',e);return false;}
+  };
+  window.edifiqAplicarServicoExtra = function(id){
+    try{const d=typeof D!=="undefined"?D:null;if(!d)return false;const x=(d.servicosExtras||[]).find(v=>v.id===id);if(!x||x.financeiroAplicado)return false;
+      d.gastos=Array.isArray(d.gastos)?d.gastos:[];
+      d.gastos.push({id:'g_'+Date.now(),data:new Date().toISOString().slice(0,10),descricao:'Serviço extra — '+(x.descricao||''),valor:Number(x.valor)||0,categoria:'Mão de obra',obraId:x.obraId||x.obra_id||'',funcionarioId:x.funcionarioId||x.funcionario_id||''});
+      x.financeiroAplicado=true;x.folhaAplicado=!!(x.funcionarioId||x.funcionario_id);
+      if(typeof save==='function')save();else if(typeof persist==='function')persist();
+      return true;}catch(e){console.error(e);return false;}
+  };
+})();
+<\/script>
+</body></html>`);
+  w.document.close();
+  setTimeout(()=>{try{w.print()}catch(e){}},350);
+}
+function exportCSVAll(){
+  const blocks=[];
+  for(const [name,arr] of Object.entries(D)){
+    blocks.push(`### ${name}`);
+    if(!Array.isArray(arr)||!arr.length){blocks.push('');continue;}
+    const keys=[...new Set(arr.flatMap(x=>Object.keys(x||{})))];
+    blocks.push(keys.map(k=>`"${String(k).replace(/"/g,'""')}"`).join(';'));
+    for(const x of arr){blocks.push(keys.map(k=>`"${String(x?.[k]??'').replace(/"/g,'""').replace(/\n/g,' ')}"`).join(';'));}
+  }
+  downloadFile(blocks.join('\n'),'EDIFIQ_dados.csv','text/csv;charset=utf-8');
+  toast('CSV exportado.');
+}
 async function importRelatorioData(event){
   const file=event.target.files?.[0];
   if(!file)return;
   const status=$("importRelatorioStatus");
-  const nome=String(file.name||"").toLowerCase();
 
   try{
-    // A importação completa é feita pelo JSON criado em “Fazer backup completo”.
-    // Não dependemos apenas da extensão: alguns celulares alteram o MIME/extensão.
-    const ehJson=nome.endsWith(".json") || String(file.type||"").toLowerCase().includes("json") || !nome.includes(".");
-    if(!ehJson){
-      if(status)status.textContent="Para restauração completa, selecione o arquivo EDIFIQ_backup.json criado em Fazer backup completo.";
-      toast("Selecione o backup completo EDIFIQ_backup.json.");
-      return;
+    if(file.name.toLowerCase().endsWith(".json")){
+      const backup=await new Promise((resolve,reject)=>{
+        const r=new FileReader();
+        r.onload=()=>{try{resolve(JSON.parse(r.result))}catch(e){reject(e)}};
+        r.onerror=()=>reject(r.error);
+        r.readAsText(file);
+      });
+
+      if(!backup?.data)throw new Error("Backup inválido");
+      if(!confirm("Importar este backup? Os registros serão adicionados e os vínculos de obras, funcionários, despesas, materiais e financeiro serão reconstruídos.")){
+        if(status)status.textContent="Importação cancelada.";
+        event.target.value="";
+        return;
+      }
+
+      await importBackupData(backup);
+      if(status)status.textContent="Backup importado com sucesso. Os vínculos e despesas foram reconstruídos.";
+      toast("Backup importado e distribuído.");
+    }else{
+      if(status)status.textContent="Para importar todos os dados com segurança, use o arquivo de backup JSON criado pelo EDIFIQ.";
+      toast("Use o backup JSON do EDIFIQ para importação completa.");
     }
-
-    const texto=await new Promise((resolve,reject)=>{
-      const r=new FileReader();
-      r.onload=()=>resolve(String(r.result||""));
-      r.onerror=()=>reject(r.error||new Error("Falha ao ler arquivo"));
-      r.readAsText(file,"utf-8");
-    });
-
-    // Remove BOM/espacos que podem ser adicionados ao compartilhar o arquivo no celular.
-    const limpo=texto.replace(/^\uFEFF/,"").trim();
-    if(!limpo)throw new Error("Arquivo vazio");
-
-    let bruto;
-    try{
-      bruto=JSON.parse(limpo);
-    }catch(e){
-      // Alguns compartilhamentos no celular acrescentam vírgula antes de } ou ].
-      try{ bruto=JSON.parse(limpo.replace(/,\s*([}\]])/g,"$1")); }
-      catch(e2){ throw new Error("O arquivo não contém um JSON válido"); }
-    }
-
-    const backup=normalizarBackupEDIFIQ(bruto);
-    if(!backup?.data || typeof backup.data!=="object")throw new Error("Backup EDIFIQ sem dados");
-
-    const quantidade=Object.values(backup.data).reduce((n,v)=>n+(Array.isArray(v)?v.length:0),0);
-    if(!quantidade)throw new Error("Backup sem registros para importar");
-
-    if(!confirm(`Importar este backup do EDIFIQ?\n\nForam encontrados ${quantidade} registros. Os dados atuais serão preservados e os registros do backup serão adicionados, com reconstrução dos vínculos.`)){
-      if(status)status.textContent="Importação cancelada.";
-      return;
-    }
-
-    if(status)status.textContent="Importando dados…";
-    await importBackupData(backup);
-    if(status)status.textContent=`Backup importado com sucesso (${quantidade} registros).`;
-    toast("Backup do EDIFIQ importado com sucesso.");
   }catch(e){
-    console.error("EDIFIQ importação:",e);
-    if(status)status.textContent="Arquivo incompatível. Use o backup completo criado pelo EDIFIQ (EDIFIQ_backup.json).";
-    toast("Não foi possível importar este arquivo. Verifique se é o backup completo do EDIFIQ.");
-  }finally{
-    // Permite selecionar novamente o mesmo arquivo.
-    event.target.value="";
+    console.error(e);
+    if(status)status.textContent="Não foi possível importar o arquivo.";
+    toast("Arquivo inválido ou incompatível.");
   }
+
+  event.target.value="";
 }
 
 
@@ -9021,5 +9309,190 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
 })();
 </script>
 
+<!-- EDIFIQ — extensão isolada: valores dos checklists + rateio de receitas -->
+<style id="edifiq-check-fin-ext-style">
+  .edCheckMoney{font-size:12px;color:#9ba3ad;margin-top:3px}.edCheckMoney strong{color:#fff}.edCheckSaldo{font-size:12px;color:#d9ad55;margin-top:3px}.edCheckEditValue{display:grid;grid-template-columns:1fr 110px;gap:8px;margin-top:8px}.edRateioBox{grid-column:1/-1;background:#0d1115;border:1px solid #252b33;border-radius:12px;padding:12px;margin-top:8px}.edRateioHead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}.edRateioList{display:grid;gap:7px}.edRateioRow{display:grid;grid-template-columns:24px minmax(0,1fr) 120px;gap:8px;align-items:center;padding:8px;border-top:1px solid #252b33}.edRateioRow:first-child{border-top:0}.edRateioRow small{display:block;color:#9ba3ad}.edRateioRow input[type=number]{width:100%;box-sizing:border-box}.edRateioSummary{display:flex;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid #252b33;font-size:13px}.edRateioError{color:#ffb0b5;font-size:12px;margin-top:7px;display:none}.edRateioEmpty{color:#9ba3ad;font-size:12px;padding:8px 0}@media(max-width:600px){.edCheckEditValue{grid-template-columns:1fr 100px}.edRateioRow{grid-template-columns:24px minmax(0,1fr) 105px}}
+</style>
+<script id="edifiq-check-fin-ext">
+(function(){
+  const $=id=>document.getElementById(id);
+  const escE=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const num=v=>Number(v||0);
+  const moneyE=v=>typeof money==='function'?money(v):new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(num(v));
+
+  function checkPayments(obraId,checkId){
+    return (D.pagamentos||[]).reduce((sum,p)=>{
+      if(String(p.obra_id)!==String(obraId)) return sum;
+      let arr=p.checklist_rateio;
+      if(typeof arr==='string'){try{arr=JSON.parse(arr)}catch(_){arr=[]}}
+      if(!Array.isArray(arr)) return sum;
+      return sum+arr.filter(x=>String(x.checklist_id)===String(checkId)).reduce((a,x)=>a+num(x.valor),0);
+    },0);
+  }
+
+  function checkStats(item){
+    const recebido=checkPayments(item.obra_id,item.id);
+    const valor=num(item.valor);
+    return {valor,recebido,saldo:Math.max(0,valor-recebido)};
+  }
+
+  // Substitui somente a renderização do checklist para acrescentar valor/saldo,
+  // mantendo a barra e os controles de progresso existentes.
+  window.renderChecklist=function(){
+    const box=$('checkList'); if(!box)return;
+    const sel=$('checkObraFilter');
+    if(!D.obras.length){
+      if(sel)sel.innerHTML='<option value="">Nenhuma obra cadastrada</option>';
+      box.innerHTML='<div class="empty">Cadastre uma obra para utilizar o checklist.</div>';return;
+    }
+    const current=sel?.value||'';
+    if(sel){
+      sel.innerHTML='<option value="">Selecione uma obra</option>'+D.obras.map(o=>`<option value="${escE(o.id)}">${escE(o.nome||'Obra')}</option>`).join('');
+      sel.value=current&&D.obras.some(o=>String(o.id)===String(current))?current:String(D.obras[0].id);
+    }
+    const obraId=sel?.value||String(D.obras[0].id);
+    const o=D.obras.find(x=>String(x.id)===String(obraId));
+    if(!o){box.innerHTML='<div class="empty">Selecione uma obra.</div>';return;}
+    const itens=D.checklist.filter(x=>String(x.obra_id)===String(o.id));
+    const total=itens.length;
+    const avg=total?Math.round(itens.reduce((a,x)=>a+num(x.progresso??((x.concluida||x.concluido)?100:0)),0)/total):0;
+    const somaServicos=itens.reduce((a,x)=>a+num(x.valor),0);
+    const receitaRateada=itens.reduce((a,x)=>a+checkStats(x).recebido,0);
+    box.innerHTML=`<div class="card">
+      <div class="row"><div><h3>${escE(o.nome)}</h3><small>${total} etapa(s)</small></div><strong class="gold">${avg}%</strong></div>
+      <div class="progress"><i style="width:${avg}%"></i></div>
+      <div class="three" style="margin-top:10px"><div><small>Serviços distribuídos</small><b>${moneyE(somaServicos)}</b></div><div><small>Recebido nos checklists</small><b class="green">${moneyE(receitaRateada)}</b></div><div><small>Saldo dos serviços</small><b class="gold">${moneyE(Math.max(0,somaServicos-receitaRateada))}</b></div></div>
+      ${itens.length?itens.map(item=>{
+        const pct=Math.max(0,Math.min(100,num(item.progresso??((item.concluida||item.concluido)?100:0))));
+        const st=checkStats(item);
+        return `<div class="check-item" style="display:block">
+          <div class="row"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0"><input type="checkbox" ${pct>=100?'checked':''} onchange="toggleChecklist('${escE(item.id)}',this.checked)"><span>${escE(item.tarefa||item.descricao||'Etapa')}</span></div><span class="checkPercent" id="cp_${escE(item.id)}">${pct}%</span><button class="mini" onclick="editarChecklist('${escE(item.id)}')">Editar</button><button class="mini" onclick="removeRow('checklist','${escE(item.id)}')">Excluir</button></div>
+          <div class="edCheckMoney">Valor do serviço: <strong>${moneyE(st.valor)}</strong></div>
+          <div class="edCheckMoney">Recebido: <strong>${moneyE(st.recebido)}</strong></div>
+          <div class="edCheckSaldo">Saldo a receber: <strong>${moneyE(st.saldo)}</strong></div>
+          <div class="checkProgressBox"><div class="progress"><i id="cbar_${escE(item.id)}" style="width:${pct}%"></i></div></div>
+          <div class="checkProgressControls"><input id="cpr_${escE(item.id)}" class="progressInput" type="range" min="0" max="100" step="1" value="${pct}" aria-label="Progresso da etapa" oninput="previewChecklistPct('${escE(item.id)}',this.value)" onchange="setChecklistProgress('${escE(item.id)}',this.value)"><input id="cpn_${escE(item.id)}" class="progressNumber" type="number" min="0" max="100" step="1" value="${pct}" aria-label="Porcentagem da etapa" oninput="previewChecklistPct('${escE(item.id)}',this.value)" onchange="setChecklistProgressFromNumber('${escE(item.id)}',this.value)"></div>
+        </div>`;
+      }).join(''):'<div class="empty">Nenhuma etapa cadastrada para esta obra.</div>'}
+      <div class="listActions"><button class="btn gold" onclick="openCheckForObra('${escE(o.id)}')">＋ Adicionar etapa</button></div>
+    </div>`;
+  };
+
+  const oldOpenCheck=window.openCheck;
+  window.openCheck=function(){
+    if(typeof oldOpenCheck==='function')oldOpenCheck();
+    setTimeout(()=>{
+      const form=$('checkM')?.querySelector('.formGrid');
+      if(!form||$('checkValor'))return;
+      const lab=document.createElement('label'); lab.className='full'; lab.innerHTML='Valor do serviço<input id="checkValor" type="number" step="0.01" min="0" placeholder="Ex.: 10000">';
+      form.appendChild(lab);
+    },0);
+  };
+
+  const oldSaveCheck=window.saveCheck;
+  window.saveCheck=async function(e){
+    if(e&&e.preventDefault)e.preventDefault();
+    const obra_id=$('checkObra')?.value;
+    const tarefa=$('checkDesc')?.value.trim();
+    const valor=num($('checkValor')?.value);
+    if(!obra_id){toast('Selecione a obra.');return;}
+    if(!tarefa){toast('Informe a etapa.');return;}
+    const result=await insertRow('checklist',{obra_id,tarefa,valor,concluida:false,progresso:0});
+    if(result){closeM('checkM');toast('Etapa adicionada.');await loadCloud();renderAll();}
+  };
+
+  const oldEditar=window.editarChecklist;
+  window.editarChecklist=async function(id){
+    const item=D.checklist.find(x=>String(x.id)===String(id)); if(!item)return;
+    const tarefa=prompt('Editar etapa:',item.tarefa||item.descricao||''); if(tarefa===null||!tarefa.trim())return;
+    const atual=num(item.valor);
+    const val=prompt('Valor deste serviço (R$):',String(atual.toFixed(2)).replace('.',','));
+    if(val===null)return;
+    const valor=Math.max(0,Number(String(val).replace(',','.'))||0);
+    await updateRow('checklist',id,{tarefa:tarefa.trim(),valor});
+    await loadCloud();renderAll();
+  };
+
+  function renderRateio(){
+    const wrap=$('edRateioWrap'); if(!wrap)return;
+    const tipo=$('tFin')?.value; const obraId=$('oFin')?.value; const total=num($('vFin')?.value);
+    if(tipo!=='entrada'||!obraId){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    const itens=(D.checklist||[]).filter(x=>String(x.obra_id)===String(obraId));
+    if(!itens.length){wrap.innerHTML='<div class="edRateioHead"><b>Checklist da receita</b></div><div class="edRateioEmpty">Esta obra ainda não possui checklist cadastrado.</div>';return;}
+    const old={};
+    wrap.querySelectorAll('input[data-check-id]').forEach(i=>old[i.dataset.checkId]=i.value);
+    wrap.innerHTML=`<div class="edRateioHead"><b>Checklist da receita</b><small>Selecione um ou vários serviços</small></div><div class="edRateioList">${itens.map(x=>{const st=checkStats(x);return `<label class="edRateioRow"><input type="checkbox" data-check-select="1" data-check-id="${escE(x.id)}" onchange="window.edRateioChanged()"><span><b>${escE(x.tarefa||'Serviço')}</b><small>Serviço: ${moneyE(st.valor)} • Saldo: ${moneyE(st.saldo)}</small></span><input type="number" min="0" step="0.01" data-check-id="${escE(x.id)}" data-check-value="1" placeholder="Valor" disabled></label>`}).join('')}</div><div class="edRateioSummary"><span>Total da receita</span><b id="edRateioTotal">${moneyE(total)}</b></div><div id="edRateioError" class="edRateioError"></div>`;
+    wrap.querySelectorAll('input[data-check-select]').forEach(ch=>ch.addEventListener('change',()=>{const id=ch.dataset.checkId;const inp=wrap.querySelector(`input[data-check-value][data-check-id="${CSS.escape(id)}"]`);if(inp){inp.disabled=!ch.checked;if(ch.checked&&!inp.value)inp.value='0';}window.edRateioChanged();}));
+    window.edRateioChanged();
+  }
+
+  window.edRateioChanged=function(){
+    const wrap=$('edRateioWrap'); if(!wrap)return;
+    const total=num($('vFin')?.value); let soma=0;
+    wrap.querySelectorAll('input[data-check-select]:checked').forEach(ch=>{const inp=wrap.querySelector(`input[data-check-value][data-check-id="${CSS.escape(ch.dataset.checkId)}"]`);soma+=num(inp?.value)});
+    const err=$('edRateioError'); if(err){if(soma>total+0.009)err.textContent='A soma do rateio não pode ser maior que o valor da receita.';else if(Math.abs(soma-total)>0.009)err.textContent=`Falta distribuir ${moneyE(Math.max(0,total-soma))}.`;else err.textContent='';err.style.display=err.textContent?'block':'none';}
+    const t=$('edRateioTotal');if(t)t.textContent=moneyE(soma);
+  };
+
+  window.edGetRateio=function(){
+    const wrap=$('edRateioWrap'); if(!wrap||wrap.style.display==='none')return [];
+    const arr=[];
+    wrap.querySelectorAll('input[data-check-select]:checked').forEach(ch=>{
+      const inp=wrap.querySelector(`input[data-check-value][data-check-id="${CSS.escape(ch.dataset.checkId)}"]`);
+      const valor=num(inp?.value); if(valor>0)arr.push({checklist_id:ch.dataset.checkId,valor});
+    });
+    return arr;
+  };
+
+  const oldOpenFin=window.openFin;
+  window.openFin=function(){
+    if(typeof oldOpenFin==='function')oldOpenFin();
+    setTimeout(()=>{
+      const grid=$('finM')?.querySelector('.formGrid'); if(!grid)return;
+      if(!$('edRateioWrap')){const div=document.createElement('div');div.id='edRateioWrap';div.className='edRateioBox';grid.appendChild(div);}
+      const refresh=()=>renderRateio();
+      $('oFin')?.addEventListener('change',refresh);$('tFin')?.addEventListener('change',refresh);$('vFin')?.addEventListener('input',window.edRateioChanged);refresh();
+    },0);
+  };
+
+  const oldSaveFin=window.saveFin;
+  window.saveFin=async function(e){
+    if(e&&e.preventDefault)e.preventDefault();
+    const tipo=$('tFin').value, descricaoBase=$('dFin').value.trim(), valor=num($('vFin').value), obra_id=$('oFin').value||null;
+    if(!descricaoBase){toast('Informe a descrição.');return;} if(valor<=0){toast('Informe um valor válido.');return;}
+    if(tipo==='entrada'){
+      const rateio=window.edGetRateio();
+      if(obra_id){const checks=(D.checklist||[]).filter(x=>String(x.obra_id)===String(obra_id));if(checks.length){if(!rateio.length){toast('Selecione pelo menos um checklist para esta receita.');return;}const soma=rateio.reduce((a,x)=>a+num(x.valor),0);if(Math.abs(soma-valor)>0.009){toast('Distribua o valor total da receita entre os checklists.');return;}}}
+      const result=await insertRow('pagamentos',{obra_id,data:$('dtFin').value,descricao:descricaoBase,valor,fornecedor:$('forFin').value.trim(),observacao:$('obsFin').value.trim(),checklist_rateio:rateio});
+      if(result){closeM('finM');toast('Receita registrada.');await loadCloud();renderAll();}
+    }else{
+      const categoria=$('finCategoria').value;const descricao=`[${categoria}] ${descricaoBase}`;
+      const result=await insertRow('gastos',{obra_id,data:$('dtFin').value,descricao,valor,fornecedor:$('forFin').value.trim(),observacao:$('obsFin').value.trim(),categoria});
+      if(result){closeM('finM');toast('Despesa registrada.');await loadCloud();renderAll();}
+    }
+  };
+
+  // Atualiza o resumo financeiro da obra com o saldo por checklist sem alterar os demais painéis.
+  const oldRenderObraFinance=window.renderObraFinance;
+  window.renderObraFinance=function(obraFilter='all'){
+    if(typeof oldRenderObraFinance==='function')oldRenderObraFinance(obraFilter);
+    const box=$('obraFinanceResumo');if(!box)return;
+    const obras=D.obras.filter(o=>obraFilter==='all'||String(o.id)===String(obraFilter));
+    box.querySelectorAll('.edChecklistFinance').forEach(x=>x.remove());
+    obras.forEach(o=>{
+      const checks=(D.checklist||[]).filter(x=>String(x.obra_id)===String(o.id)); if(!checks.length)return;
+      const host=[...box.querySelectorAll('.item')].find(el=>el.textContent.includes(o.nome)); if(!host)return;
+      const div=document.createElement('div');div.className='edChecklistFinance note';
+      div.innerHTML='<b>Saldo por checklist</b>'+checks.map(x=>{const st=checkStats(x);return `<div class="serviceLine"><span>${escE(x.tarefa||'Serviço')}<small> • ${num(x.progresso||0)}% executado</small></span><span>${moneyE(st.saldo)} a receber</span></div>`}).join('');host.appendChild(div);
+    });
+  };
+
+  // Quando a tela financeira abre ou a obra é alterada, atualiza o painel de rateio.
+  const oldRenderFinance=window.renderFinance;
+  window.renderFinance=function(){if(typeof oldRenderFinance==='function')oldRenderFinance();};
+})();
+
+</script>
 </body>
 </html>
