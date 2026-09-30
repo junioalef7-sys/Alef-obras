@@ -6447,11 +6447,12 @@ function renderChecklist(){
 
 function normalizarChecklistPct(value){
   if(value===null||value===undefined||value==="") return 0;
-  let s=String(value).trim().replace("%","").replace(",",".");
+  let s=String(value).trim().replace(/%/g,"").replace(",",".");
   const n=Number(s);
   if(!Number.isFinite(n)) return 0;
   return Math.max(0,Math.min(100,n));
 }
+
 function previewChecklistPct(id,value){
   const pct=normalizarChecklistPct(value);
   const el=$("cp_"+id); if(el)el.textContent=pct+"%";
@@ -6459,17 +6460,77 @@ function previewChecklistPct(id,value){
   const range=$("cpr_"+id); if(range && document.activeElement!==range)range.value=pct;
   const num=$("cpn_"+id); if(num && document.activeElement!==num)num.value=pct;
 }
-function previewChecklistBar(id,value){const el=$("cbar_"+id);if(el)el.style.width=normalizarChecklistPct(value)+"%";}
+
+function previewChecklistBar(id,value){
+  const el=$("cbar_"+id);
+  if(el)el.style.width=normalizarChecklistPct(value)+"%";
+}
+
+/*
+  CHECKLIST — gravação de progresso isolada.
+  O valor digitado é salvo primeiro no estado local e só depois
+  enviado ao Supabase. A resposta da nuvem não pode substituir
+  o valor recém-informado por uma versão antiga do registro.
+*/
 async function setChecklistProgress(id,value){
+  const item=D.checklist.find(x=>String(x.id)===String(id));
+  if(!item){
+    toast("Etapa de checklist não encontrada.");
+    return null;
+  }
+
   const pct=normalizarChecklistPct(value);
-  await updateRow("checklist",id,{progresso:pct,concluida:pct>=100});
+  const payload={
+    progresso:pct,
+    concluida:pct>=100
+  };
+
+  // Atualiza imediatamente o registro local.
+  Object.assign(item,payload);
+  saveLocalData();
+
+  // Atualiza a interface imediatamente, sem esperar a nuvem.
+  previewChecklistPct(id,pct);
+
+  // Sincroniza sem deixar uma resposta antiga sobrescrever o valor digitado.
+  if(sb && user && !String(id).startsWith("local_")){
+    try{
+      const {data,error}=await sb
+        .from("checklist")
+        .update(payload)
+        .eq("id",id)
+        .select()
+        .single();
+
+      if(error){
+        item._sync_pendente=true;
+        saveLocalData();
+        console.warn("Checklist: servidor recusou o progresso.",error.message);
+        toast("Progresso salvo neste aparelho. A sincronização será feita depois.");
+      }else{
+        // Mantém o valor que o usuário acabou de informar.
+        Object.assign(item,data||{},payload);
+        item._sync_pendente=false;
+        saveLocalData();
+      }
+    }catch(err){
+      item._sync_pendente=true;
+      saveLocalData();
+      console.warn("Checklist: erro ao sincronizar progresso.",err);
+      toast("Progresso salvo neste aparelho. Não foi possível sincronizar agora.");
+    }
+  }
+
+  // Redesenha somente as áreas necessárias depois que o valor já está salvo.
   renderObras();
   renderChecklist();
+  return item;
 }
+
 async function setChecklistProgressFromNumber(id,value){
   const pct=normalizarChecklistPct(value);
   previewChecklistPct(id,pct);
-  await setChecklistProgress(id,pct);
+  return await setChecklistProgress(id,pct);
 }
 async function editarChecklist(id){const item=D.checklist.find(x=>String(x.id)===String(id));if(!item)return;const tarefa=prompt("Editar etapa:",item.tarefa||item.descricao||"");if(tarefa===null||!tarefa.trim())return;await updateRow("checklist",id,{tarefa:tarefa.trim()});renderChecklist();}
 
@@ -9379,7 +9440,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
       <div class="progress"><i style="width:${avg}%"></i></div>
       <div class="three" style="margin-top:10px"><div><small>Serviços distribuídos</small><b>${moneyE(somaServicos)}</b></div><div><small>Recebido nos checklists</small><b class="green">${moneyE(receitaRateada)}</b></div><div><small>Saldo dos serviços</small><b class="gold">${moneyE(Math.max(0,somaServicos-receitaRateada))}</b></div></div>
       ${itens.length?itens.map(item=>{
-        const pct=Math.max(0,Math.min(100,num(item.progresso??((item.concluida||item.concluido)?100:0))));
+        const pct=normalizarChecklistPct(item.progresso??((item.concluida||item.concluido)?100:0));
         const st=checkStats(item);
         return `<div class="check-item" style="display:block">
           <div class="row"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0"><input type="checkbox" ${pct>=100?'checked':''} onchange="toggleChecklist('${escE(item.id)}',this.checked)"><span>${escE(item.tarefa||item.descricao||'Etapa')}</span></div><span class="checkPercent" id="cp_${escE(item.id)}">${pct}%</span><button class="mini" onclick="editarChecklist('${escE(item.id)}')">Editar</button><button class="mini" onclick="removeRow('checklist','${escE(item.id)}')">Excluir</button></div>
