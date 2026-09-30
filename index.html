@@ -9570,6 +9570,345 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   window.renderFinance=function(){if(typeof oldRenderFinance==='function')oldRenderFinance();};
 })();
 
+
+
+/* =========================================================
+   EDIFIQ — SINCRONIZAÇÃO V4 / OFFLINE-FIRST
+   Correção: celular ↔ computador, fila offline, login persistente
+   e prevenção de dados antigos sobrescrevendo dados novos.
+   ========================================================= */
+(function(){
+  const SYNC_QUEUE_KEY='EDIFIQ_SYNC_QUEUE_V4';
+  const TOMBSTONE_KEY='EDIFIQ_SYNC_TOMBSTONES_V4';
+  const OFFLINE_USER_KEY='EDIFIQ_OFFLINE_USER_V4';
+  const SYNC_TABLES=['obras','funcionarios','diarias','gastos','pagamentos','checklist','documentos','faltas'];
+  const DEP_TABLES=['checklist','diarias','gastos','pagamentos','faltas','documentos'];
+
+  const readJSON=(k,f)=>{try{const v=JSON.parse(localStorage.getItem(k)||'null');return v==null?f:v}catch(_){return f}};
+  const writeJSON=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){console.warn('EDIFIQ armazenamento',e);return false}};
+  const queue=()=>readJSON(SYNC_QUEUE_KEY,[]);
+  const tombs=()=>readJSON(TOMBSTONE_KEY,{});
+  const setStatus=(txt,cls)=>{const el=$('edifiqSyncStatus');if(el){el.textContent=txt;el.className=cls||'';}};
+  const isOnline=()=>navigator.onLine!==false;
+  const localId= id=>String(id||'').startsWith('local_');
+  const makeId=()=>`local_${Date.now()}_${Math.random().toString(36).slice(2,10)}`;
+
+  function enqueue(op){
+    let q=queue();
+    const key=`${op.type}|${op.table}|${op.id}`;
+    const idx=q.findIndex(x=>`${x.type}|${x.table}|${x.id}`===key);
+    if(idx>=0) q[idx]={...q[idx],...op,queued_at:q[idx].queued_at||Date.now()};
+    else q.push({...op,queued_at:Date.now()});
+    writeJSON(SYNC_QUEUE_KEY,q);
+  }
+  function removeQueued(table,id,types){
+    const allowed=types||null;
+    writeJSON(SYNC_QUEUE_KEY,queue().filter(x=>!(String(x.table)===String(table)&&String(x.id)===String(id)&&(!allowed||allowed.includes(x.type)))));
+  }
+  function markTomb(table,id){
+    const t=tombs();if(!t[table])t[table]={};t[table][String(id)]=Date.now();writeJSON(TOMBSTONE_KEY,t);
+  }
+  function clearTomb(table,id){
+    const t=tombs();if(t[table]){delete t[table][String(id)];writeJSON(TOMBSTONE_KEY,t);}
+  }
+  function isTomb(table,id){return !!(tombs()[table]&&tombs()[table][String(id)]);}
+  function pending(table,id){return !!D[table]?.some(r=>String(r.id)===String(id)&&r._sync_pendente);
+  }
+  function markPending(table,id,val=true){
+    const r=D[table]?.find(x=>String(x.id)===String(id));
+    if(r){if(val)r._sync_pendente=true;else delete r._sync_pendente;}
+  }
+
+  function saveOfflineUser(u){
+    if(u?.id) writeJSON(OFFLINE_USER_KEY,{id:String(u.id),email:u.email||'',saved_at:Date.now()});
+  }
+  function restoreOfflineUser(){
+    if(user?.id)return true;
+    const u=readJSON(OFFLINE_USER_KEY,null);
+    if(!u?.id)return false;
+    user={id:String(u.id),email:u.email||'',offlineCached:true};
+    $('auth')?.classList.add('hidden');$('app')?.classList.remove('hidden');
+    setStatus('📱 Offline — dados locais','warn');
+    return true;
+  }
+
+  function remapIdEverywhere(table,oldId,newId){
+    if(String(oldId)===String(newId))return;
+    for(const t of Object.keys(D)){
+      if(!Array.isArray(D[t]))continue;
+      D[t].forEach(r=>{
+        for(const k of ['obra_id','funcionario_id','checklist_id','material_id','documento_id','id']){
+          if(k!=='id' && String(r?.[k])===String(oldId))r[k]=newId;
+        }
+      });
+    }
+    // Relacionamentos locais adicionais usados pelo aplicativo.
+    try{
+      const f=JSON.parse(localStorage.getItem(FUNC_OBRA_KEY)||'{}');
+      if(f[String(oldId)]){f[String(newId)]=f[String(oldId)];delete f[String(oldId)];writeJSON(FUNC_OBRA_KEY,f);}
+    }catch(_){ }
+    try{
+      const svc=JSON.parse(localStorage.getItem(SERVICE_KEY)||'{}');
+      if(svc[String(oldId)]){svc[String(newId)]=svc[String(oldId)];delete svc[String(oldId)];writeJSON(SERVICE_KEY,svc);}
+    }catch(_){ }
+    saveLocalData();
+  }
+
+  async function uploadInsert(op){
+    let payload={...(op.row||{}),user_id:user.id};
+    delete payload.id;delete payload._sync_pendente;
+    const attempts=[payload];
+    if(op.table==='gastos'&&Object.prototype.hasOwnProperty.call(payload,'categoria')){
+      const x={...payload};delete x.categoria;attempts.push(x);
+    }
+    if(op.table==='pagamentos'&&Object.prototype.hasOwnProperty.call(payload,'forma_pagamento')){
+      const x={...payload};delete x.forma_pagamento;attempts.push(x);
+    }
+    if(op.table==='funcionarios'&&Object.prototype.hasOwnProperty.call(payload,'registrar_diaria')){
+      const x={...payload};delete x.registrar_diaria;attempts.push(x);
+    }
+    let last=null;
+    for(const p of attempts){
+      const res=await sb.from(op.table).insert(p).select().single();
+      if(!res.error&&res.data){
+        const idx=D[op.table]?.findIndex(r=>String(r.id)===String(op.id));
+        if(idx>=0){D[op.table][idx]={...res.data,_sync_pendente:false};remapIdEverywhere(op.table,op.id,res.data.id);}
+        clearTomb(op.table,op.id);return true;
+      }
+      last=res.error;
+    }
+    throw last||new Error('Falha ao inserir');
+  }
+
+  async function uploadUpdate(op){
+    const payload={...(op.row||{})};delete payload.id;delete payload.user_id;delete payload._sync_pendente;
+    const attempts=[payload];
+    if(op.table==='diarias'&&Object.prototype.hasOwnProperty.call(payload,'pago')){const x={...payload};delete x.pago;attempts.push(x);}
+    let last=null;
+    for(const p of attempts){
+      const res=await sb.from(op.table).update(p).eq('id',op.id).eq('user_id',user.id).select().single();
+      if(!res.error){
+        const idx=D[op.table]?.findIndex(r=>String(r.id)===String(op.id));
+        if(idx>=0)D[op.table][idx]={...(res.data||D[op.table][idx]),_sync_pendente:false};
+        return true;
+      }
+      last=res.error;
+    }
+    throw last||new Error('Falha ao atualizar');
+  }
+
+  async function uploadDelete(op){
+    const res=await sb.from(op.table).delete().eq('id',op.id).eq('user_id',user.id);
+    if(res.error)throw res.error;
+    clearTomb(op.table,op.id);return true;
+  }
+
+  async function flushQueue(){
+    if(!sb||!user?.id||!isOnline())return false;
+    let q=queue();if(!q.length)return true;
+    setStatus('↻ Enviando dados pendentes','warn');
+    // Processa na ordem em que foram criados; insert vem antes de update/delete da mesma linha.
+    q=q.slice().sort((a,b)=>(a.queued_at||0)-(b.queued_at||0));
+    const failed=[];
+    for(const op of q){
+      try{
+        if(op.type==='insert')await uploadInsert(op);
+        else if(op.type==='update')await uploadUpdate(op);
+        else if(op.type==='delete')await uploadDelete(op);
+      }catch(e){
+        console.warn('EDIFIQ fila',op,e?.message||e);failed.push(op);
+      }
+    }
+    writeJSON(SYNC_QUEUE_KEY,failed);
+    saveLocalData();
+    if(!failed.length)setStatus('☁️ Sincronizado','ok');else setStatus(`↻ ${failed.length} pendência(s)`,'warn');
+    return !failed.length;
+  }
+
+  // Exposto para diagnóstico e para eventos online.
+  window.edifiqFlushSync=flushQueue;
+  window.edifiqSyncQueue=queue;
+
+  /* A versão anterior mesclava sempre o local por cima da nuvem, mesmo quando o
+     local já estava desatualizado. Agora: pendente local vence; caso contrário,
+     o servidor é a fonte atual. Registros locais ainda não enviados são preservados. */
+  loadTable=async function(table){
+    if(!sb||!user?.id)return;
+    const antes=Array.isArray(D[table])?[...D[table]]:[];
+    try{
+      const {data,error}=await sb.from(table).select('*').eq('user_id',user.id);
+      if(error)throw error;
+      const cloud=Array.isArray(data)?data:[];
+      const cloudIds=new Set(cloud.map(r=>String(r.id)));
+      const localPending=antes.filter(r=>r._sync_pendente||localId(r.id));
+      const merged=cloud.map(cr=>{
+        const lr=antes.find(x=>String(x.id)===String(cr.id));
+        return lr?. _sync_pendente ? {...cr,...lr} : cr;
+      }).filter(r=>!isTomb(table,r.id));
+      for(const lr of localPending){
+        if(localId(lr.id)||!cloudIds.has(String(lr.id))){if(!isTomb(table,lr.id))merged.push(lr);}
+      }
+      D[table]=merged;
+    }catch(e){
+      console.warn('EDIFIQ loadTable',table,e?.message||e);
+      D[table]=antes;
+      throw e;
+    }
+  };
+
+  loadCloud=async function(){
+    if(!sb||!user?.id)return;
+    if(!isOnline()){restoreOfflineUser();return;}
+    try{
+      await flushQueue();
+      const before=stateCounts();
+      saveSafeSnapshot('antes da sincronização V4');
+      for(const table of SYNC_TABLES){try{await loadTable(table);}catch(_){}}
+      // Remove apenas o que foi explicitamente marcado como excluído localmente.
+      for(const table of SYNC_TABLES){
+        const t=tombs()[table]||{};D[table]=(D[table]||[]).filter(r=>!t[String(r.id)]);
+      }
+      limparChecklistsOrfaos();fillSelectors();saveLocalData();
+      // Não restaura snapshot por simples diferença de contagem: uma exclusão legítima pode existir.
+      setStatus('☁️ Sincronizado','ok');
+      return true;
+    }catch(e){
+      console.warn('EDIFIQ loadCloud',e);setStatus('↻ Sincronização pendente','warn');return false;
+    }
+  };
+
+  insertRow=async function(table,row){
+    if(!user?.id){toast('Faça login primeiro.');return null;}
+    const local={...row,id:makeId(),user_id:user.id,created_at:new Date().toISOString(),_sync_pendente:true};
+    D[table].unshift(local);saveLocalData();renderAll();
+    enqueue({type:'insert',table,id:local.id,row:{...row}});
+    if(isOnline()&&sb){await flushQueue();}
+    return D[table].find(x=>String(x.id)===String(local.id))||local;
+  };
+
+  updateRow=async function(table,id,row){
+    const idx=D[table]?.findIndex(x=>String(x.id)===String(id));
+    if(idx<0){toast('Registro não encontrado.');return null;}
+    D[table][idx]={...D[table][idx],...row,_sync_pendente:true};saveLocalData();renderAll();
+    if(localId(id)){
+      const q=queue();const ins=q.find(x=>x.type==='insert'&&x.table===table&&String(x.id)===String(id));
+      if(ins){ins.row={...ins.row,...row};writeJSON(SYNC_QUEUE_KEY,q);}
+      else enqueue({type:'update',table,id,row:{...row}});
+    }else enqueue({type:'update',table,id,row:{...row}});
+    if(isOnline()&&sb)await flushQueue();
+    return D[table][idx];
+  };
+
+  removeRow=async function(table,id){
+    if(!confirm('Deseja realmente excluir?'))return;
+    const sid=String(id);
+    // Se a linha nasceu offline, basta cancelar sua fila e removê-la localmente.
+    if(localId(sid)){
+      removeQueued(table,sid);
+      D[table]=D[table].filter(x=>String(x.id)!==sid);saveLocalData();renderAll();toast('Excluído com sucesso.');return;
+    }
+    // Exclusão de obra: agenda dependentes primeiro para respeitar FKs quando voltar à internet.
+    if(table==='obras'){
+      for(const t of DEP_TABLES){
+        const rows=(D[t]||[]).filter(r=>String(r.obra_id)===sid);
+        for(const r of rows){if(!localId(r.id)){markTomb(t,r.id);enqueue({type:'delete',table:t,id:r.id});}}
+        D[t]=(D[t]||[]).filter(r=>String(r.obra_id)!==sid);
+      }
+    }
+    markTomb(table,sid);enqueue({type:'delete',table,id:sid});
+    D[table]=(D[table]||[]).filter(x=>String(x.id)!==sid);saveLocalData();renderAll();
+    if(isOnline()&&sb)await flushQueue();
+    toast('Excluído com sucesso.');
+  };
+
+  function applyRealtime(table,payload){
+    const type=payload?.eventType,row=payload?.new||payload?.old;if(!row?.id)return;
+    if(type==='DELETE'){
+      if(!isTomb(table,row.id))D[table]=(D[table]||[]).filter(x=>String(x.id)!==String(row.id));
+    }else{
+      if(isTomb(table,row.id))return;
+      const idx=(D[table]||[]).findIndex(x=>String(x.id)===String(row.id));
+      if(idx>=0){if(!D[table][idx]._sync_pendente)D[table][idx]={...row};}
+      else D[table].unshift(row);
+    }
+    saveLocalData();try{renderAll();}catch(_){ }
+  }
+
+  startEdifiqRealtime=function(){
+    if(!sb||!user?.id||!sb.channel)return false;
+    if(edifiqRealtimeChannel&&edifiqRealtimeUserId===String(user.id))return true;
+    stopEdifiqRealtime();edifiqRealtimeUserId=String(user.id);
+    const ch=sb.channel(`edifiq-sync-v4-${String(user.id).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,32)}`);
+    SYNC_TABLES.forEach(table=>ch.on('postgres_changes',{event:'*',schema:'public',table,filter:`user_id=eq.${user.id}`},p=>applyRealtime(table,p)));
+    ch.subscribe(status=>{if(status==='SUBSCRIBED')setStatus('☁️ Sincronizado','ok');else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')setStatus('↻ Tentando sincronizar','warn');});
+    edifiqRealtimeChannel=ch;
+    if(edifiqRealtimeRefreshTimer)clearInterval(edifiqRealtimeRefreshTimer);
+    edifiqRealtimeRefreshTimer=setInterval(async()=>{if(!document.hidden&&isOnline()){await flushQueue();await loadCloud();try{renderAll();}catch(_){}}},4000);
+    return true;
+  };
+
+  // Mantém a sessão do Supabase e permite usar o cache quando a internet cai.
+  const oldBind=bindSupabaseAuth;
+  bindSupabaseAuth=function(){
+    if(!sb||sb.__edifiqAuthBoundV4)return;
+    sb.__edifiqAuthBoundV4=true;
+    sb.auth.onAuthStateChange(async(event,session)=>{
+      try{
+        user=session?.user||null;
+        if(user){
+          saveOfflineUser(user);
+          $('auth')?.classList.add('hidden');$('app')?.classList.remove('hidden');
+          await loadCloud();renderAll();startEdifiqRealtime();
+        }else if(!isOnline()){
+          restoreOfflineUser();
+        }else{
+          stopEdifiqRealtime();$('auth')?.classList.remove('hidden');$('app')?.classList.add('hidden');
+        }
+      }catch(e){console.warn('EDIFIQ auth V4',e);}
+    });
+  };
+
+  // Se a página abrir sem SDK, mas o usuário já entrou anteriormente neste aparelho,
+  // mantém o aplicativo utilizável offline. O servidor continua sendo exigido para sincronizar.
+  window.addEventListener('offline',()=>{restoreOfflineUser();setStatus('📱 Offline — salvando localmente','warn');});
+  window.addEventListener('online',async()=>{
+    setStatus('↻ Conectando e enviando dados','warn');
+    try{
+      if(!sb)await ensureSupabaseClient();
+      if(sb){
+        const sess=await sb.auth.getSession();
+        if(sess?.data?.session){user=sess.data.session.user;saveOfflineUser(user);}
+      }
+      if(user?.id){await flushQueue();await loadCloud();startEdifiqRealtime();renderAll();}
+    }catch(e){console.warn('EDIFIQ reconexão',e);setStatus('↻ Sincronização pendente','warn');}
+  });
+
+  document.addEventListener('visibilitychange',async()=>{if(!document.hidden&&isOnline()&&user?.id&&sb){try{await flushQueue();await loadCloud();renderAll();}catch(_){}}});
+
+  // Login: se estiver sem internet e já houver uma sessão local validada anteriormente,
+  // entra no cache sem exigir uma nova autenticação ao servidor.
+  const __edifiqLoginOriginal=login;
+  login=async function(){
+    if(!isOnline() && restoreOfflineUser()){
+      try{renderAll();window.scrollTo({top:0,behavior:'instant'});}catch(_){ }
+      setStatus('📱 Offline — dados locais','warn');
+      toast('Modo offline ativado. Os lançamentos serão sincronizados quando a internet voltar.');
+      return true;
+    }
+    return __edifiqLoginOriginal();
+  };
+  window.login=login;
+  window.removeRow=removeRow;
+
+  // Tenta restaurar sessão/cached user sem bloquear a abertura do app.
+  setTimeout(async()=>{
+    if(!user?.id){
+      restoreOfflineUser();
+      if(isOnline()&&!sb){try{await ensureSupabaseClient();}catch(_){}}
+    }
+  },300);
+})();
+
 </script>
 </body>
 </html>
