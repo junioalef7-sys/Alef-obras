@@ -9309,5 +9309,190 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
 })();
 </script>
 
+<!-- EDIFIQ — extensão isolada: valores dos checklists + rateio de receitas -->
+<style id="edifiq-check-fin-ext-style">
+  .edCheckMoney{font-size:12px;color:#9ba3ad;margin-top:3px}.edCheckMoney strong{color:#fff}.edCheckSaldo{font-size:12px;color:#d9ad55;margin-top:3px}.edCheckEditValue{display:grid;grid-template-columns:1fr 110px;gap:8px;margin-top:8px}.edRateioBox{grid-column:1/-1;background:#0d1115;border:1px solid #252b33;border-radius:12px;padding:12px;margin-top:8px}.edRateioHead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}.edRateioList{display:grid;gap:7px}.edRateioRow{display:grid;grid-template-columns:24px minmax(0,1fr) 120px;gap:8px;align-items:center;padding:8px;border-top:1px solid #252b33}.edRateioRow:first-child{border-top:0}.edRateioRow small{display:block;color:#9ba3ad}.edRateioRow input[type=number]{width:100%;box-sizing:border-box}.edRateioSummary{display:flex;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid #252b33;font-size:13px}.edRateioError{color:#ffb0b5;font-size:12px;margin-top:7px;display:none}.edRateioEmpty{color:#9ba3ad;font-size:12px;padding:8px 0}@media(max-width:600px){.edCheckEditValue{grid-template-columns:1fr 100px}.edRateioRow{grid-template-columns:24px minmax(0,1fr) 105px}}
+</style>
+<script id="edifiq-check-fin-ext">
+(function(){
+  const $=id=>document.getElementById(id);
+  const escE=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const num=v=>Number(v||0);
+  const moneyE=v=>typeof money==='function'?money(v):new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(num(v));
+
+  function checkPayments(obraId,checkId){
+    return (D.pagamentos||[]).reduce((sum,p)=>{
+      if(String(p.obra_id)!==String(obraId)) return sum;
+      let arr=p.checklist_rateio;
+      if(typeof arr==='string'){try{arr=JSON.parse(arr)}catch(_){arr=[]}}
+      if(!Array.isArray(arr)) return sum;
+      return sum+arr.filter(x=>String(x.checklist_id)===String(checkId)).reduce((a,x)=>a+num(x.valor),0);
+    },0);
+  }
+
+  function checkStats(item){
+    const recebido=checkPayments(item.obra_id,item.id);
+    const valor=num(item.valor);
+    return {valor,recebido,saldo:Math.max(0,valor-recebido)};
+  }
+
+  // Substitui somente a renderização do checklist para acrescentar valor/saldo,
+  // mantendo a barra e os controles de progresso existentes.
+  window.renderChecklist=function(){
+    const box=$('checkList'); if(!box)return;
+    const sel=$('checkObraFilter');
+    if(!D.obras.length){
+      if(sel)sel.innerHTML='<option value="">Nenhuma obra cadastrada</option>';
+      box.innerHTML='<div class="empty">Cadastre uma obra para utilizar o checklist.</div>';return;
+    }
+    const current=sel?.value||'';
+    if(sel){
+      sel.innerHTML='<option value="">Selecione uma obra</option>'+D.obras.map(o=>`<option value="${escE(o.id)}">${escE(o.nome||'Obra')}</option>`).join('');
+      sel.value=current&&D.obras.some(o=>String(o.id)===String(current))?current:String(D.obras[0].id);
+    }
+    const obraId=sel?.value||String(D.obras[0].id);
+    const o=D.obras.find(x=>String(x.id)===String(obraId));
+    if(!o){box.innerHTML='<div class="empty">Selecione uma obra.</div>';return;}
+    const itens=D.checklist.filter(x=>String(x.obra_id)===String(o.id));
+    const total=itens.length;
+    const avg=total?Math.round(itens.reduce((a,x)=>a+num(x.progresso??((x.concluida||x.concluido)?100:0)),0)/total):0;
+    const somaServicos=itens.reduce((a,x)=>a+num(x.valor),0);
+    const receitaRateada=itens.reduce((a,x)=>a+checkStats(x).recebido,0);
+    box.innerHTML=`<div class="card">
+      <div class="row"><div><h3>${escE(o.nome)}</h3><small>${total} etapa(s)</small></div><strong class="gold">${avg}%</strong></div>
+      <div class="progress"><i style="width:${avg}%"></i></div>
+      <div class="three" style="margin-top:10px"><div><small>Serviços distribuídos</small><b>${moneyE(somaServicos)}</b></div><div><small>Recebido nos checklists</small><b class="green">${moneyE(receitaRateada)}</b></div><div><small>Saldo dos serviços</small><b class="gold">${moneyE(Math.max(0,somaServicos-receitaRateada))}</b></div></div>
+      ${itens.length?itens.map(item=>{
+        const pct=Math.max(0,Math.min(100,num(item.progresso??((item.concluida||item.concluido)?100:0))));
+        const st=checkStats(item);
+        return `<div class="check-item" style="display:block">
+          <div class="row"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0"><input type="checkbox" ${pct>=100?'checked':''} onchange="toggleChecklist('${escE(item.id)}',this.checked)"><span>${escE(item.tarefa||item.descricao||'Etapa')}</span></div><span class="checkPercent" id="cp_${escE(item.id)}">${pct}%</span><button class="mini" onclick="editarChecklist('${escE(item.id)}')">Editar</button><button class="mini" onclick="removeRow('checklist','${escE(item.id)}')">Excluir</button></div>
+          <div class="edCheckMoney">Valor do serviço: <strong>${moneyE(st.valor)}</strong></div>
+          <div class="edCheckMoney">Recebido: <strong>${moneyE(st.recebido)}</strong></div>
+          <div class="edCheckSaldo">Saldo a receber: <strong>${moneyE(st.saldo)}</strong></div>
+          <div class="checkProgressBox"><div class="progress"><i id="cbar_${escE(item.id)}" style="width:${pct}%"></i></div></div>
+          <div class="checkProgressControls"><input id="cpr_${escE(item.id)}" class="progressInput" type="range" min="0" max="100" step="1" value="${pct}" aria-label="Progresso da etapa" oninput="previewChecklistPct('${escE(item.id)}',this.value)" onchange="setChecklistProgress('${escE(item.id)}',this.value)"><input id="cpn_${escE(item.id)}" class="progressNumber" type="number" min="0" max="100" step="1" value="${pct}" aria-label="Porcentagem da etapa" oninput="previewChecklistPct('${escE(item.id)}',this.value)" onchange="setChecklistProgressFromNumber('${escE(item.id)}',this.value)"></div>
+        </div>`;
+      }).join(''):'<div class="empty">Nenhuma etapa cadastrada para esta obra.</div>'}
+      <div class="listActions"><button class="btn gold" onclick="openCheckForObra('${escE(o.id)}')">＋ Adicionar etapa</button></div>
+    </div>`;
+  };
+
+  const oldOpenCheck=window.openCheck;
+  window.openCheck=function(){
+    if(typeof oldOpenCheck==='function')oldOpenCheck();
+    setTimeout(()=>{
+      const form=$('checkM')?.querySelector('.formGrid');
+      if(!form||$('checkValor'))return;
+      const lab=document.createElement('label'); lab.className='full'; lab.innerHTML='Valor do serviço<input id="checkValor" type="number" step="0.01" min="0" placeholder="Ex.: 10000">';
+      form.appendChild(lab);
+    },0);
+  };
+
+  const oldSaveCheck=window.saveCheck;
+  window.saveCheck=async function(e){
+    if(e&&e.preventDefault)e.preventDefault();
+    const obra_id=$('checkObra')?.value;
+    const tarefa=$('checkDesc')?.value.trim();
+    const valor=num($('checkValor')?.value);
+    if(!obra_id){toast('Selecione a obra.');return;}
+    if(!tarefa){toast('Informe a etapa.');return;}
+    const result=await insertRow('checklist',{obra_id,tarefa,valor,concluida:false,progresso:0});
+    if(result){closeM('checkM');toast('Etapa adicionada.');await loadCloud();renderAll();}
+  };
+
+  const oldEditar=window.editarChecklist;
+  window.editarChecklist=async function(id){
+    const item=D.checklist.find(x=>String(x.id)===String(id)); if(!item)return;
+    const tarefa=prompt('Editar etapa:',item.tarefa||item.descricao||''); if(tarefa===null||!tarefa.trim())return;
+    const atual=num(item.valor);
+    const val=prompt('Valor deste serviço (R$):',String(atual.toFixed(2)).replace('.',','));
+    if(val===null)return;
+    const valor=Math.max(0,Number(String(val).replace(',','.'))||0);
+    await updateRow('checklist',id,{tarefa:tarefa.trim(),valor});
+    await loadCloud();renderAll();
+  };
+
+  function renderRateio(){
+    const wrap=$('edRateioWrap'); if(!wrap)return;
+    const tipo=$('tFin')?.value; const obraId=$('oFin')?.value; const total=num($('vFin')?.value);
+    if(tipo!=='entrada'||!obraId){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    const itens=(D.checklist||[]).filter(x=>String(x.obra_id)===String(obraId));
+    if(!itens.length){wrap.innerHTML='<div class="edRateioHead"><b>Checklist da receita</b></div><div class="edRateioEmpty">Esta obra ainda não possui checklist cadastrado.</div>';return;}
+    const old={};
+    wrap.querySelectorAll('input[data-check-id]').forEach(i=>old[i.dataset.checkId]=i.value);
+    wrap.innerHTML=`<div class="edRateioHead"><b>Checklist da receita</b><small>Selecione um ou vários serviços</small></div><div class="edRateioList">${itens.map(x=>{const st=checkStats(x);return `<label class="edRateioRow"><input type="checkbox" data-check-select="1" data-check-id="${escE(x.id)}" onchange="window.edRateioChanged()"><span><b>${escE(x.tarefa||'Serviço')}</b><small>Serviço: ${moneyE(st.valor)} • Saldo: ${moneyE(st.saldo)}</small></span><input type="number" min="0" step="0.01" data-check-id="${escE(x.id)}" data-check-value="1" placeholder="Valor" disabled></label>`}).join('')}</div><div class="edRateioSummary"><span>Total da receita</span><b id="edRateioTotal">${moneyE(total)}</b></div><div id="edRateioError" class="edRateioError"></div>`;
+    wrap.querySelectorAll('input[data-check-select]').forEach(ch=>ch.addEventListener('change',()=>{const id=ch.dataset.checkId;const inp=wrap.querySelector(`input[data-check-value][data-check-id="${CSS.escape(id)}"]`);if(inp){inp.disabled=!ch.checked;if(ch.checked&&!inp.value)inp.value='0';}window.edRateioChanged();}));
+    window.edRateioChanged();
+  }
+
+  window.edRateioChanged=function(){
+    const wrap=$('edRateioWrap'); if(!wrap)return;
+    const total=num($('vFin')?.value); let soma=0;
+    wrap.querySelectorAll('input[data-check-select]:checked').forEach(ch=>{const inp=wrap.querySelector(`input[data-check-value][data-check-id="${CSS.escape(ch.dataset.checkId)}"]`);soma+=num(inp?.value)});
+    const err=$('edRateioError'); if(err){if(soma>total+0.009)err.textContent='A soma do rateio não pode ser maior que o valor da receita.';else if(Math.abs(soma-total)>0.009)err.textContent=`Falta distribuir ${moneyE(Math.max(0,total-soma))}.`;else err.textContent='';err.style.display=err.textContent?'block':'none';}
+    const t=$('edRateioTotal');if(t)t.textContent=moneyE(soma);
+  };
+
+  window.edGetRateio=function(){
+    const wrap=$('edRateioWrap'); if(!wrap||wrap.style.display==='none')return [];
+    const arr=[];
+    wrap.querySelectorAll('input[data-check-select]:checked').forEach(ch=>{
+      const inp=wrap.querySelector(`input[data-check-value][data-check-id="${CSS.escape(ch.dataset.checkId)}"]`);
+      const valor=num(inp?.value); if(valor>0)arr.push({checklist_id:ch.dataset.checkId,valor});
+    });
+    return arr;
+  };
+
+  const oldOpenFin=window.openFin;
+  window.openFin=function(){
+    if(typeof oldOpenFin==='function')oldOpenFin();
+    setTimeout(()=>{
+      const grid=$('finM')?.querySelector('.formGrid'); if(!grid)return;
+      if(!$('edRateioWrap')){const div=document.createElement('div');div.id='edRateioWrap';div.className='edRateioBox';grid.appendChild(div);}
+      const refresh=()=>renderRateio();
+      $('oFin')?.addEventListener('change',refresh);$('tFin')?.addEventListener('change',refresh);$('vFin')?.addEventListener('input',window.edRateioChanged);refresh();
+    },0);
+  };
+
+  const oldSaveFin=window.saveFin;
+  window.saveFin=async function(e){
+    if(e&&e.preventDefault)e.preventDefault();
+    const tipo=$('tFin').value, descricaoBase=$('dFin').value.trim(), valor=num($('vFin').value), obra_id=$('oFin').value||null;
+    if(!descricaoBase){toast('Informe a descrição.');return;} if(valor<=0){toast('Informe um valor válido.');return;}
+    if(tipo==='entrada'){
+      const rateio=window.edGetRateio();
+      if(obra_id){const checks=(D.checklist||[]).filter(x=>String(x.obra_id)===String(obra_id));if(checks.length){if(!rateio.length){toast('Selecione pelo menos um checklist para esta receita.');return;}const soma=rateio.reduce((a,x)=>a+num(x.valor),0);if(Math.abs(soma-valor)>0.009){toast('Distribua o valor total da receita entre os checklists.');return;}}}
+      const result=await insertRow('pagamentos',{obra_id,data:$('dtFin').value,descricao:descricaoBase,valor,fornecedor:$('forFin').value.trim(),observacao:$('obsFin').value.trim(),checklist_rateio:rateio});
+      if(result){closeM('finM');toast('Receita registrada.');await loadCloud();renderAll();}
+    }else{
+      const categoria=$('finCategoria').value;const descricao=`[${categoria}] ${descricaoBase}`;
+      const result=await insertRow('gastos',{obra_id,data:$('dtFin').value,descricao,valor,fornecedor:$('forFin').value.trim(),observacao:$('obsFin').value.trim(),categoria});
+      if(result){closeM('finM');toast('Despesa registrada.');await loadCloud();renderAll();}
+    }
+  };
+
+  // Atualiza o resumo financeiro da obra com o saldo por checklist sem alterar os demais painéis.
+  const oldRenderObraFinance=window.renderObraFinance;
+  window.renderObraFinance=function(obraFilter='all'){
+    if(typeof oldRenderObraFinance==='function')oldRenderObraFinance(obraFilter);
+    const box=$('obraFinanceResumo');if(!box)return;
+    const obras=D.obras.filter(o=>obraFilter==='all'||String(o.id)===String(obraFilter));
+    box.querySelectorAll('.edChecklistFinance').forEach(x=>x.remove());
+    obras.forEach(o=>{
+      const checks=(D.checklist||[]).filter(x=>String(x.obra_id)===String(o.id)); if(!checks.length)return;
+      const host=[...box.querySelectorAll('.item')].find(el=>el.textContent.includes(o.nome)); if(!host)return;
+      const div=document.createElement('div');div.className='edChecklistFinance note';
+      div.innerHTML='<b>Saldo por checklist</b>'+checks.map(x=>{const st=checkStats(x);return `<div class="serviceLine"><span>${escE(x.tarefa||'Serviço')}<small> • ${num(x.progresso||0)}% executado</small></span><span>${moneyE(st.saldo)} a receber</span></div>`}).join('');host.appendChild(div);
+    });
+  };
+
+  // Quando a tela financeira abre ou a obra é alterada, atualiza o painel de rateio.
+  const oldRenderFinance=window.renderFinance;
+  window.renderFinance=function(){if(typeof oldRenderFinance==='function')oldRenderFinance();};
+})();
+
+</script>
 </body>
 </html>
