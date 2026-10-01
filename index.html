@@ -2842,140 +2842,6 @@ async function ensureSupabaseClient(){
 }
 
 /* =========================================================
-   EDIFIQ — SYNC PROTEGIDO V5
-   Regra: quando há internet, a nuvem é a fonte oficial.
-   O cache local só pode prevalecer se a linha estiver marcada
-   como pendente ou se for um registro criado offline.
-   Nunca substitui a nuvem por um cache antigo/incompleto.
-   ========================================================= */
-const EDIFIQ_SYNC_QUEUE_KEY='EDIFIQ_SYNC_QUEUE_V5';
-const EDIFIQ_SYNC_MAP_KEY='EDIFIQ_SYNC_ID_MAP_V5';
-function edifiqQueue(){try{return JSON.parse(localStorage.getItem(EDIFIQ_SYNC_QUEUE_KEY)||'[]')||[]}catch{return[]}}
-function saveEdifiqQueue(q){try{localStorage.setItem(EDIFIQ_SYNC_QUEUE_KEY,JSON.stringify(q||[]))}catch(e){console.warn('EDIFIQ fila offline',e)}}
-function edifiqIdMap(){try{return JSON.parse(localStorage.getItem(EDIFIQ_SYNC_MAP_KEY)||'{}')||{}}catch{return{}}}
-function saveEdifiqIdMap(x){try{localStorage.setItem(EDIFIQ_SYNC_MAP_KEY,JSON.stringify(x||{}))}catch(e){}}
-function queueEdifiqOp(op){
-  const q=edifiqQueue();
-  const key=`${op.type}:${op.table}:${op.id}`;
-  const i=q.findIndex(x=>`${x.type}:${x.table}:${x.id}`===key);
-  if(i>=0) q[i]={...q[i],...op,queued_at:q[i].queued_at||Date.now()};
-  else q.push({...op,queued_at:Date.now()});
-  saveEdifiqQueue(q);
-}
-function edifiqIsPending(row){return !!row && (String(row.id||'').startsWith('local_') || row._sync_pendente===true)}
-function edifiqCleanRow(row){const x={...(row||{})};delete x._sync_pendente;return x}
-function edifiqReplaceIdReferences(oldId,newId){
-  for(const table of Object.keys(D)){
-    if(!Array.isArray(D[table])) continue;
-    D[table].forEach(r=>{
-      if(String(r.obra_id)===String(oldId)) r.obra_id=newId;
-      if(String(r.funcionario_id)===String(oldId)) r.funcionario_id=newId;
-      if(String(r.checklist_id)===String(oldId)) r.checklist_id=newId;
-      if(String(r.material_id)===String(oldId)) r.material_id=newId;
-    });
-  }
-}
-function edifiqApplyCloud(table,data){
-  if(!Array.isArray(data)) return false;
-  const pending=(Array.isArray(D[table])?D[table]:[]).filter(edifiqIsPending);
-  const pendingById=new Map(pending.map(r=>[String(r.id),r]));
-  const fresh=data.map(r=>{
-    const p=pendingById.get(String(r.id));
-    return p ? {...r,...p,_sync_pendente:true} : r;
-  });
-  const cloudIds=new Set(data.map(r=>String(r.id)));
-  // Registros criados offline (local_*) e ainda não enviados permanecem.
-  for(const p of pending){ if(String(p.id).startsWith('local_') || !cloudIds.has(String(p.id))) fresh.push(p); }
-  D[table]=fresh;
-  return true;
-}
-async function edifiqFetchCloudTable(table){
-  const {data,error}=await sb.from(table).select('*');
-  if(error) throw error;
-  if(!Array.isArray(data)) throw new Error(`Resposta inválida da tabela ${table}`);
-  data.sort((a,b)=>String(b.created_at||b.data||'').localeCompare(String(a.created_at||a.data||'')));
-  return data;
-}
-async function retryEdifiqQueue(){
-  if(!sb||!user?.id||navigator.onLine===false) return;
-  let q=edifiqQueue();
-  if(!q.length) return;
-  const remaining=[];
-  for(const op of q){
-    try{
-      if(op.type==='insert'){
-        let payload={...(op.row||{}),user_id:user.id};
-        const idMap=edifiqIdMap();
-        for(const k of ['obra_id','funcionario_id','checklist_id','material_id']){
-          const key=`${k.replace('_id','')}:${payload[k]}`;
-          if(payload[k] && idMap[key]) payload[k]=idMap[key];
-          // também tenta localizar o mapeamento pelo nome da tabela relacionada
-          if(payload[k]){
-            const candidates=['obras','funcionarios','checklist','materiais'];
-            const idx=['obra_id','funcionario_id','checklist_id','material_id'].indexOf(k);
-            const related=candidates[idx];
-            if(related && idMap[`${related}:${payload[k]}`]) payload[k]=idMap[`${related}:${payload[k]}`];
-          }
-        }
-        delete payload.id; delete payload._sync_pendente;
-        const {data,error}=await sb.from(op.table).insert(payload).select().single();
-        if(error||!data) throw error||new Error('Insert sem retorno');
-        const map=edifiqIdMap(); map[`${op.table}:${op.id}`]=data.id; saveEdifiqIdMap(map);
-        edifiqReplaceIdReferences(op.id,data.id);
-        const idx=D[op.table]?.findIndex(r=>String(r.id)===String(op.id));
-        if(idx>=0) D[op.table][idx]={...data,_sync_pendente:false};
-      }else if(op.type==='update'){
-        const realId=edifiqIdMap()[`${op.table}:${op.id}`]||op.id;
-        if(String(realId).startsWith('local_')) throw new Error('ID local ainda não convertido');
-        const payload=edifiqCleanRow(op.row); delete payload.id; delete payload.user_id;
-        const {data,error}=await sb.from(op.table).update(payload).eq('id',realId).eq('user_id',user.id).select().single();
-        if(error||!data) throw error||new Error('Update sem retorno');
-        const idx=D[op.table]?.findIndex(r=>String(r.id)===String(op.id)||String(r.id)===String(realId));
-        if(idx>=0) D[op.table][idx]={...data,_sync_pendente:false};
-      }else if(op.type==='delete'){
-        const realId=edifiqIdMap()[`${op.table}:${op.id}`]||op.id;
-        if(!String(realId).startsWith('local_')){
-          const {error}=await sb.from(op.table).delete().eq('id',realId).eq('user_id',user.id);
-          if(error) throw error;
-        }
-        if(Array.isArray(D[op.table])) D[op.table]=D[op.table].filter(r=>String(r.id)!==String(op.id)&&String(r.id)!==String(realId));
-      }
-    }catch(e){
-      console.warn('EDIFIQ fila pendente',op,e);
-      remaining.push(op);
-    }
-  }
-  saveEdifiqQueue(remaining); saveLocalData();
-}
-async function edifiqSyncFromCloud(reason='manual'){
-  if(!sb||!user?.id) return false;
-  if(navigator.onLine===false) return false;
-  try{
-    await retryEdifiqQueue();
-    const tables=['obras','funcionarios','diarias','gastos','pagamentos','checklist','faltas','documentos'];
-    const before=stateCounts();
-    for(const table of tables){
-      try{
-        const data=await edifiqFetchCloudTable(table);
-        // Se a nuvem retornar vazio enquanto o cache tem dados não-pendentes,
-        // não apaga o cache: isso pode ser RLS/sessão incorreta. Mantém seguro.
-        const local=Array.isArray(D[table])?D[table]:[];
-        if(data.length===0 && local.some(r=>!edifiqIsPending(r))){
-          console.warn('EDIFIQ: resposta vazia protegida',table,reason);
-          continue;
-        }
-        edifiqApplyCloud(table,data);
-      }catch(e){ console.warn('EDIFIQ: falha ao sincronizar',table,e); }
-    }
-    limparChecklistsOrfaos();
-    fillSelectors();
-    saveLocalData();
-    const el=$('edifiqSyncStatus'); if(el){el.textContent=edifiqQueue().length?'↻ Pendências offline':'☁️ Sincronizado';el.className=edifiqQueue().length?'warn':'ok';}
-    return true;
-  }catch(e){ console.warn('EDIFIQ sync geral',e); return false; }
-}
-
-/* =========================================================
    SINCRONIZAÇÃO EM TEMPO REAL — celular ↔ computador
    Usa Supabase Realtime quando o usuário está autenticado.
    Cada alteração feita em qualquer dispositivo chega aos demais
@@ -3013,11 +2879,11 @@ function startEdifiqRealtime(){
       if(!row?.id) return;
       const idx=D[table].findIndex(x=>String(x.id)===String(row.id));
       if(tipo==='DELETE'){
-        if(idx>=0 && !edifiqIsPending(D[table][idx])) D[table].splice(idx,1);
+        if(idx>=0) D[table].splice(idx,1);
       }else if(idx>=0){
-        if(!edifiqIsPending(D[table][idx])) D[table][idx]={...payload.new,_sync_pendente:false};
+        D[table][idx]={...D[table][idx],...payload.new};
       }else if(payload.new){
-        D[table].unshift({...payload.new,_sync_pendente:false});
+        D[table].unshift(payload.new);
       }
       saveLocalData();
       try{renderAll();}catch(e){console.warn('Render realtime',e);}
@@ -3041,15 +2907,15 @@ function startEdifiqRealtime(){
   const syncNow=async()=>{
     if(!sb||!user?.id||document.hidden) return;
     try{
-      await retryEdifiqQueue();
-      await edifiqSyncFromCloud('realtime-fallback');
+      await retryLocalCloudRows();
+      await loadCloud();
       renderAll();
       const el=$('edifiqSyncStatus'); if(el){el.textContent='☁️ Sincronizado';el.className='ok';}
     }catch(e){ console.warn('Fallback de sincronização:',e);
       const el=$('edifiqSyncStatus'); if(el){el.textContent='↻ Tentando sincronizar';el.className='warn';}
     }
   };
-  edifiqRealtimeRefreshTimer=setInterval(syncNow,3000);
+  edifiqRealtimeRefreshTimer=setInterval(syncNow,5000);
   if(!window.__edifiqSyncEventsBound){
     window.__edifiqSyncEventsBound=true;
     window.addEventListener('online',()=>{ setTimeout(syncNow,250); });
@@ -3340,66 +3206,294 @@ user=null;
    ========================================================= */
 
 function mergeLocal(){
-  // Apenas recupera alterações pendentes do cache. Dados normais serão
-  // substituídos pela nuvem na próxima sincronização online.
   const x=localData();
   for(const table of Object.keys(D)){
     if(!Array.isArray(x[table])) continue;
-    const pending=x[table].filter(edifiqIsPending);
-    if(pending.length){
-      const current=Array.isArray(D[table])?D[table]:[];
-      const byId=new Map(current.map(r=>[String(r.id),r]));
-      pending.forEach(r=>byId.set(String(r.id),r));
-      D[table]=[...byId.values()];
+    const localRows=x[table];
+    const localById=new Map(localRows.map(r=>[String(r.id),r]));
+    const cloudRows=Array.isArray(D[table])?D[table]:[];
+    // Nunca substitui silenciosamente dados locais por uma lista menor vinda da nuvem.
+    const merged=cloudRows.map(cloudRow=>{
+      const localRow=localById.get(String(cloudRow.id));
+      return localRow ? {...cloudRow,...localRow} : cloudRow;
+    });
+    const ids=new Set(merged.map(r=>String(r.id)));
+    for(const localRow of localRows){
+      if(!ids.has(String(localRow.id))) merged.push(localRow);
     }
+    D[table]=merged;
   }
   saveLocalData();
 }
 
 async function loadTable(table){
   if(!sb||!user) return;
+  const antes=Array.isArray(D[table])?[...D[table]]:[];
   try{
-    const data=await edifiqFetchCloudTable(table);
-    edifiqApplyCloud(table,data);
-  }catch(e){ console.warn('Erro carregando',table,e); }
+    const{data,error}=await sb.from(table).select("*");
+    if(!error&&Array.isArray(data)){
+      data.sort((a,b)=>String(b.created_at||b.data||"").localeCompare(String(a.created_at||a.data||"")));
+      // Mescla, em vez de apagar o estado atual. Isso evita perda quando o servidor retorna parcial/temporariamente vazio.
+      const byId=new Map(antes.map(r=>[String(r.id),r]));
+      const byCloud=new Map(data.map(r=>[String(r.id),r]));
+      const merged=data.map(r=>byId.has(String(r.id))?{...r,...byId.get(String(r.id))}:r);
+      for(const r of antes){ if(!byCloud.has(String(r.id))) merged.push(r); }
+      D[table]=merged;
+      return;
+    }
+    console.warn("EDIFIQ",table,error?.message);
+  }catch(e){ console.warn("Erro carregando",table,e); }
+  // Em erro, preserva o que já estava na memória/local.
+  D[table]=antes;
 }
 
 async function loadCloud(){
-  if(!sb||!user) return;
-  // Primeiro garante que o cache local pendente esteja preservado.
-  mergeLocal();
-  // Online: nuvem é a fonte oficial; offline: somente cache local.
-  if(navigator.onLine===false){
-    fillSelectors(); renderAll(); return;
+  if(!sb||!user)return;
+  // Protege o estado antes de qualquer sincronização. Se o servidor responder incompleto,
+  // o conjunto atual será preservado e poderá ser restaurado automaticamente.
+  const estadoAntesCloud=stateCounts();
+  saveSafeSnapshot("antes da sincronização com a nuvem");
+  saveLocalData();
+  for(const table of ["obras","funcionarios","diarias","gastos","pagamentos","checklist","documentos","faltas"]){
+    await loadTable(table);
   }
-  await edifiqSyncFromCloud('loadCloud');
-  try{auditEDIFIQ();}catch(e){console.warn('auditEDIFIQ',e)}
-  try{protectAgainstUnexpectedLoss({},{});}catch(e){}
-  renderAll();
+  mergeLocal();
+  auditEDIFIQ();
+  protectAgainstUnexpectedLoss(estadoAntesCloud,{});
+  limparChecklistsOrfaos();
+  fillSelectors();
+  saveLocalData();
 }
 
-async function retryLocalCloudRows(){ return retryEdifiqQueue(); }
-
-async function insertRow(table,row){
-  if(!user){ toast('Faça login primeiro.'); return null; }
-  const localId='local_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-  const localRow={...row,id:localId,user_id:user.id,created_at:new Date().toISOString(),_sync_pendente:true};
-  // Sempre grava primeiro no aparelho. Se houver internet, a fila envia em seguida.
-  D[table].unshift(localRow); saveLocalData(); renderAll();
-  queueEdifiqOp({type:'insert',table,id:localId,row:localRow});
-  if(navigator.onLine!==false) await retryEdifiqQueue();
-  const real=D[table].find(r=>String(r.id)===String(localId));
-  return real||localRow;
+async function retryLocalCloudRows(){
+  if(!sb||!user?.id) return;
+  const tables=["obras","funcionarios","diarias","gastos","pagamentos","checklist","faltas"];
+  for(const table of tables){
+    const rows=Array.isArray(D[table])?D[table]:[];
+    const locals=rows.filter(r=>String(r?.id||'').startsWith('local_'));
+    for(const local of locals){
+      try{
+        const payload={...local,user_id:user.id};
+        delete payload.id;
+        const {data,error}=await sb.from(table).insert(payload).select().single();
+        if(!error&&data){
+          const idx=D[table].findIndex(x=>String(x.id)===String(local.id));
+          if(idx>=0) D[table][idx]=data;
+          saveLocalData();
+        }
+      }catch(e){ console.warn('Retry cloud',table,e); }
+    }
+  }
 }
 
-async function updateRow(table,id,row){
-  const index=D[table].findIndex(x=>String(x.id)===String(id));
-  if(index<0){toast('Registro não encontrado.');return null;}
-  D[table][index]={...D[table][index],...row,_sync_pendente:true};
-  saveLocalData(); renderAll();
-  queueEdifiqOp({type:'update',table,id,row:{...row}});
-  if(navigator.onLine!==false) await retryEdifiqQueue();
-  return D[table][index];
+async function insertRow(
+table,
+row
+){
+
+if(!user){
+
+toast(
+"Faça login primeiro."
+);
+
+return null;
+
+}
+
+const payload={
+...row,
+user_id:user.id
+};
+
+const attempts=[
+payload
+];
+
+if(table==="gastos"){
+
+attempts.push(
+Object.fromEntries(
+Object.entries(payload)
+.filter(
+([k])=>k!=="categoria"
+)
+)
+);
+
+}
+
+if(table==="pagamentos"){
+
+attempts.push(
+Object.fromEntries(
+Object.entries(payload)
+.filter(
+([k])=>k!=="forma_pagamento"
+)
+)
+);
+
+}
+
+if(table==="funcionarios"){
+
+attempts.push(
+Object.fromEntries(
+Object.entries(payload)
+.filter(
+([k])=>k!=="registrar_diaria"
+)
+)
+);
+
+}
+
+for(const tentativa of attempts){
+
+try{
+
+const{data,error}=
+await sb
+.from(table)
+.insert(tentativa)
+.select()
+.single();
+
+if(!error&&data){
+
+D[table].unshift(data);
+
+saveLocalData();
+
+renderAll();
+
+return data;
+
+}
+
+console.warn(
+"Supabase recusou",
+table,
+error?.message
+);
+
+}catch(e){
+
+console.warn(
+"Erro Supabase",
+table,
+e
+);
+
+}
+
+}
+
+const localRow={
+...row,
+id:
+"local_"+Date.now()+"_"+
+Math.random()
+.toString(36)
+.slice(2),
+user_id:user.id,
+created_at:
+new Date().toISOString()
+};
+
+D[table].unshift(localRow);
+
+saveLocalData();
+
+renderAll();
+
+toast(
+"Salvo neste aparelho. O servidor recusou a gravação."
+);
+
+return localRow;
+
+}
+
+async function updateRow(
+table,
+id,
+row
+){
+
+const index=D[table].findIndex(
+x=>String(x.id)===String(id)
+);
+
+if(index<0){
+toast("Registro não encontrado.");
+return null;
+}
+
+const anterior={...D[table][index]};
+D[table][index]={
+...D[table][index],
+...row,
+_sync_pendente:String(id).startsWith('local_') ? true : D[table][index]._sync_pendente
+};
+saveLocalData();
+renderAll();
+
+if(String(id).startsWith("local_")){
+return D[table][index];
+}
+
+if(!sb||!user){
+return D[table][index];
+}
+
+try{
+
+const tentativas=[row];
+
+/* Algumas instalações antigas não possuem a coluna "pago".
+   Tenta primeiro o registro completo e depois somente "status"
+   para que a baixa da diária continue funcionando. */
+if(table==="diarias" && Object.prototype.hasOwnProperty.call(row,"pago")){
+  const semPago={...row};
+  delete semPago.pago;
+  tentativas.push(semPago);
+}
+
+for(const tentativa of tentativas){
+
+const{data,error}=
+await sb
+.from(table)
+.update(tentativa)
+.eq("id",id)
+.select()
+.single();
+
+if(!error&&data){
+
+D[table][index]=data;
+saveLocalData();
+renderAll();
+return data;
+
+}
+
+console.warn("Supabase recusou atualização",table,error?.message);
+}
+
+toast("Atualizado no aparelho. O servidor recusou a alteração.");
+return D[table][index];
+
+}catch(e){
+
+console.warn("Erro Supabase ao atualizar",table,e);
+toast("Atualizado no aparelho. Não foi possível sincronizar agora.");
+return D[table][index];
+
+}
+
 }
 
 async function removeRow(
@@ -3411,24 +3505,6 @@ if(!confirm(
 "Deseja realmente excluir?"
 ))
 return;
-
-// Exclusão offline: remove da interface imediatamente e registra a operação.
-// A nuvem só será alterada quando houver conexão, evitando erros e perda de sincronização.
-if(navigator.onLine===false){
-  if(table==="obras"){
-    const obraId=String(id);
-    for(const t of ["checklist","diarias","gastos","pagamentos","faltas","documentos"]){
-      const rows=Array.isArray(D[t])?D[t]:[];
-      rows.filter(r=>String(r.obra_id)===obraId && !String(r.id).startsWith("local_")).forEach(r=>queueEdifiqOp({type:'delete',table:t,id:r.id}));
-      D[t]=rows.filter(r=>String(r.obra_id)!==obraId);
-    }
-  }
-  queueEdifiqOp({type:'delete',table,id});
-  D[table]=Array.isArray(D[table])?D[table].filter(r=>String(r.id)!==String(id)):[];
-  saveLocalData(); renderAll();
-  toast("Excluído neste aparelho. A exclusão será sincronizada quando a internet voltar.");
-  return;
-}
 
 /*
   EXCLUSÃO SEGURA DE OBRA
@@ -6416,11 +6492,34 @@ async function setChecklistProgress(id,value){
   // Atualiza a interface imediatamente, sem esperar a nuvem.
   previewChecklistPct(id,pct);
 
-  // Coloca o progresso na mesma fila offline das demais alterações.
-  item._sync_pendente=true;
-  queueEdifiqOp({type:'update',table:'checklist',id,row:payload});
-  saveLocalData();
-  if(navigator.onLine!==false) await retryEdifiqQueue();
+  // Sincroniza sem deixar uma resposta antiga sobrescrever o valor digitado.
+  if(sb && user && !String(id).startsWith("local_")){
+    try{
+      const {data,error}=await sb
+        .from("checklist")
+        .update(payload)
+        .eq("id",id)
+        .select()
+        .single();
+
+      if(error){
+        item._sync_pendente=true;
+        saveLocalData();
+        console.warn("Checklist: servidor recusou o progresso.",error.message);
+        toast("Progresso salvo neste aparelho. A sincronização será feita depois.");
+      }else{
+        // Mantém o valor que o usuário acabou de informar.
+        Object.assign(item,data||{},payload);
+        item._sync_pendente=false;
+        saveLocalData();
+      }
+    }catch(err){
+      item._sync_pendente=true;
+      saveLocalData();
+      console.warn("Checklist: erro ao sincronizar progresso.",err);
+      toast("Progresso salvo neste aparelho. Não foi possível sincronizar agora.");
+    }
+  }
 
   // Redesenha somente as áreas necessárias depois que o valor já está salvo.
   renderObras();
@@ -9471,23 +9570,6 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   window.renderFinance=function(){if(typeof oldRenderFinance==='function')oldRenderFinance();};
 })();
 
-
-/* ===== EDIFIQ SYNC SAFETY BOOTSTRAP ===== */
-(function(){
-  if(window.__EDIFIQ_SYNC_V5_BOOT__) return;
-  window.__EDIFIQ_SYNC_V5_BOOT__=true;
-  const run=async()=>{
-    try{
-      if(sb&&user){
-        if(navigator.onLine!==false){ await retryEdifiqQueue(); await edifiqSyncFromCloud('network'); }
-        else { mergeLocal(); renderAll(); }
-      }
-    }catch(e){console.warn('EDIFIQ bootstrap sync',e)}
-  };
-  window.addEventListener('online',()=>setTimeout(run,300));
-  window.addEventListener('offline',()=>{const el=$('edifiqSyncStatus');if(el){el.textContent='📴 Offline — salvo neste aparelho';el.className='warn';}});
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(run,200)});
-})();
 </script>
 </body>
 </html>
