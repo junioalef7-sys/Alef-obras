@@ -2563,10 +2563,58 @@ String(b.data||"")
 
 }
 
+function getFuncionarioExtras(funcId){
+
+  const extrasMap=new Map();
+
+  // Fonte principal local dos bônus/serviços extras.
+  for(const x of (D.servicosExtras||[])){
+    if(String(x.funcionario_id??x.funcionarioId??'')!==String(funcId))continue;
+    if(!x.id)continue;
+    extrasMap.set(String(x.id),{...x,valor:Number(x.valor||0)});
+  }
+
+  // Recupera extras também a partir do lançamento financeiro vinculado.
+  // Isso mantém a folha funcionando mesmo depois de sincronizar/reabrir o aplicativo.
+  for(const g of (D.gastos||[])){
+    if(!g.servico_extra_id)continue;
+    if(String(g.funcionario_id??g.funcionarioId??'')!==String(funcId))continue;
+    const id=String(g.servico_extra_id);
+    if(extrasMap.has(id))continue;
+
+    const desc=String(g.descricao||'').replace(/^\[[^\]]+\]\s*/,'');
+    extrasMap.set(id,{
+      id,
+      funcionario_id:funcId,
+      funcionarioId:funcId,
+      obra_id:g.obra_id,
+      obraId:g.obra_id,
+      descricao:desc,
+      tipo:'Serviço extra',
+      valor:Number(g.valor||0),
+      data:g.data||today(),
+      status:String(g.status||'pendente').toLowerCase()==='pago'?'pago':'pendente',
+      financeiroAplicado:true,
+      folhaAplicado:String(g.status||'pendente').toLowerCase()==='pago'
+    });
+  }
+
+  return [...extrasMap.values()];
+}
+
+function getFuncionarioExtrasPendentes(funcId){
+
+  return getFuncionarioExtras(funcId).filter(x=>{
+    const st=String(x.status||'pendente').trim().toLowerCase();
+    return st!=='pago' && st!=='paid' && st!=='quitado' && st!=='liquidado';
+  });
+
+}
+
 function calcFuncionarioPagamento(funcId){
 
 const pendingDiarias=getPendingTotal(funcId);
-const extrasPendentes=(D.servicosExtras||[]).filter(x=>String(x.funcionario_id||x.funcionarioId)===String(funcId)&&String(x.status||'pendente')!=='pago');
+const extrasPendentes=getFuncionarioExtrasPendentes(funcId);
 const extrasTotal=extrasPendentes.reduce((a,x)=>a+Number(x.valor||0),0);
 const pending=pendingDiarias+extrasTotal;
 
@@ -3293,6 +3341,9 @@ async function loadCloud(){
     await loadTable(table);
   }
   mergeLocal();
+  aplicarExclusoesPendentes();
+  await retryEdifiqDeleteQueue();
+  aplicarExclusoesPendentes();
   auditEDIFIQ();
   protectAgainstUnexpectedLoss(estadoAntesCloud,{});
   limparChecklistsOrfaos();
@@ -3719,83 +3770,101 @@ if(table==="obras"){
   }
 }
 
-if(String(id).startsWith("local_")){
-
-D[table]=D[table].filter(
-x=>String(x.id)!==
-String(id)
-);
-
-saveLocalData();
-
-renderAll();
-
-toast(
-"Excluído com sucesso."
-);
-
-return;
-
+function getEdifiqDeleteQueue(){
+  try{
+    const q=JSON.parse(localStorage.getItem("edifiq_delete_queue")||"[]");
+    return Array.isArray(q)?q:[];
+  }catch(e){return [];}
 }
 
-try{
+function saveEdifiqDeleteQueue(q){
+  try{localStorage.setItem("edifiq_delete_queue",JSON.stringify(q||[]));}catch(e){}
+}
 
-if(!sb||!user){
+function addEdifiqDeleteQueue(table,id){
+  const q=getEdifiqDeleteQueue();
+  const key=table+"::"+String(id);
+  if(!q.some(x=>x.key===key)){
+    q.push({key,table,id:String(id),created_at:new Date().toISOString()});
+    saveEdifiqDeleteQueue(q);
+  }
+}
 
-  D[table]=D[table].filter(
-    x=>String(x.id)!==
-    String(id)
-  );
+function removeEdifiqDeleteQueue(table,id){
+  const key=table+"::"+String(id);
+  saveEdifiqDeleteQueue(getEdifiqDeleteQueue().filter(x=>x.key!==key));
+}
 
+function aplicarExclusoesPendentes(){
+  const q=getEdifiqDeleteQueue();
+  if(!q.length)return;
+  for(const item of q){
+    if(Array.isArray(D[item.table])){
+      D[item.table]=D[item.table].filter(x=>String(x.id)!==String(item.id));
+    }
+  }
+}
+
+async function retryEdifiqDeleteQueue(){
+  if(!sb||!user||!navigator.onLine)return;
+  const q=getEdifiqDeleteQueue();
+  if(!q.length)return;
+
+  const restantes=[];
+  for(const item of q){
+    try{
+      const {error}=await sb.from(item.table).delete().eq("id",item.id);
+      if(error){
+        restantes.push(item);
+      }
+    }catch(e){
+      restantes.push(item);
+    }
+  }
+  saveEdifiqDeleteQueue(restantes);
+}
+
+if(String(id).startsWith("local_")){
+  D[table]=D[table].filter(x=>String(x.id)!==String(id));
   saveLocalData();
   renderAll();
-
-  toast("Excluído neste aparelho.");
-
+  toast("Excluído com sucesso.");
   return;
 }
 
-const{error}=await sb
-.from(table)
-.delete()
-.eq("id",id);
+try{
+  // Remove imediatamente do aparelho para a exclusão funcionar mesmo com
+  // falha momentânea da nuvem.
+  D[table]=D[table].filter(x=>String(x.id)!==String(id));
+  saveLocalData();
+  renderAll();
 
-if(error){
+  if(!sb||!user||!navigator.onLine){
+    addEdifiqDeleteQueue(table,id);
+    toast("Excluído neste aparelho. A sincronização será concluída quando houver conexão.");
+    return;
+  }
 
-toast(
-"Erro ao excluir: "+
-error.message
-);
+  const {error}=await sb.from(table).delete().eq("id",id);
 
-return;
+  if(error){
+    addEdifiqDeleteQueue(table,id);
+    saveLocalData();
+    toast("Excluído neste aparelho. A nuvem será atualizada na próxima sincronização.");
+    return;
+  }
 
-}
-
-D[table]=D[table].filter(
-x=>String(x.id)!==
-String(id)
-);
-
-saveLocalData();
-
-renderAll();
-
-toast(
-"Excluído com sucesso."
-);
+  removeEdifiqDeleteQueue(table,id);
+  saveLocalData();
+  renderAll();
+  toast("Lançamento excluído com sucesso.");
 
 }catch(e){
-
-console.error(
-"Erro ao excluir",
-table,
-e
-);
-
-toast(
-"Erro ao excluir."
-);
-
+  console.error("Erro ao excluir",table,e);
+  addEdifiqDeleteQueue(table,id);
+  saveLocalData();
+  renderAll();
+  toast("Lançamento excluído neste aparelho. A sincronização será tentada novamente.");
 }
 
 }
@@ -5168,7 +5237,7 @@ for(const check of checks){
 
   const pendingItems=getPendingDiarias(id);
   const pendingDiarias=pendingItems.reduce((a,d)=>a+diariaValor(d),0);
-  const extrasPendentes=(D.servicosExtras||[]).filter(x=>String(x.funcionario_id||x.funcionarioId)===String(id)&&String(x.status||'pendente')!=='pago');
+  const extrasPendentes=getFuncionarioExtrasPendentes(id);
   const advancesAtuais=getEmployeeAdvances(id);
   if(pendingDiarias<=0 && !extrasPendentes.length && !advancesAtuais.length)continue;
 
@@ -5285,10 +5354,18 @@ for(const item of processados){
   }
 
   for(const extra of (item.resumo.extrasPendentes||[])){
-    extra.status='pago';
-    extra.data_pagamento=data;
+    const localExtra=(D.servicosExtras||[]).find(x=>String(x.id)===String(extra.id));
+    if(localExtra){
+      localExtra.status='pago';
+      localExtra.data_pagamento=data;
+      localExtra.folhaAplicado=true;
+    }
+
     const gasto=(D.gastos||[]).find(g=>String(g.servico_extra_id||'')===String(extra.id));
-    if(gasto)gasto.status='pago';
+    if(gasto){
+      gasto.status='pago';
+      gasto.data_pagamento=data;
+    }
   }
 
   /* Mantém a quitação dos adiantamentos exatamente como já funcionava. */
@@ -6247,24 +6324,82 @@ function renderFechamentoFolha(){
     toast("Erro ao atualizar a folha de pagamento.");
   }
 }
+function getFuncionarioExtrasAll(){
+  const ids=new Map();
+
+  for(const x of (D.servicosExtras||[])){
+    if(!x.id)continue;
+    ids.set(String(x.id),{...x,valor:Number(x.valor||0)});
+  }
+
+  for(const g of (D.gastos||[])){
+    if(!g.servico_extra_id)continue;
+    const id=String(g.servico_extra_id);
+    if(ids.has(id))continue;
+    ids.set(id,{
+      id,
+      funcionario_id:g.funcionario_id,
+      funcionarioId:g.funcionario_id,
+      obra_id:g.obra_id,
+      obraId:g.obra_id,
+      descricao:String(g.descricao||'').replace(/^\[[^\]]+\]\s*/,''),
+      tipo:'Serviço extra',
+      valor:Number(g.valor||0),
+      data:g.data||today(),
+      status:String(g.status||'pendente').toLowerCase()==='pago'?'pago':'pendente'
+    });
+  }
+
+  return [...ids.values()];
+}
+
 function renderEquipeOverview(){
-  const ativos=D.funcionarios.filter(f=>f.ativo!==false).length; if($("eqAtivos"))$("eqAtivos").textContent=ativos;
+  const ativos=D.funcionarios.filter(f=>f.ativo!==false).length;
+  if($("eqAtivos"))$("eqAtivos").textContent=ativos;
+
   const {ini,fim}=getPeriodDates(15);
   const ds=D.diarias.filter(d=>String(d.data||"")>=ini&&String(d.data||"")<=fim);
   const pendentes=ds.filter(d=>!diariaEstaPaga(d));
   const pagos=ds.filter(diariaEstaPaga);
-  const bruto=pendentes.reduce((a,d)=>a+diariaValor(d),0);
-  const pago=pagos.reduce((a,d)=>a+diariaValor(d),0);
-  const ids=[...new Set(ds.map(d=>String(d.funcionario_id)))];
+
+  const extrasPeriodo=getFuncionarioExtrasAll().filter(x=>{
+    const data=String(x.data||"");
+    return data>=ini&&data<=fim;
+  });
+  const extrasPendentes=extrasPeriodo.filter(x=>{
+    const st=String(x.status||"pendente").toLowerCase();
+    return st!=="pago"&&st!=="paid"&&st!=="quitado"&&st!=="liquidado";
+  });
+  const extrasPagos=extrasPeriodo.filter(x=>!extrasPendentes.includes(x));
+
+  const bruto=pendentes.reduce((a,d)=>a+diariaValor(d),0)+extrasPendentes.reduce((a,x)=>a+Number(x.valor||0),0);
+  const pago=pagos.reduce((a,d)=>a+diariaValor(d),0)+extrasPagos.reduce((a,x)=>a+Number(x.valor||0),0);
+
+  const ids=[...new Set([
+    ...ds.map(d=>String(d.funcionario_id)),
+    ...extrasPeriodo.map(x=>String(x.funcionario_id??x.funcionarioId??""))
+  ].filter(Boolean))];
+
   const adv=ids.reduce((a,id)=>a+advanceAmountForEmployeeInRange(id,ini,fim),0);
   const pend=Math.max(0,bruto-adv);
-  if($("eqDiasPeriodo"))$("eqDiasPeriodo").textContent=ds.length; if($("eqBrutoPeriodo"))$("eqBrutoPeriodo").textContent=money(bruto); if($("eqPagoPeriodo"))$("eqPagoPeriodo").textContent=money(pago); if($("eqAdiantPeriodo"))$("eqAdiantPeriodo").textContent=money(adv); if($("eqPendentePeriodo"))$("eqPendentePeriodo").textContent=money(pend);
-  const fo=$("folhaObra"); if(fo){const cur=fo.value||"all";fo.innerHTML='<option value="all">Todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');if([...fo.options].some(x=>x.value===cur))fo.value=cur;}
+
+  if($("eqDiasPeriodo"))$("eqDiasPeriodo").textContent=ds.length;
+  if($("eqBrutoPeriodo"))$("eqBrutoPeriodo").textContent=money(bruto);
+  if($("eqPagoPeriodo"))$("eqPagoPeriodo").textContent=money(pago);
+  if($("eqAdiantPeriodo"))$("eqAdiantPeriodo").textContent=money(adv);
+  if($("eqPendentePeriodo"))$("eqPendentePeriodo").textContent=money(pend);
+
+  const fo=$("folhaObra");
+  if(fo){
+    const cur=fo.value||"all";
+    fo.innerHTML='<option value="all">Todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');
+    if([...fo.options].some(x=>x.value===cur))fo.value=cur;
+  }
+
   renderFechamentoFolha();
   fillEquipeHistorySelectors();
   renderHistoricoPagamentos();
 }
-
 /* =========================================================
    FALTAS DOS FUNCIONÁRIOS
    Armazenamento local para não exigir nova tabela no Supabase.
@@ -7432,24 +7567,79 @@ function openHomeKpi(tipo){
 }
 
 async function openExtraFuncionario(funcId){
-  const f=D.funcionarios.find(x=>String(x.id)===String(funcId)); if(!f){toast('Funcionário não encontrado.');return;}
-  const obras=D.obras||[]; if(!obras.length){toast('Cadastre uma obra antes de lançar um serviço extra.');return;}
-  const nomes=obras.map((o,i)=>`${i+1} — ${o.nome}`).join('\n');
-  const escolha=prompt(`Vincule o lançamento a uma obra:\n\n${nomes}\n\nDigite o número da obra:`,'1'); if(escolha===null)return;
-  const obra=obras[Number(escolha)-1]; if(!obra){toast('Obra inválida.');return;}
-  const descricao=prompt('Descrição do serviço extra, bônus ou modificação:', 'Serviço extra'); if(descricao===null||!descricao.trim())return;
-  const tipo=prompt('Tipo: serviço extra / bônus / modificação:', 'Serviço extra'); if(tipo===null)return;
-  const raw=prompt('Valor (R$):','0'); if(raw===null)return; const valor=Number(String(raw).replace(/\./g,'').replace(',','.')); if(!Number.isFinite(valor)||valor<=0){toast('Informe um valor válido.');return;}
+  const f=D.funcionarios.find(x=>String(x.id)===String(funcId));
+  if(!f){toast('Funcionário não encontrado.');return;}
+  const obras=D.obras||[];
+  if(!obras.length){toast('Cadastre uma obra antes de lançar um serviço extra.');return;}
+
+  const nomes=obras.map((o,i)=>`${i+1} — ${o.nome}`).join('\\n');
+  const escolha=prompt(`Vincule o lançamento a uma obra:\\n\\n${nomes}\\n\\nDigite o número da obra:`,'1');
+  if(escolha===null)return;
+
+  const obra=obras[Number(escolha)-1];
+  if(!obra){toast('Obra inválida.');return;}
+
+  const descricao=prompt('Descrição do serviço extra, bônus ou modificação:','Serviço extra');
+  if(descricao===null||!descricao.trim())return;
+
+  const tipo=prompt('Tipo: serviço extra / bônus / modificação:','Serviço extra');
+  if(tipo===null)return;
+
+  const raw=prompt('Valor (R$):','0');
+  if(raw===null)return;
+
+  const valor=Number(String(raw).replace(/\\./g,'').replace(',','.'));
+  if(!Number.isFinite(valor)||valor<=0){
+    toast('Informe um valor válido.');
+    return;
+  }
+
   D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];
   const id='sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-  const item={id,funcionario_id:f.id,funcionarioId:f.id,obra_id:obra.id,obraId:obra.id,descricao:descricao.trim(),tipo:tipo.trim()||'Serviço extra',valor,data:today(),status:'pendente',financeiroAplicado:true,folhaAplicado:true};
-  D.servicosExtras.push(item);
-  const g={id:'g_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),obra_id:obra.id,data:today(),descricao:`[${item.tipo}] ${item.descricao} - ${f.nome}`,valor,fornecedor:f.nome,observacao:'Lançamento vinculado à folha de pagamento.',categoria:'Mão de obra',funcionario_id:f.id,servico_extra_id:id,status:'pendente'};
-  D.gastos=Array.isArray(D.gastos)?D.gastos:[]; D.gastos.push(g);
-  if(typeof saveLocalData==='function')saveLocalData();
-  toast(`${item.tipo} lançado para ${f.nome} e vinculado à obra e ao Financeiro.`); renderAll();
-}
 
+  const item={
+    id,
+    funcionario_id:f.id,
+    funcionarioId:f.id,
+    obra_id:obra.id,
+    obraId:obra.id,
+    descricao:descricao.trim(),
+    tipo:tipo.trim()||'Serviço extra',
+    valor,
+    data:today(),
+    status:'pendente',
+    financeiroAplicado:true,
+    folhaAplicado:false
+  };
+
+  D.servicosExtras.push(item);
+  saveLocalData();
+
+  // O lançamento financeiro passa a ser gravado pela mesma rotina usada
+  // pelo restante do Financeiro, evitando que o extra desapareça após sincronizar.
+  const result=await insertRow('gastos',{
+    obra_id:obra.id,
+    data:today(),
+    descricao:`[${item.tipo}] ${item.descricao} - ${f.nome}`,
+    valor,
+    fornecedor:f.nome,
+    observacao:'Lançamento vinculado à folha de pagamento.',
+    categoria:'Mão de obra',
+    funcionario_id:f.id,
+    servico_extra_id:id,
+    status:'pendente'
+  });
+
+  if(!result){
+    D.servicosExtras=D.servicosExtras.filter(x=>String(x.id)!==String(id));
+    saveLocalData();
+    toast('Não foi possível registrar o bônus/serviço extra.');
+    return;
+  }
+
+  toast(`${item.tipo} lançado para ${f.nome}. O valor já entra na folha de pagamento.`);
+  renderAll();
+}
 function renderDashboard(){
  renderHomeObras();
  const contratado=D.obras.reduce((a,o)=>a+Number(o.valor||0),0);
