@@ -9972,5 +9972,182 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
 })();
 
 </script>
+
+<!-- EDIFIQ — FASE 1: CONTROLE INTELIGENTE (extensão isolada, somente leitura) -->
+<style id="edifiq-controle-inteligente-style">
+  .edci-wrap{margin-top:16px}
+  .edci-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .edci-head h2{margin:0 0 4px}.edci-head p{margin:0;color:var(--muted)}
+  .edci-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+  .edci-kpi{padding:13px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.025)}
+  .edci-kpi small{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.edci-kpi b{font-size:18px}
+  .edci-status{margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.08)}
+  .edci-status.ok{background:rgba(46,204,113,.07)}.edci-status.warn{background:rgba(245,166,35,.09)}.edci-status.danger{background:rgba(231,76,60,.10)}
+  .edci-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;margin-top:12px}
+  .edci-panel{padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.018)}
+  .edci-panel h3{margin:0 0 10px;font-size:15px}
+  .edci-table{width:100%;border-collapse:collapse;font-size:12px}.edci-table th,.edci-table td{padding:9px 7px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;vertical-align:middle}
+  .edci-table th{color:var(--muted);font-weight:600}.edci-table td.num,.edci-table th.num{text-align:right;white-space:nowrap}
+  .edci-table tr.edci-alert td{background:rgba(231,76,60,.055)}
+  .edci-pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:4px 7px;font-size:10px;font-weight:700;white-space:nowrap}
+  .edci-pill.ok{background:rgba(46,204,113,.12);color:#7ee2a8}.edci-pill.warn{background:rgba(245,166,35,.14);color:#f5c76a}.edci-pill.danger{background:rgba(231,76,60,.14);color:#ff8d82}
+  .edci-progress{height:7px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden;margin-top:5px}.edci-progress i{display:block;height:100%;border-radius:999px}
+  .edci-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px;color:var(--muted);font-size:11px}.edci-legend span{display:inline-flex;align-items:center;gap:5px}
+  .edci-dot{width:9px;height:9px;border-radius:50%;display:inline-block}.edci-chart{width:100%;height:250px;overflow:hidden}.edci-chart svg{width:100%;height:100%;display:block}
+  .edci-note{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.45}.edci-empty{padding:14px;text-align:center;color:var(--muted)}
+  @media(max-width:900px){.edci-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.edci-grid{grid-template-columns:1fr}}
+  @media(max-width:560px){.edci-kpis{grid-template-columns:1fr 1fr}.edci-kpi b{font-size:15px}.edci-table{font-size:11px}.edci-table th:nth-child(3),.edci-table td:nth-child(3){display:none}}
+</style>
+<script id="edifiq-controle-inteligente">
+(function(){
+  const $ci=id=>document.getElementById(id);
+  const n=v=>Number(v||0);
+  const moneyCI=v=>typeof money==='function'?money(v):new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n(v));
+  const escCI=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  const pctCI=v=>n(v).toFixed(1).replace('.',',')+'%';
+  const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,n(v)));
+
+  function checksCI(obraId){return (D.checklist||[]).filter(c=>String(recordObraId(c))===String(obraId));}
+  function progressCI(c){
+    return typeof normalizarChecklistPct==='function'?n(normalizarChecklistPct(c?.progresso??((c?.concluida||c?.concluido)?100:0))):clamp(c?.progresso);
+  }
+  function receiptCI(obraId,checkId){
+    return (D.pagamentos||[]).reduce((sum,p)=>{
+      if(!sameObra(p,obraId))return sum;
+      const dist=typeof receitaChecklistDistribuicao==='function'?receitaChecklistDistribuicao(p):[];
+      if(Array.isArray(dist)&&dist.length)return sum+dist.filter(d=>String(d.checklist_id)===String(checkId)).reduce((a,d)=>a+n(d.valor),0);
+      return sum+(String(recordChecklistId(p)||'')===String(checkId)?n(p.valor):0);
+    },0);
+  }
+  function expenseCI(obraId,checkId){
+    return (D.gastos||[]).filter(g=>sameObra(g,obraId)&&sameChecklist(g,checkId)).reduce((a,g)=>a+n(g.valor),0);
+  }
+  function statsCI(obraId){
+    const rows=checksCI(obraId).map(c=>{
+      const valor=Math.max(0,n(c.valor)), progresso=progressCI(c);
+      const previstoAvanco=valor*progresso/100, realizado=expenseCI(obraId,c.id), recebido=receiptCI(obraId,c.id);
+      const executado=previstoAvanco, desvio=realizado-previstoAvanco;
+      const desvioPct=previstoAvanco>0?(realizado/previstoAvanco-1)*100:(realizado>0?100:0);
+      const custoPct=valor>0?realizado/valor*100:0;
+      const alerta=realizado>0&&desvio>0.01&&(previstoAvanco<=0||desvioPct>=10);
+      return {c,valor,progresso,previstoAvanco,realizado,recebido,executado,desvio,desvioPct,custoPct,alerta};
+    });
+    const previsto=rows.reduce((a,r)=>a+r.valor,0),executado=rows.reduce((a,r)=>a+r.executado,0);
+    const previstoAvanco=rows.reduce((a,r)=>a+r.previstoAvanco,0),realizado=rows.reduce((a,r)=>a+r.realizado,0);
+    const recebido=rows.reduce((a,r)=>a+r.recebido,0),desvio=realizado-previstoAvanco;
+    const progressoFis=previsto>0?executado/previsto*100:0,custoPct=previsto>0?realizado/previsto*100:0;
+    const desvioPct=previstoAvanco>0?(realizado/previstoAvanco-1)*100:(realizado>0?100:0);
+    return {rows,previsto,executado,previstoAvanco,realizado,recebido,desvio,progressoFis,custoPct,desvioPct,alertas:rows.filter(r=>r.alerta)};
+  }
+  function aggregateCI(){
+    const filter=$ci('finObraFilter')?.value||'all';
+    const obras=(D.obras||[]).filter(o=>filter==='all'||String(o.id)===String(filter));
+    return obras.map(o=>({o,s:statsCI(o.id)}));
+  }
+  function statusCI(r){
+    if(r.alerta)return ['danger','⚠ Acima do previsto'];
+    if(r.desvio>0.01)return ['warn','Atenção'];
+    return ['ok','Dentro do previsto'];
+  }
+  function svgLineCI(values,maxY,w=720,h=220){
+    const pad={l:42,r:16,t:14,b:28}, iw=w-pad.l-pad.r, ih=h-pad.t-pad.b;
+    const pts=values.map((v,i)=>{
+      const x=pad.l+(values.length<=1?iw/2:i/(values.length-1)*iw);
+      const y=pad.t+ih-(clamp(v,0,maxY)/maxY)*ih;
+      return [x,y];
+    });
+    return {pts, pad, iw, ih};
+  }
+  function pathCI(pts){return pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');}
+  function chartCI(s){
+    const rows=s.rows;
+    if(!rows.length)return '<div class="edci-empty">Cadastre etapas no checklist da obra para visualizar a Curva S.</div>';
+    const total=Math.max(s.previsto,0.01), planned=[], executed=[], financial=[];
+    let a=0,b=0,c=0;
+    rows.forEach(r=>{a+=r.valor;b+=r.executado;c+=r.realizado;planned.push(a/total*100);executed.push(b/total*100);financial.push(c/total*100);});
+    const maxY=Math.max(100,...financial,1), w=720,h=220;
+    const g=svgLineCI(planned,maxY,w,h), ge=svgLineCI(executed,maxY,w,h), gf=svgLineCI(financial,maxY,w,h);
+    const yTicks=[0,25,50,75,100].filter(v=>v<=maxY);
+    const grid=yTicks.map(v=>{const y=g.pad.t+g.ih-(v/maxY)*g.ih;return `<line x1="${g.pad.l}" y1="${y}" x2="${w-g.pad.r}" y2="${y}" stroke="rgba(255,255,255,.08)" stroke-width="1"/><text x="${g.pad.l-7}" y="${y+4}" text-anchor="end" fill="rgba(255,255,255,.48)" font-size="10">${v}%</text>`}).join('');
+    const labels=rows.map((r,i)=>{const x=g.pts[i][0];return `<text x="${x}" y="${h-7}" text-anchor="middle" fill="rgba(255,255,255,.48)" font-size="9">${escCI(String(i+1))}</text>`}).join('');
+    return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="Curva S por etapas">
+      ${grid}<path d="${pathCI(g.pts)}" fill="none" stroke="#d9ad55" stroke-width="3"/><path d="${pathCI(ge.pts)}" fill="none" stroke="#55a8ff" stroke-width="3"/><path d="${pathCI(gf.pts)}" fill="none" stroke="#ff6b6b" stroke-width="3"/>
+      ${labels}
+    </svg>`;
+  }
+  function renderCI(){
+    const host=$ci('edciHost'); if(!host)return;
+    const data=aggregateCI();
+    if(!data.length){host.innerHTML='<div class="edci-empty">Cadastre uma obra para utilizar o Controle Inteligente.</div>';return;}
+    const total=data.reduce((a,x)=>a+x.s.previsto,0), exec=data.reduce((a,x)=>a+x.s.executado,0);
+    const prevAv=data.reduce((a,x)=>a+x.s.previstoAvanco,0), real=data.reduce((a,x)=>a+x.s.realizado,0);
+    const dev=real-prevAv, devPct=prevAv>0?(real/prevAv-1)*100:(real>0?100:0);
+    const alertas=data.reduce((a,x)=>a+x.s.alertas.length,0);
+    const fis=total>0?exec/total*100:0, custo=total>0?real/total*100:0;
+    const cls=alertas>0?'danger':(dev>0.01?'warn':'ok');
+    const msg=alertas>0?`⚠ ${alertas} etapa(s) com gasto acima do previsto pelo avanço físico.`:(dev>0.01?`Atenção: o realizado financeiro está ${pctCI(devPct)} acima do previsto pelo avanço.`:'Controle dentro do previsto pelo avanço físico.');
+    let detail='';
+    data.forEach(({o,s})=>{
+      const st=statusCI(s);
+      detail+=`<div class="edci-panel" style="margin-top:12px">
+        <div class="edci-head"><div><h3>${escCI(o.nome||'Obra')}</h3><p>Previsto: ${moneyCI(s.previsto)} · Realizado: ${moneyCI(s.realizado)} · Desvio: ${moneyCI(s.desvio)}</p></div><span class="edci-pill ${st[0]}">${st[1]}</span></div>
+        <div class="edci-progress"><i style="width:${clamp(s.progressoFis)}%;background:#55a8ff"></i></div>
+        <div class="edci-note">Avanço físico: <b>${pctCI(s.progressoFis)}</b> · Custo sobre o valor dos serviços: <b>${pctCI(s.custoPct)}</b> · Desvio versus gasto previsto pelo avanço: <b>${pctCI(s.desvioPct)}</b></div>
+        <div style="overflow:auto;margin-top:10px">
+          <table class="edci-table"><thead><tr><th>Checklist</th><th class="num">Execução</th><th class="num">Previsto pelo avanço</th><th class="num">Realizado</th><th class="num">Desvio</th><th>Status</th></tr></thead><tbody>
+          ${s.rows.map(r=>{
+            const stR=r.alerta?['danger','⚠']:r.desvio>0.01?['warn','Atenção']:['ok','OK'];
+            return `<tr class="${r.alerta?'edci-alert':''}"><td><b>${escCI(r.c.tarefa||r.c.descricao||'Etapa')}</b><small style="display:block;color:var(--muted)">${moneyCI(r.valor)} de serviço</small></td><td class="num">${pctCI(r.progresso)}</td><td class="num">${moneyCI(r.previstoAvanco)}</td><td class="num">${moneyCI(r.realizado)}</td><td class="num"><b class="${r.desvio>0.01?'red':'green'}">${moneyCI(r.desvio)}</b><small style="display:block;color:var(--muted)">${pctCI(r.desvioPct)}</small></td><td><span class="edci-pill ${stR[0]}">${stR[1]}</span></td></tr>`;
+          }).join('')}
+          </tbody></table>
+        </div>
+        <div class="edci-grid">
+          <div class="edci-panel" style="margin-top:12px"><h3>📈 Curva S por etapas</h3><div class="edci-chart">${chartCI(s)}</div><div class="edci-legend"><span><i class="edci-dot" style="background:#d9ad55"></i>Previsto acumulado</span><span><i class="edci-dot" style="background:#55a8ff"></i>Executado físico</span><span><i class="edci-dot" style="background:#ff6b6b"></i>Realizado financeiro</span></div><div class="edci-note">A curva usa a ordem dos checklists cadastrados como etapas. O previsto financeiro é calculado pelo percentual físico informado em cada serviço.</div></div>
+          <div class="edci-panel" style="margin-top:12px"><h3>💰 Resultado do controle</h3><div class="financeRow"><span>Recebido nos checklists</span><b class="green">${moneyCI(s.recebido)}</b></div><div class="financeRow"><span>Valor dos serviços</span><b>${moneyCI(s.previsto)}</b></div><div class="financeRow"><span>Executado físico em R$</span><b class="blue">${moneyCI(s.executado)}</b></div><div class="financeRow"><span>Realizado financeiro</span><b class="red">${moneyCI(s.realizado)}</b></div><div class="financeRow"><span>Desvio</span><b class="${s.desvio>0.01?'red':'green'}">${moneyCI(s.desvio)} · ${pctCI(s.desvioPct)}</b></div></div>
+        </div>
+      </div>`;
+    });
+    host.innerHTML=`<div class="edci-wrap">
+      <div class="edci-head"><div><h2>🧠 Controle Inteligente</h2><p>Previsto × realizado, desvios e alertas por obra e checklist.</p></div></div>
+      <div class="edci-kpis">
+        <div class="edci-kpi"><small>VALOR PREVISTO DOS SERVIÇOS</small><b class="gold">${moneyCI(total)}</b></div>
+        <div class="edci-kpi"><small>PREVISTO PELO AVANÇO</small><b>${moneyCI(prevAv)}</b></div>
+        <div class="edci-kpi"><small>REALIZADO FINANCEIRO</small><b class="${real>prevAv?'red':'green'}">${moneyCI(real)}</b></div>
+        <div class="edci-kpi"><small>DESVIO</small><b class="${dev>0.01?'red':'green'}">${moneyCI(dev)} · ${pctCI(devPct)}</b></div>
+      </div>
+      <div class="edci-status ${cls}">${msg}</div>
+      <div class="edci-panel" style="margin-top:12px"><h3>📊 Visão do avanço</h3><div class="financeRow"><span>Execução física</span><b class="blue">${pctCI(fis)}</b></div><div class="edci-progress"><i style="width:${clamp(fis)}%;background:#55a8ff"></i></div><div class="financeRow" style="margin-top:8px"><span>Custo financeiro sobre serviços</span><b class="${custo>fis+10?'red':'green'}">${pctCI(custo)}</b></div><div class="edci-progress"><i style="width:${clamp(custo)}%;background:#ff6b6b"></i></div><div class="edci-note">O alerta considera diferença de pelo menos 10 pontos percentuais entre o custo financeiro e o avanço físico, quando já houver gasto registrado.</div></div>
+      ${detail}
+    </div>`;
+  }
+
+  function ensureCI(){
+    if($ci('edciHost'))return;
+    const target=$ci('obraFinanceResumo')?.closest('.card');
+    if(!target)return;
+    const card=document.createElement('div');
+    card.className='card';
+    card.id='edciCard';
+    card.innerHTML='<div id="edciHost"></div>';
+    target.insertAdjacentElement('afterend',card);
+  }
+
+  function refreshCI(){ensureCI();renderCI();}
+
+  window.edifiqControleInteligente=refreshCI;
+  const oldRenderFinanceCI=window.renderFinance;
+  if(typeof oldRenderFinanceCI==='function'){
+    window.renderFinance=function(){
+      oldRenderFinanceCI.apply(this,arguments);
+      try{refreshCI();}catch(err){console.error('EDIFIQ Controle Inteligente',err);}
+    };
+  }
+  document.addEventListener('change',e=>{
+    if(e.target?.id==='finObraFilter')setTimeout(refreshCI,0);
+  });
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(refreshCI,0));
+})();
+</script>
+
 </body>
 </html>
