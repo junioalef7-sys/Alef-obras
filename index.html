@@ -1549,6 +1549,10 @@ body{min-height:100vh;min-height:100dvh}
 
     <div class="edHomeWorksHead"><div><h2>Obras</h2><small id="homeObrasCount">0 obras cadastradas</small></div></div>
     <div id="homeObrasList" class="edHomeWorkList"></div>
+
+    <div class="card" id="edAutoCard">
+      <div id="edAutoHost"></div>
+    </div>
   </div>
 </section>
 <section class="page" id="resumoGeral">
@@ -7473,6 +7477,311 @@ f.observacao||""
 <style id="edifiq-final-demand-ajustes">
 .obrasSelectorToolbar{align-items:end;gap:10px;flex-wrap:wrap}.obrasSelectorToolbar label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:800;color:var(--muted)}.obrasSelectorToolbar select{min-width:260px}.obraDataGrid{grid-template-columns:repeat(3,minmax(0,1fr))}.obraModeloCard{width:100%}.obraModeloPanel .obraModeloList{max-height:520px;overflow:auto}.equipeHistoryTabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.folhaTable tbody tr{display:table-row!important;visibility:visible!important;opacity:1!important}.folhaTable tbody td{display:table-cell!important}@media(max-width:700px){.obrasSelectorToolbar{display:grid!important;grid-template-columns:1fr}.obrasSelectorToolbar label,.obrasSelectorToolbar select,.obrasSelectorToolbar input,.obrasSelectorToolbar .btn{width:100%!important;min-width:0!important}.obraDataGrid{grid-template-columns:1fr 1fr!important}.equipeHistoryTabs{display:grid;grid-template-columns:1fr 1fr}.equipeHistoryTabs .historyTab:last-child{grid-column:1/-1}.folhaTable{min-width:760px!important}}
 </style>
+
+<style id="edifiq-fase2-automation-css">
+.edAutoCard{margin-top:18px}
+.edAutoHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.edAutoTitle{display:flex;align-items:center;gap:10px}
+.edAutoBadge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:rgba(212,175,55,.14);font-size:19px}
+.edAutoHead h3{margin:0}
+.edAutoHead small{display:block;color:var(--muted,#777);margin-top:3px}
+.edAutoRefresh{border:1px solid rgba(127,127,127,.22);background:transparent;border-radius:10px;padding:8px 11px;cursor:pointer}
+.edAutoSummary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.edAutoStat{border:1px solid rgba(127,127,127,.15);border-radius:12px;padding:12px;background:rgba(127,127,127,.035)}
+.edAutoStat b{display:block;font-size:20px}
+.edAutoStat span{font-size:12px;color:var(--muted,#777)}
+.edAutoList{display:grid;gap:9px}
+.edAutoItem{display:flex;align-items:flex-start;gap:11px;border:1px solid rgba(127,127,127,.15);border-radius:12px;padding:11px 12px}
+.edAutoIcon{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:9px;flex:0 0 30px}
+.edAutoIcon.warn{background:rgba(234,179,8,.15)}
+.edAutoIcon.danger{background:rgba(239,68,68,.14)}
+.edAutoIcon.info{background:rgba(59,130,246,.13)}
+.edAutoBody{min-width:0;flex:1}
+.edAutoBody strong{display:block}
+.edAutoBody p{margin:3px 0 0;font-size:12px;color:var(--muted,#777);line-height:1.45}
+.edAutoAction{margin-left:auto;border:0;background:transparent;font-weight:700;cursor:pointer;padding:4px 0;color:inherit;white-space:nowrap}
+.edAutoEmpty{padding:16px;border:1px dashed rgba(127,127,127,.25);border-radius:12px;text-align:center;color:var(--muted,#777)}
+.edAutoFooter{margin-top:11px;font-size:11px;color:var(--muted,#777)}
+@media(max-width:700px){.edAutoSummary{grid-template-columns:1fr 1fr}.edAutoAction{display:block}.edAutoItem{align-items:flex-start}}
+</style>
+
+
+<script id="edifiq-fase2-automation-js">
+(function(){
+  'use strict';
+
+  const EA='EDIFIQ_AUTOMACAO_V1';
+
+  function ea$(id){return document.getElementById(id);}
+  function eaN(v){
+    const x=Number(v);
+    return Number.isFinite(x)?x:0;
+  }
+  function eaMoney(v){
+    try{
+      if(typeof money==='function') return money(eaN(v));
+      return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(eaN(v));
+    }catch(_){return 'R$ '+eaN(v).toFixed(2).replace('.',',');}
+  }
+  function eaPct(v){
+    return Math.max(0,Math.min(100,eaN(v)));
+  }
+  function eaObraId(x){
+    if(typeof recordObraId==='function') return recordObraId(x);
+    return x?.obra_id ?? x?.obraId ?? x?.obra ?? '';
+  }
+  function eaChecklistId(x){
+    if(typeof recordChecklistId==='function') return recordChecklistId(x);
+    return x?.checklist_id ?? x?.checklistId ?? '';
+  }
+  function eaSameObra(a,b){return String(eaObraId(a))===String(b);}
+  function eaSameCheck(a,b){return String(eaChecklistId(a))===String(b);}
+  function eaChecks(obraId){
+    return ((typeof D!=="undefined"&&D.checklist)||[]).filter(c=>eaSameObra(c,obraId));
+  }
+  function eaProgress(c){
+    if(typeof normalizarChecklistPct==='function') return eaPct(normalizarChecklistPct(c?.progresso ?? ((c?.concluida||c?.concluido)?100:0)));
+    return eaPct(c?.progresso ?? ((c?.concluida||c?.concluido)?100:0));
+  }
+  function eaExpenseForCheck(obraId,checkId){
+    return ((typeof D!=="undefined"&&D.gastos)||[]).filter(g=>eaSameObra(g,obraId)&&eaSameCheck(g,checkId)).reduce((a,g)=>a+eaN(g.valor),0);
+  }
+  function eaReceiptDistribution(p){
+    try{
+      if(typeof receitaChecklistDistribuicao==='function'){
+        const d=receitaChecklistDistribuicao(p);
+        return Array.isArray(d)?d:[];
+      }
+    }catch(_){}
+    return [];
+  }
+  function eaReceiptHasCheck(p){
+    const d=eaReceiptDistribution(p);
+    return d.some(x=>eaN(x.valor)>0 && String(x.checklist_id||'')!=='') || String(eaChecklistId(p)||'')!=='';
+  }
+  function eaDescription(g){
+    return String(g.descricao||g.nome||g.titulo||g.observacao||g.categoria||'').trim();
+  }
+  function eaDailyNeedsLink(d){
+    const obra=eaObraId(d);
+    const check=eaChecklistId(d);
+    return !obra || !check;
+  }
+
+  function buildAutomation(){
+    const data=(typeof D!=="undefined"?D:null);
+    if(!data)return {items:[],stats:{alertas:0,obras:0,checklists:0}};
+    const items=[];
+    const obras=data.obras||[];
+    const checks=data.checklist||[];
+    let overBudget=0;
+
+    /* 1. Custo acima do avanço físico */
+    obras.forEach(o=>{
+      const cs=eaChecks(o.id);
+      cs.forEach(c=>{
+        const valor=eaN(c.valor||c.valor_servico||c.valorServico);
+        if(valor<=0)return;
+        const prog=eaProgress(c);
+        const previsto=valor*prog/100;
+        const realizado=eaExpenseForCheck(o.id,c.id);
+        if(realizado<=0)return;
+        const desvioPct=previsto>0 ? ((realizado/previsto)-1)*100 : 100;
+        if((previsto<=0 && realizado>0) || desvioPct>=10){
+          overBudget++;
+          items.push({
+            type:'danger',icon:'⚠️',obraId:o.id,
+            title:'Custo acima do avanço',
+            text:`${c.nome||c.titulo||'Checklist'} — ${o.nome||'Obra'}: ${eaMoney(realizado)} gasto para ${prog.toFixed(0)}% executado.`,
+            action:'Ver financeiro',target:'financeiro'
+          });
+        }
+      });
+    });
+
+    /* 2. Despesas de obra com checklist pendente */
+    (data.gastos||[]).forEach(g=>{
+      const obraId=eaObraId(g);
+      if(!obraId)return;
+      const cs=eaChecks(obraId);
+      if(!cs.length)return;
+      if(!eaChecklistId(g)){
+        const o=obras.find(x=>String(x.id)===String(obraId));
+        items.push({
+          type:'warn',icon:'🧩',obraId,
+          title:'Despesa sem checklist',
+          text:`${eaDescription(g)||'Despesa'} — ${o?.nome||'obra'} está vinculada à obra, mas ainda não possui checklist.`,
+          action:'Ver financeiro',target:'financeiro'
+        });
+      }
+    });
+
+    /* 3. Receitas em obra com checklist, mas sem distribuição */
+    (data.pagamentos||[]).forEach(p=>{
+      const obraId=eaObraId(p);
+      if(!obraId || eaN(p.valor)<=0)return;
+      const cs=eaChecks(obraId);
+      if(!cs.length || eaReceiptHasCheck(p))return;
+      const o=obras.find(x=>String(x.id)===String(obraId));
+      items.push({
+        type:'info',icon:'💰',obraId,
+        title:'Receita aguardando distribuição',
+        text:`${eaMoney(p.valor)} em ${o?.nome||'obra'} ainda não está distribuída nos checklists.`,
+        action:'Ver financeiro',target:'financeiro'
+      });
+    });
+
+    /* 4. Diárias sem obra/checklist */
+    (data.diarias||[]).forEach(d=>{
+      if(!eaDailyNeedsLink(d))return;
+      const f=(data.funcionarios||[]).find(x=>String(x.id)===String(d.funcionario_id||d.funcionarioId));
+      items.push({
+        type:'warn',icon:'👷',funcId:f?.id,
+        title:'Diária sem vínculo completo',
+        text:`${f?.nome||'Funcionário'} possui uma diária sem obra e/ou checklist definido.`,
+        action:'Ver equipe',target:'funcionarios'
+      });
+    });
+
+    /* 5. Checklist avançado sem despesa registrada — apenas sinalização, não erro */
+    obras.forEach(o=>{
+      const cs=eaChecks(o.id);
+      cs.forEach(c=>{
+        const prog=eaProgress(c);
+        const valor=eaN(c.valor||c.valor_servico||c.valorServico);
+        const gasto=eaExpenseForCheck(o.id,c.id);
+        if(prog>=25 && valor>0 && gasto===0){
+          items.push({
+            type:'info',icon:'🔎',obraId:o.id,
+            title:'Serviço executado sem custo registrado',
+            text:`${c.nome||c.titulo||'Checklist'} — ${prog.toFixed(0)}% executado e nenhum gasto vinculado foi encontrado.`,
+            action:'Ver financeiro',target:'financeiro'
+          });
+        }
+      });
+    });
+
+    /* evita uma lista gigantesca */
+    const priority={danger:0,warn:1,info:2};
+    items.sort((a,b)=>(priority[a.type]-priority[b.type]));
+    const unique=[];
+    const seen=new Set();
+    items.forEach(x=>{
+      const key=[x.type,x.title,x.obraId,x.funcId,x.text].join('|');
+      if(!seen.has(key)){seen.add(key);unique.push(x);}
+    });
+
+    return {items:unique.slice(0,20),stats:{alertas:unique.filter(x=>x.type!=='info').length,obras:obras.length,checklists:checks.length,overBudget}};
+  }
+
+  function navigateAutomation(target){
+    try{
+      if(typeof go==='function'){go(target);return;}
+    }catch(_){}
+    try{
+      const el=ea$(target);
+      if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+    }catch(_){}
+  }
+
+  function renderAutomation(){
+    const host=ea$('edAutoHost');
+    if(!host)return;
+    const result=buildAutomation();
+    const it=result.items;
+    const st=result.stats;
+
+    host.innerHTML=`
+      <div class="edAutoCard">
+        <div class="edAutoHead">
+          <div class="edAutoTitle">
+            <span class="edAutoBadge">🤖</span>
+            <div><h3>Automação Inteligente</h3><small>O EDIFIQ verifica automaticamente os vínculos e os números das obras.</small></div>
+          </div>
+          <button class="edAutoRefresh" type="button" onclick="edifiqAtualizarAutomacao()">↻ Atualizar</button>
+        </div>
+        <div class="edAutoSummary">
+          <div class="edAutoStat"><b>${st.alertas}</b><span>Alertas que precisam de atenção</span></div>
+          <div class="edAutoStat"><b>${st.obras}</b><span>Obras analisadas</span></div>
+          <div class="edAutoStat"><b>${st.checklists}</b><span>Checklists analisados</span></div>
+        </div>
+        <div class="edAutoList">
+          ${it.length ? it.map((x,i)=>`
+            <div class="edAutoItem">
+              <div class="edAutoIcon ${x.type}">${x.icon}</div>
+              <div class="edAutoBody">
+                <strong>${typeof esc==='function'?esc(x.title):x.title}</strong>
+                <p>${typeof esc==='function'?esc(x.text):x.text}</p>
+              </div>
+              <button class="edAutoAction" type="button" onclick="edifiqAutomacaoIr('${String(x.target||'dashboard').replace(/'/g,"\\\\'")}')">${x.action||'Abrir'}</button>
+            </div>
+          `).join('') : `<div class="edAutoEmpty">✓ Nenhuma inconsistência encontrada agora. O EDIFIQ continuará verificando automaticamente.</div>`}
+        </div>
+        <div class="edAutoFooter">Verificação automática ao abrir o Dashboard e a cada 30 segundos enquanto o aplicativo estiver aberto. Esta automação não altera lançamentos.</div>
+      </div>
+    `;
+  }
+
+  function ensureAutomationCard(){
+    if(ea$('edAutoHost'))return;
+    const dash=ea$('dashboard');
+    if(!dash)return;
+    const home=dash.querySelector('.edHome');
+    if(!home)return;
+    const card=document.createElement('div');
+    card.className='card';
+    card.id='edAutoCard';
+    card.innerHTML='<div id="edAutoHost"></div>';
+    home.appendChild(card);
+  }
+
+  window.edifiqAtualizarAutomacao=function(){
+    ensureAutomationCard();
+    renderAutomation();
+  };
+  window.edifiqAutomacaoIr=function(target){
+    navigateAutomation(target);
+  };
+
+  /* Integração não destrutiva: reaproveita renderDashboard existente. */
+  const oldRD=window.renderDashboard;
+  if(typeof oldRD==='function'){
+    window.renderDashboard=function(){
+      oldRD.apply(this,arguments);
+      try{window.edifiqAtualizarAutomacao();}catch(err){console.error('EDIFIQ Automação',err);}
+    };
+  }
+
+  /* Também atualiza após renderAll, caso o Dashboard seja renderizado por outro fluxo. */
+  const oldRA=window.renderAll;
+  if(typeof oldRA==='function'){
+    window.renderAll=function(){
+      oldRA.apply(this,arguments);
+      try{window.edifiqAtualizarAutomacao();}catch(err){console.error('EDIFIQ Automação',err);}
+    };
+  }
+
+  let eaTimer=null;
+  function startAutomationTimer(){
+    if(eaTimer)clearInterval(eaTimer);
+    eaTimer=setInterval(()=>{
+      if(document.visibilityState==='visible'){
+        try{window.edifiqAtualizarAutomacao();}catch(_){}
+      }
+    },30000);
+  }
+
+  document.addEventListener('DOMContentLoaded',function(){
+    setTimeout(()=>{try{window.edifiqAtualizarAutomacao();}catch(_){}},700);
+    startAutomationTimer();
+  });
+
+  window.addEventListener('focus',function(){
+    try{window.edifiqAtualizarAutomacao();}catch(_){}
+  });
+})();
+</script>
+
 </body>
 </html>
 `);
