@@ -1587,13 +1587,12 @@ body{min-height:100vh;min-height:100dvh}
     <button class="edifiqMenuItem" onclick="openPagamentoEquipe();toggleMenuPasta()"><span>＄</span><b>Pagamento da Equipe</b></button>
     <button class="edifiqMenuItem" onclick="openAdiantamento();toggleMenuPasta()"><span>＋</span><b>Adiantamento</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('diarias')"><span>📅</span><b>Histórico de Diárias</b></button>
-    <button class="edifiqMenuItem" onclick="goMenu('relatorios')"><span>▧</span><b>Relatórios</b></button>
   </div>
   <div class="edifiqMenuTitle edifiqSectionTitle">DADOS</div>
   <button class="edifiqDataRow" onclick="goMenu('config')"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
   <button class="edifiqDataRow" onclick="openBackupConfig()"><span>💾</span><b>Backup</b><span class="edifiqChevron">›</span></button>
   <div class="edifiqDrawerAccount">
-    <div class="edifiqAvatar">AL</div><div class="edifiqAccountText"><b id="drawerUserName">Alef Júnior</b><small id="drawerUserEmail">Conta EDIFIQ</small><em>♛ Premium</em></div>
+    <div class="edifiqAvatar">AL</div><div class="edifiqAccountText"><b id="drawerUserName">Minha conta</b><small id="drawerUserEmail">Conta EDIFIQ</small><em>♛ Premium</em></div>
   </div>
   <button class="edifiqExit" type="button" onclick="logout()"><span>↪</span><b>Sair</b></button>
 </div>
@@ -1843,7 +1842,7 @@ body{min-height:100vh;min-height:100dvh}
 <div class="financeModernCard"><span class="fmLabel">Resultado</span><strong class="fmValue gold" id="finRes">R$ 0,00</strong></div>
 <div class="financeModernCard"><span class="fmLabel">Saldo a receber</span><strong class="fmValue gold" id="finReceber">R$ 0,00</strong></div>
 </div>
-<div class="financeQuick"><button class="btn" onclick="openFin();setTimeout(()=>{if($('tFin'))$('tFin').value='entrada';atualizarCategoriaFinanceira()},0)">＋ Registrar entrada</button><button class="btn" onclick="openFin()">− Registrar despesa</button><button class="btn" onclick="go('materiais')">🧱 Materiais e estoque</button></div>
+
 <div class="financeModernGrid">
 <div class="financeModernPanel"><h3>📊 Saúde financeira</h3><div class="financeRow"><span>Valor contratado</span><b id="anContrato">R$ 0,00</b></div><div class="financeRow"><span>Receita recebida</span><b class="green" id="anReceita">R$ 0,00</b></div><div class="financeRow"><span>Custos totais</span><b class="red" id="anCustos">R$ 0,00</b></div><div class="financeRow"><span>Resultado</span><b class="gold" id="anLucro">R$ 0,00</b></div><div class="financeRow"><span>Margem de lucro</span><b id="anMargem">0,0%</b></div><div class="financeRow"><span>Saldo a receber</span><b class="gold" id="anReceber">R$ 0,00</b></div><div class="financeProgress"><i id="anSaudeBar" style="width:0%"></i></div><div class="sub" id="anSaude">Sem dados</div></div>
 <div class="financeModernPanel"><h3>🧱 Custos por categoria</h3><div id="anCustosCats"></div></div>
@@ -1865,11 +1864,26 @@ body{min-height:100vh;min-height:100dvh}
 <div class="grid kpis docKpis"><div class="kpi"><small>Documentos</small><strong id="docTotal">0</strong></div><div class="kpi"><small>Obras com documentos</small><strong id="docObras">0</strong></div><div class="kpi"><small>Contratos</small><strong id="docContratos">0</strong></div><div class="kpi"><small>Notas / comprovantes</small><strong id="docFinanceiros">0</strong></div></div>
 <div id="documentosList"></div>
 </section>
-<section class="page" id="relatorios">
-<div class="pageTitle"><div><h1>Relatórios</h1><p class="sub">Os relatórios e ferramentas de exportação ficam centralizados na janela Backup.</p></div></div>
-<div class="card"><h2>💾 Relatórios centralizados no Backup</h2><p class="sub">Esta tela não duplica Equipe, Pagamentos, Adiantamentos, Histórico de Diárias ou Relatório para Cliente. Esses recursos continuam disponíveis diretamente no menu principal.</p><div class="listActions"><button class="btn gold" type="button" onclick="openBackupConfig()">Abrir Backup e Relatórios</button></div></div>
+<section class="page" id="config">
+  <div class="pageTitle"><div><h1>⚙ Configurações</h1><p class="sub">Preferências do aplicativo e gerenciamento dos dados.</p></div></div>
+  <div class="card">
+    <h2>🎨 Aparência</h2><p class="sub">Escolha entre modo claro totalmente claro ou modo escuro totalmente escuro.</p>
+    <div class="listActions">
+      <button class="btn" type="button" onclick="setEdifiqTheme('light')">☀️ Modo claro</button>
+      <button class="btn" type="button" onclick="setEdifiqTheme('dark')">🌙 Modo escuro</button>
+    </div>
+  </div>
+  <div class="card dangerDataCard">
+    <h2>🗑️ Apagar dados</h2><p class="sub">Essas ações apagam somente o setor escolhido. Faça um backup antes de excluir.</p>
+    <div class="reportGrid dataDeleteGrid">
+      <button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar Equipe</b><small>Funcionários, diárias, faltas e registros.</small></button>
+      <button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar Obras</b><small>Obras e registros vinculados.</small></button>
+      <button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar Financeiro</b><small>Receitas, despesas e pagamentos.</small></button>
+      <button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar Tudo</b><small>Apaga todos os dados do aplicativo.</small></button>
+    </div>
+    <div class="note dangerNote">⚠️ Esta ação não pode ser desfeita.</div>
+  </div>
 </section>
-</main></section>
 <!-- MODAIS -->
 <div class="modal" id="obraM"><div class="modalBox"><div class="modalHead"><h2 id="obraTitle">Nova obra</h2><button class="x" onclick="closeM('obraM')">×</button></div><form onsubmit="saveObra(event)"><div class="formGrid"><label>Nome<input id="oNome" required=""/></label><label>Cliente<input id="oCli"/></label><label class="full">Endereço<input id="oLoc"/></label><label>Valor do contrato<input id="oVal" step="0.01" type="number"/></label><label>Status<select id="oStatus"><option value="em_andamento">Em andamento</option><option value="planejada">Planejada</option><option value="concluida">Concluída</option><option value="pausada">Pausada</option></select></label><label>Início<input id="oIni" type="date"/></label><label>Previsão de término<input id="oFim" type="date"/></label><label class="full">Tipo de serviço<input id="oTipo"/></label><label class="full">Observações<textarea id="oObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('obraM')" type="button">Cancelar</button><button class="btn primary">Salvar obra</button></div></form></div></div>
 <div class="modal" id="funcM"><div class="modalBox"><div class="modalHead"><h2 id="funcTitle">Novo funcionário</h2><button class="x" onclick="closeM('funcM')">×</button></div><form onsubmit="saveFunc(event)"><div class="formGrid"><label>Nome<input id="fNome" required=""/></label><label>Função<input id="fFunc"/></label><label>Telefone<input id="fTel" type="tel"/></label><label>Tipo de pagamento<select id="fTipo"><option value="diaria">Diária</option><option value="mensal">Mensal</option></select></label><label>Valor da diária<input id="fDia" step="0.01" type="number"/></label><label>Salário mensal<input id="fSal" step="0.01" type="number"/></label><label>Dia de pagamento<input id="fPag" max="31" min="1" type="number"/></label><label>Ativo<select id="fAtivo"><option value="true">Ativo</option><option value="false">Inativo</option></select></label><label>Registrar diária<select id="fDiariaRegistro"><option value="true">Registrar diária</option><option value="false">Não registrar diária</option></select></label><label>Obra atual<select id="fObra"><option value="">Selecione a obra</option></select></label></div><div class="formActions"><button class="btn" onclick="closeM('funcM')" type="button">Cancelar</button><button class="btn primary">Salvar funcionário</button></div></form></div></div>
@@ -1881,7 +1895,7 @@ body{min-height:100vh;min-height:100dvh}
 <div class="modal" id="fotoM"><div class="modalBox"><div class="modalHead"><h2>Relatório fotográfico</h2><button class="x" onclick="closeM('fotoM')">×</button></div><form onsubmit="saveFoto(event)"><div class="formGrid"><label>Obra<select id="fotoObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="fotoData" type="date"/></label><label class="full">Título<input id="fotoTitulo"/></label><label class="full">Fotos<input accept="image/*" id="fotoFiles" multiple="" required="" type="file"/></label><label class="full">Observação<textarea id="fotoObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('fotoM')" type="button">Cancelar</button><button class="btn primary">Salvar fotos</button></div></form></div></div>
 <div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Adiantamentos</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
 <div class="pay-summary"><div><small>Diárias pendentes</small><b id="pagDiariasTotal">R$ 0,00</b></div></div><div class="formActions"><button class="btn" onclick="closeM('pagEquipeM')" type="button">Cancelar</button><button class="btn primary">Processar pagamento</button></div></form></div></div>
-<div class="modal" id="adiantM"><div class="modalBox"><div class="modalHead"><h2>Adiantamento</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveAdiantamento(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required=""><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" required=""><option value="">Selecione</option></select></label><label>Valor<input id="adiantValor" required="" step="0.01" type="number"/></label><label>Data<input id="adiantData" type="date"/></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('adiantM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
+<div class="modal" id="adiantM"><div class="modalBox"><div class="modalHead"><h2>Adiantamento</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveAdiantamento(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required=""><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" required=""><option value="">Selecione</option></select></label><label>Valor<input id="adiantValor" required="" inputmode="decimal" type="text" placeholder="R$ 0,00" autocomplete="off"/></label><label>Data<input id="adiantData" type="date"/></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('adiantM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
 <div class="modal reportClientModal" id="relatorioClienteM">
 <div class="modalBox">
 <div class="modalHead rcHeader"><div><h2>📄 Relatório para Cliente</h2><p>Escolha as obras, revise a prévia e edite antes de enviar.</p></div><button class="x" onclick="closeM('relatorioClienteM')">×</button></div>
@@ -5540,6 +5554,7 @@ if(!processados.length){toast("Nenhum funcionário selecionado possui diária pe
 let falhas=0,baixados=0;
 
 for(const item of processados){
+  let falhaFuncionario=false;
 
   const observacaoBase=`Diárias pendentes: ${money(item.resumo.pendingDiarias)}. Adiantamento abatido: ${money(item.resumo.advance)}. Valor líquido: ${money(item.resumo.net)}.${obs?" "+obs:""}`;
 
@@ -6735,10 +6750,24 @@ function renderFechamentoFolha(){
       const id=String(f.id);
       const ds=dias.filter(d=>String(d.funcionario_id)===id);
       const dsPendentes=ds.filter(d=>!diariaEstaPaga(d));
-      const bruto=dsPendentes.reduce((a,d)=>a+diariaValor(d),0);
+      const extras=getFuncionarioExtras(id).filter(x=>{
+        const data=String(x.data||"");
+        const st=String(x.status||"pendente").toLowerCase();
+        return data>=ini&&data<=fim&&(obra==="all"||String(x.obra_id??x.obraId??"")===String(obra)) &&
+          st!=="pago"&&st!=="paid"&&st!=="quitado"&&st!=="liquidado";
+      });
+      const extrasPagos=getFuncionarioExtras(id).filter(x=>{
+        const data=String(x.data||"");
+        const st=String(x.status||"pendente").toLowerCase();
+        return data>=ini&&data<=fim&&(obra==="all"||String(x.obra_id??x.obraId??"")===String(obra)) &&
+          (st==="pago"||st==="paid"||st==="quitado"||st==="liquidado");
+      });
+      const extrasPendentesValor=extras.reduce((a,x)=>a+Number(x.valor||0),0);
+      const extrasPagosValor=extrasPagos.reduce((a,x)=>a+Number(x.valor||0),0);
+      const bruto=dsPendentes.reduce((a,d)=>a+diariaValor(d),0)+extrasPendentesValor;
       const adiant=advanceAmountForEmployeeInRange(id,ini,fim);
-      const pago=ds.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);
-      const pendenteDiarias=bruto;
+      const pago=ds.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0)+extrasPagosValor;
+      const pendenteDiarias=dsPendentes.reduce((a,d)=>a+diariaValor(d),0);
       const liquido=Math.max(0,bruto-adiant);
       const pendente=Math.max(0,liquido);
 
@@ -6755,7 +6784,7 @@ function renderFechamentoFolha(){
         if(oo)obrasDaFolha.push(oo.nome);
       }
 
-      return {f,ds,bruto,adiant,pago,pendente,pendenteDiarias,liquido,obrasDaFolha};
+      return {f,ds,bruto,adiant,pago,pendente,pendenteDiarias,liquido,obrasDaFolha,extras};
     });
 
     const bruto=rows.reduce((a,r)=>a+r.bruto,0);
@@ -6785,7 +6814,7 @@ function renderFechamentoFolha(){
             <div class="folhaFuncionarioObra">🏗️ ${esc(r.obrasDaFolha.join(", ")||"Sem obra")}</div>
           </div>
           <div class="folhaFuncionarioGrid">
-            <div><small>Diárias</small><b>${r.ds.length}</b></div>
+            <div><small>Diárias / extras</small><b>${r.ds.length + (r.extras?.length||0)}</b></div>
             <div><small>Bruto</small><b>${money(r.bruto)}</b></div>
             <div><small>Adiantamento</small><b>${money(r.adiant)}</b></div>
             <div><small>Líquido</small><b class="green">${money(r.liquido)}</b></div>
@@ -8068,6 +8097,400 @@ f.observacao||""
   document.addEventListener("DOMContentLoaded",()=>setTimeout(f3Hook,500));
 })();
 <\/script>
+
+
+<script id="edifiq-correcoes-03102026">
+(function(){
+  "use strict";
+
+  /* =========================
+     UTILITÁRIOS
+     ========================= */
+  function edMoneyNumber(v){
+    if(typeof v==="number") return Number.isFinite(v)?v:0;
+    if(v===null||v===undefined||v==="") return 0;
+    let x=String(v).trim().replace(/R\$/gi,"").replace(/\s/g,"");
+    if(x.includes(",")) x=x.replace(/\./g,"").replace(",",".");
+    const n=Number(x);
+    return Number.isFinite(n)?n:0;
+  }
+  function edMoneyInput(v){
+    const n=Math.max(0,edMoneyNumber(v));
+    return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  }
+  window.edifiqMaskMoney=function(input){
+    if(!input)return;
+    const digits=String(input.value||"").replace(/\D/g,"");
+    if(!digits){input.value="";return;}
+    input.value=(Number(digits)/100).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  };
+
+  /* =========================
+     TEMA: CLARO 100% / ESCURO 100%
+     ========================= */
+  window.setEdifiqTheme=function(mode){
+    const light=mode==="light";
+    document.body.classList.toggle("edLight",light);
+    document.documentElement.setAttribute("data-edifiq-theme",light?"light":"dark");
+    try{localStorage.setItem("edifiq_theme",light?"light":"dark")}catch(_){}
+    const b=document.getElementById("themeToggleBtn");
+    if(b){
+      b.textContent=light?"☀":"☾";
+      b.setAttribute("aria-label",light?"Ativar modo escuro":"Ativar modo claro");
+    }
+  };
+  window.toggleTheme=function(){
+    const light=!document.body.classList.contains("edLight");
+    setEdifiqTheme(light?"light":"dark");
+  };
+  window.restoreTheme=function(){
+    let mode="dark";
+    try{mode=localStorage.getItem("edifiq_theme")==="light"?"light":"dark"}catch(_){}
+    setEdifiqTheme(mode);
+  };
+
+  /* CSS fechado para impedir a mistura de temas. */
+  const style=document.createElement("style");
+  style.textContent=`
+    html[data-edifiq-theme="light"],html[data-edifiq-theme="light"] body{background:#f5f7fa!important;color:#18212f!important}
+    html[data-edifiq-theme="light"]{--bg:#f5f7fa;--panel:#ffffff;--panel2:#eef2f6;--text:#18212f;--muted:#68758a;--line:#d7dee8;--shadow:0 8px 24px rgba(25,40,60,.10)}
+    body.edLight input,body.edLight select,body.edLight textarea{background:#fff!important;color:#18212f!important;border-color:#d7dee8!important}
+    body.edLight .card,body.edLight .kpi,body.edLight .financeModernCard,body.edLight .financeModernPanel,body.edLight .rgHealth,body.edLight .rgMoneyCard,body.edLight .historyCard,body.edLight .folhaFuncionarioCard,body.edLight .pay-person{background:#fff!important;color:#18212f!important;border-color:#d7dee8!important}
+    body.edLight .modalBox,body.edLight .menuPasta,body.edLight .edifiqDrawer{background:#fff!important;color:#18212f!important;border-color:#d7dee8!important}
+    body.edLight .nav{background:#fff!important;border-top-color:#d7dee8!important}
+    body.edLight .top{background:rgba(255,255,255,.96)!important;border-bottom-color:#d7dee8!important}
+    body.edLight .sub,body.edLight small,body.edLight .muted{color:#68758a!important}
+    body:not(.edLight) input,body:not(.edLight) select,body:not(.edLight) textarea{background:#0c1014!important;color:#fff!important}
+    body:not(.edLight) .card,body:not(.edLight) .kpi,body:not(.edLight) .financeModernCard,body:not(.edLight) .financeModernPanel,body:not(.edLight) .rgHealth,body:not(.edLight) .rgMoneyCard,body:not(.edLight) .historyCard,body:not(.edLight) .folhaFuncionarioCard,body:not(.edLight) .pay-person{background:#11151a!important;color:#f5f5f5!important}
+    body:not(.edLight) .modalBox,body:not(.edLight) .menuPasta,body:not(.edLight) .edifiqDrawer{background:#0f141a!important;color:#f5f5f5!important}
+    .edSearchField{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+    .edSearchField span{font-size:18px}
+    .edSearchField input{border:0!important;background:transparent!important;padding:6px!important;min-height:40px}
+    .edSelectResults{display:grid;gap:6px;margin-top:8px;max-height:180px;overflow:auto}
+    .edResultBtn{width:100%;text-align:left;padding:10px 12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px}
+    .edResultBtn:hover{border-color:var(--gold)}
+    .edExtraSummary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .edExtraSummary>div{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--panel2)}
+    @media(max-width:759px){.edExtraSummary{grid-template-columns:1fr}.edExtraSummary>div{padding:8px}}
+  `;
+  document.head.appendChild(style);
+
+  /* =========================
+     BACKUP — somente backup/importação/exportação
+     ========================= */
+  window.openBackupConfig=function(){
+    let m=document.getElementById("edBackupConfigModal");
+    if(!m){
+      m=document.createElement("div");
+      m.id="edBackupConfigModal";
+      m.className="modal open";
+      m.innerHTML=`<div class="modalBox" style="max-width:760px;max-height:90vh;overflow:auto">
+        <div class="modalHead"><div><h2>💾 Backup</h2><p class="sub">Backup, importação e exportação dos dados do EDIFIQ.</p></div><button class="x" onclick="closeM('edBackupConfigModal')">×</button></div>
+        <div class="card"><h3>Proteção dos dados</h3><p class="sub">Faça uma cópia completa antes de apagar ou alterar muitos registros.</p>
+          <div class="listActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar dados</button></div>
+          <input id="backupImportFile" accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importRelatorioData(event)" style="display:none" type="file"/>
+        </div>
+        <div class="card"><h3>Exportar dados e relatórios</h3><div class="reportGrid">
+          <button class="btn reportAction" onclick="exportPDF()"><b>📄 Exportar PDF</b><small>Relatório completo.</small></button>
+          <button class="btn reportAction" onclick="exportExcel()"><b>📊 Exportar Excel</b><small>Obras, equipe, diárias, financeiro e checklist.</small></button>
+          <button class="btn reportAction" onclick="exportCSVAll()"><b>📁 Exportar CSV</b><small>Dados para planilhas.</small></button>
+          <button class="btn reportAction" onclick="exportFull()"><b>🗂️ Exportar JSON</b><small>Backup completo para recuperação.</small></button>
+        </div></div>
+        <div class="note">Os dados de backup e a importação ficam centralizados aqui. As opções de apagar dados estão em Configurações.</div>
+      </div>`;
+      document.body.appendChild(m);
+    }else{
+      m.classList.add("open");
+    }
+  };
+
+  /* =========================
+     FALTAS: frequência + histórico de diárias
+     ========================= */
+  function edAbsenceType(x){
+    const t=String(x?.tipo||x?.status||"falta").toLowerCase();
+    if(t==="atestado")return "Atestado";
+    if(t==="justificada"||t==="falta_justificada")return "Falta justificada";
+    if(t==="injustificada"||t==="falta_injustificada")return "Falta injustificada";
+    return "Falta";
+  }
+  function edIsAbsence(x){
+    const t=String(x?.tipo||x?.status||"").toLowerCase();
+    return ["falta","justificada","injustificada","atestado","falta_justificada","falta_injustificada"].includes(t);
+  }
+
+  window.renderHistoricoFrequencia=function(){
+    if(typeof fillEquipeHistorySelectors==="function")fillEquipeHistorySelectors();
+    const box=document.getElementById("histFreqList"), resumo=document.getElementById("histFreqResumo");
+    if(!box)return;
+    const fid=document.getElementById("histFreqFunc")?.value||"", oid=document.getElementById("histFreqObra")?.value||"";
+    const ini=document.getElementById("histFreqInicio")?.value||"", fim=document.getElementById("histFreqFim")?.value||"";
+    const rows=[];
+    const push=(funcId,data,obraId,status,obs,source)=>{
+      const dt=String(data||""); const id=String(funcId||"");
+      if(!id||!dt)return;
+      if(ini&&dt<ini || fim&&dt>fim)return;
+      if(fid&&id!==String(fid))return;
+      if(oid&&String(obraId||"")!==String(oid))return;
+      rows.push({funcId:id,data:dt,obraId:obraId||"",status,obs:obs||"",source});
+    };
+    (D.diarias||[]).forEach(d=>push(d.funcionario_id??d.funcId??d.funcionarioId,d.data,d.obra_id,"trabalhou",d.observacao,"diaria"));
+    (D.presencas||[]).forEach(d=>{
+      const st=String(d.status||"presente").toLowerCase();
+      if(st==="presente"||st==="trabalhou")push(d.funcionario_id,d.data,d.obra_id,"trabalhou",d.observacao,"presenca");
+      else push(d.funcionario_id,d.data,d.obra_id,st,d.observacao,"presenca");
+    });
+    (D.faltas||[]).forEach(d=>push(d.funcionario_id??d.funcId??d.funcionarioId,d.data,d.obra_id??d.obraId,edAbsenceType(d).toLowerCase().includes("justificada")?"justificada":String(d.tipo||"falta").toLowerCase(),d.observacao,"falta"));
+    // Remove duplicatas: falta/ausência vence presença do mesmo funcionário/dia/obra.
+    const map=new Map();
+    const rank={falta:5,atestado:5,justificada:5,injustificada:5,trabalhou:2};
+    rows.forEach(r=>{
+      const key=r.funcId+"|"+r.data+"|"+String(r.obraId||"");
+      const old=map.get(key);
+      if(!old || (rank[r.status]||1)>(rank[old.status]||1))map.set(key,r);
+    });
+    const items=[...map.values()].sort((a,b)=>String(b.data).localeCompare(String(a.data))||String(a.funcId).localeCompare(String(b.funcId)));
+    const faltas=items.filter(x=>["falta","atestado","justificada","injustificada"].includes(x.status)).length;
+    const trabalhados=items.length-faltas;
+    if(resumo)resumo.innerHTML=`<div class="historyMetric"><small>Dias registrados</small><b>${items.length}</b></div><div class="historyMetric"><small>Dias trabalhados</small><b class="green">${trabalhados}</b></div><div class="historyMetric"><small>Faltas / afastamentos</small><b class="red">${faltas}</b></div>`;
+    if(!items.length){box.innerHTML='<div class="empty">Nenhum registro de frequência encontrado com os filtros selecionados.</div>';return;}
+    box.innerHTML=items.map(x=>{
+      const f=(D.funcionarios||[]).find(y=>String(y.id)===String(x.funcId)), o=(D.obras||[]).find(y=>String(y.id)===String(x.obraId));
+      const isA=["falta","atestado","justificada","injustificada"].includes(x.status);
+      const label=isA?edAbsenceType({tipo:x.status}):"Trabalhou";
+      return `<article class="historyCard"><div class="historyCardTop"><div class="historyAvatar">${isA?"⚠️":"✓"}</div><div class="historyIdentity"><b>${esc(f?.nome||"Funcionário")}</b><small>${esc(f?.funcao||"Função não informada")} · ${esc(o?.nome||"Obra não definida")}</small></div><span class="historyStatus ${isA?"pending":"paid"}">${label}</span></div><div class="historyDataGrid"><div><small>Dia</small><b>${esc(formatDateBR(x.data))}</b></div><div><small>Obra</small><b>${esc(o?.nome||"—")}</b></div><div><small>Função</small><b>${esc(f?.funcao||"—")}</b></div><div><small>Observação</small><b>${esc(x.obs||"—")}</b></div></div></article>`;
+    }).join("");
+  };
+
+  window.renderHistoricoDiariasPro=function(){
+    if(typeof fillEquipeHistorySelectors==="function")fillEquipeHistorySelectors();
+    const box=document.getElementById("histDiaList"), resumo=document.getElementById("histDiaResumo"); if(!box)return;
+    const fid=document.getElementById("histFunc2")?.value||"", ini=document.getElementById("histInicio2")?.value||"", fim=document.getElementById("histFim2")?.value||"";
+    const works=(D.diarias||[]).filter(d=>{
+      const id=String(d.funcionario_id??d.funcId??d.funcionarioId??"");
+      const dt=String(d.data||"");
+      return (!fid||id===String(fid))&&(!ini||dt>=ini)&&(!fim||dt<=fim);
+    }).map(d=>({kind:"diaria",data:d.data||"",funcId:d.funcionario_id??d.funcId??d.funcionarioId,obraId:d.obra_id,valor:diariaValor(d),pago:diariaEstaPaga(d),obs:d.observacao||""}));
+    const abs=(D.faltas||[]).filter(d=>{
+      const id=String(d.funcionario_id??d.funcId??d.funcionarioId??"");
+      const dt=String(d.data||"");
+      return (!fid||id===String(fid))&&(!ini||dt>=ini)&&(!fim||dt<=fim);
+    }).map(d=>({kind:"falta",data:d.data||"",funcId:d.funcionario_id??d.funcId??d.funcionarioId,obraId:d.obra_id??d.obraId,valor:0,pago:false,obs:d.observacao||"",status:d.tipo||"falta"}));
+    const items=[...works,...abs].sort((a,b)=>String(b.data).localeCompare(String(a.data)));
+    const total=works.reduce((a,d)=>a+d.valor,0), pag=works.filter(d=>d.pago).reduce((a,d)=>a+d.valor,0), pend=total-pag, faltas=abs.length;
+    if(resumo)resumo.innerHTML=`<div class="historyMetric"><small>Registros</small><b>${items.length}</b></div><div class="historyMetric"><small>Valor total</small><b>${money(total)}</b></div><div class="historyMetric"><small>Pendente</small><b class="gold">${money(pend)}</b></div><div class="historyMetric"><small>Faltas</small><b class="red">${faltas}</b></div>`;
+    if(!items.length){box.innerHTML='<div class="empty">Nenhuma diária ou falta encontrada com os filtros selecionados.</div>';return;}
+    box.innerHTML=items.map(d=>{
+      const f=(D.funcionarios||[]).find(x=>String(x.id)===String(d.funcId)), o=(D.obras||[]).find(x=>String(x.id)===String(d.obraId));
+      if(d.kind==="falta"){
+        return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar diary">⚠️</div><div class="historyIdentity"><b>${esc(f?.nome||"Funcionário")}</b><small>${esc(o?.nome||"Obra não definida")}</small></div><span class="historyStatus pending">${esc(edAbsenceType(d))}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data))}</b></div><div><small>Valor</small><b>R$ 0,00</b></div><div><small>Status</small><b>Não gera diária</b></div><div><small>Observação</small><b>${esc(d.obs||"—")}</b></div></div></article>`;
+      }
+      return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar diary">📅</div><div class="historyIdentity"><b>${esc(f?.nome||"Funcionário")}</b><small>${esc(o?.nome||"Obra não definida")}</small></div><span class="historyStatus ${d.pago?"paid":"pending"}">${d.pago?"Pago":"Pendente"}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data||""))}</b></div><div><small>Valor</small><b class="gold">${money(d.valor)}</b></div><div><small>Quantidade</small><b>1</b></div><div><small>Observação</small><b>${esc(d.obs||"—")}</b></div></div></article>`;
+    }).join("");
+  };
+
+  /* =========================
+     EXTRAS / BÔNUS: pesquisa por funcionário e obra
+     ========================= */
+  function edBuildExtraModal(initialFuncId="",initialObraId=""){
+    let m=document.getElementById("edExtraModal");
+    if(!m){
+      m=document.createElement("div"); m.id="edExtraModal"; m.className="modal";
+      m.innerHTML=`<div class="modalBox" style="max-width:680px">
+        <div class="modalHead"><div><h2>＋ Extras e Bônus</h2><p class="sub">Selecione pelo cadastro, usando a pesquisa de funcionário e obra.</p></div><button class="x" onclick="closeM('edExtraModal')">×</button></div>
+        <div class="formGrid">
+          <label class="full">Funcionário
+            <div class="edSearchField"><span>⌕</span><input id="edExtraFuncSearch" type="search" placeholder="Pesquisar funcionário..." autocomplete="off" list="edExtraFuncList"/><datalist id="edExtraFuncList"></datalist></div>
+            <input id="edExtraFuncId" type="hidden"/>
+            <div id="edExtraFuncResults" class="edSelectResults"></div>
+          </label>
+          <label class="full">Obra
+            <div class="edSearchField"><span>⌕</span><input id="edExtraObraSearch" type="search" placeholder="Pesquisar obra..." autocomplete="off" list="edExtraObraList"/><datalist id="edExtraObraList"></datalist></div>
+            <input id="edExtraObraId" type="hidden"/>
+            <div id="edExtraObraResults" class="edSelectResults"></div>
+          </label>
+          <label>Tipo<select id="edExtraTipo"><option value="Serviço extra">Serviço extra</option><option value="Bônus">Bônus</option><option value="Modificação">Modificação</option></select></label>
+          <label>Valor<input id="edExtraValor" inputmode="decimal" type="text" placeholder="R$ 0,00" autocomplete="off"/></label>
+          <label class="full">Descrição<textarea id="edExtraDescricao" placeholder="Descreva o serviço extra ou bônus..."></textarea></label>
+          <label>Data<input id="edExtraData" type="date"/></label>
+        </div>
+        <div class="formActions"><button class="btn" type="button" onclick="closeM('edExtraModal')">Cancelar</button><button class="btn primary" type="button" onclick="saveEdifiqExtra()">Salvar</button></div>
+      </div>`;
+      document.body.appendChild(m);
+      document.getElementById("edExtraFuncSearch").addEventListener("input",edRenderExtraPeople);
+      document.getElementById("edExtraObraSearch").addEventListener("input",edRenderExtraWorks);
+      document.getElementById("edExtraValor").addEventListener("input",function(){edifiqMaskMoney(this)});
+    }
+    const funcs=(D.funcionarios||[]).filter(f=>f.ativo!==false).sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||""),"pt-BR"));
+    const obras=(D.obras||[]).slice().sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||""),"pt-BR"));
+    document.getElementById("edExtraFuncSearch").value="";
+    document.getElementById("edExtraObraSearch").value="";
+    document.getElementById("edExtraFuncId").value=initialFuncId||"";
+    document.getElementById("edExtraObraId").value=initialObraId||"";
+    document.getElementById("edExtraTipo").value="Serviço extra";
+    document.getElementById("edExtraValor").value="";
+    document.getElementById("edExtraDescricao").value="";
+    document.getElementById("edExtraData").value=today();
+    document.getElementById("edExtraFuncList").innerHTML=funcs.map(f=>`<option value="${esc(f.nome||"")}"></option>`).join("");
+    document.getElementById("edExtraObraList").innerHTML=obras.map(o=>`<option value="${esc(o.nome||"")}"></option>`).join("");
+    edRenderExtraPeople();
+    edRenderExtraWorks();
+    if(initialFuncId){
+      const f=funcs.find(x=>String(x.id)===String(initialFuncId));
+      if(f){document.getElementById("edExtraFuncSearch").value=f.nome||"";}
+    }
+    if(initialObraId){
+      const o=obras.find(x=>String(x.id)===String(initialObraId));
+      if(o){document.getElementById("edExtraObraSearch").value=o.nome||"";}
+    }
+    edRenderExtraPeople(); edRenderExtraWorks();
+    openM("edExtraModal");
+  }
+  function edRenderExtraPeople(){
+    const q=String(document.getElementById("edExtraFuncSearch")?.value||"").toLowerCase();
+    const box=document.getElementById("edExtraFuncResults"); if(!box)return;
+    const rows=(D.funcionarios||[]).filter(f=>f.ativo!==false && (!q||String(f.nome||"").toLowerCase().includes(q))).slice(0,20);
+    box.innerHTML=rows.map(f=>`<button class="edResultBtn" type="button" onclick="edSelectExtraFunc('${String(f.id).replace(/'/g,"\\'")}')"><b>${esc(f.nome||"Funcionário")}</b><small style="display:block">${esc(f.funcao||"Função não informada")}</small></button>`).join("")||'<div class="empty">Nenhum funcionário encontrado.</div>';
+  }
+  function edRenderExtraWorks(){
+    const q=String(document.getElementById("edExtraObraSearch")?.value||"").toLowerCase();
+    const box=document.getElementById("edExtraObraResults"); if(!box)return;
+    const rows=(D.obras||[]).filter(o=>!q||String(o.nome||"").toLowerCase().includes(q)).slice(0,20);
+    box.innerHTML=rows.map(o=>`<button class="edResultBtn" type="button" onclick="edSelectExtraObra('${String(o.id).replace(/'/g,"\\'")}')"><b>${esc(o.nome||"Obra")}</b><small style="display:block">${esc(o.cliente||"")}</small></button>`).join("")||'<div class="empty">Nenhuma obra encontrada.</div>';
+  }
+  window.edSelectExtraFunc=function(id){
+    const f=(D.funcionarios||[]).find(x=>String(x.id)===String(id)); if(!f)return;
+    document.getElementById("edExtraFuncId").value=id;
+    document.getElementById("edExtraFuncSearch").value=f.nome||"";
+    edRenderExtraPeople();
+  };
+  window.edSelectExtraObra=function(id){
+    const o=(D.obras||[]).find(x=>String(x.id)===String(id)); if(!o)return;
+    document.getElementById("edExtraObraId").value=id;
+    document.getElementById("edExtraObraSearch").value=o.nome||"";
+    edRenderExtraWorks();
+  };
+  window.openExtraEquipe=async function(){edBuildExtraModal();};
+  window.openExtraObra=async function(obraId){edBuildExtraModal("",obraId);};
+  window.openExtraFuncionario=async function(funcId,fixedObraId=null){edBuildExtraModal(funcId,fixedObraId||"");};
+
+  window.saveEdifiqExtra=async function(){
+    try{
+      const funcionario_id=document.getElementById("edExtraFuncId")?.value||"";
+      const obra_id=document.getElementById("edExtraObraId")?.value||"";
+      const tipo=document.getElementById("edExtraTipo")?.value||"Serviço extra";
+      const valor=edMoneyNumber(document.getElementById("edExtraValor")?.value||0);
+      const descricao=document.getElementById("edExtraDescricao")?.value.trim()||"";
+      const data=document.getElementById("edExtraData")?.value||today();
+      const f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcionario_id));
+      const obra=(D.obras||[]).find(x=>String(x.id)===String(obra_id));
+      if(!f){toast("Selecione um funcionário pelo cadastro.");return;}
+      if(!obra){toast("Selecione uma obra pelo cadastro.");return;}
+      if(valor<=0){toast("Informe um valor válido.");return;}
+      if(!descricao){toast("Informe a descrição.");return;}
+      const id="sx_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
+      const item={id,funcionario_id:f.id,funcionarioId:f.id,obra_id:obra.id,obraId:obra.id,descricao,tipo,valor,data,status:"pendente",financeiroAplicado:true,folhaAplicado:false};
+      D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];
+      D.servicosExtras.push(item);
+      saveLocalData();
+      const result=await insertRow("gastos",{obra_id:obra.id,data,descricao:`[${tipo}] ${descricao} - ${f.nome}`,valor,fornecedor:f.nome,observacao:"Lançamento vinculado à folha de pagamento.",categoria:"Mão de obra",funcionario_id:f.id,servico_extra_id:id,status:"pendente"});
+      if(!result){
+        D.servicosExtras=D.servicosExtras.filter(x=>String(x.id)!==String(id));
+        saveLocalData();
+        toast("Não foi possível registrar o extra.");
+        return;
+      }
+      closeM("edExtraModal");
+      renderAll();
+      toast(`${tipo} de ${f.nome} registrado e incluído no fechamento da folha.`);
+    }catch(err){console.error("EDIFIQ extra",err);toast("Não foi possível registrar o extra.");}
+  };
+
+  /* =========================
+     ADIANTAMENTO: valor em R$
+     ========================= */
+  const oldOpenAdiantamento=window.openAdiantamento;
+  window.openAdiantamento=function(){
+    if(typeof oldOpenAdiantamento==="function")oldOpenAdiantamento();
+    const el=document.getElementById("adiantValor");
+    if(el){
+      el.type="text";
+      el.inputMode="decimal";
+      el.placeholder="R$ 0,00";
+      el.value="";
+      el.oninput=function(){edifiqMaskMoney(this)};
+    }
+  };
+  window.openAdiantamentoFuncionario=function(id){
+    window.openAdiantamento();
+    setTimeout(()=>{
+      const f=(D.funcionarios||[]).find(x=>String(x.id)===String(id));
+      if(f){
+        document.getElementById("adiantFunc").value=id;
+        document.getElementById("adiantObra").value=getFuncObra(id)||"";
+        document.getElementById("adiantValor").value=edMoneyInput(f.tipo_pagamento==="mensal"?f.salario_mensal:f.valor_diaria);
+      }
+    },50);
+  };
+  window.saveAdiantamento=async function(e){
+    e.preventDefault();
+    const obra_id=document.getElementById("adiantObra")?.value||"";
+    const funcionario_id=document.getElementById("adiantFunc")?.value||"";
+    const valor=edMoneyNumber(document.getElementById("adiantValor")?.value||0);
+    if(!obra_id){toast("Selecione a obra.");return;}
+    if(!funcionario_id){toast("Selecione o funcionário.");return;}
+    if(valor<=0){toast("Informe um valor válido.");return;}
+    const f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcionario_id));
+    const nome=f?.nome||"Funcionário";
+    const obs=document.getElementById("adiantObs")?.value.trim()||"";
+    const result=await insertRow("gastos",{obra_id,data:document.getElementById("adiantData")?.value||today(),descricao:`[Adiantamento] Adiantamento - ${nome}`,valor,fornecedor:nome,funcionario_id,status:"pendente",aplicado:false,observacao:obs,categoria:"Adiantamento"});
+    if(result){closeM("adiantM");toast(`Adiantamento de ${money(valor)} registrado.`);renderAll();}
+  };
+
+  /* =========================
+     FECHAMENTO: extras entram no bruto
+     ========================= */
+  const oldRenderFechamentoFolha=window.renderFechamentoFolha;
+  window.renderFechamentoFolha=function(){
+    if(typeof oldRenderFechamentoFolha==="function")oldRenderFechamentoFolha();
+    // A rotina principal já foi ajustada no código-base para somar extras.
+    // Esta chamada garante que os cards de Equipe sejam recalculados com os dados atuais.
+    try{ if(typeof renderEquipeOverview==="function" && document.getElementById("funcionarios")?.classList.contains("active")) renderEquipeOverview(); }catch(_){}
+  };
+
+  /* =========================
+     BAIXA: garantir baixa sem erro
+     ========================= */
+  const oldSavePagamentoEquipe=window.savePagamentoEquipe;
+  if(typeof oldSavePagamentoEquipe==="function"){
+    window.savePagamentoEquipe=async function(e){
+      try{
+        return await oldSavePagamentoEquipe(e);
+      }catch(err){
+        console.error("EDIFIQ baixa folha",err);
+        toast("Não foi possível concluir a baixa. Os registros pendentes foram preservados.");
+      }
+    };
+  }
+
+  /* =========================
+     AO ABRIR: restaurar tema + esconder relatório antigo
+     ========================= */
+  function edifiqFinalUI(){
+    restoreTheme();
+    const rep=document.getElementById("relatorios");
+    if(rep)rep.remove();
+    document.querySelectorAll('.edifiqMenuItem').forEach(b=>{
+      if((b.textContent||"").trim().toLowerCase()==="relatórios")b.remove();
+    });
+    const q=document.querySelector(".financeQuick");
+    if(q)q.remove();
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",edifiqFinalUI);
+  else edifiqFinalUI();
+
+})();
+</script>
 
 </body></html>`);
 
