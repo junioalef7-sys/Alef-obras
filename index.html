@@ -1539,7 +1539,7 @@ body{min-height:100vh;min-height:100dvh}
 <div class="authBox">
 <div class="authLogo authLogoSimple"><h1>EDIFIQ</h1></div>
 <label>E-mail</label><input autocomplete="email" id="email" placeholder="seu@email.com" type="email"/>
-<label>Senha</label><input autocomplete="current-password" id="password" placeholder="••••••••" type="password"/>
+<label>Senha</label><div class="passwordWrap"><input autocomplete="current-password" id="password" placeholder="••••••••" type="password"/><button type="button" class="passwordToggle" id="passwordToggle" aria-label="Mostrar senha" title="Mostrar senha">👁</button></div>
 <div class="authBtns">
 <button class="btn primary" onclick="login()">Entrar</button>
 <button class="btn" onclick="signup()">Criar conta</button>
@@ -3355,50 +3355,102 @@ async function login(){
 }
 
 async function signup(){
+  const email=($('email')?.value||'').trim().toLowerCase();
+  const password=$('password')?.value||'';
 
-if(!(await ensureSupabaseClient())){authMsg("Não foi possível carregar o servidor. Use o modo local.");return;}
+  if(!email){
+    authMsg('Informe seu e-mail.');
+    return;
+  }
 
-const email=
-$("email").value.trim();
+  if(!password){
+    authMsg('Informe uma senha.');
+    return;
+  }
 
-const password=
-$("password").value;
+  if(password.length<6){
+    authMsg('A senha deve ter pelo menos 6 caracteres.');
+    return;
+  }
 
-if(!email||!password){
+  const btn=[...document.querySelectorAll('#auth .authBtns .btn')].find(b=>/Criar conta/i.test(b.textContent||''));
+  if(btn){btn.disabled=true;btn.textContent='Criando...';}
+  authMsg('Criando sua conta...');
 
-authMsg(
-"Informe e-mail e senha."
-);
+  try{
+    if(!(await ensureSupabaseClient())){
+      authMsg('Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.');
+      return;
+    }
 
-return;
+    const result=await sb.auth.signUp({
+      email,
+      password,
+      options:{
+        emailRedirectTo:location.origin
+      }
+    });
 
+    const error=result?.error;
+    const data=result?.data;
+
+    if(error){
+      const msg=String(error.message||'');
+      if(/user already registered|already registered|already exists/i.test(msg)){
+        authMsg('Este e-mail já possui uma conta. Se você já criou a conta, use “Entrar” ou “Esqueci a senha”.');
+      }else if(/password.*(weak|short)|weak password/i.test(msg)){
+        authMsg('A senha é muito fraca. Use pelo menos 6 caracteres.');
+      }else{
+        authMsg(msg||'Não foi possível criar a conta.');
+      }
+      return;
+    }
+
+    // Quando a confirmação de e-mail está desativada, o Supabase pode devolver
+    // uma sessão imediatamente. Nesse caso, entra no aplicativo sem depender de e-mail.
+    if(data?.session?.user){
+      await finishSignupLogin(data.session);
+      return;
+    }
+
+    // Quando a confirmação de e-mail está ativada, não existe senha inválida:
+    // a conta foi criada, mas o acesso fica bloqueado até a confirmação.
+    if(data?.user){
+      const confirmed=data.user.email_confirmed_at||data.user.confirmed_at;
+      if(!confirmed){
+        authMsg('Conta criada. O Supabase está aguardando a confirmação do e-mail. Se a mensagem não chegar, confira Spam/Lixo eletrônico e use “Esqueci a senha” para solicitar um novo e-mail.');
+      }else{
+        authMsg('Conta criada com sucesso. Agora você já pode entrar com seu e-mail e senha.');
+      }
+      return;
+    }
+
+    authMsg('Não foi possível confirmar a criação da conta. Tente novamente.');
+  }catch(err){
+    console.error('EDIFIQ signup:',err);
+    authMsg('Não foi possível criar a conta agora. Verifique a conexão e tente novamente.');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Criar conta';}
+  }
 }
 
-if(password.length<6){
-
-authMsg(
-"A senha deve ter pelo menos 6 caracteres."
-);
-
-return;
-
-}
-
-authMsg("Criando conta...");
-
-const{error}=
-await sb.auth.signUp({
-email,
-password
-});
-
-if(error)
-authMsg(error.message);
-else
-authMsg(
-"Conta criada. Verifique seu e-mail se necessário."
-);
-
+async function finishSignupLogin(session){
+  if(!session?.user){
+    authMsg('Conta criada, mas o login automático não foi concluído. Tente entrar novamente.');
+    return;
+  }
+  user=session.user;
+  $('auth')?.classList.add('hidden');
+  $('app')?.classList.remove('hidden');
+  authMsg('');
+  try{
+    if(sb?.auth?.setSession && session.access_token && session.refresh_token){
+      await sb.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token});
+    }
+  }catch(e){console.warn('Sessão do novo usuário:',e)}
+  try{await loadCloud();}catch(e){console.warn('Sincronização inicial:',e)}
+  try{renderAll();}catch(e){console.warn('Renderização após cadastro:',e)}
+  window.scrollTo({top:0,behavior:'instant'});
 }
 
 async function resetPassword(){
@@ -10031,6 +10083,17 @@ document.addEventListener("DOMContentLoaded",()=>{
       }
     });
   });
+
+  const passwordInput=$("password");
+  const passwordToggle=$("passwordToggle");
+  passwordToggle?.addEventListener("click",()=>{
+    if(!passwordInput) return;
+    const showing=passwordInput.type==='text';
+    passwordInput.type=showing?'password':'text';
+    passwordToggle.textContent=showing?'👁':'🙈';
+    passwordToggle.setAttribute('aria-label',showing?'Mostrar senha':'Ocultar senha');
+    passwordToggle.title=showing?'Mostrar senha':'Ocultar senha';
+  });
 });
 window.resetPassword=
 resetPassword;
@@ -11770,6 +11833,13 @@ body.edifiq-ios-standalone .edifiqDrawerScroll{
   height:calc(100dvh - 116px - max(47px, env(safe-area-inset-top, 0px)))!important;
   padding-bottom:calc(28px + env(safe-area-inset-bottom, 0px))!important;
 }
+
+/* Campo de senha com visualização */
+.passwordWrap{position:relative;width:100%;display:flex;align-items:center}
+.passwordWrap input{width:100%;padding-right:52px!important}
+.passwordToggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:42px;height:42px;border:0;border-radius:10px;background:transparent;color:inherit;cursor:pointer;font-size:19px;display:grid;place-items:center;opacity:.82}
+.passwordToggle:hover{background:rgba(255,255,255,.06);opacity:1}
+.passwordToggle:focus-visible{outline:2px solid var(--ed-brand,#d6aa52);outline-offset:1px}
 </style>
 <script id="edifiq-ios-standalone-safearea-final">
 (function(){
