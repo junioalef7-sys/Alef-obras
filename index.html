@@ -7780,720 +7780,7 @@ f.data||""
 <p>${esc(
 f.observacao||""
 )}</p>
-
-
-<style id="edifiq-fase3-producao-style">
-.edf3-wrap{margin-top:16px}
-.edf3-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.edf3-head h2{margin:0 0 4px}.edf3-head p{margin:0;color:var(--muted)}
-.edf3-actions{display:flex;gap:8px;flex-wrap:wrap}
-.edf3-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
-.edf3-kpi{padding:13px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.025)}
-.edf3-kpi small{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.edf3-kpi b{font-size:18px}
-.edf3-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}
-.edf3-filters input,.edf3-filters select{width:100%}
-.edf3-table{margin-top:14px;overflow:auto;border:1px solid rgba(255,255,255,.07);border-radius:12px}
-.edf3-table table{width:100%;border-collapse:collapse;min-width:760px}
-.edf3-table th,.edf3-table td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;font-size:12px}
-.edf3-table th{color:var(--muted);font-weight:600}
-.edf3-table tr:last-child td{border-bottom:0}
-.edf3-empty{padding:18px;text-align:center;color:var(--muted)}
-.edf3-tag{display:inline-flex;padding:3px 7px;border-radius:999px;background:rgba(212,175,55,.12);color:#e8c65a;font-size:11px}
-.edf3-modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
-.edf3-box{width:min(720px,100%);max-height:92vh;overflow:auto;background:#0d1014;border:1px solid rgba(255,255,255,.1);border-radius:16px;box-shadow:0 20px 70px rgba(0,0,0,.45)}
-.edf3-modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid rgba(255,255,255,.07)}
-.edf3-modal-head h2{margin:0}.edf3-form{padding:16px}
-.edf3-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.edf3-field{display:flex;flex-direction:column;gap:5px}.edf3-field.full{grid-column:1/-1}
-.edf3-field label{font-size:12px;color:var(--muted)}
-.edf3-field input,.edf3-field select,.edf3-field textarea{width:100%;box-sizing:border-box}
-.edf3-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
-.edf3-worker{padding:10px;border:1px solid rgba(255,255,255,.07);border-radius:10px;margin-top:10px;background:rgba(255,255,255,.02)}
-.edf3-worker-head{display:flex;justify-content:space-between;gap:10px}
-.edf3-bar{height:7px;border-radius:99px;background:#20252c;overflow:hidden;margin-top:7px}
-.edf3-bar i{display:block;height:100%;width:0;background:#d4af37}
-@media(max-width:850px){.edf3-kpis,.edf3-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){.edf3-kpis,.edf3-filters,.edf3-grid{grid-template-columns:1fr}.edf3-field.full{grid-column:auto}}
-</style>
-
-<script id="edifiq-fase3-producao">
-(function(){
-  "use strict";
-
-  const F3_KEY="edifiq_producao_equipe_v1";
-
-  function f3N(v){const n=Number(v);return Number.isFinite(n)?n:0}
-  function f3Esc(v){
-    if(typeof esc==="function")return esc(String(v??""));
-    return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-  }
-  function f3Money(v){
-    try{if(typeof money==="function")return money(f3N(v));}catch(_){}
-    return f3N(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-  }
-  function f3Today(){try{return typeof today==="function"?today():new Date().toISOString().slice(0,10)}catch(_){return new Date().toISOString().slice(0,10)}}
-  function f3Date(v){
-    if(!v)return "—";
-    const s=String(v).slice(0,10),p=s.split("-");
-    return p.length===3?\`\${p[2]}/\${p[1]}/\${p[0]}\`:String(v);
-  }
-  function f3Data(){
-    try{
-      const x=JSON.parse(localStorage.getItem(F3_KEY)||"[]");
-      return Array.isArray(x)?x:[];
-    }catch(_){return []}
-  }
-  function f3SetData(rows){
-    try{localStorage.setItem(F3_KEY,JSON.stringify(rows));}catch(e){console.warn("EDIFIQ Produção:",e)}
-    try{if(typeof D!=="undefined")D.producoesEquipe=rows.slice()}catch(_){}
-  }
-  function f3SyncData(){
-    try{
-      const rows=f3Data();
-      if(typeof D!=="undefined")D.producoesEquipe=rows.slice();
-      return rows;
-    }catch(_){return []}
-  }
-  function f3Obra(id){return (typeof D!=="undefined"&&D.obras||[]).find(o=>String(o.id)===String(id))}
-  function f3Func(id){return (typeof D!=="undefined"&&D.funcionarios||[]).find(f=>String(f.id)===String(id))}
-  function f3Check(id){return (typeof D!=="undefined"&&D.checklist||[]).find(c=>String(c.id)===String(id))}
-  function f3ObraIdForFunc(f){
-    try{
-      if(typeof getFuncObra==="function")return getFuncObra(f?.id)||f?.obra_id||f?.obraId||"";
-    }catch(_){}
-    return f?.obra_id??f?.obraId??"";
-  }
-
-  function f3Open(){
-    f3SyncData();
-    if(!document.getElementById("edf3Modal")){
-      const m=document.createElement("div");
-      m.id="edf3Modal";m.className="edf3-modal";m.style.display="none";
-      m.innerHTML=\`
-        <div class="edf3-box">
-          <div class="edf3-modal-head">
-            <div><h2>🏗️ Registrar produção</h2><p class="sub">Registre a produção realizada por funcionário, obra e checklist.</p></div>
-            <button class="x" type="button" onclick="window.edifiqF3Close()">×</button>
-          </div>
-          <form class="edf3-form" id="edf3Form" onsubmit="return window.edifiqF3Save(event)">
-            <div class="edf3-grid">
-              <div class="edf3-field"><label>Funcionário *</label><select id="edf3Func" required></select></div>
-              <div class="edf3-field"><label>Data *</label><input id="edf3Data" type="date" required></div>
-              <div class="edf3-field"><label>Obra *</label><select id="edf3Obra" required></select></div>
-              <div class="edf3-field"><label>Checklist / serviço *</label><select id="edf3Check" required></select></div>
-              <div class="edf3-field"><label>Quantidade produzida</label><input id="edf3Qtd" type="number" min="0" step="0.01" placeholder="Ex.: 25"></div>
-              <div class="edf3-field"><label>Unidade</label><select id="edf3Un"><option value="m²">m²</option><option value="m">m</option><option value="un">un</option><option value="kg">kg</option><option value="h">h</option><option value="serviço">serviço</option><option value="outro">outro</option></select></div>
-              <div class="edf3-field"><label>Valor produzido (R$)</label><input id="edf3Valor" type="number" min="0" step="0.01" placeholder="Ex.: 1.250,00"></div>
-              <div class="edf3-field"><label>Observação</label><input id="edf3Obs" type="text" maxlength="300" placeholder="Ex.: execução de reboco da frente"></div>
-            </div>
-            <div class="note" style="margin-top:12px">O valor produzido é um indicador de produção da equipe. Ele <b>não lança despesa nem receita</b> e não altera a folha.</div>
-            <div class="edf3-modal-actions"><button class="btn" type="button" onclick="window.edifiqF3Close()">Cancelar</button><button class="btn gold" type="submit">Salvar produção</button></div>
-          </form>
-        </div>\`;
-      document.body.appendChild(m);
-    }
-    const m=document.getElementById("edf3Modal");
-    m.style.display="flex";
-    const fs=document.getElementById("edf3Func"), os=document.getElementById("edf3Obra"), cs=document.getElementById("edf3Check");
-    const funcs=(typeof D!=="undefined"?D.funcionarios:[]).filter(f=>f.ativo!==false);
-    fs.innerHTML='<option value="">Selecione</option>'+funcs.map(f=>\`<option value="\${f3Esc(f.id)}">\${f3Esc(f.nome||"Funcionário")}</option>\`).join("");
-    os.innerHTML='<option value="">Selecione</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>\`<option value="\${f3Esc(o.id)}">\${f3Esc(o.nome||"Obra")}</option>\`).join("");
-    cs.innerHTML='<option value="">Selecione a obra primeiro</option>';
-    document.getElementById("edf3Data").value=f3Today();
-    document.getElementById("edf3Qtd").value="";
-    document.getElementById("edf3Valor").value="";
-    document.getElementById("edf3Obs").value="";
-    document.getElementById("edf3Un").value="m²";
-    fs.onchange=function(){
-      const f=f3Func(this.value); if(!f)return;
-      const oid=f3ObraIdForFunc(f); if(oid){os.value=oid;f3FillChecks(oid)}
-    };
-    os.onchange=function(){f3FillChecks(this.value)};
-  }
-  function f3FillChecks(obraId){
-    const cs=document.getElementById("edf3Check");if(!cs)return;
-    const arr=(typeof D!=="undefined"?D.checklist:[]).filter(c=>{
-      const oid=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
-      return String(oid)===String(obraId);
-    });
-    cs.innerHTML='<option value="">Selecione</option>'+arr.map(c=>\`<option value="\${f3Esc(c.id)}">\${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>\`).join("");
-    if(!arr.length)cs.innerHTML='<option value="">Nenhum checklist cadastrado nesta obra</option>';
-  }
-  function f3Close(){const m=document.getElementById("edf3Modal");if(m)m.style.display="none"}
-  async function f3Save(e){
-    e.preventDefault();
-    const funcionario_id=document.getElementById("edf3Func")?.value||"";
-    const obra_id=document.getElementById("edf3Obra")?.value||"";
-    const checklist_id=document.getElementById("edf3Check")?.value||"";
-    const data=document.getElementById("edf3Data")?.value||f3Today();
-    const quantidade=f3N(document.getElementById("edf3Qtd")?.value);
-    const valor=f3N(document.getElementById("edf3Valor")?.value);
-    const unidade=document.getElementById("edf3Un")?.value||"";
-    const observacao=document.getElementById("edf3Obs")?.value?.trim()||"";
-    if(!funcionario_id||!obra_id||!checklist_id){toast("Selecione funcionário, obra e checklist.");return false}
-    if(quantidade<=0&&valor<=0){toast("Informe a quantidade produzida ou o valor produzido.");return false}
-    const f=f3Func(funcionario_id),o=f3Obra(obra_id),c=f3Check(checklist_id);
-    const row={id:"prod_"+Date.now()+"_"+Math.random().toString(36).slice(2,8),funcionario_id,obra_id,checklist_id,data,quantidade,unidade,valor,observacao};
-    const rows=f3Data();rows.push(row);f3SetData(rows);f3Close();f3Render();toast(\`Produção de \${f?.nome||"funcionário"} registrada.\`);
-    return false;
-  }
-  function f3Delete(id){
-    if(!confirm("Excluir este registro de produção?"))return;
-    f3SetData(f3Data().filter(x=>String(x.id)!==String(id)));f3Render();toast("Registro de produção excluído.");
-  }
-
-  function f3RowsFiltered(){
-    const box=document.getElementById("edf3Card");if(!box)return [];
-    const ini=box.querySelector("#edf3Ini")?.value||"";
-    const fim=box.querySelector("#edf3Fim")?.value||"";
-    const fid=box.querySelector("#edf3FiltroFunc")?.value||"all";
-    const oid=box.querySelector("#edf3FiltroObra")?.value||"all";
-    const cid=box.querySelector("#edf3FiltroCheck")?.value||"all";
-    return f3Data().filter(x=>
-      (!ini||String(x.data)>=ini)&&(!fim||String(x.data)<=fim)&&
-      (fid==="all"||String(x.funcionario_id)===String(fid))&&
-      (oid==="all"||String(x.obra_id)===String(oid))&&
-      (cid==="all"||String(x.checklist_id)===String(cid))
-    );
-  }
-
-  function f3Render(){
-    const card=document.getElementById("edf3Card");if(!card)return;
-    f3SyncData();
-    const rows=f3RowsFiltered();
-    const total=f3N(rows.reduce((a,x)=>a+f3N(x.valor),0));
-    const qtd=rows.reduce((a,x)=>a+f3N(x.quantidade),0);
-    const funcs=new Set(rows.map(x=>String(x.funcionario_id))).size;
-    const dias=new Set(rows.map(x=>String(x.data)).filter(Boolean)).size;
-    card.querySelector("#edf3Total").textContent=f3Money(total);
-    card.querySelector("#edf3QtdTotal").textContent=qtd.toLocaleString("pt-BR",{maximumFractionDigits:2});
-    card.querySelector("#edf3FuncTotal").textContent=funcs;
-    card.querySelector("#edf3DiasTotal").textContent=dias;
-
-    const tbody=card.querySelector("#edf3Body");
-    if(!rows.length){tbody.innerHTML='<tr><td colspan="7" class="edf3-empty">Nenhuma produção registrada no período.</td></tr>'}
-    else{
-      tbody.innerHTML=rows.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).map(x=>{
-        const f=f3Func(x.funcionario_id),o=f3Obra(x.obra_id),c=f3Check(x.checklist_id);
-        return \`<tr><td>\${f3Date(x.data)}</td><td><b>\${f3Esc(f?.nome||"—")}</b></td><td>\${f3Esc(o?.nome||"—")}</td><td>\${f3Esc(c?.tarefa||c?.descricao||"—")}</td><td>\${x.quantidade?f3N(x.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:2})+" "+f3Esc(x.unidade||""):"—"}</td><td><b>\${f3Money(x.valor)}</b></td><td><button class="btn danger" type="button" onclick="window.edifiqF3Delete('\${f3Esc(x.id)}')">Excluir</button></td></tr>\`;
-      }).join("");
-    }
-
-    const sumByFunc=new Map();
-    rows.forEach(x=>{const k=String(x.funcionario_id);const cur=sumByFunc.get(k)||{valor:0,qtd:0};cur.valor+=f3N(x.valor);cur.qtd+=f3N(x.quantidade);sumByFunc.set(k,cur)});
-    const rank=[...sumByFunc.entries()].sort((a,b)=>b[1].valor-a[1].valor).slice(0,8);
-    const max=rank[0]?.[1].valor||0;
-    card.querySelector("#edf3Ranking").innerHTML=rank.length?rank.map(([id,v])=>{
-      const f=f3Func(id),pct=max?Math.round(v.valor/max*100):0;
-      return \`<div class="edf3-worker"><div class="edf3-worker-head"><span><b>\${f3Esc(f?.nome||"Funcionário")}</b><small style="display:block;color:var(--muted)">\${v.qtd.toLocaleString("pt-BR",{maximumFractionDigits:2})} unidades registradas</small></span><b>\${f3Money(v.valor)}</b></div><div class="edf3-bar"><i style="width:\${pct}%"></i></div></div>\`;
-    }).join(""):'<div class="edf3-empty">Registre produções para acompanhar a equipe.</div>';
-
-    const cost=rows.reduce((a,x)=>{
-      return a+f3N((typeof D!=="undefined"?D.diarias:[]).filter(d=>String(d.funcionario_id)===String(x.funcionario_id)&&String(d.data)===String(x.data)).reduce((s,d)=>{
-        try{return s+(typeof diariaValor==="function"?diariaValor(d):f3N(d.valor_diaria)*(f3N(d.qtd??d.quantidade)||1))}catch(_){return s}
-      },0));
-    },0);
-    const prodPerCost=cost>0?total/cost:0;
-    const eff=card.querySelector("#edf3Ef");if(eff)eff.textContent=cost>0?f3Money(prodPerCost)+" produzidos / R$ 1,00 de diária":"—";
-  }
-
-  function f3BuildCard(){
-    if(document.getElementById("edf3Card"))return;
-    const page=document.getElementById("funcionarios");if(!page)return;
-    const host=page.querySelector(".equipeOverview");
-    if(!host)return;
-    const card=document.createElement("div");
-    card.id="edf3Card";card.className="card edf3-wrap";
-    card.innerHTML=\`
-      <div class="edf3-head">
-        <div><h2>🏗️ Produção da Equipe</h2><p>Controle da produção realizada por funcionário, obra e checklist.</p></div>
-        <div class="edf3-actions"><button class="btn gold" type="button" onclick="window.edifiqF3Open()">＋ Registrar produção</button><button class="btn" type="button" onclick="window.edifiqF3Refresh()">↻ Atualizar</button></div>
-      </div>
-      <div class="edf3-kpis">
-        <div class="edf3-kpi"><small>VALOR PRODUZIDO</small><b id="edf3Total">R$ 0,00</b></div>
-        <div class="edf3-kpi"><small>QUANTIDADE</small><b id="edf3QtdTotal">0</b></div>
-        <div class="edf3-kpi"><small>FUNCIONÁRIOS COM PRODUÇÃO</small><b id="edf3FuncTotal">0</b></div>
-        <div class="edf3-kpi"><small>DIAS DE PRODUÇÃO</small><b id="edf3DiasTotal">0</b></div>
-      </div>
-      <div class="edf3-filters">
-        <input id="edf3Ini" type="date" title="Data inicial">
-        <input id="edf3Fim" type="date" title="Data final">
-        <select id="edf3FiltroFunc"><option value="all">Todos os funcionários</option></select>
-        <select id="edf3FiltroObra"><option value="all">Todas as obras</option></select>
-      </div>
-      <div class="edf3-filters" style="grid-template-columns:1fr">
-        <select id="edf3FiltroCheck"><option value="all">Todos os checklists</option></select>
-      </div>
-      <div class="note" style="margin-top:12px">Produtividade financeira no filtro atual: <b id="edf3Ef">—</b>. Este indicador compara produção registrada com o custo das diárias registradas nas mesmas datas.</div>
-      <div class="edf3-table">
-        <table><thead><tr><th>Data</th><th>Funcionário</th><th>Obra</th><th>Checklist</th><th>Quantidade</th><th>Valor produzido</th><th></th></tr></thead><tbody id="edf3Body"></tbody></table>
-      </div>
-      <div style="margin-top:14px"><h3>🏆 Produção por funcionário</h3><div id="edf3Ranking"></div></div>\`;
-    host.after(card);
-
-    ["edf3Ini","edf3Fim","edf3FiltroFunc","edf3FiltroObra","edf3FiltroCheck"].forEach(id=>{
-      document.getElementById(id)?.addEventListener("change",()=>{
-        if(id==="edf3FiltroObra")f3FillFilterChecks();
-        f3Render();
-      });
-    });
-    const now=f3Today();
-    document.getElementById("edf3Ini").value=now.slice(0,8)+"01";
-    document.getElementById("edf3Fim").value=now;
-    f3FillFilters();
-  }
-  function f3FillFilters(){
-    const fs=document.getElementById("edf3FiltroFunc"),os=document.getElementById("edf3FiltroObra");
-    if(!fs||!os)return;
-    const fcur=fs.value, ocur=os.value;
-    fs.innerHTML='<option value="all">Todos os funcionários</option>'+(typeof D!=="undefined"?D.funcionarios:[]).map(f=>\`<option value="\${f3Esc(f.id)}">\${f3Esc(f.nome||"Funcionário")}</option>\`).join("");
-    os.innerHTML='<option value="all">Todas as obras</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>\`<option value="\${f3Esc(o.id)}">\${f3Esc(o.nome||"Obra")}</option>\`).join("");
-    if(fcur)fs.value=fcur;if(ocur)os.value=ocur;f3FillFilterChecks();
-  }
-  function f3FillFilterChecks(){
-    const el=document.getElementById("edf3FiltroCheck");if(!el)return;
-    const oid=document.getElementById("edf3FiltroObra")?.value||"all",cur=el.value;
-    const arr=(typeof D!=="undefined"?D.checklist:[]).filter(c=>{
-      const id=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
-      return oid==="all"||String(id)===String(oid);
-    });
-    el.innerHTML='<option value="all">Todos os checklists</option>'+arr.map(c=>\`<option value="\${f3Esc(c.id)}">\${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>\`).join("");
-    if(cur&&[...el.options].some(o=>o.value===cur))el.value=cur;
-  }
-
-  window.edifiqF3Open=f3Open;
-  window.edifiqF3Close=f3Close;
-  window.edifiqF3Save=f3Save;
-  window.edifiqF3Delete=f3Delete;
-  window.edifiqF3Render=f3Render;
-  window.edifiqF3Refresh=async function(){
-    const btn=document.querySelector('#edf3Card button[onclick*="edifiqF3Refresh"]');
-    if(btn){btn.disabled=true;btn.textContent='↻ Sincronizando...';}
-    try{
-      if(typeof sb!=="undefined"&&sb&&typeof user!=="undefined"&&user?.id&&navigator.onLine){await retryEdifiqPendingUpdates();await retryLocalCloudRows();await loadCloud();await sincronizarBaixasLocaisEquipe();await retryEdifiqPendingUpdates();await loadCloud();}
-      f3SyncData();f3FillFilters();f3Render();
-      toast(typeof sb!=="undefined"&&sb&&typeof user!=="undefined"&&user?.id&&navigator.onLine?'Produção atualizada e sincronizada.':'Produção atualizada neste aparelho.');
-    }catch(err){console.error('Atualizar produção da equipe:',err);f3SyncData();f3Render();toast('Não foi possível sincronizar a produção agora.');}
-    finally{if(btn){btn.disabled=false;btn.textContent='↻ Atualizar';}}
-  };
-
-  function f3Hook(){
-    f3SyncData();f3BuildCard();f3FillFilters();f3Render();
-  }
-  const oldGo=window.go;
-  if(typeof oldGo==="function"&&!oldGo.__edifiqF3){
-    const wrappedGo=function(page){
-      const r=oldGo.apply(this,arguments);
-      setTimeout(()=>{if(String(page)==="funcionarios")f3Hook()},80);
-      return r;
-    };
-    wrappedGo.__edifiqF3=true;window.go=wrappedGo;
-  }
-  const oldRenderFuncs=window.renderFuncs;
-  if(typeof oldRenderFuncs==="function"&&!oldRenderFuncs.__edifiqF3){
-    const wrappedRF=function(){const r=oldRenderFuncs.apply(this,arguments);setTimeout(f3Hook,0);return r};
-    wrappedRF.__edifiqF3=true;window.renderFuncs=wrappedRF;
-  }
-  document.addEventListener("DOMContentLoaded",()=>setTimeout(f3Hook,500));
-})();
-<\/script>
-
-
-<script id="edifiq-correcoes-03102026">
-(function(){
-  "use strict";
-
-  /* =========================
-     UTILITÁRIOS
-     ========================= */
-  function edMoneyNumber(v){
-    if(typeof v==="number") return Number.isFinite(v)?v:0;
-    if(v===null||v===undefined||v==="") return 0;
-    let x=String(v).trim().replace(/R\$/gi,"").replace(/\s/g,"");
-    if(x.includes(",")) x=x.replace(/\./g,"").replace(",",".");
-    const n=Number(x);
-    return Number.isFinite(n)?n:0;
-  }
-  function edMoneyInput(v){
-    const n=Math.max(0,edMoneyNumber(v));
-    return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-  }
-  window.edifiqMaskMoney=function(input){
-    if(!input)return;
-    const digits=String(input.value||"").replace(/\D/g,"");
-    if(!digits){input.value="";return;}
-    input.value=(Number(digits)/100).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-  };
-
-  /* =========================
-     TEMA: CLARO 100% / ESCURO 100%
-     ========================= */
-  window.setEdifiqTheme=function(mode){
-    const light=mode==="light";
-    document.body.classList.toggle("edLight",light);
-    document.documentElement.setAttribute("data-edifiq-theme",light?"light":"dark");
-    try{localStorage.setItem("edifiq_theme",light?"light":"dark")}catch(_){}
-    const b=document.getElementById("themeToggleBtn");
-    if(b){
-      b.textContent=light?"☀":"☾";
-      b.setAttribute("aria-label",light?"Ativar modo escuro":"Ativar modo claro");
-    }
-  };
-  window.toggleTheme=function(){
-    const light=!document.body.classList.contains("edLight");
-    setEdifiqTheme(light?"light":"dark");
-  };
-  window.restoreTheme=function(){
-    let mode="dark";
-    try{mode=localStorage.getItem("edifiq_theme")==="light"?"light":"dark"}catch(_){}
-    setEdifiqTheme(mode);
-  };
-
-  /* CSS fechado para impedir a mistura de temas. */
-  const style=document.createElement("style");
-  style.textContent=`
-    html[data-edifiq-theme="light"],html[data-edifiq-theme="light"] body{background:#f5f7fa!important;color:#18212f!important}
-    html[data-edifiq-theme="light"]{--bg:#f5f7fa;--panel:#ffffff;--panel2:#eef2f6;--text:#18212f;--muted:#68758a;--line:#d7dee8;--shadow:0 8px 24px rgba(25,40,60,.10)}
-    body.edLight input,body.edLight select,body.edLight textarea{background:#fff!important;color:#18212f!important;border-color:#d7dee8!important}
-    body.edLight .card,body.edLight .kpi,body.edLight .financeModernCard,body.edLight .financeModernPanel,body.edLight .rgHealth,body.edLight .rgMoneyCard,body.edLight .historyCard,body.edLight .folhaFuncionarioCard,body.edLight .pay-person{background:#fff!important;color:#18212f!important;border-color:#d7dee8!important}
-    body.edLight .modalBox,body.edLight .menuPasta,body.edLight .edifiqDrawer{background:#fff!important;color:#18212f!important;border-color:#d7dee8!important}
-    body.edLight .nav{background:#fff!important;border-top-color:#d7dee8!important}
-    body.edLight .top{background:rgba(255,255,255,.96)!important;border-bottom-color:#d7dee8!important}
-    body.edLight .sub,body.edLight small,body.edLight .muted{color:#68758a!important}
-    body:not(.edLight) input,body:not(.edLight) select,body:not(.edLight) textarea{background:#0c1014!important;color:#fff!important}
-    body:not(.edLight) .card,body:not(.edLight) .kpi,body:not(.edLight) .financeModernCard,body:not(.edLight) .financeModernPanel,body:not(.edLight) .rgHealth,body:not(.edLight) .rgMoneyCard,body:not(.edLight) .historyCard,body:not(.edLight) .folhaFuncionarioCard,body:not(.edLight) .pay-person{background:#11151a!important;color:#f5f5f5!important}
-    body:not(.edLight) .modalBox,body:not(.edLight) .menuPasta,body:not(.edLight) .edifiqDrawer{background:#0f141a!important;color:#f5f5f5!important}
-    .edSearchField{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
-    .edSearchField span{font-size:18px}
-    .edSearchField input{border:0!important;background:transparent!important;padding:6px!important;min-height:40px}
-    .edSelectResults{display:grid;gap:6px;margin-top:8px;max-height:180px;overflow:auto}
-    .edResultBtn{width:100%;text-align:left;padding:10px 12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px}
-    .edResultBtn:hover{border-color:var(--gold)}
-    .edExtraSummary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-    .edExtraSummary>div{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--panel2)}
-    @media(max-width:759px){.edExtraSummary{grid-template-columns:1fr}.edExtraSummary>div{padding:8px}}
-  `;
-  document.head.appendChild(style);
-
-  /* =========================
-     BACKUP — somente backup/importação/exportação
-     ========================= */
-  window.openBackupConfig=function(){
-    let m=document.getElementById("edBackupConfigModal");
-    if(!m){
-      m=document.createElement("div");
-      m.id="edBackupConfigModal";
-      m.className="modal open";
-      m.innerHTML=`<div class="modalBox" style="max-width:760px;max-height:90vh;overflow:auto">
-        <div class="modalHead"><div><h2>💾 Backup</h2><p class="sub">Backup, importação e exportação dos dados do EDIFIQ.</p></div><button class="x" onclick="closeM('edBackupConfigModal')">×</button></div>
-        <div class="card"><h3>Proteção dos dados</h3><p class="sub">Faça uma cópia completa antes de apagar ou alterar muitos registros.</p>
-          <div class="listActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar dados</button></div>
-          <input id="backupImportFile" accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importRelatorioData(event)" style="display:none" type="file"/>
-        </div>
-        <div class="card"><h3>Exportar dados e relatórios</h3><div class="reportGrid">
-          <button class="btn reportAction" onclick="exportPDF()"><b>📄 Exportar PDF</b><small>Relatório completo.</small></button>
-          <button class="btn reportAction" onclick="exportExcel()"><b>📊 Exportar Excel</b><small>Obras, equipe, diárias, financeiro e checklist.</small></button>
-          <button class="btn reportAction" onclick="exportCSVAll()"><b>📁 Exportar CSV</b><small>Dados para planilhas.</small></button>
-          <button class="btn reportAction" onclick="exportFull()"><b>🗂️ Exportar JSON</b><small>Backup completo para recuperação.</small></button>
-        </div></div>
-        <div class="note">Os dados de backup e a importação ficam centralizados aqui. As opções de apagar dados estão em Configurações.</div>
-      </div>`;
-      document.body.appendChild(m);
-    }else{
-      m.classList.add("open");
-    }
-  };
-
-  /* =========================
-     FALTAS: frequência + histórico de diárias
-     ========================= */
-  function edAbsenceType(x){
-    const t=String(x?.tipo||x?.status||"falta").toLowerCase();
-    if(t==="atestado")return "Atestado";
-    if(t==="justificada"||t==="falta_justificada")return "Falta justificada";
-    if(t==="injustificada"||t==="falta_injustificada")return "Falta injustificada";
-    return "Falta";
-  }
-  function edIsAbsence(x){
-    const t=String(x?.tipo||x?.status||"").toLowerCase();
-    return ["falta","justificada","injustificada","atestado","falta_justificada","falta_injustificada"].includes(t);
-  }
-
-  window.renderHistoricoFrequencia=function(){
-    if(typeof fillEquipeHistorySelectors==="function")fillEquipeHistorySelectors();
-    const box=document.getElementById("histFreqList"), resumo=document.getElementById("histFreqResumo");
-    if(!box)return;
-    const fid=document.getElementById("histFreqFunc")?.value||"", oid=document.getElementById("histFreqObra")?.value||"";
-    const ini=document.getElementById("histFreqInicio")?.value||"", fim=document.getElementById("histFreqFim")?.value||"";
-    const rows=[];
-    const push=(funcId,data,obraId,status,obs,source)=>{
-      const dt=String(data||""); const id=String(funcId||"");
-      if(!id||!dt)return;
-      if(ini&&dt<ini || fim&&dt>fim)return;
-      if(fid&&id!==String(fid))return;
-      if(oid&&String(obraId||"")!==String(oid))return;
-      rows.push({funcId:id,data:dt,obraId:obraId||"",status,obs:obs||"",source});
-    };
-    (D.diarias||[]).forEach(d=>push(d.funcionario_id??d.funcId??d.funcionarioId,d.data,d.obra_id,"trabalhou",d.observacao,"diaria"));
-    (D.presencas||[]).forEach(d=>{
-      const st=String(d.status||"presente").toLowerCase();
-      if(st==="presente"||st==="trabalhou")push(d.funcionario_id,d.data,d.obra_id,"trabalhou",d.observacao,"presenca");
-      else push(d.funcionario_id,d.data,d.obra_id,st,d.observacao,"presenca");
-    });
-    (D.faltas||[]).forEach(d=>push(d.funcionario_id??d.funcId??d.funcionarioId,d.data,d.obra_id??d.obraId,edAbsenceType(d).toLowerCase().includes("justificada")?"justificada":String(d.tipo||"falta").toLowerCase(),d.observacao,"falta"));
-    // Remove duplicatas: falta/ausência vence presença do mesmo funcionário/dia/obra.
-    const map=new Map();
-    const rank={falta:5,atestado:5,justificada:5,injustificada:5,trabalhou:2};
-    rows.forEach(r=>{
-      const key=r.funcId+"|"+r.data+"|"+String(r.obraId||"");
-      const old=map.get(key);
-      if(!old || (rank[r.status]||1)>(rank[old.status]||1))map.set(key,r);
-    });
-    const items=[...map.values()].sort((a,b)=>String(b.data).localeCompare(String(a.data))||String(a.funcId).localeCompare(String(b.funcId)));
-    const faltas=items.filter(x=>["falta","atestado","justificada","injustificada"].includes(x.status)).length;
-    const trabalhados=items.length-faltas;
-    if(resumo)resumo.innerHTML=`<div class="historyMetric"><small>Dias registrados</small><b>${items.length}</b></div><div class="historyMetric"><small>Dias trabalhados</small><b class="green">${trabalhados}</b></div><div class="historyMetric"><small>Faltas / afastamentos</small><b class="red">${faltas}</b></div>`;
-    if(!items.length){box.innerHTML='<div class="empty">Nenhum registro de frequência encontrado com os filtros selecionados.</div>';return;}
-    box.innerHTML=items.map(x=>{
-      const f=(D.funcionarios||[]).find(y=>String(y.id)===String(x.funcId)), o=(D.obras||[]).find(y=>String(y.id)===String(x.obraId));
-      const isA=["falta","atestado","justificada","injustificada"].includes(x.status);
-      const label=isA?edAbsenceType({tipo:x.status}):"Trabalhou";
-      return `<article class="historyCard"><div class="historyCardTop"><div class="historyAvatar">${isA?"⚠️":"✓"}</div><div class="historyIdentity"><b>${esc(f?.nome||"Funcionário")}</b><small>${esc(f?.funcao||"Função não informada")} · ${esc(o?.nome||"Obra não definida")}</small></div><span class="historyStatus ${isA?"pending":"paid"}">${label}</span></div><div class="historyDataGrid"><div><small>Dia</small><b>${esc(formatDateBR(x.data))}</b></div><div><small>Obra</small><b>${esc(o?.nome||"—")}</b></div><div><small>Função</small><b>${esc(f?.funcao||"—")}</b></div><div><small>Observação</small><b>${esc(x.obs||"—")}</b></div></div></article>`;
-    }).join("");
-  };
-
-  window.renderHistoricoDiariasPro=function(){
-    if(typeof fillEquipeHistorySelectors==="function")fillEquipeHistorySelectors();
-    const box=document.getElementById("histDiaList"), resumo=document.getElementById("histDiaResumo"); if(!box)return;
-    const fid=document.getElementById("histFunc2")?.value||"", ini=document.getElementById("histInicio2")?.value||"", fim=document.getElementById("histFim2")?.value||"";
-    const works=(D.diarias||[]).filter(d=>{
-      const id=String(d.funcionario_id??d.funcId??d.funcionarioId??"");
-      const dt=String(d.data||"");
-      return (!fid||id===String(fid))&&(!ini||dt>=ini)&&(!fim||dt<=fim);
-    }).map(d=>({kind:"diaria",data:d.data||"",funcId:d.funcionario_id??d.funcId??d.funcionarioId,obraId:d.obra_id,valor:diariaValor(d),pago:diariaEstaPaga(d),obs:d.observacao||""}));
-    const abs=(D.faltas||[]).filter(d=>{
-      const id=String(d.funcionario_id??d.funcId??d.funcionarioId??"");
-      const dt=String(d.data||"");
-      return (!fid||id===String(fid))&&(!ini||dt>=ini)&&(!fim||dt<=fim);
-    }).map(d=>({kind:"falta",data:d.data||"",funcId:d.funcionario_id??d.funcId??d.funcionarioId,obraId:d.obra_id??d.obraId,valor:0,pago:false,obs:d.observacao||"",status:d.tipo||"falta"}));
-    const items=[...works,...abs].sort((a,b)=>String(b.data).localeCompare(String(a.data)));
-    const total=works.reduce((a,d)=>a+d.valor,0), pag=works.filter(d=>d.pago).reduce((a,d)=>a+d.valor,0), pend=total-pag, faltas=abs.length;
-    if(resumo)resumo.innerHTML=`<div class="historyMetric"><small>Registros</small><b>${items.length}</b></div><div class="historyMetric"><small>Valor total</small><b>${money(total)}</b></div><div class="historyMetric"><small>Pendente</small><b class="gold">${money(pend)}</b></div><div class="historyMetric"><small>Faltas</small><b class="red">${faltas}</b></div>`;
-    if(!items.length){box.innerHTML='<div class="empty">Nenhuma diária ou falta encontrada com os filtros selecionados.</div>';return;}
-    box.innerHTML=items.map(d=>{
-      const f=(D.funcionarios||[]).find(x=>String(x.id)===String(d.funcId)), o=(D.obras||[]).find(x=>String(x.id)===String(d.obraId));
-      if(d.kind==="falta"){
-        return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar diary">⚠️</div><div class="historyIdentity"><b>${esc(f?.nome||"Funcionário")}</b><small>${esc(o?.nome||"Obra não definida")}</small></div><span class="historyStatus pending">${esc(edAbsenceType(d))}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data))}</b></div><div><small>Valor</small><b>R$ 0,00</b></div><div><small>Status</small><b>Não gera diária</b></div><div><small>Observação</small><b>${esc(d.obs||"—")}</b></div></div></article>`;
-      }
-      return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar diary">📅</div><div class="historyIdentity"><b>${esc(f?.nome||"Funcionário")}</b><small>${esc(o?.nome||"Obra não definida")}</small></div><span class="historyStatus ${d.pago?"paid":"pending"}">${d.pago?"Pago":"Pendente"}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data||""))}</b></div><div><small>Valor</small><b class="gold">${money(d.valor)}</b></div><div><small>Quantidade</small><b>1</b></div><div><small>Observação</small><b>${esc(d.obs||"—")}</b></div></div></article>`;
-    }).join("");
-  };
-
-  /* =========================
-     EXTRAS / BÔNUS: pesquisa por funcionário e obra
-     ========================= */
-  function edBuildExtraModal(initialFuncId="",initialObraId=""){
-    let m=document.getElementById("edExtraModal");
-    if(!m){
-      m=document.createElement("div"); m.id="edExtraModal"; m.className="modal";
-      m.innerHTML=`<div class="modalBox" style="max-width:680px">
-        <div class="modalHead"><div><h2>＋ Extras e Bônus</h2><p class="sub">Selecione pelo cadastro, usando a pesquisa de funcionário e obra.</p></div><button class="x" onclick="closeM('edExtraModal')">×</button></div>
-        <div class="formGrid">
-          <label class="full">Funcionário
-            <div class="edSearchField"><span>⌕</span><input id="edExtraFuncSearch" type="search" placeholder="Pesquisar funcionário..." autocomplete="off" list="edExtraFuncList"/><datalist id="edExtraFuncList"></datalist></div>
-            <input id="edExtraFuncId" type="hidden"/>
-            <div id="edExtraFuncResults" class="edSelectResults"></div>
-          </label>
-          <label class="full">Obra
-            <div class="edSearchField"><span>⌕</span><input id="edExtraObraSearch" type="search" placeholder="Pesquisar obra..." autocomplete="off" list="edExtraObraList"/><datalist id="edExtraObraList"></datalist></div>
-            <input id="edExtraObraId" type="hidden"/>
-            <div id="edExtraObraResults" class="edSelectResults"></div>
-          </label>
-          <label>Tipo<select id="edExtraTipo"><option value="Serviço extra">Serviço extra</option><option value="Bônus">Bônus</option><option value="Modificação">Modificação</option></select></label>
-          <label>Valor<input id="edExtraValor" inputmode="decimal" type="text" placeholder="R$ 0,00" autocomplete="off"/></label>
-          <label class="full">Descrição<textarea id="edExtraDescricao" placeholder="Descreva o serviço extra ou bônus..."></textarea></label>
-          <label>Data<input id="edExtraData" type="date"/></label>
-        </div>
-        <div class="formActions"><button class="btn" type="button" onclick="closeM('edExtraModal')">Cancelar</button><button class="btn primary" type="button" onclick="saveEdifiqExtra()">Salvar</button></div>
-      </div>`;
-      document.body.appendChild(m);
-      document.getElementById("edExtraFuncSearch").addEventListener("input",edRenderExtraPeople);
-      document.getElementById("edExtraObraSearch").addEventListener("input",edRenderExtraWorks);
-      document.getElementById("edExtraValor").addEventListener("input",function(){edifiqMaskMoney(this)});
-    }
-    const funcs=(D.funcionarios||[]).filter(f=>f.ativo!==false).sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||""),"pt-BR"));
-    const obras=(D.obras||[]).slice().sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||""),"pt-BR"));
-    document.getElementById("edExtraFuncSearch").value="";
-    document.getElementById("edExtraObraSearch").value="";
-    document.getElementById("edExtraFuncId").value=initialFuncId||"";
-    document.getElementById("edExtraObraId").value=initialObraId||"";
-    document.getElementById("edExtraTipo").value="Serviço extra";
-    document.getElementById("edExtraValor").value="";
-    document.getElementById("edExtraDescricao").value="";
-    document.getElementById("edExtraData").value=today();
-    document.getElementById("edExtraFuncList").innerHTML=funcs.map(f=>`<option value="${esc(f.nome||"")}"></option>`).join("");
-    document.getElementById("edExtraObraList").innerHTML=obras.map(o=>`<option value="${esc(o.nome||"")}"></option>`).join("");
-    edRenderExtraPeople();
-    edRenderExtraWorks();
-    if(initialFuncId){
-      const f=funcs.find(x=>String(x.id)===String(initialFuncId));
-      if(f){document.getElementById("edExtraFuncSearch").value=f.nome||"";}
-    }
-    if(initialObraId){
-      const o=obras.find(x=>String(x.id)===String(initialObraId));
-      if(o){document.getElementById("edExtraObraSearch").value=o.nome||"";}
-    }
-    edRenderExtraPeople(); edRenderExtraWorks();
-    openM("edExtraModal");
-  }
-  function edRenderExtraPeople(){
-    const q=String(document.getElementById("edExtraFuncSearch")?.value||"").toLowerCase();
-    const box=document.getElementById("edExtraFuncResults"); if(!box)return;
-    const rows=(D.funcionarios||[]).filter(f=>f.ativo!==false && (!q||String(f.nome||"").toLowerCase().includes(q))).slice(0,20);
-    box.innerHTML=rows.map(f=>`<button class="edResultBtn" type="button" onclick="edSelectExtraFunc('${String(f.id).replace(/'/g,"\\'")}')"><b>${esc(f.nome||"Funcionário")}</b><small style="display:block">${esc(f.funcao||"Função não informada")}</small></button>`).join("")||'<div class="empty">Nenhum funcionário encontrado.</div>';
-  }
-  function edRenderExtraWorks(){
-    const q=String(document.getElementById("edExtraObraSearch")?.value||"").toLowerCase();
-    const box=document.getElementById("edExtraObraResults"); if(!box)return;
-    const rows=(D.obras||[]).filter(o=>!q||String(o.nome||"").toLowerCase().includes(q)).slice(0,20);
-    box.innerHTML=rows.map(o=>`<button class="edResultBtn" type="button" onclick="edSelectExtraObra('${String(o.id).replace(/'/g,"\\'")}')"><b>${esc(o.nome||"Obra")}</b><small style="display:block">${esc(o.cliente||"")}</small></button>`).join("")||'<div class="empty">Nenhuma obra encontrada.</div>';
-  }
-  window.edSelectExtraFunc=function(id){
-    const f=(D.funcionarios||[]).find(x=>String(x.id)===String(id)); if(!f)return;
-    document.getElementById("edExtraFuncId").value=id;
-    document.getElementById("edExtraFuncSearch").value=f.nome||"";
-    edRenderExtraPeople();
-  };
-  window.edSelectExtraObra=function(id){
-    const o=(D.obras||[]).find(x=>String(x.id)===String(id)); if(!o)return;
-    document.getElementById("edExtraObraId").value=id;
-    document.getElementById("edExtraObraSearch").value=o.nome||"";
-    edRenderExtraWorks();
-  };
-  window.openExtraEquipe=async function(){edBuildExtraModal();};
-  window.openExtraObra=async function(obraId){edBuildExtraModal("",obraId);};
-  window.openExtraFuncionario=async function(funcId,fixedObraId=null){edBuildExtraModal(funcId,fixedObraId||"");};
-
-  window.saveEdifiqExtra=async function(){
-    try{
-      const funcionario_id=document.getElementById("edExtraFuncId")?.value||"";
-      const obra_id=document.getElementById("edExtraObraId")?.value||"";
-      const tipo=document.getElementById("edExtraTipo")?.value||"Serviço extra";
-      const valor=edMoneyNumber(document.getElementById("edExtraValor")?.value||0);
-      const descricao=document.getElementById("edExtraDescricao")?.value.trim()||"";
-      const data=document.getElementById("edExtraData")?.value||today();
-      const f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcionario_id));
-      const obra=(D.obras||[]).find(x=>String(x.id)===String(obra_id));
-      if(!f){toast("Selecione um funcionário pelo cadastro.");return;}
-      if(!obra){toast("Selecione uma obra pelo cadastro.");return;}
-      if(valor<=0){toast("Informe um valor válido.");return;}
-      if(!descricao){toast("Informe a descrição.");return;}
-      const id="sx_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
-      const item={id,funcionario_id:f.id,funcionarioId:f.id,obra_id:obra.id,obraId:obra.id,descricao,tipo,valor,data,status:"pendente",financeiroAplicado:true,folhaAplicado:false};
-      D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];
-      D.servicosExtras.push(item);
-      saveLocalData();
-      const result=await insertRow("gastos",{obra_id:obra.id,data,descricao:`[${tipo}] ${descricao} - ${f.nome}`,valor,fornecedor:f.nome,observacao:"Lançamento vinculado à folha de pagamento.",categoria:"Mão de obra",funcionario_id:f.id,servico_extra_id:id,status:"pendente"});
-      if(!result){
-        D.servicosExtras=D.servicosExtras.filter(x=>String(x.id)!==String(id));
-        saveLocalData();
-        toast("Não foi possível registrar o extra.");
-        return;
-      }
-      closeM("edExtraModal");
-      renderAll();
-      toast(`${tipo} de ${f.nome} registrado e incluído no fechamento da folha.`);
-    }catch(err){console.error("EDIFIQ extra",err);toast("Não foi possível registrar o extra.");}
-  };
-
-  /* =========================
-     ADIANTAMENTO: valor em R$
-     ========================= */
-  const oldOpenAdiantamento=window.openAdiantamento;
-  window.openAdiantamento=function(){
-    if(typeof oldOpenAdiantamento==="function")oldOpenAdiantamento();
-    const el=document.getElementById("adiantValor");
-    if(el){
-      el.type="text";
-      el.inputMode="decimal";
-      el.placeholder="R$ 0,00";
-      el.value="";
-      el.oninput=function(){edifiqMaskMoney(this)};
-    }
-  };
-  window.openAdiantamentoFuncionario=function(id){
-    window.openAdiantamento();
-    setTimeout(()=>{
-      const f=(D.funcionarios||[]).find(x=>String(x.id)===String(id));
-      if(f){
-        document.getElementById("adiantFunc").value=id;
-        document.getElementById("adiantObra").value=getFuncObra(id)||"";
-        document.getElementById("adiantValor").value=edMoneyInput(f.tipo_pagamento==="mensal"?f.salario_mensal:f.valor_diaria);
-      }
-    },50);
-  };
-  window.saveAdiantamento=async function(e){
-    e.preventDefault();
-    const obra_id=document.getElementById("adiantObra")?.value||"";
-    const funcionario_id=document.getElementById("adiantFunc")?.value||"";
-    const valor=edMoneyNumber(document.getElementById("adiantValor")?.value||0);
-    if(!obra_id){toast("Selecione a obra.");return;}
-    if(!funcionario_id){toast("Selecione o funcionário.");return;}
-    if(valor<=0){toast("Informe um valor válido.");return;}
-    const f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcionario_id));
-    const nome=f?.nome||"Funcionário";
-    const obs=document.getElementById("adiantObs")?.value.trim()||"";
-    const result=await insertRow("gastos",{obra_id,data:document.getElementById("adiantData")?.value||today(),descricao:`[Adiantamento] Adiantamento - ${nome}`,valor,fornecedor:nome,funcionario_id,status:"pendente",aplicado:false,observacao:obs,categoria:"Adiantamento"});
-    if(result){closeM("adiantM");toast(`Adiantamento de ${money(valor)} registrado.`);renderAll();}
-  };
-
-  /* =========================
-     FECHAMENTO: extras entram no bruto
-     ========================= */
-  const oldRenderFechamentoFolha=window.renderFechamentoFolha;
-  window.renderFechamentoFolha=function(){
-    if(typeof oldRenderFechamentoFolha==="function")oldRenderFechamentoFolha();
-    // A rotina principal já foi ajustada no código-base para somar extras.
-    // Esta chamada garante que os cards de Equipe sejam recalculados com os dados atuais.
-    try{ if(typeof renderEquipeOverview==="function" && document.getElementById("funcionarios")?.classList.contains("active")) renderEquipeOverview(); }catch(_){}
-  };
-
-  /* =========================
-     BAIXA: garantir baixa sem erro
-     ========================= */
-  const oldSavePagamentoEquipe=window.savePagamentoEquipe;
-  if(typeof oldSavePagamentoEquipe==="function"){
-    window.savePagamentoEquipe=async function(e){
-      try{
-        return await oldSavePagamentoEquipe(e);
-      }catch(err){
-        console.error("EDIFIQ baixa folha",err);
-        toast("Não foi possível concluir a baixa. Os registros pendentes foram preservados.");
-      }
-    };
-  }
-
-  /* =========================
-     AO ABRIR: restaurar tema + esconder relatório antigo
-     ========================= */
-  function edifiqFinalUI(){
-    restoreTheme();
-    const rep=document.getElementById("relatorios");
-    if(rep)rep.remove();
-    document.querySelectorAll('.edifiqMenuItem').forEach(b=>{
-      if((b.textContent||"").trim().toLowerCase()==="relatórios")b.remove();
-    });
-    const q=document.querySelector(".financeQuick");
-    if(q)q.remove();
-  }
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",edifiqFinalUI);
-  else edifiqFinalUI();
-
-})();
-</script>
-
 </body></html>`);
-
 win.document.close();
 
 win.document.close();
@@ -12120,6 +11407,716 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     try{window.speechSynthesis?.cancel()}catch(_){}
     closeM("diarioVozM");
   };
+})();
+</script>
+
+<style id="edifiq-fase3-producao-style">
+.edf3-wrap{margin-top:16px}
+.edf3-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.edf3-head h2{margin:0 0 4px}.edf3-head p{margin:0;color:var(--muted)}
+.edf3-actions{display:flex;gap:8px;flex-wrap:wrap}
+.edf3-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.edf3-kpi{padding:13px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.025)}
+.edf3-kpi small{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.edf3-kpi b{font-size:18px}
+.edf3-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}
+.edf3-filters input,.edf3-filters select{width:100%}
+.edf3-table{margin-top:14px;overflow:auto;border:1px solid rgba(255,255,255,.07);border-radius:12px}
+.edf3-table table{width:100%;border-collapse:collapse;min-width:760px}
+.edf3-table th,.edf3-table td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;font-size:12px}
+.edf3-table th{color:var(--muted);font-weight:600}
+.edf3-table tr:last-child td{border-bottom:0}
+.edf3-empty{padding:18px;text-align:center;color:var(--muted)}
+.edf3-tag{display:inline-flex;padding:3px 7px;border-radius:999px;background:rgba(212,175,55,.12);color:#e8c65a;font-size:11px}
+.edf3-modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
+.edf3-box{width:min(720px,100%);max-height:92vh;overflow:auto;background:#0d1014;border:1px solid rgba(255,255,255,.1);border-radius:16px;box-shadow:0 20px 70px rgba(0,0,0,.45)}
+.edf3-modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid rgba(255,255,255,.07)}
+.edf3-modal-head h2{margin:0}.edf3-form{padding:16px}
+.edf3-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.edf3-field{display:flex;flex-direction:column;gap:5px}.edf3-field.full{grid-column:1/-1}
+.edf3-field label{font-size:12px;color:var(--muted)}
+.edf3-field input,.edf3-field select,.edf3-field textarea{width:100%;box-sizing:border-box}
+.edf3-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.edf3-worker{padding:10px;border:1px solid rgba(255,255,255,.07);border-radius:10px;margin-top:10px;background:rgba(255,255,255,.02)}
+.edf3-worker-head{display:flex;justify-content:space-between;gap:10px}
+.edf3-bar{height:7px;border-radius:99px;background:#20252c;overflow:hidden;margin-top:7px}
+.edf3-bar i{display:block;height:100%;width:0;background:#d4af37}
+@media(max-width:850px){.edf3-kpis,.edf3-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.edf3-kpis,.edf3-filters,.edf3-grid{grid-template-columns:1fr}.edf3-field.full{grid-column:auto}}
+</style>
+
+<script id="edifiq-fase3-producao">
+(function(){
+  "use strict";
+
+  const F3_KEY="edifiq_producao_equipe_v1";
+
+  function f3N(v){const n=Number(v);return Number.isFinite(n)?n:0}
+  function f3Esc(v){
+    if(typeof esc==="function")return esc(String(v??""));
+    return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+  }
+  function f3Money(v){
+    try{if(typeof money==="function")return money(f3N(v));}catch(_){}
+    return f3N(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  }
+  function f3Today(){try{return typeof today==="function"?today():new Date().toISOString().slice(0,10)}catch(_){return new Date().toISOString().slice(0,10)}}
+  function f3Date(v){
+    if(!v)return "—";
+    const s=String(v).slice(0,10),p=s.split("-");
+    return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:String(v);
+  }
+  function f3Data(){
+    try{
+      const x=JSON.parse(localStorage.getItem(F3_KEY)||"[]");
+      return Array.isArray(x)?x:[];
+    }catch(_){return []}
+  }
+  function f3SetData(rows){
+    try{localStorage.setItem(F3_KEY,JSON.stringify(rows));}catch(e){console.warn("EDIFIQ Produção:",e)}
+    try{if(typeof D!=="undefined")D.producoesEquipe=rows.slice()}catch(_){}
+  }
+  function f3SyncData(){
+    try{
+      const rows=f3Data();
+      if(typeof D!=="undefined")D.producoesEquipe=rows.slice();
+      return rows;
+    }catch(_){return []}
+  }
+  function f3Obra(id){return (typeof D!=="undefined"&&D.obras||[]).find(o=>String(o.id)===String(id))}
+  function f3Func(id){return (typeof D!=="undefined"&&D.funcionarios||[]).find(f=>String(f.id)===String(id))}
+  function f3Check(id){return (typeof D!=="undefined"&&D.checklist||[]).find(c=>String(c.id)===String(id))}
+  function f3ObraIdForFunc(f){
+    try{
+      if(typeof getFuncObra==="function")return getFuncObra(f?.id)||f?.obra_id||f?.obraId||"";
+    }catch(_){}
+    return f?.obra_id??f?.obraId??"";
+  }
+
+  function f3Open(){
+    f3SyncData();
+    if(!document.getElementById("edf3Modal")){
+      const m=document.createElement("div");
+      m.id="edf3Modal";m.className="edf3-modal";m.style.display="none";
+      m.innerHTML=`
+        <div class="edf3-box">
+          <div class="edf3-modal-head">
+            <div><h2>🏗️ Registrar produção</h2><p class="sub">Registre a produção realizada por funcionário, obra e checklist.</p></div>
+            <button class="x" type="button" onclick="window.edifiqF3Close()">×</button>
+          </div>
+          <form class="edf3-form" id="edf3Form" onsubmit="return window.edifiqF3Save(event)">
+            <div class="edf3-grid">
+              <div class="edf3-field"><label>Funcionário *</label><select id="edf3Func" required></select></div>
+              <div class="edf3-field"><label>Data *</label><input id="edf3Data" type="date" required></div>
+              <div class="edf3-field"><label>Obra *</label><select id="edf3Obra" required></select></div>
+              <div class="edf3-field"><label>Checklist / serviço *</label><select id="edf3Check" required></select></div>
+              <div class="edf3-field"><label>Quantidade produzida</label><input id="edf3Qtd" type="number" min="0" step="0.01" placeholder="Ex.: 25"></div>
+              <div class="edf3-field"><label>Unidade</label><select id="edf3Un"><option value="m²">m²</option><option value="m">m</option><option value="un">un</option><option value="kg">kg</option><option value="h">h</option><option value="serviço">serviço</option><option value="outro">outro</option></select></div>
+              <div class="edf3-field"><label>Valor produzido (R$)</label><input id="edf3Valor" type="number" min="0" step="0.01" placeholder="Ex.: 1.250,00"></div>
+              <div class="edf3-field"><label>Observação</label><input id="edf3Obs" type="text" maxlength="300" placeholder="Ex.: execução de reboco da frente"></div>
+            </div>
+            <div class="note" style="margin-top:12px">O valor produzido é um indicador de produção da equipe. Ele <b>não lança despesa nem receita</b> e não altera a folha.</div>
+            <div class="edf3-modal-actions"><button class="btn" type="button" onclick="window.edifiqF3Close()">Cancelar</button><button class="btn gold" type="submit">Salvar produção</button></div>
+          </form>
+        </div>`;
+      document.body.appendChild(m);
+    }
+    const m=document.getElementById("edf3Modal");
+    m.style.display="flex";
+    const fs=document.getElementById("edf3Func"), os=document.getElementById("edf3Obra"), cs=document.getElementById("edf3Check");
+    const funcs=(typeof D!=="undefined"?D.funcionarios:[]).filter(f=>f.ativo!==false);
+    fs.innerHTML='<option value="">Selecione</option>'+funcs.map(f=>`<option value="${f3Esc(f.id)}">${f3Esc(f.nome||"Funcionário")}</option>`).join("");
+    os.innerHTML='<option value="">Selecione</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>`<option value="${f3Esc(o.id)}">${f3Esc(o.nome||"Obra")}</option>`).join("");
+    cs.innerHTML='<option value="">Selecione a obra primeiro</option>';
+    document.getElementById("edf3Data").value=f3Today();
+    document.getElementById("edf3Qtd").value="";
+    document.getElementById("edf3Valor").value="";
+    document.getElementById("edf3Obs").value="";
+    document.getElementById("edf3Un").value="m²";
+    fs.onchange=function(){
+      const f=f3Func(this.value); if(!f)return;
+      const oid=f3ObraIdForFunc(f); if(oid){os.value=oid;f3FillChecks(oid)}
+    };
+    os.onchange=function(){f3FillChecks(this.value)};
+  }
+  function f3FillChecks(obraId){
+    const cs=document.getElementById("edf3Check");if(!cs)return;
+    const arr=(typeof D!=="undefined"?D.checklist:[]).filter(c=>{
+      const oid=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
+      return String(oid)===String(obraId);
+    });
+    cs.innerHTML='<option value="">Selecione</option>'+arr.map(c=>`<option value="${f3Esc(c.id)}">${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>`).join("");
+    if(!arr.length)cs.innerHTML='<option value="">Nenhum checklist cadastrado nesta obra</option>';
+  }
+  function f3Close(){const m=document.getElementById("edf3Modal");if(m)m.style.display="none"}
+  async function f3Save(e){
+    e.preventDefault();
+    const funcionario_id=document.getElementById("edf3Func")?.value||"";
+    const obra_id=document.getElementById("edf3Obra")?.value||"";
+    const checklist_id=document.getElementById("edf3Check")?.value||"";
+    const data=document.getElementById("edf3Data")?.value||f3Today();
+    const quantidade=f3N(document.getElementById("edf3Qtd")?.value);
+    const valor=f3N(document.getElementById("edf3Valor")?.value);
+    const unidade=document.getElementById("edf3Un")?.value||"";
+    const observacao=document.getElementById("edf3Obs")?.value?.trim()||"";
+    if(!funcionario_id||!obra_id||!checklist_id){toast("Selecione funcionário, obra e checklist.");return false}
+    if(quantidade<=0&&valor<=0){toast("Informe a quantidade produzida ou o valor produzido.");return false}
+    const f=f3Func(funcionario_id),o=f3Obra(obra_id),c=f3Check(checklist_id);
+    const row={id:"prod_"+Date.now()+"_"+Math.random().toString(36).slice(2,8),funcionario_id,obra_id,checklist_id,data,quantidade,unidade,valor,observacao};
+    const rows=f3Data();rows.push(row);f3SetData(rows);f3Close();f3Render();toast(`Produção de ${f?.nome||"funcionário"} registrada.`);
+    return false;
+  }
+  function f3Delete(id){
+    if(!confirm("Excluir este registro de produção?"))return;
+    f3SetData(f3Data().filter(x=>String(x.id)!==String(id)));f3Render();toast("Registro de produção excluído.");
+  }
+
+  function f3RowsFiltered(){
+    const box=document.getElementById("edf3Card");if(!box)return [];
+    const ini=box.querySelector("#edf3Ini")?.value||"";
+    const fim=box.querySelector("#edf3Fim")?.value||"";
+    const fid=box.querySelector("#edf3FiltroFunc")?.value||"all";
+    const oid=box.querySelector("#edf3FiltroObra")?.value||"all";
+    const cid=box.querySelector("#edf3FiltroCheck")?.value||"all";
+    return f3Data().filter(x=>
+      (!ini||String(x.data)>=ini)&&(!fim||String(x.data)<=fim)&&
+      (fid==="all"||String(x.funcionario_id)===String(fid))&&
+      (oid==="all"||String(x.obra_id)===String(oid))&&
+      (cid==="all"||String(x.checklist_id)===String(cid))
+    );
+  }
+
+  function f3Render(){
+    const card=document.getElementById("edf3Card");if(!card)return;
+    f3SyncData();
+    const rows=f3RowsFiltered();
+    const total=f3N(rows.reduce((a,x)=>a+f3N(x.valor),0));
+    const qtd=rows.reduce((a,x)=>a+f3N(x.quantidade),0);
+    const funcs=new Set(rows.map(x=>String(x.funcionario_id))).size;
+    const dias=new Set(rows.map(x=>String(x.data)).filter(Boolean)).size;
+    card.querySelector("#edf3Total").textContent=f3Money(total);
+    card.querySelector("#edf3QtdTotal").textContent=qtd.toLocaleString("pt-BR",{maximumFractionDigits:2});
+    card.querySelector("#edf3FuncTotal").textContent=funcs;
+    card.querySelector("#edf3DiasTotal").textContent=dias;
+
+    const tbody=card.querySelector("#edf3Body");
+    if(!rows.length){tbody.innerHTML='<tr><td colspan="7" class="edf3-empty">Nenhuma produção registrada no período.</td></tr>'}
+    else{
+      tbody.innerHTML=rows.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).map(x=>{
+        const f=f3Func(x.funcionario_id),o=f3Obra(x.obra_id),c=f3Check(x.checklist_id);
+        return `<tr><td>${f3Date(x.data)}</td><td><b>${f3Esc(f?.nome||"—")}</b></td><td>${f3Esc(o?.nome||"—")}</td><td>${f3Esc(c?.tarefa||c?.descricao||"—")}</td><td>${x.quantidade?f3N(x.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:2})+" "+f3Esc(x.unidade||""):"—"}</td><td><b>${f3Money(x.valor)}</b></td><td><button class="btn danger" type="button" onclick="window.edifiqF3Delete('${f3Esc(x.id)}')">Excluir</button></td></tr>`;
+      }).join("");
+    }
+
+    const sumByFunc=new Map();
+    rows.forEach(x=>{const k=String(x.funcionario_id);const cur=sumByFunc.get(k)||{valor:0,qtd:0};cur.valor+=f3N(x.valor);cur.qtd+=f3N(x.quantidade);sumByFunc.set(k,cur)});
+    const rank=[...sumByFunc.entries()].sort((a,b)=>b[1].valor-a[1].valor).slice(0,8);
+    const max=rank[0]?.[1].valor||0;
+    card.querySelector("#edf3Ranking").innerHTML=rank.length?rank.map(([id,v])=>{
+      const f=f3Func(id),pct=max?Math.round(v.valor/max*100):0;
+      return `<div class="edf3-worker"><div class="edf3-worker-head"><span><b>${f3Esc(f?.nome||"Funcionário")}</b><small style="display:block;color:var(--muted)">${v.qtd.toLocaleString("pt-BR",{maximumFractionDigits:2})} unidades registradas</small></span><b>${f3Money(v.valor)}</b></div><div class="edf3-bar"><i style="width:${pct}%"></i></div></div>`;
+    }).join(""):'<div class="edf3-empty">Registre produções para acompanhar a equipe.</div>';
+
+    const cost=rows.reduce((a,x)=>{
+      return a+f3N((typeof D!=="undefined"?D.diarias:[]).filter(d=>String(d.funcionario_id)===String(x.funcionario_id)&&String(d.data)===String(x.data)).reduce((s,d)=>{
+        try{return s+(typeof diariaValor==="function"?diariaValor(d):f3N(d.valor_diaria)*(f3N(d.qtd??d.quantidade)||1))}catch(_){return s}
+      },0));
+    },0);
+    const prodPerCost=cost>0?total/cost:0;
+    const eff=card.querySelector("#edf3Ef");if(eff)eff.textContent=cost>0?f3Money(prodPerCost)+" produzidos / R$ 1,00 de diária":"—";
+  }
+
+  function f3BuildCard(){
+    if(document.getElementById("edf3Card"))return;
+    const page=document.getElementById("funcionarios");if(!page)return;
+    const host=page.querySelector(".equipeOverview");
+    if(!host)return;
+    const card=document.createElement("div");
+    card.id="edf3Card";card.className="card edf3-wrap";
+    card.innerHTML=`
+      <div class="edf3-head">
+        <div><h2>🏗️ Produção da Equipe</h2><p>Controle da produção realizada por funcionário, obra e checklist.</p></div>
+        <div class="edf3-actions"><button class="btn gold" type="button" onclick="window.edifiqF3Open()">＋ Registrar produção</button><button class="btn" type="button" onclick="window.edifiqF3Refresh()">↻ Atualizar</button></div>
+      </div>
+      <div class="edf3-kpis">
+        <div class="edf3-kpi"><small>VALOR PRODUZIDO</small><b id="edf3Total">R$ 0,00</b></div>
+        <div class="edf3-kpi"><small>QUANTIDADE</small><b id="edf3QtdTotal">0</b></div>
+        <div class="edf3-kpi"><small>FUNCIONÁRIOS COM PRODUÇÃO</small><b id="edf3FuncTotal">0</b></div>
+        <div class="edf3-kpi"><small>DIAS DE PRODUÇÃO</small><b id="edf3DiasTotal">0</b></div>
+      </div>
+      <div class="edf3-filters">
+        <input id="edf3Ini" type="date" title="Data inicial">
+        <input id="edf3Fim" type="date" title="Data final">
+        <select id="edf3FiltroFunc"><option value="all">Todos os funcionários</option></select>
+        <select id="edf3FiltroObra"><option value="all">Todas as obras</option></select>
+      </div>
+      <div class="edf3-filters" style="grid-template-columns:1fr">
+        <select id="edf3FiltroCheck"><option value="all">Todos os checklists</option></select>
+      </div>
+      <div class="note" style="margin-top:12px">Produtividade financeira no filtro atual: <b id="edf3Ef">—</b>. Este indicador compara produção registrada com o custo das diárias registradas nas mesmas datas.</div>
+      <div class="edf3-table">
+        <table><thead><tr><th>Data</th><th>Funcionário</th><th>Obra</th><th>Checklist</th><th>Quantidade</th><th>Valor produzido</th><th></th></tr></thead><tbody id="edf3Body"></tbody></table>
+      </div>
+      <div style="margin-top:14px"><h3>🏆 Produção por funcionário</h3><div id="edf3Ranking"></div></div>`;
+    host.after(card);
+
+    ["edf3Ini","edf3Fim","edf3FiltroFunc","edf3FiltroObra","edf3FiltroCheck"].forEach(id=>{
+      document.getElementById(id)?.addEventListener("change",()=>{
+        if(id==="edf3FiltroObra")f3FillFilterChecks();
+        f3Render();
+      });
+    });
+    const now=f3Today();
+    document.getElementById("edf3Ini").value=now.slice(0,8)+"01";
+    document.getElementById("edf3Fim").value=now;
+    f3FillFilters();
+  }
+  function f3FillFilters(){
+    const fs=document.getElementById("edf3FiltroFunc"),os=document.getElementById("edf3FiltroObra");
+    if(!fs||!os)return;
+    const fcur=fs.value, ocur=os.value;
+    fs.innerHTML='<option value="all">Todos os funcionários</option>'+(typeof D!=="undefined"?D.funcionarios:[]).map(f=>`<option value="${f3Esc(f.id)}">${f3Esc(f.nome||"Funcionário")}</option>`).join("");
+    os.innerHTML='<option value="all">Todas as obras</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>`<option value="${f3Esc(o.id)}">${f3Esc(o.nome||"Obra")}</option>`).join("");
+    if(fcur)fs.value=fcur;if(ocur)os.value=ocur;f3FillFilterChecks();
+  }
+  function f3FillFilterChecks(){
+    const el=document.getElementById("edf3FiltroCheck");if(!el)return;
+    const oid=document.getElementById("edf3FiltroObra")?.value||"all",cur=el.value;
+    const arr=(typeof D!=="undefined"?D.checklist:[]).filter(c=>{
+      const id=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
+      return oid==="all"||String(id)===String(oid);
+    });
+    el.innerHTML='<option value="all">Todos os checklists</option>'+arr.map(c=>`<option value="${f3Esc(c.id)}">${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>`).join("");
+    if(cur&&[...el.options].some(o=>o.value===cur))el.value=cur;
+  }
+
+  window.edifiqF3Open=f3Open;
+  window.edifiqF3Close=f3Close;
+  window.edifiqF3Save=f3Save;
+  window.edifiqF3Delete=f3Delete;
+  window.edifiqF3Render=f3Render;
+  window.edifiqF3Refresh=async function(){
+    const btn=document.querySelector('#edf3Card button[onclick*="edifiqF3Refresh"]');
+    if(btn){btn.disabled=true;btn.textContent='↻ Sincronizando...';}
+    try{
+      if(typeof sb!=="undefined"&&sb&&typeof user!=="undefined"&&user?.id&&navigator.onLine){await retryEdifiqPendingUpdates();await retryLocalCloudRows();await loadCloud();await sincronizarBaixasLocaisEquipe();await retryEdifiqPendingUpdates();await loadCloud();}
+      f3SyncData();f3FillFilters();f3Render();
+      toast(typeof sb!=="undefined"&&sb&&typeof user!=="undefined"&&user?.id&&navigator.onLine?'Produção atualizada e sincronizada.':'Produção atualizada neste aparelho.');
+    }catch(err){console.error('Atualizar produção da equipe:',err);f3SyncData();f3Render();toast('Não foi possível sincronizar a produção agora.');}
+    finally{if(btn){btn.disabled=false;btn.textContent='↻ Atualizar';}}
+  };
+
+  function f3Hook(){
+    f3SyncData();f3BuildCard();f3FillFilters();f3Render();
+  }
+  const oldGo=window.go;
+  if(typeof oldGo==="function"&&!oldGo.__edifiqF3){
+    const wrappedGo=function(page){
+      const r=oldGo.apply(this,arguments);
+      setTimeout(()=>{if(String(page)==="funcionarios")f3Hook()},80);
+      return r;
+    };
+    wrappedGo.__edifiqF3=true;window.go=wrappedGo;
+  }
+  const oldRenderFuncs=window.renderFuncs;
+  if(typeof oldRenderFuncs==="function"&&!oldRenderFuncs.__edifiqF3){
+    const wrappedRF=function(){const r=oldRenderFuncs.apply(this,arguments);setTimeout(f3Hook,0);return r};
+    wrappedRF.__edifiqF3=true;window.renderFuncs=wrappedRF;
+  }
+  document.addEventListener("DOMContentLoaded",()=>setTimeout(f3Hook,500));
+})();
+</script>
+
+
+<script id="edifiq-correcoes-03102026">
+(function(){
+  "use strict";
+
+  /* =========================
+     UTILITÁRIOS
+     ========================= */
+  function edMoneyNumber(v){
+    if(typeof v==="number") return Number.isFinite(v)?v:0;
+    if(v===null||v===undefined||v==="") return 0;
+    let x=String(v).trim().replace(/R\$/gi,"").replace(/\s/g,"");
+    if(x.includes(",")) x=x.replace(/\./g,"").replace(",",".");
+    const n=Number(x);
+    return Number.isFinite(n)?n:0;
+  }
+  function edMoneyInput(v){
+    const n=Math.max(0,edMoneyNumber(v));
+    return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  }
+  window.edifiqMaskMoney=function(input){
+    if(!input)return;
+    const digits=String(input.value||"").replace(/\D/g,"");
+    if(!digits){input.value="";return;}
+    input.value=(Number(digits)/100).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  };
+
+  /* =========================
+     TEMA: CLARO 100% / ESCURO 100%
+     ========================= */
+  window.setEdifiqTheme=function(mode){
+    const light=mode==="light";
+    document.body.classList.toggle("edLight",light);
+    document.documentElement.setAttribute("data-edifiq-theme",light?"light":"dark");
+    try{localStorage.setItem("edifiq_theme",light?"light":"dark")}catch(_){}
+    const b=document.getElementById("themeToggleBtn");
+    if(b){
+      b.textContent=light?"☀":"☾";
+      b.setAttribute("aria-label",light?"Ativar modo escuro":"Ativar modo claro");
+    }
+  };
+  window.toggleTheme=function(){
+    const light=!document.body.classList.contains("edLight");
+    setEdifiqTheme(light?"light":"dark");
+  };
+  window.restoreTheme=function(){
+    let mode="dark";
+    try{mode=localStorage.getItem("edifiq_theme")==="light"?"light":"dark"}catch(_){}
+    setEdifiqTheme(mode);
+  };
+
+  /* CSS fechado para impedir a mistura de temas. */
+  const style=document.createElement("style");
+  style.textContent=`
+    html[data-edifiq-theme="light"],html[data-edifiq-theme="light"] body{background:#f5f7fa!important;color:#18212f!important}
+    html[data-edifiq-theme="light"]{--bg:#f5f7fa;--panel:#ffffff;--panel2:#eef2f6;--text:#18212f;--muted:#68758a;--line:#d7dee8;--shadow:0 8px 24px rgba(25,40,60,.10)}
+    body.edLight input,body.edLight select,body.edLight textarea{background:#fff!important;color:#18212f!important;border-color:#d7dee8!important}
+    body.edLight .card,body.edLight .kpi,body.edLight .financeModernCard,body.edLight .financeModernPanel,body.edLight .rgHealth,body.edLight .rgMoneyCard,body.edLight .historyCard,body.edLight .folhaFuncionarioCard,body.edLight .pay-person{background:#fff!important;color:#18212f!important;border-color:#d7dee8!important}
+    body.edLight .modalBox,body.edLight .menuPasta,body.edLight .edifiqDrawer{background:#fff!important;color:#18212f!important;border-color:#d7dee8!important}
+    body.edLight .nav{background:#fff!important;border-top-color:#d7dee8!important}
+    body.edLight .top{background:rgba(255,255,255,.96)!important;border-bottom-color:#d7dee8!important}
+    body.edLight .sub,body.edLight small,body.edLight .muted{color:#68758a!important}
+    body:not(.edLight) input,body:not(.edLight) select,body:not(.edLight) textarea{background:#0c1014!important;color:#fff!important}
+    body:not(.edLight) .card,body:not(.edLight) .kpi,body:not(.edLight) .financeModernCard,body:not(.edLight) .financeModernPanel,body:not(.edLight) .rgHealth,body:not(.edLight) .rgMoneyCard,body:not(.edLight) .historyCard,body:not(.edLight) .folhaFuncionarioCard,body:not(.edLight) .pay-person{background:#11151a!important;color:#f5f5f5!important}
+    body:not(.edLight) .modalBox,body:not(.edLight) .menuPasta,body:not(.edLight) .edifiqDrawer{background:#0f141a!important;color:#f5f5f5!important}
+    .edSearchField{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+    .edSearchField span{font-size:18px}
+    .edSearchField input{border:0!important;background:transparent!important;padding:6px!important;min-height:40px}
+    .edSelectResults{display:grid;gap:6px;margin-top:8px;max-height:180px;overflow:auto}
+    .edResultBtn{width:100%;text-align:left;padding:10px 12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px}
+    .edResultBtn:hover{border-color:var(--gold)}
+    .edExtraSummary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .edExtraSummary>div{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--panel2)}
+    @media(max-width:759px){.edExtraSummary{grid-template-columns:1fr}.edExtraSummary>div{padding:8px}}
+  `;
+  document.head.appendChild(style);
+
+  /* =========================
+     BACKUP — somente backup/importação/exportação
+     ========================= */
+  window.openBackupConfig=function(){
+    let m=document.getElementById("edBackupConfigModal");
+    if(!m){
+      m=document.createElement("div");
+      m.id="edBackupConfigModal";
+      m.className="modal open";
+      m.innerHTML=`<div class="modalBox" style="max-width:760px;max-height:90vh;overflow:auto">
+        <div class="modalHead"><div><h2>💾 Backup</h2><p class="sub">Backup, importação e exportação dos dados do EDIFIQ.</p></div><button class="x" onclick="closeM('edBackupConfigModal')">×</button></div>
+        <div class="card"><h3>Proteção dos dados</h3><p class="sub">Faça uma cópia completa antes de apagar ou alterar muitos registros.</p>
+          <div class="listActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar dados</button></div>
+          <input id="backupImportFile" accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importRelatorioData(event)" style="display:none" type="file"/>
+        </div>
+        <div class="card"><h3>Exportar dados e relatórios</h3><div class="reportGrid">
+          <button class="btn reportAction" onclick="exportPDF()"><b>📄 Exportar PDF</b><small>Relatório completo.</small></button>
+          <button class="btn reportAction" onclick="exportExcel()"><b>📊 Exportar Excel</b><small>Obras, equipe, diárias, financeiro e checklist.</small></button>
+          <button class="btn reportAction" onclick="exportCSVAll()"><b>📁 Exportar CSV</b><small>Dados para planilhas.</small></button>
+          <button class="btn reportAction" onclick="exportFull()"><b>🗂️ Exportar JSON</b><small>Backup completo para recuperação.</small></button>
+        </div></div>
+        <div class="note">Os dados de backup e a importação ficam centralizados aqui. As opções de apagar dados estão em Configurações.</div>
+      </div>`;
+      document.body.appendChild(m);
+    }else{
+      m.classList.add("open");
+    }
+  };
+
+  /* =========================
+     FALTAS: frequência + histórico de diárias
+     ========================= */
+  function edAbsenceType(x){
+    const t=String(x?.tipo||x?.status||"falta").toLowerCase();
+    if(t==="atestado")return "Atestado";
+    if(t==="justificada"||t==="falta_justificada")return "Falta justificada";
+    if(t==="injustificada"||t==="falta_injustificada")return "Falta injustificada";
+    return "Falta";
+  }
+  function edIsAbsence(x){
+    const t=String(x?.tipo||x?.status||"").toLowerCase();
+    return ["falta","justificada","injustificada","atestado","falta_justificada","falta_injustificada"].includes(t);
+  }
+
+  window.renderHistoricoFrequencia=function(){
+    if(typeof fillEquipeHistorySelectors==="function")fillEquipeHistorySelectors();
+    const box=document.getElementById("histFreqList"), resumo=document.getElementById("histFreqResumo");
+    if(!box)return;
+    const fid=document.getElementById("histFreqFunc")?.value||"", oid=document.getElementById("histFreqObra")?.value||"";
+    const ini=document.getElementById("histFreqInicio")?.value||"", fim=document.getElementById("histFreqFim")?.value||"";
+    const rows=[];
+    const push=(funcId,data,obraId,status,obs,source)=>{
+      const dt=String(data||""); const id=String(funcId||"");
+      if(!id||!dt)return;
+      if(ini&&dt<ini || fim&&dt>fim)return;
+      if(fid&&id!==String(fid))return;
+      if(oid&&String(obraId||"")!==String(oid))return;
+      rows.push({funcId:id,data:dt,obraId:obraId||"",status,obs:obs||"",source});
+    };
+    (D.diarias||[]).forEach(d=>push(d.funcionario_id??d.funcId??d.funcionarioId,d.data,d.obra_id,"trabalhou",d.observacao,"diaria"));
+    (D.presencas||[]).forEach(d=>{
+      const st=String(d.status||"presente").toLowerCase();
+      if(st==="presente"||st==="trabalhou")push(d.funcionario_id,d.data,d.obra_id,"trabalhou",d.observacao,"presenca");
+      else push(d.funcionario_id,d.data,d.obra_id,st,d.observacao,"presenca");
+    });
+    (D.faltas||[]).forEach(d=>push(d.funcionario_id??d.funcId??d.funcionarioId,d.data,d.obra_id??d.obraId,edAbsenceType(d).toLowerCase().includes("justificada")?"justificada":String(d.tipo||"falta").toLowerCase(),d.observacao,"falta"));
+    // Remove duplicatas: falta/ausência vence presença do mesmo funcionário/dia/obra.
+    const map=new Map();
+    const rank={falta:5,atestado:5,justificada:5,injustificada:5,trabalhou:2};
+    rows.forEach(r=>{
+      const key=r.funcId+"|"+r.data+"|"+String(r.obraId||"");
+      const old=map.get(key);
+      if(!old || (rank[r.status]||1)>(rank[old.status]||1))map.set(key,r);
+    });
+    const items=[...map.values()].sort((a,b)=>String(b.data).localeCompare(String(a.data))||String(a.funcId).localeCompare(String(b.funcId)));
+    const faltas=items.filter(x=>["falta","atestado","justificada","injustificada"].includes(x.status)).length;
+    const trabalhados=items.length-faltas;
+    if(resumo)resumo.innerHTML=`<div class="historyMetric"><small>Dias registrados</small><b>${items.length}</b></div><div class="historyMetric"><small>Dias trabalhados</small><b class="green">${trabalhados}</b></div><div class="historyMetric"><small>Faltas / afastamentos</small><b class="red">${faltas}</b></div>`;
+    if(!items.length){box.innerHTML='<div class="empty">Nenhum registro de frequência encontrado com os filtros selecionados.</div>';return;}
+    box.innerHTML=items.map(x=>{
+      const f=(D.funcionarios||[]).find(y=>String(y.id)===String(x.funcId)), o=(D.obras||[]).find(y=>String(y.id)===String(x.obraId));
+      const isA=["falta","atestado","justificada","injustificada"].includes(x.status);
+      const label=isA?edAbsenceType({tipo:x.status}):"Trabalhou";
+      return `<article class="historyCard"><div class="historyCardTop"><div class="historyAvatar">${isA?"⚠️":"✓"}</div><div class="historyIdentity"><b>${esc(f?.nome||"Funcionário")}</b><small>${esc(f?.funcao||"Função não informada")} · ${esc(o?.nome||"Obra não definida")}</small></div><span class="historyStatus ${isA?"pending":"paid"}">${label}</span></div><div class="historyDataGrid"><div><small>Dia</small><b>${esc(formatDateBR(x.data))}</b></div><div><small>Obra</small><b>${esc(o?.nome||"—")}</b></div><div><small>Função</small><b>${esc(f?.funcao||"—")}</b></div><div><small>Observação</small><b>${esc(x.obs||"—")}</b></div></div></article>`;
+    }).join("");
+  };
+
+  window.renderHistoricoDiariasPro=function(){
+    if(typeof fillEquipeHistorySelectors==="function")fillEquipeHistorySelectors();
+    const box=document.getElementById("histDiaList"), resumo=document.getElementById("histDiaResumo"); if(!box)return;
+    const fid=document.getElementById("histFunc2")?.value||"", ini=document.getElementById("histInicio2")?.value||"", fim=document.getElementById("histFim2")?.value||"";
+    const works=(D.diarias||[]).filter(d=>{
+      const id=String(d.funcionario_id??d.funcId??d.funcionarioId??"");
+      const dt=String(d.data||"");
+      return (!fid||id===String(fid))&&(!ini||dt>=ini)&&(!fim||dt<=fim);
+    }).map(d=>({kind:"diaria",data:d.data||"",funcId:d.funcionario_id??d.funcId??d.funcionarioId,obraId:d.obra_id,valor:diariaValor(d),pago:diariaEstaPaga(d),obs:d.observacao||""}));
+    const abs=(D.faltas||[]).filter(d=>{
+      const id=String(d.funcionario_id??d.funcId??d.funcionarioId??"");
+      const dt=String(d.data||"");
+      return (!fid||id===String(fid))&&(!ini||dt>=ini)&&(!fim||dt<=fim);
+    }).map(d=>({kind:"falta",data:d.data||"",funcId:d.funcionario_id??d.funcId??d.funcionarioId,obraId:d.obra_id??d.obraId,valor:0,pago:false,obs:d.observacao||"",status:d.tipo||"falta"}));
+    const items=[...works,...abs].sort((a,b)=>String(b.data).localeCompare(String(a.data)));
+    const total=works.reduce((a,d)=>a+d.valor,0), pag=works.filter(d=>d.pago).reduce((a,d)=>a+d.valor,0), pend=total-pag, faltas=abs.length;
+    if(resumo)resumo.innerHTML=`<div class="historyMetric"><small>Registros</small><b>${items.length}</b></div><div class="historyMetric"><small>Valor total</small><b>${money(total)}</b></div><div class="historyMetric"><small>Pendente</small><b class="gold">${money(pend)}</b></div><div class="historyMetric"><small>Faltas</small><b class="red">${faltas}</b></div>`;
+    if(!items.length){box.innerHTML='<div class="empty">Nenhuma diária ou falta encontrada com os filtros selecionados.</div>';return;}
+    box.innerHTML=items.map(d=>{
+      const f=(D.funcionarios||[]).find(x=>String(x.id)===String(d.funcId)), o=(D.obras||[]).find(x=>String(x.id)===String(d.obraId));
+      if(d.kind==="falta"){
+        return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar diary">⚠️</div><div class="historyIdentity"><b>${esc(f?.nome||"Funcionário")}</b><small>${esc(o?.nome||"Obra não definida")}</small></div><span class="historyStatus pending">${esc(edAbsenceType(d))}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data))}</b></div><div><small>Valor</small><b>R$ 0,00</b></div><div><small>Status</small><b>Não gera diária</b></div><div><small>Observação</small><b>${esc(d.obs||"—")}</b></div></div></article>`;
+      }
+      return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar diary">📅</div><div class="historyIdentity"><b>${esc(f?.nome||"Funcionário")}</b><small>${esc(o?.nome||"Obra não definida")}</small></div><span class="historyStatus ${d.pago?"paid":"pending"}">${d.pago?"Pago":"Pendente"}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data||""))}</b></div><div><small>Valor</small><b class="gold">${money(d.valor)}</b></div><div><small>Quantidade</small><b>1</b></div><div><small>Observação</small><b>${esc(d.obs||"—")}</b></div></div></article>`;
+    }).join("");
+  };
+
+  /* =========================
+     EXTRAS / BÔNUS: pesquisa por funcionário e obra
+     ========================= */
+  function edBuildExtraModal(initialFuncId="",initialObraId=""){
+    let m=document.getElementById("edExtraModal");
+    if(!m){
+      m=document.createElement("div"); m.id="edExtraModal"; m.className="modal";
+      m.innerHTML=`<div class="modalBox" style="max-width:680px">
+        <div class="modalHead"><div><h2>＋ Extras e Bônus</h2><p class="sub">Selecione pelo cadastro, usando a pesquisa de funcionário e obra.</p></div><button class="x" onclick="closeM('edExtraModal')">×</button></div>
+        <div class="formGrid">
+          <label class="full">Funcionário
+            <div class="edSearchField"><span>⌕</span><input id="edExtraFuncSearch" type="search" placeholder="Pesquisar funcionário..." autocomplete="off" list="edExtraFuncList"/><datalist id="edExtraFuncList"></datalist></div>
+            <input id="edExtraFuncId" type="hidden"/>
+            <div id="edExtraFuncResults" class="edSelectResults"></div>
+          </label>
+          <label class="full">Obra
+            <div class="edSearchField"><span>⌕</span><input id="edExtraObraSearch" type="search" placeholder="Pesquisar obra..." autocomplete="off" list="edExtraObraList"/><datalist id="edExtraObraList"></datalist></div>
+            <input id="edExtraObraId" type="hidden"/>
+            <div id="edExtraObraResults" class="edSelectResults"></div>
+          </label>
+          <label>Tipo<select id="edExtraTipo"><option value="Serviço extra">Serviço extra</option><option value="Bônus">Bônus</option><option value="Modificação">Modificação</option></select></label>
+          <label>Valor<input id="edExtraValor" inputmode="decimal" type="text" placeholder="R$ 0,00" autocomplete="off"/></label>
+          <label class="full">Descrição<textarea id="edExtraDescricao" placeholder="Descreva o serviço extra ou bônus..."></textarea></label>
+          <label>Data<input id="edExtraData" type="date"/></label>
+        </div>
+        <div class="formActions"><button class="btn" type="button" onclick="closeM('edExtraModal')">Cancelar</button><button class="btn primary" type="button" onclick="saveEdifiqExtra()">Salvar</button></div>
+      </div>`;
+      document.body.appendChild(m);
+      document.getElementById("edExtraFuncSearch").addEventListener("input",edRenderExtraPeople);
+      document.getElementById("edExtraObraSearch").addEventListener("input",edRenderExtraWorks);
+      document.getElementById("edExtraValor").addEventListener("input",function(){edifiqMaskMoney(this)});
+    }
+    const funcs=(D.funcionarios||[]).filter(f=>f.ativo!==false).sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||""),"pt-BR"));
+    const obras=(D.obras||[]).slice().sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||""),"pt-BR"));
+    document.getElementById("edExtraFuncSearch").value="";
+    document.getElementById("edExtraObraSearch").value="";
+    document.getElementById("edExtraFuncId").value=initialFuncId||"";
+    document.getElementById("edExtraObraId").value=initialObraId||"";
+    document.getElementById("edExtraTipo").value="Serviço extra";
+    document.getElementById("edExtraValor").value="";
+    document.getElementById("edExtraDescricao").value="";
+    document.getElementById("edExtraData").value=today();
+    document.getElementById("edExtraFuncList").innerHTML=funcs.map(f=>`<option value="${esc(f.nome||"")}"></option>`).join("");
+    document.getElementById("edExtraObraList").innerHTML=obras.map(o=>`<option value="${esc(o.nome||"")}"></option>`).join("");
+    edRenderExtraPeople();
+    edRenderExtraWorks();
+    if(initialFuncId){
+      const f=funcs.find(x=>String(x.id)===String(initialFuncId));
+      if(f){document.getElementById("edExtraFuncSearch").value=f.nome||"";}
+    }
+    if(initialObraId){
+      const o=obras.find(x=>String(x.id)===String(initialObraId));
+      if(o){document.getElementById("edExtraObraSearch").value=o.nome||"";}
+    }
+    edRenderExtraPeople(); edRenderExtraWorks();
+    openM("edExtraModal");
+  }
+  function edRenderExtraPeople(){
+    const q=String(document.getElementById("edExtraFuncSearch")?.value||"").toLowerCase();
+    const box=document.getElementById("edExtraFuncResults"); if(!box)return;
+    const rows=(D.funcionarios||[]).filter(f=>f.ativo!==false && (!q||String(f.nome||"").toLowerCase().includes(q))).slice(0,20);
+    box.innerHTML=rows.map(f=>`<button class="edResultBtn" type="button" onclick="edSelectExtraFunc('${String(f.id).replace(/'/g,"\\'")}')"><b>${esc(f.nome||"Funcionário")}</b><small style="display:block">${esc(f.funcao||"Função não informada")}</small></button>`).join("")||'<div class="empty">Nenhum funcionário encontrado.</div>';
+  }
+  function edRenderExtraWorks(){
+    const q=String(document.getElementById("edExtraObraSearch")?.value||"").toLowerCase();
+    const box=document.getElementById("edExtraObraResults"); if(!box)return;
+    const rows=(D.obras||[]).filter(o=>!q||String(o.nome||"").toLowerCase().includes(q)).slice(0,20);
+    box.innerHTML=rows.map(o=>`<button class="edResultBtn" type="button" onclick="edSelectExtraObra('${String(o.id).replace(/'/g,"\\'")}')"><b>${esc(o.nome||"Obra")}</b><small style="display:block">${esc(o.cliente||"")}</small></button>`).join("")||'<div class="empty">Nenhuma obra encontrada.</div>';
+  }
+  window.edSelectExtraFunc=function(id){
+    const f=(D.funcionarios||[]).find(x=>String(x.id)===String(id)); if(!f)return;
+    document.getElementById("edExtraFuncId").value=id;
+    document.getElementById("edExtraFuncSearch").value=f.nome||"";
+    edRenderExtraPeople();
+  };
+  window.edSelectExtraObra=function(id){
+    const o=(D.obras||[]).find(x=>String(x.id)===String(id)); if(!o)return;
+    document.getElementById("edExtraObraId").value=id;
+    document.getElementById("edExtraObraSearch").value=o.nome||"";
+    edRenderExtraWorks();
+  };
+  window.openExtraEquipe=async function(){edBuildExtraModal();};
+  window.openExtraObra=async function(obraId){edBuildExtraModal("",obraId);};
+  window.openExtraFuncionario=async function(funcId,fixedObraId=null){edBuildExtraModal(funcId,fixedObraId||"");};
+
+  window.saveEdifiqExtra=async function(){
+    try{
+      const funcionario_id=document.getElementById("edExtraFuncId")?.value||"";
+      const obra_id=document.getElementById("edExtraObraId")?.value||"";
+      const tipo=document.getElementById("edExtraTipo")?.value||"Serviço extra";
+      const valor=edMoneyNumber(document.getElementById("edExtraValor")?.value||0);
+      const descricao=document.getElementById("edExtraDescricao")?.value.trim()||"";
+      const data=document.getElementById("edExtraData")?.value||today();
+      const f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcionario_id));
+      const obra=(D.obras||[]).find(x=>String(x.id)===String(obra_id));
+      if(!f){toast("Selecione um funcionário pelo cadastro.");return;}
+      if(!obra){toast("Selecione uma obra pelo cadastro.");return;}
+      if(valor<=0){toast("Informe um valor válido.");return;}
+      if(!descricao){toast("Informe a descrição.");return;}
+      const id="sx_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
+      const item={id,funcionario_id:f.id,funcionarioId:f.id,obra_id:obra.id,obraId:obra.id,descricao,tipo,valor,data,status:"pendente",financeiroAplicado:true,folhaAplicado:false};
+      D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];
+      D.servicosExtras.push(item);
+      saveLocalData();
+      const result=await insertRow("gastos",{obra_id:obra.id,data,descricao:`[${tipo}] ${descricao} - ${f.nome}`,valor,fornecedor:f.nome,observacao:"Lançamento vinculado à folha de pagamento.",categoria:"Mão de obra",funcionario_id:f.id,servico_extra_id:id,status:"pendente"});
+      if(!result){
+        D.servicosExtras=D.servicosExtras.filter(x=>String(x.id)!==String(id));
+        saveLocalData();
+        toast("Não foi possível registrar o extra.");
+        return;
+      }
+      closeM("edExtraModal");
+      renderAll();
+      toast(`${tipo} de ${f.nome} registrado e incluído no fechamento da folha.`);
+    }catch(err){console.error("EDIFIQ extra",err);toast("Não foi possível registrar o extra.");}
+  };
+
+  /* =========================
+     ADIANTAMENTO: valor em R$
+     ========================= */
+  const oldOpenAdiantamento=window.openAdiantamento;
+  window.openAdiantamento=function(){
+    if(typeof oldOpenAdiantamento==="function")oldOpenAdiantamento();
+    const el=document.getElementById("adiantValor");
+    if(el){
+      el.type="text";
+      el.inputMode="decimal";
+      el.placeholder="R$ 0,00";
+      el.value="";
+      el.oninput=function(){edifiqMaskMoney(this)};
+    }
+  };
+  window.openAdiantamentoFuncionario=function(id){
+    window.openAdiantamento();
+    setTimeout(()=>{
+      const f=(D.funcionarios||[]).find(x=>String(x.id)===String(id));
+      if(f){
+        document.getElementById("adiantFunc").value=id;
+        document.getElementById("adiantObra").value=getFuncObra(id)||"";
+        document.getElementById("adiantValor").value=edMoneyInput(f.tipo_pagamento==="mensal"?f.salario_mensal:f.valor_diaria);
+      }
+    },50);
+  };
+  window.saveAdiantamento=async function(e){
+    e.preventDefault();
+    const obra_id=document.getElementById("adiantObra")?.value||"";
+    const funcionario_id=document.getElementById("adiantFunc")?.value||"";
+    const valor=edMoneyNumber(document.getElementById("adiantValor")?.value||0);
+    if(!obra_id){toast("Selecione a obra.");return;}
+    if(!funcionario_id){toast("Selecione o funcionário.");return;}
+    if(valor<=0){toast("Informe um valor válido.");return;}
+    const f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcionario_id));
+    const nome=f?.nome||"Funcionário";
+    const obs=document.getElementById("adiantObs")?.value.trim()||"";
+    const result=await insertRow("gastos",{obra_id,data:document.getElementById("adiantData")?.value||today(),descricao:`[Adiantamento] Adiantamento - ${nome}`,valor,fornecedor:nome,funcionario_id,status:"pendente",aplicado:false,observacao:obs,categoria:"Adiantamento"});
+    if(result){closeM("adiantM");toast(`Adiantamento de ${money(valor)} registrado.`);renderAll();}
+  };
+
+  /* =========================
+     FECHAMENTO: extras entram no bruto
+     ========================= */
+  const oldRenderFechamentoFolha=window.renderFechamentoFolha;
+  window.renderFechamentoFolha=function(){
+    if(typeof oldRenderFechamentoFolha==="function")oldRenderFechamentoFolha();
+    // A rotina principal já foi ajustada no código-base para somar extras.
+    // Esta chamada garante que os cards de Equipe sejam recalculados com os dados atuais.
+    try{ if(typeof renderEquipeOverview==="function" && document.getElementById("funcionarios")?.classList.contains("active")) renderEquipeOverview(); }catch(_){}
+  };
+
+  /* =========================
+     BAIXA: garantir baixa sem erro
+     ========================= */
+  const oldSavePagamentoEquipe=window.savePagamentoEquipe;
+  if(typeof oldSavePagamentoEquipe==="function"){
+    window.savePagamentoEquipe=async function(e){
+      try{
+        return await oldSavePagamentoEquipe(e);
+      }catch(err){
+        console.error("EDIFIQ baixa folha",err);
+        toast("Não foi possível concluir a baixa. Os registros pendentes foram preservados.");
+      }
+    };
+  }
+
+  /* =========================
+     AO ABRIR: restaurar tema + esconder relatório antigo
+     ========================= */
+  function edifiqFinalUI(){
+    restoreTheme();
+    const rep=document.getElementById("relatorios");
+    if(rep)rep.remove();
+    document.querySelectorAll('.edifiqMenuItem').forEach(b=>{
+      if((b.textContent||"").trim().toLowerCase()==="relatórios")b.remove();
+    });
+    const q=document.querySelector(".financeQuick");
+    if(q)q.remove();
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",edifiqFinalUI);
+  else edifiqFinalUI();
+
 })();
 </script>
 <div class="modal" id="diarioVozM" aria-hidden="true">
