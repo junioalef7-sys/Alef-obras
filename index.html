@@ -12136,7 +12136,141 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     const paymentRows=x.ps.slice().sort((a,b)=>String(b.data||"").localeCompare(String(a.data||""))).map(z=>`<tr><td>${dateP(z.data)}</td><td>${escP(z.descricao||"Recebimento")}</td><td>${moneyP(z.valor)}</td></tr>`).join("");
     const photoHtml=photos.length?photos.map(f=>`<figure><img src="${escP(f.src)}"><figcaption>${escP(f.titulo||"Registro fotográfico")} ${f.data?"— "+escP(f.data):""}${f.observacao?"<br>"+escP(f.observacao):""}</figcaption></figure>`).join(""):'<p>Nenhuma foto registrada para esta obra.</p>';
     const report=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EDIFIQ — Relatório da Obra — ${escP(o.nome||"Obra")}</title><style>
-      @page{size:A4;margin:15mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#222;margin:0;font-size:11px;line-height:1.45}h1{font-size:24px;margin:0 0 4px}h2{font-size:16px;margin:22px 0 8px;border-bottom:2px solid #d9ad55;padding-bottom:5px}h3{font-size:13px;margin:14px 0 6px}.head{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #d9ad55;padding-bottom:12px}.muted{color:#666}.status{font-weight:bold;padding:5px 9px;border:1px solid #ccc;border-radius:20px;display:inline-block}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.kpi{border:1px solid #ddd;border-radius:8px;padding:9px}.kpi small{display:block;color:#666}.kpi b{font-size:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.box{border:1px solid #ddd;border-radius:8px;padding:10px}.row{display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:5px 0}.row:last-child{border-bottom:0}table{width:100%;border-collapse:collapse;margin-top:6px}th,td{border-bottom:1px solid #ddd;padding:6px 5px;text-align:left;vertical-align:top}th{background:#f5f5f5}.right{text-align:right}.photoGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.photoGrid figure{margin:0;break-inside:avoid}.photoGrid img{width:100%;height:170px;object-fit:cover;border-radius:6px}.photoGrid figcaption{font-size:9px;color:#555;margin-top:3px}.foot{margin-top:28px;color:#777;font-size:9px;border-top:1px solid #ddd;padding-top:8px}@media print{.noPrint{display:none}.pageBreak{page-break-before:always}}</style></head><body>
+      @page{size:A4;margin:15mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#222;margin:0;font-size:11px;line-height:1.45}h1{font-size:24px;margin:0 0 4px}h2{font-size:16px;margin:22px 0 8px;border-bottom:2px solid #d9ad55;padding-bottom:5px}h3{font-size:13px;margin:14px 0 6px}.head{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #d9ad55;padding-bottom:12px}.muted{color:#666}.status{font-weight:bold;padding:5px 9px;border:1px solid #ccc;border-radius:20px;display:inline-block}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.kpi{border:1px solid #ddd;border-radius:8px;padding:9px}.kpi small{display:block;color:#666}.kpi b{font-size:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.box{border:1px solid #ddd;border-radius:8px;padding:10px}.row{display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:5px 0}.row:last-child{border-bottom:0}table{width:100%;border-collapse:collapse;margin-top:6px}th,td{border-bottom:1px solid #ddd;padding:6px 5px;text-align:left;vertical-align:top}th{background:#f5f5f5}.right{text-align:right}.photoGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.photoGrid figure{margin:0;break-inside:avoid}.photoGrid img{width:100%;height:170px;object-fit:cover;border-radius:6px}.photoGrid figcaption{font-size:9px;color:#555;margin-top:3px}.foot{margin-top:28px;color:#777;font-size:9px;border-top:1px solid #ddd;padding-top:8px}@media print{.noPrint{display:none}.pageBreak{page-break-before:always}}</style>
+<style id="edifiq-mobile-menu-portal-professional">
+/* EDIFIQ — ajuste profissional do menu e Portal da Obra no celular */
+@media (max-width:759px){
+  /* Menu lateral: respeita a área segura do iPhone e evita cortar logo/nome no topo */
+  .edifiqDrawer{
+    width:min(92vw,420px)!important;
+    max-width:420px!important;
+    padding:0!important;
+    overflow:hidden!important;
+  }
+  .edifiqDrawerHead{
+    height:auto!important;
+    min-height:calc(116px + env(safe-area-inset-top,0px))!important;
+    padding:calc(18px + env(safe-area-inset-top,0px)) 16px 16px!important;
+    gap:10px!important;
+    align-items:center!important;
+  }
+  .edifiqBrandDrawer{
+    min-width:0!important;
+    flex:1 1 auto!important;
+    gap:11px!important;
+    align-items:center!important;
+  }
+  .edifiqDrawerLogo{
+    width:54px!important;
+    height:54px!important;
+    min-width:54px!important;
+    border-radius:15px!important;
+    font-size:25px!important;
+  }
+  .edifiqBrandDrawer > div:last-child{
+    min-width:0!important;
+  }
+  .edifiqBrandDrawer strong{
+    font-size:23px!important;
+    line-height:1.05!important;
+    letter-spacing:.5px!important;
+    white-space:nowrap!important;
+  }
+  .edifiqBrandDrawer small{
+    font-size:12px!important;
+    line-height:1.25!important;
+    margin-top:5px!important;
+    white-space:normal!important;
+  }
+  .edifiqDrawerHead .x{
+    flex:0 0 42px!important;
+    width:42px!important;
+    height:42px!important;
+    font-size:27px!important;
+  }
+  .edifiqDrawerLine{margin:0 16px!important}
+  .edifiqDrawerScroll{
+    height:calc(100dvh - 117px - env(safe-area-inset-top,0px))!important;
+    min-height:0!important;
+    padding:18px 12px calc(28px + env(safe-area-inset-bottom,0px))!important;
+  }
+  .edifiqMenuTitle{
+    padding:0 12px 10px!important;
+    font-size:13px!important;
+  }
+  .edifiqSectionTitle{margin-top:22px!important}
+  .edifiqMenuItem{
+    min-height:54px!important;
+    padding:8px 13px!important;
+    border-radius:15px!important;
+    gap:13px!important;
+  }
+  .edifiqMenuItem span{font-size:23px!important;width:27px!important}
+  .edifiqMenuItem b{font-size:16px!important;line-height:1.2!important}
+
+  /* Portal da Obra: cartão grande, legível e confortável para toque */
+  .obrasSelectorToolbar{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:10px!important;
+  }
+  .obrasSelectorToolbar > *{
+    width:100%!important;
+    min-width:0!important;
+  }
+  .obrasSelectorToolbar .edp-open-trigger{
+    order:4!important;
+    width:100%!important;
+    min-width:0!important;
+    min-height:70px!important;
+    padding:12px 15px!important;
+    border-radius:16px!important;
+    display:grid!important;
+    grid-template-columns:42px minmax(0,1fr) 24px!important;
+    align-items:center!important;
+    gap:12px!important;
+    white-space:normal!important;
+    text-align:left!important;
+    box-shadow:0 8px 22px rgba(0,0,0,.20)!important;
+  }
+  .edp-open-icon{
+    width:42px!important;
+    height:42px!important;
+    display:grid!important;
+    place-items:center!important;
+    border-radius:12px!important;
+    background:rgba(217,173,85,.12)!important;
+    font-size:22px!important;
+  }
+  .edp-open-copy{
+    min-width:0!important;
+    gap:3px!important;
+  }
+  .edp-open-copy b{
+    font-size:16px!important;
+    line-height:1.15!important;
+    white-space:normal!important;
+  }
+  .edp-open-copy small{
+    font-size:11px!important;
+    line-height:1.25!important;
+    margin-top:0!important;
+    white-space:normal!important;
+  }
+  .edp-open-arrow{font-size:28px!important;margin:0!important;text-align:center!important}
+  .obrasSelectorToolbar > .btn[onclick*="edifiqPortalReportSelected"]{
+    order:5!important;
+    min-height:54px!important;
+    border-radius:14px!important;
+    font-size:14px!important;
+  }
+}
+
+@media (min-width:760px){
+  .edp-open-trigger{min-width:235px}
+}
+</style>
+</head><body>
       <div class="head"><div><h1>EDIFIQ — Construção Civil</h1><div><b>Relatório automático da obra</b></div><div>${escP(o.nome||"Obra")}</div><div class="muted">Cliente: ${escP(o.cliente||"Não informado")} · Endereço: ${escP(o.endereco||o.local||"Não informado")}</div></div><div><span class="status">${escP(typeof statusLabel==="function"?statusLabel(o.status):(o.status||""))}</span><div class="muted" style="margin-top:8px">Emitido em ${dateP(todayP())}</div></div></div>
       <div class="kpis"><div class="kpi"><small>Valor contratado</small><b>${moneyP(x.contrato)}</b></div><div class="kpi"><small>Recebido</small><b>${moneyP(x.recebido)}</b></div><div class="kpi"><small>Despesas</small><b>${moneyP(x.despesas)}</b></div><div class="kpi"><small>Resultado</small><b>${moneyP(x.resultado)}</b></div><div class="kpi"><small>Saldo a receber</small><b>${moneyP(x.aReceber)}</b></div><div class="kpi"><small>Avanço físico</small><b>${pctP(x.progresso)}</b></div></div>
       <h2>1. Informações da obra</h2><div class="grid"><div class="box"><div class="row"><span>Tipo de serviço</span><b>${escP(o.tipo_servico||"Não informado")}</b></div><div class="row"><span>Início</span><b>${dateP(o.data_inicio)}</b></div><div class="row"><span>Previsão de término</span><b>${dateP(o.data_fim)}</b></div></div><div class="box"><div class="row"><span>Margem sobre contrato</span><b>${x.margem.toFixed(1).replace(".",",")}%</b></div><div class="row"><span>Diárias registradas</span><b>${x.ds.length}</b></div><div class="row"><span>Funcionários vinculados</span><b>${funcsP(o.id).length}</b></div></div></div>
