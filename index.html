@@ -2271,9 +2271,29 @@ function cloneState(){
 }
 function saveSafeSnapshot(label="estado anterior"){
   try{
-    const snap={version:2,label,at:new Date().toISOString(),data:cloneState()};
-    if(snap.data) localStorage.setItem(SAFE_SNAPSHOT_KEY,JSON.stringify(snap));
+    const snap={version:3,label,at:new Date().toISOString(),data:cloneState()};
+    if(snap.data){
+      const anterior=localStorage.getItem(SAFE_SNAPSHOT_KEY);
+      if(anterior) localStorage.setItem(SAFE_SNAPSHOT_KEY+"__PREV",anterior);
+      localStorage.setItem(SAFE_SNAPSHOT_KEY,JSON.stringify(snap));
+    }
   }catch(e){console.warn("Falha ao criar proteção de dados",e)}
+}
+function getEdifiqPendingUpdates(){
+  try{const q=JSON.parse(localStorage.getItem("edifiq_pending_updates_v1")||"[]");return Array.isArray(q)?q:[]}catch(e){return []}
+}
+function saveEdifiqPendingUpdates(q){try{localStorage.setItem("edifiq_pending_updates_v1",JSON.stringify(q||[]));}catch(e){console.warn("Fila de sincronização cheia",e)}}
+function addEdifiqPendingUpdate(table,id,row){
+  const q=getEdifiqPendingUpdates();
+  const key=table+"::"+String(id);
+  const item={key,table,id:String(id),row:{...(row||{})},updated_at:new Date().toISOString()};
+  const i=q.findIndex(x=>x.key===key);
+  if(i>=0) q[i]=item; else q.push(item);
+  saveEdifiqPendingUpdates(q);
+}
+function removeEdifiqPendingUpdate(table,id){
+  const key=table+"::"+String(id);
+  saveEdifiqPendingUpdates(getEdifiqPendingUpdates().filter(x=>x.key!==key));
 }
 function readSafeSnapshot(){
   try{const x=JSON.parse(localStorage.getItem(SAFE_SNAPSHOT_KEY)||"null");return x?.data||null}catch(e){return null}
@@ -3327,16 +3347,19 @@ function mergeLocal(){
   for(const table of Object.keys(D)){
     if(!Array.isArray(x[table])) continue;
     const localRows=x[table];
-    const localById=new Map(localRows.map(r=>[String(r.id),r]));
     const cloudRows=Array.isArray(D[table])?D[table]:[];
-    // Nunca substitui silenciosamente dados locais por uma lista menor vinda da nuvem.
+    const localById=new Map(localRows.map(r=>[String(r.id),r]));
+    const cloudById=new Map(cloudRows.map(r=>[String(r.id),r]));
     const merged=cloudRows.map(cloudRow=>{
       const localRow=localById.get(String(cloudRow.id));
-      return localRow ? {...cloudRow,...localRow} : cloudRow;
+      // NUNCA deixa uma cópia local normal sobrescrever a nuvem.
+      // Só preserva local quando há uma alteração explicitamente pendente.
+      if(localRow && (String(localRow.id).startsWith('local_') || localRow._sync_pendente)) return {...cloudRow,...localRow};
+      return cloudRow;
     });
-    const ids=new Set(merged.map(r=>String(r.id)));
     for(const localRow of localRows){
-      if(!ids.has(String(localRow.id))) merged.push(localRow);
+      const id=String(localRow.id);
+      if(!cloudById.has(id) && (id.startsWith('local_') || localRow._sync_pendente)) merged.push(localRow);
     }
     D[table]=merged;
   }
@@ -3344,61 +3367,68 @@ function mergeLocal(){
 }
 
 async function loadTable(table){
-  if(!sb||!user) return;
+  if(!sb||!user) return false;
   const antes=Array.isArray(D[table])?[...D[table]]:[];
   try{
-    const{data,error}=await sb.from(table).select("*");
+    const{data,error}=await sb.from(table).select('*').eq('user_id',user.id);
     if(!error&&Array.isArray(data)){
-      data.sort((a,b)=>String(b.created_at||b.data||"").localeCompare(String(a.created_at||a.data||"")));
-      // Mescla, em vez de apagar o estado atual. Isso evita perda quando o servidor retorna parcial/temporariamente vazio.
-      const byId=new Map(antes.map(r=>[String(r.id),r]));
-      const byCloud=new Map(data.map(r=>[String(r.id),r]));
-      const merged=data.map(r=>byId.has(String(r.id))?{...r,...byId.get(String(r.id))}:r);
-      for(const r of antes){ if(!byCloud.has(String(r.id))) merged.push(r); }
+      data.sort((a,b)=>String(b.updated_at||b.created_at||b.data||'').localeCompare(String(a.updated_at||a.created_at||a.data||'')));
+      const locaisPendentes=new Map(antes.filter(r=>String(r?.id||'').startsWith('local_')||r?._sync_pendente).map(r=>[String(r.id),r]));
+      const cloudIds=new Set(data.map(r=>String(r.id)));
+      const merged=data.map(cloudRow=>{
+        const local=locaisPendentes.get(String(cloudRow.id));
+        return local ? {...cloudRow,...local} : cloudRow;
+      });
+      for(const local of locaisPendentes.values()){
+        if(!cloudIds.has(String(local.id))) merged.push(local);
+      }
       D[table]=merged;
-      return;
+      return true;
     }
-    console.warn("EDIFIQ",table,error?.message);
-  }catch(e){ console.warn("Erro carregando",table,e); }
-  // Em erro, preserva o que já estava na memória/local.
+    console.warn('EDIFIQ',table,error?.message);
+  }catch(e){ console.warn('Erro carregando',table,e); }
   D[table]=antes;
+  return false;
 }
 
 async function loadCloud(){
-  if(!sb||!user)return;
-  // Protege o estado antes de qualquer sincronização. Se o servidor responder incompleto,
-  // o conjunto atual será preservado e poderá ser restaurado automaticamente.
+  if(!sb||!user)return false;
   const estadoAntesCloud=stateCounts();
-  saveSafeSnapshot("antes da sincronização com a nuvem");
+  saveSafeSnapshot('antes da sincronização com a nuvem');
   saveLocalData();
-  for(const table of ["obras","funcionarios","diarias","gastos","pagamentos","checklist","documentos","faltas"]){
-    await loadTable(table);
+  let okCount=0;
+  for(const table of ['obras','funcionarios','diarias','gastos','pagamentos','checklist','documentos','faltas']){
+    if(await loadTable(table)) okCount++;
   }
   mergeLocal();
   aplicarExclusoesPendentes();
   await retryEdifiqDeleteQueue();
+  await retryEdifiqPendingUpdates();
+  await retryLocalCloudRows();
   aplicarExclusoesPendentes();
   auditEDIFIQ();
-  protectAgainstUnexpectedLoss(estadoAntesCloud,{});
+  if(okCount>0) protectAgainstUnexpectedLoss(estadoAntesCloud,{});
   limparChecklistsOrfaos();
   fillSelectors();
   saveLocalData();
+  return okCount>0;
 }
 
 async function retryLocalCloudRows(){
-  if(!sb||!user?.id) return;
-  const tables=["obras","funcionarios","diarias","gastos","pagamentos","checklist","faltas"];
+  if(!sb||!user?.id||!navigator.onLine) return;
+  const tables=['obras','funcionarios','diarias','gastos','pagamentos','checklist','faltas','documentos'];
   for(const table of tables){
     const rows=Array.isArray(D[table])?D[table]:[];
     const locals=rows.filter(r=>String(r?.id||'').startsWith('local_'));
     for(const local of locals){
       try{
         const payload={...local,user_id:user.id};
-        delete payload.id;
+        delete payload.id; delete payload._sync_pendente;
         const {data,error}=await sb.from(table).insert(payload).select().single();
         if(!error&&data){
           const idx=D[table].findIndex(x=>String(x.id)===String(local.id));
           if(idx>=0) D[table][idx]=data;
+          removeEdifiqPendingUpdate(table,local.id);
           saveLocalData();
         }
       }catch(e){ console.warn('Retry cloud',table,e); }
@@ -3406,6 +3436,24 @@ async function retryLocalCloudRows(){
   }
 }
 
+async function retryEdifiqPendingUpdates(){
+  if(!sb||!user?.id||!navigator.onLine)return;
+  const q=getEdifiqPendingUpdates();
+  if(!q.length)return;
+  const restantes=[];
+  for(const item of q){
+    try{
+      const row={...(item.row||{})};
+      delete row.id; delete row.user_id; delete row._sync_pendente;
+      const {data,error}=await sb.from(item.table).update(row).eq('id',item.id).eq('user_id',user.id).select().single();
+      if(error||!data){ restantes.push(item); continue; }
+      const idx=Array.isArray(D[item.table])?D[item.table].findIndex(x=>String(x.id)===String(item.id)):-1;
+      if(idx>=0) D[item.table][idx]={...data,_sync_pendente:false};
+    }catch(e){ restantes.push(item); }
+  }
+  saveEdifiqPendingUpdates(restantes);
+  saveLocalData();
+}
 async function insertRow(
 table,
 row
@@ -3519,7 +3567,8 @@ Math.random()
 .slice(2),
 user_id:user.id,
 created_at:
-new Date().toISOString()
+new Date().toISOString(),
+_sync_pendente:true
 };
 
 D[table].unshift(localRow);
@@ -3555,7 +3604,8 @@ const anterior={...D[table][index]};
 D[table][index]={
 ...D[table][index],
 ...row,
-_sync_pendente:String(id).startsWith('local_') ? true : D[table][index]._sync_pendente
+_sync_pendente:true,
+_sync_updated_at:new Date().toISOString()
 };
 saveLocalData();
 renderAll();
@@ -3564,8 +3614,9 @@ if(String(id).startsWith("local_")){
 return D[table][index];
 }
 
-if(!sb||!user){
-return D[table][index];
+if(!sb||!user||!navigator.onLine){
+  addEdifiqPendingUpdate(table,id,row);
+  return D[table][index];
 }
 
 try{
@@ -3588,6 +3639,7 @@ await sb
 .from(table)
 .update(tentativa)
 .eq("id",id)
+.eq("user_id",user.id)
 .select()
 .single();
 
@@ -3603,13 +3655,19 @@ return data;
 console.warn("Supabase recusou atualização",table,error?.message);
 }
 
-toast("Atualizado no aparelho. O servidor recusou a alteração.");
+addEdifiqPendingUpdate(table,id,row);
+D[table][index]._sync_pendente=true;
+saveLocalData();
+toast("Atualizado neste aparelho. A alteração ficará na fila e será enviada quando a nuvem estiver disponível.");
 return D[table][index];
 
 }catch(e){
 
 console.warn("Erro Supabase ao atualizar",table,e);
-toast("Atualizado no aparelho. Não foi possível sincronizar agora.");
+addEdifiqPendingUpdate(table,id,row);
+D[table][index]._sync_pendente=true;
+saveLocalData();
+toast("Atualizado neste aparelho. A alteração será sincronizada automaticamente.");
 return D[table][index];
 
 }
@@ -3726,7 +3784,8 @@ if(table==="obras"){
         const{error}=await sb
           .from(t)
           .delete()
-          .eq("obra_id",id);
+          .eq("obra_id",id)
+          .eq("user_id",user.id);
 
         if(error){
 
@@ -3754,7 +3813,8 @@ if(table==="obras"){
     const{error}=await sb
       .from("obras")
       .delete()
-      .eq("id",id);
+      .eq("id",id)
+      .eq("user_id",user.id);
 
     if(error){
 
@@ -3847,7 +3907,7 @@ async function retryEdifiqDeleteQueue(){
   const restantes=[];
   for(const item of q){
     try{
-      const {error}=await sb.from(item.table).delete().eq("id",item.id);
+      const {error}=await sb.from(item.table).delete().eq("id",item.id).eq("user_id",user.id);
       if(error){
         restantes.push(item);
       }
@@ -3879,7 +3939,7 @@ try{
     return;
   }
 
-  const {error}=await sb.from(table).delete().eq("id",id);
+  const {error}=await sb.from(table).delete().eq("id",id).eq("user_id",user.id);
 
   if(error){
     addEdifiqDeleteQueue(table,id);
