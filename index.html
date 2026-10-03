@@ -7486,7 +7486,7 @@ f.observacao||""
   function f3Date(v){
     if(!v)return "—";
     const s=String(v).slice(0,10),p=s.split("-");
-    return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:String(v);
+    return p.length===3?\`\${p[2]}/\${p[1]}/\${p[0]}\`:String(v);
   }
   function f3Data(){
     try{
@@ -7520,7 +7520,7 @@ f.observacao||""
     if(!document.getElementById("edf3Modal")){
       const m=document.createElement("div");
       m.id="edf3Modal";m.className="edf3-modal";m.style.display="none";
-      m.innerHTML=`
+      m.innerHTML=\`
         <div class="edf3-box">
           <div class="edf3-modal-head">
             <div><h2>🏗️ Registrar produção</h2><p class="sub">Registre a produção realizada por funcionário, obra e checklist.</p></div>
@@ -7540,15 +7540,15 @@ f.observacao||""
             <div class="note" style="margin-top:12px">O valor produzido é um indicador de produção da equipe. Ele <b>não lança despesa nem receita</b> e não altera a folha.</div>
             <div class="edf3-modal-actions"><button class="btn" type="button" onclick="window.edifiqF3Close()">Cancelar</button><button class="btn gold" type="submit">Salvar produção</button></div>
           </form>
-        </div>`;
+        </div>\`;
       document.body.appendChild(m);
     }
     const m=document.getElementById("edf3Modal");
     m.style.display="flex";
     const fs=document.getElementById("edf3Func"), os=document.getElementById("edf3Obra"), cs=document.getElementById("edf3Check");
     const funcs=(typeof D!=="undefined"?D.funcionarios:[]).filter(f=>f.ativo!==false);
-    fs.innerHTML='<option value="">Selecione</option>'+funcs.map(f=>`<option value="${f3Esc(f.id)}">${f3Esc(f.nome||"Funcionário")}</option>`).join("");
-    os.innerHTML='<option value="">Selecione</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>`<option value="${f3Esc(o.id)}">${f3Esc(o.nome||"Obra")}</option>`).join("");
+    fs.innerHTML='<option value="">Selecione</option>'+funcs.map(f=>\`<option value="\${f3Esc(f.id)}">\${f3Esc(f.nome||"Funcionário")}</option>\`).join("");
+    os.innerHTML='<option value="">Selecione</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>\`<option value="\${f3Esc(o.id)}">\${f3Esc(o.nome||"Obra")}</option>\`).join("");
     cs.innerHTML='<option value="">Selecione a obra primeiro</option>';
     document.getElementById("edf3Data").value=f3Today();
     document.getElementById("edf3Qtd").value="";
@@ -7567,7 +7567,7 @@ f.observacao||""
       const oid=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
       return String(oid)===String(obraId);
     });
-    cs.innerHTML='<option value="">Selecione</option>'+arr.map(c=>`<option value="${f3Esc(c.id)}">${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>`).join("");
+    cs.innerHTML='<option value="">Selecione</option>'+arr.map(c=>\`<option value="\${f3Esc(c.id)}">\${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>\`).join("");
     if(!arr.length)cs.innerHTML='<option value="">Nenhum checklist cadastrado nesta obra</option>';
   }
   function f3Close(){const m=document.getElementById("edf3Modal");if(m)m.style.display="none"}
@@ -7585,7 +7585,7 @@ f.observacao||""
     if(quantidade<=0&&valor<=0){toast("Informe a quantidade produzida ou o valor produzido.");return false}
     const f=f3Func(funcionario_id),o=f3Obra(obra_id),c=f3Check(checklist_id);
     const row={id:"prod_"+Date.now()+"_"+Math.random().toString(36).slice(2,8),funcionario_id,obra_id,checklist_id,data,quantidade,unidade,valor,observacao};
-    const rows=f3Data();rows.push(row);f3SetData(rows);f3Close();f3Render();toast(`Produção de ${f?.nome||"funcionário"} registrada.`);
+    const rows=f3Data();rows.push(row);f3SetData(rows);f3Close();f3Render();toast(\`Produção de \${f?.nome||"funcionário"} registrada.\`);
     return false;
   }
   function f3Delete(id){
@@ -7626,7 +7626,7 @@ f.observacao||""
     else{
       tbody.innerHTML=rows.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).map(x=>{
         const f=f3Func(x.funcionario_id),o=f3Obra(x.obra_id),c=f3Check(x.checklist_id);
-        return `<tr><td>${f3Date(x.data)}</td><td><b>${f3Esc(f?.nome||"—")}</b></td><td>${f3Esc(o?.nome||"—")}</td><td>${f3Esc(c?.tarefa||c?.descricao||"—")}</td><td>${x.quantidade?f3N(x.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:2})+" "+f3Esc(x.unidade||""):"—"}</td><td><b>${f3Money(x.valor)}</b></td><td><button class="btn danger" type="button" onclick="window.edifiqF3Delete('${f3Esc(x.id)}')">Excluir</button></td></tr>`;
+        return \`<tr><td>\${f3Date(x.data)}</td><td><b>\${f3Esc(f?.nome||"—")}</b></td><td>\${f3Esc(o?.nome||"—")}</td><td>\${f3Esc(c?.tarefa||c?.descricao||"—")}</td><td>\${x.quantidade?f3N(x.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:2})+" "+f3Esc(x.unidade||""):"—"}</td><td><b>\${f3Money(x.valor)}</b></td><td><button class="btn danger" type="button" onclick="window.edifiqF3Delete('\${f3Esc(x.id)}')">Excluir</button></td></tr>\`;
       }).join("");
     }
 
@@ -7636,7 +7636,7 @@ f.observacao||""
     const max=rank[0]?.[1].valor||0;
     card.querySelector("#edf3Ranking").innerHTML=rank.length?rank.map(([id,v])=>{
       const f=f3Func(id),pct=max?Math.round(v.valor/max*100):0;
-      return `<div class="edf3-worker"><div class="edf3-worker-head"><span><b>${f3Esc(f?.nome||"Funcionário")}</b><small style="display:block;color:var(--muted)">${v.qtd.toLocaleString("pt-BR",{maximumFractionDigits:2})} unidades registradas</small></span><b>${f3Money(v.valor)}</b></div><div class="edf3-bar"><i style="width:${pct}%"></i></div></div>`;
+      return \`<div class="edf3-worker"><div class="edf3-worker-head"><span><b>\${f3Esc(f?.nome||"Funcionário")}</b><small style="display:block;color:var(--muted)">\${v.qtd.toLocaleString("pt-BR",{maximumFractionDigits:2})} unidades registradas</small></span><b>\${f3Money(v.valor)}</b></div><div class="edf3-bar"><i style="width:\${pct}%"></i></div></div>\`;
     }).join(""):'<div class="edf3-empty">Registre produções para acompanhar a equipe.</div>';
 
     const cost=rows.reduce((a,x)=>{
@@ -7655,7 +7655,7 @@ f.observacao||""
     if(!host)return;
     const card=document.createElement("div");
     card.id="edf3Card";card.className="card edf3-wrap";
-    card.innerHTML=`
+    card.innerHTML=\`
       <div class="edf3-head">
         <div><h2>🏗️ Produção da Equipe</h2><p>Controle da produção realizada por funcionário, obra e checklist.</p></div>
         <div class="edf3-actions"><button class="btn gold" type="button" onclick="window.edifiqF3Open()">＋ Registrar produção</button><button class="btn" type="button" onclick="window.edifiqF3Render()">↻ Atualizar</button></div>
@@ -7679,7 +7679,7 @@ f.observacao||""
       <div class="edf3-table">
         <table><thead><tr><th>Data</th><th>Funcionário</th><th>Obra</th><th>Checklist</th><th>Quantidade</th><th>Valor produzido</th><th></th></tr></thead><tbody id="edf3Body"></tbody></table>
       </div>
-      <div style="margin-top:14px"><h3>🏆 Produção por funcionário</h3><div id="edf3Ranking"></div></div>`;
+      <div style="margin-top:14px"><h3>🏆 Produção por funcionário</h3><div id="edf3Ranking"></div></div>\`;
     host.after(card);
 
     ["edf3Ini","edf3Fim","edf3FiltroFunc","edf3FiltroObra","edf3FiltroCheck"].forEach(id=>{
@@ -7697,8 +7697,8 @@ f.observacao||""
     const fs=document.getElementById("edf3FiltroFunc"),os=document.getElementById("edf3FiltroObra");
     if(!fs||!os)return;
     const fcur=fs.value, ocur=os.value;
-    fs.innerHTML='<option value="all">Todos os funcionários</option>'+(typeof D!=="undefined"?D.funcionarios:[]).map(f=>`<option value="${f3Esc(f.id)}">${f3Esc(f.nome||"Funcionário")}</option>`).join("");
-    os.innerHTML='<option value="all">Todas as obras</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>`<option value="${f3Esc(o.id)}">${f3Esc(o.nome||"Obra")}</option>`).join("");
+    fs.innerHTML='<option value="all">Todos os funcionários</option>'+(typeof D!=="undefined"?D.funcionarios:[]).map(f=>\`<option value="\${f3Esc(f.id)}">\${f3Esc(f.nome||"Funcionário")}</option>\`).join("");
+    os.innerHTML='<option value="all">Todas as obras</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>\`<option value="\${f3Esc(o.id)}">\${f3Esc(o.nome||"Obra")}</option>\`).join("");
     if(fcur)fs.value=fcur;if(ocur)os.value=ocur;f3FillFilterChecks();
   }
   function f3FillFilterChecks(){
@@ -7708,7 +7708,7 @@ f.observacao||""
       const id=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
       return oid==="all"||String(id)===String(oid);
     });
-    el.innerHTML='<option value="all">Todos os checklists</option>'+arr.map(c=>`<option value="${f3Esc(c.id)}">${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>`).join("");
+    el.innerHTML='<option value="all">Todos os checklists</option>'+arr.map(c=>\`<option value="\${f3Esc(c.id)}">\${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>\`).join("");
     if(cur&&[...el.options].some(o=>o.value===cur))el.value=cur;
   }
 
@@ -7737,7 +7737,7 @@ f.observacao||""
   }
   document.addEventListener("DOMContentLoaded",()=>setTimeout(f3Hook,500));
 })();
-</script>
+<\/script>
 
 </body></html>`);
 
@@ -8838,7 +8838,7 @@ function rcExportPDF(){
   function f3Date(v){
     if(!v)return "—";
     const s=String(v).slice(0,10),p=s.split("-");
-    return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:String(v);
+    return p.length===3?\`\${p[2]}/\${p[1]}/\${p[0]}\`:String(v);
   }
   function f3Data(){
     try{
@@ -8872,7 +8872,7 @@ function rcExportPDF(){
     if(!document.getElementById("edf3Modal")){
       const m=document.createElement("div");
       m.id="edf3Modal";m.className="edf3-modal";m.style.display="none";
-      m.innerHTML=`
+      m.innerHTML=\`
         <div class="edf3-box">
           <div class="edf3-modal-head">
             <div><h2>🏗️ Registrar produção</h2><p class="sub">Registre a produção realizada por funcionário, obra e checklist.</p></div>
@@ -8892,15 +8892,15 @@ function rcExportPDF(){
             <div class="note" style="margin-top:12px">O valor produzido é um indicador de produção da equipe. Ele <b>não lança despesa nem receita</b> e não altera a folha.</div>
             <div class="edf3-modal-actions"><button class="btn" type="button" onclick="window.edifiqF3Close()">Cancelar</button><button class="btn gold" type="submit">Salvar produção</button></div>
           </form>
-        </div>`;
+        </div>\`;
       document.body.appendChild(m);
     }
     const m=document.getElementById("edf3Modal");
     m.style.display="flex";
     const fs=document.getElementById("edf3Func"), os=document.getElementById("edf3Obra"), cs=document.getElementById("edf3Check");
     const funcs=(typeof D!=="undefined"?D.funcionarios:[]).filter(f=>f.ativo!==false);
-    fs.innerHTML='<option value="">Selecione</option>'+funcs.map(f=>`<option value="${f3Esc(f.id)}">${f3Esc(f.nome||"Funcionário")}</option>`).join("");
-    os.innerHTML='<option value="">Selecione</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>`<option value="${f3Esc(o.id)}">${f3Esc(o.nome||"Obra")}</option>`).join("");
+    fs.innerHTML='<option value="">Selecione</option>'+funcs.map(f=>\`<option value="\${f3Esc(f.id)}">\${f3Esc(f.nome||"Funcionário")}</option>\`).join("");
+    os.innerHTML='<option value="">Selecione</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>\`<option value="\${f3Esc(o.id)}">\${f3Esc(o.nome||"Obra")}</option>\`).join("");
     cs.innerHTML='<option value="">Selecione a obra primeiro</option>';
     document.getElementById("edf3Data").value=f3Today();
     document.getElementById("edf3Qtd").value="";
@@ -8919,7 +8919,7 @@ function rcExportPDF(){
       const oid=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
       return String(oid)===String(obraId);
     });
-    cs.innerHTML='<option value="">Selecione</option>'+arr.map(c=>`<option value="${f3Esc(c.id)}">${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>`).join("");
+    cs.innerHTML='<option value="">Selecione</option>'+arr.map(c=>\`<option value="\${f3Esc(c.id)}">\${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>\`).join("");
     if(!arr.length)cs.innerHTML='<option value="">Nenhum checklist cadastrado nesta obra</option>';
   }
   function f3Close(){const m=document.getElementById("edf3Modal");if(m)m.style.display="none"}
@@ -8937,7 +8937,7 @@ function rcExportPDF(){
     if(quantidade<=0&&valor<=0){toast("Informe a quantidade produzida ou o valor produzido.");return false}
     const f=f3Func(funcionario_id),o=f3Obra(obra_id),c=f3Check(checklist_id);
     const row={id:"prod_"+Date.now()+"_"+Math.random().toString(36).slice(2,8),funcionario_id,obra_id,checklist_id,data,quantidade,unidade,valor,observacao};
-    const rows=f3Data();rows.push(row);f3SetData(rows);f3Close();f3Render();toast(`Produção de ${f?.nome||"funcionário"} registrada.`);
+    const rows=f3Data();rows.push(row);f3SetData(rows);f3Close();f3Render();toast(\`Produção de \${f?.nome||"funcionário"} registrada.\`);
     return false;
   }
   function f3Delete(id){
@@ -8978,7 +8978,7 @@ function rcExportPDF(){
     else{
       tbody.innerHTML=rows.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).map(x=>{
         const f=f3Func(x.funcionario_id),o=f3Obra(x.obra_id),c=f3Check(x.checklist_id);
-        return `<tr><td>${f3Date(x.data)}</td><td><b>${f3Esc(f?.nome||"—")}</b></td><td>${f3Esc(o?.nome||"—")}</td><td>${f3Esc(c?.tarefa||c?.descricao||"—")}</td><td>${x.quantidade?f3N(x.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:2})+" "+f3Esc(x.unidade||""):"—"}</td><td><b>${f3Money(x.valor)}</b></td><td><button class="btn danger" type="button" onclick="window.edifiqF3Delete('${f3Esc(x.id)}')">Excluir</button></td></tr>`;
+        return \`<tr><td>\${f3Date(x.data)}</td><td><b>\${f3Esc(f?.nome||"—")}</b></td><td>\${f3Esc(o?.nome||"—")}</td><td>\${f3Esc(c?.tarefa||c?.descricao||"—")}</td><td>\${x.quantidade?f3N(x.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:2})+" "+f3Esc(x.unidade||""):"—"}</td><td><b>\${f3Money(x.valor)}</b></td><td><button class="btn danger" type="button" onclick="window.edifiqF3Delete('\${f3Esc(x.id)}')">Excluir</button></td></tr>\`;
       }).join("");
     }
 
@@ -8988,7 +8988,7 @@ function rcExportPDF(){
     const max=rank[0]?.[1].valor||0;
     card.querySelector("#edf3Ranking").innerHTML=rank.length?rank.map(([id,v])=>{
       const f=f3Func(id),pct=max?Math.round(v.valor/max*100):0;
-      return `<div class="edf3-worker"><div class="edf3-worker-head"><span><b>${f3Esc(f?.nome||"Funcionário")}</b><small style="display:block;color:var(--muted)">${v.qtd.toLocaleString("pt-BR",{maximumFractionDigits:2})} unidades registradas</small></span><b>${f3Money(v.valor)}</b></div><div class="edf3-bar"><i style="width:${pct}%"></i></div></div>`;
+      return \`<div class="edf3-worker"><div class="edf3-worker-head"><span><b>\${f3Esc(f?.nome||"Funcionário")}</b><small style="display:block;color:var(--muted)">\${v.qtd.toLocaleString("pt-BR",{maximumFractionDigits:2})} unidades registradas</small></span><b>\${f3Money(v.valor)}</b></div><div class="edf3-bar"><i style="width:\${pct}%"></i></div></div>\`;
     }).join(""):'<div class="edf3-empty">Registre produções para acompanhar a equipe.</div>';
 
     const cost=rows.reduce((a,x)=>{
@@ -9007,7 +9007,7 @@ function rcExportPDF(){
     if(!host)return;
     const card=document.createElement("div");
     card.id="edf3Card";card.className="card edf3-wrap";
-    card.innerHTML=`
+    card.innerHTML=\`
       <div class="edf3-head">
         <div><h2>🏗️ Produção da Equipe</h2><p>Controle da produção realizada por funcionário, obra e checklist.</p></div>
         <div class="edf3-actions"><button class="btn gold" type="button" onclick="window.edifiqF3Open()">＋ Registrar produção</button><button class="btn" type="button" onclick="window.edifiqF3Render()">↻ Atualizar</button></div>
@@ -9031,7 +9031,7 @@ function rcExportPDF(){
       <div class="edf3-table">
         <table><thead><tr><th>Data</th><th>Funcionário</th><th>Obra</th><th>Checklist</th><th>Quantidade</th><th>Valor produzido</th><th></th></tr></thead><tbody id="edf3Body"></tbody></table>
       </div>
-      <div style="margin-top:14px"><h3>🏆 Produção por funcionário</h3><div id="edf3Ranking"></div></div>`;
+      <div style="margin-top:14px"><h3>🏆 Produção por funcionário</h3><div id="edf3Ranking"></div></div>\`;
     host.after(card);
 
     ["edf3Ini","edf3Fim","edf3FiltroFunc","edf3FiltroObra","edf3FiltroCheck"].forEach(id=>{
@@ -9049,8 +9049,8 @@ function rcExportPDF(){
     const fs=document.getElementById("edf3FiltroFunc"),os=document.getElementById("edf3FiltroObra");
     if(!fs||!os)return;
     const fcur=fs.value, ocur=os.value;
-    fs.innerHTML='<option value="all">Todos os funcionários</option>'+(typeof D!=="undefined"?D.funcionarios:[]).map(f=>`<option value="${f3Esc(f.id)}">${f3Esc(f.nome||"Funcionário")}</option>`).join("");
-    os.innerHTML='<option value="all">Todas as obras</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>`<option value="${f3Esc(o.id)}">${f3Esc(o.nome||"Obra")}</option>`).join("");
+    fs.innerHTML='<option value="all">Todos os funcionários</option>'+(typeof D!=="undefined"?D.funcionarios:[]).map(f=>\`<option value="\${f3Esc(f.id)}">\${f3Esc(f.nome||"Funcionário")}</option>\`).join("");
+    os.innerHTML='<option value="all">Todas as obras</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>\`<option value="\${f3Esc(o.id)}">\${f3Esc(o.nome||"Obra")}</option>\`).join("");
     if(fcur)fs.value=fcur;if(ocur)os.value=ocur;f3FillFilterChecks();
   }
   function f3FillFilterChecks(){
@@ -9060,7 +9060,7 @@ function rcExportPDF(){
       const id=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
       return oid==="all"||String(id)===String(oid);
     });
-    el.innerHTML='<option value="all">Todos os checklists</option>'+arr.map(c=>`<option value="${f3Esc(c.id)}">${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>`).join("");
+    el.innerHTML='<option value="all">Todos os checklists</option>'+arr.map(c=>\`<option value="\${f3Esc(c.id)}">\${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>\`).join("");
     if(cur&&[...el.options].some(o=>o.value===cur))el.value=cur;
   }
 
@@ -9089,7 +9089,7 @@ function rcExportPDF(){
   }
   document.addEventListener("DOMContentLoaded",()=>setTimeout(f3Hook,500));
 })();
-</script>
+<\/script>
 
 </body></html>`);w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},400);
 }
@@ -9181,7 +9181,7 @@ function exportPDF(){
   function f3Date(v){
     if(!v)return "—";
     const s=String(v).slice(0,10),p=s.split("-");
-    return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:String(v);
+    return p.length===3?\`\${p[2]}/\${p[1]}/\${p[0]}\`:String(v);
   }
   function f3Data(){
     try{
@@ -9215,7 +9215,7 @@ function exportPDF(){
     if(!document.getElementById("edf3Modal")){
       const m=document.createElement("div");
       m.id="edf3Modal";m.className="edf3-modal";m.style.display="none";
-      m.innerHTML=`
+      m.innerHTML=\`
         <div class="edf3-box">
           <div class="edf3-modal-head">
             <div><h2>🏗️ Registrar produção</h2><p class="sub">Registre a produção realizada por funcionário, obra e checklist.</p></div>
@@ -9235,15 +9235,15 @@ function exportPDF(){
             <div class="note" style="margin-top:12px">O valor produzido é um indicador de produção da equipe. Ele <b>não lança despesa nem receita</b> e não altera a folha.</div>
             <div class="edf3-modal-actions"><button class="btn" type="button" onclick="window.edifiqF3Close()">Cancelar</button><button class="btn gold" type="submit">Salvar produção</button></div>
           </form>
-        </div>`;
+        </div>\`;
       document.body.appendChild(m);
     }
     const m=document.getElementById("edf3Modal");
     m.style.display="flex";
     const fs=document.getElementById("edf3Func"), os=document.getElementById("edf3Obra"), cs=document.getElementById("edf3Check");
     const funcs=(typeof D!=="undefined"?D.funcionarios:[]).filter(f=>f.ativo!==false);
-    fs.innerHTML='<option value="">Selecione</option>'+funcs.map(f=>`<option value="${f3Esc(f.id)}">${f3Esc(f.nome||"Funcionário")}</option>`).join("");
-    os.innerHTML='<option value="">Selecione</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>`<option value="${f3Esc(o.id)}">${f3Esc(o.nome||"Obra")}</option>`).join("");
+    fs.innerHTML='<option value="">Selecione</option>'+funcs.map(f=>\`<option value="\${f3Esc(f.id)}">\${f3Esc(f.nome||"Funcionário")}</option>\`).join("");
+    os.innerHTML='<option value="">Selecione</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>\`<option value="\${f3Esc(o.id)}">\${f3Esc(o.nome||"Obra")}</option>\`).join("");
     cs.innerHTML='<option value="">Selecione a obra primeiro</option>';
     document.getElementById("edf3Data").value=f3Today();
     document.getElementById("edf3Qtd").value="";
@@ -9262,7 +9262,7 @@ function exportPDF(){
       const oid=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
       return String(oid)===String(obraId);
     });
-    cs.innerHTML='<option value="">Selecione</option>'+arr.map(c=>`<option value="${f3Esc(c.id)}">${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>`).join("");
+    cs.innerHTML='<option value="">Selecione</option>'+arr.map(c=>\`<option value="\${f3Esc(c.id)}">\${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>\`).join("");
     if(!arr.length)cs.innerHTML='<option value="">Nenhum checklist cadastrado nesta obra</option>';
   }
   function f3Close(){const m=document.getElementById("edf3Modal");if(m)m.style.display="none"}
@@ -9280,7 +9280,7 @@ function exportPDF(){
     if(quantidade<=0&&valor<=0){toast("Informe a quantidade produzida ou o valor produzido.");return false}
     const f=f3Func(funcionario_id),o=f3Obra(obra_id),c=f3Check(checklist_id);
     const row={id:"prod_"+Date.now()+"_"+Math.random().toString(36).slice(2,8),funcionario_id,obra_id,checklist_id,data,quantidade,unidade,valor,observacao};
-    const rows=f3Data();rows.push(row);f3SetData(rows);f3Close();f3Render();toast(`Produção de ${f?.nome||"funcionário"} registrada.`);
+    const rows=f3Data();rows.push(row);f3SetData(rows);f3Close();f3Render();toast(\`Produção de \${f?.nome||"funcionário"} registrada.\`);
     return false;
   }
   function f3Delete(id){
@@ -9321,7 +9321,7 @@ function exportPDF(){
     else{
       tbody.innerHTML=rows.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).map(x=>{
         const f=f3Func(x.funcionario_id),o=f3Obra(x.obra_id),c=f3Check(x.checklist_id);
-        return `<tr><td>${f3Date(x.data)}</td><td><b>${f3Esc(f?.nome||"—")}</b></td><td>${f3Esc(o?.nome||"—")}</td><td>${f3Esc(c?.tarefa||c?.descricao||"—")}</td><td>${x.quantidade?f3N(x.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:2})+" "+f3Esc(x.unidade||""):"—"}</td><td><b>${f3Money(x.valor)}</b></td><td><button class="btn danger" type="button" onclick="window.edifiqF3Delete('${f3Esc(x.id)}')">Excluir</button></td></tr>`;
+        return \`<tr><td>\${f3Date(x.data)}</td><td><b>\${f3Esc(f?.nome||"—")}</b></td><td>\${f3Esc(o?.nome||"—")}</td><td>\${f3Esc(c?.tarefa||c?.descricao||"—")}</td><td>\${x.quantidade?f3N(x.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:2})+" "+f3Esc(x.unidade||""):"—"}</td><td><b>\${f3Money(x.valor)}</b></td><td><button class="btn danger" type="button" onclick="window.edifiqF3Delete('\${f3Esc(x.id)}')">Excluir</button></td></tr>\`;
       }).join("");
     }
 
@@ -9331,7 +9331,7 @@ function exportPDF(){
     const max=rank[0]?.[1].valor||0;
     card.querySelector("#edf3Ranking").innerHTML=rank.length?rank.map(([id,v])=>{
       const f=f3Func(id),pct=max?Math.round(v.valor/max*100):0;
-      return `<div class="edf3-worker"><div class="edf3-worker-head"><span><b>${f3Esc(f?.nome||"Funcionário")}</b><small style="display:block;color:var(--muted)">${v.qtd.toLocaleString("pt-BR",{maximumFractionDigits:2})} unidades registradas</small></span><b>${f3Money(v.valor)}</b></div><div class="edf3-bar"><i style="width:${pct}%"></i></div></div>`;
+      return \`<div class="edf3-worker"><div class="edf3-worker-head"><span><b>\${f3Esc(f?.nome||"Funcionário")}</b><small style="display:block;color:var(--muted)">\${v.qtd.toLocaleString("pt-BR",{maximumFractionDigits:2})} unidades registradas</small></span><b>\${f3Money(v.valor)}</b></div><div class="edf3-bar"><i style="width:\${pct}%"></i></div></div>\`;
     }).join(""):'<div class="edf3-empty">Registre produções para acompanhar a equipe.</div>';
 
     const cost=rows.reduce((a,x)=>{
@@ -9350,7 +9350,7 @@ function exportPDF(){
     if(!host)return;
     const card=document.createElement("div");
     card.id="edf3Card";card.className="card edf3-wrap";
-    card.innerHTML=`
+    card.innerHTML=\`
       <div class="edf3-head">
         <div><h2>🏗️ Produção da Equipe</h2><p>Controle da produção realizada por funcionário, obra e checklist.</p></div>
         <div class="edf3-actions"><button class="btn gold" type="button" onclick="window.edifiqF3Open()">＋ Registrar produção</button><button class="btn" type="button" onclick="window.edifiqF3Render()">↻ Atualizar</button></div>
@@ -9374,7 +9374,7 @@ function exportPDF(){
       <div class="edf3-table">
         <table><thead><tr><th>Data</th><th>Funcionário</th><th>Obra</th><th>Checklist</th><th>Quantidade</th><th>Valor produzido</th><th></th></tr></thead><tbody id="edf3Body"></tbody></table>
       </div>
-      <div style="margin-top:14px"><h3>🏆 Produção por funcionário</h3><div id="edf3Ranking"></div></div>`;
+      <div style="margin-top:14px"><h3>🏆 Produção por funcionário</h3><div id="edf3Ranking"></div></div>\`;
     host.after(card);
 
     ["edf3Ini","edf3Fim","edf3FiltroFunc","edf3FiltroObra","edf3FiltroCheck"].forEach(id=>{
@@ -9392,8 +9392,8 @@ function exportPDF(){
     const fs=document.getElementById("edf3FiltroFunc"),os=document.getElementById("edf3FiltroObra");
     if(!fs||!os)return;
     const fcur=fs.value, ocur=os.value;
-    fs.innerHTML='<option value="all">Todos os funcionários</option>'+(typeof D!=="undefined"?D.funcionarios:[]).map(f=>`<option value="${f3Esc(f.id)}">${f3Esc(f.nome||"Funcionário")}</option>`).join("");
-    os.innerHTML='<option value="all">Todas as obras</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>`<option value="${f3Esc(o.id)}">${f3Esc(o.nome||"Obra")}</option>`).join("");
+    fs.innerHTML='<option value="all">Todos os funcionários</option>'+(typeof D!=="undefined"?D.funcionarios:[]).map(f=>\`<option value="\${f3Esc(f.id)}">\${f3Esc(f.nome||"Funcionário")}</option>\`).join("");
+    os.innerHTML='<option value="all">Todas as obras</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>\`<option value="\${f3Esc(o.id)}">\${f3Esc(o.nome||"Obra")}</option>\`).join("");
     if(fcur)fs.value=fcur;if(ocur)os.value=ocur;f3FillFilterChecks();
   }
   function f3FillFilterChecks(){
@@ -9403,7 +9403,7 @@ function exportPDF(){
       const id=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
       return oid==="all"||String(id)===String(oid);
     });
-    el.innerHTML='<option value="all">Todos os checklists</option>'+arr.map(c=>`<option value="${f3Esc(c.id)}">${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>`).join("");
+    el.innerHTML='<option value="all">Todos os checklists</option>'+arr.map(c=>\`<option value="\${f3Esc(c.id)}">\${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>\`).join("");
     if(cur&&[...el.options].some(o=>o.value===cur))el.value=cur;
   }
 
@@ -9432,7 +9432,7 @@ function exportPDF(){
   }
   document.addEventListener("DOMContentLoaded",()=>setTimeout(f3Hook,500));
 })();
-</script>
+<\/script>
 
 </body></html>`);
   w.document.close();
@@ -9890,7 +9890,7 @@ function relatorioDiario(){
   function f3Date(v){
     if(!v)return "—";
     const s=String(v).slice(0,10),p=s.split("-");
-    return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:String(v);
+    return p.length===3?\`\${p[2]}/\${p[1]}/\${p[0]}\`:String(v);
   }
   function f3Data(){
     try{
@@ -9924,7 +9924,7 @@ function relatorioDiario(){
     if(!document.getElementById("edf3Modal")){
       const m=document.createElement("div");
       m.id="edf3Modal";m.className="edf3-modal";m.style.display="none";
-      m.innerHTML=`
+      m.innerHTML=\`
         <div class="edf3-box">
           <div class="edf3-modal-head">
             <div><h2>🏗️ Registrar produção</h2><p class="sub">Registre a produção realizada por funcionário, obra e checklist.</p></div>
@@ -9944,15 +9944,15 @@ function relatorioDiario(){
             <div class="note" style="margin-top:12px">O valor produzido é um indicador de produção da equipe. Ele <b>não lança despesa nem receita</b> e não altera a folha.</div>
             <div class="edf3-modal-actions"><button class="btn" type="button" onclick="window.edifiqF3Close()">Cancelar</button><button class="btn gold" type="submit">Salvar produção</button></div>
           </form>
-        </div>`;
+        </div>\`;
       document.body.appendChild(m);
     }
     const m=document.getElementById("edf3Modal");
     m.style.display="flex";
     const fs=document.getElementById("edf3Func"), os=document.getElementById("edf3Obra"), cs=document.getElementById("edf3Check");
     const funcs=(typeof D!=="undefined"?D.funcionarios:[]).filter(f=>f.ativo!==false);
-    fs.innerHTML='<option value="">Selecione</option>'+funcs.map(f=>`<option value="${f3Esc(f.id)}">${f3Esc(f.nome||"Funcionário")}</option>`).join("");
-    os.innerHTML='<option value="">Selecione</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>`<option value="${f3Esc(o.id)}">${f3Esc(o.nome||"Obra")}</option>`).join("");
+    fs.innerHTML='<option value="">Selecione</option>'+funcs.map(f=>\`<option value="\${f3Esc(f.id)}">\${f3Esc(f.nome||"Funcionário")}</option>\`).join("");
+    os.innerHTML='<option value="">Selecione</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>\`<option value="\${f3Esc(o.id)}">\${f3Esc(o.nome||"Obra")}</option>\`).join("");
     cs.innerHTML='<option value="">Selecione a obra primeiro</option>';
     document.getElementById("edf3Data").value=f3Today();
     document.getElementById("edf3Qtd").value="";
@@ -9971,7 +9971,7 @@ function relatorioDiario(){
       const oid=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
       return String(oid)===String(obraId);
     });
-    cs.innerHTML='<option value="">Selecione</option>'+arr.map(c=>`<option value="${f3Esc(c.id)}">${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>`).join("");
+    cs.innerHTML='<option value="">Selecione</option>'+arr.map(c=>\`<option value="\${f3Esc(c.id)}">\${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>\`).join("");
     if(!arr.length)cs.innerHTML='<option value="">Nenhum checklist cadastrado nesta obra</option>';
   }
   function f3Close(){const m=document.getElementById("edf3Modal");if(m)m.style.display="none"}
@@ -9989,7 +9989,7 @@ function relatorioDiario(){
     if(quantidade<=0&&valor<=0){toast("Informe a quantidade produzida ou o valor produzido.");return false}
     const f=f3Func(funcionario_id),o=f3Obra(obra_id),c=f3Check(checklist_id);
     const row={id:"prod_"+Date.now()+"_"+Math.random().toString(36).slice(2,8),funcionario_id,obra_id,checklist_id,data,quantidade,unidade,valor,observacao};
-    const rows=f3Data();rows.push(row);f3SetData(rows);f3Close();f3Render();toast(`Produção de ${f?.nome||"funcionário"} registrada.`);
+    const rows=f3Data();rows.push(row);f3SetData(rows);f3Close();f3Render();toast(\`Produção de \${f?.nome||"funcionário"} registrada.\`);
     return false;
   }
   function f3Delete(id){
@@ -10030,7 +10030,7 @@ function relatorioDiario(){
     else{
       tbody.innerHTML=rows.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).map(x=>{
         const f=f3Func(x.funcionario_id),o=f3Obra(x.obra_id),c=f3Check(x.checklist_id);
-        return `<tr><td>${f3Date(x.data)}</td><td><b>${f3Esc(f?.nome||"—")}</b></td><td>${f3Esc(o?.nome||"—")}</td><td>${f3Esc(c?.tarefa||c?.descricao||"—")}</td><td>${x.quantidade?f3N(x.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:2})+" "+f3Esc(x.unidade||""):"—"}</td><td><b>${f3Money(x.valor)}</b></td><td><button class="btn danger" type="button" onclick="window.edifiqF3Delete('${f3Esc(x.id)}')">Excluir</button></td></tr>`;
+        return \`<tr><td>\${f3Date(x.data)}</td><td><b>\${f3Esc(f?.nome||"—")}</b></td><td>\${f3Esc(o?.nome||"—")}</td><td>\${f3Esc(c?.tarefa||c?.descricao||"—")}</td><td>\${x.quantidade?f3N(x.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:2})+" "+f3Esc(x.unidade||""):"—"}</td><td><b>\${f3Money(x.valor)}</b></td><td><button class="btn danger" type="button" onclick="window.edifiqF3Delete('\${f3Esc(x.id)}')">Excluir</button></td></tr>\`;
       }).join("");
     }
 
@@ -10040,7 +10040,7 @@ function relatorioDiario(){
     const max=rank[0]?.[1].valor||0;
     card.querySelector("#edf3Ranking").innerHTML=rank.length?rank.map(([id,v])=>{
       const f=f3Func(id),pct=max?Math.round(v.valor/max*100):0;
-      return `<div class="edf3-worker"><div class="edf3-worker-head"><span><b>${f3Esc(f?.nome||"Funcionário")}</b><small style="display:block;color:var(--muted)">${v.qtd.toLocaleString("pt-BR",{maximumFractionDigits:2})} unidades registradas</small></span><b>${f3Money(v.valor)}</b></div><div class="edf3-bar"><i style="width:${pct}%"></i></div></div>`;
+      return \`<div class="edf3-worker"><div class="edf3-worker-head"><span><b>\${f3Esc(f?.nome||"Funcionário")}</b><small style="display:block;color:var(--muted)">\${v.qtd.toLocaleString("pt-BR",{maximumFractionDigits:2})} unidades registradas</small></span><b>\${f3Money(v.valor)}</b></div><div class="edf3-bar"><i style="width:\${pct}%"></i></div></div>\`;
     }).join(""):'<div class="edf3-empty">Registre produções para acompanhar a equipe.</div>';
 
     const cost=rows.reduce((a,x)=>{
@@ -10059,7 +10059,7 @@ function relatorioDiario(){
     if(!host)return;
     const card=document.createElement("div");
     card.id="edf3Card";card.className="card edf3-wrap";
-    card.innerHTML=`
+    card.innerHTML=\`
       <div class="edf3-head">
         <div><h2>🏗️ Produção da Equipe</h2><p>Controle da produção realizada por funcionário, obra e checklist.</p></div>
         <div class="edf3-actions"><button class="btn gold" type="button" onclick="window.edifiqF3Open()">＋ Registrar produção</button><button class="btn" type="button" onclick="window.edifiqF3Render()">↻ Atualizar</button></div>
@@ -10083,7 +10083,7 @@ function relatorioDiario(){
       <div class="edf3-table">
         <table><thead><tr><th>Data</th><th>Funcionário</th><th>Obra</th><th>Checklist</th><th>Quantidade</th><th>Valor produzido</th><th></th></tr></thead><tbody id="edf3Body"></tbody></table>
       </div>
-      <div style="margin-top:14px"><h3>🏆 Produção por funcionário</h3><div id="edf3Ranking"></div></div>`;
+      <div style="margin-top:14px"><h3>🏆 Produção por funcionário</h3><div id="edf3Ranking"></div></div>\`;
     host.after(card);
 
     ["edf3Ini","edf3Fim","edf3FiltroFunc","edf3FiltroObra","edf3FiltroCheck"].forEach(id=>{
@@ -10101,8 +10101,8 @@ function relatorioDiario(){
     const fs=document.getElementById("edf3FiltroFunc"),os=document.getElementById("edf3FiltroObra");
     if(!fs||!os)return;
     const fcur=fs.value, ocur=os.value;
-    fs.innerHTML='<option value="all">Todos os funcionários</option>'+(typeof D!=="undefined"?D.funcionarios:[]).map(f=>`<option value="${f3Esc(f.id)}">${f3Esc(f.nome||"Funcionário")}</option>`).join("");
-    os.innerHTML='<option value="all">Todas as obras</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>`<option value="${f3Esc(o.id)}">${f3Esc(o.nome||"Obra")}</option>`).join("");
+    fs.innerHTML='<option value="all">Todos os funcionários</option>'+(typeof D!=="undefined"?D.funcionarios:[]).map(f=>\`<option value="\${f3Esc(f.id)}">\${f3Esc(f.nome||"Funcionário")}</option>\`).join("");
+    os.innerHTML='<option value="all">Todas as obras</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>\`<option value="\${f3Esc(o.id)}">\${f3Esc(o.nome||"Obra")}</option>\`).join("");
     if(fcur)fs.value=fcur;if(ocur)os.value=ocur;f3FillFilterChecks();
   }
   function f3FillFilterChecks(){
@@ -10112,7 +10112,7 @@ function relatorioDiario(){
       const id=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
       return oid==="all"||String(id)===String(oid);
     });
-    el.innerHTML='<option value="all">Todos os checklists</option>'+arr.map(c=>`<option value="${f3Esc(c.id)}">${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>`).join("");
+    el.innerHTML='<option value="all">Todos os checklists</option>'+arr.map(c=>\`<option value="\${f3Esc(c.id)}">\${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>\`).join("");
     if(cur&&[...el.options].some(o=>o.value===cur))el.value=cur;
   }
 
@@ -10141,7 +10141,7 @@ function relatorioDiario(){
   }
   document.addEventListener("DOMContentLoaded",()=>setTimeout(f3Hook,500));
 })();
-</script>
+<\/script>
 
 </body></html>`;
   const w=window.open("","_blank"); if(!w){toast("Permita pop-ups para gerar o relatório.");return;} w.document.write(html);w.document.close();setTimeout(()=>w.print(),350);
