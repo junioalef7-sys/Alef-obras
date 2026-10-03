@@ -1710,7 +1710,7 @@ body{min-height:100vh;min-height:100dvh}
 </div>
 </section>
 <section class="page" id="diario">
-<div class="pageTitle"><div><h1>📋 Diário de Obra</h1><p class="sub">Registre o que aconteceu em cada obra, dia a dia.</p></div><button class="btn gold" onclick="openDiario()">＋ Registro do dia</button></div>
+<div class="pageTitle"><div><h1>📋 Diário de Obra</h1><p class="sub">Registre o que aconteceu em cada obra, dia a dia.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn gold" onclick="openDiario()">＋ Registro do dia</button><button class="btn" type="button" onclick="openDiarioVoz()">🎙️ Diário por voz</button></div></div>
 <div class="diarioFilters">
 <label>Obra<select id="diarioObraFilter" onchange="renderDiario()"><option value="all">Todas as obras</option></select></label>
 <label>De<input id="diarioInicio" onchange="renderDiario()" type="date"/></label>
@@ -8758,7 +8758,39 @@ function rcExportPDF(){
   const cliente=$('rcCliente')?.value||'Cliente';
   const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
   const html=esc(txt).replace(/\n/g,'<br>');
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório para ${esc(cliente)}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033;line-height:1.55;max-width:850px;margin:auto}h1{font-size:24px;text-align:center} .box{border:1px solid #d9e0ea;border-radius:14px;padding:24px;white-space:normal}@media print{body{padding:10px}}</style></head><body><h1>EDIFIQ — Relatório para Cliente</h1><div class="box">${html}</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório para ${esc(cliente)}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033;line-height:1.55;max-width:850px;margin:auto}h1{font-size:24px;text-align:center} .box{border:1px solid #d9e0ea;border-radius:14px;padding:24px;white-space:normal}@media print{body{padding:10px}}</style></head><body><h1>EDIFIQ — Relatório para Cliente</h1><div class="box">${html}</div><div class="modal" id="diarioVozM" aria-hidden="true">
+  <div class="modalBox diarioVozBox">
+    <div class="modalHead">
+      <div><h2>🎙️ Diário de Obra por Voz</h2><p class="sub" id="diarioVozStatus">Escolha a obra e toque em iniciar.</p></div>
+      <button class="x" type="button" onclick="closeDiarioVoz()">×</button>
+    </div>
+    <div class="diarioVozBody">
+      <div class="formGrid">
+        <label>Obra
+          <select id="diarioVozObra" required></select>
+        </label>
+        <label>Data
+          <input id="diarioVozData" type="date">
+        </label>
+      </div>
+      <div class="diarioVozOrb" id="diarioVozOrb">🎙️</div>
+      <div class="diarioVozQuestion" id="diarioVozQuestion">Toque em “Iniciar conversa” para começar.</div>
+      <div class="diarioVozTranscript" id="diarioVozTranscript">A conversa aparecerá aqui.</div>
+      <div class="diarioVozPreview" id="diarioVozPreview"></div>
+      <div class="diarioVozActions">
+        <button class="btn primary" id="diarioVozStart" type="button" onclick="diarioVozStart()">🎙️ Iniciar conversa</button>
+        <button class="btn" id="diarioVozRepeat" type="button" onclick="diarioVozRepeat()" style="display:none">🔊 Repetir pergunta</button>
+        <button class="btn" id="diarioVozStop" type="button" onclick="diarioVozStop()" style="display:none">⏹️ Parar</button>
+      </div>
+      <div class="note">O navegador precisa permitir o uso do microfone. O Diário por Voz usa o reconhecimento de voz do próprio navegador e grava o registro no Diário de Obra existente.</div>
+      <div class="formActions">
+        <button class="btn" type="button" onclick="closeDiarioVoz()">Cancelar</button>
+        <button class="btn gold" id="diarioVozSave" type="button" onclick="diarioVozConfirm()" style="display:none">✓ Confirmar e salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
 <script id="edifiq-servico-extra-link">
 (function(){
   // Vincula serviços extras à folha/financeiro sem substituir dados existentes.
@@ -12150,5 +12182,233 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
 })();
 </script>
 
+<style id="edifiq-diario-voz-style">
+.diarioVozBox{width:min(760px,96vw);max-height:94dvh;overflow:auto}
+.diarioVozBody{padding:2px 0 4px}
+.diarioVozOrb{width:82px;height:82px;border-radius:50%;margin:18px auto 12px;display:grid;place-items:center;font-size:34px;border:2px solid rgba(212,175,55,.45);background:rgba(212,175,55,.08);transition:.2s}
+.diarioVozOrb.listening{transform:scale(1.08);box-shadow:0 0 0 10px rgba(212,175,55,.08),0 0 28px rgba(212,175,55,.22)}
+.diarioVozQuestion{text-align:center;font-size:18px;font-weight:700;line-height:1.35;margin:10px auto;max-width:620px}
+.diarioVozTranscript{min-height:44px;border:1px solid #ddd;border-radius:10px;padding:10px;margin-top:10px;background:#fafafa;color:#444}
+.diarioVozPreview{margin-top:10px}
+.diarioVozPreview .box{background:#fafafa}
+.diarioVozActions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:14px 0}
+@media(max-width:640px){.diarioVozBox{width:96vw}.diarioVozQuestion{font-size:16px}}
+</style>
+<script id="edifiq-diario-voz">
+(function(){
+  let voz=null;
+  let vozStep=0;
+  let vozData={obra_id:"",data:"",clima:"Não informado",horas:8,atividades:"",observacoes:"",equipe:[]};
+  let vozRunning=false;
+  let vozListening=false;
+
+  const steps=[
+    {key:"atividades",q:"O que foi feito hoje na obra? Pode falar com detalhes.",parse:v=>String(v||"").trim()},
+    {key:"horas",q:"Quantas horas a equipe trabalhou hoje? Diga apenas o número de horas.",parse:v=>{
+      const m=String(v||"").replace(",",".").match(/(\d+(?:\.\d+)?)/);
+      return m?Math.max(0,Math.min(24,Number(m[1]))):null;
+    }},
+    {key:"clima",q:"Como estava o tempo hoje? Diga ensolarado, nublado, chuvoso ou parcialmente nublado.",parse:v=>{
+      const x=String(v||"").toLowerCase();
+      if(x.includes("chuv"))return"Chuvoso";
+      if(x.includes("parcial"))return"Parcialmente nublado";
+      if(x.includes("nubl"))return"Nublado";
+      if(x.includes("sol")||x.includes("ensolar"))return"Ensolarado";
+      return"Não informado";
+    }},
+    {key:"equipe",q:"Quem trabalhou hoje? Fale os nomes dos funcionários, um após o outro.",parse:v=>diarioVozEquipe(v)}
+  ];
+
+  function el(id){return document.getElementById(id)}
+  function norm(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim()}
+  function todayV(){return typeof today==="function"?today():new Date().toISOString().slice(0,10)}
+  function escV(v){return typeof esc==="function"?esc(v):String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+
+  function fillVozObras(){
+    const s=el("diarioVozObra"); if(!s)return;
+    const atual=s.value;
+    s.innerHTML='<option value="">Selecione a obra</option>'+(D.obras||[]).map(o=>`<option value="${escV(o.id)}">${escV(o.nome)}</option>`).join("");
+    if([...s.options].some(o=>o.value===atual))s.value=atual;
+    const f=el("diarioObraFilter");
+    if(!s.value && f && f.value && f.value!=="all" && [...s.options].some(o=>o.value===f.value))s.value=f.value;
+  }
+
+  function activeFuncs(){
+    const oid=el("diarioVozObra")?.value||"";
+    let funcs=(D.funcionarios||[]).filter(f=>f.ativo!==false);
+    if(oid){
+      const linked=funcs.filter(f=>typeof getFuncObra==="function" && String(getFuncObra(f.id))===String(oid));
+      if(linked.length)funcs=linked;
+    }
+    return funcs;
+  }
+
+  function diarioVozEquipe(raw){
+    const funcs=activeFuncs();
+    const txt=norm(raw);
+    const found=[];
+    funcs.forEach(f=>{
+      const name=norm(f.nome);
+      if(name && (txt.includes(name)||name.split(/\s+/).every(part=>part.length<3||txt.includes(part)))) found.push(String(f.id));
+    });
+    return [...new Set(found)];
+  }
+
+  function sayVoz(text){
+    if(!("speechSynthesis" in window))return;
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang="pt-BR"; u.rate=1; u.pitch=1;
+    window.speechSynthesis.speak(u);
+  }
+
+  function setStatus(text){
+    if(el("diarioVozStatus"))el("diarioVozStatus").textContent=text;
+    if(el("diarioVozQuestion"))el("diarioVozQuestion").textContent=text;
+  }
+
+  function transcript(text){
+    if(el("diarioVozTranscript"))el("diarioVozTranscript").textContent=text?`Você disse: “${text}”`:"Aguardando sua resposta…";
+  }
+
+  function stopRecognition(){
+    try{if(voz)voz.stop()}catch(_){}
+    vozListening=false;
+    el("diarioVozOrb")?.classList.remove("listening");
+    if(el("diarioVozStop"))el("diarioVozStop").style.display="none";
+  }
+
+  function startRecognition(){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){
+      setStatus("Seu navegador não oferece reconhecimento de voz. Use Chrome ou Edge com o microfone permitido.");
+      return;
+    }
+    stopRecognition();
+    voz=new SR();
+    voz.lang="pt-BR"; voz.continuous=false; voz.interimResults=false; voz.maxAlternatives=1;
+    voz.onstart=()=>{
+      vozListening=true;
+      el("diarioVozOrb")?.classList.add("listening");
+      if(el("diarioVozStop"))el("diarioVozStop").style.display="inline-flex";
+      setStatus("Estou ouvindo… fale agora.");
+    };
+    voz.onresult=e=>{
+      const heard=e.results?.[0]?.[0]?.transcript?.trim()||"";
+      stopRecognition();
+      transcript(heard);
+      processAnswer(heard);
+    };
+    voz.onerror=e=>{
+      stopRecognition();
+      const msg=e.error==="not-allowed"?"Permissão do microfone foi bloqueada. Autorize o microfone no navegador.":e.error==="no-speech"?"Não consegui ouvir. Vamos tentar novamente.":"Não consegui reconhecer a fala. Vamos tentar novamente.";
+      setStatus(msg);
+      sayVoz(msg);
+      if(vozRunning)setTimeout(()=>askCurrent(),700);
+    };
+    voz.onend=()=>{vozListening=false;el("diarioVozOrb")?.classList.remove("listening");};
+    try{voz.start()}catch(_){setStatus("Não foi possível iniciar o microfone. Tente novamente.")}
+  }
+
+  function askCurrent(){
+    if(!vozRunning)return;
+    if(vozStep>=steps.length){finishVoz();return}
+    const st=steps[vozStep];
+    setStatus(st.q);
+    sayVoz(st.q);
+    if(el("diarioVozRepeat"))el("diarioVozRepeat").style.display="inline-flex";
+    setTimeout(()=>{if(vozRunning&&!vozListening)startRecognition()},500);
+  }
+
+  function processAnswer(heard){
+    if(!vozRunning)return;
+    const st=steps[vozStep];
+    const val=st.parse(heard);
+    if(st.key==="horas" && val===null){
+      const q="Não entendi as horas. Diga, por exemplo, oito horas.";
+      setStatus(q);sayVoz(q);setTimeout(()=>startRecognition(),700);return;
+    }
+    if(st.key==="equipe" && (!val||!val.length)){
+      const q="Não consegui identificar os funcionários. Fale os nomes exatamente como estão cadastrados, ou faça a seleção manual.";
+      setStatus(q);sayVoz(q);renderEquipeManual();return;
+    }
+    vozData[st.key]=val;
+    vozStep++;
+    if(st.key==="equipe")renderEquipeManual();
+    setTimeout(askCurrent,400);
+  }
+
+  function renderEquipeManual(){
+    const funcs=activeFuncs();
+    const box=el("diarioVozPreview");
+    if(!box)return;
+    const selected=new Set(vozData.equipe||[]);
+    box.innerHTML=`<div class="box"><b>👷 Equipe reconhecida/selecionada</b><div style="display:grid;gap:7px;margin-top:8px">${funcs.map(f=>`<label style="display:flex;gap:8px;align-items:center"><input class="diarioVozFunc" type="checkbox" value="${escV(f.id)}" ${selected.has(String(f.id))?"checked":""}> ${escV(f.nome)}</label>`).join("")}</div><small class="muted">Se algum nome não foi reconhecido pela voz, marque-o aqui.</small></div>`;
+    box.querySelectorAll(".diarioVozFunc").forEach(c=>c.addEventListener("change",()=>{
+      vozData.equipe=[...box.querySelectorAll(".diarioVozFunc:checked")].map(x=>x.value);
+    }));
+  }
+
+  function finishVoz(){
+    stopRecognition(); vozRunning=false;
+    if(!vozData.equipe?.length){
+      setStatus("Selecione pelo menos um trabalhador para concluir.");
+      renderEquipeManual(); return;
+    }
+    const obra=(D.obras||[]).find(o=>String(o.id)===String(vozData.obra_id));
+    const names=vozData.equipe.map(id=>(D.funcionarios||[]).find(f=>String(f.id)===String(id))?.nome).filter(Boolean);
+    const preview=`<div class="box"><h3 style="margin-top:0">📋 Resumo do diário</h3><div class="row"><span>Obra</span><b>${escV(obra?.nome||"")}</b></div><div class="row"><span>Data</span><b>${escV(typeof diarioFmtData==="function"?diarioFmtData(vozData.data):vozData.data)}</b></div><div class="row"><span>Clima</span><b>${escV(vozData.clima)}</b></div><div class="row"><span>Horas</span><b>${Number(vozData.horas).toLocaleString("pt-BR")} h</b></div><div class="row"><span>Equipe</span><b>${escV(names.join(" · "))}</b></div><div style="margin-top:10px"><b>Atividades</b><p>${escV(vozData.atividades).replace(/\n/g,"<br>")}</p></div><div><b>Observações</b><p>${escV(vozData.observacoes||"Nenhuma")}</p></div></div>`;
+    el("diarioVozPreview").innerHTML=preview;
+    setStatus("Confira o resumo. Você pode confirmar e salvar.");
+    el("diarioVozSave").style.display="inline-flex";
+    el("diarioVozRepeat").style.display="none";
+    sayVoz("Pronto. Confira o resumo e toque em confirmar e salvar.");
+  }
+
+  window.openDiarioVoz=function(){
+    fillVozObras();
+    vozRunning=false; vozStep=0; vozData={obra_id:"",data:todayV(),clima:"Não informado",horas:8,atividades:"",observacoes:"",equipe:[]};
+    el("diarioVozData").value=vozData.data;
+    el("diarioVozTranscript").textContent="A conversa aparecerá aqui.";
+    el("diarioVozPreview").innerHTML="";
+    el("diarioVozSave").style.display="none";
+    el("diarioVozRepeat").style.display="none";
+    el("diarioVozStop").style.display="none";
+    setStatus("Escolha a obra e toque em iniciar.");
+    openM("diarioVozM");
+  };
+
+  window.diarioVozStart=function(){
+    const obra=el("diarioVozObra")?.value||"";
+    if(!obra){toast("Selecione a obra.");return}
+    vozData.obra_id=obra;
+    vozData.data=el("diarioVozData")?.value||todayV();
+    vozRunning=true; vozStep=0;
+    el("diarioVozSave").style.display="none";
+    el("diarioVozPreview").innerHTML="";
+    setStatus("Vamos começar.");
+    sayVoz("Vamos registrar o diário de obra por voz.");
+    setTimeout(askCurrent,1000);
+  };
+
+  window.diarioVozRepeat=function(){if(vozRunning)askCurrent()};
+  window.diarioVozStop=function(){stopRecognition();vozRunning=false;setStatus("Conversa pausada. Toque em iniciar para começar novamente.");sayVoz("Conversa pausada.")};
+
+  window.diarioVozConfirm=function(){
+    if(!vozData.obra_id){toast("Selecione a obra.");return}
+    if(!vozData.equipe?.length){toast("Selecione pelo menos um trabalhador.");renderEquipeManual();return}
+    const base={obra_id:vozData.obra_id,data:vozData.data||todayV(),clima:vozData.clima||"Não informado",horas:Number(vozData.horas||0),equipe:[...new Set(vozData.equipe)],atividades:String(vozData.atividades||"").trim(),observacoes:String(vozData.observacoes||"").trim()};
+    D.diario=Array.isArray(D.diario)?D.diario:[];
+    D.diario.unshift({...base,id:"diario_"+Date.now()+"_"+Math.random().toString(36).slice(2),user_id:user?.id||"local-user",created_at:new Date().toISOString(),origem:"voz"});
+    saveLocalData(); closeDiarioVoz(); renderAll(); toast("Diário de obra registrado por voz.");
+  };
+
+  window.closeDiarioVoz=function(){
+    stopRecognition(); vozRunning=false;
+    try{window.speechSynthesis?.cancel()}catch(_){}
+    closeM("diarioVozM");
+  };
+})();
+</script>
 </body>
 </html>
