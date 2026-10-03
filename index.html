@@ -1623,7 +1623,7 @@ body{min-height:100vh;min-height:100dvh}
     <select id="obraSelecionada" onchange="renderObras()"><option value="">Selecione uma obra</option></select>
   </label>
   <input id="obraSearch" oninput="renderObras()" placeholder="Buscar obra ou cliente"/>
-  <button class="btn" onclick="go('documentos')">📄 Documentos da Obra</button><button class="btn gold" type="button" onclick="window.edifiqPortalOpenSelected()">🏗️ Portal da obra</button><button class="btn" type="button" onclick="window.edifiqPortalReportSelected()">📄 Relatório automático</button>
+  <button class="btn" onclick="go('documentos')">📄 Documentos da Obra</button><button class="edp-open-trigger" type="button" onclick="window.edifiqPortalOpenSelected()"><span class="edp-open-icon">🏗️</span><span class="edp-open-copy"><b>Portal da Obra</b><small>Resumo completo da obra</small></span><span class="edp-open-arrow">›</span></button><button class="btn" type="button" onclick="window.edifiqPortalReportSelected()">📄 Relatório automático</button>
 </div>
 <div class="note" id="obraSelecaoAviso" style="margin-bottom:12px">Selecione uma obra acima para visualizar os dados. Apenas uma obra é exibida por vez.</div>
 <div id="obrasList"></div>
@@ -8758,39 +8758,7 @@ function rcExportPDF(){
   const cliente=$('rcCliente')?.value||'Cliente';
   const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
   const html=esc(txt).replace(/\n/g,'<br>');
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório para ${esc(cliente)}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033;line-height:1.55;max-width:850px;margin:auto}h1{font-size:24px;text-align:center} .box{border:1px solid #d9e0ea;border-radius:14px;padding:24px;white-space:normal}@media print{body{padding:10px}}</style></head><body><h1>EDIFIQ — Relatório para Cliente</h1><div class="box">${html}</div><div class="modal" id="diarioVozM" aria-hidden="true">
-  <div class="modalBox diarioVozBox">
-    <div class="modalHead">
-      <div><h2>🎙️ Diário de Obra por Voz</h2><p class="sub" id="diarioVozStatus">Escolha a obra e toque em iniciar.</p></div>
-      <button class="x" type="button" onclick="closeDiarioVoz()">×</button>
-    </div>
-    <div class="diarioVozBody">
-      <div class="formGrid">
-        <label>Obra
-          <select id="diarioVozObra" required></select>
-        </label>
-        <label>Data
-          <input id="diarioVozData" type="date">
-        </label>
-      </div>
-      <div class="diarioVozOrb" id="diarioVozOrb">🎙️</div>
-      <div class="diarioVozQuestion" id="diarioVozQuestion">Toque em “Iniciar conversa” para começar.</div>
-      <div class="diarioVozTranscript" id="diarioVozTranscript">A conversa aparecerá aqui.</div>
-      <div class="diarioVozPreview" id="diarioVozPreview"></div>
-      <div class="diarioVozActions">
-        <button class="btn primary" id="diarioVozStart" type="button" onclick="diarioVozStart()">🎙️ Iniciar conversa</button>
-        <button class="btn" id="diarioVozRepeat" type="button" onclick="diarioVozRepeat()" style="display:none">🔊 Repetir pergunta</button>
-        <button class="btn" id="diarioVozStop" type="button" onclick="diarioVozStop()" style="display:none">⏹️ Parar</button>
-      </div>
-      <div class="note">O navegador precisa permitir o uso do microfone. O Diário por Voz usa o reconhecimento de voz do próprio navegador e grava o registro no Diário de Obra existente.</div>
-      <div class="formActions">
-        <button class="btn" type="button" onclick="closeDiarioVoz()">Cancelar</button>
-        <button class="btn gold" id="diarioVozSave" type="button" onclick="diarioVozConfirm()" style="display:none">✓ Confirmar e salvar</button>
-      </div>
-    </div>
-  </div>
-</div>
-<div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório para ${esc(cliente)}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033;line-height:1.55;max-width:850px;margin:auto}h1{font-size:24px;text-align:center} .box{border:1px solid #d9e0ea;border-radius:14px;padding:24px;white-space:normal}@media print{body{padding:10px}}</style></head><body><h1>EDIFIQ — Relatório para Cliente</h1><div class="box">${html}</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
 <script id="edifiq-servico-extra-link">
 (function(){
   // Vincula serviços extras à folha/financeiro sem substituir dados existentes.
@@ -11984,6 +11952,14 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
 </script>
 
 
+<style id="edifiq-fase4-portal-trigger-style">
+.edp-open-trigger{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 13px;border:1px solid rgba(217,173,85,.55);border-radius:12px;background:linear-gradient(135deg,rgba(217,173,85,.14),rgba(255,255,255,.035));color:var(--text,#f5f7fb);cursor:pointer;box-shadow:0 5px 18px rgba(0,0,0,.16);transition:.18s;white-space:nowrap}
+.edp-open-trigger:hover{transform:translateY(-1px);border-color:#d9ad55;background:linear-gradient(135deg,rgba(217,173,85,.20),rgba(255,255,255,.055))}
+.edp-open-trigger:active{transform:translateY(0)}
+.edp-open-icon{font-size:22px;line-height:1}.edp-open-copy{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}.edp-open-copy b{font-size:13px}.edp-open-copy small{font-size:10px;color:var(--muted);margin-top:3px}.edp-open-arrow{font-size:25px;color:#d9ad55;line-height:1;margin-left:3px}
+@media(max-width:700px){.edp-open-trigger{flex:1;min-width:190px}.edp-open-copy b{font-size:12px}}
+</style>
+
 <style id="edifiq-fase4-portal-style">
   .edp-box{width:min(1180px,96vw)!important;max-width:none!important;max-height:92vh!important;overflow:auto!important}
   .edp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
@@ -12176,7 +12152,14 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
 
   window.edifiqPortalOpen=openP;
   window.edifiqPortalOpenSelected=()=>openP(selectedP());
-  window.edifiqPortalRefresh=()=>{if(currentId)renderP(currentId)};
+  window.edifiqPortalRefresh=()=>{
+    const id=selectedP()||currentId;
+    if(!id){toast("Selecione uma obra primeiro.");return;}
+    currentId=String(id);
+    renderP(currentId);
+    setTimeout(()=>{try{loadPhotosP(currentId)}catch(_){}} ,0);
+    toast("Portal da obra atualizado.");
+  };
   window.edifiqPortalReport=()=>reportP(currentId);
   window.edifiqPortalReportSelected=()=>reportP(selectedP());
 })();
@@ -12367,6 +12350,8 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
 
   window.openDiarioVoz=function(){
     fillVozObras();
+    const selected=el("obraSelecionada")?.value||el("diarioObraFilter")?.value||"";
+    if(selected && selected!=="all" && el("diarioVozObra"))el("diarioVozObra").value=selected;
     vozRunning=false; vozStep=0; vozData={obra_id:"",data:todayV(),clima:"Não informado",horas:8,atividades:"",observacoes:"",equipe:[]};
     el("diarioVozData").value=vozData.data;
     el("diarioVozTranscript").textContent="A conversa aparecerá aqui.";
@@ -12379,8 +12364,15 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   };
 
   window.diarioVozStart=function(){
+    const modal=el("diarioVozM");
+    if(!modal){toast("Módulo Diário por Voz não carregou. Recarregue o aplicativo.");return}
     const obra=el("diarioVozObra")?.value||"";
     if(!obra){toast("Selecione a obra.");return}
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){
+      const msg="Seu navegador não oferece reconhecimento de voz. No iPhone, tente pelo Chrome ou Safari atualizado e permita o microfone.";
+      setStatus(msg);sayVoz(msg);return;
+    }
     vozData.obra_id=obra;
     vozData.data=el("diarioVozData")?.value||todayV();
     vozRunning=true; vozStep=0;
@@ -12410,5 +12402,37 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   };
 })();
 </script>
+<div class="modal" id="diarioVozM" aria-hidden="true">
+  <div class="modalBox diarioVozBox">
+    <div class="modalHead">
+      <div><h2>🎙️ Diário de Obra por Voz</h2><p class="sub" id="diarioVozStatus">Escolha a obra e toque em iniciar.</p></div>
+      <button class="x" type="button" onclick="closeDiarioVoz()">×</button>
+    </div>
+    <div class="diarioVozBody">
+      <div class="formGrid">
+        <label>Obra
+          <select id="diarioVozObra" required></select>
+        </label>
+        <label>Data
+          <input id="diarioVozData" type="date">
+        </label>
+      </div>
+      <div class="diarioVozOrb" id="diarioVozOrb">🎙️</div>
+      <div class="diarioVozQuestion" id="diarioVozQuestion">Toque em “Iniciar conversa” para começar.</div>
+      <div class="diarioVozTranscript" id="diarioVozTranscript">A conversa aparecerá aqui.</div>
+      <div class="diarioVozPreview" id="diarioVozPreview"></div>
+      <div class="diarioVozActions">
+        <button class="btn primary" id="diarioVozStart" type="button" onclick="diarioVozStart()">🎙️ Iniciar conversa</button>
+        <button class="btn" id="diarioVozRepeat" type="button" onclick="diarioVozRepeat()" style="display:none">🔊 Repetir pergunta</button>
+        <button class="btn" id="diarioVozStop" type="button" onclick="diarioVozStop()" style="display:none">⏹️ Parar</button>
+      </div>
+      <div class="note">O navegador precisa permitir o uso do microfone. O Diário por Voz usa o reconhecimento de voz do próprio navegador e grava o registro no Diário de Obra existente.</div>
+      <div class="formActions">
+        <button class="btn" type="button" onclick="closeDiarioVoz()">Cancelar</button>
+        <button class="btn gold" id="diarioVozSave" type="button" onclick="diarioVozConfirm()" style="display:none">✓ Confirmar e salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
