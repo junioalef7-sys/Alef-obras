@@ -1713,7 +1713,7 @@ body{min-height:100vh;min-height:100dvh}
 </section>
 <section class="page" id="funcionarios">
 <div class="pageTitle"><h1>Funcionários</h1><button class="btn gold" onclick="openFunc()">＋ Funcionário</button></div>
-<div class="toolbar"><select id="funcFilter" onchange="renderFuncs()"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select><button class="btn gold" onclick="openPresenca()">✓ Registrar presença</button><button class="btn" onclick="openFalta()">⚠️ Registrar falta</button><button class="btn" onclick="go('diarias')">📅 Diárias</button><button class="btn gold" onclick="openExtraEquipe()">🏆 Extras e Bônus</button><button class="btn" onclick="openPagamentoEquipe()">💰 Pagamentos</button><button class="btn" onclick="openAdiantamento()">＋ Adiantamento</button></div>
+<div class="toolbar"><select id="funcFilter" onchange="renderFuncs()"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select><button class="btn" type="button" onclick="atualizarEquipeCompleto()">↻ Atualizar equipe</button><button class="btn gold" onclick="openPresenca()">✓ Registrar presença</button><button class="btn" onclick="openFalta()">⚠️ Registrar falta</button><button class="btn" onclick="go('diarias')">📅 Diárias</button><button class="btn gold" onclick="openExtraEquipe()">🏆 Extras e Bônus</button><button class="btn" onclick="openPagamentoEquipe()">💰 Pagamentos</button><button class="btn" onclick="openAdiantamento()">＋ Adiantamento</button></div>
 <div class="card equipeOverview">
 <h2>Gestão da equipe</h2><p class="sub">Cadastro, presença, faltas, diárias, adiantamentos, pagamentos e fechamento da folha por período.</p>
 <div class="grid kpis equipeKpis">
@@ -2633,16 +2633,13 @@ d.valor_diaria||0
 }
 
 function diariaEstaPaga(d){
-
-if(isDiariaMarkedPaid(d?.id)) return true;
-const status=String(d?.status||"pendente").trim().toLowerCase();
-
-return status==="pago" ||
-       status==="paid" ||
-       status==="quitado" ||
-       status==="liquidado" ||
-       d?.pago===true ||
-       d?.paga===true;
+  if(isDiariaMarkedPaid(d?.id)) return true;
+  const status=String(d?.status||"pendente").trim().toLowerCase();
+  const qtd=Number(d?.qtd??d?.quantidade??1);
+  const qtdPaga=Number(d?.qtd_paga||0);
+  const valor=Number(diariaValor(d)||0);
+  const valorBaixado=Number(d?.valor_baixado||d?.valor_pago||0);
+  return status==="pago"||status==="paid"||status==="quitado"||status==="liquidado"||d?.pago===true||d?.paga===true||(qtd>0&&qtdPaga>=qtd)||(valor>0&&valorBaixado>=valor-0.01);
 }
 
 function getPendingDiarias(funcId){
@@ -3552,9 +3549,17 @@ async function retryEdifiqPendingUpdates(){
   const restantes=[];
   for(const item of q){
     try{
-      const row={...(item.row||{})};
+      let row={...(item.row||{})};
       delete row.id; delete row.user_id; delete row._sync_pendente;
-      const {data,error}=await sb.from(item.table).update(row).eq('id',item.id).eq('user_id',user.id).select().single();
+      const tentativas=item.table==="diarias"
+        ? [{status:"Pago",valor_pago:Math.max(0,Number(row.valor_baixado??row.valor_pago??row.valor??0)),qtd_paga:Math.max(0,Number(row.qtd_paga??row.qtd??1)),pago_em:row.pago_em||row.data_pagamento||today(),valor_baixado:Math.max(0,Number(row.valor_baixado??row.valor_pago??row.valor??0))},{status:"Pago"}]
+        : [row];
+      let data=null,error=null;
+      for(const tentativa of tentativas){
+        const resp=await sb.from(item.table).update(tentativa).eq('id',item.id).eq('user_id',user.id).select().single();
+        data=resp.data; error=resp.error;
+        if(!error&&data)break;
+      }
       if(error||!data){ restantes.push(item); continue; }
       const idx=Array.isArray(D[item.table])?D[item.table].findIndex(x=>String(x.id)===String(item.id)):-1;
       if(idx>=0) D[item.table][idx]={...data,_sync_pendente:false};
@@ -3732,13 +3737,13 @@ try{
 
 const tentativas=[row];
 
-/* Algumas instalações antigas não possuem a coluna "pago".
-   Tenta primeiro o registro completo e depois somente "status"
-   para que a baixa da diária continue funcionando. */
-if(table==="diarias" && Object.prototype.hasOwnProperty.call(row,"pago")){
-  const semPago={...row};
-  delete semPago.pago;
-  tentativas.push(semPago);
+/* Normaliza a baixa para o schema atual da tabela diarias. */
+if(table==="diarias"){
+  const qtd=Math.max(0,Number(row.qtd_paga??row.qtd??1));
+  const valor=Math.max(0,Number(row.valor_baixado??row.valor_pago??row.valor??0));
+  const dataPg=row.pago_em||row.data_pagamento||today();
+  tentativas.unshift({status:"Pago",valor_pago:valor,qtd_paga:qtd,pago_em:dataPg,valor_baixado:valor});
+  tentativas.push({status:"Pago"});
 }
 
 for(const tentativa of tentativas){
@@ -3754,7 +3759,8 @@ await sb
 
 if(!error&&data){
 
-D[table][index]=data;
+D[table][index]={...data,_sync_pendente:false};
+removeEdifiqPendingUpdate(table,id);
 saveLocalData();
 renderAll();
 return data;
@@ -5630,20 +5636,14 @@ for(const item of processados){
     continue;
   }
 
-  /* Baixa cada diária usando a própria obra_id já registrada. */
+  /* Baixa cada diária usando exatamente as colunas existentes no Supabase. */
   for(const diaria of item.pendingItems){
-    const atualizado=await updateRow(
-      "diarias",
-      diaria.id,
-      {status:"pago",pago:true,paga:true,data_pagamento:data}
-    );
+    const qtdOriginal=Math.max(0,Number(diaria.qtd??diaria.quantidade??1));
+    const valorBaixado=Math.max(0,Number(diariaValor(diaria)||0));
+    const payloadBaixa={status:"Pago",valor_pago:valorBaixado,qtd_paga:qtdOriginal,pago_em:data,valor_baixado:valorBaixado};
+    const atualizado=await updateRow("diarias",diaria.id,payloadBaixa);
     const localDia=D.diarias.find(d=>String(d.id)===String(diaria.id));
-    if(localDia){
-      localDia.status="pago";
-      localDia.pago=true;
-      localDia.paga=true;
-      localDia.data_pagamento=data;
-    }
+    if(localDia){Object.assign(localDia,payloadBaixa);localDia.pago=true;localDia.paga=true;localDia.data_pagamento=data;}
     markDiariasPaid([diaria.id]);
     if(atualizado)baixados++;
   }
@@ -6824,6 +6824,32 @@ function renderEquipeOverview(){
   fillEquipeHistorySelectors();
   renderHistoricoPagamentos();
 }
+async function sincronizarBaixasLocaisEquipe(){
+  if(!sb||!user?.id||!navigator.onLine)return 0;
+  let total=0;
+  const dias=Array.isArray(D.diarias)?D.diarias:[];
+  for(const diaria of dias){
+    if(!diaria?.id||String(diaria.id).startsWith('local_')||!isDiariaMarkedPaid(diaria.id))continue;
+    const qtd=Math.max(0,Number(diaria.qtd??diaria.quantidade??1));
+    const valor=Math.max(0,Number(diaria.valor_baixado??diaria.valor_pago??diariaValor(diaria)??0));
+    const payload={status:'Pago',valor_pago:valor,qtd_paga:qtd,pago_em:diaria.pago_em||diaria.data_pagamento||today(),valor_baixado:valor};
+    const atual=await updateRow('diarias',diaria.id,payload);
+    if(atual&&!atual._sync_pendente)total++;
+  }
+  return total;
+}
+
+async function atualizarEquipeCompleto(){
+  const btn=[...document.querySelectorAll('#funcionarios button')].find(b=>/Atualizar equipe/i.test(b.textContent||''));
+  if(btn){btn.disabled=true;btn.dataset.oldText=btn.textContent;btn.textContent='↻ Sincronizando...';}
+  try{
+    if(sb&&user?.id&&navigator.onLine){await retryEdifiqPendingUpdates();await retryLocalCloudRows();await loadCloud();await sincronizarBaixasLocaisEquipe();await retryEdifiqPendingUpdates();await loadCloud();}
+    fillSelectors(); renderAll(); try{window.edifiqF3Render?.();}catch(_){}
+    toast(sb&&user?.id&&navigator.onLine?'Equipe atualizada e sincronizada.':'Equipe atualizada neste aparelho.');
+  }catch(err){console.error('Atualizar equipe:',err);renderAll();toast('Não foi possível sincronizar a equipe agora. Os dados locais foram preservados.');}
+  finally{if(btn){btn.disabled=false;btn.textContent=btn.dataset.oldText||'↻ Atualizar equipe';}}
+}
+
 /* =========================================================
    FALTAS DOS FUNCIONÁRIOS
    Armazenamento local para não exigir nova tabela no Supabase.
@@ -7898,7 +7924,7 @@ f.observacao||""
     card.innerHTML=\`
       <div class="edf3-head">
         <div><h2>🏗️ Produção da Equipe</h2><p>Controle da produção realizada por funcionário, obra e checklist.</p></div>
-        <div class="edf3-actions"><button class="btn gold" type="button" onclick="window.edifiqF3Open()">＋ Registrar produção</button><button class="btn" type="button" onclick="window.edifiqF3Render()">↻ Atualizar</button></div>
+        <div class="edf3-actions"><button class="btn gold" type="button" onclick="window.edifiqF3Open()">＋ Registrar produção</button><button class="btn" type="button" onclick="window.edifiqF3Refresh()">↻ Atualizar</button></div>
       </div>
       <div class="edf3-kpis">
         <div class="edf3-kpi"><small>VALOR PRODUZIDO</small><b id="edf3Total">R$ 0,00</b></div>
@@ -7957,6 +7983,16 @@ f.observacao||""
   window.edifiqF3Save=f3Save;
   window.edifiqF3Delete=f3Delete;
   window.edifiqF3Render=f3Render;
+  window.edifiqF3Refresh=async function(){
+    const btn=document.querySelector('#edf3Card button[onclick*="edifiqF3Refresh"]');
+    if(btn){btn.disabled=true;btn.textContent='↻ Sincronizando...';}
+    try{
+      if(typeof sb!=="undefined"&&sb&&typeof user!=="undefined"&&user?.id&&navigator.onLine){await retryEdifiqPendingUpdates();await retryLocalCloudRows();await loadCloud();await sincronizarBaixasLocaisEquipe();await retryEdifiqPendingUpdates();await loadCloud();}
+      f3SyncData();f3FillFilters();f3Render();
+      toast(typeof sb!=="undefined"&&sb&&typeof user!=="undefined"&&user?.id&&navigator.onLine?'Produção atualizada e sincronizada.':'Produção atualizada neste aparelho.');
+    }catch(err){console.error('Atualizar produção da equipe:',err);f3SyncData();f3Render();toast('Não foi possível sincronizar a produção agora.');}
+    finally{if(btn){btn.disabled=false;btn.textContent='↻ Atualizar';}}
+  };
 
   function f3Hook(){
     f3SyncData();f3BuildCard();f3FillFilters();f3Render();
