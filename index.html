@@ -11695,5 +11695,67 @@ button,a,input,select,textarea{touch-action:manipulation}
   window.edifiqPwaInstall=function(){showBar()};
 })();
 </script>
+
+
+<style id="edifiq-ios-home-menu-safearea-final">
+/* EDIFIQ — CORREÇÃO FINAL DO MENU NO APP DA TELA DE INÍCIO DO iPHONE
+   Não altera o Safari normal. No modo standalone, reserva uma área
+   real para a barra de status antes da logo do menu.
+*/
+@media (max-width:759px) and (display-mode:standalone){
+  .edifiqDrawer{
+    top:0!important;
+    bottom:0!important;
+    height:100dvh!important;
+    padding:0!important;
+    overflow:hidden!important;
+  }
+
+  .edifiqDrawerHead{
+    height:auto!important;
+    min-height:calc(116px + max(47px, env(safe-area-inset-top, 0px)))!important;
+    padding-top:calc(18px + max(47px, env(safe-area-inset-top, 0px)))!important;
+    padding-right:16px!important;
+    padding-bottom:16px!important;
+    padding-left:16px!important;
+    align-items:center!important;
+  }
+
+  .edifiqDrawerScroll{
+    height:calc(100dvh - 116px - max(47px, env(safe-area-inset-top, 0px)))!important;
+    min-height:0!important;
+    padding-top:18px!important;
+    padding-right:12px!important;
+    padding-bottom:calc(28px + env(safe-area-inset-bottom, 0px))!important;
+    padding-left:12px!important;
+  }
+}
+
+/* Fallback específico para iPhone/iPad instalado, inclusive quando o
+   Safari não expõe corretamente o env(safe-area-inset-top). */
+body.edifiq-ios-standalone .edifiqDrawerHead{
+  min-height:calc(116px + max(47px, env(safe-area-inset-top, 0px)))!important;
+  padding-top:calc(18px + max(47px, env(safe-area-inset-top, 0px)))!important;
+}
+
+body.edifiq-ios-standalone .edifiqDrawerScroll{
+  height:calc(100dvh - 116px - max(47px, env(safe-area-inset-top, 0px)))!important;
+  padding-bottom:calc(28px + env(safe-area-inset-bottom, 0px))!important;
+}
+</style>
+<script id="edifiq-ios-standalone-safearea-final">
+(function(){
+  "use strict";
+  try{
+    var standalone =
+      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+      window.navigator.standalone === true;
+    if(standalone && document.body){
+      document.body.classList.add("edifiq-ios-standalone");
+    }
+  }catch(_){}
+})();
+</script>
+
 </body>
 </html>
