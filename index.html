@@ -1623,7 +1623,7 @@ body{min-height:100vh;min-height:100dvh}
     <select id="obraSelecionada" onchange="renderObras()"><option value="">Selecione uma obra</option></select>
   </label>
   <input id="obraSearch" oninput="renderObras()" placeholder="Buscar obra ou cliente"/>
-  <button class="btn" onclick="go('documentos')">📄 Documentos da Obra</button>
+  <button class="btn" onclick="go('documentos')">📄 Documentos da Obra</button><button class="btn gold" type="button" onclick="window.edifiqPortalOpenSelected()">🏗️ Portal da obra</button><button class="btn" type="button" onclick="window.edifiqPortalReportSelected()">📄 Relatório automático</button>
 </div>
 <div class="note" id="obraSelecaoAviso" style="margin-bottom:12px">Selecione uma obra acima para visualizar os dados. Apenas uma obra é exibida por vez.</div>
 <div id="obrasList"></div>
@@ -11948,6 +11948,205 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     wrappedRF.__edifiqF3=true;window.renderFuncs=wrappedRF;
   }
   document.addEventListener("DOMContentLoaded",()=>setTimeout(f3Hook,500));
+})();
+</script>
+
+
+<style id="edifiq-fase4-portal-style">
+  .edp-box{width:min(1180px,96vw)!important;max-width:none!important;max-height:92vh!important;overflow:auto!important}
+  .edp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+  .edp-head h2{margin:0 0 4px}.edp-head p{margin:0;color:var(--muted)}
+  .edp-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .edp-hero{margin-top:14px;padding:18px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:linear-gradient(135deg,rgba(217,173,85,.10),rgba(255,255,255,.025))}
+  .edp-hero-main{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;flex-wrap:wrap}
+  .edp-hero h1{font-size:26px;margin:0 0 5px}.edp-hero p{margin:3px 0;color:var(--muted)}
+  .edp-status{display:inline-flex;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.10);font-size:11px;font-weight:700}
+  .edp-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:12px}
+  .edp-kpi{padding:13px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.025)}
+  .edp-kpi small{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}.edp-kpi b{font-size:17px}
+  .edp-progress{height:9px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden;margin-top:7px}.edp-progress i{display:block;height:100%;background:#55a8ff;border-radius:999px}
+  .edp-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px;margin-top:12px}
+  .edp-panel{padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.018)}
+  .edp-panel h3{margin:0 0 10px;font-size:15px}.edp-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06)}.edp-row:last-child{border-bottom:0}
+  .edp-row span{color:var(--muted)}.edp-row b{text-align:right}
+  .edp-table{width:100%;border-collapse:collapse;font-size:12px}.edp-table th,.edp-table td{padding:8px 7px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;vertical-align:middle}.edp-table th{color:var(--muted);font-weight:600}
+  .edp-table .num{text-align:right;white-space:nowrap}
+  .edp-checkbar{height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden;margin-top:5px}.edp-checkbar i{display:block;height:100%;background:#d9ad55;border-radius:999px}
+  .edp-badge{display:inline-flex;border-radius:999px;padding:4px 7px;font-size:10px;font-weight:700;background:rgba(255,255,255,.07)}
+  .edp-production{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}.edp-production>div{padding:10px;border-radius:10px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06)}.edp-production small{display:block;color:var(--muted);font-size:10px}.edp-production b{font-size:15px}
+  .edp-photos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.edp-photos img{width:100%;height:125px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,.08)}
+  .edp-empty{padding:14px;text-align:center;color:var(--muted)}
+  .edp-note{font-size:11px;color:var(--muted);line-height:1.45}
+  @media(max-width:1000px){.edp-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.edp-grid{grid-template-columns:1fr}}
+  @media(max-width:600px){.edp-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.edp-production{grid-template-columns:1fr}.edp-photos{grid-template-columns:repeat(2,minmax(0,1fr))}.edp-hero h1{font-size:21px}}
+</style>
+
+<div class="modal" id="edPortalM">
+  <div class="modalBox edp-box">
+    <div class="edp-head">
+      <div><h2>🏗️ Portal da Obra</h2><p>Visão consolidada e somente leitura da obra selecionada.</p></div>
+      <div class="edp-actions">
+        <button class="btn" type="button" onclick="window.edifiqPortalRefresh()">↻ Atualizar</button>
+        <button class="btn gold" type="button" onclick="window.edifiqPortalReport()">📄 Gerar relatório</button>
+        <button class="x" type="button" onclick="closeM('edPortalM')">×</button>
+      </div>
+    </div>
+    <div id="edPortalBody"></div>
+  </div>
+</div>
+
+<script id="edifiq-fase4-portal">
+(function(){
+  const $=id=>document.getElementById(id);
+  const n=v=>Number(v||0);
+  const moneyP=v=>typeof money==="function"?money(v):new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n(v));
+  const escP=v=>typeof esc==="function"?esc(v):String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+  const dateP=v=>{const s=String(v||"");if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return "—";return typeof formatDateBR==="function"?formatDateBR(s):s.split("-").reverse().join("/")};
+  const pctP=v=>Math.max(0,Math.min(100,n(v))).toFixed(0)+"%";
+  const obraIdP=x=>typeof recordObraId==="function"?recordObraId(x):(x?.obra_id??x?.obraId??x?.obra_id_fk??x?.obra??"");
+  const checkIdP=x=>typeof recordChecklistId==="function"?recordChecklistId(x):(x?.checklist_id??x?.checklistId??x?.checklist_id_fk??"");
+  const todayP=()=>{const d=new Date();return d.toISOString().slice(0,10)};
+  let currentId="";
+
+  function obraP(id){return (typeof D!=="undefined"?D.obras:[]).find(o=>String(o.id)===String(id))}
+  function checksP(id){return (typeof D!=="undefined"?D.checklist:[]).filter(c=>String(obraIdP(c))===String(id))}
+  function gastosP(id){return (typeof D!=="undefined"?D.gastos:[]).filter(g=>String(obraIdP(g))===String(id))}
+  function pagamentosP(id){return (typeof D!=="undefined"?D.pagamentos:[]).filter(g=>String(obraIdP(g))===String(id))}
+  function diariasP(id){return (typeof D!=="undefined"?D.diarias:[]).filter(g=>String(obraIdP(g))===String(id))}
+  function funcsP(id){
+    return (typeof D!=="undefined"?D.funcionarios:[]).filter(f=>{
+      try{return String(getFuncObra(f.id)||f.obra_id||f.obraId||"")===String(id)}catch(_){return String(f.obra_id||f.obraId||"")===String(id)}
+    });
+  }
+  function producoesP(id){
+    let rows=[];
+    try{rows=Array.isArray(D.producoesEquipe)?D.producoesEquipe:JSON.parse(localStorage.getItem("edifiq_producao_equipe_v1")||"[]")}catch(_){rows=[]}
+    return (rows||[]).filter(x=>String(x.obra_id)===String(id));
+  }
+  function servicesP(id){
+    try{return typeof servicesForObra==="function"?(servicesForObra(id)||[]):[]}catch(_){return []}
+  }
+  function progressP(c){
+    try{return typeof normalizarChecklistPct==="function"?n(normalizarChecklistPct(c?.progresso??((c?.concluida||c?.concluido)?100:0))):Math.max(0,Math.min(100,n(c?.progresso??((c?.concluida||c?.concluido)?100:0))))}catch(_){return Math.max(0,Math.min(100,n(c?.progresso)))}
+  }
+  function receiptCheckP(p,cid){
+    try{
+      const dist=typeof receitaChecklistDistribuicao==="function"?receitaChecklistDistribuicao(p):[];
+      if(Array.isArray(dist)&&dist.length)return dist.filter(d=>String(d.checklist_id)===String(cid)).reduce((a,d)=>a+n(d.valor),0);
+    }catch(_){}
+    return String(checkIdP(p))===String(cid)?n(p.valor):0;
+  }
+  function expenseCheckP(g,cid){return String(checkIdP(g))===String(cid)?n(g.valor):0}
+  function checkStatsP(c){
+    const obraId=obraIdP(c),cid=c.id;
+    const recebido=pagamentosP(obraId).reduce((a,p)=>a+receiptCheckP(p,cid),0);
+    const despesas=gastosP(obraId).reduce((a,g)=>a+expenseCheckP(g,cid),0);
+    const valor=n(c.valor), saldo=Math.max(0,valor-recebido), lucro=recebido-despesas, margem=recebido>0?lucro/recebido*100:0;
+    return {valor,recebido,despesas,saldo,lucro,margem,progresso:progressP(c)};
+  }
+  function obraDataP(o){
+    let f={};
+    try{f=typeof obraFinanceData==="function"?(obraFinanceData(o.id)||{}):{}}catch(_){}
+    const gs=gastosP(o.id), ps=pagamentosP(o.id), ds=diariasP(o.id), cs=checksP(o.id), ex=servicesP(o.id);
+    const contrato=n(f.contrato??o.valor), recebido=n(f.receita??ps.reduce((a,x)=>a+n(x.valor),0)), despesas=n(f.despesas??gs.reduce((a,x)=>a+n(x.valor),0)), resultado=n(f.resultado??(recebido-despesas));
+    const progresso=(()=>{try{return n(typeof obraProgress==="function"?obraProgress(o):0)}catch(_){return cs.length?cs.reduce((a,c)=>a+progressP(c),0)/cs.length:0}})();
+    return {f,gs,ps,ds,cs,ex,contrato,recebido,despesas,resultado,progresso,margem:contrato>0?resultado/contrato*100:0,aReceber:Math.max(0,contrato-recebido)};
+  }
+  function categoryTotalsP(gs){
+    const out={};
+    gs.forEach(g=>{let k="Outros";try{k=typeof gastoSubcategoria==="function"?gastoSubcategoria(g):(g.categoria||"Outros")}catch(_){k=g.categoria||"Outros"}out[k]=(out[k]||0)+n(g.valor)});
+    return out;
+  }
+  function renderP(id){
+    const body=$("edPortalBody");if(!body)return;
+    const o=obraP(id);if(!o){body.innerHTML='<div class="edp-empty">Obra não encontrada.</div>';return}
+    currentId=String(o.id);
+    const x=obraDataP(o), cats=categoryTotalsP(x.gs), funcs=funcsP(o.id), prod=producoesP(o.id), services=x.ex;
+    const checkRows=x.cs.map(c=>{const st=checkStatsP(c);return `<tr><td><b>${escP(c.tarefa||c.descricao||"Etapa")}</b><div class="edp-checkbar"><i style="width:${st.progresso}%"></i></div></td><td class="num">${pctP(st.progresso)}</td><td class="num">${moneyP(st.valor)}</td><td class="num">${moneyP(st.recebido)}</td><td class="num">${moneyP(st.despesas)}</td><td class="num"><b class="${st.lucro>=0?'green':'red'}">${moneyP(st.lucro)}</b></td></tr>`}).join("");
+    const prodValue=prod.reduce((a,r)=>a+n(r.valor),0),prodQtd=prod.reduce((a,r)=>a+n(r.quantidade),0),prodFuncs=new Set(prod.map(r=>String(r.funcionario_id))).size;
+    const dias=new Set(x.ds.map(d=>String(d.data||"")).filter(Boolean)).size;
+    const catRows=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="edp-row"><span>${escP(k)}</span><b class="red">${moneyP(v)}</b></div>`).join("");
+    const prodRows=prod.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).slice(0,12).map(r=>{
+      const f=(D.funcionarios||[]).find(x=>String(x.id)===String(r.funcionario_id)),c=(D.checklist||[]).find(x=>String(x.id)===String(r.checklist_id));
+      return `<tr><td>${dateP(r.data)}</td><td>${escP(f?.nome||"Funcionário")}</td><td>${escP(c?.tarefa||c?.descricao||"—")}</td><td class="num">${r.quantidade?n(r.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:2})+" "+escP(r.unidade||""):"—"}</td><td class="num">${moneyP(r.valor)}</td></tr>`;
+    }).join("");
+    body.innerHTML=`
+      <div class="edp-hero">
+        <div class="edp-hero-main">
+          <div><h1>${escP(o.nome||"Obra")}</h1><p><b>Cliente:</b> ${escP(o.cliente||"Não informado")}</p><p><b>Endereço:</b> ${escP(o.endereco||o.local||"Não informado")}</p><p><b>Período:</b> ${dateP(o.data_inicio)} → ${dateP(o.data_fim)}</p></div>
+          <div><span class="edp-status">${escP(typeof statusLabel==="function"?statusLabel(o.status):(o.status||"Em andamento"))}</span><div class="edp-note" style="margin-top:8px">Gerado em ${dateP(todayP())}</div></div>
+        </div>
+        <div class="edp-kpis">
+          <div class="edp-kpi"><small>CONTRATO</small><b class="gold">${moneyP(x.contrato)}</b></div>
+          <div class="edp-kpi"><small>RECEBIDO</small><b class="green">${moneyP(x.recebido)}</b></div>
+          <div class="edp-kpi"><small>DESPESAS</small><b class="red">${moneyP(x.despesas)}</b></div>
+          <div class="edp-kpi"><small>RESULTADO</small><b class="${x.resultado>=0?'green':'red'}">${moneyP(x.resultado)}</b></div>
+          <div class="edp-kpi"><small>A RECEBER</small><b class="gold">${moneyP(x.aReceber)}</b></div>
+          <div class="edp-kpi"><small>AVANÇO FÍSICO</small><b class="blue">${pctP(x.progresso)}</b><div class="edp-progress"><i style="width:${Math.max(0,Math.min(100,x.progresso))}%"></i></div></div>
+        </div>
+      </div>
+      <div class="edp-grid">
+        <section class="edp-panel"><h3>📋 Checklist e serviços</h3>${x.cs.length?`<div style="overflow:auto"><table class="edp-table"><thead><tr><th>Etapa</th><th class="num">Execução</th><th class="num">Serviço</th><th class="num">Recebido</th><th class="num">Despesas</th><th class="num">Resultado</th></tr></thead><tbody>${checkRows}</tbody></table></div>`:'<div class="edp-empty">Nenhuma etapa cadastrada.</div>'}${services.length?`<div style="margin-top:12px"><b>Serviços adicionais</b>${services.map(s=>`<div class="edp-row"><span>${escP(s.nome||s.descricao||"Serviço adicional")}</span><b class="blue">${moneyP(s.valor)}</b></div>`).join("")}</div>`:""}</section>
+        <section class="edp-panel"><h3>💰 Resumo financeiro</h3><div class="edp-row"><span>Valor contratado</span><b>${moneyP(x.contrato)}</b></div><div class="edp-row"><span>Total recebido</span><b class="green">${moneyP(x.recebido)}</b></div><div class="edp-row"><span>Total de despesas</span><b class="red">${moneyP(x.despesas)}</b></div><div class="edp-row"><span>Resultado</span><b class="${x.resultado>=0?'green':'red'}">${moneyP(x.resultado)}</b></div><div class="edp-row"><span>Margem sobre contrato</span><b>${x.margem.toFixed(1).replace(".",",")}%</b></div><div class="edp-row"><span>Saldo a receber</span><b class="gold">${moneyP(x.aReceber)}</b></div><h4 style="margin:14px 0 4px">Custos por categoria</h4>${catRows||'<div class="edp-empty">Sem despesas.</div>'}</section>
+      </div>
+      <div class="edp-grid">
+        <section class="edp-panel"><h3>👷 Equipe</h3><div class="edp-row"><span>Funcionários vinculados</span><b>${funcs.length}</b></div><div class="edp-row"><span>Registros de diárias</span><b>${x.ds.length}</b></div><div class="edp-row"><span>Dias com registro</span><b>${dias}</b></div><div class="edp-row"><span>Custo de mão de obra</span><b class="red">${moneyP(cats["Mão de obra"]||0)}</b></div><div class="edp-production"><div><small>VALOR PRODUZIDO</small><b>${moneyP(prodValue)}</b></div><div><small>QUANTIDADE</small><b>${prodQtd.toLocaleString("pt-BR",{maximumFractionDigits:2})}</b></div><div><small>FUNCIONÁRIOS COM PRODUÇÃO</small><b>${prodFuncs}</b></div></div>${prodRows?`<div style="overflow:auto"><table class="edp-table"><thead><tr><th>Data</th><th>Funcionário</th><th>Checklist</th><th class="num">Qtd.</th><th class="num">Valor</th></tr></thead><tbody>${prodRows}</tbody></table></div>`:'<div class="edp-empty">Nenhuma produção registrada para esta obra.</div>'}</section>
+        <section class="edp-panel"><h3>📊 Situação da execução</h3><div class="edp-row"><span>Avanço físico</span><b class="blue">${pctP(x.progresso)}</b></div><div class="edp-progress"><i style="width:${Math.max(0,Math.min(100,x.progresso))}%"></i></div><div class="edp-row"><span>Etapas do checklist</span><b>${x.cs.length}</b></div><div class="edp-row"><span>Serviços adicionais</span><b>${services.length}</b></div><div class="edp-row"><span>Recebimentos</span><b>${x.ps.length}</b></div><div class="edp-row"><span>Diárias registradas</span><b>${x.ds.length}</b></div><div class="edp-note" style="margin-top:10px">Esta área é somente leitura. Os lançamentos continuam sendo feitos nos módulos existentes.</div></section>
+      </div>
+      <section class="edp-panel" style="margin-top:12px"><div class="edp-head"><div><h3>📸 Relatório fotográfico</h3><p class="edp-note">Fotos já registradas para esta obra.</p></div></div><div id="edpPhotos" class="edp-photos"><div class="edp-empty">Carregando fotos...</div></div></section>`;
+    loadPhotosP(o.id);
+  }
+  async function loadPhotosP(id){
+    const host=$("edpPhotos");if(!host)return;
+    try{
+      const photos=typeof getPhotosByObraDB==="function"?await getPhotosByObraDB(id):[];
+      host.innerHTML=photos.length?photos.slice(0,12).map(f=>`<div><img src="${escP(f.src)}" alt="${escP(f.titulo||"Foto da obra")}" title="${escP(f.titulo||"Foto da obra")}"><div class="edp-note" style="margin-top:4px">${escP(f.titulo||"Registro fotográfico")} · ${escP(f.data||"")}</div></div>`).join(""):'<div class="edp-empty">Nenhuma foto registrada para esta obra.</div>';
+    }catch(_){host.innerHTML='<div class="edp-empty">Não foi possível carregar as fotos desta obra.</div>'}
+  }
+  function selectedP(){
+    return $("obraSelecionada")?.value||"";
+  }
+  function openP(id){
+    const oid=id||selectedP();
+    if(!oid){toast("Selecione uma obra primeiro.");return}
+    if(!obraP(oid)){toast("Obra não encontrada.");return}
+    currentId=String(oid);openM("edPortalM");renderP(oid);
+  }
+  async function reportP(id){
+    const oid=id||currentId||selectedP();
+    if(!oid){toast("Selecione uma obra primeiro.");return}
+    const o=obraP(oid);if(!o){toast("Obra não encontrada.");return}
+    const w=window.open("","_blank");
+    if(!w){toast("Permita a abertura de nova janela para gerar o relatório.");return}
+    w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório da Obra</title></head><body><p style="font-family:Arial;padding:30px">Preparando relatório...</p></body></html>');w.document.close();
+    const x=obraDataP(o), cats=categoryTotalsP(x.gs), services=x.ex, prod=producoesP(o.id);
+    let photos=[];try{photos=typeof getPhotosByObraDB==="function"?await getPhotosByObraDB(o.id):[]}catch(_){}
+    const checkRows=x.cs.map(c=>{const st=checkStatsP(c);return `<tr><td><b>${escP(c.tarefa||c.descricao||"Etapa")}</b></td><td>${pctP(st.progresso)}</td><td>${moneyP(st.valor)}</td><td>${moneyP(st.recebido)}</td><td>${moneyP(st.despesas)}</td><td>${moneyP(st.lucro)}</td><td>${st.margem.toFixed(1).replace(".",",")}%</td></tr>`}).join("");
+    const prodRows=prod.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).map(r=>{const f=(D.funcionarios||[]).find(x=>String(x.id)===String(r.funcionario_id)),c=(D.checklist||[]).find(x=>String(x.id)===String(r.checklist_id));return `<tr><td>${dateP(r.data)}</td><td>${escP(f?.nome||"Funcionário")}</td><td>${escP(c?.tarefa||c?.descricao||"—")}</td><td>${r.quantidade?n(r.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:2})+" "+escP(r.unidade||""):"—"}</td><td>${moneyP(r.valor)}</td></tr>`}).join("");
+    const costRows=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${escP(k)}</td><td>${moneyP(v)}</td></tr>`).join("");
+    const serviceRows=services.map(z=>`<tr><td>${escP(z.nome||z.descricao||"Serviço adicional")}</td><td>${dateP(z.data)}</td><td>${moneyP(z.valor)}</td></tr>`).join("");
+    const paymentRows=x.ps.slice().sort((a,b)=>String(b.data||"").localeCompare(String(a.data||""))).map(z=>`<tr><td>${dateP(z.data)}</td><td>${escP(z.descricao||"Recebimento")}</td><td>${moneyP(z.valor)}</td></tr>`).join("");
+    const photoHtml=photos.length?photos.map(f=>`<figure><img src="${escP(f.src)}"><figcaption>${escP(f.titulo||"Registro fotográfico")} ${f.data?"— "+escP(f.data):""}${f.observacao?"<br>"+escP(f.observacao):""}</figcaption></figure>`).join(""):'<p>Nenhuma foto registrada para esta obra.</p>';
+    const report=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EDIFIQ — Relatório da Obra — ${escP(o.nome||"Obra")}</title><style>
+      @page{size:A4;margin:15mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#222;margin:0;font-size:11px;line-height:1.45}h1{font-size:24px;margin:0 0 4px}h2{font-size:16px;margin:22px 0 8px;border-bottom:2px solid #d9ad55;padding-bottom:5px}h3{font-size:13px;margin:14px 0 6px}.head{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #d9ad55;padding-bottom:12px}.muted{color:#666}.status{font-weight:bold;padding:5px 9px;border:1px solid #ccc;border-radius:20px;display:inline-block}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.kpi{border:1px solid #ddd;border-radius:8px;padding:9px}.kpi small{display:block;color:#666}.kpi b{font-size:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.box{border:1px solid #ddd;border-radius:8px;padding:10px}.row{display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:5px 0}.row:last-child{border-bottom:0}table{width:100%;border-collapse:collapse;margin-top:6px}th,td{border-bottom:1px solid #ddd;padding:6px 5px;text-align:left;vertical-align:top}th{background:#f5f5f5}.right{text-align:right}.photoGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.photoGrid figure{margin:0;break-inside:avoid}.photoGrid img{width:100%;height:170px;object-fit:cover;border-radius:6px}.photoGrid figcaption{font-size:9px;color:#555;margin-top:3px}.foot{margin-top:28px;color:#777;font-size:9px;border-top:1px solid #ddd;padding-top:8px}@media print{.noPrint{display:none}.pageBreak{page-break-before:always}}</style></head><body>
+      <div class="head"><div><h1>EDIFIQ — Construção Civil</h1><div><b>Relatório automático da obra</b></div><div>${escP(o.nome||"Obra")}</div><div class="muted">Cliente: ${escP(o.cliente||"Não informado")} · Endereço: ${escP(o.endereco||o.local||"Não informado")}</div></div><div><span class="status">${escP(typeof statusLabel==="function"?statusLabel(o.status):(o.status||""))}</span><div class="muted" style="margin-top:8px">Emitido em ${dateP(todayP())}</div></div></div>
+      <div class="kpis"><div class="kpi"><small>Valor contratado</small><b>${moneyP(x.contrato)}</b></div><div class="kpi"><small>Recebido</small><b>${moneyP(x.recebido)}</b></div><div class="kpi"><small>Despesas</small><b>${moneyP(x.despesas)}</b></div><div class="kpi"><small>Resultado</small><b>${moneyP(x.resultado)}</b></div><div class="kpi"><small>Saldo a receber</small><b>${moneyP(x.aReceber)}</b></div><div class="kpi"><small>Avanço físico</small><b>${pctP(x.progresso)}</b></div></div>
+      <h2>1. Informações da obra</h2><div class="grid"><div class="box"><div class="row"><span>Tipo de serviço</span><b>${escP(o.tipo_servico||"Não informado")}</b></div><div class="row"><span>Início</span><b>${dateP(o.data_inicio)}</b></div><div class="row"><span>Previsão de término</span><b>${dateP(o.data_fim)}</b></div></div><div class="box"><div class="row"><span>Margem sobre contrato</span><b>${x.margem.toFixed(1).replace(".",",")}%</b></div><div class="row"><span>Diárias registradas</span><b>${x.ds.length}</b></div><div class="row"><span>Funcionários vinculados</span><b>${funcsP(o.id).length}</b></div></div></div>
+      <h2>2. Checklist e serviços</h2>${x.cs.length?`<table><thead><tr><th>Etapa</th><th>Execução</th><th>Serviço</th><th>Recebido</th><th>Despesas</th><th>Resultado</th><th>Margem</th></tr></thead><tbody>${checkRows}</tbody></table>`:"<p>Nenhuma etapa cadastrada.</p>"}${services.length?`<h3>Serviços adicionais</h3><table><thead><tr><th>Serviço</th><th>Data</th><th>Valor</th></tr></thead><tbody>${serviceRows}</tbody></table>`:""}
+      <h2>3. Financeiro</h2><div class="grid"><div class="box"><h3>Custos por categoria</h3><table><thead><tr><th>Categoria</th><th>Valor</th></tr></thead><tbody>${costRows||"<tr><td colspan=2>Sem despesas.</td></tr>"}</tbody></table></div><div class="box"><h3>Recebimentos</h3><table><thead><tr><th>Data</th><th>Descrição</th><th>Valor</th></tr></thead><tbody>${paymentRows||"<tr><td colspan=3>Sem recebimentos.</td></tr>"}</tbody></table></div></div>
+      <h2>4. Produção da equipe</h2><div class="box"><div class="row"><span>Valor produzido</span><b>${moneyP(prod.reduce((a,r)=>a+n(r.valor),0))}</b></div><div class="row"><span>Quantidade produzida</span><b>${prod.reduce((a,r)=>a+n(r.quantidade),0).toLocaleString("pt-BR",{maximumFractionDigits:2})}</b></div><div class="row"><span>Funcionários com produção</span><b>${new Set(prod.map(r=>String(r.funcionario_id))).size}</b></div></div>${prod.length?`<table><thead><tr><th>Data</th><th>Funcionário</th><th>Checklist</th><th>Quantidade</th><th>Valor</th></tr></thead><tbody>${prodRows}</tbody></table>`:"<p>Nenhuma produção registrada.</p>"}
+      <h2>5. Relatório fotográfico</h2><div class="photoGrid">${photoHtml}</div>
+      <div class="foot">EDIFIQ — Construção Civil · Relatório gerado automaticamente a partir dos dados existentes nesta obra. Este relatório é somente leitura.</div>
+      </body></html>`;
+    w.setTimeout(()=>w.print(),600);
+    w.document.open();w.document.write(report);w.document.close();
+  }
+
+  window.edifiqPortalOpen=openP;
+  window.edifiqPortalOpenSelected=()=>openP(selectedP());
+  window.edifiqPortalRefresh=()=>{if(currentId)renderP(currentId)};
+  window.edifiqPortalReport=()=>reportP(currentId);
+  window.edifiqPortalReportSelected=()=>reportP(selectedP());
 })();
 </script>
 
