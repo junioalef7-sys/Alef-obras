@@ -11766,3 +11766,349 @@ body.edifiq-ios-standalone .edifiqDrawerScroll{
 
 </body>
 </html>
+<script>
+/* =========================================================
+   EDIFIQ — CORREÇÃO DEFINITIVA DO LOGIN SUPABASE
+   Cole este bloco NO FINAL do index.html
+   ========================================================= */
+
+(function(){
+
+  async function edifiqLoginCorrigido(){
+
+    const emailEl = document.getElementById("email");
+    const passwordEl = document.getElementById("password");
+
+    const email = (emailEl?.value || "").trim().toLowerCase();
+    const password = passwordEl?.value || "";
+
+    if(!email){
+      if(typeof authMsg === "function"){
+        authMsg("Digite seu e-mail.");
+      }
+      emailEl?.focus();
+      return;
+    }
+
+    if(!password){
+      if(typeof authMsg === "function"){
+        authMsg("Digite sua senha.");
+      }
+      passwordEl?.focus();
+      return;
+    }
+
+    const btn = document.querySelector(
+      '#auth button[onclick*="login"], #auth .primary'
+    );
+
+    if(btn){
+      btn.disabled = true;
+      btn.dataset.oldText = btn.textContent;
+      btn.textContent = "Entrando...";
+    }
+
+    try{
+
+      if(typeof authMsg === "function"){
+        authMsg("Conectando...");
+      }
+
+      /* Carrega o cliente Supabase */
+      let conectado = false;
+
+      if(typeof ensureSupabaseClient === "function"){
+        conectado = await ensureSupabaseClient();
+      }else if(typeof sb !== "undefined" && sb){
+        conectado = true;
+      }
+
+      if(!conectado || typeof sb === "undefined" || !sb){
+
+        if(typeof authMsg === "function"){
+          authMsg(
+            "Não foi possível conectar ao servidor. Verifique sua internet."
+          );
+        }
+
+        return;
+      }
+
+      /* LOGIN */
+      const resposta = await sb.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+      if(resposta.error){
+
+        console.error(
+          "EDIFIQ — erro de login:",
+          resposta.error
+        );
+
+        const erro = String(
+          resposta.error.message || ""
+        );
+
+        if(/invalid login credentials/i.test(erro)){
+
+          authMsg("E-mail ou senha incorretos.");
+
+        }else if(/email not confirmed/i.test(erro)){
+
+          authMsg(
+            "Este e-mail ainda não foi confirmado no Supabase."
+          );
+
+        }else if(/network|fetch|connection/i.test(erro)){
+
+          authMsg(
+            "Erro de conexão. Verifique sua internet."
+          );
+
+        }else{
+
+          authMsg(
+            erro || "Não foi possível entrar."
+          );
+
+        }
+
+        return;
+      }
+
+      /* Confirma que existe sessão */
+      const sessao = resposta.data?.session;
+      const usuario = resposta.data?.user;
+
+      if(!sessao || !usuario){
+
+        authMsg(
+          "O login não foi concluído. Tente novamente."
+        );
+
+        return;
+      }
+
+      /* Guarda usuário */
+      window.user = usuario;
+
+      /* Fecha tela de login */
+      const auth = document.getElementById("auth");
+      const app = document.getElementById("app");
+
+      if(auth){
+        auth.classList.add("hidden");
+      }
+
+      if(app){
+        app.classList.remove("hidden");
+      }
+
+      /* Limpa mensagem */
+      if(typeof authMsg === "function"){
+        authMsg("");
+      }
+
+      /* Carrega dados da conta */
+      try{
+
+        if(typeof loadCloud === "function"){
+          await Promise.race([
+            loadCloud(),
+            new Promise(function(resolve){
+              setTimeout(resolve,7000);
+            })
+          ]);
+        }
+
+      }catch(e){
+
+        console.warn(
+          "EDIFIQ — não foi possível carregar a nuvem:",
+          e
+        );
+
+      }
+
+      /* Atualiza funcionários, se a função existir */
+      try{
+
+        if(
+          typeof limparFuncionariosSemIdentificacao ===
+          "function"
+        ){
+          await limparFuncionariosSemIdentificacao();
+        }
+
+      }catch(e){
+
+        console.warn(
+          "EDIFIQ — limpeza:",
+          e
+        );
+
+      }
+
+      /* Salva dados locais */
+      try{
+
+        if(typeof saveLocalData === "function"){
+          saveLocalData();
+        }
+
+      }catch(e){
+
+        console.warn(
+          "EDIFIQ — dados locais:",
+          e
+        );
+
+      }
+
+      /* Atualiza a interface */
+      try{
+
+        if(typeof fillSelectors === "function"){
+          fillSelectors();
+        }
+
+        if(typeof renderAll === "function"){
+          renderAll();
+        }
+
+      }catch(e){
+
+        console.warn(
+          "EDIFIQ — atualização da interface:",
+          e
+        );
+
+      }
+
+      /* Sincronização em tempo real, se existir */
+      try{
+
+        if(typeof startEdifiqRealtime === "function"){
+          startEdifiqRealtime();
+        }
+
+      }catch(e){
+
+        console.warn(
+          "EDIFIQ — realtime:",
+          e
+        );
+
+      }
+
+      /* Volta para o topo */
+      try{
+
+        window.scrollTo({
+          top:0,
+          behavior:"instant"
+        });
+
+      }catch(e){}
+
+      /* Mensagem de sucesso */
+      if(typeof toast === "function"){
+
+        toast(
+          "Login realizado com sucesso!"
+        );
+
+      }
+
+    }catch(erro){
+
+      console.error(
+        "EDIFIQ — falha no login:",
+        erro
+      );
+
+      const mensagem = String(
+        erro?.message || ""
+      );
+
+      if(
+        /network|fetch|connection|internet/i.test(
+          mensagem
+        )
+      ){
+
+        authMsg(
+          "Sem conexão com o servidor. Verifique sua internet."
+        );
+
+      }else{
+
+        authMsg(
+          mensagem ||
+          "Não foi possível entrar. Tente novamente."
+        );
+
+      }
+
+    }finally{
+
+      if(btn){
+
+        btn.disabled = false;
+
+        btn.textContent =
+          btn.dataset.oldText || "Entrar";
+
+      }
+
+    }
+  }
+
+  /*
+   * Substitui a função antiga.
+   * O botão "Entrar" continuará funcionando
+   * sem precisar alterar o HTML do botão.
+   */
+  window.login = edifiqLoginCorrigido;
+
+  /*
+   * Também corrige o Enter no campo de senha/e-mail.
+   */
+  document.addEventListener(
+    "DOMContentLoaded",
+    function(){
+
+      const email =
+        document.getElementById("email");
+
+      const password =
+        document.getElementById("password");
+
+      [email,password].forEach(function(campo){
+
+        if(!campo) return;
+
+        campo.addEventListener(
+          "keydown",
+          function(e){
+
+            if(e.key === "Enter"){
+
+              e.preventDefault();
+
+              edifiqLoginCorrigido();
+
+            }
+
+          }
+        );
+
+      });
+
+    }
+  );
+
+})();
+</script>
