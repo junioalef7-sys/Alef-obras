@@ -10997,7 +10997,28 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     rtGeneratePreview(false);
     const d=rtData(),html=$('rtPreview')?.innerHTML||'';
     const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
-    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório do Trabalhador</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#172033;line-height:1.5;max-width:950px;margin:auto}h1{font-size:24px}h2{font-size:17px;margin-top:22px;border-bottom:1px solid #ddd;padding-bottom:6px}.wrMeta{color:#64748b;font-size:12px}.wrKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.wrKpi,.wrInfo{border:1px solid #d9e0ea;border-radius:10px;padding:10px}.wrKpi small,.wrInfo small{display:block;color:#64748b;font-size:10px}.wrGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #d9e0ea;padding:6px;text-align:left;vertical-align:top}th{background:#f3f6fa}@media print{body{padding:8px}}</style></head><body>${html}
+    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório do Trabalhador</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#172033;line-height:1.5;max-width:950px;margin:auto}h1{font-size:24px}h2{font-size:17px;margin-top:22px;border-bottom:1px solid #ddd;padding-bottom:6px}.wrMeta{color:#64748b;font-size:12px}.wrKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.wrKpi,.wrInfo{border:1px solid #d9e0ea;border-radius:10px;padding:10px}.wrKpi small,.wrInfo small{display:block;color:#64748b;font-size:10px}.wrGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #d9e0ea;padding:6px;text-align:left;vertical-align:top}th{background:#f3f6fa}@media print{body{padding:8px}}</style></head><body>${html}</body></html>`);
+
+    w.document.close();setTimeout(()=>w.print(),300);
+  };
+  window.rtWhatsApp=function(){
+    if(!window.__rtFuncId){toast('Selecione um trabalhador.');return;}
+    const d=rtData();const txt=`RELATÓRIO DO TRABALHADOR — ${d.f.nome}\nPeríodo: ${rtFmt(d.r.ini)} a ${rtFmt(d.r.fim)}\nFunção: ${d.f.funcao||'Não informada'}\nDias trabalhados: ${d.diasTrabalhados}\nDiárias: ${rtMoney(d.brutoDiarias)}\nAdiantamentos: ${rtMoney(d.totalAdiant)}\nPagamentos: ${rtMoney(d.totalPagamentos+d.pagDiarias)}\nExtras: ${rtMoney(d.totalExtras)}\nFaltas/afastamentos: ${d.faltas.length}`;
+    window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+  };
+  window.openRelatorioTrabalhador=function(){
+    const m=rtEnsureModal();
+    const fs=rtFuncs();
+    window.__rtFuncId=fs[0]?String(fs[0].id):'';
+    window.__rtPeriod='mes';
+    window.__rtSections={...RT_SECTIONS};
+    rtRenderWorkers();rtRenderSections();rtSyncDates();
+    if($('rtPreview'))$('rtPreview').innerHTML='';
+    rtShowTab('sel');m.classList.add('open');
+  };
+})();
+</script>
+
 <style id="edifiq-fase3-producao-style">
 .edf3-wrap{margin-top:16px}
 .edf3-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -11304,26 +11325,6 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
 })();
 </script>
 
-</body></html>`);
-    w.document.close();setTimeout(()=>w.print(),300);
-  };
-  window.rtWhatsApp=function(){
-    if(!window.__rtFuncId){toast('Selecione um trabalhador.');return;}
-    const d=rtData();const txt=`RELATÓRIO DO TRABALHADOR — ${d.f.nome}\nPeríodo: ${rtFmt(d.r.ini)} a ${rtFmt(d.r.fim)}\nFunção: ${d.f.funcao||'Não informada'}\nDias trabalhados: ${d.diasTrabalhados}\nDiárias: ${rtMoney(d.brutoDiarias)}\nAdiantamentos: ${rtMoney(d.totalAdiant)}\nPagamentos: ${rtMoney(d.totalPagamentos+d.pagDiarias)}\nExtras: ${rtMoney(d.totalExtras)}\nFaltas/afastamentos: ${d.faltas.length}`;
-    window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
-  };
-  window.openRelatorioTrabalhador=function(){
-    const m=rtEnsureModal();
-    const fs=rtFuncs();
-    window.__rtFuncId=fs[0]?String(fs[0].id):'';
-    window.__rtPeriod='mes';
-    window.__rtSections={...RT_SECTIONS};
-    rtRenderWorkers();rtRenderSections();rtSyncDates();
-    if($('rtPreview'))$('rtPreview').innerHTML='';
-    rtShowTab('sel');m.classList.add('open');
-  };
-})();
-</script>
 
 <!-- EDIFIQ — extensão isolada: valores dos checklists e resumo por checklist -->
 <style id="edifiq-check-fin-ext-style">
