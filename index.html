@@ -1884,16 +1884,42 @@ const RECEITA_CHECKLIST_MARKER="[[EDIFIQ_RECEITA_CHECKLIST_V1]]";
 function receitaChecklistDistribuicao(pag){
   try{
     const obs=String(pag?.observacao||"");
-    const m=obs.match(/\[\[EDIFIQ_RECEITA_CHECKLIST_V1\]\]\s*([\s\S]*?)(?:\n|$)/);
-    if(!m)return [];
-    const arr=JSON.parse(m[1]);
-    return Array.isArray(arr)?arr.map(x=>({checklist_id:String(x.checklist_id),valor:Number(x.valor||0)})).filter(x=>x.checklist_id&&x.valor>0):[];
+    const pos=obs.indexOf(RECEITA_CHECKLIST_MARKER);
+    if(pos<0)return [];
+    let resto=obs.slice(pos+RECEITA_CHECKLIST_MARKER.length);
+    // Aceita tanto quebra de linha real quanto o formato antigo que eventualmente
+    // tenha sido salvo como texto literal "\\n".
+    resto=resto.replace(/^\s+/,"");
+    if(resto.startsWith("\\n"))resto=resto.slice(2);
+    const linha=resto.split(/\r?\n/)[0].trim();
+    if(!linha)return [];
+    const arr=JSON.parse(linha);
+    if(!Array.isArray(arr))return [];
+    return arr.map(x=>({
+      checklist_id:String(x?.checklist_id||""),
+      valor:Number(x?.valor||0)
+    })).filter(x=>x.checklist_id&&Number.isFinite(x.valor)&&x.valor>0);
   }catch(_){return [];}
 }
 function receitaObservacaoTexto(pag){
   const obs=String(pag?.observacao||"");
-  return obs.replace(/\[\[EDIFIQ_RECEITA_CHECKLIST_V1\]\]\s*[\s\S]*?(?:\n|$)/,"").trim();
+  const pos=obs.indexOf(RECEITA_CHECKLIST_MARKER);
+  if(pos<0)return obs.trim();
+  const resto=obs.slice(pos+RECEITA_CHECKLIST_MARKER.length).replace(/^\s+/,"");
+  const semJson=resto.startsWith("\\n")?resto.slice(2):resto;
+  const partes=semJson.split(/\r?\n/);
+  partes.shift();
+  return partes.join("\n").trim();
 }
+function receitaDistribuicaoValida(pag){
+  const obraId=String(recordObraId(pag)||"");
+  const dist=receitaChecklistDistribuicao(pag);
+  if(!dist.length)return false;
+  const ids=new Set(checklistForObra(obraId).map(c=>String(c.id)));
+  return dist.every(x=>ids.has(String(x.checklist_id))) &&
+    Math.abs(dist.reduce((a,x)=>a+Number(x.valor||0),0)-Number(pag?.valor||0))<0.01;
+}
+
 function checklistFinanceResumo(obraId, checklistId){
   const cid=String(checklistId);
   const pagamentos=(D.pagamentos||[]).filter(x=>sameObra(x,obraId));
@@ -5792,11 +5818,17 @@ function atualizarDespesaChecklistDistribuicao(){
 function receitaChecklistSelecionados(){
   const box=$("finReceitaChecklistList");
   if(!box)return [];
-  return [...box.querySelectorAll("input[data-fin-check]:checked")].map(cb=>{
+  const obraId=String($("oFin")?.value||"");
+  const validos=new Set(checklistForObra(obraId).map(c=>String(c.id)));
+  const mapa=new Map();
+  [...box.querySelectorAll("input[data-fin-check]:checked")].forEach(cb=>{
     const id=String(cb.dataset.finCheck||"");
+    if(!id||!validos.has(id))return;
     const input=$(`finCheckValor_${id}`);
-    return {checklist_id:id,valor:Number(input?.value||0)};
-  }).filter(x=>x.checklist_id);
+    const valor=Number(input?.value||0);
+    if(Number.isFinite(valor)&&valor>0)mapa.set(id,valor);
+  });
+  return [...mapa.entries()].map(([checklist_id,valor])=>({checklist_id,valor}));
 }
 
 function atualizarReceitaChecklistDistribuicao(){
@@ -5889,16 +5921,15 @@ if(tipo==="entrada"){
 const obraId=$("oFin").value||null;
 const dist=receitaChecklistSelecionados().filter(x=>Number(x.valor||0)>0);
 const soma=dist.reduce((a,x)=>a+Number(x.valor||0),0);
-if(obraId && dist.length && Math.abs(soma-valor)>0.01){
-  toast(`Distribua exatamente ${money(valor)} entre os checklists. Total atual: ${money(soma)}.`);
+if(obraId && Math.abs(soma-valor)>0.01){
+  toast(dist.length
+    ? `Distribua exatamente ${money(valor)} entre os checklists. Total atual: ${money(soma)}.`
+    : `Selecione pelo menos um checklist e distribua os ${money(valor)} da receita.`);
   return;
-}
-if(obraId && !dist.length){
-  // Receita sem checklist continua permitida para compatibilidade com lançamentos antigos.
 }
 const observacaoBase=$("obsFin").value.trim();
 const obsComDistribuicao=dist.length
-  ? `${RECEITA_CHECKLIST_MARKER}${JSON.stringify(dist)}\\n${observacaoBase}`.trim()
+  ? `${RECEITA_CHECKLIST_MARKER}${JSON.stringify(dist)}\n${observacaoBase}`.trim()
   : observacaoBase;
 const result=
 await insertRow(
@@ -6389,6 +6420,23 @@ Saldo do contrato
 ${money(f.saldoContrato)}
 </b>
 
+</div>
+
+<div style="margin-top:14px">
+  <b>Resumo por checklist</b>
+  ${(checklistForObra(o.id)||[]).length
+    ? (checklistForObra(o.id)||[]).map(c=>{
+        const s=checklistFinanceResumo(o.id,c.id);
+        const prog=Math.max(0,Math.min(100,Number(c.progresso||0)));
+        return `<div class="card" style="margin-top:8px;padding:10px">
+          <div class="row"><b>${esc(c.tarefa||c.descricao||"Etapa")}</b><b>${prog.toFixed(0)}%</b></div>
+          <small class="sub">Serviço: ${money(c.valor||0)} · Recebido: ${money(s.recebido)} · Restante: ${money(s.saldoReceber)}</small>
+          <div class="finance-line"><span>Despesas</span><b class="red">${money(s.despesas)}</b></div>
+          <div class="finance-line"><span>Lucro</span><b class="${s.lucro>=0?"green":"red"}">${money(s.lucro)}</b></div>
+          <div class="finance-line"><span>Margem</span><b>${Number(s.margem||0).toFixed(1).replace(".",",")}%</b></div>
+        </div>`;
+      }).join("")
+    : `<small class="sub" style="display:block;margin-top:6px">Nenhum checklist cadastrado nesta obra.</small>`}
 </div>
 
 </div>
