@@ -11547,6 +11547,86 @@ body.edLight .edHomeBrandName,body.edLight .edHomeWork h3,body.edLight .pageTitl
   .edp-open-trigger{min-width:235px}
 }
 </style>
+
+<style id="edifiq-ios-standalone-shadow-fix">
+/* EDIFIQ — correção visual exclusiva da versão adicionada à Tela de Início do iPhone.
+   O Safari normal permanece com o visual original. */
+@media (display-mode: standalone){
+  html,body{
+    -webkit-font-smoothing:antialiased!important;
+    text-shadow:none!important;
+  }
+
+  /* Remove o efeito de composição/transparência que fazia o conteúdo de baixo
+     aparecer como uma "sombra" atrás dos textos e botões. */
+  body,
+  #app,
+  .wrap,
+  #dashboard,
+  main,
+  section{
+    text-shadow:none!important;
+  }
+
+  h1,h2,h3,h4,h5,h6,p,small,b,strong,span,label,
+  button,.btn,.pageTitle,.pageTitle h1,
+  .edHomeHeader,.edHomeHeader *,
+  .toolbar,.toolbar *,
+  .card,.card *,
+  .nav,.nav *{
+    text-shadow:none!important;
+    -webkit-text-shadow:none!important;
+    filter:none!important;
+  }
+
+  /* Na Tela de Início, barras fixas ficam totalmente opacas.
+     Isso impede que letras/conteúdo atrás delas sejam compostos pela camada
+     transparente e pareçam uma sombra. */
+  .nav{
+    background:#0c0f13!important;
+    background-image:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    box-shadow:none!important;
+    opacity:1!important;
+  }
+
+  .menuPasta,
+  .drawer,
+  .modalBox,
+  .edifiq-pwa-install{
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+
+  /* Botões grandes sem camada de sombra/composição no modo instalado. */
+  button,
+  .btn,
+  .btn.primary,
+  .btn.gold,
+  .reportAction,
+  .edHomeHeader button{
+    text-shadow:none!important;
+    filter:none!important;
+    -webkit-filter:none!important;
+  }
+
+  /* Mantém o espaço do conteúdo acima da barra fixa, sem sobreposição. */
+  .wrap{
+    padding-bottom:calc(125px + env(safe-area-inset-bottom))!important;
+  }
+}
+
+@media (display-mode: standalone) and (prefers-color-scheme: light){
+  body.edLight .nav,
+  body.edLight .bottomNav{
+    background:#ffffff!important;
+    background-image:none!important;
+    color:#172033!important;
+    box-shadow:none!important;
+  }
+}
+</style>
 </head><body>
       <div class="head"><div><h1>EDIFIQ — Construção Civil</h1><div><b>Relatório automático da obra</b></div><div>${escP(o.nome||"Obra")}</div><div class="muted">Cliente: ${escP(o.cliente||"Não informado")} · Endereço: ${escP(o.endereco||o.local||"Não informado")}</div></div><div><span class="status">${escP(typeof statusLabel==="function"?statusLabel(o.status):(o.status||""))}</span><div class="muted" style="margin-top:8px">Emitido em ${dateP(todayP())}</div></div></div>
       <div class="kpis"><div class="kpi"><small>Valor contratado</small><b>${moneyP(x.contrato)}</b></div><div class="kpi"><small>Recebido</small><b>${moneyP(x.recebido)}</b></div><div class="kpi"><small>Despesas</small><b>${moneyP(x.despesas)}</b></div><div class="kpi"><small>Resultado</small><b>${moneyP(x.resultado)}</b></div><div class="kpi"><small>Saldo a receber</small><b>${moneyP(x.aReceber)}</b></div><div class="kpi"><small>Avanço físico</small><b>${pctP(x.progresso)}</b></div></div>
