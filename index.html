@@ -5482,7 +5482,6 @@ async function savePagamentoEquipe(e){
 e.preventDefault();
 
 try{
-
 const checks=[...document.querySelectorAll(".pag-check")].filter(x=>x.checked);
 if(!checks.length){toast("Selecione pelo menos um funcionário.");return;}
 
@@ -5492,6 +5491,8 @@ const descricao=$("pagDescricao").value.trim()||"Pagamento de equipe";
 const obs=$("pagObs").value.trim();
 let total=0,diariasTotal=0,adiantTotal=0,quantidade=0;
 const processados=[];
+const toCents=v=>Math.round((Number(v)||0)*100);
+const fromCents=v=>Number((Math.round(Number(v)||0)/100).toFixed(2));
 
 for(const check of checks){
   const id=check.dataset.id;
@@ -5505,79 +5506,73 @@ for(const check of checks){
   if(pendingDiarias<=0 && !extrasPendentes.length && !advancesAtuais.length)continue;
 
   const resumo=calcFuncionarioPagamento(id);
+  const grupos=[];
 
-  /*
-    IMPORTANTE: a obra do pagamento não vem mais de getFuncObra(id).
-    Cada diária já possui sua própria obra_id. O pagamento é dividido
-    exatamente pelas obras onde as diárias foram registradas.
-  */
-  const gruposObra=new Map();
-  for(const diaria of pendingItems){
+  // Cada diária fica exatamente na obra/checklist onde foi registrada.
+  pendingItems.forEach((diaria,idx)=>{
     const obraId=String(diaria.obra_id||fallbackObra||"");
-    if(!obraId)continue;
-    const checklistId=String(diaria.checklist_id||"");
-    const chave=obraId+"::"+checklistId;
-    const valor=diariaValor(diaria);
-    const atual=gruposObra.get(chave)||{obraId,checklistId,valor:0};
-    atual.valor+=valor;
-    gruposObra.set(chave,atual);
-  }
+    if(!obraId)return;
+    grupos.push({
+      uid:'d_'+String(diaria.id||idx),
+      source:'diaria',
+      diariaId:diaria.id,
+      obraId,
+      checklistId:String(diaria.checklist_id||""),
+      valor:Number(diariaValor(diaria)||0)
+    });
+  });
 
-  if(pendingDiarias>0 && gruposObra.size===0){
-    toast(`Não foi possível identificar a obra das diárias de ${f.nome}.`);
-    continue;
-  }
+  // Bônus/extras também entram na folha e mantêm sua própria obra/checklist.
+  extrasPendentes.forEach((extra,idx)=>{
+    const obraId=String(extra.obra_id||extra.obraId||"");
+    if(!obraId)return;
+    grupos.push({
+      uid:'x_'+String(extra.id||idx),
+      source:'extra',
+      extraId:extra.id,
+      obraId,
+      checklistId:String(extra.checklist_id||extra.checklistId||""),
+      valor:Number(extra.valor||0)
+    });
+  });
 
-  processados.push({id,f,resumo,pendingItems,gruposObra,pendingDiarias});
+  const faltandoObra=grupos.length===0 && (pendingDiarias>0 || extrasPendentes.length>0);
+  if(faltandoObra){toast(`Não foi possível identificar a obra das diárias/extras de ${f.nome}.`);continue;}
+
+  processados.push({id,f,resumo,pendingItems,extrasPendentes,grupos,pendingDiarias});
   total+=resumo.net;
   diariasTotal+=resumo.pendingDiarias;
   adiantTotal+=resumo.advance;
   quantidade++;
 }
 
-if(!processados.length){toast("Nenhum funcionário selecionado possui diária pendente e obra definida.");return;}
+if(!processados.length){toast("Nenhum funcionário selecionado possui valores pendentes e obra definida.");return;}
 
 let falhas=0,baixados=0;
 
 for(const item of processados){
+  const observacaoBase=`Diárias: ${money(item.resumo.pendingDiarias)}. Extras/Bônus: ${money(item.resumo.extrasTotal||0)}. Vale abatido: ${money(item.resumo.advance)}. Líquido: ${money(item.resumo.net)}.${obs?" "+obs:""}`;
+  const grupos=item.grupos;
+  const totalBrutoCents=toCents(item.resumo.pending);
+  const totalAdiantCents=Math.min(totalBrutoCents,toCents(item.resumo.advance||0));
 
-  const observacaoBase=`Diárias pendentes: ${money(item.resumo.pendingDiarias)}. Adiantamento abatido: ${money(item.resumo.advance)}. Valor líquido: ${money(item.resumo.net)}.${obs?" "+obs:""}`;
-
-  /*
-    Serviços extras já possuem lançamento financeiro próprio.
-    Portanto, nesta etapa lançamos somente o valor líquido das diárias.
-    O abatimento de adiantamento é distribuído proporcionalmente entre
-    as obras das diárias, mantendo cada despesa na obra correta.
-  */
-  /*
-    DISTRIBUIÇÃO EXATA DAS DIÁRIAS
-    Cada obra mantém exatamente a soma das diárias registradas nela.
-    Todo cálculo financeiro é feito em centavos, evitando cortes por
-    arredondamento e garantindo que a soma final feche exatamente a folha.
-  */
-  const grupos=[...item.gruposObra.values()];
-  const brutoDiarias=Number(item.pendingDiarias||0);
-  const toCents=v=>Math.round((Number(v)||0)*100);
-  const fromCents=v=>Number((Math.round(Number(v)||0)/100).toFixed(2));
-
+  // Soma exata por obra, sem rateio decimal.
   const gruposPorObra=new Map();
   for(const g of grupos){
     const obraId=String(g.obraId);
     gruposPorObra.set(obraId,(gruposPorObra.get(obraId)||0)+toCents(g.valor));
   }
 
-  const totalBrutoCents=toCents(brutoDiarias);
-  const totalAdiantCents=Math.min(totalBrutoCents,toCents(item.resumo.advance||0));
   const advAplicacoesPorObraCents=new Map();
   let restanteAdvCents=totalAdiantCents;
 
-  // Adiantamento com obra definida permanece naquela obra.
+  // Vale com obra definida permanece naquela obra.
   for(const al of (item.resumo.allocations||[])){
     if(restanteAdvCents<=0)break;
     const adv=(item.resumo.advances||[]).find(a=>String(a.id)===String(al.id));
     const usar=Math.min(restanteAdvCents,toCents(al.valor));
     if(usar<=0)continue;
-    const advObra=String(recordObraId(adv)||'');
+    const advObra=String(recordObraId(adv)||"");
     if(!advObra)continue;
     const limite=Math.max(0,Number(gruposPorObra.get(advObra)||0)-Number(advAplicacoesPorObraCents.get(advObra)||0));
     const aplicado=Math.min(usar,limite);
@@ -5587,38 +5582,32 @@ for(const item of processados){
     }
   }
 
-  // Adiantamentos sem obra (ou saldo restante) são distribuídos em centavos.
+  // Vale sem obra/saldo restante: distribuição em centavos, fechando exatamente.
   if(restanteAdvCents>0){
     const obrasComSaldo=[...gruposPorObra.entries()].filter(([obraId,c])=>c>Number(advAplicacoesPorObraCents.get(obraId)||0));
     const baseTotal=obrasComSaldo.reduce((a,[_,c])=>a+c,0);
     if(baseTotal>0){
       const parcelas=obrasComSaldo.map(([obraId,brutoCents])=>{
-        const jaAplicado=Number(advAplicacoesPorObraCents.get(obraId)||0);
-        const disponivel=Math.max(0,brutoCents-jaAplicado);
+        const ja=Number(advAplicacoesPorObraCents.get(obraId)||0);
+        const disponivel=Math.max(0,brutoCents-ja);
         const exato=restanteAdvCents*(disponivel/baseTotal);
         const base=Math.min(disponivel,Math.floor(exato));
         return {obraId,base,resto:exato-base,disponivel};
       });
       let usado=parcelas.reduce((a,x)=>a+x.base,0);
       parcelas.sort((a,b)=>b.resto-a.resto);
-      for(const x of parcelas){
-        if(usado>=restanteAdvCents)break;
-        if(x.base<x.disponivel){x.base++;usado++;}
-      }
-      for(const x of parcelas){
-        advAplicacoesPorObraCents.set(x.obraId,(advAplicacoesPorObraCents.get(x.obraId)||0)+x.base);
-      }
+      for(const x of parcelas){if(usado>=restanteAdvCents)break;if(x.base<x.disponivel){x.base++;usado++;}}
+      for(const x of parcelas)advAplicacoesPorObraCents.set(x.obraId,(advAplicacoesPorObraCents.get(x.obraId)||0)+x.base);
     }
   }
 
-  // Distribui o abatimento da obra entre checklists também em centavos.
+  // Distribui o vale entre os lançamentos da obra em centavos, incluindo bônus/extras.
   const abatidoPorGrupoCents=new Map();
   for(const [obraId,brutoObraCents] of gruposPorObra){
     const abatimentoObraCents=Math.min(brutoObraCents,Number(advAplicacoesPorObraCents.get(obraId)||0));
     const gruposDaObra=grupos.filter(g=>String(g.obraId)===String(obraId));
     const totalGrupoCents=gruposDaObra.reduce((a,g)=>a+toCents(g.valor),0);
     if(abatimentoObraCents<=0||totalGrupoCents<=0)continue;
-
     const partes=gruposDaObra.map(g=>{
       const brutoCents=toCents(g.valor);
       const exato=abatimentoObraCents*(brutoCents/totalGrupoCents);
@@ -5627,70 +5616,69 @@ for(const item of processados){
     });
     let usado=partes.reduce((a,x)=>a+x.base,0);
     partes.sort((a,b)=>b.resto-a.resto);
-    for(const x of partes){
-      if(usado>=abatimentoObraCents)break;
-      if(x.base<x.brutoCents){x.base++;usado++;}
-    }
-    for(const x of partes){
-      const key=String(x.g.obraId)+'::'+String(x.g.checklistId||'');
-      abatidoPorGrupoCents.set(key,x.base);
-    }
+    for(const x of partes){if(usado>=abatimentoObraCents)break;if(x.base<x.brutoCents){x.base++;usado++;}}
+    for(const x of partes)abatidoPorGrupoCents.set(x.g.uid,x.base);
   }
 
-  // Fechamento: a soma das despesas líquidas deve ser exatamente a folha líquida.
+  // Garante fechamento exato da folha líquida.
+  let somaLiquidaCents=grupos.reduce((sum,g)=>sum+Math.max(0,toCents(g.valor)-Number(abatidoPorGrupoCents.get(g.uid)||0)),0);
   const totalLiquidoCents=Math.max(0,totalBrutoCents-totalAdiantCents);
-  let somaLiquidaCents=grupos.reduce((sum,g)=>{
-    const key=String(g.obraId)+'::'+String(g.checklistId||'');
-    return sum+Math.max(0,toCents(g.valor)-Number(abatidoPorGrupoCents.get(key)||0));
-  },0);
   const diferencaCents=totalLiquidoCents-somaLiquidaCents;
   if(diferencaCents!==0&&grupos.length){
     for(let i=grupos.length-1;i>=0;i--){
       const g=grupos[i];
-      const key=String(g.obraId)+'::'+String(g.checklistId||'');
       const brutoCents=toCents(g.valor);
-      const abat=Number(abatidoPorGrupoCents.get(key)||0);
+      const abat=Number(abatidoPorGrupoCents.get(g.uid)||0);
       const liquido=Math.max(0,brutoCents-abat);
       const novo=Math.max(0,Math.min(brutoCents,liquido+diferencaCents));
-      abatidoPorGrupoCents.set(key,brutoCents-novo);
+      abatidoPorGrupoCents.set(g.uid,brutoCents-novo);
       break;
     }
   }
 
-  for(let i=0;i<grupos.length;i++){
-    const grupo=grupos[i];
+  let falhaFuncionario=false;
+  for(const grupo of grupos){
+    const brutoCents=toCents(grupo.valor);
+    const abatimentoCents=Number(abatidoPorGrupoCents.get(grupo.uid)||0);
+    const valorLancamento=fromCents(Math.max(0,brutoCents-abatimentoCents));
+    if(valorLancamento<=0)continue;
+
     const obraId=String(grupo.obraId);
-    const checklistId=grupo.checklistId;
-    const brutoObra=Number(grupo.valor||0);
-    const key=obraId+"::"+String(checklistId||"");
-    const brutoObraCents=toCents(brutoObra);
-    const abatimentoCents=Number(abatidoPorGrupoCents.get(key)||0);
-    const valorObra=fromCents(Math.max(0,brutoObraCents-abatimentoCents));
-    if(valorObra<=0)continue;
-
-    const obraObj=D.obras.find(o=>String(o.id)===String(obraId));
+    const checklistId=grupo.checklistId||null;
+    const obraObj=D.obras.find(o=>String(o.id)===obraId);
     const nomeObra=obraObj?.nome||"Obra";
-    const result=await insertRow("gastos",{
-      obra_id:obraId,
-      checklist_id:checklistId||null,
-      data,
-      descricao:`[Mão de obra] ${descricao} - ${item.f.nome}${checklistId?` - ${checklistNome(checklistId)}`:""}`,
-      valor:valorObra,
-      fornecedor:item.f.nome,
-      funcionario_id:item.id,
-      observacao:`Obra das diárias: ${nomeObra}. ${observacaoBase}`,
-      categoria:"Mão de obra"
-    });
 
-    if(!result){falhas++;falhaFuncionario=true;break;}
+    if(grupo.source==='extra'){
+      const gastoExistente=(D.gastos||[]).find(g=>String(g.servico_extra_id||'')===String(grupo.extraId));
+      if(gastoExistente){
+        const atual=Number(gastoExistente.valor||0);
+        const payload={obra_id:obraId,checklist_id:checklistId,data,valor:valorLancamento,fornecedor:item.f.nome,funcionario_id:item.id,categoria:"Mão de obra",status:"pago",data_pagamento:data,descricao:gastoExistente.descricao||`[Bônus] ${item.f.nome}`,observacao:`${observacaoBase} Obra: ${nomeObra}.`};
+        const ok=await updateRow("gastos",gastoExistente.id,payload);
+        if(!ok){falhaFuncionario=true;break;}
+        Object.assign(gastoExistente,payload,{servico_extra_id:grupo.extraId});
+      }else{
+        const extra=item.extrasPendentes.find(x=>String(x.id)===String(grupo.extraId));
+        const result=await insertRow("gastos",{
+          obra_id:obraId,checklist_id:checklistId,data,
+          descricao:`[${extra?.tipo||"Bônus"}] ${extra?.descricao||descricao} - ${item.f.nome}${checklistId?` - ${checklistNome(checklistId)}`:""}`,
+          valor:valorLancamento,fornecedor:item.f.nome,funcionario_id:item.id,servico_extra_id:grupo.extraId,
+          observacao:`${observacaoBase} Obra: ${nomeObra}.`,categoria:"Mão de obra",status:"pago",data_pagamento:data
+        });
+        if(!result){falhaFuncionario=true;break;}
+      }
+    }else{
+      const result=await insertRow("gastos",{
+        obra_id:obraId,checklist_id:checklistId,data,
+        descricao:`[Mão de obra] ${descricao} - ${item.f.nome}${checklistId?` - ${checklistNome(checklistId)}`:""}`,
+        valor:valorLancamento,fornecedor:item.f.nome,funcionario_id:item.id,
+        observacao:`Obra das diárias: ${nomeObra}. ${observacaoBase}`,categoria:"Mão de obra",status:"pago",data_pagamento:data
+      });
+      if(!result){falhaFuncionario=true;break;}
+    }
   }
 
-  if(falhaFuncionario){
-    /* Não baixa as diárias deste funcionário se algum lançamento financeiro falhou. */
-    continue;
-  }
+  if(falhaFuncionario){falhas++;continue;}
 
-  /* Baixa cada diária usando exatamente as colunas existentes no Supabase. */
   for(const diaria of item.pendingItems){
     const qtdOriginal=Math.max(0,Number(diaria.qtd??diaria.quantidade??1));
     const valorBaixado=Math.max(0,Number(diariaValor(diaria)||0));
@@ -5702,44 +5690,25 @@ for(const item of processados){
     if(atualizado)baixados++;
   }
 
-  for(const extra of (item.resumo.extrasPendentes||[])){
+  for(const extra of item.extrasPendentes){
     const localExtra=(D.servicosExtras||[]).find(x=>String(x.id)===String(extra.id));
-    if(localExtra){
-      localExtra.status='pago';
-      localExtra.data_pagamento=data;
-      localExtra.folhaAplicado=true;
-    }
-
+    if(localExtra){localExtra.status='pago';localExtra.data_pagamento=data;localExtra.folhaAplicado=true;localExtra.financeiroAplicado=true;}
     const gasto=(D.gastos||[]).find(g=>String(g.servico_extra_id||'')===String(extra.id));
-    if(gasto){
-      gasto.status='pago';
-      gasto.data_pagamento=data;
-    }
+    if(gasto){gasto.status='pago';gasto.data_pagamento=data;}
   }
 
-  /* Mantém a quitação dos adiantamentos exatamente como já funcionava. */
   const advAplicados=getAdvanceApplied();
   const nomeFunc=normalize(item.f.nome);
   for(const g of (D.gastos||[])){
-    if(gastoCategoria(g)!=="Adiantamento") continue;
-    const pertence=String(g.funcionario_id||"")===String(item.id) || normalize(g.fornecedor)===nomeFunc || normalize(g.descricao).includes(nomeFunc);
-    if(!pertence) continue;
-    const valor=Number(g.valor||0);
-    if(valor<=0)continue;
-    advAplicados[g.id]=valor;
-    g.status="pago";
-    g.aplicado=true;
-    g.valor_baixado=valor;
-    g.data_pagamento=data;
-    g.funcionario_id=item.id;
+    if(gastoCategoria(g)!=="Adiantamento")continue;
+    const pertence=String(g.funcionario_id||"")===String(item.id)||normalize(g.fornecedor)===nomeFunc||normalize(g.descricao).includes(nomeFunc);
+    if(!pertence)continue;
+    const valor=Number(g.valor||0);if(valor<=0)continue;
+    advAplicados[g.id]=valor;g.status="pago";g.aplicado=true;g.valor_baixado=valor;g.data_pagamento=data;g.funcionario_id=item.id;
   }
   for(const a of (D.adiantamentos||[])){
     if(String(a.funcionario_id)!==String(item.id))continue;
-    const valor=Number(a.valor||0);
-    a.status="pago";
-    a.aplicado=true;
-    a.valor_baixado=valor;
-    a.data_pagamento=data;
+    const valor=Number(a.valor||0);a.status="pago";a.aplicado=true;a.valor_baixado=valor;a.data_pagamento=data;
   }
   saveAdvanceApplied(advAplicados);
   saveLocalData();
@@ -5748,12 +5717,8 @@ for(const item of processados){
 closeM("pagEquipeM");
 saveLocalData();
 renderAll();
-
-if(falhas>0){
-  toast(`${quantidade-falhas} pagamento(s) processado(s). ${falhas} lançamento(s) financeiro(s) aguardando sincronização.`);
-}else{
-  toast(`${quantidade} pagamento(s) processado(s). ${baixados} diária(s) baixada(s). Total líquido: ${money(total)}. Cada despesa foi vinculada à obra da respectiva diária.`);
-}
+if(falhas>0)toast(`${quantidade-falhas} pagamento(s) processado(s). ${falhas} lançamento(s) aguardando sincronização.`);
+else toast(`${quantidade} pagamento(s) processado(s). ${baixados} diária(s) baixada(s). Total líquido: ${money(total)}. Diárias e bônus/extras foram distribuídos exatamente por obra e checklist.`);
 
 }catch(err){
 console.error("Erro no pagamento da equipe:",err);
@@ -8342,16 +8307,90 @@ function openHomeKpi(tipo){
   const m=document.createElement('div');m.id='edHomeKpiModal';m.className='modal open';m.innerHTML=`<div class="modalBox edKpiModalBox"><div class="modalHead"><div><h2>${title}</h2><p class="sub">Detalhamento da tela inicial.</p></div><button class="x" onclick="edifiqCloseHomeModal()">×</button></div><div class="edKpiModalBody">${body}</div></div>`;document.body.appendChild(m);
 }
 
-async function openExtraEquipe(){
-  const funcs=(D.funcionarios||[]).filter(f=>f.ativo!==false);
-  if(!funcs.length){toast('Cadastre um funcionário antes de lançar Extras e Bônus.');return;}
-  const nomes=funcs.map((f,i)=>`${i+1} — ${f.nome}`).join('\n');
-  const escolha=prompt(`Selecione o funcionário para o lançamento de Extras e Bônus:\n\n${nomes}\n\nDigite o número:`,'1');
-  if(escolha===null)return;
-  const f=funcs[Number(escolha)-1];
-  if(!f){toast('Funcionário inválido.');return;}
-  await openExtraFuncionario(f.id);
+function extraChecklistOptions(obraId){
+  const itens=checklistForObra(obraId);
+  return '<option value="">Sem checklist</option>'+itens.map(c=>`<option value="${esc(c.id)}">${esc(c.tarefa||c.descricao||"Etapa")}</option>`).join('');
 }
+
+function extraAtualizarChecklist(){
+  const obraId=$("extraObra")?.value||"";
+  const el=$("extraChecklist");
+  if(!el)return;
+  const atual=el.value;
+  el.innerHTML=extraChecklistOptions(obraId);
+  if(atual && [...el.options].some(o=>String(o.value)===String(atual))) el.value=atual;
+}
+
+function fecharExtraModal(){ closeM('extraEquipeM'); }
+
+async function salvarExtraEquipeFormulario(e){
+  e.preventDefault();
+  const funcId=$("extraFunc")?.value||"";
+  const obraId=$("extraObra")?.value||"";
+  const checklistId=$("extraChecklist")?.value||"";
+  const tipo=$("extraTipo")?.value||"";
+  const descricao=$("extraDescricao")?.value.trim()||"";
+  const valor=Number($("extraValor")?.value||0);
+  const data=$("extraData")?.value||today();
+
+  if(!funcId){toast('Selecione o funcionário.');return;}
+  if(!obraId){toast('Selecione a obra.');return;}
+  if(!tipo){toast('Selecione o tipo de lançamento.');return;}
+  if(!descricao){toast('Informe a descrição.');return;}
+  if(!Number.isFinite(valor)||valor<=0){toast('Informe um valor válido.');return;}
+
+  const f=D.funcionarios.find(x=>String(x.id)===String(funcId));
+  const obra=D.obras.find(x=>String(x.id)===String(obraId));
+  if(!f||!obra){toast('Funcionário ou obra inválidos.');return;}
+
+  D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];
+  const id='sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  const item={
+    id,
+    funcionario_id:f.id,
+    funcionarioId:f.id,
+    obra_id:obra.id,
+    obraId:obra.id,
+    checklist_id:checklistId||null,
+    checklistId:checklistId||null,
+    descricao,
+    tipo,
+    valor,
+    data,
+    status:'pendente',
+    financeiroAplicado:false,
+    folhaAplicado:false
+  };
+
+  D.servicosExtras.push(item);
+  saveLocalData();
+  fecharExtraModal();
+  toast(`${tipo} lançado na folha de ${f.nome}. Será distribuído na obra${checklistId?' e checklist selecionados':''} ao processar o pagamento.`);
+  renderAll();
+}
+
+function openExtraFormulario({funcId='',fixedObraId=''}={}){
+  let m=document.getElementById('extraEquipeM');
+  if(!m){
+    m=document.createElement('div');
+    m.id='extraEquipeM';
+    m.className='modal';
+    document.body.appendChild(m);
+  }
+  const funcs=(D.funcionarios||[]).filter(f=>f.ativo!==false);
+  const obras=D.obras||[];
+  if(!funcs.length){toast('Cadastre um funcionário antes de lançar Extras e Bônus.');return;}
+  if(!obras.length){toast('Cadastre uma obra antes de lançar Extras e Bônus.');return;}
+  const selectedFunc=funcId||funcs[0].id;
+  const selectedObra=fixedObraId||getFuncObra(selectedFunc)||obras[0].id;
+  m.innerHTML=`<div class="modalBox"><div class="modalHead"><div><h2>🏆 Extras e Bônus</h2><p class="sub">Selecione os dados do lançamento. O bônus entra na folha e fica vinculado à obra e ao checklist.</p></div><button class="x" type="button" onclick="fecharExtraModal()">×</button></div><form onsubmit="salvarExtraEquipeFormulario(event)"><div class="formGrid"><label>Funcionário<select id="extraFunc" required onchange="if(!'${String(funcId).replace(/'/g,"\\'")}'){}"><option value="">Selecione</option>${funcs.map(f=>`<option value="${esc(f.id)}">${esc(f.nome)}</option>`).join('')}</select></label><label>Tipo<select id="extraTipo" required><option value="Bônus">Bônus</option><option value="Extra">Extra</option><option value="Hora extra">Hora extra</option><option value="Prêmio">Prêmio</option><option value="Produção">Produção</option></select></label><label>Obra<select id="extraObra" required onchange="extraAtualizarChecklist()"><option value="">Selecione</option>${obras.map(o=>`<option value="${esc(o.id)}">${esc(o.nome)}</option>`).join('')}</select></label><label>Checklist<select id="extraChecklist"><option value="">Sem checklist</option></select></label><label>Data<input id="extraData" type="date" value="${today()}"></label><label>Valor<input id="extraValor" type="number" min="0.01" step="0.01" required placeholder="R$ 0,00"></label><label class="full">Descrição<input id="extraDescricao" required placeholder="Ex.: Bônus por conclusão da etapa"></label></div><div class="note">💰 O valor será somado à folha do funcionário e, no pagamento, lançado na despesa da obra selecionada, sem rateio picado. Se houver checklist, ficará vinculado a ele.</div><div class="formActions"><button class="btn" type="button" onclick="fecharExtraModal()">Cancelar</button><button class="btn primary" type="submit">Lançar na folha</button></div></form></div>`;
+  m.classList.add('open');
+  $("extraFunc").value=selectedFunc;
+  $("extraObra").value=selectedObra;
+  extraAtualizarChecklist();
+}
+
+async function openExtraEquipe(){ openExtraFormulario(); }
 
 async function openExtraObra(obraId){
   const obra=(D.obras||[]).find(o=>String(o.id)===String(obraId));
@@ -8359,93 +8398,15 @@ async function openExtraObra(obraId){
   const ids=[...new Set((D.diarias||[]).filter(d=>String(d.obra_id)===String(obraId)).map(d=>String(d.funcionario_id)).filter(Boolean))];
   const funcs=(D.funcionarios||[]).filter(f=>f.ativo!==false && (ids.includes(String(f.id)) || String(getFuncObra(f.id))===String(obraId)));
   if(!funcs.length){toast('Nenhum funcionário encontrado nesta obra. Registre uma diária ou vincule um funcionário à obra.');return;}
-  const nomes=funcs.map((f,i)=>`${i+1} — ${f.nome}`).join('\n');
-  const escolha=prompt(`Extras e Bônus — ${obra.nome}\n\nSelecione o funcionário:\n\n${nomes}\n\nDigite o número:`,'1');
-  if(escolha===null)return;
-  const f=funcs[Number(escolha)-1];
-  if(!f){toast('Funcionário inválido.');return;}
-  await openExtraFuncionario(f.id,obraId);
+  openExtraFormulario({funcId:funcs[0].id,fixedObraId:obraId});
+  setTimeout(()=>{
+    const el=$("extraFunc");
+    if(el){el.innerHTML='<option value="">Selecione</option>'+funcs.map(f=>`<option value="${esc(f.id)}">${esc(f.nome)}</option>`).join('');el.value=funcs[0].id;}
+  },0);
 }
 
-async function openExtraFuncionario(funcId,fixedObraId=null){
-  const f=D.funcionarios.find(x=>String(x.id)===String(funcId));
-  if(!f){toast('Funcionário não encontrado.');return;}
-  const obras=D.obras||[];
-  if(!obras.length){toast('Cadastre uma obra antes de lançar um serviço extra.');return;}
+async function openExtraFuncionario(funcId,fixedObraId=null){ openExtraFormulario({funcId,fixedObraId:fixedObraId||''}); }
 
-  let obra=null;
-  if(fixedObraId){
-    obra=obras.find(o=>String(o.id)===String(fixedObraId));
-    if(!obra){toast('Obra inválida.');return;}
-  }else{
-    const nomes=obras.map((o,i)=>`${i+1} — ${o.nome}`).join('\\n');
-    const escolha=prompt(`Vincule o lançamento a uma obra:\\n\\n${nomes}\\n\\nDigite o número da obra:`,'1');
-    if(escolha===null)return;
-    obra=obras[Number(escolha)-1];
-    if(!obra){toast('Obra inválida.');return;}
-  }
-
-  const descricao=prompt('Descrição do serviço extra, bônus ou modificação:','Serviço extra');
-  if(descricao===null||!descricao.trim())return;
-
-  const tipo=prompt('Tipo: serviço extra / bônus / modificação:','Serviço extra');
-  if(tipo===null)return;
-
-  const raw=prompt('Valor (R$):','0');
-  if(raw===null)return;
-
-  const valor=Number(String(raw).replace(/\\./g,'').replace(',','.'));
-  if(!Number.isFinite(valor)||valor<=0){
-    toast('Informe um valor válido.');
-    return;
-  }
-
-  D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];
-  const id='sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-
-  const item={
-    id,
-    funcionario_id:f.id,
-    funcionarioId:f.id,
-    obra_id:obra.id,
-    obraId:obra.id,
-    descricao:descricao.trim(),
-    tipo:tipo.trim()||'Serviço extra',
-    valor,
-    data:today(),
-    status:'pendente',
-    financeiroAplicado:true,
-    folhaAplicado:false
-  };
-
-  D.servicosExtras.push(item);
-  saveLocalData();
-
-  // O lançamento financeiro passa a ser gravado pela mesma rotina usada
-  // pelo restante do Financeiro, evitando que o extra desapareça após sincronizar.
-  const result=await insertRow('gastos',{
-    obra_id:obra.id,
-    data:today(),
-    descricao:`[${item.tipo}] ${item.descricao} - ${f.nome}`,
-    valor,
-    fornecedor:f.nome,
-    observacao:'Lançamento vinculado à folha de pagamento.',
-    categoria:'Mão de obra',
-    funcionario_id:f.id,
-    servico_extra_id:id,
-    status:'pendente'
-  });
-
-  if(!result){
-    D.servicosExtras=D.servicosExtras.filter(x=>String(x.id)!==String(id));
-    saveLocalData();
-    toast('Não foi possível registrar o bônus/serviço extra.');
-    return;
-  }
-
-  toast(`${item.tipo} lançado para ${f.nome}. O valor já entra na folha de pagamento.`);
-  renderAll();
-}
 function renderDashboard(){
  renderHomeObras();
  const contratado=D.obras.reduce((a,o)=>a+Number(o.valor||0),0);
