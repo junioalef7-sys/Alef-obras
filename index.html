@@ -331,7 +331,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}input,select,tex
 .progressNumber{width:68px!important;min-width:68px;padding:7px 6px!important;text-align:center;}
 @media(max-width:759px){.authLogoSimple h1{font-size:26px}.checkProgressControls{grid-template-columns:minmax(0,1fr) 62px}.progressNumber{width:62px!important;min-width:62px}}
 
-/* EDIFIQ — quatro atalhos grandes na tela inicial */
+/* EDIFIQ — atalhos antigos removidos; mantido apenas o estilo legado para compatibilidade */
 .homeQuickGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;}
 .homeQuick{border:1px solid var(--line);background:linear-gradient(145deg,#171c22,#0d1115);color:#fff;border-radius:16px;min-height:112px;padding:14px 12px;text-align:left;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;}
 .homeQuick span{font-size:28px;line-height:1;margin-bottom:8px;}
@@ -1587,7 +1587,6 @@ body{min-height:100vh;min-height:100dvh}
     <button class="edifiqMenuItem" onclick="openPagamentoEquipe();toggleMenuPasta()"><span>＄</span><b>Pagamento da Equipe</b></button>
     <button class="edifiqMenuItem" onclick="openAdiantamento();toggleMenuPasta()"><span>＋</span><b>Adiantamento</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('diarias')"><span>📅</span><b>Histórico de Diárias</b></button>
-    <button class="edifiqMenuItem" onclick="goMenu('relatorios')"><span>▧</span><b>Relatórios</b></button>
   </div>
   <div class="edifiqMenuTitle edifiqSectionTitle">DADOS</div>
   <button class="edifiqDataRow" onclick="goMenu('config')"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
@@ -1864,10 +1863,6 @@ body{min-height:100vh;min-height:100dvh}
 <div class="toolbar docFilters"><select id="docObraFilter" onchange="renderDocumentos()"><option value="all">Todas as obras</option></select><select id="docCategoriaFilter" onchange="renderDocumentos()"><option value="all">Todas as categorias</option><option>Contrato</option><option>Orçamento</option><option>Nota fiscal</option><option>Comprovante</option><option>Medição</option><option>Projeto</option><option>Outros</option></select><input id="docBusca" oninput="renderDocumentos()" placeholder="Buscar documento, fornecedor ou observação"></div>
 <div class="grid kpis docKpis"><div class="kpi"><small>Documentos</small><strong id="docTotal">0</strong></div><div class="kpi"><small>Obras com documentos</small><strong id="docObras">0</strong></div><div class="kpi"><small>Contratos</small><strong id="docContratos">0</strong></div><div class="kpi"><small>Notas / comprovantes</small><strong id="docFinanceiros">0</strong></div></div>
 <div id="documentosList"></div>
-</section>
-<section class="page" id="relatorios">
-<div class="pageTitle"><div><h1>Relatórios</h1><p class="sub">Os relatórios e ferramentas de exportação ficam centralizados na janela Backup.</p></div></div>
-<div class="card"><h2>💾 Relatórios centralizados no Backup</h2><p class="sub">Esta tela não duplica Equipe, Pagamentos, Adiantamentos, Histórico de Diárias ou Relatório para Cliente. Esses recursos continuam disponíveis diretamente no menu principal.</p><div class="listActions"><button class="btn gold" type="button" onclick="openBackupConfig()">Abrir Backup e Relatórios</button></div></div>
 </section>
 </main></section>
 <!-- MODAIS -->
@@ -2860,24 +2855,90 @@ function toggleMenuPasta(){
  if(b) b.classList.toggle('open',open);
 }
 
+function exportDataOnly(){
+  try{
+    const pacote={
+      app:"EDIFIQ",
+      version:"4.0-data",
+      date:new Date().toISOString(),
+      data:D
+    };
+    downloadFile(JSON.stringify(pacote,null,2),"EDIFIQ_dados.json","application/json");
+    toast("Dados exportados com sucesso.");
+  }catch(e){
+    console.error("EDIFIQ exportDataOnly:",e);
+    toast("Não foi possível exportar os dados.");
+  }
+}
+
 function openBackupConfig(){
   let m=document.getElementById('edBackupConfigModal');
   if(!m){
     m=document.createElement('div');
     m.id='edBackupConfigModal';
     m.className='modal open';
-    m.innerHTML=`<div class="modalBox" style="max-width:720px;max-height:90vh;overflow:auto">
-      <div class="modalHead"><div><h2>💾 Backup</h2><p class="sub">Central de proteção, recuperação e exportação dos dados do EDIFIQ.</p></div><button class="x" onclick="closeM('edBackupConfigModal')">×</button></div>
-      <div class="card"><h3>Proteção dos dados</h3><p class="sub">O backup não substitui nem apaga os dados atuais. A importação também preserva os registros existentes e mescla somente o que for necessário.</p><div class="listActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar backup</button><input id="backupImportFile" accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importRelatorioData(event)" style="display:none" type="file"/></div></div>
-      <div class="card"><h3>Exportar relatórios</h3><div class="reportGrid"><button class="btn reportAction" onclick="exportPDF()"><b>📄 Exportar PDF</b><small>Relatório pronto para salvar ou compartilhar.</small></button><button class="btn reportAction" onclick="exportExcel()"><b>📊 Exportar Excel</b><small>Obras, equipe, diárias, financeiro e checklist.</small></button><button class="btn reportAction" onclick="exportCSVAll()"><b>📁 Exportar CSV</b><small>Dados compatíveis com planilhas.</small></button><button class="btn reportAction" onclick="exportFull()"><b>🗂️ Exportar JSON</b><small>Backup completo para recuperação futura.</small></button></div></div>
-      <div class="card"><h3>📊 Acesso rápido aos relatórios</h3><p class="sub">Os recursos continuam no menu principal, mas também ficam centralizados aqui para consulta e exportação.</p><div class="reportGrid"><button class="btn reportAction" type="button" onclick="openRelatorioCliente()"><b>📄 Relatório para Cliente</b><small>Gerar acompanhamento por obra e cliente.</small></button><button class="btn reportAction" type="button" onclick="openRelatorioTrabalhador()"><b>👷 Relatório do Trabalhador</b><small>Dados cadastrais, dias, obras, pagamentos e fechamento.</small></button><button class="btn reportAction" type="button" onclick="openPagamentoEquipe()"><b>👷 Pagamento da Equipe</b><small>Folha, diárias, adiantamentos e líquido.</small></button><button class="btn reportAction" type="button" onclick="openAdiantamento()"><b>＋ Adiantamento</b><small>Registrar e controlar adiantamentos.</small></button><button class="btn reportAction" type="button" onclick="go('diarias');closeM('edBackupConfigModal')"><b>📅 Histórico de Diárias</b><small>Consultar os registros por período e obra.</small></button></div></div>
-      <div class="card dangerDataCard"><h3>🗑️ Apagar dados</h3><p class="sub">Escolha o setor que deseja apagar. O aplicativo pedirá confirmação antes de excluir.</p><div class="reportGrid dataDeleteGrid"><button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar Equipe</b><small>Funcionários, diárias, faltas e registros.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar Obras</b><small>Obras e registros vinculados.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar Financeiro</b><small>Receitas, despesas e pagamentos.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar Tudo</b><small>Apaga todos os dados do aplicativo.</small></button></div><div class="note dangerNote">⚠️ Esta ação não pode ser desfeita. Faça um backup antes de apagar.</div></div>
-      <div class="note" id="backupStatus">Backup centralizado: seus dados atuais permanecem preservados.</div>
+    m.innerHTML=`<div class="modalBox" style="max-width:680px;max-height:90vh;overflow:auto">
+      <div class="modalHead">
+        <div><h2>💾 Backup</h2><p class="sub">Backup completo, importação e exportação dos dados do EDIFIQ.</p></div>
+        <button class="x" onclick="closeM('edBackupConfigModal')" type="button">×</button>
+      </div>
+      <div class="card">
+        <h3>🔐 Proteção dos dados</h3>
+        <p class="sub">O backup completo inclui os dados do aplicativo e as fotos salvas localmente. Faça um backup antes de trocar de aparelho ou apagar dados.</p>
+        <div class="listActions">
+          <button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button>
+          <button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar dados</button>
+          <button class="btn" type="button" onclick="exportDataOnly()">📤 Exportar dados</button>
+          <input id="backupImportFile" accept=".json,application/json" onchange="importRelatorioData(event)" style="display:none" type="file"/>
+        </div>
+      </div>
+      <div class="note" id="backupStatus">Use o backup completo para restaurar o aplicativo em outro aparelho.</div>
     </div>`;
     document.body.appendChild(m);
-  } else m.classList.add('open');
+  }else{
+    m.classList.add('open');
+  }
 }
-
+function openConfig(){
+  let m=document.getElementById('edConfigModal');
+  if(!m){
+    m=document.createElement('div');
+    m.id='edConfigModal';
+    m.className='modal open';
+    m.innerHTML=`<div class="modalBox" style="max-width:680px;max-height:90vh;overflow:auto">
+      <div class="modalHead">
+        <div><h2>⚙️ Configurações</h2><p class="sub">Seus dados e controle dos dados armazenados no EDIFIQ.</p></div>
+        <button class="x" onclick="closeM('edConfigModal')" type="button">×</button>
+      </div>
+      <div class="card">
+        <h3>👤 Seus dados</h3>
+        <div class="item"><b>Conta</b><br><small id="configUserEmail">Não informado</small></div>
+        <div class="item"><b>ID da conta</b><br><small id="configUserId">Não informado</small></div>
+        <div class="item"><b>Aplicativo</b><br><small>EDIFIQ — Construção Civil</small></div>
+      </div>
+      <div class="card dangerDataCard">
+        <h3>🗑️ Apagar dados</h3>
+        <p class="sub">Escolha o que deseja apagar. O aplicativo pedirá confirmação antes de excluir.</p>
+        <div class="reportGrid dataDeleteGrid">
+          <button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar Equipe</b><small>Funcionários, diárias, faltas e registros.</small></button>
+          <button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar Obras</b><small>Obras e registros vinculados.</small></button>
+          <button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar Financeiro</b><small>Receitas, despesas e pagamentos.</small></button>
+          <button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar Tudo</b><small>Apaga todos os dados do aplicativo.</small></button>
+        </div>
+        <div class="note dangerNote">⚠️ Esta ação não pode ser desfeita. Faça um backup antes de apagar.</div>
+      </div>
+    </div>`;
+    document.body.appendChild(m);
+  }else{
+    m.classList.add('open');
+  }
+  const email=user?.email||'Não informado';
+  const uid=user?.id||'Conta local';
+  const e=document.getElementById('configUserEmail');
+  const id=document.getElementById('configUserId');
+  if(e)e.textContent=email;
+  if(id)id.textContent=uid;
+}
 function parseNumeroSeguro(v){
   if(typeof v==='number') return v;
   if(v===null||v===undefined||v==='') return 0;
@@ -2943,8 +3004,13 @@ function restoreTheme(){
 }
 
 function goMenu(page){
-toggleMenuPasta();
-go(page);
+  if(page==='config'){
+    toggleMenuPasta();
+    openConfig();
+    return;
+  }
+  toggleMenuPasta();
+  go(page);
 }
 
 function go(page){
@@ -3210,6 +3276,8 @@ async function login(){
     }
 
     user=session.user;
+    const drawerEmail=$("drawerUserEmail");
+    if(drawerEmail)drawerEmail.textContent=user.email||"Conta EDIFIQ";
 
     // Mostra o aplicativo imediatamente após a autenticação.
     $("auth")?.classList.add("hidden");
@@ -3440,6 +3508,8 @@ async function finishSignupLogin(session){
     return;
   }
   user=session.user;
+  const drawerEmail=$('drawerUserEmail');
+  if(drawerEmail)drawerEmail.textContent=user.email||'Conta EDIFIQ';
   $('auth')?.classList.add('hidden');
   $('app')?.classList.remove('hidden');
   authMsg('');
@@ -11535,11 +11605,38 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   }
 
   function sayVoz(text){
-    if(!("speechSynthesis" in window))return;
-    window.speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(text);
-    u.lang="pt-BR"; u.rate=1; u.pitch=1;
-    window.speechSynthesis.speak(u);
+    return new Promise(resolve=>{
+      if(!("speechSynthesis" in window)){resolve();return;}
+      try{
+        window.speechSynthesis.cancel();
+        const u=new SpeechSynthesisUtterance(String(text||""));
+        u.lang="pt-BR"; u.rate=1; u.pitch=1;
+        u.onend=()=>resolve();
+        u.onerror=()=>resolve();
+        window.speechSynthesis.speak(u);
+        setTimeout(resolve,Math.max(2500,String(text||"").length*85));
+      }catch(_){resolve();}
+    });
+  }
+
+  async function ensureMicrophone(){
+    try{
+      if(!navigator.mediaDevices?.getUserMedia){
+        return true;
+      }
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      stream.getTracks().forEach(t=>{try{t.stop()}catch(_){}});
+      return true;
+    }catch(e){
+      const code=e?.name||"";
+      const msg=code==="NotAllowedError"||code==="PermissionDeniedError"
+        ?"Permissão do microfone foi bloqueada. Autorize o microfone para o EDIFIQ e tente novamente."
+        :code==="NotFoundError"
+        ?"Nenhum microfone foi encontrado neste dispositivo."
+        :"Não foi possível acessar o microfone. Verifique as permissões do navegador.";
+      setStatus(msg); transcript(""); sayVoz(msg);
+      return false;
+    }
   }
 
   function setStatus(text){
@@ -11558,46 +11655,84 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     if(el("diarioVozStop"))el("diarioVozStop").style.display="none";
   }
 
-  function startRecognition(){
+  async function startRecognition(){
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
     if(!SR){
-      setStatus("Seu navegador não oferece reconhecimento de voz. Use Chrome ou Edge com o microfone permitido.");
-      return;
+      const msg="O reconhecimento de voz não está disponível neste navegador. Use Chrome ou Edge no computador, ou um navegador atualizado com microfone permitido.";
+      setStatus(msg); transcript(""); await sayVoz(msg); return;
     }
+    if(!vozRunning)return;
+    if(vozListening)return;
+    const ok=await ensureMicrophone();
+    if(!ok)return;
+
     stopRecognition();
     voz=new SR();
-    voz.lang="pt-BR"; voz.continuous=false; voz.interimResults=false; voz.maxAlternatives=1;
+    voz.lang="pt-BR";
+    voz.continuous=false;
+    voz.interimResults=true;
+    voz.maxAlternatives=3;
+
     voz.onstart=()=>{
       vozListening=true;
       el("diarioVozOrb")?.classList.add("listening");
       if(el("diarioVozStop"))el("diarioVozStop").style.display="inline-flex";
       setStatus("Estou ouvindo… fale agora.");
+      transcript("");
     };
+
     voz.onresult=e=>{
-      const heard=e.results?.[0]?.[0]?.transcript?.trim()||"";
-      stopRecognition();
-      transcript(heard);
-      processAnswer(heard);
+      let heard="";
+      for(let i=e.resultIndex||0;i<e.results.length;i++){
+        heard+=(e.results[i]?.[0]?.transcript||"")+" ";
+      }
+      heard=heard.trim();
+      if(heard)transcript(heard);
+      const last=e.results[e.results.length-1];
+      if(last?.isFinal && heard){
+        stopRecognition();
+        processAnswer(heard);
+      }
     };
-    voz.onerror=e=>{
+
+    voz.onerror=async e=>{
+      const code=e?.error||"";
       stopRecognition();
-      const msg=e.error==="not-allowed"?"Permissão do microfone foi bloqueada. Autorize o microfone no navegador.":e.error==="no-speech"?"Não consegui ouvir. Vamos tentar novamente.":"Não consegui reconhecer a fala. Vamos tentar novamente.";
-      setStatus(msg);
-      sayVoz(msg);
-      if(vozRunning)setTimeout(()=>askCurrent(),700);
+      if(code==="aborted")return;
+      const msg=code==="not-allowed"||code==="service-not-allowed"
+        ?"Permissão do microfone bloqueada. Autorize o microfone e toque em iniciar novamente."
+        :code==="audio-capture"
+        ?"O navegador não conseguiu acessar o microfone. Verifique se outro aplicativo está usando o microfone."
+        :code==="no-speech"
+        ?"Não ouvi sua resposta. Toque em repetir e fale depois de aparecer “Estou ouvindo”."
+        :"Não consegui reconhecer a fala. Toque em repetir e tente novamente.";
+      setStatus(msg); await sayVoz(msg);
     };
-    voz.onend=()=>{vozListening=false;el("diarioVozOrb")?.classList.remove("listening");};
-    try{voz.start()}catch(_){setStatus("Não foi possível iniciar o microfone. Tente novamente.")}
+
+    voz.onend=()=>{
+      vozListening=false;
+      el("diarioVozOrb")?.classList.remove("listening");
+      if(vozRunning && !el("diarioVozSave")?.offsetParent && !el("diarioVozStop")?.offsetParent){
+        // Não reinicia sozinho: evita loop de permissão/erro.
+      }
+    };
+
+    try{
+      voz.start();
+    }catch(e){
+      vozListening=false;
+      setStatus("Não foi possível iniciar o reconhecimento. Toque em repetir e tente novamente.");
+    }
   }
 
-  function askCurrent(){
+  async function askCurrent(){
     if(!vozRunning)return;
     if(vozStep>=steps.length){finishVoz();return}
     const st=steps[vozStep];
     setStatus(st.q);
-    sayVoz(st.q);
     if(el("diarioVozRepeat"))el("diarioVozRepeat").style.display="inline-flex";
-    setTimeout(()=>{if(vozRunning&&!vozListening)startRecognition()},500);
+    await sayVoz(st.q);
+    if(vozRunning && !vozListening)await startRecognition();
   }
 
   function processAnswer(heard){
@@ -11660,36 +11795,43 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     openM("diarioVozM");
   };
 
-  window.diarioVozStart=function(){
+  window.diarioVozStart=async function(){
     const modal=el("diarioVozM");
     if(!modal){toast("Módulo Diário por Voz não carregou. Recarregue o aplicativo.");return}
     const obra=el("diarioVozObra")?.value||"";
     if(!obra){toast("Selecione a obra.");return}
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
     if(!SR){
-      const msg="Seu navegador não oferece reconhecimento de voz. No iPhone, tente pelo Chrome ou Safari atualizado e permita o microfone.";
+      const msg="O reconhecimento de voz não está disponível neste navegador. Use Chrome ou Edge no computador, ou um navegador atualizado com microfone permitido.";
       setStatus(msg);sayVoz(msg);return;
     }
+    const mic=await ensureMicrophone();
+    if(!mic)return;
     vozData.obra_id=obra;
     vozData.data=el("diarioVozData")?.value||todayV();
     vozRunning=true; vozStep=0;
     el("diarioVozSave").style.display="none";
     el("diarioVozPreview").innerHTML="";
-    setStatus("Vamos começar.");
-    sayVoz("Vamos registrar o diário de obra por voz.");
-    setTimeout(askCurrent,1000);
+    setStatus("Microfone liberado. Vamos começar.");
+    await sayVoz("Microfone liberado. Vamos registrar o diário de obra por voz.");
+    if(vozRunning)askCurrent();
   };
 
   window.diarioVozRepeat=function(){if(vozRunning)askCurrent()};
   window.diarioVozStop=function(){stopRecognition();vozRunning=false;setStatus("Conversa pausada. Toque em iniciar para começar novamente.");sayVoz("Conversa pausada.")};
 
-  window.diarioVozConfirm=function(){
+  window.diarioVozConfirm=async function(){
     if(!vozData.obra_id){toast("Selecione a obra.");return}
     if(!vozData.equipe?.length){toast("Selecione pelo menos um trabalhador.");renderEquipeManual();return}
     const base={obra_id:vozData.obra_id,data:vozData.data||todayV(),clima:vozData.clima||"Não informado",horas:Number(vozData.horas||0),equipe:[...new Set(vozData.equipe)],atividades:String(vozData.atividades||"").trim(),observacoes:String(vozData.observacoes||"").trim()};
     D.diario=Array.isArray(D.diario)?D.diario:[];
-    D.diario.unshift({...base,id:"diario_"+Date.now()+"_"+Math.random().toString(36).slice(2),user_id:user?.id||"local-user",created_at:new Date().toISOString(),origem:"voz"});
-    saveLocalData(); closeDiarioVoz(); renderAll(); toast("Diário de obra registrado por voz.");
+    const registro={...base,id:"diario_"+Date.now()+"_"+Math.random().toString(36).slice(2),user_id:user?.id||"local-user",created_at:new Date().toISOString(),origem:"voz"};
+    D.diario.unshift(registro);
+    saveLocalData();
+    try{
+      if(sb&&user) await insertRow("diario",registro);
+    }catch(e){console.warn("Diário por voz — sincronização:",e);}
+    closeDiarioVoz(); renderAll(); toast("Diário de obra registrado por voz.");
   };
 
   window.closeDiarioVoz=function(){
