@@ -3774,6 +3774,10 @@ Object.entries(payload)
 
 }
 
+if(table==="diarias"){
+  attempts.push(Object.fromEntries(Object.entries(payload).filter(([k])=>k!=="checklist_id")));
+}
+
 if(table==="pagamentos"){
 
 attempts.push(
@@ -5271,13 +5275,13 @@ row
 );
 
 if(result){
-
-closeM("diaM");
-
-toast(
-`Diária registrada: ${money(valorReal)}`
-);
-
+  if(String(row.status||'').toLowerCase()==='pago' && result.id) markDiariasPaid([result.id]);
+  saveLocalData();
+  closeM("diaM");
+  renderAll();
+  toast(`Diária registrada: ${money(valorReal)}`);
+}else{
+  toast("Não foi possível registrar a diária.");
 }
 
 }
@@ -7102,12 +7106,26 @@ async function saveFalta(e){
   toast("Falta registrada e incluída no histórico.");
 }
 
-function deleteFalta(id){
- if(!confirm("Excluir este registro de falta?"))return;
- D.faltas=D.faltas.filter(x=>String(x.id)!==String(id));
- saveLocalData();
- renderAll();
- toast("Registro excluído.");
+async function deleteFalta(id){
+  if(!confirm("Excluir este registro de falta?"))return;
+  const existente=(D.faltas||[]).find(x=>String(x.id)===String(id));
+  if(!existente){toast("Falta não encontrada.");return;}
+  D.faltas=D.faltas.filter(x=>String(x.id)!==String(id));
+  saveLocalData();
+  renderAll();
+  if(!String(id).startsWith("local_") && sb && user && navigator.onLine){
+    try{
+      const {error}=await sb.from("faltas").delete().eq("id",id).eq("user_id",user.id);
+      if(error) addEdifiqDeleteQueue("faltas",id);
+      else removeEdifiqDeleteQueue("faltas",id);
+    }catch(_){addEdifiqDeleteQueue("faltas",id);}
+  }else if(!String(id).startsWith("local_")){
+    addEdifiqDeleteQueue("faltas",id);
+  }
+  saveLocalData();
+  renderAll();
+  try{renderHistoricoFrequencia();renderHistoricoDiariasPro();renderHistoricoDiarias()}catch(_){}
+  toast("Registro de falta excluído de todos os históricos.");
 }
 
 /* =========================================================
@@ -8492,7 +8510,8 @@ function openExtraLancamentoModal(funcId='',obraId=''){
     <form onsubmit="salvarExtraLancamento(event)">
       <div class="formGrid">
         <label>Funcionário<select id="extraFuncSel" required><option value="">Selecione o funcionário</option>${funcs.map(f=>`<option value="${esc(String(f.id))}">${esc(f.nome||'Funcionário')}</option>`).join('')}</select></label>
-        <label>Obra<select id="extraObraSel" required><option value="">Selecione a obra</option>${obras.map(o=>`<option value="${esc(String(o.id))}">${esc(o.nome||'Obra')}</option>`).join('')}</select></label>
+        <label>Obra<select id="extraObraSel" required onchange="fillExtraChecklistSelector()"><option value="">Selecione a obra</option>${obras.map(o=>`<option value="${esc(String(o.id))}">${esc(o.nome||'Obra')}</option>`).join('')}</select></label>
+        <label>Checklist da obra<select id="extraChecklistSel"><option value="">Sem checklist</option></select></label>
         <label>Tipo<select id="extraTipoSel"><option value="Serviço extra">Serviço extra</option><option value="Bônus">Bônus</option><option value="Modificação">Modificação</option></select></label>
         <label>Valor (R$)<input id="extraValorSel" type="number" min="0.01" step="0.01" required placeholder="0,00"></label>
         <label class="full">Descrição<input id="extraDescSel" required value="Serviço extra" placeholder="Descrição do bônus ou serviço extra"></label>
@@ -8504,6 +8523,14 @@ function openExtraLancamentoModal(funcId='',obraId=''){
   const fs=document.getElementById('extraFuncSel'), os=document.getElementById('extraObraSel');
   if(funcId)fs.value=funcId;
   if(obraId)os.value=obraId;
+  fillExtraChecklistSelector();
+}
+
+function fillExtraChecklistSelector(){
+  const obraId=document.getElementById('extraObraSel')?.value||'';
+  const el=document.getElementById('extraChecklistSel');
+  if(!el)return;
+  fillChecklistSelect(el,obraId,'Sem checklist');
 }
 
 async function salvarExtraLancamento(e){
@@ -8511,6 +8538,7 @@ async function salvarExtraLancamento(e){
   const funcionario_id=document.getElementById('extraFuncSel')?.value||'';
   const obra_id=document.getElementById('extraObraSel')?.value||'';
   const tipo=document.getElementById('extraTipoSel')?.value||'Serviço extra';
+  const checklist_id=document.getElementById('extraChecklistSel')?.value||null;
   const valor=Number(document.getElementById('extraValorSel')?.value||0);
   const descricao=document.getElementById('extraDescSel')?.value.trim()||tipo;
   const f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcionario_id));
@@ -8519,9 +8547,10 @@ async function salvarExtraLancamento(e){
   if(!Number.isFinite(valor)||valor<=0){toast('Informe um valor válido.');return;}
   D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];
   const id='sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-  const item={id,funcionario_id:f.id,funcionarioId:f.id,obra_id:obra.id,obraId:obra.id,descricao,tipo,valor,data:today(),status:'pendente',financeiroAplicado:true,folhaAplicado:false};
+  const item={id,funcionario_id:f.id,funcionarioId:f.id,obra_id:obra.id,obraId:obra.id,checklist_id,checklistId:checklist_id,descricao,tipo,valor,data:today(),status:'pendente',financeiroAplicado:true,folhaAplicado:false};
   D.servicosExtras.push(item); saveLocalData();
-  const result=await insertRow('gastos',{obra_id:obra.id,data:today(),descricao:`[${tipo}] ${descricao} - ${f.nome}`,valor,fornecedor:f.nome,observacao:'Lançamento vinculado à folha de pagamento.',categoria:'Mão de obra',funcionario_id:f.id,servico_extra_id:id,status:'pendente'});
+  const nomeChecklist=checklist_id?checklistNome(checklist_id):'';
+  const result=await insertRow('gastos',{obra_id:obra.id,checklist_id,data:today(),descricao:`[${tipo}] ${descricao} - ${f.nome}${nomeChecklist?` - ${nomeChecklist}`:''}`,valor,fornecedor:f.nome,observacao:`Lançamento vinculado à folha de pagamento.${nomeChecklist?` Checklist: ${nomeChecklist}.`:''}`,categoria:'Mão de obra',funcionario_id:f.id,servico_extra_id:id,status:'pendente'});
   if(!result){D.servicosExtras=D.servicosExtras.filter(x=>String(x.id)!==String(id));saveLocalData();toast('Não foi possível registrar o bônus/serviço extra.');return;}
   closeM('extraLancamentoM'); toast(`${tipo} lançado para ${f.nome}. O valor já entra na folha de pagamento.`); renderAll();
 }
@@ -8919,7 +8948,7 @@ function renderHistoricoFrequencia(){
   const norm=v=>{const t=String(v||'').toLowerCase().trim();if(['falta_justificada','justificada','falta com justificativa'].includes(t))return'justificada';if(['falta_injustificada','injustificada','falta sem justificativa'].includes(t))return'injustificada';if(['atestado','afastamento'].includes(t))return'atestado';return['presente','trabalhou'].includes(t)?'trabalhou':'falta'};
   const isF=s=>['falta','justificada','injustificada','atestado'].includes(s); const items=[];
   const push=(funcId,data,obraId,status,obs,source)=>{const id=String(funcId||''),dt=String(data||'');if(!id||!dt)return;if(ini&&dt<ini||fim&&dt>fim)return;if(fid&&id!==String(fid))return;if(oid&&String(obraId||'')!==String(oid))return;items.push({funcId:id,data:dt,obraId:obraId||'',status:norm(status),obs:obs||'',source})};
-  (D.diarias||[]).forEach(d=>push(d.funcionario_id??d.funcId??d.funcionarioId,d.data,d.obra_id,'trabalhou',d.observacao,'diaria'));
+  (D.diarias||[]).forEach(d=>{if(!diariaEstaPaga(d))push(d.funcionario_id??d.funcId??d.funcionarioId,d.data,d.obra_id,'trabalhou',d.observacao,'diaria');});
   (D.presencas||[]).forEach(d=>push(d.funcionario_id,d.data,d.obra_id,d.status||'presente',d.observacao,'presenca'));
   (D.faltas||[]).forEach(d=>push(d.funcionario_id,d.data,d.obra_id,d.tipo||'falta',d.observacao,'falta'));
   items.sort((a,b)=>String(b.data).localeCompare(String(a.data))||String(a.funcId).localeCompare(String(b.funcId)));
@@ -8969,8 +8998,8 @@ function renderHistoricoDiariasPro(){
   const total=dias.reduce((a,d)=>a+diariaValor(d),0),pag=dias.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0),pend=total-pag;
   if(resumo)resumo.innerHTML=`<div class="historyMetric"><small>Diárias</small><b>${dias.length}</b></div><div class="historyMetric"><small>Valor total</small><b>${money(total)}</b></div><div class="historyMetric"><small>Faltas</small><b class="red">${faltas.length}</b></div><div class="historyMetric"><small>Pendente</small><b class="gold">${money(pend)}</b></div>`;
   if(!dias.length&&!faltas.length){box.innerHTML='<div class="empty">Nenhuma diária ou falta encontrada com os filtros selecionados.</div>';return;}
-  const dh=dias.map(d=>{const f=D.funcionarios.find(x=>String(x.id)===String(d.funcionario_id??d.funcId??d.funcionarioId)),o=D.obras.find(x=>String(x.id)===String(d.obra_id)),v=diariaValor(d),p=diariaEstaPaga(d);return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar diary">📅</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${p?'paid':'pending'}">${p?'Pago':'Pendente'}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data||''))}</b></div><div><small>Valor</small><b class="gold">${money(v)}</b></div><div><small>Quantidade</small><b>${Number(d.qtd||1).toLocaleString('pt-BR')}</b></div><div><small>Observação</small><b>${esc(d.observacao||'—')}</b></div></div></article>`}).join('');
-  const fh=faltas.map(x=>{const f=D.funcionarios.find(y=>String(y.id)===String(x.funcionario_id)),o=D.obras.find(y=>String(y.id)===String(x.obra_id)),t=String(x.tipo||'falta').toLowerCase(),label={falta:'Falta',justificada:'Falta justificada',injustificada:'Falta injustificada',atestado:'Atestado',falta_justificada:'Falta justificada',falta_injustificada:'Falta injustificada'}[t]||'Falta';return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar">⚠️</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus pending">${label}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(x.data||''))}</b></div><div><small>Tipo</small><b>${esc(label)}</b></div><div><small>Obra</small><b>${esc(o?.nome||'Não definida')}</b></div><div><small>Observação</small><b>${esc(x.observacao||'—')}</b></div></div></article>`}).join('');
+  const dh=dias.map(d=>{const f=D.funcionarios.find(x=>String(x.id)===String(d.funcionario_id??d.funcId??d.funcionarioId)),o=D.obras.find(x=>String(x.id)===String(d.obra_id)),v=diariaValor(d),p=diariaEstaPaga(d);return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar diary">📅</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${p?'paid':'pending'}">${p?'Pago':'Pendente'}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data||''))}</b></div><div><small>Valor</small><b class="gold">${money(v)}</b></div><div><small>Quantidade</small><b>${Number(d.qtd||1).toLocaleString('pt-BR')}</b></div><div><small>Observação</small><b>${esc(d.observacao||'—')}</b></div></div><div class="listActions"><button class="btn danger" type="button" onclick="removeRow('diarias','${d.id}')">Excluir diária</button></div></article>`}).join('');
+  const fh=faltas.map(x=>{const f=D.funcionarios.find(y=>String(y.id)===String(x.funcionario_id)),o=D.obras.find(y=>String(y.id)===String(x.obra_id)),t=String(x.tipo||'falta').toLowerCase(),label={falta:'Falta',justificada:'Falta justificada',injustificada:'Falta injustificada',atestado:'Atestado',falta_justificada:'Falta justificada',falta_injustificada:'Falta injustificada'}[t]||'Falta';return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar">⚠️</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus pending">${label}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(x.data||''))}</b></div><div><small>Tipo</small><b>${esc(label)}</b></div><div><small>Obra</small><b>${esc(o?.nome||'Não definida')}</b></div><div><small>Observação</small><b>${esc(x.observacao||'—')}</b></div></div><div class="listActions"><button class="btn danger" type="button" onclick="removeRow('faltas','${x.id}')">Excluir falta</button></div></article>`}).join('');
   box.innerHTML=fh+dh;
 }
 
@@ -8985,7 +9014,7 @@ function renderHistoricoDiarias(){
   if(ini){dias=dias.filter(d=>String(d.data||'')>=ini);faltas=faltas.filter(x=>String(x.data||'')>=ini)}if(fim){dias=dias.filter(d=>String(d.data||'')<=fim);faltas=faltas.filter(x=>String(x.data||'')<=fim)}dias.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));faltas.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
   const f=D.funcionarios.find(x=>String(x.id)===String(funcId)),total=dias.reduce((a,d)=>a+diariaValor(d),0),pag=dias.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);if(!dias.length&&!faltas.length){box.innerHTML=`<div><b>${esc(f?.nome||'Funcionário')}</b><br><small>Nenhuma diária ou falta encontrada no período selecionado.</small></div>`;return;}
   const dh=dias.map(d=>{const o=D.obras.find(x=>String(x.id)===String(d.obra_id)),v=diariaValor(d),p=diariaEstaPaga(d);return `<div class="card"><div class="row"><div><b>${esc(formatDateBR(d.data))}</b><br><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="badge ${p?'on':'off'}">${p?'Pago':'Pendente'}</span></div><div class="three" style="margin-top:10px"><div><small>Valor</small><br><b>${money(v)}</b></div><div><small>Quantidade</small><br><b>${Number(d.qtd||1).toLocaleString('pt-BR')}</b></div><div><small>Observação</small><br><b>${esc(d.observacao||'—')}</b></div></div></div>`}).join('');
-  const fh=faltas.map(x=>{const o=D.obras.find(y=>String(y.id)===String(x.obra_id)),t=String(x.tipo||'falta').toLowerCase(),label={falta:'Falta',justificada:'Falta justificada',injustificada:'Falta injustificada',atestado:'Atestado',falta_justificada:'Falta justificada',falta_injustificada:'Falta injustificada'}[t]||'Falta';return `<div class="card"><div class="row"><div><b>⚠️ ${esc(formatDateBR(x.data))}</b><br><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="badge off">${label}</span></div><div style="margin-top:10px"><small>Observação</small><br><b>${esc(x.observacao||'—')}</b></div></div>`}).join('');
+  const fh=faltas.map(x=>{const o=D.obras.find(y=>String(y.id)===String(x.obra_id)),t=String(x.tipo||'falta').toLowerCase(),label={falta:'Falta',justificada:'Falta justificada',injustificada:'Falta injustificada',atestado:'Atestado',falta_justificada:'Falta justificada',falta_injustificada:'Falta injustificada'}[t]||'Falta';return `<div class="card"><div class="row"><div><b>⚠️ ${esc(formatDateBR(x.data))}</b><br><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="badge off">${label}</span></div><div style="margin-top:10px"><small>Observação</small><br><b>${esc(x.observacao||'—')}</b></div><div class="listActions"><button class="btn danger" type="button" onclick="removeRow('faltas','${x.id}')">Excluir falta</button></div></div>`}).join('');
   box.innerHTML=`<div class="historySummaryGrid"><div class="historyMetric"><small>Diárias</small><b>${dias.length}</b></div><div class="historyMetric"><small>Valor total</small><b>${money(total)}</b></div><div class="historyMetric"><small>Pago</small><b class="green">${money(pag)}</b></div><div class="historyMetric"><small>Faltas</small><b class="red">${faltas.length}</b></div></div>${fh}${dh}`;
 }
 
@@ -11392,29 +11421,7 @@ body.edLight .edHomeBrandName,body.edLight .edHomeWork h3,body.edLight .pageTitl
     const o=obraP(oid);if(!o){toast("Obra não encontrada.");return}
     const w=window.open("","_blank");
     if(!w){toast("Permita a abertura de nova janela para gerar o relatório.");return}
-    w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório da Obra</title></head><body><p style="font-family:Arial;padding:30px">Preparando relatório...</p>
-<style id="edifiq-theme-final-fix">
-/* EDIFIQ — tema com apenas dois estados: claro ou escuro */
-:root{color-scheme:dark}
-body{background:#0b0e12!important;color:#f4f6f8!important}
-body:not(.edLight) .card,body:not(.edLight) .modalBox,body:not(.edLight) .toolbar,body:not(.edLight) .pageTitle,body:not(.edLight) .kpi,body:not(.edLight) .edHomeKpi,body:not(.edLight) .edHomeWork{background:#11161d!important;color:#f4f6f8!important;border-color:#2a313b!important}
-body:not(.edLight) input,body:not(.edLight) select,body:not(.edLight) textarea{background:#0c1117!important;color:#f4f6f8!important;border-color:#343c48!important}
-body:not(.edLight) .sub,body:not(.edLight) small{color:#aeb7c4}
-body.edLight{color-scheme:light;background:#f4f7fb!important;color:#172033!important}
-body.edLight #app,body.edLight .wrap,body.edLight .page,body.edLight .pageTitle,body.edLight .toolbar{background:#f4f7fb!important;color:#172033!important}
-body.edLight .card,body.edLight .modalBox,body.edLight .kpi,body.edLight .edHome,body.edLight .edHomeHeader,body.edLight .edHomeKpi,body.edLight .edHomeWork,body.edLight .edHomeSearch,body.edLight .edHomeIconBtn,body.edLight .edHomeSelect{background:#fff!important;color:#172033!important;border-color:#d7e0ee!important}
-body.edLight input,body.edLight select,body.edLight textarea{background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
-body.edLight input::placeholder,body.edLight textarea::placeholder{color:#7b8798!important}
-body.edLight .sub,body.edLight small{color:#68758a!important}
-body.edLight .nav,body.edLight .bottomNav,body.edLight .drawer,body.edLight .menuPasta{background:#fff!important;color:#172033!important}
-body.edLight .btn:not(.gold):not(.primary){background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
-body.edLight .btn.gold,body.edLight .btn.primary{color:#090b0e!important}
-body.edLight .modal{background:rgba(15,23,42,.38)!important}
-body.edLight .edHomeBrandName,body.edLight .edHomeWork h3,body.edLight .pageTitle h1,body.edLight h1,body.edLight h2,body.edLight h3,body.edLight h4,body.edLight b,body.edLight strong{color:#172033!important}
-.extraLancamentoBox{max-width:680px!important}
-@media(max-width:600px){.extraLancamentoBox{width:94vw!important}.extraLancamentoBox .formGrid{grid-template-columns:1fr!important}}
-</style>
-</body></html>');w.document.close();
+    w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório da Obra</title></head><body><p style="font-family:Arial;padding:30px">Preparando relatório...</p></body></html>');w.document.close();
     const x=obraDataP(o), cats=categoryTotalsP(x.gs), services=x.ex, prod=producoesP(o.id);
     let photos=[];try{photos=typeof getPhotosByObraDB==="function"?await getPhotosByObraDB(o.id):[]}catch(_){}
     const checkRows=x.cs.map(c=>{const st=checkStatsP(c);return `<tr><td><b>${escP(c.tarefa||c.descricao||"Etapa")}</b></td><td>${pctP(st.progresso)}</td><td>${moneyP(st.valor)}</td><td>${moneyP(st.recebido)}</td><td>${moneyP(st.despesas)}</td><td>${moneyP(st.lucro)}</td><td>${st.margem.toFixed(1).replace(".",",")}%</td></tr>`}).join("");
