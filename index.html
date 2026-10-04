@@ -3757,6 +3757,67 @@ const payload={
 user_id:user.id
 };
 
+/* DIÁRIAS: uma única tentativa de INSERT.
+   Nunca repetir o INSERT de uma diária após um erro de SELECT/RLS,
+   pois o banco pode ter gravado a linha mesmo quando o retorno falha.
+   Isso era a causa mais provável de uma única diária aparecer 2/3 vezes. */
+if(table==="diarias"){
+  try{
+    const {data,error}=await sb
+      .from("diarias")
+      .insert(payload)
+      .select()
+      .single();
+
+    if(!error && data){
+      D.diarias.unshift(data);
+      saveLocalData();
+      renderAll();
+      return data;
+    }
+
+    console.warn("Supabase recusou/confirmou parcialmente a diária:",error?.message);
+
+    /* Se o INSERT aconteceu mas o SELECT falhou, recupera a linha
+       antes de criar qualquer registro local. */
+    try{
+      await loadTable("diarias");
+      const encontrada=(D.diarias||[]).find(d=>
+        String(d.funcionario_id)===String(row.funcionario_id) &&
+        String(d.obra_id)===String(row.obra_id) &&
+        String(d.data)===String(row.data) &&
+        Number(d.qtd??1)===Number(row.qtd??1) &&
+        Number(d.valor_diaria??d.valor??0)===Number(row.valor_diaria??0) &&
+        String(d.observacao||"")===String(row.observacao||"")
+      );
+      if(encontrada){
+        saveLocalData();
+        renderAll();
+        return encontrada;
+      }
+    }catch(recErr){
+      console.warn("Não foi possível confirmar a diária no servidor:",recErr);
+    }
+  }catch(e){
+    console.warn("Erro ao registrar diária:",e);
+  }
+
+  /* Só cria no aparelho quando temos certeza de que a linha não foi
+     localizada na nuvem. Nunca faz uma segunda tentativa de INSERT. */
+  const localRow={
+    ...row,
+    id:"local_"+Date.now()+"_"+Math.random().toString(36).slice(2),
+    user_id:user.id,
+    created_at:new Date().toISOString(),
+    _sync_pendente:true
+  };
+  D.diarias.unshift(localRow);
+  saveLocalData();
+  renderAll();
+  toast("Diária salva neste aparelho. A sincronização será feita automaticamente.");
+  return localRow;
+}
+
 const attempts=[
 payload
 ];
