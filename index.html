@@ -923,7 +923,7 @@ body{min-height:100vh;min-height:100dvh}
   #folhaDetalhes .folhaTable tbody td:nth-child(2):before{content:'Obra'}
   #folhaDetalhes .folhaTable tbody td:nth-child(3):before{content:'Diárias'}
   #folhaDetalhes .folhaTable tbody td:nth-child(4):before{content:'Bruto'}
-  #folhaDetalhes .folhaTable tbody td:nth-child(5):before{content:'Adiantamento'}
+  #folhaDetalhes .folhaTable tbody td:nth-child(5):before{content:'Vale'}
   #folhaDetalhes .folhaTable tbody td:nth-child(6):before{content:'Líquido'}
   #folhaDetalhes .folhaTable tbody td:nth-child(7):before{content:'Pago'}
   #folhaDetalhes .folhaTable tbody td:nth-child(8):before{content:'Pendente'}
@@ -1585,12 +1585,12 @@ body{min-height:100vh;min-height:100dvh}
     <button class="edifiqMenuItem" onclick="openRelatorioCliente();toggleMenuPasta()"><span>▧</span><b>Relatório para Cliente</b></button>
      <button class="edifiqMenuItem" onclick="openRelatorioTrabalhador();toggleMenuPasta()"><span>♙</span><b>Relatório do Trabalhador</b></button>
     <button class="edifiqMenuItem" onclick="openPagamentoEquipe();toggleMenuPasta()"><span>＄</span><b>Pagamento da Equipe</b></button>
-    <button class="edifiqMenuItem" onclick="openAdiantamento();toggleMenuPasta()"><span>＋</span><b>Adiantamento</b></button>
+    <button class="edifiqMenuItem" onclick="openVale();toggleMenuPasta()"><span>＋</span><b>Vale</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('diarias')"><span>📅</span><b>Histórico de Diárias</b></button>
-    <button class="edifiqMenuItem" onclick="goMenu('relatorios')"><span>▧</span><b>Relatórios</b></button>
+    
   </div>
   <div class="edifiqMenuTitle edifiqSectionTitle">DADOS</div>
-  <button class="edifiqDataRow" onclick="goMenu('config')"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
+  <button class="edifiqDataRow" onclick="openConfiguracoes()"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
   <button class="edifiqDataRow" onclick="openBackupConfig()"><span>💾</span><b>Backup</b><span class="edifiqChevron">›</span></button>
   <div class="edifiqDrawerAccount">
     <div class="edifiqAvatar">AL</div><div class="edifiqAccountText"><b id="drawerUserName">Alef Júnior</b><small id="drawerUserEmail">Conta EDIFIQ</small><em>♛ Premium</em></div>
@@ -1715,26 +1715,26 @@ body{min-height:100vh;min-height:100dvh}
 </section>
 <section class="page" id="funcionarios">
 <div class="pageTitle"><h1>Funcionários</h1><button class="btn gold" onclick="openFunc()">＋ Funcionário</button></div>
-<div class="toolbar"><select id="funcFilter" onchange="renderFuncs()"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select><button class="btn" type="button" onclick="atualizarEquipeCompleto()">↻ Atualizar equipe</button><button class="btn gold" onclick="openPresenca()">✓ Registrar presença</button><button class="btn" onclick="openFalta()">⚠️ Registrar falta</button><button class="btn" onclick="go('diarias')">📅 Diárias</button><button class="btn gold" onclick="openExtraEquipe()">🏆 Extras e Bônus</button><button class="btn" onclick="openPagamentoEquipe()">💰 Pagamentos</button><button class="btn" onclick="openAdiantamento()">＋ Adiantamento</button></div>
+<div class="toolbar"><select id="funcFilter" onchange="renderFuncs()"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select><button class="btn" type="button" onclick="atualizarEquipeCompleto()">↻ Atualizar equipe</button><button class="btn gold" onclick="openPresenca()">✓ Registrar presença</button><button class="btn" onclick="openFalta()">⚠️ Registrar falta</button><button class="btn" onclick="go('diarias')">📅 Diárias</button><button class="btn gold" onclick="openExtraEquipe()">🏆 Extras e Bônus</button><button class="btn" onclick="openPagamentoEquipe()">💰 Pagamentos</button><button class="btn" onclick="openVale()">＋ Vale</button></div>
 <div class="card equipeOverview">
-<h2>Gestão da equipe</h2><p class="sub">Cadastro, presença, faltas, diárias, adiantamentos, pagamentos e fechamento da folha por período.</p>
+<h2>Gestão da equipe</h2><p class="sub">Cadastro, presença, faltas, diárias, vales, pagamentos e fechamento da folha por período.</p>
 <div class="grid kpis equipeKpis">
 <div class="kpi"><small>Funcionários ativos</small><strong id="eqAtivos">0</strong></div>
 <div class="kpi"><small>Diárias no período</small><strong id="eqDiasPeriodo">0</strong></div>
 <div class="kpi"><small>Total trabalhado</small><strong id="eqBrutoPeriodo">R$ 0,00</strong></div>
 <div class="kpi"><small>Total pago</small><strong id="eqPagoPeriodo">R$ 0,00</strong></div>
-<div class="kpi"><small>Adiantamentos</small><strong id="eqAdiantPeriodo">R$ 0,00</strong></div>
+<div class="kpi"><small>Vales</small><strong id="eqAdiantPeriodo">R$ 0,00</strong></div>
 <div class="kpi"><small>Saldo pendente</small><strong id="eqPendentePeriodo">R$ 0,00</strong></div>
 </div></div>
 <div id="funcList"></div>
 <div class="card" id="folhaEquipeCard">
-<div class="row"><div><h2>Fechamento de folha</h2><p class="sub">Consolidação de 15 ou 30 dias, com funcionários, diárias, bruto, adiantamentos e líquido.</p></div><button class="btn gold" onclick="atualizarFolha()">↻ Atualizar folha</button></div>
+<div class="row"><div><h2>Fechamento de folha</h2><p class="sub">Consolidação de 15 ou 30 dias, com funcionários, diárias, bruto, vales e líquido.</p></div><button class="btn gold" onclick="atualizarFolha()">↻ Atualizar folha</button></div>
 <div class="toolbar folhaToolbar"><label>Período<select id="folhaPeriodo" onchange="renderFechamentoFolha()"><option value="15">15 dias</option><option value="30">30 dias</option><option value="custom">Personalizado</option></select></label><label>Obra<select id="folhaObra" onchange="renderFechamentoFolha()"><option value="all">Todas as obras</option></select></label><label>De<input id="folhaInicio" type="date" onchange="renderFechamentoFolha()"></label><label>Até<input id="folhaFim" type="date" onchange="renderFechamentoFolha()"></label></div>
 <div class="grid kpis folhaKpis">
 <div class="kpi"><small>Funcionários</small><strong id="folhaFuncionarios">0</strong></div>
 <div class="kpi"><small>Diárias</small><strong id="folhaDiarias">0</strong></div>
 <div class="kpi"><small>Valor bruto</small><strong id="folhaBruto">R$ 0,00</strong></div>
-<div class="kpi"><small>Adiantamentos</small><strong id="folhaAdiant">R$ 0,00</strong></div>
+<div class="kpi"><small>Vales</small><strong id="folhaAdiant">R$ 0,00</strong></div>
 <div class="kpi"><small>Líquido total</small><strong id="folhaLiquido">R$ 0,00</strong></div>
 <div class="kpi"><small>Saldo pendente</small><strong id="folhaPendente">R$ 0,00</strong></div>
 </div><div id="folhaDetalhes"></div></div>
@@ -1836,7 +1836,7 @@ body{min-height:100vh;min-height:100dvh}
 </section>
 <section class="page" id="financeiro">
 <div class="pageTitle"><div><h1>💰 Financeiro</h1><p class="sub">Painel financeiro completo, moderno e separado por obra.</p></div><button class="btn gold" onclick="openFin()">＋ Lançamento</button></div>
-<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select><select id="finCategoriaFilter" onchange="renderFinance()"><option value="all">Todas as categorias</option><option value="Material">Material</option><option value="Combustível">Combustível</option><option value="Mão de obra">Mão de obra</option><option value="Locação">Locação</option><option value="Serviço terceirizado">Serviço terceirizado</option><option value="Adiantamento">Adiantamento</option><option value="Ferramentas e equipamentos">Ferramentas e equipamentos</option><option value="Transporte">Transporte</option><option value="Outros">Outros</option></select></div>
+<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select><select id="finCategoriaFilter" onchange="renderFinance()"><option value="all">Todas as categorias</option><option value="Material">Material</option><option value="Combustível">Combustível</option><option value="Mão de obra">Mão de obra</option><option value="Locação">Locação</option><option value="Serviço terceirizado">Serviço terceirizado</option><option value="Adiantamento">Vale</option><option value="Ferramentas e equipamentos">Ferramentas e equipamentos</option><option value="Transporte">Transporte</option><option value="Outros">Outros</option></select></div>
 <div class="financeModernHead">
 <div class="financeModernCard"><span class="fmLabel">Entradas</span><strong class="fmValue green" id="finEnt">R$ 0,00</strong></div>
 <div class="financeModernCard"><span class="fmLabel">Despesas</span><strong class="fmValue red" id="finDesp">R$ 0,00</strong></div>
@@ -1865,23 +1865,20 @@ body{min-height:100vh;min-height:100dvh}
 <div class="grid kpis docKpis"><div class="kpi"><small>Documentos</small><strong id="docTotal">0</strong></div><div class="kpi"><small>Obras com documentos</small><strong id="docObras">0</strong></div><div class="kpi"><small>Contratos</small><strong id="docContratos">0</strong></div><div class="kpi"><small>Notas / comprovantes</small><strong id="docFinanceiros">0</strong></div></div>
 <div id="documentosList"></div>
 </section>
-<section class="page" id="relatorios">
-<div class="pageTitle"><div><h1>Relatórios</h1><p class="sub">Os relatórios e ferramentas de exportação ficam centralizados na janela Backup.</p></div></div>
-<div class="card"><h2>💾 Relatórios centralizados no Backup</h2><p class="sub">Esta tela não duplica Equipe, Pagamentos, Adiantamentos, Histórico de Diárias ou Relatório para Cliente. Esses recursos continuam disponíveis diretamente no menu principal.</p><div class="listActions"><button class="btn gold" type="button" onclick="openBackupConfig()">Abrir Backup e Relatórios</button></div></div>
-</section>
+
 </main></section>
 <!-- MODAIS -->
 <div class="modal" id="obraM"><div class="modalBox"><div class="modalHead"><h2 id="obraTitle">Nova obra</h2><button class="x" onclick="closeM('obraM')">×</button></div><form onsubmit="saveObra(event)"><div class="formGrid"><label>Nome<input id="oNome" required=""/></label><label>Cliente<input id="oCli"/></label><label class="full">Endereço<input id="oLoc"/></label><label>Valor do contrato<input id="oVal" step="0.01" type="number"/></label><label>Status<select id="oStatus"><option value="em_andamento">Em andamento</option><option value="planejada">Planejada</option><option value="concluida">Concluída</option><option value="pausada">Pausada</option></select></label><label>Início<input id="oIni" type="date"/></label><label>Previsão de término<input id="oFim" type="date"/></label><label class="full">Tipo de serviço<input id="oTipo"/></label><label class="full">Observações<textarea id="oObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('obraM')" type="button">Cancelar</button><button class="btn primary">Salvar obra</button></div></form></div></div>
 <div class="modal" id="funcM"><div class="modalBox"><div class="modalHead"><h2 id="funcTitle">Novo funcionário</h2><button class="x" onclick="closeM('funcM')">×</button></div><form onsubmit="saveFunc(event)"><div class="formGrid"><label>Nome<input id="fNome" required=""/></label><label>Função<input id="fFunc"/></label><label>Telefone<input id="fTel" type="tel"/></label><label>Tipo de pagamento<select id="fTipo"><option value="diaria">Diária</option><option value="mensal">Mensal</option></select></label><label>Valor da diária<input id="fDia" step="0.01" type="number"/></label><label>Salário mensal<input id="fSal" step="0.01" type="number"/></label><label>Dia de pagamento<input id="fPag" max="31" min="1" type="number"/></label><label>Ativo<select id="fAtivo"><option value="true">Ativo</option><option value="false">Inativo</option></select></label><label>Registrar diária<select id="fDiariaRegistro"><option value="true">Registrar diária</option><option value="false">Não registrar diária</option></select></label><label>Obra atual<select id="fObra"><option value="">Selecione a obra</option></select></label></div><div class="formActions"><button class="btn" onclick="closeM('funcM')" type="button">Cancelar</button><button class="btn primary">Salvar funcionário</button></div></form></div></div>
 <div class="modal" id="diaM"><div class="modalBox"><div class="modalHead"><h2>Registrar diária</h2><button class="x" onclick="closeM('diaM')">×</button></div><form onsubmit="saveDia(event)"><div class="formGrid"><label>Funcionário<select id="dFunc"><option value="">Selecione</option></select></label><label>Obra<select id="dObra" onchange="fillDiariaChecklistSelector()"><option value="">Selecione</option></select></label><label>Checklist / Serviço<select id="dChecklist"><option value="">Sem checklist</option></select></label><label>Data<input id="dData" type="date"/></label><label>Tipo<select id="dTipo"><option value="completa">Diária completa</option><option value="manha">Meia diária — manhã</option><option value="tarde">Meia diária — tarde</option></select></label><label>Valor da diária<input id="dVal" step="0.01" type="number"/></label><label>Status<select id="dStatus"><option value="pendente">Pendente</option><option value="pago">Pago</option></select></label><label class="full"><span class="sub" id="diaValorInfo">Diária completa: 100%</span></label><label class="full">Observação<textarea id="dObs"></textarea></label></div><input id="dQtd" type="hidden" value="1"/><div class="formActions"><button class="btn" onclick="closeM('diaM')" type="button">Cancelar</button><button class="btn primary">Salvar diária</button></div></form></div></div>
 <div class="modal" id="presencaM"><div class="modalBox"><div class="modalHead"><h2>Registrar presença</h2><button class="x" onclick="closeM('presencaM')">×</button></div><form onsubmit="savePresenca(event)"><div class="formGrid"><label>Funcionário<select id="presFunc" required><option value="">Selecione</option></select></label><label>Obra<select id="presObra"><option value="">Selecione</option></select></label><label>Data<input id="presData" type="date" required></label><label>Status<select id="presStatus"><option value="presente">Presente</option><option value="justificada">Ausência justificada</option><option value="injustificada">Ausência injustificada</option></select></label><label class="full">Observação<textarea id="presObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('presencaM')" type="button">Cancelar</button><button class="btn primary">Salvar presença</button></div></form></div></div>
-<div class="modal" id="faltaM"><div class="modalBox"><div class="modalHead"><h2>Registrar falta</h2><button class="x" onclick="closeM('faltaM')">×</button></div><form onsubmit="saveFalta(event)"><div class="formGrid"><label>Funcionário<select id="faltaFunc" required=""><option value="">Selecione</option></select></label><label>Data<input id="faltaData" required="" type="date"/></label><label>Tipo<select id="faltaTipo"><option value="falta">Falta</option><option value="justificada">Falta justificada</option><option value="atestado">Atestado</option></select></label><label>Observação<input id="faltaObs"/></label></div><div class="formActions"><button class="btn" onclick="closeM('faltaM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
+<div class="modal" id="faltaM"><div class="modalBox"><div class="modalHead"><h2>Registrar falta</h2><button class="x" onclick="closeM('faltaM')">×</button></div><form onsubmit="saveFalta(event)"><div class="formGrid"><label>Funcionário<select id="faltaFunc" required=""><option value="">Selecione</option></select></label><label>Data<input id="faltaData" required="" type="date"/></label><label>Tipo<select id="faltaTipo"><option value="sem_justificativa">Falta sem justificativa</option><option value="justificada">Falta com justificativa</option><option value="atestado">Atestado</option></select></label><label>Observação<input id="faltaObs"/></label></div><div class="formActions"><button class="btn" onclick="closeM('faltaM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
 <div class="modal" id="checkM"><div class="modalBox"><div class="modalHead"><h2>Adicionar etapa</h2><button class="x" onclick="closeM('checkM')">×</button></div><form onsubmit="saveCheck(event)"><div class="formGrid"><label>Obra<select id="checkObra" required=""><option value="">Selecione</option></select></label><label>Valor do serviço<input id="checkValor" type="number" step="0.01" min="0" value="0" placeholder="R$ 0,00"></label><label class="full">Etapa<input id="checkDesc" placeholder="Ex.: Reboco concluído" required=""/></label></div><div class="formActions"><button class="btn" onclick="closeM('checkM')" type="button">Cancelar</button><button class="btn primary">Adicionar</button></div></form></div></div>
-<div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin" onchange="atualizarCategoriaFinanceira();atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin" onchange="atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" step="0.01" type="number" oninput="atualizarReceitaChecklistDistribuicao()"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finReceitaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><div class="row"><div><b>Distribuir receita nos checklists da obra</b><small class="sub" style="display:block;margin-top:4px">Selecione um ou vários checklists e informe quanto da entrada pertence a cada um.</small></div><b id="finReceitaChecklistTotal" class="gold">R$ 0,00</b></div><div id="finReceitaChecklistList" style="margin-top:10px"></div><div id="finReceitaChecklistStatus" class="sub" style="margin-top:8px"></div></div></div><div id="finDespesaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><label style="display:block"><b>Checklist da despesa</b><select id="finDespesaChecklist"><option value="">Sem checklist</option></select><small class="sub" style="display:block;margin-top:4px">A despesa ficará vinculada somente ao checklist da obra selecionada.</small></label></div></div><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Combustível</option><option>Mão de obra</option><option>Locação</option><option>Serviço terceirizado</option><option>Adiantamento</option><option>Ferramentas e equipamentos</option><option>Transporte</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
+<div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin" onchange="atualizarCategoriaFinanceira();atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin" onchange="atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" step="0.01" type="number" oninput="atualizarReceitaChecklistDistribuicao()"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finReceitaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><div class="row"><div><b>Distribuir receita nos checklists da obra</b><small class="sub" style="display:block;margin-top:4px">Selecione um ou vários checklists e informe quanto da entrada pertence a cada um.</small></div><b id="finReceitaChecklistTotal" class="gold">R$ 0,00</b></div><div id="finReceitaChecklistList" style="margin-top:10px"></div><div id="finReceitaChecklistStatus" class="sub" style="margin-top:8px"></div></div></div><div id="finDespesaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><label style="display:block"><b>Checklist da despesa</b><select id="finDespesaChecklist"><option value="">Sem checklist</option></select><small class="sub" style="display:block;margin-top:4px">A despesa ficará vinculada somente ao checklist da obra selecionada.</small></label></div></div><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Combustível</option><option>Mão de obra</option><option>Locação</option><option>Serviço terceirizado</option><option value="Adiantamento">Vale</option><option>Ferramentas e equipamentos</option><option>Transporte</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
 <div class="modal" id="fotoM"><div class="modalBox"><div class="modalHead"><h2>Relatório fotográfico</h2><button class="x" onclick="closeM('fotoM')">×</button></div><form onsubmit="saveFoto(event)"><div class="formGrid"><label>Obra<select id="fotoObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="fotoData" type="date"/></label><label class="full">Título<input id="fotoTitulo"/></label><label class="full">Fotos<input accept="image/*" id="fotoFiles" multiple="" required="" type="file"/></label><label class="full">Observação<textarea id="fotoObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('fotoM')" type="button">Cancelar</button><button class="btn primary">Salvar fotos</button></div></form></div></div>
-<div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Adiantamentos</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
+<div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Vales</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
 <div class="pay-summary"><div><small>Diárias pendentes</small><b id="pagDiariasTotal">R$ 0,00</b></div></div><div class="formActions"><button class="btn" onclick="closeM('pagEquipeM')" type="button">Cancelar</button><button class="btn primary">Processar pagamento</button></div></form></div></div>
-<div class="modal" id="adiantM"><div class="modalBox"><div class="modalHead"><h2>Adiantamento</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveAdiantamento(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required=""><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" required=""><option value="">Selecione</option></select></label><label>Valor<input id="adiantValor" required="" step="0.01" type="number"/></label><label>Data<input id="adiantData" type="date"/></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('adiantM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
+<div class="modal" id="adiantM"><div class="modalBox"><div class="modalHead"><h2>Vale</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveVale(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required=""><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" onchange="fillValeChecklistSelector()" required=""><option value="">Selecione</option></select></label><label>Checklist<select id="adiantChecklist"><option value="">Sem checklist</option></select></label><label>Valor<input id="adiantValor" required="" step="0.01" type="number"/></label><label>Data<input id="adiantData" type="date"/></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="note">O Vale ficará vinculado à obra e, se selecionado, ao checklist escolhido.</div><div class="formActions"><button class="btn" onclick="closeM('adiantM')" type="button">Cancelar</button><button class="btn primary">Registrar Vale</button></div></form></div></div>
 <div class="modal reportClientModal" id="relatorioClienteM">
 <div class="modalBox">
 <div class="modalHead rcHeader"><div><h2>📄 Relatório para Cliente</h2><p>Escolha as obras, revise a prévia e edite antes de enviar.</p></div><button class="x" onclick="closeM('relatorioClienteM')">×</button></div>
@@ -2860,6 +2857,20 @@ function toggleMenuPasta(){
  if(b) b.classList.toggle('open',open);
 }
 
+function openConfiguracoes(){
+  let m=document.getElementById('edConfiguracoesModal');
+  if(!m){
+    m=document.createElement('div'); m.id='edConfiguracoesModal'; m.className='modal open';
+    const email=(typeof user!=='undefined'&&user?.email)?user.email:(localStorage.getItem('edifiq_last_email')||'Não informado');
+    m.innerHTML=`<div class="modalBox" style="max-width:720px;max-height:90vh;overflow:auto">
+      <div class="modalHead"><div><h2>⚙️ Configurações</h2><p class="sub">Dados do aplicativo, conta e ações administrativas.</p></div><button class="x" onclick="closeM('edConfiguracoesModal')">×</button></div>
+      <div class="card"><h3>📱 Dados do aplicativo</h3><div class="three"><div><small>Aplicativo</small><b>EDIFIQ — Construção Civil</b></div><div><small>Versão</small><b>Atual</b></div><div><small>Armazenamento</small><b>Local + nuvem quando disponível</b></div></div></div>
+      <div class="card"><h3>🔐 Login da conta</h3><div class="three"><div><small>E-mail</small><b>${esc(email)}</b></div><div><small>Status</small><b class="green">Sessão atual</b></div><div><small>Conta</small><b>EDIFIQ</b></div></div></div>
+      <div class="card dangerDataCard"><h3>🗑️ Apagar dados</h3><p class="sub">As ações de apagar ficam centralizadas aqui. Faça um backup antes de excluir.</p><div class="reportGrid dataDeleteGrid"><button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar Equipe</b><small>Funcionários, diárias, faltas e registros.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar Obras</b><small>Obras e registros vinculados.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar Financeiro</b><small>Receitas, despesas e pagamentos.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar Tudo</b><small>Apaga todos os dados do aplicativo.</small></button></div></div>
+    </div>`; document.body.appendChild(m);
+  }else m.classList.add('open');
+} 
+
 function openBackupConfig(){
   let m=document.getElementById('edBackupConfigModal');
   if(!m){
@@ -2870,7 +2881,7 @@ function openBackupConfig(){
       <div class="modalHead"><div><h2>💾 Backup</h2><p class="sub">Central de proteção, recuperação e exportação dos dados do EDIFIQ.</p></div><button class="x" onclick="closeM('edBackupConfigModal')">×</button></div>
       <div class="card"><h3>Proteção dos dados</h3><p class="sub">O backup não substitui nem apaga os dados atuais. A importação também preserva os registros existentes e mescla somente o que for necessário.</p><div class="listActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar backup</button><input id="backupImportFile" accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importRelatorioData(event)" style="display:none" type="file"/></div></div>
       <div class="card"><h3>Exportar relatórios</h3><div class="reportGrid"><button class="btn reportAction" onclick="exportPDF()"><b>📄 Exportar PDF</b><small>Relatório pronto para salvar ou compartilhar.</small></button><button class="btn reportAction" onclick="exportExcel()"><b>📊 Exportar Excel</b><small>Obras, equipe, diárias, financeiro e checklist.</small></button><button class="btn reportAction" onclick="exportCSVAll()"><b>📁 Exportar CSV</b><small>Dados compatíveis com planilhas.</small></button><button class="btn reportAction" onclick="exportFull()"><b>🗂️ Exportar JSON</b><small>Backup completo para recuperação futura.</small></button></div></div>
-      <div class="card"><h3>📊 Acesso rápido aos relatórios</h3><p class="sub">Os recursos continuam no menu principal, mas também ficam centralizados aqui para consulta e exportação.</p><div class="reportGrid"><button class="btn reportAction" type="button" onclick="openRelatorioCliente()"><b>📄 Relatório para Cliente</b><small>Gerar acompanhamento por obra e cliente.</small></button><button class="btn reportAction" type="button" onclick="openRelatorioTrabalhador()"><b>👷 Relatório do Trabalhador</b><small>Dados cadastrais, dias, obras, pagamentos e fechamento.</small></button><button class="btn reportAction" type="button" onclick="openPagamentoEquipe()"><b>👷 Pagamento da Equipe</b><small>Folha, diárias, adiantamentos e líquido.</small></button><button class="btn reportAction" type="button" onclick="openAdiantamento()"><b>＋ Adiantamento</b><small>Registrar e controlar adiantamentos.</small></button><button class="btn reportAction" type="button" onclick="go('diarias');closeM('edBackupConfigModal')"><b>📅 Histórico de Diárias</b><small>Consultar os registros por período e obra.</small></button></div></div>
+      <div class="card"><h3>📊 Acesso rápido aos relatórios</h3><p class="sub">Os recursos continuam no menu principal, mas também ficam centralizados aqui para consulta e exportação.</p><div class="reportGrid"><button class="btn reportAction" type="button" onclick="openRelatorioCliente()"><b>📄 Relatório para Cliente</b><small>Gerar acompanhamento por obra e cliente.</small></button><button class="btn reportAction" type="button" onclick="openRelatorioTrabalhador()"><b>👷 Relatório do Trabalhador</b><small>Dados cadastrais, dias, obras, pagamentos e fechamento.</small></button><button class="btn reportAction" type="button" onclick="openPagamentoEquipe()"><b>👷 Pagamento da Equipe</b><small>Folha, diárias, adiantamentos e líquido.</small></button><button class="btn reportAction" type="button" onclick="openVale()"><b>＋ Vale</b><small>Registrar e controlar vales.</small></button><button class="btn reportAction" type="button" onclick="go('diarias');closeM('edBackupConfigModal')"><b>📅 Histórico de Diárias</b><small>Consultar os registros por período e obra.</small></button></div></div>
       <div class="card dangerDataCard"><h3>🗑️ Apagar dados</h3><p class="sub">Escolha o setor que deseja apagar. O aplicativo pedirá confirmação antes de excluir.</p><div class="reportGrid dataDeleteGrid"><button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar Equipe</b><small>Funcionários, diárias, faltas e registros.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar Obras</b><small>Obras e registros vinculados.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar Financeiro</b><small>Receitas, despesas e pagamentos.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar Tudo</b><small>Apaga todos os dados do aplicativo.</small></button></div><div class="note dangerNote">⚠️ Esta ação não pode ser desfeita. Faça um backup antes de apagar.</div></div>
       <div class="note" id="backupStatus">Backup centralizado: seus dados atuais permanecem preservados.</div>
     </div>`;
@@ -3192,6 +3203,7 @@ async function initSupabase(){
 
 async function login(){
   const email=($("email")?.value||"").trim().toLowerCase();
+  try{if(email)localStorage.setItem("edifiq_last_email",email)}catch(_){}
   const password=$("password")?.value||"";
 
   if(!email||!password){
@@ -4916,7 +4928,7 @@ resumo.pending
 
 <div>
 <small>
-Adiantamento disponível
+Vale disponível
 </small><br>
 
 <b class="red">
@@ -4962,7 +4974,7 @@ f.registrar_diaria!==false
 :""
 }
 <button class="btn" onclick="openPagamentoFuncionario('${f.id}')">💰 Pagamento</button>
-<button class="btn" onclick="openAdiantamentoFuncionario('${f.id}')">💳 Adiantamento</button>
+<button class="btn" onclick="openAdiantamentoFuncionario('${f.id}')">💳 Vale</button>
 <button class="btn" onclick="toggleFunc('${f.id}')">${f.ativo===false?"Ativar":"Desativar"}</button>
 <button class="btn danger" onclick="excluirFuncionario('${esc(String(f.id??""))}',${funcIndex})">Excluir</button>
 </div>
@@ -5316,7 +5328,7 @@ resumo.pending
 </div>
 
 <div>
-<small>Adiantamento</small><br>
+<small>Vale</small><br>
 <b class="red">
 ${money(
 resumo.advance
@@ -5510,7 +5522,7 @@ for(const check of checks){
 
   // Cada diária fica exatamente na obra/checklist onde foi registrada.
   pendingItems.forEach((diaria,idx)=>{
-    const obraId=String(diaria.obra_id||fallbackObra||"");
+    const obraId=String(diaria.obra_id||"");
     if(!obraId)return;
     grupos.push({
       uid:'d_'+String(diaria.id||idx),
@@ -5731,175 +5743,58 @@ toast("Não foi possível concluir o pagamento. Os dados pendentes foram preserv
    ADIANTAMENTO
    ========================================================= */
 
-function fillAdiantamentoFuncionarios(){
-
+function fillValeFuncionarios(){
 const el=$("adiantFunc");
-
 if(!el)return;
-
 const atual=el.value;
-
-el.innerHTML=`
-<option value="">
-Selecione o funcionário
-</option>
-${
-D.funcionarios
-.filter(f=>f.ativo!==false)
-.map(f=>`
-<option value="${f.id}">
-${esc(f.nome)}
-</option>
-`).join("")
+el.innerHTML=`<option value="">Selecione o funcionário</option>${D.funcionarios.filter(f=>f.ativo!==false).map(f=>`<option value="${f.id}">${esc(f.nome)}</option>`).join("")}`;
+if(atual)el.value=atual;
 }
-`;
-
-if(atual)
-el.value=atual;
-
+function fillValeChecklistSelector(){
+  const el=$("adiantChecklist");
+  if(!el)return;
+  const obraId=$("adiantObra")?.value||"";
+  if(typeof fillChecklistSelect==='function') fillChecklistSelect(el,obraId,"Sem checklist");
+  else {
+    const arr=(D.checklist||[]).filter(c=>String(c.obra_id??c.obraId??"")===String(obraId));
+    el.innerHTML='<option value="">Sem checklist</option>'+arr.map(c=>`<option value="${esc(c.id)}">${esc(c.tarefa||c.descricao||"Serviço")}</option>`).join("");
+  }
 }
-
-function openAdiantamento(){
-
+function openVale(){
 fillSelectors();
-
-fillAdiantamentoFuncionarios();
-
-$("adiantObra").value="";
-$("adiantFunc").value="";
-$("adiantValor").value="";
-$("adiantData").value=today();
-$("adiantObs").value="";
-
+fillValeFuncionarios();
+$("adiantObra").value=""; $("adiantFunc").value="";
+$("adiantChecklist").innerHTML='<option value="">Sem checklist</option>';
+$("adiantValor").value=""; $("adiantData").value=today(); $("adiantObs").value="";
 openM("adiantM");
-
 }
-
-function openAdiantamentoFuncionario(id){
-
-openAdiantamento();
-
+function openValeFuncionario(id){
+openVale();
 setTimeout(()=>{
-
 $("adiantFunc").value=id;
-
-$("adiantObra").value=
-getFuncObra(id)||"";
-
-const f=
-D.funcionarios.find(
-x=>String(x.id)===
-String(id)
-);
-
-if(f){
-
-$("adiantValor").value=
-f.tipo_pagamento==="mensal"
-?f.salario_mensal||""
-:f.valor_diaria||"";
-
-}
-
+$("adiantObra").value=getFuncObra(id)||"";
+fillValeChecklistSelector();
+const f=D.funcionarios.find(x=>String(x.id)===String(id));
+if(f)$("adiantValor").value=f.tipo_pagamento==="mensal"?(f.salario_mensal||""):(f.valor_diaria||"");
 },50);
-
 }
-
-async function saveAdiantamento(e){
-
+async function saveVale(e){
 e.preventDefault();
-
-const obra_id=
-$("adiantObra").value;
-
-const funcionario_id=
-$("adiantFunc").value;
-
-const valor=
-Number(
-$("adiantValor").value||0
-);
-
-if(!obra_id){
-
-toast(
-"Selecione a obra."
-);
-
-return;
-
+const obra_id=$("adiantObra").value, funcionario_id=$("adiantFunc").value, checklist_id=$("adiantChecklist")?.value||null, valor=Number($("adiantValor").value||0);
+if(!obra_id){toast("Selecione a obra.");return;}
+if(!funcionario_id){toast("Selecione o funcionário.");return;}
+if(valor<=0){toast("Informe um valor válido.");return;}
+const f=D.funcionarios.find(x=>String(x.id)===String(funcionario_id));
+const nome=f?.nome||"Funcionário";
+const obs=$("adiantObs").value.trim();
+const result=await insertRow("gastos",{obra_id,checklist_id,data:$("adiantData").value,descricao:`[Vale] Vale - ${nome}${checklist_id?` - ${checklistNome(checklist_id)}`:""}`,valor,fornecedor:nome,funcionario_id,status:"pendente",aplicado:false,observacao:obs,categoria:"Adiantamento"});
+if(result){closeM("adiantM");toast(`Vale de ${money(valor)} registrado.`);await loadCloud();renderAll();}
 }
-
-if(!funcionario_id){
-
-toast(
-"Selecione o funcionário."
-);
-
-return;
-
-}
-
-if(valor<=0){
-
-toast(
-"Informe um valor válido."
-);
-
-return;
-
-}
-
-const f=
-D.funcionarios.find(
-x=>String(x.id)===
-String(funcionario_id)
-);
-
-const nome=
-f?.nome||
-"Funcionário";
-
-const obs=
-$("adiantObs").value.trim();
-
-const result=
-await insertRow(
-"gastos",
-{
-obra_id,
-data:
-$("adiantData").value,
-descricao:
-`[Adiantamento] Adiantamento - ${nome}`,
-valor,
-fornecedor:
-nome,
-funcionario_id,
-status:"pendente",
-aplicado:false,
-observacao:obs
-}
-);
-
-if(result){
-
-closeM("adiantM");
-
-toast(
-`Adiantamento de ${money(
-valor
-)} registrado.`
-);
-
-await loadCloud();
-
-renderAll();
-
-}
-
-}
-
+// Compatibilidade com chamadas antigas do aplicativo.
+function fillAdiantamentoFuncionarios(){fillValeFuncionarios();}
+function openAdiantamento(){openVale();}
+function openAdiantamentoFuncionario(id){openValeFuncionario(id);}
+async function saveAdiantamento(e){return saveVale(e);}
 
 /* =========================================================
    FINANCEIRO
@@ -6752,7 +6647,7 @@ function renderFechamentoFolha(){
           <div class="folhaFuncionarioGrid">
             <div><small>Diárias</small><b>${r.ds.length}</b></div>
             <div><small>Bruto</small><b>${money(r.bruto)}</b></div>
-            <div><small>Adiantamento</small><b>${money(r.adiant)}</b></div>
+            <div><small>Vale</small><b>${money(r.adiant)}</b></div>
             <div><small>Líquido</small><b class="green">${money(r.liquido)}</b></div>
             <div><small>Pago</small><b>${money(r.pago)}</b></div>
             <div><small>Pendente</small><b class="${r.pendente>0?'gold':''}">${money(r.pendente)}</b></div>
@@ -6940,7 +6835,7 @@ const row={
  funcionario_id,
  obra_id:getFuncObra(funcionario_id)||null,
  data:$("faltaData").value||today(),
- tipo:$("faltaTipo").value||"falta",
+ tipo:(($("faltaTipo").value||"sem_justificativa")==="falta"?"sem_justificativa":$("faltaTipo").value),
  observacao:$("faltaObs").value.trim(),
  created_at:new Date().toISOString()
 };
@@ -8853,17 +8748,22 @@ function renderHistoricoDiariasPro(){
   fillEquipeHistorySelectors();
   const box=$('histDiaList'), resumoBox=$('histDiaResumo'); if(!box)return;
   const fid=$('histFunc2')?.value||'', ini=$('histInicio2')?.value||'', fim=$('histFim2')?.value||'';
-  let items=(D.diarias||[]).slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
-  if(fid)items=items.filter(d=>String(d.funcionario_id??d.funcId??d.funcionarioId)===String(fid));
-  if(ini)items=items.filter(d=>String(d.data||'')>=ini);
-  if(fim)items=items.filter(d=>String(d.data||'')<=fim);
-  const total=items.reduce((a,d)=>a+diariaValor(d),0), pag=items.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0), pend=total-pag;
-  if(resumoBox)resumoBox.innerHTML=`<div class="historyMetric"><small>Registros</small><b>${items.length}</b></div><div class="historyMetric"><small>Valor total</small><b>${money(total)}</b></div><div class="historyMetric"><small>Pendente</small><b class="gold">${money(pend)}</b></div>`;
-  if(!items.length){box.innerHTML='<div class="empty">Nenhuma diária encontrada com os filtros selecionados.</div>';return;}
-  box.innerHTML=items.map(d=>{const f=D.funcionarios.find(x=>String(x.id)===String(d.funcionario_id??d.funcId??d.funcionarioId));const o=D.obras.find(x=>String(x.id)===String(d.obra_id));const v=diariaValor(d);const pago=diariaEstaPaga(d);return `<article class="historyCard diaryHistoryCard">
-    <div class="historyCardTop"><div class="historyAvatar diary">📅</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${pago?'paid':'pending'}">${pago?'Pago':'Pendente'}</span></div>
-    <div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data||''))}</b></div><div><small>Valor</small><b class="gold">${money(v)}</b></div><div><small>Quantidade</small><b>${Number(d.qtd||1).toLocaleString('pt-BR')}</b></div><div><small>Observação</small><b>${esc(d.observacao||'—')}</b></div></div>
-  </article>`}).join('');
+  const dias=(D.diarias||[]).map(d=>({kind:'diaria',row:d,data:d.data||'',funcionario_id:d.funcionario_id??d.funcId??d.funcionarioId,obra_id:d.obra_id,valor:diariaValor(d),pago:diariaEstaPaga(d),observacao:d.observacao||''}));
+  const faltas=(D.faltas||[]).map(f=>({kind:'falta',row:f,data:f.data||'',funcionario_id:f.funcionario_id,obra_id:f.obra_id||getFuncObra(f.funcionario_id)||'',valor:0,pago:false,observacao:f.observacao||'',tipo:f.tipo||'sem_justificativa'}));
+  let items=[...dias,...faltas].filter(x=>String(x.funcionario_id) && (!fid||String(x.funcionario_id)===String(fid)) && (!ini||String(x.data)>=ini) && (!fim||String(x.data)<=fim));
+  items.sort((a,b)=>String(b.data).localeCompare(String(a.data)));
+  const total=items.filter(x=>x.kind==='diaria').reduce((a,x)=>a+x.valor,0), pag=items.filter(x=>x.kind==='diaria'&&x.pago).reduce((a,x)=>a+x.valor,0), faltasTotal=items.filter(x=>x.kind==='falta').length;
+  if(resumoBox)resumoBox.innerHTML=`<div class="historyMetric"><small>Registros</small><b>${items.length}</b></div><div class="historyMetric"><small>Valor das diárias</small><b>${money(total)}</b></div><div class="historyMetric"><small>Faltas</small><b class="red">${faltasTotal}</b></div><div class="historyMetric"><small>Pendente</small><b class="gold">${money(total-pag)}</b></div>`;
+  if(!items.length){box.innerHTML='<div class="empty">Nenhum registro encontrado com os filtros selecionados.</div>';return;}
+  box.innerHTML=items.map(x=>{
+    const f=D.funcionarios.find(y=>String(y.id)===String(x.funcionario_id));
+    const o=D.obras.find(y=>String(y.id)===String(x.obra_id));
+    if(x.kind==='falta'){
+      const label={falta:'Falta sem justificativa',sem_justificativa:'Falta sem justificativa',justificada:'Falta com justificativa',atestado:'Atestado'}[x.tipo]||'Falta';
+      return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar diary">⚠️</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus pending">${label}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(x.data))}</b></div><div><small>Tipo</small><b>${esc(label)}</b></div><div><small>Valor</small><b>R$ 0,00</b></div><div><small>Observação</small><b>${esc(x.observacao||'—')}</b></div></div></article>`;
+    }
+    return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar diary">📅</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${x.pago?'paid':'pending'}">${x.pago?'Pago':'Pendente'}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(x.data))}</b></div><div><small>Valor</small><b class="gold">${money(x.valor)}</b></div><div><small>Quantidade</small><b>${Number(x.row.qtd||1).toLocaleString('pt-BR')}</b></div><div><small>Observação</small><b>${esc(x.observacao||'—')}</b></div></div></article>`;
+  }).join('');
 }
 function formatDateBR(v){if(!v)return '—';const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:String(v);}
 
@@ -10395,9 +10295,9 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     if(s.cadastro)sections.push(`<h2>👤 Dados do trabalhador</h2><div class="wrGrid"><div class="wrInfo"><small>Nome</small><b>${esc(f.nome||'—')}</b></div><div class="wrInfo"><small>Função</small><b>${esc(f.funcao||f.função||'Não informada')}</b></div><div class="wrInfo"><small>Telefone</small><b>${esc(f.telefone||f.tel||'—')}</b></div><div class="wrInfo"><small>Status</small><b>${f.ativo===false?'Inativo':'Ativo'}</b></div><div class="wrInfo"><small>Tipo de pagamento</small><b>${esc(f.tipo_pagamento||'—')}</b></div><div class="wrInfo"><small>Valor da diária</small><b>${f.valor_diaria!=null?rtMoney(f.valor_diaria):'—'}</b></div><div class="wrInfo"><small>Salário mensal</small><b>${f.salario_mensal!=null?rtMoney(f.salario_mensal):'—'}</b></div><div class="wrInfo"><small>Dia de pagamento</small><b>${esc(f.dia_pagamento||'—')}</b></div><div class="wrInfo"><small>Registrar diária</small><b>${f.registrar_diaria===false?'Não':'Sim'}</b></div></div>`);
     if(s.obras)sections.push(`<h2>🏗️ Obras e vínculos</h2><div class="wrGrid">${works}</div>`);
     if(s.dias)sections.push(`<h2>📅 Dias trabalhados e diárias</h2><div class="wrKpis"><div class="wrKpi"><small>DIAS TRABALHADOS</small><b>${d.diasTrabalhados}</b></div><div class="wrKpi"><small>REGISTROS</small><b>${d.diarias.length}</b></div><div class="wrKpi"><small>BRUTO</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrKpi"><small>PENDENTE</small><b>${rtMoney(d.pendDiarias)}</b></div></div>${diasRows?`<table><thead><tr><th>Data</th><th>Obra</th><th>Função</th><th>Qtd.</th><th>Valor</th><th>Status</th></tr></thead><tbody>${diasRows}</tbody></table>`:'<p>Nenhuma diária no período.</p>'}`);
-    if(s.folha)sections.push(`<h2>💰 Resumo da folha</h2><div class="wrGrid"><div class="wrInfo"><small>Bruto das diárias</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrInfo"><small>Diárias já pagas</small><b>${rtMoney(d.pagDiarias)}</b></div><div class="wrInfo"><small>Diárias pendentes</small><b>${rtMoney(d.pendDiarias)}</b></div><div class="wrInfo"><small>Adiantamentos no período</small><b>${rtMoney(d.totalAdiant)}</b></div><div class="wrInfo"><small>Pagamentos registrados</small><b>${rtMoney(d.totalPagamentos)}</b></div><div class="wrInfo"><small>Produção / extras</small><b>${rtMoney(d.totalExtras)}</b></div></div>`);
+    if(s.folha)sections.push(`<h2>💰 Resumo da folha</h2><div class="wrGrid"><div class="wrInfo"><small>Bruto das diárias</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrInfo"><small>Diárias já pagas</small><b>${rtMoney(d.pagDiarias)}</b></div><div class="wrInfo"><small>Diárias pendentes</small><b>${rtMoney(d.pendDiarias)}</b></div><div class="wrInfo"><small>Vales no período</small><b>${rtMoney(d.totalAdiant)}</b></div><div class="wrInfo"><small>Pagamentos registrados</small><b>${rtMoney(d.totalPagamentos)}</b></div><div class="wrInfo"><small>Produção / extras</small><b>${rtMoney(d.totalExtras)}</b></div></div>`);
     if(s.faltas)sections.push(`<h2>⚠️ Faltas e afastamentos</h2><div class="wrKpis"><div class="wrKpi"><small>REGISTROS</small><b>${d.faltas.length}</b></div><div class="wrKpi"><small>PRESENÇAS</small><b>${d.presencas.filter(x=>String(x.status||'presente')==='presente').length}</b></div></div>${faltaRows?`<table><thead><tr><th>Data</th><th>Tipo</th><th>Observação</th></tr></thead><tbody>${faltaRows}</tbody></table>`:'<p>Nenhuma falta/afastamento no período.</p>'}`);
-    if(s.adiant)sections.push(`<h2>💳 Adiantamentos</h2>${advRows?`<table><thead><tr><th>Data</th><th>Valor</th><th>Observação</th><th>Obra</th></tr></thead><tbody>${advRows}</tbody></table>`:'<p>Nenhum adiantamento no período.</p>'}`);
+    if(s.adiant)sections.push(`<h2>💳 Vales</h2>${advRows?`<table><thead><tr><th>Data</th><th>Valor</th><th>Observação</th><th>Obra</th></tr></thead><tbody>${advRows}</tbody></table>`:'<p>Nenhum vale no período.</p>'}`);
     if(s.pagamentos)sections.push(`<h2>💵 Pagamentos realizados</h2>${pagRows?`<table><thead><tr><th>Data</th><th>Valor</th><th>Descrição</th><th>Obra</th></tr></thead><tbody>${pagRows}</tbody></table>`:'<p>Nenhum pagamento de equipe encontrado no período.</p>'}`);
     if(s.extras)sections.push(`<h2>🏆 Produção / Extras</h2>${extraRows?`<table><thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Status</th></tr></thead><tbody>${extraRows}</tbody></table>`:'<p>Nenhum serviço extra registrado no período.</p>'}`);
     if(s.resumo){
@@ -10423,7 +10323,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   };
   window.rtWhatsApp=function(){
     if(!window.__rtFuncId){toast('Selecione um trabalhador.');return;}
-    const d=rtData();const txt=`RELATÓRIO DO TRABALHADOR — ${d.f.nome}\nPeríodo: ${rtFmt(d.r.ini)} a ${rtFmt(d.r.fim)}\nFunção: ${d.f.funcao||'Não informada'}\nDias trabalhados: ${d.diasTrabalhados}\nDiárias: ${rtMoney(d.brutoDiarias)}\nAdiantamentos: ${rtMoney(d.totalAdiant)}\nPagamentos: ${rtMoney(d.totalPagamentos+d.pagDiarias)}\nExtras: ${rtMoney(d.totalExtras)}\nFaltas/afastamentos: ${d.faltas.length}`;
+    const d=rtData();const txt=`RELATÓRIO DO TRABALHADOR — ${d.f.nome}\nPeríodo: ${rtFmt(d.r.ini)} a ${rtFmt(d.r.fim)}\nFunção: ${d.f.funcao||'Não informada'}\nDias trabalhados: ${d.diasTrabalhados}\nDiárias: ${rtMoney(d.brutoDiarias)}\nVales: ${rtMoney(d.totalAdiant)}\nPagamentos: ${rtMoney(d.totalPagamentos+d.pagDiarias)}\nExtras: ${rtMoney(d.totalExtras)}\nFaltas/afastamentos: ${d.faltas.length}`;
     window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
   };
   window.openRelatorioTrabalhador=function(){
