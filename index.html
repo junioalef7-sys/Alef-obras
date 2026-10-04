@@ -7180,12 +7180,24 @@ async function saveFalta(e){
   toast("Falta registrada e incluída no histórico.");
 }
 
-function deleteFalta(id){
+async function deleteFalta(id){
  if(!confirm("Excluir este registro de falta?"))return;
- D.faltas=D.faltas.filter(x=>String(x.id)!==String(id));
+ const sid=String(id);
+ D.faltas=D.faltas.filter(x=>String(x.id)!==sid);
  saveLocalData();
+ try{
+   if(sb&&user&&navigator.onLine&&!sid.startsWith('local_')){
+     const {error}=await sb.from('faltas').delete().eq('id',id).eq('user_id',user.id);
+     if(error)addEdifiqDeleteQueue('faltas',id); else removeEdifiqDeleteQueue('faltas',id);
+   }else if(!sid.startsWith('local_')){
+     addEdifiqDeleteQueue('faltas',id);
+   }
+ }catch(e){
+   addEdifiqDeleteQueue('faltas',id);
+ }
  renderAll();
- toast("Registro excluído.");
+ try{renderHistoricoFrequencia();renderHistoricoDiariasPro();renderHistoricoDiarias();}catch(_){ }
+ toast("Registro de falta excluído.");
 }
 
 /* =========================================================
@@ -9066,7 +9078,7 @@ function renderHistoricoDiariasPro(){
   if(resumo)resumo.innerHTML=`<div class="historyMetric"><small>Diárias</small><b>${dias.length}</b></div><div class="historyMetric"><small>Valor total</small><b>${money(total)}</b></div><div class="historyMetric"><small>Faltas</small><b class="red">${faltas.length}</b></div><div class="historyMetric"><small>Pendente</small><b class="gold">${money(pend)}</b></div>`;
   if(!dias.length&&!faltas.length){box.innerHTML='<div class="empty">Nenhuma diária ou falta encontrada com os filtros selecionados.</div>';return;}
   const dh=dias.map(d=>{const f=D.funcionarios.find(x=>String(x.id)===String(d.funcionario_id??d.funcId??d.funcionarioId)),o=D.obras.find(x=>String(x.id)===String(d.obra_id)),v=diariaValor(d),p=diariaEstaPaga(d);return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar diary">📅</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${p?'paid':'pending'}">${p?'Pago':'Pendente'}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data||''))}</b></div><div><small>Valor</small><b class="gold">${money(v)}</b></div><div><small>Quantidade</small><b>${Number(d.qtd||1).toLocaleString('pt-BR')}</b></div><div><small>Observação</small><b>${esc(d.observacao||'—')}</b></div></div></article>`}).join('');
-  const fh=faltas.map(x=>{const f=D.funcionarios.find(y=>String(y.id)===String(x.funcionario_id)),o=D.obras.find(y=>String(y.id)===String(x.obra_id)),t=String(x.tipo||'falta').toLowerCase(),label={falta:'Falta',justificada:'Falta justificada',injustificada:'Falta injustificada',atestado:'Atestado',falta_justificada:'Falta justificada',falta_injustificada:'Falta injustificada'}[t]||'Falta';return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar">⚠️</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus pending">${label}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(x.data||''))}</b></div><div><small>Tipo</small><b>${esc(label)}</b></div><div><small>Obra</small><b>${esc(o?.nome||'Não definida')}</b></div><div><small>Observação</small><b>${esc(x.observacao||'—')}</b></div></div></article>`}).join('');
+  const fh=faltas.map(x=>{const f=D.funcionarios.find(y=>String(y.id)===String(x.funcionario_id)),o=D.obras.find(y=>String(y.id)===String(x.obra_id)),t=String(x.tipo||'falta').toLowerCase(),label={falta:'Falta',justificada:'Falta justificada',injustificada:'Falta injustificada',atestado:'Atestado',falta_justificada:'Falta justificada',falta_injustificada:'Falta injustificada'}[t]||'Falta';return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar">⚠️</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus pending">${label}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(x.data||''))}</b></div><div><small>Tipo</small><b>${esc(label)}</b></div><div><small>Obra</small><b>${esc(o?.nome||'Não definida')}</b></div><div><small>Observação</small><b>${esc(x.observacao||'—')}</b></div><div class="listActions"><button class="btn danger" type="button" onclick="deleteFalta('${x.id}')">Excluir falta</button></div></article>`}).join('');
   box.innerHTML=fh+dh;
 }
 
@@ -9081,7 +9093,7 @@ function renderHistoricoDiarias(){
   if(ini){dias=dias.filter(d=>String(d.data||'')>=ini);faltas=faltas.filter(x=>String(x.data||'')>=ini)}if(fim){dias=dias.filter(d=>String(d.data||'')<=fim);faltas=faltas.filter(x=>String(x.data||'')<=fim)}dias.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));faltas.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
   const f=D.funcionarios.find(x=>String(x.id)===String(funcId)),total=dias.reduce((a,d)=>a+diariaValor(d),0),pag=dias.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);if(!dias.length&&!faltas.length){box.innerHTML=`<div><b>${esc(f?.nome||'Funcionário')}</b><br><small>Nenhuma diária ou falta encontrada no período selecionado.</small></div>`;return;}
   const dh=dias.map(d=>{const o=D.obras.find(x=>String(x.id)===String(d.obra_id)),v=diariaValor(d),p=diariaEstaPaga(d);return `<div class="card"><div class="row"><div><b>${esc(formatDateBR(d.data))}</b><br><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="badge ${p?'on':'off'}">${p?'Pago':'Pendente'}</span></div><div class="three" style="margin-top:10px"><div><small>Valor</small><br><b>${money(v)}</b></div><div><small>Quantidade</small><br><b>${Number(d.qtd||1).toLocaleString('pt-BR')}</b></div><div><small>Observação</small><br><b>${esc(d.observacao||'—')}</b></div></div></div>`}).join('');
-  const fh=faltas.map(x=>{const o=D.obras.find(y=>String(y.id)===String(x.obra_id)),t=String(x.tipo||'falta').toLowerCase(),label={falta:'Falta',justificada:'Falta justificada',injustificada:'Falta injustificada',atestado:'Atestado',falta_justificada:'Falta justificada',falta_injustificada:'Falta injustificada'}[t]||'Falta';return `<div class="card"><div class="row"><div><b>⚠️ ${esc(formatDateBR(x.data))}</b><br><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="badge off">${label}</span></div><div style="margin-top:10px"><small>Observação</small><br><b>${esc(x.observacao||'—')}</b></div></div>`}).join('');
+  const fh=faltas.map(x=>{const o=D.obras.find(y=>String(y.id)===String(x.obra_id)),t=String(x.tipo||'falta').toLowerCase(),label={falta:'Falta',justificada:'Falta justificada',injustificada:'Falta injustificada',atestado:'Atestado',falta_justificada:'Falta justificada',falta_injustificada:'Falta injustificada'}[t]||'Falta';return `<div class="card"><div class="row"><div><b>⚠️ ${esc(formatDateBR(x.data))}</b><br><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="badge off">${label}</span></div><div style="margin-top:10px"><small>Observação</small><br><b>${esc(x.observacao||'—')}</b></div><div class="listActions"><button class="btn danger" type="button" onclick="deleteFalta('${x.id}')">Excluir falta</button></div></div>`}).join('');
   box.innerHTML=`<div class="historySummaryGrid"><div class="historyMetric"><small>Diárias</small><b>${dias.length}</b></div><div class="historyMetric"><small>Valor total</small><b>${money(total)}</b></div><div class="historyMetric"><small>Pago</small><b class="green">${money(pag)}</b></div><div class="historyMetric"><small>Faltas</small><b class="red">${faltas.length}</b></div></div>${fh}${dh}`;
 }
 
