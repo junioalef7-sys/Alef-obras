@@ -923,7 +923,7 @@ body{min-height:100vh;min-height:100dvh}
   #folhaDetalhes .folhaTable tbody td:nth-child(2):before{content:'Obra'}
   #folhaDetalhes .folhaTable tbody td:nth-child(3):before{content:'Diárias'}
   #folhaDetalhes .folhaTable tbody td:nth-child(4):before{content:'Bruto'}
-  #folhaDetalhes .folhaTable tbody td:nth-child(5):before{content:'Adiantamento'}
+  #folhaDetalhes .folhaTable tbody td:nth-child(5):before{content:'Vale'}
   #folhaDetalhes .folhaTable tbody td:nth-child(6):before{content:'Líquido'}
   #folhaDetalhes .folhaTable tbody td:nth-child(7):before{content:'Pago'}
   #folhaDetalhes .folhaTable tbody td:nth-child(8):before{content:'Pendente'}
@@ -1585,7 +1585,7 @@ body{min-height:100vh;min-height:100dvh}
     <button class="edifiqMenuItem" onclick="openRelatorioCliente();toggleMenuPasta()"><span>▧</span><b>Relatório para Cliente</b></button>
      <button class="edifiqMenuItem" onclick="openRelatorioTrabalhador();toggleMenuPasta()"><span>♙</span><b>Relatório do Trabalhador</b></button>
     <button class="edifiqMenuItem" onclick="openPagamentoEquipe();toggleMenuPasta()"><span>＄</span><b>Pagamento da Equipe</b></button>
-    <button class="edifiqMenuItem" onclick="openAdiantamento();toggleMenuPasta()"><span>＋</span><b>Adiantamento</b></button>
+    <button class="edifiqMenuItem" onclick="openVale();toggleMenuPasta()"><span>＋</span><b>Vale</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('diarias')"><span>📅</span><b>Histórico de Diárias</b></button>
   </div>
   <div class="edifiqMenuTitle edifiqSectionTitle">DADOS</div>
@@ -1714,26 +1714,26 @@ body{min-height:100vh;min-height:100dvh}
 </section>
 <section class="page" id="funcionarios">
 <div class="pageTitle"><h1>Funcionários</h1><button class="btn gold" onclick="openFunc()">＋ Funcionário</button></div>
-<div class="toolbar"><select id="funcFilter" onchange="renderFuncs()"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select><button class="btn" type="button" onclick="atualizarEquipeCompleto()">↻ Atualizar equipe</button><button class="btn gold" onclick="openPresenca()">✓ Registrar presença</button><button class="btn" onclick="openFalta()">⚠️ Registrar falta</button><button class="btn" onclick="go('diarias')">📅 Diárias</button><button class="btn gold" onclick="openExtraEquipe()">🏆 Extras e Bônus</button><button class="btn" onclick="openPagamentoEquipe()">💰 Pagamentos</button><button class="btn" onclick="openAdiantamento()">＋ Adiantamento</button></div>
+<div class="toolbar"><select id="funcFilter" onchange="renderFuncs()"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select><button class="btn" type="button" onclick="atualizarEquipeCompleto()">↻ Atualizar equipe</button><button class="btn gold" onclick="openPresenca()">✓ Registrar presença</button><button class="btn" onclick="openFalta()">⚠️ Registrar falta</button><button class="btn" onclick="go('diarias')">📅 Diárias</button><button class="btn gold" onclick="openExtraEquipe()">🏆 Extras e Bônus</button><button class="btn" onclick="openPagamentoEquipe()">💰 Pagamentos</button><button class="btn" onclick="openVale()">＋ Vale</button></div>
 <div class="card equipeOverview">
-<h2>Gestão da equipe</h2><p class="sub">Cadastro, presença, faltas, diárias, adiantamentos, pagamentos e fechamento da folha por período.</p>
+<h2>Gestão da equipe</h2><p class="sub">Cadastro, presença, faltas, diárias, vales, pagamentos e fechamento da folha por período.</p>
 <div class="grid kpis equipeKpis">
 <div class="kpi"><small>Funcionários ativos</small><strong id="eqAtivos">0</strong></div>
 <div class="kpi"><small>Diárias no período</small><strong id="eqDiasPeriodo">0</strong></div>
 <div class="kpi"><small>Total trabalhado</small><strong id="eqBrutoPeriodo">R$ 0,00</strong></div>
 <div class="kpi"><small>Total pago</small><strong id="eqPagoPeriodo">R$ 0,00</strong></div>
-<div class="kpi"><small>Adiantamentos</small><strong id="eqAdiantPeriodo">R$ 0,00</strong></div>
+<div class="kpi"><small>Vales</small><strong id="eqAdiantPeriodo">R$ 0,00</strong></div>
 <div class="kpi"><small>Saldo pendente</small><strong id="eqPendentePeriodo">R$ 0,00</strong></div>
 </div></div>
 <div id="funcList"></div>
 <div class="card" id="folhaEquipeCard">
-<div class="row"><div><h2>Fechamento de folha</h2><p class="sub">Consolidação de 15 ou 30 dias, com funcionários, diárias, bruto, adiantamentos e líquido.</p></div><button class="btn gold" onclick="atualizarFolha()">↻ Atualizar folha</button></div>
+<div class="row"><div><h2>Fechamento de folha</h2><p class="sub">Consolidação de 15 ou 30 dias, com funcionários, diárias, bruto, vales e líquido.</p></div><button class="btn gold" onclick="atualizarFolha()">↻ Atualizar folha</button></div>
 <div class="toolbar folhaToolbar"><label>Período<select id="folhaPeriodo" onchange="renderFechamentoFolha()"><option value="15">15 dias</option><option value="30">30 dias</option><option value="custom">Personalizado</option></select></label><label>Obra<select id="folhaObra" onchange="renderFechamentoFolha()"><option value="all">Todas as obras</option></select></label><label>De<input id="folhaInicio" type="date" onchange="renderFechamentoFolha()"></label><label>Até<input id="folhaFim" type="date" onchange="renderFechamentoFolha()"></label></div>
 <div class="grid kpis folhaKpis">
 <div class="kpi"><small>Funcionários</small><strong id="folhaFuncionarios">0</strong></div>
 <div class="kpi"><small>Diárias</small><strong id="folhaDiarias">0</strong></div>
 <div class="kpi"><small>Valor bruto</small><strong id="folhaBruto">R$ 0,00</strong></div>
-<div class="kpi"><small>Adiantamentos</small><strong id="folhaAdiant">R$ 0,00</strong></div>
+<div class="kpi"><small>Vales</small><strong id="folhaAdiant">R$ 0,00</strong></div>
 <div class="kpi"><small>Líquido total</small><strong id="folhaLiquido">R$ 0,00</strong></div>
 <div class="kpi"><small>Saldo pendente</small><strong id="folhaPendente">R$ 0,00</strong></div>
 </div><div id="folhaDetalhes"></div></div>
@@ -1835,14 +1835,13 @@ body{min-height:100vh;min-height:100dvh}
 </section>
 <section class="page" id="financeiro">
 <div class="pageTitle"><div><h1>💰 Financeiro</h1><p class="sub">Painel financeiro completo, moderno e separado por obra.</p></div><button class="btn gold" onclick="openFin()">＋ Lançamento</button></div>
-<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select><select id="finCategoriaFilter" onchange="renderFinance()"><option value="all">Todas as categorias</option><option value="Material">Material</option><option value="Combustível">Combustível</option><option value="Mão de obra">Mão de obra</option><option value="Locação">Locação</option><option value="Serviço terceirizado">Serviço terceirizado</option><option value="Adiantamento">Adiantamento</option><option value="Ferramentas e equipamentos">Ferramentas e equipamentos</option><option value="Transporte">Transporte</option><option value="Outros">Outros</option></select></div>
+<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select><select id="finCategoriaFilter" onchange="renderFinance()"><option value="all">Todas as categorias</option><option value="Material">Material</option><option value="Combustível">Combustível</option><option value="Mão de obra">Mão de obra</option><option value="Locação">Locação</option><option value="Serviço terceirizado">Serviço terceirizado</option><option value="Vale">Vale</option><option value="Ferramentas e equipamentos">Ferramentas e equipamentos</option><option value="Transporte">Transporte</option><option value="Outros">Outros</option></select></div>
 <div class="financeModernHead">
 <div class="financeModernCard"><span class="fmLabel">Entradas</span><strong class="fmValue green" id="finEnt">R$ 0,00</strong></div>
 <div class="financeModernCard"><span class="fmLabel">Despesas</span><strong class="fmValue red" id="finDesp">R$ 0,00</strong></div>
 <div class="financeModernCard"><span class="fmLabel">Resultado</span><strong class="fmValue gold" id="finRes">R$ 0,00</strong></div>
 <div class="financeModernCard"><span class="fmLabel">Saldo a receber</span><strong class="fmValue gold" id="finReceber">R$ 0,00</strong></div>
 </div>
-<div class="financeQuick"><button class="btn" onclick="openFin();setTimeout(()=>{if($('tFin'))$('tFin').value='entrada';atualizarCategoriaFinanceira()},0)">＋ Registrar entrada</button><button class="btn" onclick="openFin()">− Registrar despesa</button><button class="btn" onclick="go('materiais')">🧱 Materiais e estoque</button></div>
 <div class="financeModernGrid">
 <div class="financeModernPanel"><h3>📊 Saúde financeira</h3><div class="financeRow"><span>Valor contratado</span><b id="anContrato">R$ 0,00</b></div><div class="financeRow"><span>Receita recebida</span><b class="green" id="anReceita">R$ 0,00</b></div><div class="financeRow"><span>Custos totais</span><b class="red" id="anCustos">R$ 0,00</b></div><div class="financeRow"><span>Resultado</span><b class="gold" id="anLucro">R$ 0,00</b></div><div class="financeRow"><span>Margem de lucro</span><b id="anMargem">0,0%</b></div><div class="financeRow"><span>Saldo a receber</span><b class="gold" id="anReceber">R$ 0,00</b></div><div class="financeProgress"><i id="anSaudeBar" style="width:0%"></i></div><div class="sub" id="anSaude">Sem dados</div></div>
 <div class="financeModernPanel"><h3>🧱 Custos por categoria</h3><div id="anCustosCats"></div></div>
@@ -1872,11 +1871,11 @@ body{min-height:100vh;min-height:100dvh}
 <div class="modal" id="presencaM"><div class="modalBox"><div class="modalHead"><h2>Registrar presença</h2><button class="x" onclick="closeM('presencaM')">×</button></div><form onsubmit="savePresenca(event)"><div class="formGrid"><label>Funcionário<select id="presFunc" required><option value="">Selecione</option></select></label><label>Obra<select id="presObra"><option value="">Selecione</option></select></label><label>Data<input id="presData" type="date" required></label><label>Status<select id="presStatus"><option value="presente">Presente</option><option value="justificada">Ausência justificada</option><option value="injustificada">Ausência injustificada</option></select></label><label class="full">Observação<textarea id="presObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('presencaM')" type="button">Cancelar</button><button class="btn primary">Salvar presença</button></div></form></div></div>
 <div class="modal" id="faltaM"><div class="modalBox"><div class="modalHead"><h2>Registrar falta</h2><button class="x" onclick="closeM('faltaM')">×</button></div><form onsubmit="saveFalta(event)"><div class="formGrid"><label>Funcionário<select id="faltaFunc" required=""><option value="">Selecione</option></select></label><label>Data<input id="faltaData" required="" type="date"/></label><label>Tipo<select id="faltaTipo"><option value="falta">Falta</option><option value="justificada">Falta justificada</option><option value="atestado">Atestado</option></select></label><label>Observação<input id="faltaObs"/></label></div><div class="formActions"><button class="btn" onclick="closeM('faltaM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
 <div class="modal" id="checkM"><div class="modalBox"><div class="modalHead"><h2>Adicionar etapa</h2><button class="x" onclick="closeM('checkM')">×</button></div><form onsubmit="saveCheck(event)"><div class="formGrid"><label>Obra<select id="checkObra" required=""><option value="">Selecione</option></select></label><label>Valor do serviço<input id="checkValor" type="number" step="0.01" min="0" value="0" placeholder="R$ 0,00"></label><label class="full">Etapa<input id="checkDesc" placeholder="Ex.: Reboco concluído" required=""/></label></div><div class="formActions"><button class="btn" onclick="closeM('checkM')" type="button">Cancelar</button><button class="btn primary">Adicionar</button></div></form></div></div>
-<div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin" onchange="atualizarCategoriaFinanceira();atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin" onchange="atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" step="0.01" type="number" oninput="atualizarReceitaChecklistDistribuicao()"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finReceitaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><div class="row"><div><b>Distribuir receita nos checklists da obra</b><small class="sub" style="display:block;margin-top:4px">Selecione um ou vários checklists e informe quanto da entrada pertence a cada um.</small></div><b id="finReceitaChecklistTotal" class="gold">R$ 0,00</b></div><div id="finReceitaChecklistList" style="margin-top:10px"></div><div id="finReceitaChecklistStatus" class="sub" style="margin-top:8px"></div></div></div><div id="finDespesaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><label style="display:block"><b>Checklist da despesa</b><select id="finDespesaChecklist"><option value="">Sem checklist</option></select><small class="sub" style="display:block;margin-top:4px">A despesa ficará vinculada somente ao checklist da obra selecionada.</small></label></div></div><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Combustível</option><option>Mão de obra</option><option>Locação</option><option>Serviço terceirizado</option><option>Adiantamento</option><option>Ferramentas e equipamentos</option><option>Transporte</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
+<div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin" onchange="atualizarCategoriaFinanceira();atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin" onchange="atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" step="0.01" type="number" oninput="atualizarReceitaChecklistDistribuicao()"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finReceitaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><div class="row"><div><b>Distribuir receita nos checklists da obra</b><small class="sub" style="display:block;margin-top:4px">Selecione um ou vários checklists e informe quanto da entrada pertence a cada um.</small></div><b id="finReceitaChecklistTotal" class="gold">R$ 0,00</b></div><div id="finReceitaChecklistList" style="margin-top:10px"></div><div id="finReceitaChecklistStatus" class="sub" style="margin-top:8px"></div></div></div><div id="finDespesaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><label style="display:block"><b>Checklist da despesa</b><select id="finDespesaChecklist"><option value="">Sem checklist</option></select><small class="sub" style="display:block;margin-top:4px">A despesa ficará vinculada somente ao checklist da obra selecionada.</small></label></div></div><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Combustível</option><option>Mão de obra</option><option>Locação</option><option>Serviço terceirizado</option><option>Vale</option><option>Ferramentas e equipamentos</option><option>Transporte</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
 <div class="modal" id="fotoM"><div class="modalBox"><div class="modalHead"><h2>Relatório fotográfico</h2><button class="x" onclick="closeM('fotoM')">×</button></div><form onsubmit="saveFoto(event)"><div class="formGrid"><label>Obra<select id="fotoObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="fotoData" type="date"/></label><label class="full">Título<input id="fotoTitulo"/></label><label class="full">Fotos<input accept="image/*" id="fotoFiles" multiple="" required="" type="file"/></label><label class="full">Observação<textarea id="fotoObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('fotoM')" type="button">Cancelar</button><button class="btn primary">Salvar fotos</button></div></form></div></div>
-<div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Adiantamentos</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
+<div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Vales</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
 <div class="pay-summary"><div><small>Diárias pendentes</small><b id="pagDiariasTotal">R$ 0,00</b></div></div><div class="formActions"><button class="btn" onclick="closeM('pagEquipeM')" type="button">Cancelar</button><button class="btn primary">Processar pagamento</button></div></form></div></div>
-<div class="modal" id="adiantM"><div class="modalBox"><div class="modalHead"><h2>Adiantamento</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveAdiantamento(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required=""><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" required=""><option value="">Selecione</option></select></label><label>Valor<input id="adiantValor" required="" step="0.01" type="number"/></label><label>Data<input id="adiantData" type="date"/></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('adiantM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
+<div class="modal" id="adiantM"><div class="modalBox"><div class="modalHead"><h2>Vale</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveVale(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required=""><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" required=""><option value="">Selecione</option></select></label><label>Valor<input id="adiantValor" required="" step="0.01" type="number"/></label><label>Data<input id="adiantData" type="date"/></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('adiantM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
 <div class="modal reportClientModal" id="relatorioClienteM">
 <div class="modalBox">
 <div class="modalHead rcHeader"><div><h2>📄 Relatório para Cliente</h2><p>Escolha as obras, revise a prévia e edite antes de enviar.</p></div><button class="x" onclick="closeM('relatorioClienteM')">×</button></div>
@@ -1933,7 +1932,7 @@ material_movimentos:[]
 
 const LOCAL_KEY="edifiq_local_v3";
 const FUNC_OBRA_KEY="edifiq_func_obras_v2";
-const ADV_KEY="edifiq_adiantamentos_aplicados_v1";
+const ADV_KEY="edifiq_vales_aplicados_v1";
 const PAID_DIARIAS_KEY="edifiq_diarias_baixadas_v2";
 function getPaidDiariasMap(){try{return JSON.parse(localStorage.getItem(PAID_DIARIAS_KEY)||"{}");}catch(_){return {};}}
 function markDiariasPaid(ids){const m=getPaidDiariasMap();(ids||[]).forEach(id=>{if(id!=null)m[String(id)]=true;});try{localStorage.setItem(PAID_DIARIAS_KEY,JSON.stringify(m));}catch(_){}return m;}
@@ -2569,7 +2568,7 @@ JSON.stringify(data)
 }catch(e){
 
 console.warn(
-"Erro nos adiantamentos",
+"Erro nos vales",
 e
 );
 
@@ -2598,7 +2597,7 @@ function gastoSubcategoria(g){
   if(c.includes('material')||text.includes('material')) return 'Material';
   if(c.includes('mao')||text.includes('pagamento de equipe')||text.includes('pagamento de diaria')||text.includes('pagamento de diária')||text.includes('mao de obra')) return 'Mão de obra';
   if(c.includes('terceir')||text.includes('servico terceirizado')) return 'Serviço terceirizado';
-  if(c.includes('adiant')||text.includes('adiantamento')) return 'Adiantamento';
+  if(c.includes('adiant')||text.includes('adiantamento')) return 'Vale';
   return 'Outros';
 }
 
@@ -2611,7 +2610,7 @@ function categoriaFinanceira(g){
 
 const c=gastoCategoria(g);
 
-return c==="Adiantamento"
+return c==="Vale"
 ?"Mão de obra"
 :c;
 
@@ -2675,7 +2674,7 @@ const applied=getAdvanceApplied();
 return D.gastos
 .filter(g=>{
 
-if(gastoCategoria(g)!=="Adiantamento") return false;
+if(gastoCategoria(g)!=="Vale") return false;
 if(String(g.status||"").toLowerCase()==="pago") return false;
 if(Number(g.valor||0)>0 && Number(applied[g.id]||0)>=Number(g.valor||0)) return false;
 
@@ -2819,7 +2818,7 @@ advances
 
 }
 
-function aplicarAdiantamentos(funcId,allocations){
+function aplicarVales(funcId,allocations){
   const data=getAdvanceApplied();
   const ids=new Set();
   (allocations||[]).forEach(a=>{
@@ -2831,8 +2830,8 @@ function aplicarAdiantamentos(funcId,allocations){
       if(g){ g.status='pago'; g.data_pagamento=today(); }
     }
   });
-  // Mantém a fonte de adiantamentos da equipe coerente com os gastos usados na folha.
-  (D.adiantamentos||[]).forEach(a=>{
+  // Mantém a fonte de vales da equipe coerente com os gastos usados na folha.
+  (D.vales||[]).forEach(a=>{
     if(String(a.funcionario_id)===String(funcId)){
       const valor=Number(a.valor||0);
       a.status='pago'; a.aplicado=true; a.aplicado_em=today(); a.valor_baixado=valor;
@@ -4759,7 +4758,7 @@ function diasTrabalhadosPorObra(obraId){
 
 function obraGastosResumo(obraId){
   const gs=(D.gastos||[]).filter(g=>String(recordObraId(g))===String(obraId));
-  const out={Material:0,'Combustível':0,'Mão de obra':0,'Locação':0,'Serviço terceirizado':0,Adiantamento:0,'Ferramentas e equipamentos':0,Transporte:0,Outros:0};
+  const out={Material:0,'Combustível':0,'Mão de obra':0,'Locação':0,'Serviço terceirizado':0,Vale:0,'Ferramentas e equipamentos':0,Transporte:0,Outros:0};
   gs.forEach(g=>{const k=gastoSubcategoria(g);out[k]=(out[k]||0)+Number(g.valor||0);});
   return out;
 }
@@ -5032,7 +5031,7 @@ resumo.pending
 
 <div>
 <small>
-Adiantamento disponível
+Vale disponível
 </small><br>
 
 <b class="red">
@@ -5078,7 +5077,7 @@ f.registrar_diaria!==false
 :""
 }
 <button class="btn" onclick="openPagamentoFuncionario('${f.id}')">💰 Pagamento</button>
-<button class="btn" onclick="openAdiantamentoFuncionario('${f.id}')">💳 Adiantamento</button>
+<button class="btn" onclick="openValeFuncionario('${f.id}')">💳 Vale</button>
 <button class="btn" onclick="toggleFunc('${f.id}')">${f.ativo===false?"Ativar":"Desativar"}</button>
 <button class="btn danger" onclick="excluirFuncionario('${esc(String(f.id??""))}',${funcIndex})">Excluir</button>
 </div>
@@ -5432,7 +5431,7 @@ resumo.pending
 </div>
 
 <div>
-<small>Adiantamento</small><br>
+<small>Vale</small><br>
 <b class="red">
 ${money(
 resumo.advance
@@ -5657,7 +5656,7 @@ let falhas=0,baixados=0;
 
 for(const item of processados){
 
-  const observacaoBase=`Diárias pendentes: ${money(item.resumo.pendingDiarias)}. Adiantamento abatido: ${money(item.resumo.advance)}. Valor líquido: ${money(item.resumo.net)}.${obs?" "+obs:""}`;
+  const observacaoBase=`Diárias pendentes: ${money(item.resumo.pendingDiarias)}. Vale abatido: ${money(item.resumo.advance)}. Valor líquido: ${money(item.resumo.net)}.${obs?" "+obs:""}`;
 
   /*
     Serviços extras já possuem lançamento financeiro próprio.
@@ -5687,7 +5686,7 @@ for(const item of processados){
   const advAplicacoesPorObraCents=new Map();
   let restanteAdvCents=totalAdiantCents;
 
-  // Adiantamento com obra definida permanece naquela obra.
+  // Vale com obra definida permanece naquela obra.
   for(const al of (item.resumo.allocations||[])){
     if(restanteAdvCents<=0)break;
     const adv=(item.resumo.advances||[]).find(a=>String(a.id)===String(al.id));
@@ -5703,7 +5702,7 @@ for(const item of processados){
     }
   }
 
-  // Adiantamentos sem obra (ou saldo restante) são distribuídos em centavos.
+  // Vales sem obra (ou saldo restante) são distribuídos em centavos.
   if(restanteAdvCents>0){
     const obrasComSaldo=[...gruposPorObra.entries()].filter(([obraId,c])=>c>Number(advAplicacoesPorObraCents.get(obraId)||0));
     const baseTotal=obrasComSaldo.reduce((a,[_,c])=>a+c,0);
@@ -5833,11 +5832,11 @@ for(const item of processados){
     }
   }
 
-  /* Mantém a quitação dos adiantamentos exatamente como já funcionava. */
+  /* Mantém a quitação dos vales exatamente como já funcionava. */
   const advAplicados=getAdvanceApplied();
   const nomeFunc=normalize(item.f.nome);
   for(const g of (D.gastos||[])){
-    if(gastoCategoria(g)!=="Adiantamento") continue;
+    if(gastoCategoria(g)!=="Vale") continue;
     const pertence=String(g.funcionario_id||"")===String(item.id) || normalize(g.fornecedor)===nomeFunc || normalize(g.descricao).includes(nomeFunc);
     if(!pertence) continue;
     const valor=Number(g.valor||0);
@@ -5849,7 +5848,7 @@ for(const item of processados){
     g.data_pagamento=data;
     g.funcionario_id=item.id;
   }
-  for(const a of (D.adiantamentos||[])){
+  for(const a of (D.vales||[])){
     if(String(a.funcionario_id)!==String(item.id))continue;
     const valor=Number(a.valor||0);
     a.status="pago";
@@ -5882,7 +5881,7 @@ toast("Não foi possível concluir o pagamento. Os dados pendentes foram preserv
    ADIANTAMENTO
    ========================================================= */
 
-function fillAdiantamentoFuncionarios(){
+function fillValeFuncionarios(){
 
 const el=$("adiantFunc");
 
@@ -5910,11 +5909,11 @@ el.value=atual;
 
 }
 
-function openAdiantamento(){
+function openVale(){
 
 fillSelectors();
 
-fillAdiantamentoFuncionarios();
+fillValeFuncionarios();
 
 $("adiantObra").value="";
 $("adiantFunc").value="";
@@ -5926,9 +5925,9 @@ openM("adiantM");
 
 }
 
-function openAdiantamentoFuncionario(id){
+function openValeFuncionario(id){
 
-openAdiantamento();
+openVale();
 
 setTimeout(()=>{
 
@@ -5956,7 +5955,7 @@ f.tipo_pagamento==="mensal"
 
 }
 
-async function saveAdiantamento(e){
+async function saveVale(e){
 
 e.preventDefault();
 
@@ -6022,7 +6021,7 @@ obra_id,
 data:
 $("adiantData").value,
 descricao:
-`[Adiantamento] Adiantamento - ${nome}`,
+`[Vale] Vale - ${nome}`,
 valor,
 fornecedor:
 nome,
@@ -6038,7 +6037,7 @@ if(result){
 closeM("adiantM");
 
 toast(
-`Adiantamento de ${money(
+`Vale de ${money(
 valor
 )} registrado.`
 );
@@ -6785,7 +6784,7 @@ function advanceAmountForEmployeeInRange(funcId,ini,fim){
   const f=D.funcionarios.find(x=>String(x.id)===String(funcId)); if(!f)return 0; const nome=normalize(f.nome);
   const applied=getAdvanceApplied();
   return D.gastos.filter(g=>{
-    if(gastoCategoria(g)!=="Adiantamento") return false;
+    if(gastoCategoria(g)!=="Vale") return false;
     if(String(g.status||"").toLowerCase()==="pago" || String(g.status||"").toLowerCase()==="quitado" || String(g.status||"").toLowerCase()==="liquidado") return false;
     if(Number(g.valor||0)>0 && Number(applied[g.id]||0)>=Number(g.valor||0)) return false;
     return String(g.data||"")>=ini && String(g.data||"")<=fim && (normalize(g.fornecedor)===nome||normalize(g.descricao).includes(nome));
@@ -6903,7 +6902,7 @@ function renderFechamentoFolha(){
           <div class="folhaFuncionarioGrid">
             <div><small>Diárias</small><b>${r.ds.length}</b></div>
             <div><small>Bruto</small><b>${money(r.bruto)}</b></div>
-            <div><small>Adiantamento</small><b>${money(r.adiant)}</b></div>
+            <div><small>Vale</small><b>${money(r.adiant)}</b></div>
             <div><small>Líquido</small><b class="green">${money(r.liquido)}</b></div>
             <div><small>Pago</small><b>${money(r.pago)}</b></div>
             <div><small>Pendente</small><b class="${r.pendente>0?'gold':''}">${money(r.pendente)}</b></div>
@@ -8174,6 +8173,8 @@ f.observacao||""
 })();
 <\/script>
 
+
+
 </body></html>`);
 
 win.document.close();
@@ -8450,107 +8451,70 @@ function openHomeKpi(tipo){
 async function openExtraEquipe(){
   const funcs=(D.funcionarios||[]).filter(f=>f.ativo!==false);
   if(!funcs.length){toast('Cadastre um funcionário antes de lançar Extras e Bônus.');return;}
-  const nomes=funcs.map((f,i)=>`${i+1} — ${f.nome}`).join('\n');
-  const escolha=prompt(`Selecione o funcionário para o lançamento de Extras e Bônus:\n\n${nomes}\n\nDigite o número:`,'1');
-  if(escolha===null)return;
-  const f=funcs[Number(escolha)-1];
-  if(!f){toast('Funcionário inválido.');return;}
-  await openExtraFuncionario(f.id);
+  openExtraLancamentoModal('', '');
 }
 
 async function openExtraObra(obraId){
   const obra=(D.obras||[]).find(o=>String(o.id)===String(obraId));
   if(!obra){toast('Obra não encontrada.');return;}
-  const ids=[...new Set((D.diarias||[]).filter(d=>String(d.obra_id)===String(obraId)).map(d=>String(d.funcionario_id)).filter(Boolean))];
-  const funcs=(D.funcionarios||[]).filter(f=>f.ativo!==false && (ids.includes(String(f.id)) || String(getFuncObra(f.id))===String(obraId)));
-  if(!funcs.length){toast('Nenhum funcionário encontrado nesta obra. Registre uma diária ou vincule um funcionário à obra.');return;}
-  const nomes=funcs.map((f,i)=>`${i+1} — ${f.nome}`).join('\n');
-  const escolha=prompt(`Extras e Bônus — ${obra.nome}\n\nSelecione o funcionário:\n\n${nomes}\n\nDigite o número:`,'1');
-  if(escolha===null)return;
-  const f=funcs[Number(escolha)-1];
-  if(!f){toast('Funcionário inválido.');return;}
-  await openExtraFuncionario(f.id,obraId);
+  openExtraLancamentoModal('', String(obraId));
 }
 
 async function openExtraFuncionario(funcId,fixedObraId=null){
   const f=D.funcionarios.find(x=>String(x.id)===String(funcId));
   if(!f){toast('Funcionário não encontrado.');return;}
+  openExtraLancamentoModal(String(funcId), fixedObraId?String(fixedObraId):'');
+}
+
+function openExtraLancamentoModal(funcId='',obraId=''){
+  const funcs=(D.funcionarios||[]).filter(f=>f.ativo!==false);
   const obras=D.obras||[];
-  if(!obras.length){toast('Cadastre uma obra antes de lançar um serviço extra.');return;}
-
-  let obra=null;
-  if(fixedObraId){
-    obra=obras.find(o=>String(o.id)===String(fixedObraId));
-    if(!obra){toast('Obra inválida.');return;}
-  }else{
-    const nomes=obras.map((o,i)=>`${i+1} — ${o.nome}`).join('\\n');
-    const escolha=prompt(`Vincule o lançamento a uma obra:\\n\\n${nomes}\\n\\nDigite o número da obra:`,'1');
-    if(escolha===null)return;
-    obra=obras[Number(escolha)-1];
-    if(!obra){toast('Obra inválida.');return;}
+  if(!funcs.length){toast('Cadastre um funcionário antes de lançar Extras e Bônus.');return;}
+  if(!obras.length){toast('Cadastre uma obra antes de lançar Extras e Bônus.');return;}
+  let m=document.getElementById('extraLancamentoM');
+  if(!m){
+    m=document.createElement('div'); m.id='extraLancamentoM'; m.className='modal';
+    document.body.appendChild(m);
   }
+  m.innerHTML=`<div class="modalBox extraLancamentoBox">
+    <div class="modalHead"><div><h2>🏆 Bônus e Extras</h2><p class="sub">Selecione pelo nome, sem digitar números.</p></div><button class="x" type="button" onclick="closeM('extraLancamentoM')">×</button></div>
+    <form onsubmit="salvarExtraLancamento(event)">
+      <div class="formGrid">
+        <label>Funcionário<select id="extraFuncSel" required><option value="">Selecione o funcionário</option>${funcs.map(f=>`<option value="${esc(String(f.id))}">${esc(f.nome||'Funcionário')}</option>`).join('')}</select></label>
+        <label>Obra<select id="extraObraSel" required><option value="">Selecione a obra</option>${obras.map(o=>`<option value="${esc(String(o.id))}">${esc(o.nome||'Obra')}</option>`).join('')}</select></label>
+        <label>Tipo<select id="extraTipoSel"><option value="Serviço extra">Serviço extra</option><option value="Bônus">Bônus</option><option value="Modificação">Modificação</option></select></label>
+        <label>Valor (R$)<input id="extraValorSel" type="number" min="0.01" step="0.01" required placeholder="0,00"></label>
+        <label class="full">Descrição<input id="extraDescSel" required value="Serviço extra" placeholder="Descrição do bônus ou serviço extra"></label>
+      </div>
+      <div class="formActions"><button class="btn" type="button" onclick="closeM('extraLancamentoM')">Cancelar</button><button class="btn gold" type="submit">🏆 Lançar Bônus/Extra</button></div>
+    </form>
+  </div>`;
+  m.classList.add('open');
+  const fs=document.getElementById('extraFuncSel'), os=document.getElementById('extraObraSel');
+  if(funcId)fs.value=funcId;
+  if(obraId)os.value=obraId;
+}
 
-  const descricao=prompt('Descrição do serviço extra, bônus ou modificação:','Serviço extra');
-  if(descricao===null||!descricao.trim())return;
-
-  const tipo=prompt('Tipo: serviço extra / bônus / modificação:','Serviço extra');
-  if(tipo===null)return;
-
-  const raw=prompt('Valor (R$):','0');
-  if(raw===null)return;
-
-  const valor=Number(String(raw).replace(/\\./g,'').replace(',','.'));
-  if(!Number.isFinite(valor)||valor<=0){
-    toast('Informe um valor válido.');
-    return;
-  }
-
+async function salvarExtraLancamento(e){
+  e.preventDefault();
+  const funcionario_id=document.getElementById('extraFuncSel')?.value||'';
+  const obra_id=document.getElementById('extraObraSel')?.value||'';
+  const tipo=document.getElementById('extraTipoSel')?.value||'Serviço extra';
+  const valor=Number(document.getElementById('extraValorSel')?.value||0);
+  const descricao=document.getElementById('extraDescSel')?.value.trim()||tipo;
+  const f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcionario_id));
+  const obra=(D.obras||[]).find(x=>String(x.id)===String(obra_id));
+  if(!f||!obra){toast('Selecione o funcionário e a obra pelo nome.');return;}
+  if(!Number.isFinite(valor)||valor<=0){toast('Informe um valor válido.');return;}
   D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];
   const id='sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-
-  const item={
-    id,
-    funcionario_id:f.id,
-    funcionarioId:f.id,
-    obra_id:obra.id,
-    obraId:obra.id,
-    descricao:descricao.trim(),
-    tipo:tipo.trim()||'Serviço extra',
-    valor,
-    data:today(),
-    status:'pendente',
-    financeiroAplicado:true,
-    folhaAplicado:false
-  };
-
-  D.servicosExtras.push(item);
-  saveLocalData();
-
-  // O lançamento financeiro passa a ser gravado pela mesma rotina usada
-  // pelo restante do Financeiro, evitando que o extra desapareça após sincronizar.
-  const result=await insertRow('gastos',{
-    obra_id:obra.id,
-    data:today(),
-    descricao:`[${item.tipo}] ${item.descricao} - ${f.nome}`,
-    valor,
-    fornecedor:f.nome,
-    observacao:'Lançamento vinculado à folha de pagamento.',
-    categoria:'Mão de obra',
-    funcionario_id:f.id,
-    servico_extra_id:id,
-    status:'pendente'
-  });
-
-  if(!result){
-    D.servicosExtras=D.servicosExtras.filter(x=>String(x.id)!==String(id));
-    saveLocalData();
-    toast('Não foi possível registrar o bônus/serviço extra.');
-    return;
-  }
-
-  toast(`${item.tipo} lançado para ${f.nome}. O valor já entra na folha de pagamento.`);
-  renderAll();
+  const item={id,funcionario_id:f.id,funcionarioId:f.id,obra_id:obra.id,obraId:obra.id,descricao,tipo,valor,data:today(),status:'pendente',financeiroAplicado:true,folhaAplicado:false};
+  D.servicosExtras.push(item); saveLocalData();
+  const result=await insertRow('gastos',{obra_id:obra.id,data:today(),descricao:`[${tipo}] ${descricao} - ${f.nome}`,valor,fornecedor:f.nome,observacao:'Lançamento vinculado à folha de pagamento.',categoria:'Mão de obra',funcionario_id:f.id,servico_extra_id:id,status:'pendente'});
+  if(!result){D.servicosExtras=D.servicosExtras.filter(x=>String(x.id)!==String(id));saveLocalData();toast('Não foi possível registrar o bônus/serviço extra.');return;}
+  closeM('extraLancamentoM'); toast(`${tipo} lançado para ${f.nome}. O valor já entra na folha de pagamento.`); renderAll();
 }
+
 function renderDashboard(){
  renderHomeObras();
  const contratado=D.obras.reduce((a,o)=>a+Number(o.valor||0),0);
@@ -8667,7 +8631,7 @@ fotos:fotos,
 funcionarioObras:
 localFuncObras(),
 
-adiantamentosAplicados:
+valesAplicados:
 getAdvanceApplied(),
 
 servicosAdicionais:
@@ -8844,17 +8808,17 @@ async function importBackupData(backup){
     });
   }
 
-  if(backup.adiantamentosAplicados){
+  if(backup.valesAplicados){
     /*
      * Os IDs dos gastos mudaram na importação. Para evitar aplicar
-     * adiantamentos no gasto errado, recriamos o mapa pelo índice/
+     * vales no gasto errado, recriamos o mapa pelo índice/
      * fornecedor/descrição quando possível. Registros que não puderem
      * ser associados ficam zerados, sem causar desconto indevido.
      */
     const novoAplicado={};
-    const origem=backup.adiantamentosAplicados||{};
+    const origem=backup.valesAplicados||{};
     const gastosImportados=D.gastos||[];
-    const gastosAdiant=gastosImportados.filter(g=>gastoCategoria(g)==="Adiantamento");
+    const gastosAdiant=gastosImportados.filter(g=>gastoCategoria(g)==="Vale");
 
     Object.entries(origem).forEach(([oldId,val])=>{
       const g=gastosAdiant.find(x=>String(x.id)===String(oldId));
@@ -9185,6 +9149,28 @@ function rcExportPDF(){
 
 
 
+
+<style id="edifiq-theme-final-fix">
+/* EDIFIQ — tema com apenas dois estados: claro ou escuro */
+:root{color-scheme:dark}
+body{background:#0b0e12!important;color:#f4f6f8!important}
+body:not(.edLight) .card,body:not(.edLight) .modalBox,body:not(.edLight) .toolbar,body:not(.edLight) .pageTitle,body:not(.edLight) .kpi,body:not(.edLight) .edHomeKpi,body:not(.edLight) .edHomeWork{background:#11161d!important;color:#f4f6f8!important;border-color:#2a313b!important}
+body:not(.edLight) input,body:not(.edLight) select,body:not(.edLight) textarea{background:#0c1117!important;color:#f4f6f8!important;border-color:#343c48!important}
+body:not(.edLight) .sub,body:not(.edLight) small{color:#aeb7c4}
+body.edLight{color-scheme:light;background:#f4f7fb!important;color:#172033!important}
+body.edLight #app,body.edLight .wrap,body.edLight .page,body.edLight .pageTitle,body.edLight .toolbar{background:#f4f7fb!important;color:#172033!important}
+body.edLight .card,body.edLight .modalBox,body.edLight .kpi,body.edLight .edHome,body.edLight .edHomeHeader,body.edLight .edHomeKpi,body.edLight .edHomeWork,body.edLight .edHomeSearch,body.edLight .edHomeIconBtn,body.edLight .edHomeSelect{background:#fff!important;color:#172033!important;border-color:#d7e0ee!important}
+body.edLight input,body.edLight select,body.edLight textarea{background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight input::placeholder,body.edLight textarea::placeholder{color:#7b8798!important}
+body.edLight .sub,body.edLight small{color:#68758a!important}
+body.edLight .nav,body.edLight .bottomNav,body.edLight .drawer,body.edLight .menuPasta{background:#fff!important;color:#172033!important}
+body.edLight .btn:not(.gold):not(.primary){background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight .btn.gold,body.edLight .btn.primary{color:#090b0e!important}
+body.edLight .modal{background:rgba(15,23,42,.38)!important}
+body.edLight .edHomeBrandName,body.edLight .edHomeWork h3,body.edLight .pageTitle h1,body.edLight h1,body.edLight h2,body.edLight h3,body.edLight h4,body.edLight b,body.edLight strong{color:#172033!important}
+.extraLancamentoBox{max-width:680px!important}
+@media(max-width:600px){.extraLancamentoBox{width:94vw!important}.extraLancamentoBox .formGrid{grid-template-columns:1fr!important}}
+</style>
 </body></html>`);w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},400);
 }
 
@@ -9224,6 +9210,28 @@ function exportPDF(){
 
 
 
+
+<style id="edifiq-theme-final-fix">
+/* EDIFIQ — tema com apenas dois estados: claro ou escuro */
+:root{color-scheme:dark}
+body{background:#0b0e12!important;color:#f4f6f8!important}
+body:not(.edLight) .card,body:not(.edLight) .modalBox,body:not(.edLight) .toolbar,body:not(.edLight) .pageTitle,body:not(.edLight) .kpi,body:not(.edLight) .edHomeKpi,body:not(.edLight) .edHomeWork{background:#11161d!important;color:#f4f6f8!important;border-color:#2a313b!important}
+body:not(.edLight) input,body:not(.edLight) select,body:not(.edLight) textarea{background:#0c1117!important;color:#f4f6f8!important;border-color:#343c48!important}
+body:not(.edLight) .sub,body:not(.edLight) small{color:#aeb7c4}
+body.edLight{color-scheme:light;background:#f4f7fb!important;color:#172033!important}
+body.edLight #app,body.edLight .wrap,body.edLight .page,body.edLight .pageTitle,body.edLight .toolbar{background:#f4f7fb!important;color:#172033!important}
+body.edLight .card,body.edLight .modalBox,body.edLight .kpi,body.edLight .edHome,body.edLight .edHomeHeader,body.edLight .edHomeKpi,body.edLight .edHomeWork,body.edLight .edHomeSearch,body.edLight .edHomeIconBtn,body.edLight .edHomeSelect{background:#fff!important;color:#172033!important;border-color:#d7e0ee!important}
+body.edLight input,body.edLight select,body.edLight textarea{background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight input::placeholder,body.edLight textarea::placeholder{color:#7b8798!important}
+body.edLight .sub,body.edLight small{color:#68758a!important}
+body.edLight .nav,body.edLight .bottomNav,body.edLight .drawer,body.edLight .menuPasta{background:#fff!important;color:#172033!important}
+body.edLight .btn:not(.gold):not(.primary){background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight .btn.gold,body.edLight .btn.primary{color:#090b0e!important}
+body.edLight .modal{background:rgba(15,23,42,.38)!important}
+body.edLight .edHomeBrandName,body.edLight .edHomeWork h3,body.edLight .pageTitle h1,body.edLight h1,body.edLight h2,body.edLight h3,body.edLight h4,body.edLight b,body.edLight strong{color:#172033!important}
+.extraLancamentoBox{max-width:680px!important}
+@media(max-width:600px){.extraLancamentoBox{width:94vw!important}.extraLancamentoBox .formGrid{grid-template-columns:1fr!important}}
+</style>
 </body></html>`);
   w.document.close();
   setTimeout(()=>{try{w.print()}catch(e){}},350);
@@ -9629,6 +9637,28 @@ function relatorioDiario(){
 
 
 
+
+<style id="edifiq-theme-final-fix">
+/* EDIFIQ — tema com apenas dois estados: claro ou escuro */
+:root{color-scheme:dark}
+body{background:#0b0e12!important;color:#f4f6f8!important}
+body:not(.edLight) .card,body:not(.edLight) .modalBox,body:not(.edLight) .toolbar,body:not(.edLight) .pageTitle,body:not(.edLight) .kpi,body:not(.edLight) .edHomeKpi,body:not(.edLight) .edHomeWork{background:#11161d!important;color:#f4f6f8!important;border-color:#2a313b!important}
+body:not(.edLight) input,body:not(.edLight) select,body:not(.edLight) textarea{background:#0c1117!important;color:#f4f6f8!important;border-color:#343c48!important}
+body:not(.edLight) .sub,body:not(.edLight) small{color:#aeb7c4}
+body.edLight{color-scheme:light;background:#f4f7fb!important;color:#172033!important}
+body.edLight #app,body.edLight .wrap,body.edLight .page,body.edLight .pageTitle,body.edLight .toolbar{background:#f4f7fb!important;color:#172033!important}
+body.edLight .card,body.edLight .modalBox,body.edLight .kpi,body.edLight .edHome,body.edLight .edHomeHeader,body.edLight .edHomeKpi,body.edLight .edHomeWork,body.edLight .edHomeSearch,body.edLight .edHomeIconBtn,body.edLight .edHomeSelect{background:#fff!important;color:#172033!important;border-color:#d7e0ee!important}
+body.edLight input,body.edLight select,body.edLight textarea{background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight input::placeholder,body.edLight textarea::placeholder{color:#7b8798!important}
+body.edLight .sub,body.edLight small{color:#68758a!important}
+body.edLight .nav,body.edLight .bottomNav,body.edLight .drawer,body.edLight .menuPasta{background:#fff!important;color:#172033!important}
+body.edLight .btn:not(.gold):not(.primary){background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight .btn.gold,body.edLight .btn.primary{color:#090b0e!important}
+body.edLight .modal{background:rgba(15,23,42,.38)!important}
+body.edLight .edHomeBrandName,body.edLight .edHomeWork h3,body.edLight .pageTitle h1,body.edLight h1,body.edLight h2,body.edLight h3,body.edLight h4,body.edLight b,body.edLight strong{color:#172033!important}
+.extraLancamentoBox{max-width:680px!important}
+@media(max-width:600px){.extraLancamentoBox{width:94vw!important}.extraLancamentoBox .formGrid{grid-template-columns:1fr!important}}
+</style>
 </body></html>`;
   const w=window.open("","_blank"); if(!w){toast("Permita pop-ups para gerar o relatório.");return;} w.document.write(html);w.document.close();setTimeout(()=>w.print(),350);
 }
@@ -9810,7 +9840,7 @@ async function apagarDadosSetor(setor){
   const nomes={
     equipe:'a equipe (funcionários, diárias, faltas e registros da equipe)',
     obras:'as obras e todos os registros vinculados a elas',
-    financeiro:'os dados financeiros (receitas, despesas, pagamentos e adiantamentos)',
+    financeiro:'os dados financeiros (receitas, despesas, pagamentos e vales)',
     geral:'TODOS os dados do aplicativo'
   };
   const alvo=nomes[setor];
@@ -10080,7 +10110,7 @@ async function excluirFuncionario(id){
   for(const t of dependentes){
     if(Array.isArray(D[t])) D[t]=D[t].filter(x=>String(x.funcionario_id)!==String(id));
   }
-  if(Array.isArray(D.adiantamentos)) D.adiantamentos=D.adiantamentos.filter(x=>String(x.funcionario_id)!==String(id));
+  if(Array.isArray(D.vales)) D.vales=D.vales.filter(x=>String(x.funcionario_id)!==String(id));
   if(Array.isArray(D.servicosExtras)) D.servicosExtras=D.servicosExtras.filter(x=>String(x.funcionario_id||x.funcionarioId)!==String(id));
 
   // Para a tabela principal, removeRow cuida do Supabase e do fallback local.
@@ -10162,11 +10192,11 @@ openPagamentoEquipe;
 window.openPagamentoFuncionario=
 openPagamentoFuncionario;
 
-window.openAdiantamento=
-openAdiantamento;
+window.openVale=
+openVale;
 
-window.openAdiantamentoFuncionario=
-openAdiantamentoFuncionario;
+window.openValeFuncionario=
+openValeFuncionario;
 window.enterLocalMode=function(){
   try{
     return enterLocalMode();
@@ -10208,8 +10238,8 @@ window.deleteFalta=deleteFalta;
 window.savePagamentoEquipe=
 savePagamentoEquipe;
 
-window.saveAdiantamento=
-saveAdiantamento;
+window.saveVale=
+saveVale;
 
 window.toggleFunc=
 toggleFunc;
@@ -10378,11 +10408,11 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     const diarias=(D.diarias||[]).filter(d=>rtMatchEmployee(d,f)&&rtInRange(d.data,r));
     const faltas=(D.faltas||[]).filter(x=>rtMatchEmployee(x,f)&&rtInRange(x.data,r));
     const presencas=(D.presencas||[]).filter(x=>rtMatchEmployee(x,f)&&rtInRange(x.data,r));
-    const adiantamentos=(D.gastos||[]).filter(g=>gastoCategoria(g)==='Adiantamento'&&rtMatchEmployee(g,f)&&rtInRange(g.data,r));
+    const vales=(D.gastos||[]).filter(g=>gastoCategoria(g)==='Vale'&&rtMatchEmployee(g,f)&&rtInRange(g.data,r));
     const pagamentos=(D.gastos||[]).filter(g=>gastoCategoria(g)==='Mão de obra'&&rtMatchEmployee(g,f)&&rtInRange(g.data,r));
     const extras=(D.servicosExtras||[]).filter(x=>String(x.funcionario_id??x.funcionarioId??'')===String(f.id)&&rtInRange(x.data,r));
     const obraIds=new Set();
-    [diarias,faltas,presencas,adiantamentos,pagamentos].forEach(arr=>arr.forEach(x=>{if(x.obra_id!=null)obraIds.add(String(x.obra_id));}));
+    [diarias,faltas,presencas,vales,pagamentos].forEach(arr=>arr.forEach(x=>{if(x.obra_id!=null)obraIds.add(String(x.obra_id));}));
     extras.forEach(x=>{if(x.obra_id!=null||x.obraId!=null)obraIds.add(String(x.obra_id??x.obraId));});
     const current=getFuncObra(f.id); if(current)obraIds.add(String(current));
     const obras=[...(D.obras||[])].filter(o=>obraIds.has(String(o.id)));
@@ -10390,10 +10420,10 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     const brutoDiarias=diarias.reduce((a,d)=>a+diariaValor(d),0);
     const pagDiarias=diarias.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);
     const pendDiarias=diarias.filter(d=>!diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
-    const totalAdiant=adiantamentos.filter(g=>{const st=String(g.status||'').toLowerCase(); return st!=='pago'&&st!=='quitado'&&st!=='liquidado'&&Number(getAdvanceApplied()[g.id]||0)<Number(g.valor||0);}).reduce((a,g)=>a+Math.max(0,Number(g.valor||0)-Number(getAdvanceApplied()[g.id]||0)),0);
+    const totalAdiant=vales.filter(g=>{const st=String(g.status||'').toLowerCase(); return st!=='pago'&&st!=='quitado'&&st!=='liquidado'&&Number(getAdvanceApplied()[g.id]||0)<Number(g.valor||0);}).reduce((a,g)=>a+Math.max(0,Number(g.valor||0)-Number(getAdvanceApplied()[g.id]||0)),0);
     const totalPagamentos=pagamentos.reduce((a,g)=>a+Number(g.valor||0),0);
     const totalExtras=extras.reduce((a,x)=>a+Number(x.valor||0),0);
-    return {f,r,diarias,faltas,presencas,adiantamentos,pagamentos,extras,obras,diasTrabalhados,brutoDiarias,pagDiarias,pendDiarias,totalAdiant,totalPagamentos,totalExtras};
+    return {f,r,diarias,faltas,presencas,vales,pagamentos,extras,obras,diasTrabalhados,brutoDiarias,pagDiarias,pendDiarias,totalAdiant,totalPagamentos,totalExtras};
   }
   function rtEnsureModal(){
     let m=$('relatorioTrabalhadorM');
@@ -10441,7 +10471,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   }
   function rtRenderSections(){
     const box=$('rtSections');if(!box)return;
-    const labels={cadastro:'Dados cadastrais e função',obras:'Obras e vínculos',dias:'Dias trabalhados e diárias',folha:'Resumo da folha',faltas:'Faltas e afastamentos',adiant:'Adiantamentos',pagamentos:'Pagamentos realizados',extras:'Produção / extras',resumo:'Resumo financeiro'};
+    const labels={cadastro:'Dados cadastrais e função',obras:'Obras e vínculos',dias:'Dias trabalhados e diárias',folha:'Resumo da folha',faltas:'Faltas e afastamentos',adiant:'Vales',pagamentos:'Pagamentos realizados',extras:'Produção / extras',resumo:'Resumo financeiro'};
     box.innerHTML=Object.entries(labels).map(([k,n])=>`<label class="wrCheckOpt"><input type="checkbox" ${window.__rtSections[k]?'checked':''} onchange="window.__rtSections['${k}']=this.checked"><span>${n}</span></label>`).join('');
   }
   function rtSyncDates(){
@@ -10468,15 +10498,15 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     const diasRows=d.diarias.slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||''))).map(x=>`<tr><td>${rtFmt(x.data)}</td><td>${esc((D.obras.find(o=>String(o.id)===String(x.obra_id))||{}).nome||'—')}</td><td>${esc(f.funcao||'—')}</td><td>${Number(x.qtd??x.quantidade??1)}</td><td>${rtMoney(diariaValor(x))}</td><td>${diariaEstaPaga(x)?'Pago':'Pendente'}</td></tr>`).join('');
     const faltaRows=d.faltas.map(x=>`<tr><td>${rtFmt(x.data)}</td><td>${esc({falta:'Falta',justificada:'Falta justificada',atestado:'Atestado'}[x.tipo]||x.tipo||'Falta')}</td><td>${rtEscLines(x.observacao)}</td></tr>`).join('');
     const pagRows=d.pagamentos.map(x=>`<tr><td>${rtFmt(x.data)}</td><td>${rtMoney(x.valor)}</td><td>${rtEscLines(x.descricao)}</td><td>${esc((D.obras.find(o=>String(o.id)===String(x.obra_id))||{}).nome||'—')}</td></tr>`).join('');
-    const advRows=d.adiantamentos.map(x=>`<tr><td>${rtFmt(x.data)}</td><td>${rtMoney(x.valor)}</td><td>${rtEscLines(x.observacao||x.descricao)}</td><td>${esc((D.obras.find(o=>String(o.id)===String(x.obra_id))||{}).nome||'—')}</td></tr>`).join('');
+    const advRows=d.vales.map(x=>`<tr><td>${rtFmt(x.data)}</td><td>${rtMoney(x.valor)}</td><td>${rtEscLines(x.observacao||x.descricao)}</td><td>${esc((D.obras.find(o=>String(o.id)===String(x.obra_id))||{}).nome||'—')}</td></tr>`).join('');
     const extraRows=d.extras.map(x=>`<tr><td>${rtFmt(x.data)}</td><td>${esc(x.tipo||'Serviço extra')}</td><td>${rtEscLines(x.descricao)}</td><td>${rtMoney(x.valor)}</td><td>${esc(x.status||'—')}</td></tr>`).join('');
     const sections=[];
     if(s.cadastro)sections.push(`<h2>👤 Dados do trabalhador</h2><div class="wrGrid"><div class="wrInfo"><small>Nome</small><b>${esc(f.nome||'—')}</b></div><div class="wrInfo"><small>Função</small><b>${esc(f.funcao||f.função||'Não informada')}</b></div><div class="wrInfo"><small>Telefone</small><b>${esc(f.telefone||f.tel||'—')}</b></div><div class="wrInfo"><small>Status</small><b>${f.ativo===false?'Inativo':'Ativo'}</b></div><div class="wrInfo"><small>Tipo de pagamento</small><b>${esc(f.tipo_pagamento||'—')}</b></div><div class="wrInfo"><small>Valor da diária</small><b>${f.valor_diaria!=null?rtMoney(f.valor_diaria):'—'}</b></div><div class="wrInfo"><small>Salário mensal</small><b>${f.salario_mensal!=null?rtMoney(f.salario_mensal):'—'}</b></div><div class="wrInfo"><small>Dia de pagamento</small><b>${esc(f.dia_pagamento||'—')}</b></div><div class="wrInfo"><small>Registrar diária</small><b>${f.registrar_diaria===false?'Não':'Sim'}</b></div></div>`);
     if(s.obras)sections.push(`<h2>🏗️ Obras e vínculos</h2><div class="wrGrid">${works}</div>`);
     if(s.dias)sections.push(`<h2>📅 Dias trabalhados e diárias</h2><div class="wrKpis"><div class="wrKpi"><small>DIAS TRABALHADOS</small><b>${d.diasTrabalhados}</b></div><div class="wrKpi"><small>REGISTROS</small><b>${d.diarias.length}</b></div><div class="wrKpi"><small>BRUTO</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrKpi"><small>PENDENTE</small><b>${rtMoney(d.pendDiarias)}</b></div></div>${diasRows?`<table><thead><tr><th>Data</th><th>Obra</th><th>Função</th><th>Qtd.</th><th>Valor</th><th>Status</th></tr></thead><tbody>${diasRows}</tbody></table>`:'<p>Nenhuma diária no período.</p>'}`);
-    if(s.folha)sections.push(`<h2>💰 Resumo da folha</h2><div class="wrGrid"><div class="wrInfo"><small>Bruto das diárias</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrInfo"><small>Diárias já pagas</small><b>${rtMoney(d.pagDiarias)}</b></div><div class="wrInfo"><small>Diárias pendentes</small><b>${rtMoney(d.pendDiarias)}</b></div><div class="wrInfo"><small>Adiantamentos no período</small><b>${rtMoney(d.totalAdiant)}</b></div><div class="wrInfo"><small>Pagamentos registrados</small><b>${rtMoney(d.totalPagamentos)}</b></div><div class="wrInfo"><small>Produção / extras</small><b>${rtMoney(d.totalExtras)}</b></div></div>`);
+    if(s.folha)sections.push(`<h2>💰 Resumo da folha</h2><div class="wrGrid"><div class="wrInfo"><small>Bruto das diárias</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrInfo"><small>Diárias já pagas</small><b>${rtMoney(d.pagDiarias)}</b></div><div class="wrInfo"><small>Diárias pendentes</small><b>${rtMoney(d.pendDiarias)}</b></div><div class="wrInfo"><small>Vales no período</small><b>${rtMoney(d.totalAdiant)}</b></div><div class="wrInfo"><small>Pagamentos registrados</small><b>${rtMoney(d.totalPagamentos)}</b></div><div class="wrInfo"><small>Produção / extras</small><b>${rtMoney(d.totalExtras)}</b></div></div>`);
     if(s.faltas)sections.push(`<h2>⚠️ Faltas e afastamentos</h2><div class="wrKpis"><div class="wrKpi"><small>REGISTROS</small><b>${d.faltas.length}</b></div><div class="wrKpi"><small>PRESENÇAS</small><b>${d.presencas.filter(x=>String(x.status||'presente')==='presente').length}</b></div></div>${faltaRows?`<table><thead><tr><th>Data</th><th>Tipo</th><th>Observação</th></tr></thead><tbody>${faltaRows}</tbody></table>`:'<p>Nenhuma falta/afastamento no período.</p>'}`);
-    if(s.adiant)sections.push(`<h2>💳 Adiantamentos</h2>${advRows?`<table><thead><tr><th>Data</th><th>Valor</th><th>Observação</th><th>Obra</th></tr></thead><tbody>${advRows}</tbody></table>`:'<p>Nenhum adiantamento no período.</p>'}`);
+    if(s.adiant)sections.push(`<h2>💳 Vales</h2>${advRows?`<table><thead><tr><th>Data</th><th>Valor</th><th>Observação</th><th>Obra</th></tr></thead><tbody>${advRows}</tbody></table>`:'<p>Nenhum adiantamento no período.</p>'}`);
     if(s.pagamentos)sections.push(`<h2>💵 Pagamentos realizados</h2>${pagRows?`<table><thead><tr><th>Data</th><th>Valor</th><th>Descrição</th><th>Obra</th></tr></thead><tbody>${pagRows}</tbody></table>`:'<p>Nenhum pagamento de equipe encontrado no período.</p>'}`);
     if(s.extras)sections.push(`<h2>🏆 Produção / Extras</h2>${extraRows?`<table><thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Status</th></tr></thead><tbody>${extraRows}</tbody></table>`:'<p>Nenhum serviço extra registrado no período.</p>'}`);
     if(s.resumo){
@@ -10496,13 +10526,35 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     rtGeneratePreview(false);
     const d=rtData(),html=$('rtPreview')?.innerHTML||'';
     const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
-    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório do Trabalhador</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#172033;line-height:1.5;max-width:950px;margin:auto}h1{font-size:24px}h2{font-size:17px;margin-top:22px;border-bottom:1px solid #ddd;padding-bottom:6px}.wrMeta{color:#64748b;font-size:12px}.wrKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.wrKpi,.wrInfo{border:1px solid #d9e0ea;border-radius:10px;padding:10px}.wrKpi small,.wrInfo small{display:block;color:#64748b;font-size:10px}.wrGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #d9e0ea;padding:6px;text-align:left;vertical-align:top}th{background:#f3f6fa}@media print{body{padding:8px}}</style></head><body>${html}</body></html>`);
+    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório do Trabalhador</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#172033;line-height:1.5;max-width:950px;margin:auto}h1{font-size:24px}h2{font-size:17px;margin-top:22px;border-bottom:1px solid #ddd;padding-bottom:6px}.wrMeta{color:#64748b;font-size:12px}.wrKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.wrKpi,.wrInfo{border:1px solid #d9e0ea;border-radius:10px;padding:10px}.wrKpi small,.wrInfo small{display:block;color:#64748b;font-size:10px}.wrGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #d9e0ea;padding:6px;text-align:left;vertical-align:top}th{background:#f3f6fa}@media print{body{padding:8px}}</style></head><body>${html}
+<style id="edifiq-theme-final-fix">
+/* EDIFIQ — tema com apenas dois estados: claro ou escuro */
+:root{color-scheme:dark}
+body{background:#0b0e12!important;color:#f4f6f8!important}
+body:not(.edLight) .card,body:not(.edLight) .modalBox,body:not(.edLight) .toolbar,body:not(.edLight) .pageTitle,body:not(.edLight) .kpi,body:not(.edLight) .edHomeKpi,body:not(.edLight) .edHomeWork{background:#11161d!important;color:#f4f6f8!important;border-color:#2a313b!important}
+body:not(.edLight) input,body:not(.edLight) select,body:not(.edLight) textarea{background:#0c1117!important;color:#f4f6f8!important;border-color:#343c48!important}
+body:not(.edLight) .sub,body:not(.edLight) small{color:#aeb7c4}
+body.edLight{color-scheme:light;background:#f4f7fb!important;color:#172033!important}
+body.edLight #app,body.edLight .wrap,body.edLight .page,body.edLight .pageTitle,body.edLight .toolbar{background:#f4f7fb!important;color:#172033!important}
+body.edLight .card,body.edLight .modalBox,body.edLight .kpi,body.edLight .edHome,body.edLight .edHomeHeader,body.edLight .edHomeKpi,body.edLight .edHomeWork,body.edLight .edHomeSearch,body.edLight .edHomeIconBtn,body.edLight .edHomeSelect{background:#fff!important;color:#172033!important;border-color:#d7e0ee!important}
+body.edLight input,body.edLight select,body.edLight textarea{background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight input::placeholder,body.edLight textarea::placeholder{color:#7b8798!important}
+body.edLight .sub,body.edLight small{color:#68758a!important}
+body.edLight .nav,body.edLight .bottomNav,body.edLight .drawer,body.edLight .menuPasta{background:#fff!important;color:#172033!important}
+body.edLight .btn:not(.gold):not(.primary){background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight .btn.gold,body.edLight .btn.primary{color:#090b0e!important}
+body.edLight .modal{background:rgba(15,23,42,.38)!important}
+body.edLight .edHomeBrandName,body.edLight .edHomeWork h3,body.edLight .pageTitle h1,body.edLight h1,body.edLight h2,body.edLight h3,body.edLight h4,body.edLight b,body.edLight strong{color:#172033!important}
+.extraLancamentoBox{max-width:680px!important}
+@media(max-width:600px){.extraLancamentoBox{width:94vw!important}.extraLancamentoBox .formGrid{grid-template-columns:1fr!important}}
+</style>
+</body></html>`);
 
     w.document.close();setTimeout(()=>w.print(),300);
   };
   window.rtWhatsApp=function(){
     if(!window.__rtFuncId){toast('Selecione um trabalhador.');return;}
-    const d=rtData();const txt=`RELATÓRIO DO TRABALHADOR — ${d.f.nome}\nPeríodo: ${rtFmt(d.r.ini)} a ${rtFmt(d.r.fim)}\nFunção: ${d.f.funcao||'Não informada'}\nDias trabalhados: ${d.diasTrabalhados}\nDiárias: ${rtMoney(d.brutoDiarias)}\nAdiantamentos: ${rtMoney(d.totalAdiant)}\nPagamentos: ${rtMoney(d.totalPagamentos+d.pagDiarias)}\nExtras: ${rtMoney(d.totalExtras)}\nFaltas/afastamentos: ${d.faltas.length}`;
+    const d=rtData();const txt=`RELATÓRIO DO TRABALHADOR — ${d.f.nome}\nPeríodo: ${rtFmt(d.r.ini)} a ${rtFmt(d.r.fim)}\nFunção: ${d.f.funcao||'Não informada'}\nDias trabalhados: ${d.diasTrabalhados}\nDiárias: ${rtMoney(d.brutoDiarias)}\nVales: ${rtMoney(d.totalAdiant)}\nPagamentos: ${rtMoney(d.totalPagamentos+d.pagDiarias)}\nExtras: ${rtMoney(d.totalExtras)}\nFaltas/afastamentos: ${d.faltas.length}`;
     window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
   };
   window.openRelatorioTrabalhador=function(){
@@ -11329,7 +11381,29 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     const o=obraP(oid);if(!o){toast("Obra não encontrada.");return}
     const w=window.open("","_blank");
     if(!w){toast("Permita a abertura de nova janela para gerar o relatório.");return}
-    w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório da Obra</title></head><body><p style="font-family:Arial;padding:30px">Preparando relatório...</p></body></html>');w.document.close();
+    w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório da Obra</title></head><body><p style="font-family:Arial;padding:30px">Preparando relatório...</p>
+<style id="edifiq-theme-final-fix">
+/* EDIFIQ — tema com apenas dois estados: claro ou escuro */
+:root{color-scheme:dark}
+body{background:#0b0e12!important;color:#f4f6f8!important}
+body:not(.edLight) .card,body:not(.edLight) .modalBox,body:not(.edLight) .toolbar,body:not(.edLight) .pageTitle,body:not(.edLight) .kpi,body:not(.edLight) .edHomeKpi,body:not(.edLight) .edHomeWork{background:#11161d!important;color:#f4f6f8!important;border-color:#2a313b!important}
+body:not(.edLight) input,body:not(.edLight) select,body:not(.edLight) textarea{background:#0c1117!important;color:#f4f6f8!important;border-color:#343c48!important}
+body:not(.edLight) .sub,body:not(.edLight) small{color:#aeb7c4}
+body.edLight{color-scheme:light;background:#f4f7fb!important;color:#172033!important}
+body.edLight #app,body.edLight .wrap,body.edLight .page,body.edLight .pageTitle,body.edLight .toolbar{background:#f4f7fb!important;color:#172033!important}
+body.edLight .card,body.edLight .modalBox,body.edLight .kpi,body.edLight .edHome,body.edLight .edHomeHeader,body.edLight .edHomeKpi,body.edLight .edHomeWork,body.edLight .edHomeSearch,body.edLight .edHomeIconBtn,body.edLight .edHomeSelect{background:#fff!important;color:#172033!important;border-color:#d7e0ee!important}
+body.edLight input,body.edLight select,body.edLight textarea{background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight input::placeholder,body.edLight textarea::placeholder{color:#7b8798!important}
+body.edLight .sub,body.edLight small{color:#68758a!important}
+body.edLight .nav,body.edLight .bottomNav,body.edLight .drawer,body.edLight .menuPasta{background:#fff!important;color:#172033!important}
+body.edLight .btn:not(.gold):not(.primary){background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight .btn.gold,body.edLight .btn.primary{color:#090b0e!important}
+body.edLight .modal{background:rgba(15,23,42,.38)!important}
+body.edLight .edHomeBrandName,body.edLight .edHomeWork h3,body.edLight .pageTitle h1,body.edLight h1,body.edLight h2,body.edLight h3,body.edLight h4,body.edLight b,body.edLight strong{color:#172033!important}
+.extraLancamentoBox{max-width:680px!important}
+@media(max-width:600px){.extraLancamentoBox{width:94vw!important}.extraLancamentoBox .formGrid{grid-template-columns:1fr!important}}
+</style>
+</body></html>');w.document.close();
     const x=obraDataP(o), cats=categoryTotalsP(x.gs), services=x.ex, prod=producoesP(o.id);
     let photos=[];try{photos=typeof getPhotosByObraDB==="function"?await getPhotosByObraDB(o.id):[]}catch(_){}
     const checkRows=x.cs.map(c=>{const st=checkStatsP(c);return `<tr><td><b>${escP(c.tarefa||c.descricao||"Etapa")}</b></td><td>${pctP(st.progresso)}</td><td>${moneyP(st.valor)}</td><td>${moneyP(st.recebido)}</td><td>${moneyP(st.despesas)}</td><td>${moneyP(st.lucro)}</td><td>${st.margem.toFixed(1).replace(".",",")}%</td></tr>`}).join("");
@@ -11482,7 +11556,29 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
       <h2>4. Produção da equipe</h2><div class="box"><div class="row"><span>Valor produzido</span><b>${moneyP(prod.reduce((a,r)=>a+n(r.valor),0))}</b></div><div class="row"><span>Quantidade produzida</span><b>${prod.reduce((a,r)=>a+n(r.quantidade),0).toLocaleString("pt-BR",{maximumFractionDigits:2})}</b></div><div class="row"><span>Funcionários com produção</span><b>${new Set(prod.map(r=>String(r.funcionario_id))).size}</b></div></div>${prod.length?`<table><thead><tr><th>Data</th><th>Funcionário</th><th>Checklist</th><th>Quantidade</th><th>Valor</th></tr></thead><tbody>${prodRows}</tbody></table>`:"<p>Nenhuma produção registrada.</p>"}
       <h2>5. Relatório fotográfico</h2><div class="photoGrid">${photoHtml}</div>
       <div class="foot">EDIFIQ — Construção Civil · Relatório gerado automaticamente a partir dos dados existentes nesta obra. Este relatório é somente leitura.</div>
-      </body></html>`;
+      
+<style id="edifiq-theme-final-fix">
+/* EDIFIQ — tema com apenas dois estados: claro ou escuro */
+:root{color-scheme:dark}
+body{background:#0b0e12!important;color:#f4f6f8!important}
+body:not(.edLight) .card,body:not(.edLight) .modalBox,body:not(.edLight) .toolbar,body:not(.edLight) .pageTitle,body:not(.edLight) .kpi,body:not(.edLight) .edHomeKpi,body:not(.edLight) .edHomeWork{background:#11161d!important;color:#f4f6f8!important;border-color:#2a313b!important}
+body:not(.edLight) input,body:not(.edLight) select,body:not(.edLight) textarea{background:#0c1117!important;color:#f4f6f8!important;border-color:#343c48!important}
+body:not(.edLight) .sub,body:not(.edLight) small{color:#aeb7c4}
+body.edLight{color-scheme:light;background:#f4f7fb!important;color:#172033!important}
+body.edLight #app,body.edLight .wrap,body.edLight .page,body.edLight .pageTitle,body.edLight .toolbar{background:#f4f7fb!important;color:#172033!important}
+body.edLight .card,body.edLight .modalBox,body.edLight .kpi,body.edLight .edHome,body.edLight .edHomeHeader,body.edLight .edHomeKpi,body.edLight .edHomeWork,body.edLight .edHomeSearch,body.edLight .edHomeIconBtn,body.edLight .edHomeSelect{background:#fff!important;color:#172033!important;border-color:#d7e0ee!important}
+body.edLight input,body.edLight select,body.edLight textarea{background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight input::placeholder,body.edLight textarea::placeholder{color:#7b8798!important}
+body.edLight .sub,body.edLight small{color:#68758a!important}
+body.edLight .nav,body.edLight .bottomNav,body.edLight .drawer,body.edLight .menuPasta{background:#fff!important;color:#172033!important}
+body.edLight .btn:not(.gold):not(.primary){background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight .btn.gold,body.edLight .btn.primary{color:#090b0e!important}
+body.edLight .modal{background:rgba(15,23,42,.38)!important}
+body.edLight .edHomeBrandName,body.edLight .edHomeWork h3,body.edLight .pageTitle h1,body.edLight h1,body.edLight h2,body.edLight h3,body.edLight h4,body.edLight b,body.edLight strong{color:#172033!important}
+.extraLancamentoBox{max-width:680px!important}
+@media(max-width:600px){.extraLancamentoBox{width:94vw!important}.extraLancamentoBox .formGrid{grid-template-columns:1fr!important}}
+</style>
+</body></html>`;
     w.setTimeout(()=>w.print(),600);
     w.document.open();w.document.write(report);w.document.close();
   }
@@ -11967,5 +12063,48 @@ body.edifiq-ios-standalone .edifiqDrawerScroll{
 })();
 </script>
 
+
+<style id="edifiq-theme-final-fix">
+/* EDIFIQ — tema com apenas dois estados: claro ou escuro */
+:root{color-scheme:dark}
+body{background:#0b0e12!important;color:#f4f6f8!important}
+body:not(.edLight) .card,body:not(.edLight) .modalBox,body:not(.edLight) .toolbar,body:not(.edLight) .pageTitle,body:not(.edLight) .kpi,body:not(.edLight) .edHomeKpi,body:not(.edLight) .edHomeWork{background:#11161d!important;color:#f4f6f8!important;border-color:#2a313b!important}
+body:not(.edLight) input,body:not(.edLight) select,body:not(.edLight) textarea{background:#0c1117!important;color:#f4f6f8!important;border-color:#343c48!important}
+body:not(.edLight) .sub,body:not(.edLight) small{color:#aeb7c4}
+body.edLight{color-scheme:light;background:#f4f7fb!important;color:#172033!important}
+body.edLight #app,body.edLight .wrap,body.edLight .page,body.edLight .pageTitle,body.edLight .toolbar{background:#f4f7fb!important;color:#172033!important}
+body.edLight .card,body.edLight .modalBox,body.edLight .kpi,body.edLight .edHome,body.edLight .edHomeHeader,body.edLight .edHomeKpi,body.edLight .edHomeWork,body.edLight .edHomeSearch,body.edLight .edHomeIconBtn,body.edLight .edHomeSelect{background:#fff!important;color:#172033!important;border-color:#d7e0ee!important}
+body.edLight input,body.edLight select,body.edLight textarea{background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight input::placeholder,body.edLight textarea::placeholder{color:#7b8798!important}
+body.edLight .sub,body.edLight small{color:#68758a!important}
+body.edLight .nav,body.edLight .bottomNav,body.edLight .drawer,body.edLight .menuPasta{background:#fff!important;color:#172033!important}
+body.edLight .btn:not(.gold):not(.primary){background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight .btn.gold,body.edLight .btn.primary{color:#090b0e!important}
+body.edLight .modal{background:rgba(15,23,42,.38)!important}
+body.edLight .edHomeBrandName,body.edLight .edHomeWork h3,body.edLight .pageTitle h1,body.edLight h1,body.edLight h2,body.edLight h3,body.edLight h4,body.edLight b,body.edLight strong{color:#172033!important}
+.extraLancamentoBox{max-width:680px!important}
+@media(max-width:600px){.extraLancamentoBox{width:94vw!important}.extraLancamentoBox .formGrid{grid-template-columns:1fr!important}}
+</style>
+<style id="edifiq-theme-final-fix">
+/* EDIFIQ — tema com apenas dois estados: claro ou escuro */
+:root{color-scheme:dark}
+body{background:#0b0e12!important;color:#f4f6f8!important}
+body:not(.edLight) .card,body:not(.edLight) .modalBox,body:not(.edLight) .toolbar,body:not(.edLight) .pageTitle,body:not(.edLight) .kpi,body:not(.edLight) .edHomeKpi,body:not(.edLight) .edHomeWork{background:#11161d!important;color:#f4f6f8!important;border-color:#2a313b!important}
+body:not(.edLight) input,body:not(.edLight) select,body:not(.edLight) textarea{background:#0c1117!important;color:#f4f6f8!important;border-color:#343c48!important}
+body:not(.edLight) .sub,body:not(.edLight) small{color:#aeb7c4}
+body.edLight{color-scheme:light;background:#f4f7fb!important;color:#172033!important}
+body.edLight #app,body.edLight .wrap,body.edLight .page,body.edLight .pageTitle,body.edLight .toolbar{background:#f4f7fb!important;color:#172033!important}
+body.edLight .card,body.edLight .modalBox,body.edLight .kpi,body.edLight .edHome,body.edLight .edHomeHeader,body.edLight .edHomeKpi,body.edLight .edHomeWork,body.edLight .edHomeSearch,body.edLight .edHomeIconBtn,body.edLight .edHomeSelect{background:#fff!important;color:#172033!important;border-color:#d7e0ee!important}
+body.edLight input,body.edLight select,body.edLight textarea{background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight input::placeholder,body.edLight textarea::placeholder{color:#7b8798!important}
+body.edLight .sub,body.edLight small{color:#68758a!important}
+body.edLight .nav,body.edLight .bottomNav,body.edLight .drawer,body.edLight .menuPasta{background:#fff!important;color:#172033!important}
+body.edLight .btn:not(.gold):not(.primary){background:#fff!important;color:#172033!important;border-color:#cbd5e1!important}
+body.edLight .btn.gold,body.edLight .btn.primary{color:#090b0e!important}
+body.edLight .modal{background:rgba(15,23,42,.38)!important}
+body.edLight .edHomeBrandName,body.edLight .edHomeWork h3,body.edLight .pageTitle h1,body.edLight h1,body.edLight h2,body.edLight h3,body.edLight h4,body.edLight b,body.edLight strong{color:#172033!important}
+.extraLancamentoBox{max-width:680px!important}
+@media(max-width:600px){.extraLancamentoBox{width:94vw!important}.extraLancamentoBox .formGrid{grid-template-columns:1fr!important}}
+</style>
 </body>
 </html>
