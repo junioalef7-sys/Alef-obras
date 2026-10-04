@@ -5178,9 +5178,20 @@ fillDiariaChecklistSelector();
 
 }
 
+let edifiqSalvandoDiaria=false;
+
 async function saveDia(e){
 
 e.preventDefault();
+
+/* Impede duplo clique/toque ou disparo repetido do submit enquanto a gravação está em andamento. */
+if(edifiqSalvandoDiaria){
+  toast("A diária já está sendo registrada. Aguarde a confirmação.");
+  return;
+}
+
+const form=e?.currentTarget||document.querySelector("#diaM form");
+const submitBtn=form?.querySelector("button[type=submit],button.primary:not([type=button])");
 
 const funcionario_id=
 $("dFunc").value;
@@ -5268,20 +5279,35 @@ $("dStatus").value,
 observacao
 };
 
-const result=
-await insertRow(
-"diarias",
-row
-);
+/* Trava o botão antes da chamada assíncrona para nunca criar duas diárias com um único toque. */
+edifiqSalvandoDiaria=true;
+if(submitBtn){
+  submitBtn.disabled=true;
+  submitBtn.dataset.edifiqOriginalText=submitBtn.textContent;
+  submitBtn.textContent="Registrando...";
+}
 
-if(result){
-  if(String(row.status||'').toLowerCase()==='pago' && result.id) markDiariasPaid([result.id]);
-  saveLocalData();
-  closeM("diaM");
-  renderAll();
-  toast(`Diária registrada: ${money(valorReal)}`);
-}else{
+try{
+  const result=await insertRow("diarias",row);
+
+  if(result){
+    if(String(row.status||'').toLowerCase()==='pago' && result.id) markDiariasPaid([result.id]);
+    saveLocalData();
+    closeM("diaM");
+    renderAll();
+    toast(`Diária registrada: ${money(valorReal)}`);
+  }else{
+    toast("Não foi possível registrar a diária.");
+  }
+}catch(err){
+  console.error("Erro ao registrar diária",err);
   toast("Não foi possível registrar a diária.");
+}finally{
+  edifiqSalvandoDiaria=false;
+  if(submitBtn){
+    submitBtn.disabled=false;
+    submitBtn.textContent=submitBtn.dataset.edifiqOriginalText||"Salvar diária";
+  }
 }
 
 }
