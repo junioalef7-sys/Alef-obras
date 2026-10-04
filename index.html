@@ -2684,8 +2684,8 @@ normalize(g.fornecedor);
 const descricao=
 normalize(g.descricao);
 
-return fornecedor===nome||
-descricao.includes(nome);
+return String(g.funcionario_id??g.funcionarioId??"")===String(funcId) ||
+  (String(g.funcionario_id??g.funcionarioId??"")==="" && (fornecedor===nome||descricao.includes(nome)));
 
 })
 .map(g=>{
@@ -2820,23 +2820,44 @@ advances
 
 function aplicarVales(funcId,allocations){
   const data=getAdvanceApplied();
-  const ids=new Set();
+  const usados=new Map();
+
   (allocations||[]).forEach(a=>{
-    if(a?.id!=null){
-      const id=String(a.id); ids.add(id);
-      const g=(D.gastos||[]).find(x=>String(x.id)===id);
-      const valor=Number(g?.valor||a.valor||0);
-      data[id]=Math.max(Number(data[id]||0),valor);
-      if(g){ g.status='pago'; g.data_pagamento=today(); }
+    if(a?.id==null)return;
+    const id=String(a.id);
+    const g=(D.gastos||[]).find(x=>String(x.id)===id);
+    const original=Math.max(0,Number(g?.valor||a.valor||0));
+    const jaAplicado=Math.max(0,Number(data[id]||0));
+    const usar=Math.max(0,Math.min(original-jaAplicado,Number(a.valor||0)));
+    if(usar<=0)return;
+
+    const novoAplicado=jaAplicado+usar;
+    data[id]=novoAplicado;
+    usados.set(id,novoAplicado);
+
+    if(g){
+      g.valor_baixado=novoAplicado;
+      g.aplicado=novoAplicado>=original-0.01;
+      g.status=g.aplicado?'pago':'pendente';
+      g.data_pagamento=g.aplicado?today():(g.data_pagamento||null);
     }
   });
-  // Mantém a fonte de vales da equipe coerente com os gastos usados na folha.
+
+  // Espelha a baixa na coleção auxiliar de vales sem quitar vales que ainda
+  // possuem saldo disponível.
   (D.vales||[]).forEach(a=>{
-    if(String(a.funcionario_id)===String(funcId)){
-      const valor=Number(a.valor||0);
-      a.status='pago'; a.aplicado=true; a.aplicado_em=today(); a.valor_baixado=valor;
-    }
+    if(String(a.funcionario_id)!==String(funcId))return;
+    const id=String(a.id||a.gasto_id||"");
+    if(!id || !usados.has(id))return;
+
+    const original=Math.max(0,Number(a.valor||0));
+    const aplicado=Math.min(original,Number(usados.get(id)||0));
+    a.valor_baixado=aplicado;
+    a.aplicado=aplicado>=original-0.01;
+    a.status=a.aplicado?'pago':'pendente';
+    if(a.aplicado)a.data_pagamento=today();
   });
+
   saveAdvanceApplied(data);
   saveLocalData();
 }
@@ -2999,14 +3020,60 @@ function auditEDIFIQ(){
   const obraIds=new Set((D.obras||[]).map(o=>String(o.id)));
   const funcIds=new Set((D.funcionarios||[]).map(f=>String(f.id)));
   const materialIds=new Set((D.materiais||[]).map(m=>String(m.id)));
+  const checklistMap=new Map((D.checklist||[]).map(c=>[String(c.id),c]));
+
+  for(const f of (D.funcionarios||[])){
+    const oid=f.obra_id??f.obraId??f.obra??"";
+    if(oid!=="" && oid!=null && !obraIds.has(String(oid))){
+      issues.push(`funcionarios.obra_id:${oid}`);
+    }
+  }
+
   for(const t of ['gastos','pagamentos','diarias','checklist','faltas','diario','documentos','materiais']){
     for(const r of (D[t]||[])){
       if(r.obra_id!=null && r.obra_id!=='' && !obraIds.has(String(r.obra_id))) issues.push(`${t}.obra_id:${r.obra_id}`);
       if(r.funcionario_id!=null && r.funcionario_id!=='' && !funcIds.has(String(r.funcionario_id))) issues.push(`${t}.funcionario_id:${r.funcionario_id}`);
+
+      const cid=r.checklist_id??r.checklistId??r.checklist_id_fk??"";
+      if(cid!=="" && cid!=null){
+        const c=checklistMap.get(String(cid));
+        if(!c){
+          issues.push(`${t}.checklist_id:${cid}`);
+        }else{
+          const coid=c.obra_id??c.obraId??c.obra??"";
+          const roid=r.obra_id??r.obraId??r.obra??"";
+          if(roid!=="" && roid!=null && coid!=="" && coid!=null && String(coid)!==String(roid)){
+            issues.push(`${t}.checklist_obra_mismatch:${r.id||"sem-id"}`);
+          }
+        }
+      }
     }
   }
+
+  // Valida também a coleção auxiliar de Vales.
+  for(const r of (D.vales||[])){
+    if(r.funcionario_id!=null && r.funcionario_id!=='' && !funcIds.has(String(r.funcionario_id))) issues.push(`vales.funcionario_id:${r.funcionario_id}`);
+    const oid=r.obra_id??r.obraId??"";
+    if(oid!=="" && oid!=null && !obraIds.has(String(oid))) issues.push(`vales.obra_id:${oid}`);
+    const cid=r.checklist_id??r.checklistId??"";
+    if(cid!=="" && cid!=null){
+      const c=checklistMap.get(String(cid));
+      if(!c) issues.push(`vales.checklist_id:${cid}`);
+      else{
+        const coid=c.obra_id??c.obraId??"";
+        if(oid!=="" && coid!=="" && String(oid)!==String(coid)) issues.push(`vales.checklist_obra_mismatch:${r.id||"sem-id"}`);
+      }
+    }
+  }
+
   for(const r of (D.material_movimentos||[])) if(r.material_id!=null && !materialIds.has(String(r.material_id))) issues.push(`material_movimentos.material_id:${r.material_id}`);
-  for(const r of (D.checklist||[])){const p=Number(r.progresso||0);if(p<0){r.progresso=0;issues.push('checklist.progresso<0')}if(p>100){r.progresso=100;issues.push('checklist.progresso>100')}}
+  for(const r of (D.checklist||[])){
+    const p=Number(r.progresso||0);
+    if(p<0){r.progresso=0;issues.push('checklist.progresso<0')}
+    if(p>100){r.progresso=100;issues.push('checklist.progresso>100')}
+    const oid=r.obra_id??r.obraId??r.obra??"";
+    if(oid!=="" && !obraIds.has(String(oid))) issues.push(`checklist.obra_id:${oid}`);
+  }
   if(issues.length){console.warn('Auditoria EDIFIQ encontrou/corrigiu inconsistências:',issues);saveLocalData();}
   return issues;
 }
@@ -5832,29 +5899,40 @@ for(const item of processados){
     }
   }
 
-  /* Mantém a quitação dos vales exatamente como já funcionava. */
+  /* Baixa somente os Vales efetivamente usados nesta folha.
+     Um Vale parcialmente abatido continua com o saldo restante disponível. */
   const advAplicados=getAdvanceApplied();
   const nomeFunc=normalize(item.f.nome);
-  for(const g of (D.gastos||[])){
-    if(gastoCategoria(g)!=="Vale") continue;
-    const pertence=String(g.funcionario_id||"")===String(item.id) || normalize(g.fornecedor)===nomeFunc || normalize(g.descricao).includes(nomeFunc);
-    if(!pertence) continue;
-    const valor=Number(g.valor||0);
-    if(valor<=0)continue;
-    advAplicados[g.id]=valor;
-    g.status="pago";
-    g.aplicado=true;
-    g.valor_baixado=valor;
-    g.data_pagamento=data;
+  const allocations=item.resumo.allocations||[];
+
+  for(const a of allocations){
+    const g=(D.gastos||[]).find(x=>String(x.id)===String(a.id));
+    if(!g)continue;
+    const original=Math.max(0,Number(g.valor||0));
+    const jaAplicado=Math.max(0,Number(advAplicados[g.id]||0));
+    const usar=Math.max(0,Math.min(original-jaAplicado,Number(a.valor||0)));
+    if(usar<=0)continue;
+
+    const novoAplicado=jaAplicado+usar;
+    advAplicados[g.id]=novoAplicado;
+    g.valor_baixado=novoAplicado;
+    g.aplicado=novoAplicado>=original-0.01;
+    g.status=g.aplicado?"pago":"pendente";
+    g.data_pagamento=g.aplicado?data:(g.data_pagamento||null);
     g.funcionario_id=item.id;
   }
+
   for(const a of (D.vales||[])){
     if(String(a.funcionario_id)!==String(item.id))continue;
-    const valor=Number(a.valor||0);
-    a.status="pago";
-    a.aplicado=true;
-    a.valor_baixado=valor;
-    a.data_pagamento=data;
+    const id=String(a.id||a.gasto_id||"");
+    if(!id)continue;
+    const original=Math.max(0,Number(a.valor||0));
+    const aplicado=Math.min(original,Number(advAplicados[id]||0));
+    if(aplicado<=0)continue;
+    a.valor_baixado=aplicado;
+    a.aplicado=aplicado>=original-0.01;
+    a.status=a.aplicado?"pago":"pendente";
+    if(a.aplicado)a.data_pagamento=data;
   }
   saveAdvanceApplied(advAplicados);
   saveLocalData();
@@ -11392,8 +11470,7 @@ body.edLight .edHomeBrandName,body.edLight .edHomeWork h3,body.edLight .pageTitl
     const o=obraP(oid);if(!o){toast("Obra não encontrada.");return}
     const w=window.open("","_blank");
     if(!w){toast("Permita a abertura de nova janela para gerar o relatório.");return}
-    w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório da Obra</title></head><body><p style="font-family:Arial;padding:30px">Preparando relatório...</p>
-<style id="edifiq-theme-final-fix">
+    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório da Obra</title></head><body><p style="font-family:Arial;padding:30px">Preparando relatório...</p>\\n<style id="edifiq-theme-final-fix">
 /* EDIFIQ — tema com apenas dois estados: claro ou escuro */
 :root{color-scheme:dark}
 body{background:#0b0e12!important;color:#f4f6f8!important}
@@ -11414,7 +11491,7 @@ body.edLight .edHomeBrandName,body.edLight .edHomeWork h3,body.edLight .pageTitl
 .extraLancamentoBox{max-width:680px!important}
 @media(max-width:600px){.extraLancamentoBox{width:94vw!important}.extraLancamentoBox .formGrid{grid-template-columns:1fr!important}}
 </style>
-</body></html>');w.document.close();
+</body></html>`);w.document.close();
     const x=obraDataP(o), cats=categoryTotalsP(x.gs), services=x.ex, prod=producoesP(o.id);
     let photos=[];try{photos=typeof getPhotosByObraDB==="function"?await getPhotosByObraDB(o.id):[]}catch(_){}
     const checkRows=x.cs.map(c=>{const st=checkStatsP(c);return `<tr><td><b>${escP(c.tarefa||c.descricao||"Etapa")}</b></td><td>${pctP(st.progresso)}</td><td>${moneyP(st.valor)}</td><td>${moneyP(st.recebido)}</td><td>${moneyP(st.despesas)}</td><td>${moneyP(st.lucro)}</td><td>${st.margem.toFixed(1).replace(".",",")}%</td></tr>`}).join("");
