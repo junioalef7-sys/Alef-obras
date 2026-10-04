@@ -3699,6 +3699,36 @@ async function retryLocalCloudRows(){
       try{
         const payload={...local,user_id:user.id};
         delete payload.id; delete payload._sync_pendente;
+
+        /* DIÁRIAS: antes de reenviar uma diária local, procure no servidor
+           uma linha idêntica. Isso impede que uma diária que já foi gravada
+           na nuvem seja inserida novamente durante a sincronização. */
+        if(table==="diarias"){
+          const q=await sb.from("diarias")
+            .select("*")
+            .eq("user_id",user.id)
+            .eq("funcionario_id",payload.funcionario_id)
+            .eq("obra_id",payload.obra_id)
+            .eq("data",payload.data)
+            .eq("qtd",Number(payload.qtd??1))
+            .eq("valor_diaria",Number(payload.valor_diaria??0))
+            .limit(10);
+
+          if(!q.error && Array.isArray(q.data) && q.data.length){
+            const encontrada=q.data.find(d=>
+              String(d.checklist_id||"")===String(payload.checklist_id||"") &&
+              String(d.observacao||"")===String(payload.observacao||"") &&
+              String(d.status||"").toLowerCase()===String(payload.status||"").toLowerCase()
+            ) || q.data[0];
+
+            const idx=D[table].findIndex(x=>String(x.id)===String(local.id));
+            if(idx>=0) D[table][idx]=encontrada;
+            removeEdifiqPendingUpdate(table,local.id);
+            saveLocalData();
+            continue;
+          }
+        }
+
         const {data,error}=await sb.from(table).insert(payload).select().single();
         if(!error&&data){
           const idx=D[table].findIndex(x=>String(x.id)===String(local.id));
@@ -3757,53 +3787,76 @@ const payload={
 user_id:user.id
 };
 
-/* DIÁRIAS: uma única tentativa de INSERT.
-   Nunca repetir o INSERT de uma diária após um erro de SELECT/RLS,
-   pois o banco pode ter gravado a linha mesmo quando o retorno falha.
-   Isso era a causa mais provável de uma única diária aparecer 2/3 vezes. */
+/* DIÁRIAS: gravação idempotente.
+   Uma ação do usuário = no máximo UMA diária.
+   Antes de inserir, procura uma diária idêntica na memória e na nuvem.
+   Se a resposta do INSERT falhar, NÃO faz outro INSERT; primeiro tenta
+   localizar a linha que pode já ter sido gravada. */
 if(table==="diarias"){
-  try{
-    const {data,error}=await sb
-      .from("diarias")
-      .insert(payload)
-      .select()
-      .single();
+  const mesmaDiaria=(d)=>
+    String(d?.funcionario_id)===String(row.funcionario_id) &&
+    String(d?.obra_id)===String(row.obra_id) &&
+    String(d?.data)===String(row.data) &&
+    Number(d?.qtd??1)===Number(row.qtd??1) &&
+    Number(d?.valor_diaria??d?.valor??0)===Number(row.valor_diaria??0) &&
+    String(d?.checklist_id||"")===String(row.checklist_id||"") &&
+    String(d?.observacao||"")===String(row.observacao||"") &&
+    String(d?.status||"").toLowerCase()===String(row.status||"").toLowerCase();
 
-    if(!error && data){
-      D.diarias.unshift(data);
-      saveLocalData();
-      renderAll();
-      return data;
-    }
-
-    console.warn("Supabase recusou/confirmou parcialmente a diária:",error?.message);
-
-    /* Se o INSERT aconteceu mas o SELECT falhou, recupera a linha
-       antes de criar qualquer registro local. */
-    try{
-      await loadTable("diarias");
-      const encontrada=(D.diarias||[]).find(d=>
-        String(d.funcionario_id)===String(row.funcionario_id) &&
-        String(d.obra_id)===String(row.obra_id) &&
-        String(d.data)===String(row.data) &&
-        Number(d.qtd??1)===Number(row.qtd??1) &&
-        Number(d.valor_diaria??d.valor??0)===Number(row.valor_diaria??0) &&
-        String(d.observacao||"")===String(row.observacao||"")
-      );
-      if(encontrada){
-        saveLocalData();
-        renderAll();
-        return encontrada;
-      }
-    }catch(recErr){
-      console.warn("Não foi possível confirmar a diária no servidor:",recErr);
-    }
-  }catch(e){
-    console.warn("Erro ao registrar diária:",e);
+  /* Proteção imediata contra duplo acionamento/duplicata local. */
+  const localExistente=(D.diarias||[]).find(mesmaDiaria);
+  if(localExistente){
+    return localExistente;
   }
 
-  /* Só cria no aparelho quando temos certeza de que a linha não foi
-     localizada na nuvem. Nunca faz uma segunda tentativa de INSERT. */
+  if(sb && user && navigator.onLine){
+    try{
+      /* 1) Verifica se a diária já existe na nuvem antes de inserir. */
+      const busca=await sb.from("diarias")
+        .select("*")
+        .eq("user_id",user.id)
+        .eq("funcionario_id",row.funcionario_id)
+        .eq("obra_id",row.obra_id)
+        .eq("data",row.data)
+        .eq("qtd",Number(row.qtd??1))
+        .eq("valor_diaria",Number(row.valor_diaria??0))
+        .limit(20);
+
+      if(!busca.error && Array.isArray(busca.data)){
+        const encontrada=busca.data.find(mesmaDiaria);
+        if(encontrada){
+          D.diarias.unshift(encontrada);
+          saveLocalData();
+          renderAll();
+          return encontrada;
+        }
+      }
+
+      /* 2) Faz UMA única inserção. Não repete o INSERT se houver erro. */
+      const {error:insertError}=await sb.from("diarias").insert(payload);
+
+      if(!insertError){
+        /* 3) Confirma pela leitura. */
+        const ok=await loadTable("diarias");
+        if(ok){
+          const confirmada=(D.diarias||[]).find(mesmaDiaria);
+          if(confirmada){
+            saveLocalData();
+            renderAll();
+            return confirmada;
+          }
+        }
+      }else{
+        console.warn("Supabase recusou/confirmou parcialmente a diária:",insertError.message);
+      }
+    }catch(e){
+      console.warn("Erro ao registrar diária:",e);
+    }
+  }
+
+  /* Se não foi possível confirmar a nuvem, salva SOMENTE uma cópia local
+     pendente. A rotina de sincronização acima verifica primeiro se ela já
+     existe no servidor, evitando duplicação. */
   const localRow={
     ...row,
     id:"local_"+Date.now()+"_"+Math.random().toString(36).slice(2),
@@ -3814,10 +3867,9 @@ if(table==="diarias"){
   D.diarias.unshift(localRow);
   saveLocalData();
   renderAll();
-  toast("Diária salva neste aparelho. A sincronização será feita automaticamente.");
+  toast("Diária salva neste aparelho. Será sincronizada automaticamente.");
   return localRow;
 }
-
 const attempts=[
 payload
 ];
@@ -5356,9 +5408,11 @@ try{
     saveLocalData();
     closeM("diaM");
     renderAll();
-    toast(`Diária registrada: ${money(valorReal)}`);
+    toast(result._sync_pendente
+      ? `Diária registrada no aparelho: ${money(valorReal)}`
+      : `Diária registrada: ${money(valorReal)}`);
   }else{
-    toast("Não foi possível registrar a diária.");
+    toast("Não foi possível registrar a diária. Verifique o login.");
   }
 }catch(err){
   console.error("Erro ao registrar diária",err);
