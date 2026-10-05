@@ -10448,7 +10448,16 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     box.innerHTML=`<div class="card">
       <div class="row"><div><h3>${escE(o.nome)}</h3><small>${total} etapa(s)</small></div><strong class="gold">${avg}%</strong></div>
       <div class="progress"><i style="width:${avg}%"></i></div>
-      <div class="edCheckTopList"><div class="edCheckTopRow"><span>Total contratado</span><b>${moneyE(num(o.valor))}</b></div><div class="edCheckTopRow"><span>Total recebido</span><b class="green">${moneyE(receitaRateada)}</b></div><div class="edCheckTopRow"><span>Saldo a receber</span><b class="gold">${moneyE(Math.max(0,num(o.valor)-receitaRateada))}</b></div></div><div class="three" style="margin-top:10px"><div><small>Serviços distribuídos</small><b>${moneyE(somaServicos)}</b></div><div><small>Despesas nos checklists</small><b class="red">${moneyE(despRateada)}</b></div><div><small>Lucro</small><b class="${lucroRateado>=0?'green':'red'}">${moneyE(lucroRateado)}</b></div><div><small>Margem</small><b>${margemRateada.toFixed(1).replace('.',',')}%</b></div><div><small>Execução média</small><b>${avg}%</b></div></div>
+      <div class="edCheckTopList">
+        <div class="edCheckTopRow"><span>Total contratado</span><b>${moneyE(num(o.valor))}</b></div>
+        <div class="edCheckTopRow"><span>Total recebido</span><b class="green">${moneyE(receitaRateada)}</b></div>
+        <div class="edCheckTopRow"><span>Saldo a receber</span><b class="gold">${moneyE(Math.max(0,num(o.valor)-receitaRateada))}</b></div>
+        <div class="edCheckTopRow"><span>Serviços distribuídos</span><b>${moneyE(somaServicos)}</b></div>
+        <div class="edCheckTopRow"><span>Despesas nos checklists</span><b class="red">${moneyE(despRateada)}</b></div>
+        <div class="edCheckTopRow"><span>Lucro</span><b class="${lucroRateado>=0?'green':'red'}">${moneyE(lucroRateado)}</b></div>
+        <div class="edCheckTopRow"><span>Margem</span><b>${margemRateada.toFixed(1).replace('.',',')}%</b></div>
+        <div class="edCheckTopRow"><span>Execução média</span><b>${avg}%</b></div>
+      </div>
       ${itens.length?itens.map(item=>{
         const pct=normalizarChecklistPct(item.progresso??((item.concluida||item.concluido)?100:0));
         const st=checkStats(item);
@@ -12049,6 +12058,150 @@ try{
 
 /* Substitui a expressão de inicialização por uma restauração assíncrona.
    O listener original já está registrado; a função fica disponível antes do evento. */
+})();
+</script>
+
+<!-- EDIFIQ — CORREÇÃO FINAL: RECEITAS COM CHECKLIST + iOS STANDALONE -->
+<style id="edifiq-receita-checklist-ios-fix">
+  /* Nunca deixe o formulário de receita perder o foco durante a digitação. */
+  #finReceitaChecklistList{display:flex;flex-direction:column;gap:6px}
+  #finReceitaChecklistList .fin-check-row{margin:0!important;padding:10px 0!important;background:transparent!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important}
+  #finReceitaChecklistList .fin-check-row:last-child{border-bottom:0!important}
+  #finReceitaChecklistList input[type="text"]{font-size:16px!important;min-height:44px!important;padding:10px!important;box-sizing:border-box!important;touch-action:manipulation!important;-webkit-user-select:text!important;user-select:text!important}
+  #finReceitaChecklistList input[type="checkbox"]{touch-action:manipulation!important}
+  @media(max-width:759px){
+    #finM .modalBox{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))!important}
+    #finReceitaChecklistList .fin-check-row{padding:12px 0!important}
+    #finReceitaChecklistList .fin-check-row > div{grid-template-columns:minmax(0,1fr) 145px!important}
+  }
+
+  /* No app instalado, não use o blur/transparência do topo: isso é o que
+     costuma criar a faixa/sombra sobre o conteúdo no iPhone. */
+  @media(max-width:759px) and (display-mode:standalone){
+    html,body{background:#090b0e!important}
+    body{padding-top:0!important;box-shadow:none!important;text-shadow:none!important}
+    .top{background:#090b0e!important;background-image:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important;border-bottom:1px solid #252b33!important}
+    .wrap{padding-top:12px!important}
+    .pageTitle,.pageTitle *{text-shadow:none!important}
+    .btn,.card,.kpi,.homeAction,.homePrimary,.homeTool,.edifiqHomeMenuCard{box-shadow:none!important;text-shadow:none!important}
+    input,select,textarea,button{filter:none!important}
+  }
+  body.edifiq-ios-standalone .top{background:#090b0e!important;background-image:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important}
+</style>
+<script id="edifiq-receita-checklist-final-fix">
+(function(){
+  "use strict";
+  var state=window.__edifiqReceitaChecklistState||{};
+  window.__edifiqReceitaChecklistState=state;
+
+  function el(id){return document.getElementById(id)}
+  function key(){return String(el("oFin")?.value||"")}
+  function rememberCurrentDOM(){
+    var box=el("finReceitaChecklistList"), obra=key();
+    if(!box||!obra)return;
+    var map=state[obra]||(state[obra]={});
+    box.querySelectorAll("input[data-fin-check]").forEach(function(cb){
+      var id=String(cb.dataset.finCheck||"");
+      if(!id)return;
+      var inp=el("finCheckValor_"+id);
+      map[id]={checked:!!cb.checked,value:inp?String(inp.value||""):String(map[id]?.value||"")};
+    });
+  }
+  function getMap(){
+    var obra=key();
+    return obra?(state[obra]||(state[obra]={})):{};
+  }
+
+  window.receitaChecklistSelecionados=function(){
+    var box=el("finReceitaChecklistList"), obra=key();
+    if(!box||!obra)return [];
+    rememberCurrentDOM();
+    var validos=new Set((typeof checklistForObra==="function"?checklistForObra(obra):[]).map(function(c){return String(c.id)}));
+    var map=getMap(), out=[];
+    Object.keys(map).forEach(function(id){
+      if(!validos.has(String(id))||!map[id]?.checked)return;
+      var valor=typeof valorBR==="function"?valorBR(map[id].value):Number(map[id].value||0);
+      if(Number.isFinite(valor)&&valor>0)out.push({checklist_id:String(id),valor:valor});
+    });
+    return out;
+  };
+
+  window.atualizarReceitaChecklistResumo=function(){
+    var total=typeof valorBR==="function"?valorBR(el("vFin")?.value):Number(el("vFin")?.value||0);
+    var dist=window.receitaChecklistSelecionados();
+    var soma=dist.reduce(function(a,x){return a+Number(x.valor||0)},0);
+    var dif=total-soma;
+    if(el("finReceitaChecklistTotal"))el("finReceitaChecklistTotal").textContent=typeof money==="function"?money(soma):soma.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+    var status=el("finReceitaChecklistStatus");
+    if(status){
+      status.className="sub";
+      status.textContent=total>0?(Math.abs(dif)<0.01?"Distribuição completa: "+money(soma)+" de "+money(total)+".":"Distribuído: "+money(soma)+" de "+money(total)+". Falta distribuir: "+money(Math.max(0,dif))+"."):"Informe o valor da receita para distribuir.";
+      status.style.color=Math.abs(dif)<0.01?"var(--green,#3ddc84)":(soma>total?"var(--red,#ff5f56)":"");
+    }
+  };
+
+  window.atualizarReceitaChecklistDistribuicao=function(){
+    var wrap=el("finReceitaChecklistWrap"),list=el("finReceitaChecklistList"),status=el("finReceitaChecklistStatus"),semWrap=el("finReceitaSemChecklistWrap"),sem=el("finReceitaSemChecklist");
+    if(!wrap||!list)return;
+    rememberCurrentDOM();
+    var tipo=el("tFin")?.value||"entrada",obra=key(),semChecklist=!!sem?.checked;
+    if(semWrap)semWrap.classList.toggle("hidden",tipo!=="entrada");
+    wrap.classList.toggle("hidden",tipo!=="entrada"||semChecklist);
+    if(tipo!=="entrada"||semChecklist){list.innerHTML="";if(status)status.textContent=semChecklist?"Receita sem checklist: o valor ficará somente na obra selecionada.":"";if(el("finReceitaChecklistTotal"))el("finReceitaChecklistTotal").textContent=money(0);return;}
+    if(!obra){list.innerHTML='<div class="empty">Selecione uma obra para escolher os checklists da receita.</div>';if(status)status.textContent="";return;}
+    var itens=typeof checklistForObra==="function"?checklistForObra(obra):[];
+    if(!itens.length){list.innerHTML='<div class="empty">Esta obra ainda não possui checklists cadastrados. Você também pode marcar “Lançar receita sem checklist”.</div>';if(status)status.textContent="";return;}
+    var map=getMap();
+    list.innerHTML=itens.map(function(c){
+      var id=String(c.id),item=map[id]||{},v=item.value||"";
+      return '<div class="card fin-check-row">'+
+        '<div style="display:grid;grid-template-columns:minmax(0,1fr) 145px;gap:10px;align-items:center">'+
+          '<div style="display:flex;align-items:flex-start;gap:10px;min-width:0">'+
+            '<input data-fin-check="'+(typeof esc==='function'?esc(id):id)+'" type="checkbox" '+(item.checked?'checked':'')+' style="width:22px;height:22px;flex:0 0 22px;margin-top:2px">'+
+            '<span style="min-width:0"><b>'+esc(c.tarefa||c.descricao||"Etapa")+'</b><small class="sub" style="display:block">Serviço: '+money(c.valor||0)+' · Progresso: '+Number(c.progresso||0)+'%</small></span>'+ 
+          '</div>'+ 
+          '<div style="min-width:0"><small class="sub" style="display:block;margin-bottom:4px">Valor desta etapa</small><input id="finCheckValor_'+esc(id)+'" type="text" inputmode="decimal" autocomplete="off" value="'+esc(String(v))+'" placeholder="R$ 0,00"></div>'+ 
+        '</div></div>';
+    }).join("");
+    // Nenhum oninput chama a função que reconstrói a lista. O foco permanece no campo.
+    list.querySelectorAll("input[data-fin-check]").forEach(function(cb){
+      cb.addEventListener("change",function(){
+        var id=String(cb.dataset.finCheck||""),map=getMap(),inp=el("finCheckValor_"+id);
+        map[id]={checked:!!cb.checked,value:inp?String(inp.value||""):String(map[id]?.value||"")};
+        window.atualizarReceitaChecklistResumo();
+      });
+    });
+    list.querySelectorAll("input[id^='finCheckValor_']").forEach(function(inp){
+      inp.addEventListener("input",function(){
+        var id=String(inp.id).replace("finCheckValor_","");
+        var map=getMap();
+        map[id]={checked:!!el("finReceitaChecklistList")?.querySelector('input[data-fin-check="'+CSS.escape(id)+'"]')?.checked,value:String(inp.value||"")};
+        window.atualizarReceitaChecklistResumo();
+      });
+      inp.addEventListener("focus",function(){
+        try{inp.setSelectionRange(inp.value.length,inp.value.length)}catch(_){ }
+      });
+    });
+    window.atualizarReceitaChecklistResumo();
+  };
+
+  // Abertura da receita começa sempre limpa, sem apagar o restante do aplicativo.
+  var oldOpenFin=window.openFin;
+  window.openFin=function(){
+    state={};window.__edifiqReceitaChecklistState=state;
+    if(typeof oldOpenFin==="function")oldOpenFin();
+    // Garante que o modal esteja aberto antes da reconstrução final.
+    if(typeof openM==="function")openM("finM");
+    setTimeout(function(){window.atualizarReceitaChecklistDistribuicao()},0);
+  };
+
+  // Se o usuário mudar de obra/tipo, reconstrói somente a lista; enquanto digita,
+  // nenhuma reconstrução acontece.
+  document.addEventListener("change",function(e){
+    if(e.target?.id==="oFin"||e.target?.id==="tFin"||e.target?.id==="finReceitaSemChecklist"){
+      setTimeout(function(){window.atualizarReceitaChecklistDistribuicao()},0);
+    }
+  },true);
 })();
 </script>
 </body>
