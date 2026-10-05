@@ -3647,7 +3647,7 @@ async function loadCloud(){
   saveSafeSnapshot('antes da sincronização com a nuvem');
   saveLocalData();
   let okCount=0;
-  for(const table of ['obras','funcionarios','diarias','gastos','pagamentos','checklist','documentos','faltas']){
+  for(const table of ['obras','funcionarios','diarias','gastos','pagamentos','checklist','documentos','faltas','presencas']){
     if(await loadTable(table)) okCount++;
   }
   mergeLocal();
@@ -3667,7 +3667,7 @@ async function loadCloud(){
 
 async function retryLocalCloudRows(){
   if(!sb||!user?.id||!navigator.onLine) return;
-  const tables=['obras','funcionarios','diarias','gastos','pagamentos','checklist','faltas','documentos'];
+  const tables=['obras','funcionarios','diarias','gastos','pagamentos','checklist','faltas','presencas','documentos'];
   for(const table of tables){
     const rows=Array.isArray(D[table])?D[table]:[];
     const locals=rows.filter(r=>String(r?.id||'').startsWith('local_'));
@@ -6529,11 +6529,22 @@ function openPresenca(funcId=null){
   $("presData").value=today(); $("presStatus").value="presente"; $("presObs").value="";
   openM("presencaM");
 }
-function savePresenca(e){
+async function savePresenca(e){
   e.preventDefault(); ensurePresencas();
-  const funcionario_id=$("presFunc").value; if(!funcionario_id){toast("Selecione o funcionário.");return;}
-  const row={id:"pres_"+Date.now()+"_"+Math.random().toString(36).slice(2),funcionario_id,obra_id:$("presObra").value||getFuncObra(funcionario_id)||null,data:$("presData").value||today(),status:$("presStatus").value||"presente",observacao:$("presObs").value.trim(),created_at:new Date().toISOString()};
-  D.presencas.unshift(row); saveLocalData(); closeM("presencaM"); renderAll(); toast("Presença registrada.");
+  const funcionario_id=$("presFunc").value;
+  if(!funcionario_id){toast("Selecione o funcionário.");return;}
+  const row={
+    funcionario_id,
+    obra_id:$("presObra").value||getFuncObra(funcionario_id)||null,
+    data:$("presData").value||today(),
+    status:$("presStatus").value||"presente",
+    observacao:$("presObs").value.trim()
+  };
+  const result=await insertRow("presencas",row);
+  if(!result)return;
+  closeM("presencaM");
+  renderAll();
+  toast("Presença registrada e salva.");
 }
 function getPeriodDates(days){
   const fim=new Date(); fim.setHours(0,0,0,0); const ini=new Date(fim); ini.setDate(ini.getDate()-(Number(days)-1));
@@ -6798,7 +6809,7 @@ if(f){
 }
 
 $("faltaData").value=today();
-$("faltaTipo").value="falta";
+$("faltaTipo").value="sem_justificativa";
 $("faltaObs").value="";
 openM("faltaM");
 
@@ -6820,7 +6831,7 @@ box.innerHTML=items.map(x=>{
   const f=D.funcionarios.find(y=>String(y.id)===String(x.funcionario_id));
   const o=D.obras.find(y=>String(y.id)===String(x.obra_id));
   const tipo=x.tipo||"falta";
-  const label={falta:"Falta",justificada:"Falta justificada",atestado:"Atestado"}[tipo]||tipo;
+  const label={falta:"Falta sem justificativa",sem_justificativa:"Falta sem justificativa",justificada:"Falta com justificativa",atestado:"Atestado"}[tipo]||tipo;
   return `<div class="card">
     <div class="row">
       <div><b>${esc(f?.nome||"Funcionário")}</b><br><small>${esc(x.data||"")}</small></div>
@@ -6843,33 +6854,32 @@ function getFaltasFuncionario(funcId){
 
 async function saveFalta(e){
 
-e.preventDefault();
-const funcionario_id=$("faltaFunc").value;
-if(!funcionario_id){toast("Selecione o funcionário.");return;}
+  e.preventDefault();
+  const funcionario_id=$("faltaFunc").value;
+  if(!funcionario_id){toast("Selecione o funcionário.");return;}
 
-const row={
- id:"falta_"+Date.now()+"_"+Math.random().toString(36).slice(2),
- funcionario_id,
- obra_id:getFuncObra(funcionario_id)||null,
- data:$("faltaData").value||today(),
- tipo:(($("faltaTipo").value||"sem_justificativa")==="falta"?"sem_justificativa":$("faltaTipo").value),
- observacao:$("faltaObs").value.trim(),
- created_at:new Date().toISOString()
-};
+  const row={
+    funcionario_id,
+    obra_id:getFuncObra(funcionario_id)||null,
+    data:$("faltaData").value||today(),
+    tipo:$("faltaTipo").value||"sem_justificativa",
+    observacao:$("faltaObs").value.trim()
+  };
 
-D.faltas.unshift(row);
-saveLocalData();
-closeM("faltaM");
-renderAll();
-toast("Falta registrada.");
+  // Usa o mesmo mecanismo de persistência das demais tabelas.
+  // Antes, a falta era apenas inserida em D.faltas/localStorage; quando
+  // loadCloud() rodava, a coleção local era substituída pelos dados da
+  // nuvem e a falta recém-registrada desaparecia.
+  const result=await insertRow("faltas",row);
+  if(!result)return;
+
+  closeM("faltaM");
+  renderAll();
+  toast("Falta registrada e salva.");
 }
 
-function deleteFalta(id){
- if(!confirm("Excluir este registro de falta?"))return;
- D.faltas=D.faltas.filter(x=>String(x.id)!==String(id));
- saveLocalData();
- renderAll();
- toast("Registro excluído.");
+async function deleteFalta(id){
+  await removeRow("faltas",id);
 }
 
 /* =========================================================
