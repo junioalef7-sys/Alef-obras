@@ -4394,8 +4394,8 @@ const saldoReceber=Math.max(0,contrato-receita);
 
 /* Margem de lucro sobre o valor contratado.
    Ex.: resultado de R$ 20.000 em contrato de R$ 100.000 = 20%. */
-const margemLucro=receita>0
-  ? (resultado/receita)*100
+const margemLucro=contrato>0
+  ? (resultado/contrato)*100
   : 0;
 
 return{
@@ -4704,7 +4704,7 @@ function renderObras(){
   const aReceber=Math.max(0,contrato-recebido);
   const despesas=Number(f.despesas||0);
   const resultado=Number(f.resultado||0);
-  const margem=receita>0?(resultado/receita)*100:0;
+  const margem=contrato>0?(resultado/contrato)*100:0;
   const pctRecebido=contrato>0?Math.max(0,Math.min(100,(recebido/contrato)*100)):0;
   const totalCustos=Object.values(gc).reduce((a,v)=>a+Number(v||0),0);
   const custoMao=Number(f.mao||gc['Mão de obra']||0);
@@ -5685,7 +5685,6 @@ for(const item of processados){
         obra_id:obraId,checklist_id:checklistId,data,
         descricao:`[Mão de obra] ${descricao} - ${item.f.nome}${checklistId?` - ${checklistNome(checklistId)}`:""}`,
         valor:valorLancamento,fornecedor:item.f.nome,funcionario_id:item.id,
-        origem_diaria_id:grupo.source==="diaria"?grupo.diariaId:null,
         observacao:`Obra das diárias: ${nomeObra}. ${observacaoBase}`,categoria:"Mão de obra",status:"pago",data_pagamento:data
       });
       if(!result){falhaFuncionario=true;break;}
@@ -8331,7 +8330,7 @@ function renderDashboard(){
  const despesas=D.gastos.reduce((a,x)=>a+Number(x.valor||0),0);
  const resultado=entradas-despesas;
  const receber=D.obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0);
- const margem=receita>0?(resultado/receita)*100:0;
+ const margem=contratado>0?(resultado/contratado)*100:0;
  const andamento=D.obras.filter(o=>o.status==='em_andamento').length;
  const dias=new Set(D.diarias.map(d=>String(d.data||'')).filter(Boolean)).size;
  if($('kObras'))$('kObras').textContent=D.obras.length;
@@ -9135,7 +9134,7 @@ function renderAnalises(){
   const contrato=obras.reduce((a,o)=>a+Number(o.valor||0),0);
   const receita=obras.reduce((a,o)=>a+obraFinanceData(o.id).receita,0);
   const custos=obras.reduce((a,o)=>a+obraFinanceData(o.id).despesas,0);
-  const lucro=receita-custos, margem=receita>0?(lucro/receita)*100:0;
+  const lucro=receita-custos, margem=contrato>0?(lucro/contrato)*100:0;
   const receber=obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0);
      const obrasAndamento=obras.filter(o=>o.status==="em_andamento").length;
    if($("anObrasAndamento"))$("anObrasAndamento").textContent=obrasAndamento;
@@ -9200,7 +9199,7 @@ function renderResumoGeral(){
   const receber=Math.max(0,total-receita);
   // No resumo geral, lucro é o valor contratado menos os custos já realizados.
   const lucro=total-despesas;
-  const margem=receita>0?(lucro/receita)*100:0;
+  const margem=total>0?(lucro/total)*100:0;
   const andamento=obras.filter(o=>String(o.status)==='em_andamento').length;
   const concluidas=obras.filter(o=>String(o.status)==='concluida').length;
   const pausadas=obras.filter(o=>String(o.status)==='pausada').length;
@@ -11737,372 +11736,6 @@ body.edifiq-ios-standalone .edifiqDrawerScroll{
       document.body.classList.add("edifiq-ios-standalone");
     }
   }catch(_){}
-})();
-</script>
-
-
-<!-- EDIFIQ — correção final de cálculos, distribuição e persistência -->
-<style id="edifiq-final-correcoes">
-  /* Remove o Portal da Obra do menu, sem apagar os dados/módulo existente. */
-  .edifiqMenuItem.edifiq-hide-final{display:none!important}
-  .edifiqBackupQuickFinal{display:none!important}
-</style>
-<script id="edifiq-final-correcoes-script">
-(function(){
-  "use strict";
-  const $=id=>document.getElementById(id);
-  const N=v=>{
-    const n=Number(v);
-    return Number.isFinite(n)?n:0;
-  };
-  const cents=v=>Math.round(N(v)*100);
-  const moneySafe=v=>typeof money==="function"?money(v):new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(N(v));
-
-  /*
-   * 1) CÁLCULO FINANCEIRO ÚNICO
-   * - Receita = somente pagamentos da obra.
-   * - Despesa = somente gastos da obra.
-   * - Lucro = receita - despesas.
-   * - Margem = lucro / receita (margem de lucro real).
-   * - Percentuais de custos continuam sendo calculados sobre o contrato.
-   * - Cada lançamento pertence a uma única obra; não existe rateio automático
-   *   entre obras.
-   */
-  window.obraFinanceData=function(obraId){
-    const obra=(window.D?.obras||[]).find(o=>String(o.id)===String(obraId));
-    const contrato=Math.max(0,N(obra?.valor));
-    const pagamentos=(window.D?.pagamentos||[]).filter(x=>{
-      const id=typeof recordObraId==="function"?recordObraId(x):(x?.obra_id??"");
-      return String(id)===String(obraId);
-    });
-    const gastos=(window.D?.gastos||[]).filter(x=>{
-      const id=typeof recordObraId==="function"?recordObraId(x):(x?.obra_id??"");
-      return String(id)===String(obraId);
-    });
-
-    const soma=(arr)=>arr.reduce((a,x)=>a+Math.max(0,N(x?.valor)),0);
-    const receita=soma(pagamentos);
-    const despesas=soma(gastos);
-    const resultado=receita-despesas;
-    const margemLucro=receita>0?(resultado/receita)*100:0;
-
-    const porCategoria=(fn)=>gastos.filter(fn).reduce((a,x)=>a+Math.max(0,N(x?.valor)),0);
-    const sub=(x)=>typeof gastoSubcategoria==="function"?gastoSubcategoria(x):String(x?.categoria||"Outros");
-    const material=porCategoria(x=>sub(x)==="Material");
-    const mao=porCategoria(x=>sub(x)==="Mão de obra");
-    const terceirizado=porCategoria(x=>sub(x)==="Serviço terceirizado");
-    const combustivel=porCategoria(x=>sub(x)==="Combustível");
-    const locacao=porCategoria(x=>sub(x)==="Locação");
-    const ferramentasEquipamentos=porCategoria(x=>sub(x)==="Ferramentas e equipamentos");
-    const transporte=porCategoria(x=>sub(x)==="Transporte");
-
-    const outros=Math.max(0,despesas-material-mao-terceirizado-combustivel-locacao-ferramentasEquipamentos-transporte);
-    const saldoReceber=Math.max(0,contrato-receita);
-    const saldoContrato=contrato-despesas;
-
-    return {
-      contrato,receita,material,mao,terceirizado,outros,despesas,
-      resultado,margemLucro,saldoContrato,saldoReceber,
-      combustivel,locacao,ferramentasEquipamentos,transporte
-    };
-  };
-
-  window.percentContrato=function(valor,contrato){
-    const c=N(contrato);
-    if(c<=0)return 0;
-    return Math.max(0,N(valor)/c*100);
-  };
-  window.pctText=function(valor,contrato){
-    const c=N(contrato);
-    return c>0?window.percentContrato(valor,c).toFixed(1)+"%":"—";
-  };
-
-  /*
-   * 2) PROGRESSO DA OBRA
-   * Usa o valor dos serviços dos checklists quando eles têm valor.
-   * Se não houver valores nos checklists, usa a quantidade de etapas.
-   */
-  window.obraProgress=function(obra){
-    const itens=(window.D?.checklist||[]).filter(x=>String(x?.obra_id??x?.obraId??"")===String(obra?.id));
-    if(!itens.length)return String(obra?.status||"") === "concluida" ? 100 : 0;
-
-    const valorTotal=itens.reduce((a,x)=>a+Math.max(0,N(x?.valor)),0);
-    if(valorTotal>0){
-      const executado=itens.reduce((a,x)=>{
-        const p=Math.max(0,Math.min(100,N(x?.progresso??((x?.concluida||x?.concluido)?100:0))));
-        return a+N(x?.valor)*p/100;
-      },0);
-      return Math.round(Math.max(0,Math.min(100,executado/valorTotal*100)));
-    }
-
-    const soma=itens.reduce((a,x)=>a+Math.max(0,Math.min(100,N(x?.progresso??((x?.concluida||x?.concluido)?100:0)))),0);
-    return Math.round(soma/itens.length);
-  };
-
-  /*
-   * 3) DISTRIBUIÇÃO: nunca dividir uma despesa entre obras.
-   * Se o registro possui obra_id, ele pertence 100% àquela obra.
-   * Diárias já registradas em obras diferentes continuam separadas por registro.
-   */
-  window.edifiqDistribuicaoObra=function(rows,obraId){
-    return (Array.isArray(rows)?rows:[]).filter(x=>{
-      const id=typeof recordObraId==="function"?recordObraId(x):(x?.obra_id??"");
-      return String(id)===String(obraId);
-    });
-  };
-
-  /*
-   * 4) SALVAMENTO LOCAL ROBUSTO
-   * O código anterior montava um payload fixo e podia deixar de persistir
-   * tabelas adicionadas dinamicamente (por exemplo servicosExtras/adiantamentos).
-   * Agora todas as coleções presentes em D são salvas individualmente.
-   */
-  window.saveLocalData=function(){
-    const data={};
-    const keys=Object.keys(window.D||{});
-    let algum=false;
-
-    for(const key of keys){
-      const value=window.D[key];
-      if(Array.isArray(value))data[key]=value;
-      else if(value && typeof value==="object")data[key]=value;
-    }
-
-    // Metadados auxiliares que ficam fora de D.
-    try{
-      data.__services_local=JSON.parse(localStorage.getItem(typeof SERVICE_KEY!=="undefined"?SERVICE_KEY:"edifiq_servicos_adicionais_v1")||"{}");
-    }catch(_){}
-
-    try{
-      localStorage.setItem("edifiq_local_v3",JSON.stringify(data));
-      algum=true;
-    }catch(e){
-      console.warn("EDIFIQ: cache principal não coube; mantendo backups por tabela.",e);
-    }
-
-    for(const [table,rows] of Object.entries(data)){
-      try{
-        localStorage.setItem("edifiq_local_v3__"+table,JSON.stringify(rows));
-        algum=true;
-      }catch(e){
-        console.warn("EDIFIQ: falha ao salvar tabela local",table,e);
-      }
-    }
-
-    // Também preserva as estruturas auxiliares usadas pelo financeiro/equipe.
-    try{
-      if(window.D?.servicosExtras!==undefined)
-        localStorage.setItem("edifiq_servicos_extras_v1",JSON.stringify(window.D.servicosExtras||[]));
-    }catch(e){console.warn(e)}
-    try{
-      if(window.D?.adiantamentos!==undefined)
-        localStorage.setItem("edifiq_adiantamentos_v1",JSON.stringify(window.D.adiantamentos||[]));
-    }catch(e){console.warn(e)}
-
-    return algum;
-  };
-
-  window.localData=function(){
-    const base={};
-    try{
-      const raw=localStorage.getItem("edifiq_local_v3");
-      const obj=raw?JSON.parse(raw):{};
-      if(obj&&typeof obj==="object")Object.assign(base,obj);
-    }catch(e){console.warn("EDIFIQ: leitura do cache principal falhou.",e)}
-
-    const keys=Object.keys(window.D||{});
-    for(const table of keys){
-      try{
-        const raw=localStorage.getItem("edifiq_local_v3__"+table);
-        if(!raw)continue;
-        const rows=JSON.parse(raw);
-        if(Array.isArray(rows)){
-          // Só substitui quando o backup da tabela é válido.
-          // Não usa "maior quantidade de registros" como critério, pois isso
-          // ressuscitava registros apagados e gerava somas erradas.
-          if(!Array.isArray(base[table]))base[table]=rows;
-        }else if(rows && typeof rows==="object" && !base[table])base[table]=rows;
-      }catch(e){console.warn("EDIFIQ: backup local inválido",table,e)}
-    }
-
-    // Recupera coleções auxiliares que versões anteriores não colocavam no payload.
-    try{
-      const raw=localStorage.getItem("edifiq_servicos_extras_v1");
-      if(raw && !Array.isArray(base.servicosExtras))base.servicosExtras=JSON.parse(raw);
-    }catch(_){}
-    try{
-      const raw=localStorage.getItem("edifiq_adiantamentos_v1");
-      if(raw && !Array.isArray(base.adiantamentos))base.adiantamentos=JSON.parse(raw);
-    }catch(_){}
-
-    return base;
-  };
-
-  /*
-   * 5) SINCRONIZAÇÃO SEGURA
-   * Primeiro preserva os dados locais; a nuvem não pode apagar silenciosamente
-   * uma coleção local que exista no aparelho.
-   */
-  window.loadCloud=async function(){
-    if(!window.sb||!window.user)return false;
-
-    const antes=typeof stateCounts==="function"?stateCounts():{};
-    try{saveLocalData();}catch(_){}
-
-    let ok=0;
-    const tabelas=["obras","funcionarios","diarias","gastos","pagamentos","checklist","documentos","faltas"];
-    for(const table of tabelas){
-      try{if(await loadTable(table))ok++;}catch(e){console.warn("EDIFIQ load",table,e)}
-    }
-
-    // Recupera registros locais pendentes e auxiliares sem apagar o que já existe.
-    try{mergeLocal();}catch(e){console.warn("EDIFIQ merge local",e)}
-    try{aplicarExclusoesPendentes();}catch(_){}
-    try{await retryEdifiqDeleteQueue();}catch(_){}
-    try{await retryEdifiqPendingUpdates();}catch(_){}
-    try{await retryLocalCloudRows();}catch(_){}
-    try{aplicarExclusoesPendentes();}catch(_){}
-
-    // Só considera perda real quando a mesma coleção local não contém mais os registros.
-    try{
-      if(ok && typeof protectAgainstUnexpectedLoss==="function")protectAgainstUnexpectedLoss(antes,{});
-    }catch(_){}
-
-    try{limparChecklistsOrfaos();}catch(_){}
-    try{fillSelectors();}catch(_){}
-    try{saveLocalData();}catch(_){}
-    return ok>0;
-  };
-
-  /*
-   * 6) NOME DO USUÁRIO NO MENU
-   */
-  window.edifiqAtualizarNomeMenu=function(){
-    const meta=(window.user&&window.user.user_metadata)||{};
-    let nome=meta.nome||meta.name||meta.full_name||meta.display_name||"";
-    if(!nome){
-      try{nome=localStorage.getItem("edifiq_nome_usuario")||""}catch(_){}
-    }
-    if(!nome && window.user?.email)nome=String(window.user.email).split("@")[0];
-    nome=String(nome||"Usuário").trim();
-
-    const el=$("drawerUserName");
-    if(el)el.textContent=nome;
-    const em=el?.parentElement?.querySelector("em");
-    if(em)em.remove();
-    const av=document.querySelector(".edifiqAvatar");
-    if(av){
-      const partes=nome.split(/\s+/).filter(Boolean);
-      av.textContent=(partes[0]?.[0]||"U")+(partes.length>1?(partes[partes.length-1]?.[0]||""):"");
-    }
-  };
-
-  /*
-   * 7) BACKUP: somente salvamento/recuperação, sem os antigos acessos rápidos.
-   */
-  window.openBackupConfig=function(){
-    let m=$("edBackupConfigModal");
-    if(!m){
-      m=document.createElement("div");
-      m.id="edBackupConfigModal";
-      m.className="modal";
-      document.body.appendChild(m);
-    }
-    const localOk=(()=>{try{return !!localStorage.getItem("edifiq_local_v3")}catch(_){return false}})();
-    m.innerHTML=`<div class="modalBox" style="max-width:720px;max-height:90vh;overflow:auto">
-      <div class="modalHead">
-        <div><h2>💾 Salvamento e Backup</h2><p class="sub">Proteção dos dados do EDIFIQ neste aparelho e recuperação por arquivo.</p></div>
-        <button class="x" onclick="closeM('edBackupConfigModal')">×</button>
-      </div>
-      <div class="card">
-        <h3>💾 Salvamento automático</h3>
-        <p class="sub">Os dados são salvos localmente após alterações e sincronizados com a nuvem quando disponível.</p>
-        <div class="listActions">
-          <button class="btn gold" type="button" onclick="saveLocalData();toast('Dados salvos neste aparelho.');">💾 Salvar agora</button>
-          <span class="sub" style="align-self:center">${localOk?"Salvamento local disponível":"Aguardando primeiro salvamento"}</span>
-        </div>
-      </div>
-      <div class="card">
-        <h3>🛡️ Backup completo</h3>
-        <p class="sub">Faça uma cópia completa antes de trocar de aparelho ou realizar alterações importantes.</p>
-        <div class="listActions">
-          <button class="btn gold" type="button" onclick="saveLocalData();exportFull()">⬇️ Fazer backup completo</button>
-          <button class="btn" type="button" onclick="$('backupImportFile').click()">📥 Restaurar/importar backup</button>
-          <input id="backupImportFile" accept=".json,application/json" onchange="importRelatorioData(event)" style="display:none" type="file"/>
-        </div>
-      </div>
-      <div class="note">O backup é separado da exclusão de dados. Nada é apagado ao salvar ou exportar.</div>
-    </div>`;
-    m.classList.add("open");
-  };
-
-  function ocultarPortalMenu(){
-    document.querySelectorAll(".edifiqMenuItem").forEach(btn=>{
-      const txt=String(btn.textContent||"").trim();
-      const click=String(btn.getAttribute("onclick")||"");
-      if(/Portal da Obra/i.test(txt)||/edifiqPortalOpenSelected/i.test(click)){
-        btn.classList.add("edifiq-hide-final");
-      }
-    });
-    const premium=document.querySelector(".edifiqAccountText em");
-    if(premium)premium.remove();
-    edifiqAtualizarNomeMenu();
-  }
-
-  function instalarObservadores(){
-    ocultarPortalMenu();
-    const menu=$("menuPasta");
-    if(menu && window.MutationObserver){
-      new MutationObserver(ocultarPortalMenu).observe(menu,{childList:true,subtree:true});
-    }
-  }
-
-  // Reaplica a correção do nome depois de login/sessão e após qualquer renderização.
-  const oldRenderAll=window.renderAll;
-  if(typeof oldRenderAll==="function"){
-    window.renderAll=function(){
-      const r=oldRenderAll.apply(this,arguments);
-      try{ocultarPortalMenu()}catch(_){}
-      return r;
-    };
-  }
-
-  // Evita chamadas duplicadas de pagamento por duplo clique.
-  let pagamentoEmAndamento=false;
-  const oldSavePagamento=window.savePagamentoEquipe;
-  if(typeof oldSavePagamento==="function"){
-    window.savePagamentoEquipe=async function(e){
-      if(pagamentoEmAndamento){
-        if(e?.preventDefault)e.preventDefault();
-        return;
-      }
-      pagamentoEmAndamento=true;
-      try{return await oldSavePagamento.apply(this,arguments)}
-      finally{pagamentoEmAndamento=false}
-    };
-  }
-
-  // Marca despesas de diárias novas com a origem para evitar duplicação futura.
-  // Não altera registros antigos nem redistribui valores já lançados.
-  const oldInsertRow=window.insertRow;
-  if(typeof oldInsertRow==="function"){
-    window.insertRow=async function(table,row){
-      if(table==="gastos" && row && row.origem_diaria_id){
-        const existe=(window.D?.gastos||[]).find(g=>String(g.origem_diaria_id||"")===String(row.origem_diaria_id));
-        if(existe){
-          toast("Esta diária já foi lançada no financeiro desta obra.");
-          return existe;
-        }
-      }
-      return await oldInsertRow.apply(this,arguments);
-    };
-  }
-
-  document.addEventListener("DOMContentLoaded",instalarObservadores);
-  setTimeout(instalarObservadores,0);
-  setTimeout(instalarObservadores,500);
-  setTimeout(instalarObservadores,1500);
-  window.addEventListener("load",instalarObservadores);
 })();
 </script>
 
