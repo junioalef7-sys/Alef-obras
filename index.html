@@ -566,6 +566,24 @@ table{width:100%;border-collapse:collapse}
   .wrap{padding-top:22px}
 }
 
+
+/* EDIFIQ — Checklist em lista, sem blocos de métricas */
+.checkMetricList{margin-top:12px;border-top:1px solid var(--line)}
+.checkMetricRow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.checkMetricRow:last-child{border-bottom:0}
+.checkMetricRow span{color:var(--muted);font-size:14px}
+.checkMetricRow b{font-size:16px;text-align:right;white-space:nowrap}
+.fin-check-row{background:#0d1115;box-shadow:none}
+.fin-check-row label{color:var(--text)!important;font-size:inherit!important}
+.fin-check-row input[type="text"]{width:130px!important;max-width:130px!important;padding:10px!important}
+@media(max-width:600px){
+  .checkMetricRow{padding:10px 0}
+  .checkMetricRow span{font-size:13px}
+  .checkMetricRow b{font-size:15px}
+  .fin-check-row>div{grid-template-columns:minmax(0,1fr)!important}
+  .fin-check-row>div>div{min-width:0!important}
+  .fin-check-row input[type="text"]{width:100%!important;max-width:none!important}
+}
 </style>
 <style>
 .homeQuickGridFinal{grid-template-columns:1fr 1fr!important;max-width:900px;margin:14px auto}
@@ -1894,7 +1912,7 @@ body{min-height:100vh;min-height:100dvh}
 <div class="modal" id="presencaM"><div class="modalBox"><div class="modalHead"><h2>Registrar presença</h2><button class="x" onclick="closeM('presencaM')">×</button></div><form onsubmit="savePresenca(event)"><div class="formGrid"><label>Funcionário<select id="presFunc" required><option value="">Selecione</option></select></label><label>Obra<select id="presObra"><option value="">Selecione</option></select></label><label>Data<input id="presData" type="date" required></label><label>Status<select id="presStatus"><option value="presente">Presente</option><option value="justificada">Ausência justificada</option><option value="injustificada">Ausência injustificada</option></select></label><label class="full">Observação<textarea id="presObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('presencaM')" type="button">Cancelar</button><button class="btn primary">Salvar presença</button></div></form></div></div>
 <div class="modal" id="faltaM"><div class="modalBox"><div class="modalHead"><h2>Registrar falta</h2><button class="x" onclick="closeM('faltaM')">×</button></div><form onsubmit="saveFalta(event)"><div class="formGrid"><label>Funcionário<select id="faltaFunc" required=""><option value="">Selecione</option></select></label><label>Data<input id="faltaData" required="" type="date"/></label><label>Tipo<select id="faltaTipo"><option value="sem_justificativa">Falta sem justificativa</option><option value="justificada">Falta com justificativa</option><option value="atestado">Atestado</option></select></label><label>Observação<input id="faltaObs"/></label></div><div class="formActions"><button class="btn" onclick="closeM('faltaM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
 <div class="modal" id="checkM"><div class="modalBox"><div class="modalHead"><h2>Adicionar etapa</h2><button class="x" onclick="closeM('checkM')">×</button></div><form onsubmit="saveCheck(event)"><div class="formGrid"><label>Obra<select id="checkObra" required=""><option value="">Selecione</option></select></label><label>Valor do serviço<input id="checkValor" type="number" step="0.01" min="0" value="0" placeholder="R$ 0,00"></label><label class="full">Etapa<input id="checkDesc" placeholder="Ex.: Reboco concluído" required=""/></label></div><div class="formActions"><button class="btn" onclick="closeM('checkM')" type="button">Cancelar</button><button class="btn primary">Adicionar</button></div></form></div></div>
-<div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin" onchange="atualizarCategoriaFinanceira();atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin" onchange="atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" step="0.01" type="number" oninput="atualizarReceitaChecklistResumo()"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finReceitaSemChecklistWrap" class="full hidden"><label class="edFinSemChecklist"><input id="finReceitaSemChecklist" type="checkbox" onchange="atualizarReceitaChecklistDistribuicao()"><span><b>Lançar receita sem checklist</b><small class="sub" style="display:block;margin-top:3px">A receita ficará vinculada somente à obra selecionada, sem dividir valor entre serviços.</small></span></label></div><div id="finReceitaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><div class="row"><div><b>Distribuir receita nos checklists da obra</b><small class="sub" style="display:block;margin-top:4px">Selecione um ou vários checklists e informe quanto da entrada pertence a cada um.</small></div><b id="finReceitaChecklistTotal" class="gold">R$ 0,00</b></div><div id="finReceitaChecklistList" style="margin-top:10px"></div><div id="finReceitaChecklistStatus" class="sub" style="margin-top:8px"></div></div></div><div id="finDespesaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><label style="display:block"><b>Checklist da despesa</b><select id="finDespesaChecklist"><option value="">Sem checklist</option></select><small class="sub" style="display:block;margin-top:4px">A despesa ficará vinculada somente ao checklist da obra selecionada.</small></label></div></div><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Combustível</option><option>Mão de obra</option><option>Locação</option><option>Serviço terceirizado</option><option value="Adiantamento">Vale</option><option>Ferramentas e equipamentos</option><option>Transporte</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
+<div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin" onchange="atualizarCategoriaFinanceira();atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin" onchange="atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" type="text" inputmode="decimal" autocomplete="off" oninput="atualizarReceitaChecklistResumo()"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finReceitaSemChecklistWrap" class="full hidden"><label class="edFinSemChecklist"><input id="finReceitaSemChecklist" type="checkbox" onchange="atualizarReceitaChecklistDistribuicao()"><span><b>Lançar receita sem checklist</b><small class="sub" style="display:block;margin-top:3px">A receita ficará vinculada somente à obra selecionada, sem dividir valor entre serviços.</small></span></label></div><div id="finReceitaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><div class="row"><div><b>Distribuir receita nos checklists da obra</b><small class="sub" style="display:block;margin-top:4px">Selecione um ou vários checklists e informe quanto da entrada pertence a cada um.</small></div><b id="finReceitaChecklistTotal" class="gold">R$ 0,00</b></div><div id="finReceitaChecklistList" style="margin-top:10px"></div><div id="finReceitaChecklistStatus" class="sub" style="margin-top:8px"></div></div></div><div id="finDespesaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><label style="display:block"><b>Checklist da despesa</b><select id="finDespesaChecklist"><option value="">Sem checklist</option></select><small class="sub" style="display:block;margin-top:4px">A despesa ficará vinculada somente ao checklist da obra selecionada.</small></label></div></div><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Combustível</option><option>Mão de obra</option><option>Locação</option><option>Serviço terceirizado</option><option value="Adiantamento">Vale</option><option>Ferramentas e equipamentos</option><option>Transporte</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
 <div class="modal" id="fotoM"><div class="modalBox"><div class="modalHead"><h2>Relatório fotográfico</h2><button class="x" onclick="closeM('fotoM')">×</button></div><form onsubmit="saveFoto(event)"><div class="formGrid"><label>Obra<select id="fotoObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="fotoData" type="date"/></label><label class="full">Título<input id="fotoTitulo"/></label><label class="full">Fotos<input accept="image/*" id="fotoFiles" multiple="" required="" type="file"/></label><label class="full">Observação<textarea id="fotoObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('fotoM')" type="button">Cancelar</button><button class="btn primary">Salvar fotos</button></div></form></div></div>
 <div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Vales</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
 <div class="pay-summary"><div><small>Diárias pendentes</small><b id="pagDiariasTotal">R$ 0,00</b></div></div><div class="formActions"><button class="btn" onclick="closeM('pagEquipeM')" type="button">Cancelar</button><button class="btn primary">Processar pagamento</button></div></form></div></div>
@@ -5841,6 +5859,15 @@ function atualizarDespesaChecklistDistribuicao(){
   if(atual && itens.some(c=>String(c.id)===String(atual)))sel.value=atual;
 }
 
+function valorBR(v){
+  if(v===null||v===undefined||v==="")return 0;
+  let x=String(v).trim().replace(/R\\$\\s?/gi,"");
+  if(x.includes(",")&&x.includes(".")) x=x.replace(/\\./g,"").replace(",",".");
+  else if(x.includes(",")) x=x.replace(",",".");
+  const n=Number(x);
+  return Number.isFinite(n)?n:0;
+}
+
 function receitaChecklistSelecionados(){
   const box=$("finReceitaChecklistList");
   if(!box)return [];
@@ -5851,7 +5878,7 @@ function receitaChecklistSelecionados(){
     const id=String(cb.dataset.finCheck||"");
     if(!id||!validos.has(id))return;
     const input=$(`finCheckValor_${id}`);
-    const valor=Number(input?.value||0);
+    const valor=valorBR(input?.value);
     if(Number.isFinite(valor)&&valor>0)mapa.set(id,valor);
   });
   return [...mapa.entries()].map(([checklist_id,valor])=>({checklist_id,valor}));
@@ -5882,11 +5909,18 @@ function atualizarReceitaChecklistDistribuicao(){
   const atuais=new Map(receitaChecklistSelecionados().map(x=>[String(x.checklist_id),x.valor]));
   list.innerHTML=itens.map(c=>{
     const id=String(c.id), v=atuais.get(id);
-    return `<label class="card" style="display:flex;align-items:center;gap:10px;margin:6px 0;padding:10px;cursor:pointer">
-      <input data-fin-check="${esc(id)}" type="checkbox" ${v>0?"checked":""} onchange="atualizarReceitaChecklistResumo()" style="width:20px;height:20px;flex:0 0 20px">
-      <span style="flex:1"><b>${esc(c.tarefa||c.descricao||"Etapa")}</b><small class="sub" style="display:block">Serviço: ${money(c.valor||0)} · Progresso: ${Number(c.progresso||0)}%</small></span>
-      <input id="finCheckValor_${esc(id)}" type="number" min="0" step="0.01" value="${v>0?esc(String(v)):""}" placeholder="R$ 0,00" onclick="event.stopPropagation()" oninput="atualizarReceitaChecklistResumo()" style="max-width:130px">
-    </label>`;
+    return `<div class="card fin-check-row" style="margin:6px 0;padding:10px">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center">
+        <label style="display:flex;align-items:flex-start;gap:10px;min-width:0;margin:0;cursor:pointer">
+          <input data-fin-check="${esc(id)}" type="checkbox" ${v>0?"checked":""} onchange="atualizarReceitaChecklistResumo()" style="width:20px;height:20px;flex:0 0 20px;margin-top:2px">
+          <span style="min-width:0"><b>${esc(c.tarefa||c.descricao||"Etapa")}</b><small class="sub" style="display:block">Serviço: ${money(c.valor||0)} · Progresso: ${Number(c.progresso||0)}%</small></span>
+        </label>
+        <div style="min-width:120px">
+          <small class="sub" style="display:block;margin-bottom:4px">Valor desta etapa</small>
+          <input id="finCheckValor_${esc(id)}" type="text" inputmode="decimal" autocomplete="off" value="${v>0?esc(String(v)):""}" placeholder="R$ 0,00" oninput="atualizarReceitaChecklistResumo()" style="width:130px;max-width:130px">
+        </div>
+      </div>
+    </div>`;
   }).join("");
   atuais.forEach((v,id)=>{
     const cb=list.querySelector(`input[data-fin-check="${CSS.escape(id)}"]`); const inp=$("finCheckValor_"+id);
@@ -5896,7 +5930,7 @@ function atualizarReceitaChecklistDistribuicao(){
 }
 
 function atualizarReceitaChecklistResumo(){
-  const total=Number($("vFin")?.value||0);
+  const total=valorBR($("vFin")?.value);
   const dist=receitaChecklistSelecionados();
   const soma=dist.reduce((a,x)=>a+Number(x.valor||0),0);
   const dif=total-soma;
@@ -5922,9 +5956,7 @@ const descricaoBase=
 $("dFin").value.trim();
 
 const valor=
-Number(
-$("vFin").value||0
-);
+valorBR($("vFin").value);
 
 if(!descricaoBase){
 
@@ -6986,10 +7018,29 @@ function renderChecklist(){
       <div class="row"><div style="display:flex;align-items:center;gap:8px;flex:1"><input type="checkbox" ${pct>=100?'checked':''} onchange="toggleChecklist('${item.id}',this.checked)"><span><b>${esc(item.tarefa||item.descricao||'Etapa')}</b><small style="display:block;color:var(--muted)">Serviço: ${money(valor)}</small></span></div><span class="checkPercent" id="cp_${item.id}">${pct}%</span><button class="mini" onclick="editarChecklist('${item.id}')">Editar</button><button class="mini" onclick="editarValorChecklist('${item.id}')">Valor</button><button class="mini" onclick="removeRow('checklist','${item.id}')">Excluir</button></div>
       <div class="checkProgressBox"><div class="progress"><i id="cbar_${item.id}" style="width:${pct}%"></i></div></div>
       <div class="checkProgressControls"><input id="cpr_${item.id}" class="progressInput" type="range" min="0" max="100" step="1" value="${pct}" aria-label="Progresso da etapa" oninput="previewChecklistPct('${item.id}',this.value)" onchange="setChecklistProgress('${item.id}',this.value)"><input id="cpn_${item.id}" class="progressNumber" type="number" min="0" max="100" step="1" value="${pct}" aria-label="Porcentagem da etapa" oninput="previewChecklistPct('${item.id}',this.value)" onchange="setChecklistProgressFromNumber('${item.id}',this.value)" onblur="setChecklistProgressFromNumber('${item.id}',this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();setChecklistProgressFromNumber('${item.id}',this.value);this.blur();}"></div>
-      <div class="three" style="margin-top:10px"><div><small>Recebido</small><b class="green">${money(r.recebido)}</b></div><div><small>Saldo a receber</small><b class="gold">${money(r.saldoReceber)}</b></div><div><small>Despesas</small><b class="red">${money(r.despesas)}</b></div><div><small>Lucro</small><b class="${r.lucro>=0?'green':'red'}">${money(r.lucro)}</b></div><div><small>Margem</small><b>${r.margem.toFixed(1).replace('.',',')}%</b></div><div><small>Executado</small><b>${pct}%</b></div></div>
+      <div class="checkMetricList">
+        <div class="checkMetricRow"><span>Recebido</span><b class="green">${money(r.recebido)}</b></div>
+        <div class="checkMetricRow"><span>Saldo a receber</span><b class="gold">${money(r.saldoReceber)}</b></div>
+        <div class="checkMetricRow"><span>Despesas</span><b class="red">${money(r.despesas)}</b></div>
+        <div class="checkMetricRow"><span>Lucro</span><b class="${r.lucro>=0?'green':'red'}">${money(r.lucro)}</b></div>
+        <div class="checkMetricRow"><span>Margem</span><b>${r.margem.toFixed(1).replace('.',',')}%</b></div>
+        <div class="checkMetricRow"><span>Executado</span><b>${pct}%</b></div>
+      </div>
     </div>`;
   }).join('');
-  box.innerHTML=`<div class="card"><div class="row"><div><h3>${esc(o.nome)}</h3><small>${total} etapa(s)</small></div><strong class="gold">${avg}%</strong></div><div class="progress"><i style="width:${avg}%"></i></div><div class="three" style="margin-top:10px"><div><small>Contrato</small><b>${money(contrato)}</b></div><div><small>Recebido</small><b class="green">${money(recebidaObra)}</b></div><div><small>Despesas</small><b class="red">${money(despesasObra)}</b></div><div><small>Lucro</small><b class="${lucroObra>=0?'green':'red'}">${money(lucroObra)}</b></div><div><small>Margem</small><b>${margemObra.toFixed(1).replace('.',',')}%</b></div><div><small>Execução</small><b>${avg}%</b></div></div>${rows||'<div class="empty">Nenhuma etapa cadastrada para esta obra.</div>'}<div class="listActions"><button class="btn gold" onclick="openCheckForObra('${o.id}')">＋ Adicionar etapa</button></div></div>`;
+  box.innerHTML=`<div class="card"><div class="row"><div><h3>${esc(o.nome)}</h3><small>${total} etapa(s)</small></div><strong class="gold">${avg}%</strong></div><div class="progress"><i style="width:${avg}%"></i></div>
+    <div class="checkMetricList checkObraResumoList">
+      <div class="checkMetricRow"><span>Total contratado</span><b>${money(contrato)}</b></div>
+      <div class="checkMetricRow"><span>Total recebido</span><b class="green">${money(recebidaObra)}</b></div>
+      <div class="checkMetricRow"><span>Saldo a receber</span><b class="gold">${money(Math.max(0,contrato-recebidaObra))}</b></div>
+      <div class="checkMetricRow"><span>Serviços distribuídos</span><b>${money(itens.reduce((a,x)=>a+checklistValor(x),0))}</b></div>
+      <div class="checkMetricRow"><span>Despesas nos checklists</span><b class="red">${money(itens.reduce((a,x)=>a+checklistFinanceResumo(o.id,x.id).despesas,0))}</b></div>
+      <div class="checkMetricRow"><span>Lucro</span><b class="${lucroObra>=0?'green':'red'}">${money(lucroObra)}</b></div>
+      <div class="checkMetricRow"><span>Margem</span><b>${margemObra.toFixed(1).replace('.',',')}%</b></div>
+      <div class="checkMetricRow"><span>Execução média</span><b>${avg}%</b></div>
+    </div>
+    ${rows||'<div class="empty">Nenhuma etapa cadastrada para esta obra.</div>'}
+    <div class="listActions"><button class="btn gold" onclick="openCheckForObra('${o.id}')">＋ Adicionar etapa</button></div></div>`;
 }
 function editarValorChecklist(id){
   const item=D.checklist.find(x=>String(x.id)===String(id)); if(!item)return;
