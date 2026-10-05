@@ -923,7 +923,7 @@ body{min-height:100vh;min-height:100dvh}
   #folhaDetalhes .folhaTable tbody td:nth-child(2):before{content:'Obra'}
   #folhaDetalhes .folhaTable tbody td:nth-child(3):before{content:'Diárias'}
   #folhaDetalhes .folhaTable tbody td:nth-child(4):before{content:'Bruto'}
-  #folhaDetalhes .folhaTable tbody td:nth-child(5):before{content:'Vale'}
+  #folhaDetalhes .folhaTable tbody td:nth-child(5):before{content:'Adiantamento'}
   #folhaDetalhes .folhaTable tbody td:nth-child(6):before{content:'Líquido'}
   #folhaDetalhes .folhaTable tbody td:nth-child(7):before{content:'Pago'}
   #folhaDetalhes .folhaTable tbody td:nth-child(8):before{content:'Pendente'}
@@ -1531,29 +1531,6 @@ body{min-height:100vh;min-height:100dvh}
 
 /* Relatórios: marca consistente com o aplicativo */
 
-
-.edConfigDataList{display:flex;flex-direction:column;gap:0;margin-top:8px}.edConfigDataRow{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--line)}.edConfigDataRow:first-child{border-top:0}.edConfigDataRow span{color:var(--muted);font-size:13px}.edConfigDataRow b{text-align:right;overflow-wrap:anywhere}@media(max-width:600px){.edConfigDataRow{align-items:flex-start;flex-direction:column;gap:4px}.edConfigDataRow b{text-align:left}}
-</style>
-<style id="edifiq-final-fixes">
-.edCheckTopList{display:flex;flex-direction:column;margin-top:12px;border-top:1px solid var(--line)}
-.edCheckTopRow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
-.edCheckTopRow span{color:var(--muted);font-size:13px}
-.edCheckTopRow b{font-size:15px;text-align:right;overflow-wrap:anywhere}
-.edConfigLoginList{display:flex;flex-direction:column;margin-top:8px}
-.edConfigLoginRow{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--line)}
-.edConfigLoginRow:first-child{border-top:0}
-.edConfigLoginRow span{color:var(--muted);font-size:13px}
-.edConfigLoginRow b{text-align:right;overflow-wrap:anywhere}
-@media(max-width:600px){.edCheckTopRow,.edConfigLoginRow{align-items:flex-start;flex-direction:column;gap:4px}.edCheckTopRow b,.edConfigLoginRow b{text-align:left}}
-.edFinSemChecklist{display:flex;align-items:center;gap:9px;padding:10px 0;border-top:1px solid var(--line);margin-top:8px}
-.edFinSemChecklist input{width:20px;height:20px;flex:0 0 20px}
-</style>
-<style id="edifiq-final-fixes">
-.edifiqAccountText em,.edHomePremium{display:none!important}
-.edifiqMenuItem[data-edifiq-hidden="1"]{display:none!important}
-</style>
-<style id="edifiq-fix-save-calculos-final">
-.edCheckTopList{display:flex!important;flex-direction:column!important;gap:0!important;width:100%!important}.edCheckTopRow{display:flex!important;justify-content:space-between!important;align-items:center!important;gap:12px!important;padding:9px 0!important;border-bottom:1px solid var(--line,#252b33)!important}.edCheckTopRow:last-child{border-bottom:0!important}.edCheckTopRow b{white-space:nowrap}.obraBigMetric{display:flex;justify-content:space-between;align-items:center;gap:12px}.obraBigMetric+.obraBigMetric{margin-top:8px}
 </style>
 </head>
 <body>
@@ -1608,12 +1585,12 @@ body{min-height:100vh;min-height:100dvh}
     <button class="edifiqMenuItem" onclick="openRelatorioCliente();toggleMenuPasta()"><span>▧</span><b>Relatório para Cliente</b></button>
      <button class="edifiqMenuItem" onclick="openRelatorioTrabalhador();toggleMenuPasta()"><span>♙</span><b>Relatório do Trabalhador</b></button>
     <button class="edifiqMenuItem" onclick="openPagamentoEquipe();toggleMenuPasta()"><span>＄</span><b>Pagamento da Equipe</b></button>
-    <button class="edifiqMenuItem" onclick="openVale();toggleMenuPasta()"><span>＋</span><b>Vale</b></button>
+    <button class="edifiqMenuItem" onclick="openAdiantamento();toggleMenuPasta()"><span>＋</span><b>Adiantamento</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('diarias')"><span>📅</span><b>Histórico de Diárias</b></button>
-    
+    <button class="edifiqMenuItem" onclick="goMenu('relatorios')"><span>▧</span><b>Relatórios</b></button>
   </div>
   <div class="edifiqMenuTitle edifiqSectionTitle">DADOS</div>
-  <button class="edifiqDataRow" onclick="openConfiguracoes()"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
+  <button class="edifiqDataRow" onclick="goMenu('config')"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
   <button class="edifiqDataRow" onclick="openBackupConfig()"><span>💾</span><b>Backup</b><span class="edifiqChevron">›</span></button>
   <div class="edifiqDrawerAccount">
     <div class="edifiqAvatar">AL</div><div class="edifiqAccountText"><b id="drawerUserName">Alef Júnior</b><small id="drawerUserEmail">Conta EDIFIQ</small><em>♛ Premium</em></div>
@@ -1738,26 +1715,26 @@ body{min-height:100vh;min-height:100dvh}
 </section>
 <section class="page" id="funcionarios">
 <div class="pageTitle"><h1>Funcionários</h1><button class="btn gold" onclick="openFunc()">＋ Funcionário</button></div>
-<div class="toolbar"><select id="funcFilter" onchange="renderFuncs()"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select><button class="btn" type="button" onclick="atualizarEquipeCompleto()">↻ Atualizar equipe</button><button class="btn gold" onclick="openPresenca()">✓ Registrar presença</button><button class="btn" onclick="openFalta()">⚠️ Registrar falta</button><button class="btn" onclick="go('diarias')">📅 Diárias</button><button class="btn gold" onclick="openExtraEquipe()">🏆 Extras e Bônus</button><button class="btn" onclick="openPagamentoEquipe()">💰 Pagamentos</button><button class="btn" onclick="openVale()">＋ Vale</button></div>
+<div class="toolbar"><select id="funcFilter" onchange="renderFuncs()"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select><button class="btn" type="button" onclick="atualizarEquipeCompleto()">↻ Atualizar equipe</button><button class="btn gold" onclick="openPresenca()">✓ Registrar presença</button><button class="btn" onclick="openFalta()">⚠️ Registrar falta</button><button class="btn" onclick="go('diarias')">📅 Diárias</button><button class="btn gold" onclick="openExtraEquipe()">🏆 Extras e Bônus</button><button class="btn" onclick="openPagamentoEquipe()">💰 Pagamentos</button><button class="btn" onclick="openAdiantamento()">＋ Adiantamento</button></div>
 <div class="card equipeOverview">
-<h2>Gestão da equipe</h2><p class="sub">Cadastro, presença, faltas, diárias, vales, pagamentos e fechamento da folha por período.</p>
+<h2>Gestão da equipe</h2><p class="sub">Cadastro, presença, faltas, diárias, adiantamentos, pagamentos e fechamento da folha por período.</p>
 <div class="grid kpis equipeKpis">
 <div class="kpi"><small>Funcionários ativos</small><strong id="eqAtivos">0</strong></div>
 <div class="kpi"><small>Diárias no período</small><strong id="eqDiasPeriodo">0</strong></div>
 <div class="kpi"><small>Total trabalhado</small><strong id="eqBrutoPeriodo">R$ 0,00</strong></div>
 <div class="kpi"><small>Total pago</small><strong id="eqPagoPeriodo">R$ 0,00</strong></div>
-<div class="kpi"><small>Vales</small><strong id="eqAdiantPeriodo">R$ 0,00</strong></div>
+<div class="kpi"><small>Adiantamentos</small><strong id="eqAdiantPeriodo">R$ 0,00</strong></div>
 <div class="kpi"><small>Saldo pendente</small><strong id="eqPendentePeriodo">R$ 0,00</strong></div>
 </div></div>
 <div id="funcList"></div>
 <div class="card" id="folhaEquipeCard">
-<div class="row"><div><h2>Fechamento de folha</h2><p class="sub">Consolidação de 15 ou 30 dias, com funcionários, diárias, bruto, vales e líquido.</p></div><button class="btn gold" onclick="atualizarFolha()">↻ Atualizar folha</button></div>
+<div class="row"><div><h2>Fechamento de folha</h2><p class="sub">Consolidação de 15 ou 30 dias, com funcionários, diárias, bruto, adiantamentos e líquido.</p></div><button class="btn gold" onclick="atualizarFolha()">↻ Atualizar folha</button></div>
 <div class="toolbar folhaToolbar"><label>Período<select id="folhaPeriodo" onchange="renderFechamentoFolha()"><option value="15">15 dias</option><option value="30">30 dias</option><option value="custom">Personalizado</option></select></label><label>Obra<select id="folhaObra" onchange="renderFechamentoFolha()"><option value="all">Todas as obras</option></select></label><label>De<input id="folhaInicio" type="date" onchange="renderFechamentoFolha()"></label><label>Até<input id="folhaFim" type="date" onchange="renderFechamentoFolha()"></label></div>
 <div class="grid kpis folhaKpis">
 <div class="kpi"><small>Funcionários</small><strong id="folhaFuncionarios">0</strong></div>
 <div class="kpi"><small>Diárias</small><strong id="folhaDiarias">0</strong></div>
 <div class="kpi"><small>Valor bruto</small><strong id="folhaBruto">R$ 0,00</strong></div>
-<div class="kpi"><small>Vales</small><strong id="folhaAdiant">R$ 0,00</strong></div>
+<div class="kpi"><small>Adiantamentos</small><strong id="folhaAdiant">R$ 0,00</strong></div>
 <div class="kpi"><small>Líquido total</small><strong id="folhaLiquido">R$ 0,00</strong></div>
 <div class="kpi"><small>Saldo pendente</small><strong id="folhaPendente">R$ 0,00</strong></div>
 </div><div id="folhaDetalhes"></div></div>
@@ -1859,7 +1836,7 @@ body{min-height:100vh;min-height:100dvh}
 </section>
 <section class="page" id="financeiro">
 <div class="pageTitle"><div><h1>💰 Financeiro</h1><p class="sub">Painel financeiro completo, moderno e separado por obra.</p></div><button class="btn gold" onclick="openFin()">＋ Lançamento</button></div>
-<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select><select id="finCategoriaFilter" onchange="renderFinance()"><option value="all">Todas as categorias</option><option value="Material">Material</option><option value="Combustível">Combustível</option><option value="Mão de obra">Mão de obra</option><option value="Locação">Locação</option><option value="Serviço terceirizado">Serviço terceirizado</option><option value="Adiantamento">Vale</option><option value="Ferramentas e equipamentos">Ferramentas e equipamentos</option><option value="Transporte">Transporte</option><option value="Outros">Outros</option></select></div>
+<div class="toolbar"><select id="finObraFilter" onchange="renderFinance()"><option value="all">Todas as obras</option></select><select id="finTipoFilter" onchange="renderFinance()"><option value="all">Entradas + despesas</option><option value="entrada">Entradas</option><option value="despesa">Despesas</option></select><select id="finCategoriaFilter" onchange="renderFinance()"><option value="all">Todas as categorias</option><option value="Material">Material</option><option value="Combustível">Combustível</option><option value="Mão de obra">Mão de obra</option><option value="Locação">Locação</option><option value="Serviço terceirizado">Serviço terceirizado</option><option value="Adiantamento">Adiantamento</option><option value="Ferramentas e equipamentos">Ferramentas e equipamentos</option><option value="Transporte">Transporte</option><option value="Outros">Outros</option></select></div>
 <div class="financeModernHead">
 <div class="financeModernCard"><span class="fmLabel">Entradas</span><strong class="fmValue green" id="finEnt">R$ 0,00</strong></div>
 <div class="financeModernCard"><span class="fmLabel">Despesas</span><strong class="fmValue red" id="finDesp">R$ 0,00</strong></div>
@@ -1888,20 +1865,23 @@ body{min-height:100vh;min-height:100dvh}
 <div class="grid kpis docKpis"><div class="kpi"><small>Documentos</small><strong id="docTotal">0</strong></div><div class="kpi"><small>Obras com documentos</small><strong id="docObras">0</strong></div><div class="kpi"><small>Contratos</small><strong id="docContratos">0</strong></div><div class="kpi"><small>Notas / comprovantes</small><strong id="docFinanceiros">0</strong></div></div>
 <div id="documentosList"></div>
 </section>
-
+<section class="page" id="relatorios">
+<div class="pageTitle"><div><h1>Relatórios</h1><p class="sub">Os relatórios e ferramentas de exportação ficam centralizados na janela Backup.</p></div></div>
+<div class="card"><h2>💾 Relatórios centralizados no Backup</h2><p class="sub">Esta tela não duplica Equipe, Pagamentos, Adiantamentos, Histórico de Diárias ou Relatório para Cliente. Esses recursos continuam disponíveis diretamente no menu principal.</p><div class="listActions"><button class="btn gold" type="button" onclick="openBackupConfig()">Abrir Backup e Relatórios</button></div></div>
+</section>
 </main></section>
 <!-- MODAIS -->
 <div class="modal" id="obraM"><div class="modalBox"><div class="modalHead"><h2 id="obraTitle">Nova obra</h2><button class="x" onclick="closeM('obraM')">×</button></div><form onsubmit="saveObra(event)"><div class="formGrid"><label>Nome<input id="oNome" required=""/></label><label>Cliente<input id="oCli"/></label><label class="full">Endereço<input id="oLoc"/></label><label>Valor do contrato<input id="oVal" step="0.01" type="number"/></label><label>Status<select id="oStatus"><option value="em_andamento">Em andamento</option><option value="planejada">Planejada</option><option value="concluida">Concluída</option><option value="pausada">Pausada</option></select></label><label>Início<input id="oIni" type="date"/></label><label>Previsão de término<input id="oFim" type="date"/></label><label class="full">Tipo de serviço<input id="oTipo"/></label><label class="full">Observações<textarea id="oObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('obraM')" type="button">Cancelar</button><button class="btn primary">Salvar obra</button></div></form></div></div>
 <div class="modal" id="funcM"><div class="modalBox"><div class="modalHead"><h2 id="funcTitle">Novo funcionário</h2><button class="x" onclick="closeM('funcM')">×</button></div><form onsubmit="saveFunc(event)"><div class="formGrid"><label>Nome<input id="fNome" required=""/></label><label>Função<input id="fFunc"/></label><label>Telefone<input id="fTel" type="tel"/></label><label>Tipo de pagamento<select id="fTipo"><option value="diaria">Diária</option><option value="mensal">Mensal</option></select></label><label>Valor da diária<input id="fDia" step="0.01" type="number"/></label><label>Salário mensal<input id="fSal" step="0.01" type="number"/></label><label>Dia de pagamento<input id="fPag" max="31" min="1" type="number"/></label><label>Ativo<select id="fAtivo"><option value="true">Ativo</option><option value="false">Inativo</option></select></label><label>Registrar diária<select id="fDiariaRegistro"><option value="true">Registrar diária</option><option value="false">Não registrar diária</option></select></label><label>Obra atual<select id="fObra"><option value="">Selecione a obra</option></select></label></div><div class="formActions"><button class="btn" onclick="closeM('funcM')" type="button">Cancelar</button><button class="btn primary">Salvar funcionário</button></div></form></div></div>
 <div class="modal" id="diaM"><div class="modalBox"><div class="modalHead"><h2>Registrar diária</h2><button class="x" onclick="closeM('diaM')">×</button></div><form onsubmit="saveDia(event)"><div class="formGrid"><label>Funcionário<select id="dFunc"><option value="">Selecione</option></select></label><label>Obra<select id="dObra" onchange="fillDiariaChecklistSelector()"><option value="">Selecione</option></select></label><label>Checklist / Serviço<select id="dChecklist"><option value="">Sem checklist</option></select></label><label>Data<input id="dData" type="date"/></label><label>Tipo<select id="dTipo"><option value="completa">Diária completa</option><option value="manha">Meia diária — manhã</option><option value="tarde">Meia diária — tarde</option></select></label><label>Valor da diária<input id="dVal" step="0.01" type="number"/></label><label>Status<select id="dStatus"><option value="pendente">Pendente</option><option value="pago">Pago</option></select></label><label class="full"><span class="sub" id="diaValorInfo">Diária completa: 100%</span></label><label class="full">Observação<textarea id="dObs"></textarea></label></div><input id="dQtd" type="hidden" value="1"/><div class="formActions"><button class="btn" onclick="closeM('diaM')" type="button">Cancelar</button><button class="btn primary">Salvar diária</button></div></form></div></div>
 <div class="modal" id="presencaM"><div class="modalBox"><div class="modalHead"><h2>Registrar presença</h2><button class="x" onclick="closeM('presencaM')">×</button></div><form onsubmit="savePresenca(event)"><div class="formGrid"><label>Funcionário<select id="presFunc" required><option value="">Selecione</option></select></label><label>Obra<select id="presObra"><option value="">Selecione</option></select></label><label>Data<input id="presData" type="date" required></label><label>Status<select id="presStatus"><option value="presente">Presente</option><option value="justificada">Ausência justificada</option><option value="injustificada">Ausência injustificada</option></select></label><label class="full">Observação<textarea id="presObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('presencaM')" type="button">Cancelar</button><button class="btn primary">Salvar presença</button></div></form></div></div>
-<div class="modal" id="faltaM"><div class="modalBox"><div class="modalHead"><h2>Registrar falta</h2><button class="x" onclick="closeM('faltaM')">×</button></div><form onsubmit="saveFalta(event)"><div class="formGrid"><label>Funcionário<select id="faltaFunc" required=""><option value="">Selecione</option></select></label><label>Data<input id="faltaData" required="" type="date"/></label><label>Tipo<select id="faltaTipo"><option value="sem_justificativa">Falta sem justificativa</option><option value="justificada">Falta com justificativa</option><option value="atestado">Atestado</option></select></label><label>Observação<input id="faltaObs"/></label></div><div class="formActions"><button class="btn" onclick="closeM('faltaM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
+<div class="modal" id="faltaM"><div class="modalBox"><div class="modalHead"><h2>Registrar falta</h2><button class="x" onclick="closeM('faltaM')">×</button></div><form onsubmit="saveFalta(event)"><div class="formGrid"><label>Funcionário<select id="faltaFunc" required=""><option value="">Selecione</option></select></label><label>Data<input id="faltaData" required="" type="date"/></label><label>Tipo<select id="faltaTipo"><option value="falta">Falta</option><option value="justificada">Falta justificada</option><option value="atestado">Atestado</option></select></label><label>Observação<input id="faltaObs"/></label></div><div class="formActions"><button class="btn" onclick="closeM('faltaM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
 <div class="modal" id="checkM"><div class="modalBox"><div class="modalHead"><h2>Adicionar etapa</h2><button class="x" onclick="closeM('checkM')">×</button></div><form onsubmit="saveCheck(event)"><div class="formGrid"><label>Obra<select id="checkObra" required=""><option value="">Selecione</option></select></label><label>Valor do serviço<input id="checkValor" type="number" step="0.01" min="0" value="0" placeholder="R$ 0,00"></label><label class="full">Etapa<input id="checkDesc" placeholder="Ex.: Reboco concluído" required=""/></label></div><div class="formActions"><button class="btn" onclick="closeM('checkM')" type="button">Cancelar</button><button class="btn primary">Adicionar</button></div></form></div></div>
-<div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin" onchange="atualizarCategoriaFinanceira();atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin" onchange="atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" step="0.01" type="number" oninput="atualizarReceitaChecklistResumo()"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finReceitaSemChecklistWrap" class="full hidden"><label class="edFinSemChecklist"><input id="finReceitaSemChecklist" type="checkbox" onchange="atualizarReceitaChecklistDistribuicao()"><span><b>Lançar receita sem checklist</b><small class="sub" style="display:block;margin-top:3px">A receita ficará vinculada somente à obra selecionada, sem dividir valor entre serviços.</small></span></label></div><div id="finReceitaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><div class="row"><div><b>Distribuir receita nos checklists da obra</b><small class="sub" style="display:block;margin-top:4px">Selecione um ou vários checklists e informe quanto da entrada pertence a cada um.</small></div><b id="finReceitaChecklistTotal" class="gold">R$ 0,00</b></div><div id="finReceitaChecklistList" style="margin-top:10px"></div><div id="finReceitaChecklistStatus" class="sub" style="margin-top:8px"></div></div></div><div id="finDespesaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><label style="display:block"><b>Checklist da despesa</b><select id="finDespesaChecklist"><option value="">Sem checklist</option></select><small class="sub" style="display:block;margin-top:4px">A despesa ficará vinculada somente ao checklist da obra selecionada.</small></label></div></div><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Combustível</option><option>Mão de obra</option><option>Locação</option><option>Serviço terceirizado</option><option value="Adiantamento">Vale</option><option>Ferramentas e equipamentos</option><option>Transporte</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
+<div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin" onchange="atualizarCategoriaFinanceira();atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin" onchange="atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" step="0.01" type="number" oninput="atualizarReceitaChecklistDistribuicao()"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finReceitaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><div class="row"><div><b>Distribuir receita nos checklists da obra</b><small class="sub" style="display:block;margin-top:4px">Selecione um ou vários checklists e informe quanto da entrada pertence a cada um.</small></div><b id="finReceitaChecklistTotal" class="gold">R$ 0,00</b></div><div id="finReceitaChecklistList" style="margin-top:10px"></div><div id="finReceitaChecklistStatus" class="sub" style="margin-top:8px"></div></div></div><div id="finDespesaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><label style="display:block"><b>Checklist da despesa</b><select id="finDespesaChecklist"><option value="">Sem checklist</option></select><small class="sub" style="display:block;margin-top:4px">A despesa ficará vinculada somente ao checklist da obra selecionada.</small></label></div></div><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Combustível</option><option>Mão de obra</option><option>Locação</option><option>Serviço terceirizado</option><option>Adiantamento</option><option>Ferramentas e equipamentos</option><option>Transporte</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
 <div class="modal" id="fotoM"><div class="modalBox"><div class="modalHead"><h2>Relatório fotográfico</h2><button class="x" onclick="closeM('fotoM')">×</button></div><form onsubmit="saveFoto(event)"><div class="formGrid"><label>Obra<select id="fotoObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="fotoData" type="date"/></label><label class="full">Título<input id="fotoTitulo"/></label><label class="full">Fotos<input accept="image/*" id="fotoFiles" multiple="" required="" type="file"/></label><label class="full">Observação<textarea id="fotoObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('fotoM')" type="button">Cancelar</button><button class="btn primary">Salvar fotos</button></div></form></div></div>
-<div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Vales</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
+<div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Adiantamentos</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
 <div class="pay-summary"><div><small>Diárias pendentes</small><b id="pagDiariasTotal">R$ 0,00</b></div></div><div class="formActions"><button class="btn" onclick="closeM('pagEquipeM')" type="button">Cancelar</button><button class="btn primary">Processar pagamento</button></div></form></div></div>
-<div class="modal" id="adiantM"><div class="modalBox"><div class="modalHead"><h2>Vale</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveVale(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required=""><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" onchange="fillValeChecklistSelector()" required=""><option value="">Selecione</option></select></label><label>Checklist<select id="adiantChecklist"><option value="">Sem checklist</option></select></label><label>Valor<input id="adiantValor" required="" step="0.01" type="number"/></label><label>Data<input id="adiantData" type="date"/></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="note">O Vale ficará vinculado à obra e, se selecionado, ao checklist escolhido.</div><div class="formActions"><button class="btn" onclick="closeM('adiantM')" type="button">Cancelar</button><button class="btn primary">Registrar Vale</button></div></form></div></div>
+<div class="modal" id="adiantM"><div class="modalBox"><div class="modalHead"><h2>Adiantamento</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveAdiantamento(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required=""><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" required=""><option value="">Selecione</option></select></label><label>Valor<input id="adiantValor" required="" step="0.01" type="number"/></label><label>Data<input id="adiantData" type="date"/></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('adiantM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
 <div class="modal reportClientModal" id="relatorioClienteM">
 <div class="modalBox">
 <div class="modalHead rcHeader"><div><h2>📄 Relatório para Cliente</h2><p>Escolha as obras, revise a prévia e edite antes de enviar.</p></div><button class="x" onclick="closeM('relatorioClienteM')">×</button></div>
@@ -1979,43 +1959,6 @@ function sameObra(a,b){return String(recordObraId(a))===String(b);}
 function sameChecklist(a,b){return String(recordChecklistId(a))===String(b);}
 function checklistForObra(obraId){
   return (D.checklist||[]).filter(x=>String(recordObraId(x))===String(obraId));
-}
-
-/*
-  Normaliza vínculos financeiros antigos sem fazer rateio automático.
-  Se um registro já possui obra_id/obraId válido, ele é preservado.
-  Se só existe o nome da obra, converte para o id. Para diárias sem obra,
-  só usa a obra do funcionário quando há uma única obra possível.
-*/
-function normalizarVinculosFinanceiros(){
-  const obras=Array.isArray(D.obras)?D.obras:[];
-  const porNome=new Map(obras.map(o=>[normalize(o.nome||''),String(o.id)]).filter(([n])=>n));
-  const validIds=new Set(obras.map(o=>String(o.id)));
-  const getObraPorTexto=x=>{
-    const raw=String(x?.obra||x?.obra_nome||x?.nome_obra||'').trim();
-    if(!raw)return '';
-    if(validIds.has(raw))return raw;
-    return porNome.get(normalize(raw))||'';
-  };
-  let changed=false;
-  for(const table of ['pagamentos','gastos','diarias','checklist']){
-    for(const r of (D[table]||[])){
-      let oid=String(recordObraId(r)||'');
-      if(!validIds.has(oid)) oid=getObraPorTexto(r);
-      if(oid && String(r.obra_id||'')!==oid){r.obra_id=oid;changed=true;}
-    }
-  }
-  // Diária antiga sem obra: só vincula se houver exatamente uma obra possível.
-  for(const d of (D.diarias||[])){
-    if(String(recordObraId(d)||''))continue;
-    const f=(D.funcionarios||[]).find(x=>String(x.id)===String(d.funcionario_id||''));
-    const candidatos=new Set();
-    const fo=String(f?.obra_id||''); if(validIds.has(fo))candidatos.add(fo);
-    const map=localFuncObras(); const mo=String(map?.[d.funcionario_id]||''); if(validIds.has(mo))candidatos.add(mo);
-    const texto=getObraPorTexto(d); if(texto)candidatos.add(texto);
-    if(candidatos.size===1){d.obra_id=[...candidatos][0];changed=true;}
-  }
-  return changed;
 }
 function checklistNome(id){
   const c=(D.checklist||[]).find(x=>String(x.id)===String(id));
@@ -2494,10 +2437,7 @@ function localData(){
     for(const table of Object.keys(D)){
       try{
         const raw=localStorage.getItem(LOCAL_KEY+"__"+table);
-        if(raw && !Array.isArray(base[table])){
-          const rows=JSON.parse(raw);
-          if(Array.isArray(rows)) base[table]=rows;
-        }
+        if(raw){ const rows=JSON.parse(raw); if(Array.isArray(rows) && (!Array.isArray(base[table]) || rows.length>base[table].length)) base[table]=rows; }
       }catch(_){ }
     }
     return base;
@@ -2920,20 +2860,6 @@ function toggleMenuPasta(){
  if(b) b.classList.toggle('open',open);
 }
 
-function openConfiguracoes(){
-  let m=document.getElementById('edConfiguracoesModal');
-  if(!m){
-    m=document.createElement('div'); m.id='edConfiguracoesModal'; m.className='modal open';
-    const email=(typeof user!=='undefined'&&user?.email)?user.email:(localStorage.getItem('edifiq_last_email')||'Não informado');
-    m.innerHTML=`<div class="modalBox" style="max-width:720px;max-height:90vh;overflow:auto">
-      <div class="modalHead"><div><h2>⚙️ Configurações</h2><p class="sub">Dados do aplicativo, conta e ações administrativas.</p></div><button class="x" onclick="closeM('edConfiguracoesModal')">×</button></div>
-      <div class="card"><h3>📱 Dados do aplicativo</h3><div class="edConfigDataList"><div class="edConfigDataRow"><span>Aplicativo</span><b>EDIFIQ — Construção Civil</b></div><div class="edConfigDataRow"><span>Versão</span><b>Atual</b></div><div class="edConfigDataRow"><span>Armazenamento</span><b>Local + nuvem quando disponível</b></div></div></div>
-      <div class="card"><h3>🔐 Login da conta</h3><div class="edConfigLoginList"><div class="edConfigLoginRow"><span>E-mail</span><b>${esc(email)}</b></div><div class="edConfigLoginRow"><span>Status</span><b class="green">Sessão atual</b></div><div class="edConfigLoginRow"><span>Conta</span><b>EDIFIQ</b></div></div></div>
-      <div class="card dangerDataCard"><h3>🗑️ Apagar dados</h3><p class="sub">As ações de apagar ficam centralizadas aqui. Faça um backup antes de excluir.</p><div class="reportGrid dataDeleteGrid"><button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar Equipe</b><small>Funcionários, diárias, faltas e registros.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar Obras</b><small>Obras e registros vinculados.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar Financeiro</b><small>Receitas, despesas e pagamentos.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar Tudo</b><small>Apaga todos os dados do aplicativo.</small></button></div></div>
-    </div>`; document.body.appendChild(m);
-  }else m.classList.add('open');
-} 
-
 function openBackupConfig(){
   let m=document.getElementById('edBackupConfigModal');
   if(!m){
@@ -2944,7 +2870,7 @@ function openBackupConfig(){
       <div class="modalHead"><div><h2>💾 Backup</h2><p class="sub">Central de proteção, recuperação e exportação dos dados do EDIFIQ.</p></div><button class="x" onclick="closeM('edBackupConfigModal')">×</button></div>
       <div class="card"><h3>Proteção dos dados</h3><p class="sub">O backup não substitui nem apaga os dados atuais. A importação também preserva os registros existentes e mescla somente o que for necessário.</p><div class="listActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar backup</button><input id="backupImportFile" accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importRelatorioData(event)" style="display:none" type="file"/></div></div>
       <div class="card"><h3>Exportar relatórios</h3><div class="reportGrid"><button class="btn reportAction" onclick="exportPDF()"><b>📄 Exportar PDF</b><small>Relatório pronto para salvar ou compartilhar.</small></button><button class="btn reportAction" onclick="exportExcel()"><b>📊 Exportar Excel</b><small>Obras, equipe, diárias, financeiro e checklist.</small></button><button class="btn reportAction" onclick="exportCSVAll()"><b>📁 Exportar CSV</b><small>Dados compatíveis com planilhas.</small></button><button class="btn reportAction" onclick="exportFull()"><b>🗂️ Exportar JSON</b><small>Backup completo para recuperação futura.</small></button></div></div>
-      <div class="card"><h3>📊 Acesso rápido aos relatórios</h3><p class="sub">Os recursos continuam no menu principal, mas também ficam centralizados aqui para consulta e exportação.</p><div class="reportGrid"><button class="btn reportAction" type="button" onclick="openRelatorioCliente()"><b>📄 Relatório para Cliente</b><small>Gerar acompanhamento por obra e cliente.</small></button><button class="btn reportAction" type="button" onclick="openRelatorioTrabalhador()"><b>👷 Relatório do Trabalhador</b><small>Dados cadastrais, dias, obras, pagamentos e fechamento.</small></button><button class="btn reportAction" type="button" onclick="openPagamentoEquipe()"><b>👷 Pagamento da Equipe</b><small>Folha, diárias, adiantamentos e líquido.</small></button><button class="btn reportAction" type="button" onclick="openVale()"><b>＋ Vale</b><small>Registrar e controlar vales.</small></button><button class="btn reportAction" type="button" onclick="go('diarias');closeM('edBackupConfigModal')"><b>📅 Histórico de Diárias</b><small>Consultar os registros por período e obra.</small></button></div></div>
+      <div class="card"><h3>📊 Acesso rápido aos relatórios</h3><p class="sub">Os recursos continuam no menu principal, mas também ficam centralizados aqui para consulta e exportação.</p><div class="reportGrid"><button class="btn reportAction" type="button" onclick="openRelatorioCliente()"><b>📄 Relatório para Cliente</b><small>Gerar acompanhamento por obra e cliente.</small></button><button class="btn reportAction" type="button" onclick="openRelatorioTrabalhador()"><b>👷 Relatório do Trabalhador</b><small>Dados cadastrais, dias, obras, pagamentos e fechamento.</small></button><button class="btn reportAction" type="button" onclick="openPagamentoEquipe()"><b>👷 Pagamento da Equipe</b><small>Folha, diárias, adiantamentos e líquido.</small></button><button class="btn reportAction" type="button" onclick="openAdiantamento()"><b>＋ Adiantamento</b><small>Registrar e controlar adiantamentos.</small></button><button class="btn reportAction" type="button" onclick="go('diarias');closeM('edBackupConfigModal')"><b>📅 Histórico de Diárias</b><small>Consultar os registros por período e obra.</small></button></div></div>
       <div class="card dangerDataCard"><h3>🗑️ Apagar dados</h3><p class="sub">Escolha o setor que deseja apagar. O aplicativo pedirá confirmação antes de excluir.</p><div class="reportGrid dataDeleteGrid"><button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar Equipe</b><small>Funcionários, diárias, faltas e registros.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar Obras</b><small>Obras e registros vinculados.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar Financeiro</b><small>Receitas, despesas e pagamentos.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar Tudo</b><small>Apaga todos os dados do aplicativo.</small></button></div><div class="note dangerNote">⚠️ Esta ação não pode ser desfeita. Faça um backup antes de apagar.</div></div>
       <div class="note" id="backupStatus">Backup centralizado: seus dados atuais permanecem preservados.</div>
     </div>`;
@@ -3266,7 +3192,6 @@ async function initSupabase(){
 
 async function login(){
   const email=($("email")?.value||"").trim().toLowerCase();
-  try{if(email)localStorage.setItem("edifiq_last_email",email)}catch(_){}
   const password=$("password")?.value||"";
 
   if(!email||!password){
@@ -3636,7 +3561,6 @@ async function loadCloud(){
     if(await loadTable(table)) okCount++;
   }
   mergeLocal();
-  normalizarVinculosFinanceiros();
   aplicarExclusoesPendentes();
   await retryEdifiqDeleteQueue();
   await retryEdifiqPendingUpdates();
@@ -4338,24 +4262,32 @@ pausada:"Pausada"
 }
 
 function obraProgress(obra){
-  const itens=(D.checklist||[]).filter(x=>String(recordObraId(x))===String(obra?.id));
-  if(!itens.length) return String(obra?.status||"") === "concluida" ? 100 : 0;
 
-  const normalizaPct=v=>Math.max(0,Math.min(100,Number(v)||0));
-  const valores=itens.map(x=>Math.max(0,Number(x?.valor)||0));
-  const totalValor=valores.reduce((a,b)=>a+b,0);
+const itens=
+D.checklist.filter(
+x=>String(x.obra_id)===
+String(obra.id)
+);
 
-  if(totalValor>0){
-    const executado=itens.reduce((a,x)=>{
-      const valor=Math.max(0,Number(x?.valor)||0);
-      const pct=normalizaPct(x?.progresso ?? (x?.concluida||x?.concluido||x?.status==="concluido" ? 100 : 0));
-      return a + valor*(pct/100);
-    },0);
-    return Math.round((executado/totalValor)*100);
-  }
+if(!itens.length){
 
-  const progressoItens=itens.map(x=>normalizaPct(x?.progresso ?? (x?.concluida||x?.concluido||x?.status==="concluido" ? 100 : 0)));
-  return Math.round(progressoItens.reduce((a,b)=>a+b,0)/Math.max(1,progressoItens.length));
+return obra.status==="concluida"
+?100
+:0;
+
+}
+
+const done=
+itens.filter(x=>
+x.concluida===true||
+x.concluido===true||
+x.status==="concluido"
+).length;
+
+return Math.round(
+done/itens.length*100
+);
+
 }
 
 
@@ -4364,60 +4296,138 @@ function obraProgress(obra){
    ========================================================= */
 
 function obraFinanceData(obraId){
-  const oid=String(obraId||"");
-  const obra=(D.obras||[]).find(o=>String(o.id)===oid);
-  const num=v=>{
-    if(typeof v==="number" && Number.isFinite(v)) return v;
-    if(v==null||v==="") return 0;
-    let x=String(v).trim().replace(/R\$\s?/gi,"");
-    if(x.includes(",") && x.includes(".")) x=x.replace(/\./g,"").replace(",",".");
-    else if(x.includes(",")) x=x.replace(",",".");
-    const n=Number(x);
-    return Number.isFinite(n)?n:0;
-  };
-  const rows=(D.gastos||[]).filter(x=>String(recordObraId(x))===oid);
-  const pagamentos=(D.pagamentos||[]).filter(x=>String(recordObraId(x))===oid);
-  const contrato=Math.max(0,num(obra?.valor));
-  const receita=pagamentos.reduce((a,x)=>a+num(x.valor),0);
 
-  const somaCat=(fn)=>rows.reduce((a,x)=>a+(fn(x)?num(x.valor):0),0);
-  const material=somaCat(x=>gastoSubcategoria(x)==="Material");
-  const mao=somaCat(x=>gastoSubcategoria(x)==="Mão de obra");
-  const terceirizado=somaCat(x=>gastoSubcategoria(x)==="Serviço terceirizado");
-  const combustivel=somaCat(x=>gastoSubcategoria(x)==="Combustível");
-  const locacao=somaCat(x=>gastoSubcategoria(x)==="Locação");
-  const ferramentasEquipamentos=somaCat(x=>gastoSubcategoria(x)==="Ferramentas e equipamentos");
-  const transporte=somaCat(x=>gastoSubcategoria(x)==="Transporte");
-  const outros=somaCat(x=>["Outros","Adiantamento"].includes(gastoSubcategoria(x)));
+const obra=D.obras.find(
+o=>String(o.id)===
+String(obraId)
+);
 
-  // Cada lançamento pertence a UMA obra. Não há rateio automático entre obras.
-  const despesas=rows.reduce((a,x)=>a+num(x.valor),0);
-  const resultado=receita-despesas;
-  const margemLucro=receita>0 ? (resultado/receita)*100 : 0;
-  const saldoReceber=Math.max(0,contrato-receita);
-  const saldoContrato=contrato-despesas;
+const contrato=
+Number(obra?.valor||0);
 
-  return {
-    contrato,receita,material,mao,terceirizado,outros,despesas,resultado,
-    margemLucro,saldoContrato,saldoReceber,combustivel,locacao,
-    ferramentasEquipamentos,transporte
-  };
+const receita=
+D.pagamentos
+.filter(x=>
+String(recordObraId(x))===
+String(obraId)
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+const gastos=
+D.gastos.filter(
+x=>String(recordObraId(x))===
+String(obraId)
+);
+
+const material=
+gastos
+.filter(
+x=>categoriaFinanceira(x)==="Material"
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+const mao=
+gastos
+.filter(
+x=>categoriaFinanceira(x)==="Mão de obra"
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+const terceirizado=
+gastos
+.filter(
+x=>categoriaFinanceira(x)==="Serviço terceirizado"
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+const outros=
+gastos
+.filter(
+x=>categoriaFinanceira(x)==="Outros"
+)
+.reduce(
+(a,x)=>a+Number(x.valor||0),
+0
+);
+
+const combustivel=gastos.filter(x=>gastoSubcategoria(x)==="Combustível").reduce((a,x)=>a+Number(x.valor||0),0);
+const locacao=gastos.filter(x=>gastoSubcategoria(x)==="Locação").reduce((a,x)=>a+Number(x.valor||0),0);
+const ferramentasEquipamentos=gastos.filter(x=>gastoSubcategoria(x)==="Ferramentas e equipamentos").reduce((a,x)=>a+Number(x.valor||0),0);
+const transporte=gastos.filter(x=>gastoSubcategoria(x)==="Transporte").reduce((a,x)=>a+Number(x.valor||0),0);
+
+const despesas=
+gastos.reduce((a,x)=>a+Number(x.valor||0),0);
+
+const resultado=
+receita-despesas;
+
+const saldoContrato=
+contrato-despesas;
+
+const saldoReceber=Math.max(0,contrato-receita);
+
+/* Margem de lucro sobre o valor contratado.
+   Ex.: resultado de R$ 20.000 em contrato de R$ 100.000 = 20%. */
+const margemLucro=contrato>0
+  ? (resultado/contrato)*100
+  : 0;
+
+return{
+contrato,
+receita,
+material,
+mao,
+terceirizado,
+outros,
+despesas,
+resultado,
+margemLucro,
+saldoContrato,
+saldoReceber,
+combustivel,
+locacao
+};
+
 }
 
-function percentContrato(valor,contrato){
-  const num=v=>{
-    if(typeof v==="number" && Number.isFinite(v))return v;
-    if(v==null||v==="")return 0;
-    let x=String(v).trim().replace(/R\$\s?/gi,"");
-    if(x.includes(",")&&x.includes("."))x=x.replace(/\./g,"").replace(",",".");
-    else if(x.includes(","))x=x.replace(",",".");
-    const n=Number(x);return Number.isFinite(n)?n:0;
-  };
-  const c=num(contrato);
-  return c>0 ? (num(valor)/c)*100 : 0;
+function percentContrato(
+valor,
+contrato
+){
+
+if(!contrato)return 0;
+
+return(
+Number(valor||0)/
+Number(contrato)*100
+);
+
 }
-function pctText(valor,contrato){
-  return percentContrato(valor,contrato).toFixed(1)+"%";
+
+function pctText(
+valor,
+contrato
+){
+
+if(!contrato)return"—";
+
+return percentContrato(
+valor,
+contrato
+).toFixed(1)+"%";
+
 }
 
 function obraFinanceMini(o){
@@ -4680,8 +4690,7 @@ function renderObras(){
   const aReceber=Math.max(0,contrato-recebido);
   const despesas=Number(f.despesas||0);
   const resultado=Number(f.resultado||0);
-  const margem=Number(f.margemLucro||0);
-  const servicosAdicionais=Number(f.servicosAdicionais||0);
+  const margem=contrato>0?(resultado/contrato)*100:0;
   const pctRecebido=contrato>0?Math.max(0,Math.min(100,(recebido/contrato)*100)):0;
   const totalCustos=Object.values(gc).reduce((a,v)=>a+Number(v||0),0);
   const custoMao=Number(f.mao||gc['Mão de obra']||0);
@@ -4747,9 +4756,9 @@ function renderObras(){
 
   const pagamentosHtml=`<div class="obraModelKpis three"><div><small>Recebimentos</small><b>${pagamentos.length}</b></div><div><small>Total recebido</small><b class="green">${money(recebido)}</b></div><div><small>A receber</small><b class="gold">${money(aReceber)}</b></div></div><div class="obraModeloList">${pagamentos.length?pagamentos.map(r=>`<div class="obraModeloRow"><span><b>${esc(r.descricao||'Pagamento recebido')}</b><br><small>${formatDateBR(r.data)} • ${esc(r.forma_pagamento||r.forma||'Recebimento')}</small></span><b class="green">${money(r.valor)}</b></div>`).join(''):'<div class="obraModeloEmpty">Nenhum pagamento recebido registrado.</div>'}</div><button class="btn gold" type="button" onclick="openFin()">＋ Registrar Pagamento</button>`;
 
-  const resumoHtml=`<div class="obraSummaryBlock"><h3>Valores da Obra</h3><div class="obraBigMetric"><small>Valor Total da Obra</small><strong class="blue">${money(contrato)}</strong></div><div class="obraBigMetric"><small>Já Recebi</small><strong class="green">${money(recebido)}</strong></div><div class="obraBigMetric"><small>Falta Receber</small><strong class="green">${money(aReceber)}</strong></div><div class="obraBigMetric"><small>Serviços Adicionais</small><strong class="blue">${money(servicosAdicionais)}</strong></div><div class="obraProgressLine"><small>Progresso de Recebimento</small><b>${pctRecebido.toFixed(0)}%</b></div><div class="obraMiniProgress"><span style="width:${pctRecebido}%"></span></div></div>
+  const resumoHtml=`<div class="obraSummaryBlock"><h3>Valores da Obra</h3><div class="obraBigMetric"><small>Valor Total da Obra</small><strong class="blue">${money(contrato)}</strong></div><div class="obraBigMetric"><small>Já Recebi</small><strong class="green">${money(recebido)}</strong></div><div class="obraBigMetric"><small>Falta Receber</small><strong class="green">${money(aReceber)}</strong></div><div class="obraProgressLine"><small>Progresso de Recebimento</small><b>${pctRecebido.toFixed(0)}%</b></div><div class="obraMiniProgress"><span style="width:${pctRecebido}%"></span></div></div>
     <div class="obraSummaryBlock result"><h3>Resultado</h3><div class="obraResultRow"><span>Lucro</span><strong class="green">${money(resultado)}</strong></div><div class="obraResultRow"><span>Margem</span><strong class="green">${margem.toFixed(1).replace('.',',')}%</strong></div></div>
-    <div class="obraSummaryBlock"><h3>Detalhamento de Custos</h3><div class="obraResultRow"><span>Mão de Obra</span><strong>${money(custoMao)}</strong></div><div class="obraResultRow"><span>Gastos com Materiais</span><strong>${money(custoMaterial)}</strong></div><div class="obraResultRow"><span>Serviços adicionais contratados</span><strong class="blue">${money(servicosAdicionais)}</strong></div><div class="obraResultRow"><span>Terceirizados/Repasses</span><strong>${money(custoTerceiro)}</strong></div><hr><div class="obraResultRow total"><span>Total de Custos</span><strong>${money(despesas||totalCustos)}</strong></div></div>
+    <div class="obraSummaryBlock"><h3>Detalhamento de Custos</h3><div class="obraResultRow"><span>Mão de Obra</span><strong>${money(custoMao)}</strong></div><div class="obraResultRow"><span>Gastos com Materiais</span><strong>${money(custoMaterial)}</strong></div><div class="obraResultRow"><span>Serviços Adicionais</span><strong>${money(custoServicos)}</strong></div><div class="obraResultRow"><span>Terceirizados/Repasses</span><strong>${money(custoTerceiro)}</strong></div><hr><div class="obraResultRow total"><span>Total de Custos</span><strong>${money(despesas||totalCustos)}</strong></div></div>
     <div class="obraSummaryBlock"><h3>Projeções</h3><div class="obraResultRow"><span>Lucro por Semana</span><strong>${money(lucroPorSemana)}</strong></div><div class="obraResultRow"><span>Dias Trabalhados</span><strong>${totalDias}</strong></div><div class="obraResultRow"><span>Gastos Registrados</span><strong>${x.gastos.length}</strong></div><div class="obraResultRow"><span>Serviços Adicionais</span><strong>${x.extras.length}</strong></div><div class="obraResultRow"><span>Serviços Terceirizados</span><strong>${x.gastos.filter(g=>gastoSubcategoria(g)==='Serviço terceirizado').length}</strong></div></div>`;
 
   const checklistHtml=x.checks.length?`<div class="obraModeloList">${x.checks.map(c=>{const pct=Math.max(0,Math.min(100,Number(c.progresso??((c.concluida||c.concluido)?100:0))));return `<div class="obraModeloRow"><span><b>${esc(c.tarefa||c.descricao||c.nome||c.titulo||'Item')}</b><br><small>${pct}% concluído</small></span><b class="blue">${pct}%</b></div>`;}).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum item de checklist cadastrado.</div>';
@@ -4907,7 +4916,7 @@ resumo.pending
 
 <div>
 <small>
-Vale disponível
+Adiantamento disponível
 </small><br>
 
 <b class="red">
@@ -4953,7 +4962,7 @@ f.registrar_diaria!==false
 :""
 }
 <button class="btn" onclick="openPagamentoFuncionario('${f.id}')">💰 Pagamento</button>
-<button class="btn" onclick="openAdiantamentoFuncionario('${f.id}')">💳 Vale</button>
+<button class="btn" onclick="openAdiantamentoFuncionario('${f.id}')">💳 Adiantamento</button>
 <button class="btn" onclick="toggleFunc('${f.id}')">${f.ativo===false?"Ativar":"Desativar"}</button>
 <button class="btn danger" onclick="excluirFuncionario('${esc(String(f.id??""))}',${funcIndex})">Excluir</button>
 </div>
@@ -5307,7 +5316,7 @@ resumo.pending
 </div>
 
 <div>
-<small>Vale</small><br>
+<small>Adiantamento</small><br>
 <b class="red">
 ${money(
 resumo.advance
@@ -5473,6 +5482,7 @@ async function savePagamentoEquipe(e){
 e.preventDefault();
 
 try{
+
 const checks=[...document.querySelectorAll(".pag-check")].filter(x=>x.checked);
 if(!checks.length){toast("Selecione pelo menos um funcionário.");return;}
 
@@ -5482,8 +5492,6 @@ const descricao=$("pagDescricao").value.trim()||"Pagamento de equipe";
 const obs=$("pagObs").value.trim();
 let total=0,diariasTotal=0,adiantTotal=0,quantidade=0;
 const processados=[];
-const toCents=v=>Math.round((Number(v)||0)*100);
-const fromCents=v=>Number((Math.round(Number(v)||0)/100).toFixed(2));
 
 for(const check of checks){
   const id=check.dataset.id;
@@ -5497,77 +5505,79 @@ for(const check of checks){
   if(pendingDiarias<=0 && !extrasPendentes.length && !advancesAtuais.length)continue;
 
   const resumo=calcFuncionarioPagamento(id);
-  const grupos=[];
 
-  // Cada diária fica exatamente na obra/checklist onde foi registrada.
-  pendingItems.forEach((diaria,idx)=>{
-    let obraId=String(recordObraId(diaria)||"");
-    if(!obraId){
-      const fObra=String(getFuncObra(id)||"");
-      if(fObra)obraId=fObra;
-    }
-    if(!obraId)return;
-    grupos.push({
-      uid:'d_'+String(diaria.id||idx),
-      source:'diaria',
-      diariaId:diaria.id,
-      obraId,
-      checklistId:String(diaria.checklist_id||""),
-      valor:Number(diariaValor(diaria)||0)
-    });
-  });
+  /*
+    IMPORTANTE: a obra do pagamento não vem mais de getFuncObra(id).
+    Cada diária já possui sua própria obra_id. O pagamento é dividido
+    exatamente pelas obras onde as diárias foram registradas.
+  */
+  const gruposObra=new Map();
+  for(const diaria of pendingItems){
+    const obraId=String(diaria.obra_id||fallbackObra||"");
+    if(!obraId)continue;
+    const checklistId=String(diaria.checklist_id||"");
+    const chave=obraId+"::"+checklistId;
+    const valor=diariaValor(diaria);
+    const atual=gruposObra.get(chave)||{obraId,checklistId,valor:0};
+    atual.valor+=valor;
+    gruposObra.set(chave,atual);
+  }
 
-  // Bônus/extras também entram na folha e mantêm sua própria obra/checklist.
-  extrasPendentes.forEach((extra,idx)=>{
-    const obraId=String(recordObraId(extra)||"");
-    if(!obraId)return;
-    grupos.push({
-      uid:'x_'+String(extra.id||idx),
-      source:'extra',
-      extraId:extra.id,
-      obraId,
-      checklistId:String(extra.checklist_id||extra.checklistId||""),
-      valor:Number(extra.valor||0)
-    });
-  });
+  if(pendingDiarias>0 && gruposObra.size===0){
+    toast(`Não foi possível identificar a obra das diárias de ${f.nome}.`);
+    continue;
+  }
 
-  const faltandoObra=grupos.length===0 && (pendingDiarias>0 || extrasPendentes.length>0);
-  if(faltandoObra){toast(`Não foi possível identificar a obra das diárias/extras de ${f.nome}.`);continue;}
-
-  processados.push({id,f,resumo,pendingItems,extrasPendentes,grupos,pendingDiarias});
+  processados.push({id,f,resumo,pendingItems,gruposObra,pendingDiarias});
   total+=resumo.net;
   diariasTotal+=resumo.pendingDiarias;
   adiantTotal+=resumo.advance;
   quantidade++;
 }
 
-if(!processados.length){toast("Nenhum funcionário selecionado possui valores pendentes e obra definida.");return;}
+if(!processados.length){toast("Nenhum funcionário selecionado possui diária pendente e obra definida.");return;}
 
 let falhas=0,baixados=0;
 
 for(const item of processados){
-  const observacaoBase=`Diárias: ${money(item.resumo.pendingDiarias)}. Extras/Bônus: ${money(item.resumo.extrasTotal||0)}. Vale abatido: ${money(item.resumo.advance)}. Líquido: ${money(item.resumo.net)}.${obs?" "+obs:""}`;
-  const grupos=item.grupos;
-  const totalBrutoCents=toCents(item.resumo.pending);
-  const totalAdiantCents=Math.min(totalBrutoCents,toCents(item.resumo.advance||0));
 
-  // Soma exata por obra, sem rateio decimal.
+  const observacaoBase=`Diárias pendentes: ${money(item.resumo.pendingDiarias)}. Adiantamento abatido: ${money(item.resumo.advance)}. Valor líquido: ${money(item.resumo.net)}.${obs?" "+obs:""}`;
+
+  /*
+    Serviços extras já possuem lançamento financeiro próprio.
+    Portanto, nesta etapa lançamos somente o valor líquido das diárias.
+    O abatimento de adiantamento é distribuído proporcionalmente entre
+    as obras das diárias, mantendo cada despesa na obra correta.
+  */
+  /*
+    DISTRIBUIÇÃO EXATA DAS DIÁRIAS
+    Cada obra mantém exatamente a soma das diárias registradas nela.
+    Todo cálculo financeiro é feito em centavos, evitando cortes por
+    arredondamento e garantindo que a soma final feche exatamente a folha.
+  */
+  const grupos=[...item.gruposObra.values()];
+  const brutoDiarias=Number(item.pendingDiarias||0);
+  const toCents=v=>Math.round((Number(v)||0)*100);
+  const fromCents=v=>Number((Math.round(Number(v)||0)/100).toFixed(2));
+
   const gruposPorObra=new Map();
   for(const g of grupos){
     const obraId=String(g.obraId);
     gruposPorObra.set(obraId,(gruposPorObra.get(obraId)||0)+toCents(g.valor));
   }
 
+  const totalBrutoCents=toCents(brutoDiarias);
+  const totalAdiantCents=Math.min(totalBrutoCents,toCents(item.resumo.advance||0));
   const advAplicacoesPorObraCents=new Map();
   let restanteAdvCents=totalAdiantCents;
 
-  // Vale com obra definida permanece naquela obra.
+  // Adiantamento com obra definida permanece naquela obra.
   for(const al of (item.resumo.allocations||[])){
     if(restanteAdvCents<=0)break;
     const adv=(item.resumo.advances||[]).find(a=>String(a.id)===String(al.id));
     const usar=Math.min(restanteAdvCents,toCents(al.valor));
     if(usar<=0)continue;
-    const advObra=String(recordObraId(adv)||"");
+    const advObra=String(recordObraId(adv)||'');
     if(!advObra)continue;
     const limite=Math.max(0,Number(gruposPorObra.get(advObra)||0)-Number(advAplicacoesPorObraCents.get(advObra)||0));
     const aplicado=Math.min(usar,limite);
@@ -5577,32 +5587,38 @@ for(const item of processados){
     }
   }
 
-  // Vale sem obra/saldo restante: distribuição em centavos, fechando exatamente.
+  // Adiantamentos sem obra (ou saldo restante) são distribuídos em centavos.
   if(restanteAdvCents>0){
     const obrasComSaldo=[...gruposPorObra.entries()].filter(([obraId,c])=>c>Number(advAplicacoesPorObraCents.get(obraId)||0));
     const baseTotal=obrasComSaldo.reduce((a,[_,c])=>a+c,0);
     if(baseTotal>0){
       const parcelas=obrasComSaldo.map(([obraId,brutoCents])=>{
-        const ja=Number(advAplicacoesPorObraCents.get(obraId)||0);
-        const disponivel=Math.max(0,brutoCents-ja);
+        const jaAplicado=Number(advAplicacoesPorObraCents.get(obraId)||0);
+        const disponivel=Math.max(0,brutoCents-jaAplicado);
         const exato=restanteAdvCents*(disponivel/baseTotal);
         const base=Math.min(disponivel,Math.floor(exato));
         return {obraId,base,resto:exato-base,disponivel};
       });
       let usado=parcelas.reduce((a,x)=>a+x.base,0);
       parcelas.sort((a,b)=>b.resto-a.resto);
-      for(const x of parcelas){if(usado>=restanteAdvCents)break;if(x.base<x.disponivel){x.base++;usado++;}}
-      for(const x of parcelas)advAplicacoesPorObraCents.set(x.obraId,(advAplicacoesPorObraCents.get(x.obraId)||0)+x.base);
+      for(const x of parcelas){
+        if(usado>=restanteAdvCents)break;
+        if(x.base<x.disponivel){x.base++;usado++;}
+      }
+      for(const x of parcelas){
+        advAplicacoesPorObraCents.set(x.obraId,(advAplicacoesPorObraCents.get(x.obraId)||0)+x.base);
+      }
     }
   }
 
-  // Distribui o vale entre os lançamentos da obra em centavos, incluindo bônus/extras.
+  // Distribui o abatimento da obra entre checklists também em centavos.
   const abatidoPorGrupoCents=new Map();
   for(const [obraId,brutoObraCents] of gruposPorObra){
     const abatimentoObraCents=Math.min(brutoObraCents,Number(advAplicacoesPorObraCents.get(obraId)||0));
     const gruposDaObra=grupos.filter(g=>String(g.obraId)===String(obraId));
     const totalGrupoCents=gruposDaObra.reduce((a,g)=>a+toCents(g.valor),0);
     if(abatimentoObraCents<=0||totalGrupoCents<=0)continue;
+
     const partes=gruposDaObra.map(g=>{
       const brutoCents=toCents(g.valor);
       const exato=abatimentoObraCents*(brutoCents/totalGrupoCents);
@@ -5611,69 +5627,70 @@ for(const item of processados){
     });
     let usado=partes.reduce((a,x)=>a+x.base,0);
     partes.sort((a,b)=>b.resto-a.resto);
-    for(const x of partes){if(usado>=abatimentoObraCents)break;if(x.base<x.brutoCents){x.base++;usado++;}}
-    for(const x of partes)abatidoPorGrupoCents.set(x.g.uid,x.base);
+    for(const x of partes){
+      if(usado>=abatimentoObraCents)break;
+      if(x.base<x.brutoCents){x.base++;usado++;}
+    }
+    for(const x of partes){
+      const key=String(x.g.obraId)+'::'+String(x.g.checklistId||'');
+      abatidoPorGrupoCents.set(key,x.base);
+    }
   }
 
-  // Garante fechamento exato da folha líquida.
-  let somaLiquidaCents=grupos.reduce((sum,g)=>sum+Math.max(0,toCents(g.valor)-Number(abatidoPorGrupoCents.get(g.uid)||0)),0);
+  // Fechamento: a soma das despesas líquidas deve ser exatamente a folha líquida.
   const totalLiquidoCents=Math.max(0,totalBrutoCents-totalAdiantCents);
+  let somaLiquidaCents=grupos.reduce((sum,g)=>{
+    const key=String(g.obraId)+'::'+String(g.checklistId||'');
+    return sum+Math.max(0,toCents(g.valor)-Number(abatidoPorGrupoCents.get(key)||0));
+  },0);
   const diferencaCents=totalLiquidoCents-somaLiquidaCents;
   if(diferencaCents!==0&&grupos.length){
     for(let i=grupos.length-1;i>=0;i--){
       const g=grupos[i];
+      const key=String(g.obraId)+'::'+String(g.checklistId||'');
       const brutoCents=toCents(g.valor);
-      const abat=Number(abatidoPorGrupoCents.get(g.uid)||0);
+      const abat=Number(abatidoPorGrupoCents.get(key)||0);
       const liquido=Math.max(0,brutoCents-abat);
       const novo=Math.max(0,Math.min(brutoCents,liquido+diferencaCents));
-      abatidoPorGrupoCents.set(g.uid,brutoCents-novo);
+      abatidoPorGrupoCents.set(key,brutoCents-novo);
       break;
     }
   }
 
-  let falhaFuncionario=false;
-  for(const grupo of grupos){
-    const brutoCents=toCents(grupo.valor);
-    const abatimentoCents=Number(abatidoPorGrupoCents.get(grupo.uid)||0);
-    const valorLancamento=fromCents(Math.max(0,brutoCents-abatimentoCents));
-    if(valorLancamento<=0)continue;
-
+  for(let i=0;i<grupos.length;i++){
+    const grupo=grupos[i];
     const obraId=String(grupo.obraId);
-    const checklistId=grupo.checklistId||null;
-    const obraObj=D.obras.find(o=>String(o.id)===obraId);
-    const nomeObra=obraObj?.nome||"Obra";
+    const checklistId=grupo.checklistId;
+    const brutoObra=Number(grupo.valor||0);
+    const key=obraId+"::"+String(checklistId||"");
+    const brutoObraCents=toCents(brutoObra);
+    const abatimentoCents=Number(abatidoPorGrupoCents.get(key)||0);
+    const valorObra=fromCents(Math.max(0,brutoObraCents-abatimentoCents));
+    if(valorObra<=0)continue;
 
-    if(grupo.source==='extra'){
-      const gastoExistente=(D.gastos||[]).find(g=>String(g.servico_extra_id||'')===String(grupo.extraId));
-      if(gastoExistente){
-        const atual=Number(gastoExistente.valor||0);
-        const payload={obra_id:obraId,checklist_id:checklistId,data,valor:valorLancamento,fornecedor:item.f.nome,funcionario_id:item.id,categoria:"Mão de obra",status:"pago",data_pagamento:data,descricao:gastoExistente.descricao||`[Bônus] ${item.f.nome}`,observacao:`${observacaoBase} Obra: ${nomeObra}.`};
-        const ok=await updateRow("gastos",gastoExistente.id,payload);
-        if(!ok){falhaFuncionario=true;break;}
-        Object.assign(gastoExistente,payload,{servico_extra_id:grupo.extraId});
-      }else{
-        const extra=item.extrasPendentes.find(x=>String(x.id)===String(grupo.extraId));
-        const result=await insertRow("gastos",{
-          obra_id:obraId,checklist_id:checklistId,data,
-          descricao:`[${extra?.tipo||"Bônus"}] ${extra?.descricao||descricao} - ${item.f.nome}${checklistId?` - ${checklistNome(checklistId)}`:""}`,
-          valor:valorLancamento,fornecedor:item.f.nome,funcionario_id:item.id,servico_extra_id:grupo.extraId,
-          observacao:`${observacaoBase} Obra: ${nomeObra}.`,categoria:"Mão de obra",status:"pago",data_pagamento:data
-        });
-        if(!result){falhaFuncionario=true;break;}
-      }
-    }else{
-      const result=await insertRow("gastos",{
-        obra_id:obraId,checklist_id:checklistId,data,
-        descricao:`[Mão de obra] ${descricao} - ${item.f.nome}${checklistId?` - ${checklistNome(checklistId)}`:""}`,
-        valor:valorLancamento,fornecedor:item.f.nome,funcionario_id:item.id,
-        observacao:`Obra das diárias: ${nomeObra}. ${observacaoBase}`,categoria:"Mão de obra",status:"pago",data_pagamento:data
-      });
-      if(!result){falhaFuncionario=true;break;}
-    }
+    const obraObj=D.obras.find(o=>String(o.id)===String(obraId));
+    const nomeObra=obraObj?.nome||"Obra";
+    const result=await insertRow("gastos",{
+      obra_id:obraId,
+      checklist_id:checklistId||null,
+      data,
+      descricao:`[Mão de obra] ${descricao} - ${item.f.nome}${checklistId?` - ${checklistNome(checklistId)}`:""}`,
+      valor:valorObra,
+      fornecedor:item.f.nome,
+      funcionario_id:item.id,
+      observacao:`Obra das diárias: ${nomeObra}. ${observacaoBase}`,
+      categoria:"Mão de obra"
+    });
+
+    if(!result){falhas++;falhaFuncionario=true;break;}
   }
 
-  if(falhaFuncionario){falhas++;continue;}
+  if(falhaFuncionario){
+    /* Não baixa as diárias deste funcionário se algum lançamento financeiro falhou. */
+    continue;
+  }
 
+  /* Baixa cada diária usando exatamente as colunas existentes no Supabase. */
   for(const diaria of item.pendingItems){
     const qtdOriginal=Math.max(0,Number(diaria.qtd??diaria.quantidade??1));
     const valorBaixado=Math.max(0,Number(diariaValor(diaria)||0));
@@ -5685,25 +5702,44 @@ for(const item of processados){
     if(atualizado)baixados++;
   }
 
-  for(const extra of item.extrasPendentes){
+  for(const extra of (item.resumo.extrasPendentes||[])){
     const localExtra=(D.servicosExtras||[]).find(x=>String(x.id)===String(extra.id));
-    if(localExtra){localExtra.status='pago';localExtra.data_pagamento=data;localExtra.folhaAplicado=true;localExtra.financeiroAplicado=true;}
+    if(localExtra){
+      localExtra.status='pago';
+      localExtra.data_pagamento=data;
+      localExtra.folhaAplicado=true;
+    }
+
     const gasto=(D.gastos||[]).find(g=>String(g.servico_extra_id||'')===String(extra.id));
-    if(gasto){gasto.status='pago';gasto.data_pagamento=data;}
+    if(gasto){
+      gasto.status='pago';
+      gasto.data_pagamento=data;
+    }
   }
 
+  /* Mantém a quitação dos adiantamentos exatamente como já funcionava. */
   const advAplicados=getAdvanceApplied();
   const nomeFunc=normalize(item.f.nome);
   for(const g of (D.gastos||[])){
-    if(gastoCategoria(g)!=="Adiantamento")continue;
-    const pertence=String(g.funcionario_id||"")===String(item.id)||normalize(g.fornecedor)===nomeFunc||normalize(g.descricao).includes(nomeFunc);
-    if(!pertence)continue;
-    const valor=Number(g.valor||0);if(valor<=0)continue;
-    advAplicados[g.id]=valor;g.status="pago";g.aplicado=true;g.valor_baixado=valor;g.data_pagamento=data;g.funcionario_id=item.id;
+    if(gastoCategoria(g)!=="Adiantamento") continue;
+    const pertence=String(g.funcionario_id||"")===String(item.id) || normalize(g.fornecedor)===nomeFunc || normalize(g.descricao).includes(nomeFunc);
+    if(!pertence) continue;
+    const valor=Number(g.valor||0);
+    if(valor<=0)continue;
+    advAplicados[g.id]=valor;
+    g.status="pago";
+    g.aplicado=true;
+    g.valor_baixado=valor;
+    g.data_pagamento=data;
+    g.funcionario_id=item.id;
   }
   for(const a of (D.adiantamentos||[])){
     if(String(a.funcionario_id)!==String(item.id))continue;
-    const valor=Number(a.valor||0);a.status="pago";a.aplicado=true;a.valor_baixado=valor;a.data_pagamento=data;
+    const valor=Number(a.valor||0);
+    a.status="pago";
+    a.aplicado=true;
+    a.valor_baixado=valor;
+    a.data_pagamento=data;
   }
   saveAdvanceApplied(advAplicados);
   saveLocalData();
@@ -5712,8 +5748,12 @@ for(const item of processados){
 closeM("pagEquipeM");
 saveLocalData();
 renderAll();
-if(falhas>0)toast(`${quantidade-falhas} pagamento(s) processado(s). ${falhas} lançamento(s) aguardando sincronização.`);
-else toast(`${quantidade} pagamento(s) processado(s). ${baixados} diária(s) baixada(s). Total líquido: ${money(total)}. Diárias e bônus/extras foram distribuídos exatamente por obra e checklist.`);
+
+if(falhas>0){
+  toast(`${quantidade-falhas} pagamento(s) processado(s). ${falhas} lançamento(s) financeiro(s) aguardando sincronização.`);
+}else{
+  toast(`${quantidade} pagamento(s) processado(s). ${baixados} diária(s) baixada(s). Total líquido: ${money(total)}. Cada despesa foi vinculada à obra da respectiva diária.`);
+}
 
 }catch(err){
 console.error("Erro no pagamento da equipe:",err);
@@ -5726,58 +5766,175 @@ toast("Não foi possível concluir o pagamento. Os dados pendentes foram preserv
    ADIANTAMENTO
    ========================================================= */
 
-function fillValeFuncionarios(){
+function fillAdiantamentoFuncionarios(){
+
 const el=$("adiantFunc");
+
 if(!el)return;
+
 const atual=el.value;
-el.innerHTML=`<option value="">Selecione o funcionário</option>${D.funcionarios.filter(f=>f.ativo!==false).map(f=>`<option value="${f.id}">${esc(f.nome)}</option>`).join("")}`;
-if(atual)el.value=atual;
+
+el.innerHTML=`
+<option value="">
+Selecione o funcionário
+</option>
+${
+D.funcionarios
+.filter(f=>f.ativo!==false)
+.map(f=>`
+<option value="${f.id}">
+${esc(f.nome)}
+</option>
+`).join("")
 }
-function fillValeChecklistSelector(){
-  const el=$("adiantChecklist");
-  if(!el)return;
-  const obraId=$("adiantObra")?.value||"";
-  if(typeof fillChecklistSelect==='function') fillChecklistSelect(el,obraId,"Sem checklist");
-  else {
-    const arr=(D.checklist||[]).filter(c=>String(c.obra_id??c.obraId??"")===String(obraId));
-    el.innerHTML='<option value="">Sem checklist</option>'+arr.map(c=>`<option value="${esc(c.id)}">${esc(c.tarefa||c.descricao||"Serviço")}</option>`).join("");
-  }
+`;
+
+if(atual)
+el.value=atual;
+
 }
-function openVale(){
+
+function openAdiantamento(){
+
 fillSelectors();
-fillValeFuncionarios();
-$("adiantObra").value=""; $("adiantFunc").value="";
-$("adiantChecklist").innerHTML='<option value="">Sem checklist</option>';
-$("adiantValor").value=""; $("adiantData").value=today(); $("adiantObs").value="";
+
+fillAdiantamentoFuncionarios();
+
+$("adiantObra").value="";
+$("adiantFunc").value="";
+$("adiantValor").value="";
+$("adiantData").value=today();
+$("adiantObs").value="";
+
 openM("adiantM");
+
 }
-function openValeFuncionario(id){
-openVale();
+
+function openAdiantamentoFuncionario(id){
+
+openAdiantamento();
+
 setTimeout(()=>{
+
 $("adiantFunc").value=id;
-$("adiantObra").value=getFuncObra(id)||"";
-fillValeChecklistSelector();
-const f=D.funcionarios.find(x=>String(x.id)===String(id));
-if(f)$("adiantValor").value=f.tipo_pagamento==="mensal"?(f.salario_mensal||""):(f.valor_diaria||"");
+
+$("adiantObra").value=
+getFuncObra(id)||"";
+
+const f=
+D.funcionarios.find(
+x=>String(x.id)===
+String(id)
+);
+
+if(f){
+
+$("adiantValor").value=
+f.tipo_pagamento==="mensal"
+?f.salario_mensal||""
+:f.valor_diaria||"";
+
+}
+
 },50);
+
 }
-async function saveVale(e){
+
+async function saveAdiantamento(e){
+
 e.preventDefault();
-const obra_id=$("adiantObra").value, funcionario_id=$("adiantFunc").value, checklist_id=$("adiantChecklist")?.value||null, valor=Number($("adiantValor").value||0);
-if(!obra_id){toast("Selecione a obra.");return;}
-if(!funcionario_id){toast("Selecione o funcionário.");return;}
-if(valor<=0){toast("Informe um valor válido.");return;}
-const f=D.funcionarios.find(x=>String(x.id)===String(funcionario_id));
-const nome=f?.nome||"Funcionário";
-const obs=$("adiantObs").value.trim();
-const result=await insertRow("gastos",{obra_id,checklist_id,data:$("adiantData").value,descricao:`[Vale] Vale - ${nome}${checklist_id?` - ${checklistNome(checklist_id)}`:""}`,valor,fornecedor:nome,funcionario_id,status:"pendente",aplicado:false,observacao:obs,categoria:"Adiantamento"});
-if(result){closeM("adiantM");toast(`Vale de ${money(valor)} registrado.`);await loadCloud();renderAll();}
+
+const obra_id=
+$("adiantObra").value;
+
+const funcionario_id=
+$("adiantFunc").value;
+
+const valor=
+Number(
+$("adiantValor").value||0
+);
+
+if(!obra_id){
+
+toast(
+"Selecione a obra."
+);
+
+return;
+
 }
-// Compatibilidade com chamadas antigas do aplicativo.
-function fillAdiantamentoFuncionarios(){fillValeFuncionarios();}
-function openAdiantamento(){openVale();}
-function openAdiantamentoFuncionario(id){openValeFuncionario(id);}
-async function saveAdiantamento(e){return saveVale(e);}
+
+if(!funcionario_id){
+
+toast(
+"Selecione o funcionário."
+);
+
+return;
+
+}
+
+if(valor<=0){
+
+toast(
+"Informe um valor válido."
+);
+
+return;
+
+}
+
+const f=
+D.funcionarios.find(
+x=>String(x.id)===
+String(funcionario_id)
+);
+
+const nome=
+f?.nome||
+"Funcionário";
+
+const obs=
+$("adiantObs").value.trim();
+
+const result=
+await insertRow(
+"gastos",
+{
+obra_id,
+data:
+$("adiantData").value,
+descricao:
+`[Adiantamento] Adiantamento - ${nome}`,
+valor,
+fornecedor:
+nome,
+funcionario_id,
+status:"pendente",
+aplicado:false,
+observacao:obs
+}
+);
+
+if(result){
+
+closeM("adiantM");
+
+toast(
+`Adiantamento de ${money(
+valor
+)} registrado.`
+);
+
+await loadCloud();
+
+renderAll();
+
+}
+
+}
+
 
 /* =========================================================
    FINANCEIRO
@@ -5794,7 +5951,6 @@ $("dtFin").value=today();
 $("forFin").value="";
 $("obsFin").value="";
 $("oFin").value="";
-if($("finReceitaSemChecklist"))$("finReceitaSemChecklist").checked=false;
 $("finCategoria").value="Material";
 
 atualizarCategoriaFinanceira();
@@ -5863,15 +6019,12 @@ function receitaChecklistSelecionados(){
 
 function atualizarReceitaChecklistDistribuicao(){
   const wrap=$("finReceitaChecklistWrap"), list=$("finReceitaChecklistList"), status=$("finReceitaChecklistStatus");
-  const semWrap=$("finReceitaSemChecklistWrap"), sem=$("finReceitaSemChecklist");
   if(!wrap||!list)return;
   const tipo=$("tFin")?.value||"entrada";
   const obraId=$("oFin")?.value||"";
   const total=Number($("vFin")?.value||0);
-  const semChecklist=!!sem?.checked;
-  if(semWrap) semWrap.classList.toggle("hidden",tipo!=="entrada");
-  wrap.classList.toggle("hidden",tipo!=="entrada"||semChecklist);
-  if(tipo!=="entrada"||semChecklist){list.innerHTML="";if(status)status.textContent=semChecklist?"Receita sem checklist: o valor ficará somente na obra selecionada.":"";if($("finReceitaChecklistTotal"))$("finReceitaChecklistTotal").textContent=money(0);return;}
+  wrap.classList.toggle("hidden",tipo!=="entrada");
+  if(tipo!=="entrada"){list.innerHTML="";if(status)status.textContent="";return;}
   if(!obraId){
     list.innerHTML='<div class="empty">Selecione uma obra para escolher os checklists da receita.</div>';
     if(status)status.textContent="";
@@ -5879,7 +6032,7 @@ function atualizarReceitaChecklistDistribuicao(){
   }
   const itens=checklistForObra(obraId);
   if(!itens.length){
-    list.innerHTML='<div class="empty">Esta obra ainda não possui checklists cadastrados. Você também pode marcar “Lançar receita sem checklist”.</div>';
+    list.innerHTML='<div class="empty">Esta obra ainda não possui checklists cadastrados.</div>';
     if(status)status.textContent="";
     return;
   }
@@ -5887,31 +6040,30 @@ function atualizarReceitaChecklistDistribuicao(){
   list.innerHTML=itens.map(c=>{
     const id=String(c.id), v=atuais.get(id);
     return `<label class="card" style="display:flex;align-items:center;gap:10px;margin:6px 0;padding:10px;cursor:pointer">
-      <input data-fin-check="${esc(id)}" type="checkbox" ${v>0?"checked":""} onchange="atualizarReceitaChecklistResumo()" style="width:20px;height:20px;flex:0 0 20px">
+      <input data-fin-check="${esc(id)}" type="checkbox" ${v>0?"checked":""} onchange="atualizarReceitaChecklistDistribuicao()" style="width:20px;height:20px;flex:0 0 20px">
       <span style="flex:1"><b>${esc(c.tarefa||c.descricao||"Etapa")}</b><small class="sub" style="display:block">Serviço: ${money(c.valor||0)} · Progresso: ${Number(c.progresso||0)}%</small></span>
-      <input id="finCheckValor_${esc(id)}" type="number" min="0" step="0.01" value="${v>0?esc(String(v)):""}" placeholder="R$ 0,00" onclick="event.stopPropagation()" oninput="atualizarReceitaChecklistResumo()" style="max-width:130px">
+      <input id="finCheckValor_${esc(id)}" type="number" min="0" step="0.01" value="${v>0?esc(String(v)):""}" placeholder="R$ 0,00" onclick="event.stopPropagation()" oninput="atualizarReceitaChecklistDistribuicao()" style="max-width:130px">
     </label>`;
   }).join("");
+  // restore selection after rebuilding and keep typed values where possible
   atuais.forEach((v,id)=>{
-    const cb=list.querySelector(`input[data-fin-check="${CSS.escape(id)}"]`); const inp=$("finCheckValor_"+id);
-    if(cb)cb.checked=true; if(inp&&v>0)inp.value=v;
+    const cb=list.querySelector(`input[data-fin-check="${CSS.escape(id)}"]`);
+    const inp=$(`finCheckValor_${id}`);
+    if(cb)cb.checked=true;
+    if(inp&&v>0)inp.value=v;
   });
-  atualizarReceitaChecklistResumo();
-}
-
-function atualizarReceitaChecklistResumo(){
-  const total=Number($("vFin")?.value||0);
   const dist=receitaChecklistSelecionados();
-  const soma=dist.reduce((a,x)=>a+Number(x.valor||0),0);
+  const soma=dist.reduce((a,x)=>a+x.valor,0);
   const dif=total-soma;
-  if($("finReceitaChecklistTotal")) $("finReceitaChecklistTotal").textContent=money(soma);
-  const status=$("finReceitaChecklistStatus");
+  if($("finReceitaChecklistTotal"))$("finReceitaChecklistTotal").textContent=money(soma);
   if(status){
     status.className="sub";
     status.textContent=total>0
       ? (Math.abs(dif)<0.01 ? `Distribuição completa: ${money(soma)} de ${money(total)}.` : `Distribuído: ${money(soma)} de ${money(total)}. Falta distribuir: ${money(Math.max(0,dif))}.`)
       : "Informe o valor da receita para distribuir.";
-    status.style.color=Math.abs(dif)<0.01 ? "var(--green,#3ddc84)" : (soma>total ? "var(--red,#ff5f56)" : "");
+    if(Math.abs(dif)<0.01)status.style.color="var(--green,#3ddc84)";
+    else if(soma>total)status.style.color="var(--red,#ff5f56)";
+    else status.style.color="";
   }
 }
 
@@ -5953,13 +6105,12 @@ return;
 if(tipo==="entrada"){
 
 const obraId=$("oFin").value||null;
-const semChecklist=!!$("finReceitaSemChecklist")?.checked;
-const dist=semChecklist?[]:receitaChecklistSelecionados().filter(x=>Number(x.valor||0)>0);
+const dist=receitaChecklistSelecionados().filter(x=>Number(x.valor||0)>0);
 const soma=dist.reduce((a,x)=>a+Number(x.valor||0),0);
-if(obraId && !semChecklist && Math.abs(soma-valor)>0.01){
+if(obraId && Math.abs(soma-valor)>0.01){
   toast(dist.length
-    ? `Distribua exatamente ${money(valor)} entre os checklists ou marque “Lançar receita sem checklist”. Total atual: ${money(soma)}.`
-    : `Selecione um checklist e distribua os ${money(valor)} ou marque “Lançar receita sem checklist”.`);
+    ? `Distribua exatamente ${money(valor)} entre os checklists. Total atual: ${money(soma)}.`
+    : `Selecione pelo menos um checklist e distribua os ${money(valor)} da receita.`);
   return;
 }
 const observacaoBase=$("obsFin").value.trim();
@@ -6636,7 +6787,7 @@ function renderFechamentoFolha(){
           <div class="folhaFuncionarioGrid">
             <div><small>Diárias</small><b>${r.ds.length}</b></div>
             <div><small>Bruto</small><b>${money(r.bruto)}</b></div>
-            <div><small>Vale</small><b>${money(r.adiant)}</b></div>
+            <div><small>Adiantamento</small><b>${money(r.adiant)}</b></div>
             <div><small>Líquido</small><b class="green">${money(r.liquido)}</b></div>
             <div><small>Pago</small><b>${money(r.pago)}</b></div>
             <div><small>Pendente</small><b class="${r.pendente>0?'gold':''}">${money(r.pendente)}</b></div>
@@ -6824,7 +6975,7 @@ const row={
  funcionario_id,
  obra_id:getFuncObra(funcionario_id)||null,
  data:$("faltaData").value||today(),
- tipo:(($("faltaTipo").value||"sem_justificativa")==="falta"?"sem_justificativa":$("faltaTipo").value),
+ tipo:$("faltaTipo").value||"falta",
  observacao:$("faltaObs").value.trim(),
  created_at:new Date().toISOString()
 };
@@ -7898,10 +8049,7 @@ f.observacao||""
   };
 
   function f3Hook(){
-    // Produção da Equipe foi removida da tela de Funcionários.
-    // Mantemos o restante do módulo intacto para não afetar extras/folha/relatórios.
-    const oldCard=document.getElementById("edf3Card");
-    if(oldCard) oldCard.remove();
+    f3SyncData();f3BuildCard();f3FillFilters();f3Render();
   }
   const oldGo=window.go;
   if(typeof oldGo==="function"&&!oldGo.__edifiqF3){
@@ -8194,90 +8342,16 @@ function openHomeKpi(tipo){
   const m=document.createElement('div');m.id='edHomeKpiModal';m.className='modal open';m.innerHTML=`<div class="modalBox edKpiModalBox"><div class="modalHead"><div><h2>${title}</h2><p class="sub">Detalhamento da tela inicial.</p></div><button class="x" onclick="edifiqCloseHomeModal()">×</button></div><div class="edKpiModalBody">${body}</div></div>`;document.body.appendChild(m);
 }
 
-function extraChecklistOptions(obraId){
-  const itens=checklistForObra(obraId);
-  return '<option value="">Sem checklist</option>'+itens.map(c=>`<option value="${esc(c.id)}">${esc(c.tarefa||c.descricao||"Etapa")}</option>`).join('');
-}
-
-function extraAtualizarChecklist(){
-  const obraId=$("extraObra")?.value||"";
-  const el=$("extraChecklist");
-  if(!el)return;
-  const atual=el.value;
-  el.innerHTML=extraChecklistOptions(obraId);
-  if(atual && [...el.options].some(o=>String(o.value)===String(atual))) el.value=atual;
-}
-
-function fecharExtraModal(){ closeM('extraEquipeM'); }
-
-async function salvarExtraEquipeFormulario(e){
-  e.preventDefault();
-  const funcId=$("extraFunc")?.value||"";
-  const obraId=$("extraObra")?.value||"";
-  const checklistId=$("extraChecklist")?.value||"";
-  const tipo=$("extraTipo")?.value||"";
-  const descricao=$("extraDescricao")?.value.trim()||"";
-  const valor=Number($("extraValor")?.value||0);
-  const data=$("extraData")?.value||today();
-
-  if(!funcId){toast('Selecione o funcionário.');return;}
-  if(!obraId){toast('Selecione a obra.');return;}
-  if(!tipo){toast('Selecione o tipo de lançamento.');return;}
-  if(!descricao){toast('Informe a descrição.');return;}
-  if(!Number.isFinite(valor)||valor<=0){toast('Informe um valor válido.');return;}
-
-  const f=D.funcionarios.find(x=>String(x.id)===String(funcId));
-  const obra=D.obras.find(x=>String(x.id)===String(obraId));
-  if(!f||!obra){toast('Funcionário ou obra inválidos.');return;}
-
-  D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];
-  const id='sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-  const item={
-    id,
-    funcionario_id:f.id,
-    funcionarioId:f.id,
-    obra_id:obra.id,
-    obraId:obra.id,
-    checklist_id:checklistId||null,
-    checklistId:checklistId||null,
-    descricao,
-    tipo,
-    valor,
-    data,
-    status:'pendente',
-    financeiroAplicado:false,
-    folhaAplicado:false
-  };
-
-  D.servicosExtras.push(item);
-  saveLocalData();
-  fecharExtraModal();
-  toast(`${tipo} lançado na folha de ${f.nome}. Será distribuído na obra${checklistId?' e checklist selecionados':''} ao processar o pagamento.`);
-  renderAll();
-}
-
-function openExtraFormulario({funcId='',fixedObraId=''}={}){
-  let m=document.getElementById('extraEquipeM');
-  if(!m){
-    m=document.createElement('div');
-    m.id='extraEquipeM';
-    m.className='modal';
-    document.body.appendChild(m);
-  }
+async function openExtraEquipe(){
   const funcs=(D.funcionarios||[]).filter(f=>f.ativo!==false);
-  const obras=D.obras||[];
   if(!funcs.length){toast('Cadastre um funcionário antes de lançar Extras e Bônus.');return;}
-  if(!obras.length){toast('Cadastre uma obra antes de lançar Extras e Bônus.');return;}
-  const selectedFunc=funcId||funcs[0].id;
-  const selectedObra=fixedObraId||getFuncObra(selectedFunc)||obras[0].id;
-  m.innerHTML=`<div class="modalBox"><div class="modalHead"><div><h2>🏆 Extras e Bônus</h2><p class="sub">Selecione os dados do lançamento. O bônus entra na folha e fica vinculado à obra e ao checklist.</p></div><button class="x" type="button" onclick="fecharExtraModal()">×</button></div><form onsubmit="salvarExtraEquipeFormulario(event)"><div class="formGrid"><label>Funcionário<select id="extraFunc" required onchange="if(!'${String(funcId).replace(/'/g,"\\'")}'){}"><option value="">Selecione</option>${funcs.map(f=>`<option value="${esc(f.id)}">${esc(f.nome)}</option>`).join('')}</select></label><label>Tipo<select id="extraTipo" required><option value="Bônus">Bônus</option><option value="Extra">Extra</option><option value="Hora extra">Hora extra</option><option value="Prêmio">Prêmio</option><option value="Produção">Produção</option></select></label><label>Obra<select id="extraObra" required onchange="extraAtualizarChecklist()"><option value="">Selecione</option>${obras.map(o=>`<option value="${esc(o.id)}">${esc(o.nome)}</option>`).join('')}</select></label><label>Checklist<select id="extraChecklist"><option value="">Sem checklist</option></select></label><label>Data<input id="extraData" type="date" value="${today()}"></label><label>Valor<input id="extraValor" type="number" min="0.01" step="0.01" required placeholder="R$ 0,00"></label><label class="full">Descrição<input id="extraDescricao" required placeholder="Ex.: Bônus por conclusão da etapa"></label></div><div class="note">💰 O valor será somado à folha do funcionário e, no pagamento, lançado na despesa da obra selecionada, sem rateio picado. Se houver checklist, ficará vinculado a ele.</div><div class="formActions"><button class="btn" type="button" onclick="fecharExtraModal()">Cancelar</button><button class="btn primary" type="submit">Lançar na folha</button></div></form></div>`;
-  m.classList.add('open');
-  $("extraFunc").value=selectedFunc;
-  $("extraObra").value=selectedObra;
-  extraAtualizarChecklist();
+  const nomes=funcs.map((f,i)=>`${i+1} — ${f.nome}`).join('\n');
+  const escolha=prompt(`Selecione o funcionário para o lançamento de Extras e Bônus:\n\n${nomes}\n\nDigite o número:`,'1');
+  if(escolha===null)return;
+  const f=funcs[Number(escolha)-1];
+  if(!f){toast('Funcionário inválido.');return;}
+  await openExtraFuncionario(f.id);
 }
-
-async function openExtraEquipe(){ openExtraFormulario(); }
 
 async function openExtraObra(obraId){
   const obra=(D.obras||[]).find(o=>String(o.id)===String(obraId));
@@ -8285,15 +8359,93 @@ async function openExtraObra(obraId){
   const ids=[...new Set((D.diarias||[]).filter(d=>String(d.obra_id)===String(obraId)).map(d=>String(d.funcionario_id)).filter(Boolean))];
   const funcs=(D.funcionarios||[]).filter(f=>f.ativo!==false && (ids.includes(String(f.id)) || String(getFuncObra(f.id))===String(obraId)));
   if(!funcs.length){toast('Nenhum funcionário encontrado nesta obra. Registre uma diária ou vincule um funcionário à obra.');return;}
-  openExtraFormulario({funcId:funcs[0].id,fixedObraId:obraId});
-  setTimeout(()=>{
-    const el=$("extraFunc");
-    if(el){el.innerHTML='<option value="">Selecione</option>'+funcs.map(f=>`<option value="${esc(f.id)}">${esc(f.nome)}</option>`).join('');el.value=funcs[0].id;}
-  },0);
+  const nomes=funcs.map((f,i)=>`${i+1} — ${f.nome}`).join('\n');
+  const escolha=prompt(`Extras e Bônus — ${obra.nome}\n\nSelecione o funcionário:\n\n${nomes}\n\nDigite o número:`,'1');
+  if(escolha===null)return;
+  const f=funcs[Number(escolha)-1];
+  if(!f){toast('Funcionário inválido.');return;}
+  await openExtraFuncionario(f.id,obraId);
 }
 
-async function openExtraFuncionario(funcId,fixedObraId=null){ openExtraFormulario({funcId,fixedObraId:fixedObraId||''}); }
+async function openExtraFuncionario(funcId,fixedObraId=null){
+  const f=D.funcionarios.find(x=>String(x.id)===String(funcId));
+  if(!f){toast('Funcionário não encontrado.');return;}
+  const obras=D.obras||[];
+  if(!obras.length){toast('Cadastre uma obra antes de lançar um serviço extra.');return;}
 
+  let obra=null;
+  if(fixedObraId){
+    obra=obras.find(o=>String(o.id)===String(fixedObraId));
+    if(!obra){toast('Obra inválida.');return;}
+  }else{
+    const nomes=obras.map((o,i)=>`${i+1} — ${o.nome}`).join('\\n');
+    const escolha=prompt(`Vincule o lançamento a uma obra:\\n\\n${nomes}\\n\\nDigite o número da obra:`,'1');
+    if(escolha===null)return;
+    obra=obras[Number(escolha)-1];
+    if(!obra){toast('Obra inválida.');return;}
+  }
+
+  const descricao=prompt('Descrição do serviço extra, bônus ou modificação:','Serviço extra');
+  if(descricao===null||!descricao.trim())return;
+
+  const tipo=prompt('Tipo: serviço extra / bônus / modificação:','Serviço extra');
+  if(tipo===null)return;
+
+  const raw=prompt('Valor (R$):','0');
+  if(raw===null)return;
+
+  const valor=Number(String(raw).replace(/\\./g,'').replace(',','.'));
+  if(!Number.isFinite(valor)||valor<=0){
+    toast('Informe um valor válido.');
+    return;
+  }
+
+  D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];
+  const id='sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+
+  const item={
+    id,
+    funcionario_id:f.id,
+    funcionarioId:f.id,
+    obra_id:obra.id,
+    obraId:obra.id,
+    descricao:descricao.trim(),
+    tipo:tipo.trim()||'Serviço extra',
+    valor,
+    data:today(),
+    status:'pendente',
+    financeiroAplicado:true,
+    folhaAplicado:false
+  };
+
+  D.servicosExtras.push(item);
+  saveLocalData();
+
+  // O lançamento financeiro passa a ser gravado pela mesma rotina usada
+  // pelo restante do Financeiro, evitando que o extra desapareça após sincronizar.
+  const result=await insertRow('gastos',{
+    obra_id:obra.id,
+    data:today(),
+    descricao:`[${item.tipo}] ${item.descricao} - ${f.nome}`,
+    valor,
+    fornecedor:f.nome,
+    observacao:'Lançamento vinculado à folha de pagamento.',
+    categoria:'Mão de obra',
+    funcionario_id:f.id,
+    servico_extra_id:id,
+    status:'pendente'
+  });
+
+  if(!result){
+    D.servicosExtras=D.servicosExtras.filter(x=>String(x.id)!==String(id));
+    saveLocalData();
+    toast('Não foi possível registrar o bônus/serviço extra.');
+    return;
+  }
+
+  toast(`${item.tipo} lançado para ${f.nome}. O valor já entra na folha de pagamento.`);
+  renderAll();
+}
 function renderDashboard(){
  renderHomeObras();
  const contratado=D.obras.reduce((a,o)=>a+Number(o.valor||0),0);
@@ -8301,7 +8453,7 @@ function renderDashboard(){
  const despesas=D.gastos.reduce((a,x)=>a+Number(x.valor||0),0);
  const resultado=entradas-despesas;
  const receber=D.obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0);
- const margem=entradas>0?(resultado/entradas)*100:0;
+ const margem=contratado>0?(resultado/contratado)*100:0;
  const andamento=D.obras.filter(o=>o.status==='em_andamento').length;
  const dias=new Set(D.diarias.map(d=>String(d.data||'')).filter(Boolean)).size;
  if($('kObras'))$('kObras').textContent=D.obras.length;
@@ -8740,22 +8892,17 @@ function renderHistoricoDiariasPro(){
   fillEquipeHistorySelectors();
   const box=$('histDiaList'), resumoBox=$('histDiaResumo'); if(!box)return;
   const fid=$('histFunc2')?.value||'', ini=$('histInicio2')?.value||'', fim=$('histFim2')?.value||'';
-  const dias=(D.diarias||[]).map(d=>({kind:'diaria',row:d,data:d.data||'',funcionario_id:d.funcionario_id??d.funcId??d.funcionarioId,obra_id:d.obra_id,valor:diariaValor(d),pago:diariaEstaPaga(d),observacao:d.observacao||''}));
-  const faltas=(D.faltas||[]).map(f=>({kind:'falta',row:f,data:f.data||'',funcionario_id:f.funcionario_id,obra_id:f.obra_id||getFuncObra(f.funcionario_id)||'',valor:0,pago:false,observacao:f.observacao||'',tipo:f.tipo||'sem_justificativa'}));
-  let items=[...dias,...faltas].filter(x=>String(x.funcionario_id) && (!fid||String(x.funcionario_id)===String(fid)) && (!ini||String(x.data)>=ini) && (!fim||String(x.data)<=fim));
-  items.sort((a,b)=>String(b.data).localeCompare(String(a.data)));
-  const total=items.filter(x=>x.kind==='diaria').reduce((a,x)=>a+x.valor,0), pag=items.filter(x=>x.kind==='diaria'&&x.pago).reduce((a,x)=>a+x.valor,0), faltasTotal=items.filter(x=>x.kind==='falta').length;
-  if(resumoBox)resumoBox.innerHTML=`<div class="historyMetric"><small>Registros</small><b>${items.length}</b></div><div class="historyMetric"><small>Valor das diárias</small><b>${money(total)}</b></div><div class="historyMetric"><small>Faltas</small><b class="red">${faltasTotal}</b></div><div class="historyMetric"><small>Pendente</small><b class="gold">${money(total-pag)}</b></div>`;
-  if(!items.length){box.innerHTML='<div class="empty">Nenhum registro encontrado com os filtros selecionados.</div>';return;}
-  box.innerHTML=items.map(x=>{
-    const f=D.funcionarios.find(y=>String(y.id)===String(x.funcionario_id));
-    const o=D.obras.find(y=>String(y.id)===String(x.obra_id));
-    if(x.kind==='falta'){
-      const label={falta:'Falta sem justificativa',sem_justificativa:'Falta sem justificativa',justificada:'Falta com justificativa',atestado:'Atestado'}[x.tipo]||'Falta';
-      return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar diary">⚠️</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus pending">${label}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(x.data))}</b></div><div><small>Tipo</small><b>${esc(label)}</b></div><div><small>Valor</small><b>R$ 0,00</b></div><div><small>Observação</small><b>${esc(x.observacao||'—')}</b></div></div></article>`;
-    }
-    return `<article class="historyCard diaryHistoryCard"><div class="historyCardTop"><div class="historyAvatar diary">📅</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${x.pago?'paid':'pending'}">${x.pago?'Pago':'Pendente'}</span></div><div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(x.data))}</b></div><div><small>Valor</small><b class="gold">${money(x.valor)}</b></div><div><small>Quantidade</small><b>${Number(x.row.qtd||1).toLocaleString('pt-BR')}</b></div><div><small>Observação</small><b>${esc(x.observacao||'—')}</b></div></div></article>`;
-  }).join('');
+  let items=(D.diarias||[]).slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  if(fid)items=items.filter(d=>String(d.funcionario_id??d.funcId??d.funcionarioId)===String(fid));
+  if(ini)items=items.filter(d=>String(d.data||'')>=ini);
+  if(fim)items=items.filter(d=>String(d.data||'')<=fim);
+  const total=items.reduce((a,d)=>a+diariaValor(d),0), pag=items.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0), pend=total-pag;
+  if(resumoBox)resumoBox.innerHTML=`<div class="historyMetric"><small>Registros</small><b>${items.length}</b></div><div class="historyMetric"><small>Valor total</small><b>${money(total)}</b></div><div class="historyMetric"><small>Pendente</small><b class="gold">${money(pend)}</b></div>`;
+  if(!items.length){box.innerHTML='<div class="empty">Nenhuma diária encontrada com os filtros selecionados.</div>';return;}
+  box.innerHTML=items.map(d=>{const f=D.funcionarios.find(x=>String(x.id)===String(d.funcionario_id??d.funcId??d.funcionarioId));const o=D.obras.find(x=>String(x.id)===String(d.obra_id));const v=diariaValor(d);const pago=diariaEstaPaga(d);return `<article class="historyCard diaryHistoryCard">
+    <div class="historyCardTop"><div class="historyAvatar diary">📅</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${pago?'paid':'pending'}">${pago?'Pago':'Pendente'}</span></div>
+    <div class="historyDataGrid"><div><small>Data</small><b>${esc(formatDateBR(d.data||''))}</b></div><div><small>Valor</small><b class="gold">${money(v)}</b></div><div><small>Quantidade</small><b>${Number(d.qtd||1).toLocaleString('pt-BR')}</b></div><div><small>Observação</small><b>${esc(d.observacao||'—')}</b></div></div>
+  </article>`}).join('');
 }
 function formatDateBR(v){if(!v)return '—';const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:String(v);}
 
@@ -9105,7 +9252,7 @@ function renderAnalises(){
   const contrato=obras.reduce((a,o)=>a+Number(o.valor||0),0);
   const receita=obras.reduce((a,o)=>a+obraFinanceData(o.id).receita,0);
   const custos=obras.reduce((a,o)=>a+obraFinanceData(o.id).despesas,0);
-  const lucro=receita-custos, margem=receita>0?(lucro/receita)*100:0;
+  const lucro=receita-custos, margem=contrato>0?(lucro/contrato)*100:0;
   const receber=obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0);
      const obrasAndamento=obras.filter(o=>o.status==="em_andamento").length;
    if($("anObrasAndamento"))$("anObrasAndamento").textContent=obrasAndamento;
@@ -9169,8 +9316,8 @@ function renderResumoGeral(){
   const despesas=obras.reduce((a,o)=>a+moneyN(obraFinanceData(o.id).despesas),0);
   const receber=Math.max(0,total-receita);
   // No resumo geral, lucro é o valor contratado menos os custos já realizados.
-  const lucro=receita-despesas;
-  const margem=receita>0?(lucro/receita)*100:0;
+  const lucro=total-despesas;
+  const margem=total>0?(lucro/total)*100:0;
   const andamento=obras.filter(o=>String(o.status)==='em_andamento').length;
   const concluidas=obras.filter(o=>String(o.status)==='concluida').length;
   const pausadas=obras.filter(o=>String(o.status)==='pausada').length;
@@ -9244,9 +9391,9 @@ function renderResumoGeral(){
     }
   }
 
-  const ranking=obras.map(o=>{const f=obraFinanceData(o.id);return {o,f,lucro:f.resultado,pct:f.margemLucro};}).sort((a,b)=>b.lucro-a.lucro);
+  const ranking=obras.map(o=>({o,f:obraFinanceData(o.id),lucro:moneyN(o.valor)-moneyN(obraFinanceData(o.id).despesas)})).sort((a,b)=>b.lucro-a.lucro);
   const rankHtml=arr=>arr.length?arr.map(x=>{
-    const f=x.f; const pct=Number(x.pct??f.margemLucro??0);
+    const f=x.f; const pct=x.o.valor?x.lucro/moneyN(x.o.valor)*100:0;
     return `<div class="rgRankCard"><div class="rgRankTop"><div><h3>${esc(x.o.nome||'Obra sem nome')}</h3><small>${esc(x.o.cliente||'Cliente não informado')}</small></div><span class="badge ${x.o.status==='concluida'?'on':''}">${esc(statusLabel(x.o.status))}</span></div><div class="rgRankLine"><span>Terceirizados: <b class="gold">${money(obraGastosResumo(x.o.id)['Serviço terceirizado']||0)}</b></span><span>Lucro: <b class="green">${money(x.lucro)}</b> <b class="green">${pct.toFixed(1)}%</b></span></div><div class="rgRankDivider"></div><div class="rgRankLine"><span>Recebido: <b class="green">${money(f.receita)}</b></span><span>A Receber: <b class="gold">${money(Math.max(0,moneyN(x.o.valor)-moneyN(f.receita)))}</b></span></div></div>`;
   }).join(''):'<div class="empty">Nenhuma obra cadastrada.</div>';
   const mais=$('rgTopMais'), menos=$('rgTopMenos');
@@ -9680,7 +9827,6 @@ async function apagarDadosSetor(setor){
 }
 
 function renderAll(){
-  try{if(normalizarVinculosFinanceiros())saveLocalData();}catch(e){console.warn("Falha ao normalizar vínculos",e);}
  auditEDIFIQ();
 
 renderDashboard();
@@ -9779,7 +9925,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
   try{
     try{await openDocumentoDB();}catch(e){console.warn("Armazenamento de documentos indisponível",e)}
     // 1) Recupera primeiro os dados que já estavam salvos neste aparelho.
-    const local=await edifiqRestoreIndexedSnapshot(localData()); Object.keys(D).forEach(k=>{D[k]=Array.isArray(local[k])?local[k]:[]});
+    const local=localData(); Object.keys(D).forEach(k=>{D[k]=Array.isArray(local[k])?local[k]:[]});
     auditEDIFIQ(); saveSafeSnapshot("estado inicial carregado");
     loadDocumentoMeta();
     await loadMaterialMeta();
@@ -10288,9 +10434,9 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     if(s.cadastro)sections.push(`<h2>👤 Dados do trabalhador</h2><div class="wrGrid"><div class="wrInfo"><small>Nome</small><b>${esc(f.nome||'—')}</b></div><div class="wrInfo"><small>Função</small><b>${esc(f.funcao||f.função||'Não informada')}</b></div><div class="wrInfo"><small>Telefone</small><b>${esc(f.telefone||f.tel||'—')}</b></div><div class="wrInfo"><small>Status</small><b>${f.ativo===false?'Inativo':'Ativo'}</b></div><div class="wrInfo"><small>Tipo de pagamento</small><b>${esc(f.tipo_pagamento||'—')}</b></div><div class="wrInfo"><small>Valor da diária</small><b>${f.valor_diaria!=null?rtMoney(f.valor_diaria):'—'}</b></div><div class="wrInfo"><small>Salário mensal</small><b>${f.salario_mensal!=null?rtMoney(f.salario_mensal):'—'}</b></div><div class="wrInfo"><small>Dia de pagamento</small><b>${esc(f.dia_pagamento||'—')}</b></div><div class="wrInfo"><small>Registrar diária</small><b>${f.registrar_diaria===false?'Não':'Sim'}</b></div></div>`);
     if(s.obras)sections.push(`<h2>🏗️ Obras e vínculos</h2><div class="wrGrid">${works}</div>`);
     if(s.dias)sections.push(`<h2>📅 Dias trabalhados e diárias</h2><div class="wrKpis"><div class="wrKpi"><small>DIAS TRABALHADOS</small><b>${d.diasTrabalhados}</b></div><div class="wrKpi"><small>REGISTROS</small><b>${d.diarias.length}</b></div><div class="wrKpi"><small>BRUTO</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrKpi"><small>PENDENTE</small><b>${rtMoney(d.pendDiarias)}</b></div></div>${diasRows?`<table><thead><tr><th>Data</th><th>Obra</th><th>Função</th><th>Qtd.</th><th>Valor</th><th>Status</th></tr></thead><tbody>${diasRows}</tbody></table>`:'<p>Nenhuma diária no período.</p>'}`);
-    if(s.folha)sections.push(`<h2>💰 Resumo da folha</h2><div class="wrGrid"><div class="wrInfo"><small>Bruto das diárias</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrInfo"><small>Diárias já pagas</small><b>${rtMoney(d.pagDiarias)}</b></div><div class="wrInfo"><small>Diárias pendentes</small><b>${rtMoney(d.pendDiarias)}</b></div><div class="wrInfo"><small>Vales no período</small><b>${rtMoney(d.totalAdiant)}</b></div><div class="wrInfo"><small>Pagamentos registrados</small><b>${rtMoney(d.totalPagamentos)}</b></div><div class="wrInfo"><small>Produção / extras</small><b>${rtMoney(d.totalExtras)}</b></div></div>`);
+    if(s.folha)sections.push(`<h2>💰 Resumo da folha</h2><div class="wrGrid"><div class="wrInfo"><small>Bruto das diárias</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrInfo"><small>Diárias já pagas</small><b>${rtMoney(d.pagDiarias)}</b></div><div class="wrInfo"><small>Diárias pendentes</small><b>${rtMoney(d.pendDiarias)}</b></div><div class="wrInfo"><small>Adiantamentos no período</small><b>${rtMoney(d.totalAdiant)}</b></div><div class="wrInfo"><small>Pagamentos registrados</small><b>${rtMoney(d.totalPagamentos)}</b></div><div class="wrInfo"><small>Produção / extras</small><b>${rtMoney(d.totalExtras)}</b></div></div>`);
     if(s.faltas)sections.push(`<h2>⚠️ Faltas e afastamentos</h2><div class="wrKpis"><div class="wrKpi"><small>REGISTROS</small><b>${d.faltas.length}</b></div><div class="wrKpi"><small>PRESENÇAS</small><b>${d.presencas.filter(x=>String(x.status||'presente')==='presente').length}</b></div></div>${faltaRows?`<table><thead><tr><th>Data</th><th>Tipo</th><th>Observação</th></tr></thead><tbody>${faltaRows}</tbody></table>`:'<p>Nenhuma falta/afastamento no período.</p>'}`);
-    if(s.adiant)sections.push(`<h2>💳 Vales</h2>${advRows?`<table><thead><tr><th>Data</th><th>Valor</th><th>Observação</th><th>Obra</th></tr></thead><tbody>${advRows}</tbody></table>`:'<p>Nenhum vale no período.</p>'}`);
+    if(s.adiant)sections.push(`<h2>💳 Adiantamentos</h2>${advRows?`<table><thead><tr><th>Data</th><th>Valor</th><th>Observação</th><th>Obra</th></tr></thead><tbody>${advRows}</tbody></table>`:'<p>Nenhum adiantamento no período.</p>'}`);
     if(s.pagamentos)sections.push(`<h2>💵 Pagamentos realizados</h2>${pagRows?`<table><thead><tr><th>Data</th><th>Valor</th><th>Descrição</th><th>Obra</th></tr></thead><tbody>${pagRows}</tbody></table>`:'<p>Nenhum pagamento de equipe encontrado no período.</p>'}`);
     if(s.extras)sections.push(`<h2>🏆 Produção / Extras</h2>${extraRows?`<table><thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Status</th></tr></thead><tbody>${extraRows}</tbody></table>`:'<p>Nenhum serviço extra registrado no período.</p>'}`);
     if(s.resumo){
@@ -10316,7 +10462,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   };
   window.rtWhatsApp=function(){
     if(!window.__rtFuncId){toast('Selecione um trabalhador.');return;}
-    const d=rtData();const txt=`RELATÓRIO DO TRABALHADOR — ${d.f.nome}\nPeríodo: ${rtFmt(d.r.ini)} a ${rtFmt(d.r.fim)}\nFunção: ${d.f.funcao||'Não informada'}\nDias trabalhados: ${d.diasTrabalhados}\nDiárias: ${rtMoney(d.brutoDiarias)}\nVales: ${rtMoney(d.totalAdiant)}\nPagamentos: ${rtMoney(d.totalPagamentos+d.pagDiarias)}\nExtras: ${rtMoney(d.totalExtras)}\nFaltas/afastamentos: ${d.faltas.length}`;
+    const d=rtData();const txt=`RELATÓRIO DO TRABALHADOR — ${d.f.nome}\nPeríodo: ${rtFmt(d.r.ini)} a ${rtFmt(d.r.fim)}\nFunção: ${d.f.funcao||'Não informada'}\nDias trabalhados: ${d.diasTrabalhados}\nDiárias: ${rtMoney(d.brutoDiarias)}\nAdiantamentos: ${rtMoney(d.totalAdiant)}\nPagamentos: ${rtMoney(d.totalPagamentos+d.pagDiarias)}\nExtras: ${rtMoney(d.totalExtras)}\nFaltas/afastamentos: ${d.faltas.length}`;
     window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
   };
   window.openRelatorioTrabalhador=function(){
@@ -10392,29 +10538,16 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     if(!o){box.innerHTML='<div class="empty">Selecione uma obra.</div>';return;}
     const itens=D.checklist.filter(x=>String(x.obra_id)===String(o.id));
     const total=itens.length;
-    const avg=typeof obraProgress==='function'?Math.max(0,Math.min(100,Number(obraProgress(o))||0)):(total?Math.round(itens.reduce((a,x)=>a+num(x.progresso??((x.concluida||x.concluido)?100:0)),0)/total):0);
+    const avg=total?Math.round(itens.reduce((a,x)=>a+num(x.progresso??((x.concluida||x.concluido)?100:0)),0)/total):0;
     const somaServicos=itens.reduce((a,x)=>a+num(x.valor),0);
-    const fObra=typeof obraFinanceData==='function'?obraFinanceData(o.id):{contrato:num(o.valor),receita:0,despesas:0,resultado:0,margemLucro:0,saldoReceber:num(o.valor),servicosAdicionais:0};
-    const receitaRateada=num(fObra.receita);
-    const despRateada=num(fObra.despesas);
-    const lucroRateado=num(fObra.resultado);
-    const margemRateada=num(fObra.margemLucro);
-    const saldoObra=Math.max(0,num(fObra.saldoReceber));
-    const servicosAdicionais=num(fObra.servicosAdicionais);
+    const receitaRateada=itens.reduce((a,x)=>a+checkStats(x).recebido,0);
+    const despRateada=itens.reduce((a,x)=>a+checkStats(x).despesas,0);
+    const lucroRateado=receitaRateada-despRateada;
+    const margemRateada=receitaRateada>0?(lucroRateado/receitaRateada)*100:0;
     box.innerHTML=`<div class="card">
       <div class="row"><div><h3>${escE(o.nome)}</h3><small>${total} etapa(s)</small></div><strong class="gold">${avg}%</strong></div>
       <div class="progress"><i style="width:${avg}%"></i></div>
-      <div class="edCheckTopList">
-        <div class="edCheckTopRow"><span>Total contratado</span><b>${moneyE(num(fObra.contrato??o.valor))}</b></div>
-        <div class="edCheckTopRow"><span>Total recebido</span><b class="green">${moneyE(receitaRateada)}</b></div>
-        <div class="edCheckTopRow"><span>Saldo a receber</span><b class="gold">${moneyE(saldoObra)}</b></div>
-        <div class="edCheckTopRow"><span>Serviços adicionais</span><b class="blue">${moneyE(servicosAdicionais)}</b></div>
-        <div class="edCheckTopRow"><span>Serviços distribuídos no checklist</span><b>${moneyE(somaServicos)}</b></div>
-        <div class="edCheckTopRow"><span>Total de despesas</span><b class="red">${moneyE(despRateada)}</b></div>
-        <div class="edCheckTopRow"><span>Lucro</span><b class="${lucroRateado>=0?'green':'red'}">${moneyE(lucroRateado)}</b></div>
-        <div class="edCheckTopRow"><span>Margem de lucro</span><b>${margemRateada.toFixed(1).replace('.',',')}%</b></div>
-        <div class="edCheckTopRow"><span>Progresso da obra</span><b>${avg}%</b></div>
-      </div>
+      <div class="three" style="margin-top:10px"><div><small>Serviços distribuídos</small><b>${moneyE(somaServicos)}</b></div><div><small>Recebido nos checklists</small><b class="green">${moneyE(receitaRateada)}</b></div><div><small>Despesas nos checklists</small><b class="red">${moneyE(despRateada)}</b></div><div><small>Lucro</small><b class="${lucroRateado>=0?'green':'red'}">${moneyE(lucroRateado)}</b></div><div><small>Margem</small><b>${margemRateada.toFixed(1).replace('.',',')}%</b></div><div><small>Execução média</small><b>${avg}%</b></div></div>
       ${itens.length?itens.map(item=>{
         const pct=normalizarChecklistPct(item.progresso??((item.concluida||item.concluido)?100:0));
         const st=checkStats(item);
@@ -10961,9 +11094,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   window.edifiqF3Render=f3Render;
 
   function f3Hook(){
-    // Produção da Equipe removida da tela de Funcionários.
-    const oldCard=document.getElementById("edf3Card");
-    if(oldCard) oldCard.remove();
+    f3SyncData();f3BuildCard();f3FillFilters();f3Render();
   }
   const oldGo=window.go;
   if(typeof oldGo==="function"&&!oldGo.__edifiqF3){
@@ -11724,330 +11855,5 @@ body.edifiq-ios-standalone .edifiqDrawerScroll{
 })();
 </script>
 
-
-<script id="edifiq-final-correcoes">
-(function(){
-"use strict";
-
-/* =========================================================
-   EDIFIQ — CORREÇÕES FINAIS DE CÁLCULO, DISTRIBUIÇÃO E DADOS
-   ========================================================= */
-
-const EDIFIQ_IDB="EDIFIQ_APP_STATE_V4";
-const EDIFIQ_STORE="estado";
-const EDIFIQ_STATE_ID="principal";
-let edifiqSaveQueue=Promise.resolve();
-let edifiqSaveSeq=0;
-
-function edNum(v){
-  if(typeof v==="number" && Number.isFinite(v)) return v;
-  if(v==null || v==="") return 0;
-  let x=String(v).trim().replace(/R\$\s?/gi,"");
-  if(x.includes(",") && x.includes(".")) x=x.replace(/\./g,"").replace(",",".");
-  else if(x.includes(",")) x=x.replace(",",".");
-  const n=Number(x);
-  return Number.isFinite(n)?n:0;
-}
-function edRows(table){return Array.isArray(D[table])?D[table]:[];}
-function edObraId(row){return String(recordObraId(row)||"");}
-function edChecklistId(row){return String(recordChecklistId(row)||"");}
-
-/* ---------- CÁLCULO FINANCEIRO ÚNICO ---------- */
-window.obraFinanceData=function(obraId){
-  const oid=String(obraId||"");
-  const obra=edRows("obras").find(o=>String(o.id)===oid);
-  const contrato=Math.max(0,edNum(obra?.valor));
-  const receitas=edRows("pagamentos").filter(x=>edObraId(x)===oid);
-  const gastos=edRows("gastos").filter(x=>edObraId(x)===oid);
-  const extras=(typeof servicesForObra==="function"?servicesForObra(oid):[]).filter(Boolean);
-
-  const receita=receitas.reduce((a,x)=>a+edNum(x.valor),0);
-  const despesas=gastos.reduce((a,x)=>a+edNum(x.valor),0);
-  const resultado=receita-despesas;
-
-  const sub=(g)=>{
-    try{return gastoSubcategoria(g)}catch(_){return String(g?.categoria||"Outros")}
-  };
-  const soma=(nome)=>gastos.reduce((a,x)=>a+(sub(x)===nome?edNum(x.valor):0),0);
-
-  const material=soma("Material");
-  const mao=soma("Mão de obra");
-  const terceirizado=soma("Serviço terceirizado");
-  const combustivel=soma("Combustível");
-  const locacao=soma("Locação");
-  const ferramentasEquipamentos=soma("Ferramentas e equipamentos");
-  const transporte=soma("Transporte");
-  const outros=gastos.reduce((a,x)=>{
-    const c=sub(x);
-    return a+((c==="Outros"||c==="Adiantamento")?edNum(x.valor):0);
-  },0);
-  const servicosAdicionais=extras.reduce((a,x)=>a+Math.max(0,edNum(x.valor)),0);
-  const margemLucro=receita>0?(resultado/receita)*100:0;
-  const margemSobreContrato=contrato>0?(resultado/contrato)*100:0;
-
-  return {
-    contrato,receita,material,mao,terceirizado,outros,despesas,resultado,
-    margemLucro,margemSobreContrato,
-    servicosAdicionais,quantidadeServicosAdicionais:extras.length,
-    saldoContrato:contrato-despesas,
-    saldoReceber:Math.max(0,contrato-receita),
-    combustivel,locacao,ferramentasEquipamentos,transporte
-  };
-};
-
-window.percentContrato=function(valor,contrato){
-  const c=edNum(contrato);
-  return c>0?(edNum(valor)/c)*100:0;
-};
-window.pctText=function(valor,contrato){
-  return window.percentContrato(valor,contrato).toFixed(1)+"%";
-};
-
-/* Progresso da obra: pondera valor dos serviços; sem valores, usa progresso dos itens. */
-window.obraProgress=function(obra){
-  const itens=edRows("checklist").filter(x=>edObraId(x)===String(obra?.id||""));
-  if(!itens.length)return String(obra?.status||"")==="concluida"?100:0;
-  const pct=x=>Math.max(0,Math.min(100,edNum(x)));
-  const total=itens.reduce((a,x)=>a+Math.max(0,edNum(x.valor)),0);
-  if(total>0){
-    const exec=itens.reduce((a,x)=>{
-      const p=x.progresso!=null?x.progresso:((x.concluida||x.concluido||x.status==="concluido")?100:0);
-      return a+Math.max(0,edNum(x.valor))*pct(p)/100;
-    },0);
-    return Math.round(exec/total*100);
-  }
-  return Math.round(itens.reduce((a,x)=>{
-    const p=x.progresso!=null?x.progresso:((x.concluida||x.concluido||x.status==="concluido")?100:0);
-    return a+pct(p);
-  },0)/itens.length);
-};
-
-/* ---------- SALVAMENTO LOCAL RESILIENTE ---------- */
-function edifiqSnapshot(){
-  const data={};
-  for(const k of Object.keys(D)){
-    data[k]=Array.isArray(D[k])?D[k].map(x=>x&&typeof x==="object"?{...x}:x):[];
-  }
-  return {
-    version:4,
-    savedAt:Date.now(),
-    data,
-    services:(typeof getServices==="function"?getServices():{}),
-    advances:(typeof getAdvanceApplied==="function"?getAdvanceApplied():{}),
-    funcObras:(typeof localFuncObras==="function"?localFuncObras():{}),
-    paidDiarias:(typeof getPaidDiariasMap==="function"?getPaidDiariasMap():{})
-  };
-}
-function edifiqOpenDB(){
-  return new Promise((resolve,reject)=>{
-    if(!window.indexedDB){reject(new Error("IndexedDB indisponível"));return;}
-    const r=indexedDB.open(EDIFIQ_IDB,1);
-    r.onupgradeneeded=e=>{
-      const db=e.target.result;
-      if(!db.objectStoreNames.contains(EDIFIQ_STORE))db.createObjectStore(EDIFIQ_STORE,{keyPath:"id"});
-    };
-    r.onsuccess=()=>resolve(r.result);
-    r.onerror=()=>reject(r.error||new Error("Falha no IndexedDB"));
-  });
-}
-function edifiqWriteIDB(snapshot,seq){
-  edifiqSaveQueue=edifiqSaveQueue.then(async()=>{
-    if(seq!==edifiqSaveSeq)return;
-    try{
-      const db=await edifiqOpenDB();
-      await new Promise((resolve,reject)=>{
-        const tx=db.transaction(EDIFIQ_STORE,"readwrite");
-        tx.objectStore(EDIFIQ_STORE).put({id:EDIFIQ_STATE_ID,snapshot});
-        tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error("Falha ao salvar"));
-        tx.onabort=()=>reject(tx.error||new Error("Gravação abortada"));
-      });
-      db.close();
-    }catch(e){console.warn("EDIFIQ: backup IndexedDB não gravado",e);}
-  }).catch(e=>console.warn("EDIFIQ fila de salvamento",e));
-}
-window.saveLocalData=function(){
-  const snap=edifiqSnapshot();
-  const payload={...snap.data,_edifiqVersion:4,_savedAt:snap.savedAt};
-  let ok=false;
-  try{localStorage.setItem(LOCAL_KEY,JSON.stringify(payload));ok=true;}catch(e){console.warn("EDIFIQ: snapshot local excedeu o limite; IndexedDB será usado.",e);}
-  for(const [table,rows] of Object.entries(snap.data)){
-    try{localStorage.setItem(LOCAL_KEY+"__"+table,JSON.stringify(rows));ok=true;}catch(e){console.warn("EDIFIQ: tabela não coube no localStorage:",table);}
-  }
-  try{localStorage.setItem("edifiq_servicos_adicionais_v1",JSON.stringify(snap.services||{}));}catch(_){}
-  try{localStorage.setItem("edifiq_adiantamentos_aplicados_v1",JSON.stringify(snap.advances||{}));}catch(_){}
-  try{localStorage.setItem("edifiq_func_obras_v2",JSON.stringify(snap.funcObras||{}));}catch(_){}
-  try{localStorage.setItem("edifiq_diarias_baixadas_v2",JSON.stringify(snap.paidDiarias||{}));}catch(_){}
-  edifiqSaveSeq++;
-  edifiqWriteIDB(snap,edifiqSaveSeq);
-  return ok;
-};
-async function edifiqReadIDB(){
-  try{
-    const db=await edifiqOpenDB();
-    const snap=await new Promise((resolve,reject)=>{
-      const r=db.transaction(EDIFIQ_STORE,"readonly").objectStore(EDIFIQ_STORE).get(EDIFIQ_STATE_ID);
-      r.onsuccess=()=>resolve(r.result?.snapshot||null);r.onerror=()=>reject(r.error);
-    });
-    db.close();return snap;
-  }catch(_){return null}
-}
-async function edifiqRestoreIndexedSnapshot(local){
-  const snap=await edifiqReadIDB();
-  if(!snap?.data)return local||{};
-  const localSaved=edNum(local?._savedAt||0);
-  if(edNum(snap.savedAt)<=localSaved)return local||{};
-  try{
-    if(snap.services)saveServices(snap.services);
-    if(snap.advances)saveAdvanceApplied(snap.advances);
-    if(snap.funcObras)localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(snap.funcObras));
-    if(snap.paidDiarias)localStorage.setItem(PAID_DIARIAS_KEY,JSON.stringify(snap.paidDiarias));
-  }catch(_){}
-  return snap.data;
-}
-
-/* Faz o carregamento da nuvem de forma conservadora: nunca substitui uma coleção
-   local por uma coleção vazia/menor quando já existem dados salvos no aparelho. */
-const edifiqOriginalLoadCloud=window.loadCloud;
-window.loadCloud=async function(){
-  const before=stateCounts();
-  saveLocalData();
-  let ok=false;
-  try{
-    if(typeof edifiqOriginalLoadCloud==="function")ok=await edifiqOriginalLoadCloud();
-  }catch(e){console.warn("EDIFIQ: sincronização",e);}
-  if(ok){
-    const after=stateCounts();
-    const perdeu=Object.keys(before).some(k=>(after[k]||0)<(before[k]||0));
-    if(perdeu){
-      const local=localData();
-      for(const k of Object.keys(D)){
-        if(Array.isArray(local[k])&&(local[k].length>(D[k]?.length||0)))D[k]=local[k];
-      }
-    }
-  }
-  saveLocalData();
-  return ok;
-};
-
-/* ---------- SALVAMENTO EXTRA DOS SERVIÇOS ADICIONAIS ---------- */
-(function(){
-  const originalSaveServices=window.saveServices||saveServices;
-  window.saveServices=function(x){
-    try{
-      localStorage.setItem(SERVICE_KEY,JSON.stringify(x||{}));
-      localStorage.setItem(SERVICE_KEY+"__backup",JSON.stringify(x||{}));
-    }catch(e){console.warn("EDIFIQ: falha ao salvar serviços adicionais",e)}
-    try{ if(typeof originalSaveServices==='function' && originalSaveServices!==window.saveServices) originalSaveServices(x); }catch(_){}
-    try{ if(typeof window.saveLocalData==='function') window.saveLocalData(); }catch(_){}
-    return x;
-  };
-})();
-
-/* ---------- PROTEÇÃO CONTRA PERDA AO FECHAR/ATUALIZAR ---------- */
-(function(){
-  let ultimo=0;
-  const persistir=()=>{
-    try{ if(typeof window.saveLocalData==='function') window.saveLocalData(); ultimo=Date.now(); }catch(e){console.warn('EDIFIQ: salvamento de saída',e)}
-  };
-  window.addEventListener('pagehide',persistir,{capture:true});
-  window.addEventListener('beforeunload',persistir,{capture:true});
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistir();});
-  setInterval(()=>{if(Date.now()-ultimo>15000)persistir();},20000);
-})();
-
-/* ---------- NOME DO CADASTRO E MENU ---------- */
-window.edifiqAtualizarNomeMenu=function(){
-  const meta=user?.user_metadata||{};
-  const nome=String(meta.nome||meta.name||meta.full_name||meta.display_name||"").trim()
-    ||String(localStorage.getItem("edifiq_nome_usuario")||"").trim()
-    ||String(user?.email||"").split("@")[0]
-    ||"Usuário";
-  const email=String(user?.email||"").trim();
-  const n=$("drawerUserName"),e=$("drawerUserEmail");
-  if(n)n.textContent=nome;
-  if(e)e.textContent=email||"Conta EDIFIQ";
-  document.querySelectorAll(".edifiqAccountText em").forEach(x=>x.remove());
-  document.querySelectorAll(".edHomePremium").forEach(x=>x.remove());
-  document.querySelectorAll(".edifiqMenuItem").forEach(btn=>{
-    const txt=(btn.textContent||"").toLowerCase();
-    const onclick=String(btn.getAttribute("onclick")||"").toLowerCase();
-    if(txt.includes("portal da obra")||onclick.includes("edifiqportalopenselected")){
-      btn.dataset.edifiqHidden="1";
-    }
-  });
-  const av=document.querySelector(".edifiqDrawerAccount .edifiqAvatar");
-  if(av)av.textContent=nome.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase()||"U";
-};
-window.edifiqAtualizarNomeMenu();
-
-/* ---------- BACKUP: somente salvar, backup e restaurar ---------- */
-window.openBackupConfig=function(){
-  let m=document.getElementById("edBackupConfigModal");
-  if(!m){
-    m=document.createElement("div");
-    m.id="edBackupConfigModal";m.className="modal open";
-    m.innerHTML=`<div class="modalBox" style="max-width:650px;max-height:90vh;overflow:auto">
-      <div class="modalHead"><div><h2>💾 Salvamento e Backup</h2><p class="sub">Proteção dos dados do EDIFIQ.</p></div><button class="x" type="button" onclick="closeM('edBackupConfigModal')">×</button></div>
-      <div class="card"><h3>💾 Salvamento</h3><p class="sub">O aplicativo salva automaticamente no aparelho. Use este botão para forçar um salvamento agora.</p><button class="btn gold" type="button" onclick="saveLocalData();toast('Dados salvos no aparelho.')">Salvar agora</button></div>
-      <div class="card"><h3>🗂️ Backup completo</h3><p class="sub">Cria um arquivo completo para guardar ou transferir seus dados.</p><button class="btn" type="button" onclick="saveLocalData();exportFull()">Fazer backup completo</button></div>
-      <div class="card"><h3>📥 Restaurar backup</h3><p class="sub">Importa um backup do EDIFIQ sem os antigos atalhos de acesso rápido.</p><button class="btn" type="button" onclick="document.getElementById('backupImportFileFinal').click()">Selecionar arquivo de backup</button><input id="backupImportFileFinal" type="file" accept=".json,application/json" style="display:none" onchange="importRelatorioData(event)"/></div>
-    </div>`;
-    document.body.appendChild(m);
-  }else{
-    m.classList.add("open");
-  }
-};
-
-/* ---------- Remove Portal da Obra mesmo se o menu for re-renderizado ---------- */
-function edifiqHidePortal(){
-  document.querySelectorAll(".edifiqMenuItem").forEach(btn=>{
-    const t=(btn.textContent||"").toLowerCase();
-    const oc=String(btn.getAttribute("onclick")||"").toLowerCase();
-    if(t.includes("portal da obra")||oc.includes("edifiqportalopenselected"))btn.dataset.edifiqHidden="1";
-  });
-}
-edifiqHidePortal();
-try{new MutationObserver(edifiqHidePortal).observe(document.body,{childList:true,subtree:true});}catch(_){}
-
-/* Atualiza nome quando login/sessão mudar. */
-document.addEventListener("click",()=>setTimeout(window.edifiqAtualizarNomeMenu,100));
-window.addEventListener("load",()=>setTimeout(window.edifiqAtualizarNomeMenu,100));
-
-/* ---------- Corrige alguns resumos que ainda calculavam lucro sobre contrato ---------- */
-window.edifiqCorrigirResumos=function(){
-  const obras=edRows("obras");
-  const totalContrato=obras.reduce((a,o)=>a+edNum(o.valor),0);
-  const totalReceita=obras.reduce((a,o)=>a+window.obraFinanceData(o.id).receita,0);
-  const totalDesp=obras.reduce((a,o)=>a+window.obraFinanceData(o.id).despesas,0);
-  const lucro=totalReceita-totalDesp;
-  const margem=totalReceita>0?lucro/totalReceita*100:0;
-  const set=(id,v)=>{const el=$(id);if(el)el.textContent=v;};
-  set("rgResultado",money(lucro));set("rgMargem",margem.toFixed(1)+"%");
-  set("rgHealthLucro",money(lucro));set("rgHealthMargem",margem.toFixed(1)+"%");
-};
-setTimeout(()=>{try{window.edifiqAtualizarNomeMenu();window.edifiqCorrigirResumos();}catch(_){}} ,0);
-
-/* ---------- Auditoria de distribuição: cada gasto/receita entra uma única vez
-   na obra cujo obra_id/obraId foi salvo. ---------- */
-window.edifiqDistribuicaoObra=function(obraId){
-  const oid=String(obraId||"");
-  return {
-    receitas:edRows("pagamentos").filter(x=>edObraId(x)===oid),
-    despesas:edRows("gastos").filter(x=>edObraId(x)===oid),
-    diarias:edRows("diarias").filter(x=>edObraId(x)===oid),
-    checklist:edRows("checklist").filter(x=>edObraId(x)===oid)
-  };
-};
-
-/* ---------- Restaura o snapshot IndexedDB antes da primeira renderização ---------- */
-try{
-  const src=String(document.documentElement.outerHTML||"");
-}catch(_){}
-
-/* Substitui a expressão de inicialização por uma restauração assíncrona.
-   O listener original já está registrado; a função fica disponível antes do evento. */
-})();
-</script>
 </body>
 </html>
-
