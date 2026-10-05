@@ -1535,6 +1535,20 @@ body{min-height:100vh;min-height:100dvh}
 .edConfigDataList{display:flex;flex-direction:column;gap:0;margin-top:8px}.edConfigDataRow{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--line)}.edConfigDataRow:first-child{border-top:0}.edConfigDataRow span{color:var(--muted);font-size:13px}.edConfigDataRow b{text-align:right;overflow-wrap:anywhere}@media(max-width:600px){.edConfigDataRow{align-items:flex-start;flex-direction:column;gap:4px}.edConfigDataRow b{text-align:left}}
 </style>
 <style id="edifiq-final-fixes">
+.edCheckTopList{display:flex;flex-direction:column;margin-top:12px;border-top:1px solid var(--line)}
+.edCheckTopRow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.edCheckTopRow span{color:var(--muted);font-size:13px}
+.edCheckTopRow b{font-size:15px;text-align:right;overflow-wrap:anywhere}
+.edConfigLoginList{display:flex;flex-direction:column;margin-top:8px}
+.edConfigLoginRow{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--line)}
+.edConfigLoginRow:first-child{border-top:0}
+.edConfigLoginRow span{color:var(--muted);font-size:13px}
+.edConfigLoginRow b{text-align:right;overflow-wrap:anywhere}
+@media(max-width:600px){.edCheckTopRow,.edConfigLoginRow{align-items:flex-start;flex-direction:column;gap:4px}.edCheckTopRow b,.edConfigLoginRow b{text-align:left}}
+.edFinSemChecklist{display:flex;align-items:center;gap:9px;padding:10px 0;border-top:1px solid var(--line);margin-top:8px}
+.edFinSemChecklist input{width:20px;height:20px;flex:0 0 20px}
+</style>
+<style id="edifiq-final-fixes">
 .edifiqAccountText em,.edHomePremium{display:none!important}
 .edifiqMenuItem[data-edifiq-hidden="1"]{display:none!important}
 </style>
@@ -1880,7 +1894,7 @@ body{min-height:100vh;min-height:100dvh}
 <div class="modal" id="presencaM"><div class="modalBox"><div class="modalHead"><h2>Registrar presença</h2><button class="x" onclick="closeM('presencaM')">×</button></div><form onsubmit="savePresenca(event)"><div class="formGrid"><label>Funcionário<select id="presFunc" required><option value="">Selecione</option></select></label><label>Obra<select id="presObra"><option value="">Selecione</option></select></label><label>Data<input id="presData" type="date" required></label><label>Status<select id="presStatus"><option value="presente">Presente</option><option value="justificada">Ausência justificada</option><option value="injustificada">Ausência injustificada</option></select></label><label class="full">Observação<textarea id="presObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('presencaM')" type="button">Cancelar</button><button class="btn primary">Salvar presença</button></div></form></div></div>
 <div class="modal" id="faltaM"><div class="modalBox"><div class="modalHead"><h2>Registrar falta</h2><button class="x" onclick="closeM('faltaM')">×</button></div><form onsubmit="saveFalta(event)"><div class="formGrid"><label>Funcionário<select id="faltaFunc" required=""><option value="">Selecione</option></select></label><label>Data<input id="faltaData" required="" type="date"/></label><label>Tipo<select id="faltaTipo"><option value="sem_justificativa">Falta sem justificativa</option><option value="justificada">Falta com justificativa</option><option value="atestado">Atestado</option></select></label><label>Observação<input id="faltaObs"/></label></div><div class="formActions"><button class="btn" onclick="closeM('faltaM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
 <div class="modal" id="checkM"><div class="modalBox"><div class="modalHead"><h2>Adicionar etapa</h2><button class="x" onclick="closeM('checkM')">×</button></div><form onsubmit="saveCheck(event)"><div class="formGrid"><label>Obra<select id="checkObra" required=""><option value="">Selecione</option></select></label><label>Valor do serviço<input id="checkValor" type="number" step="0.01" min="0" value="0" placeholder="R$ 0,00"></label><label class="full">Etapa<input id="checkDesc" placeholder="Ex.: Reboco concluído" required=""/></label></div><div class="formActions"><button class="btn" onclick="closeM('checkM')" type="button">Cancelar</button><button class="btn primary">Adicionar</button></div></form></div></div>
-<div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin" onchange="atualizarCategoriaFinanceira();atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin" onchange="atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" step="0.01" type="number" oninput="atualizarReceitaChecklistResumo()"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finReceitaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><div class="row"><div><b>Distribuir receita nos checklists da obra</b><small class="sub" style="display:block;margin-top:4px">Selecione um ou vários checklists e informe quanto da entrada pertence a cada um.</small></div><b id="finReceitaChecklistTotal" class="gold">R$ 0,00</b></div><div id="finReceitaChecklistList" style="margin-top:10px"></div><div id="finReceitaChecklistStatus" class="sub" style="margin-top:8px"></div></div></div><div id="finDespesaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><label style="display:block"><b>Checklist da despesa</b><select id="finDespesaChecklist"><option value="">Sem checklist</option></select><small class="sub" style="display:block;margin-top:4px">A despesa ficará vinculada somente ao checklist da obra selecionada.</small></label></div></div><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Combustível</option><option>Mão de obra</option><option>Locação</option><option>Serviço terceirizado</option><option value="Adiantamento">Vale</option><option>Ferramentas e equipamentos</option><option>Transporte</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
+<div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin" onchange="atualizarCategoriaFinanceira();atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin" onchange="atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" step="0.01" type="number" oninput="atualizarReceitaChecklistResumo()"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finReceitaSemChecklistWrap" class="full hidden"><label class="edFinSemChecklist"><input id="finReceitaSemChecklist" type="checkbox" onchange="atualizarReceitaChecklistDistribuicao()"><span><b>Lançar receita sem checklist</b><small class="sub" style="display:block;margin-top:3px">A receita ficará vinculada somente à obra selecionada, sem dividir valor entre serviços.</small></span></label></div><div id="finReceitaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><div class="row"><div><b>Distribuir receita nos checklists da obra</b><small class="sub" style="display:block;margin-top:4px">Selecione um ou vários checklists e informe quanto da entrada pertence a cada um.</small></div><b id="finReceitaChecklistTotal" class="gold">R$ 0,00</b></div><div id="finReceitaChecklistList" style="margin-top:10px"></div><div id="finReceitaChecklistStatus" class="sub" style="margin-top:8px"></div></div></div><div id="finDespesaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><label style="display:block"><b>Checklist da despesa</b><select id="finDespesaChecklist"><option value="">Sem checklist</option></select><small class="sub" style="display:block;margin-top:4px">A despesa ficará vinculada somente ao checklist da obra selecionada.</small></label></div></div><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Combustível</option><option>Mão de obra</option><option>Locação</option><option>Serviço terceirizado</option><option value="Adiantamento">Vale</option><option>Ferramentas e equipamentos</option><option>Transporte</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
 <div class="modal" id="fotoM"><div class="modalBox"><div class="modalHead"><h2>Relatório fotográfico</h2><button class="x" onclick="closeM('fotoM')">×</button></div><form onsubmit="saveFoto(event)"><div class="formGrid"><label>Obra<select id="fotoObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="fotoData" type="date"/></label><label class="full">Título<input id="fotoTitulo"/></label><label class="full">Fotos<input accept="image/*" id="fotoFiles" multiple="" required="" type="file"/></label><label class="full">Observação<textarea id="fotoObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('fotoM')" type="button">Cancelar</button><button class="btn primary">Salvar fotos</button></div></form></div></div>
 <div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra<select id="pagObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Vales</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
 <div class="pay-summary"><div><small>Diárias pendentes</small><b id="pagDiariasTotal">R$ 0,00</b></div></div><div class="formActions"><button class="btn" onclick="closeM('pagEquipeM')" type="button">Cancelar</button><button class="btn primary">Processar pagamento</button></div></form></div></div>
@@ -1962,6 +1976,43 @@ function sameObra(a,b){return String(recordObraId(a))===String(b);}
 function sameChecklist(a,b){return String(recordChecklistId(a))===String(b);}
 function checklistForObra(obraId){
   return (D.checklist||[]).filter(x=>String(recordObraId(x))===String(obraId));
+}
+
+/*
+  Normaliza vínculos financeiros antigos sem fazer rateio automático.
+  Se um registro já possui obra_id/obraId válido, ele é preservado.
+  Se só existe o nome da obra, converte para o id. Para diárias sem obra,
+  só usa a obra do funcionário quando há uma única obra possível.
+*/
+function normalizarVinculosFinanceiros(){
+  const obras=Array.isArray(D.obras)?D.obras:[];
+  const porNome=new Map(obras.map(o=>[normalize(o.nome||''),String(o.id)]).filter(([n])=>n));
+  const validIds=new Set(obras.map(o=>String(o.id)));
+  const getObraPorTexto=x=>{
+    const raw=String(x?.obra||x?.obra_nome||x?.nome_obra||'').trim();
+    if(!raw)return '';
+    if(validIds.has(raw))return raw;
+    return porNome.get(normalize(raw))||'';
+  };
+  let changed=false;
+  for(const table of ['pagamentos','gastos','diarias','checklist']){
+    for(const r of (D[table]||[])){
+      let oid=String(recordObraId(r)||'');
+      if(!validIds.has(oid)) oid=getObraPorTexto(r);
+      if(oid && String(r.obra_id||'')!==oid){r.obra_id=oid;changed=true;}
+    }
+  }
+  // Diária antiga sem obra: só vincula se houver exatamente uma obra possível.
+  for(const d of (D.diarias||[])){
+    if(String(recordObraId(d)||''))continue;
+    const f=(D.funcionarios||[]).find(x=>String(x.id)===String(d.funcionario_id||''));
+    const candidatos=new Set();
+    const fo=String(f?.obra_id||''); if(validIds.has(fo))candidatos.add(fo);
+    const map=localFuncObras(); const mo=String(map?.[d.funcionario_id]||''); if(validIds.has(mo))candidatos.add(mo);
+    const texto=getObraPorTexto(d); if(texto)candidatos.add(texto);
+    if(candidatos.size===1){d.obra_id=[...candidatos][0];changed=true;}
+  }
+  return changed;
 }
 function checklistNome(id){
   const c=(D.checklist||[]).find(x=>String(x.id)===String(id));
@@ -2874,7 +2925,7 @@ function openConfiguracoes(){
     m.innerHTML=`<div class="modalBox" style="max-width:720px;max-height:90vh;overflow:auto">
       <div class="modalHead"><div><h2>⚙️ Configurações</h2><p class="sub">Dados do aplicativo, conta e ações administrativas.</p></div><button class="x" onclick="closeM('edConfiguracoesModal')">×</button></div>
       <div class="card"><h3>📱 Dados do aplicativo</h3><div class="edConfigDataList"><div class="edConfigDataRow"><span>Aplicativo</span><b>EDIFIQ — Construção Civil</b></div><div class="edConfigDataRow"><span>Versão</span><b>Atual</b></div><div class="edConfigDataRow"><span>Armazenamento</span><b>Local + nuvem quando disponível</b></div></div></div>
-      <div class="card"><h3>🔐 Login da conta</h3><div class="three"><div><small>E-mail</small><b>${esc(email)}</b></div><div><small>Status</small><b class="green">Sessão atual</b></div><div><small>Conta</small><b>EDIFIQ</b></div></div></div>
+      <div class="card"><h3>🔐 Login da conta</h3><div class="edConfigLoginList"><div class="edConfigLoginRow"><span>E-mail</span><b>${esc(email)}</b></div><div class="edConfigLoginRow"><span>Status</span><b class="green">Sessão atual</b></div><div class="edConfigLoginRow"><span>Conta</span><b>EDIFIQ</b></div></div></div>
       <div class="card dangerDataCard"><h3>🗑️ Apagar dados</h3><p class="sub">As ações de apagar ficam centralizadas aqui. Faça um backup antes de excluir.</p><div class="reportGrid dataDeleteGrid"><button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar Equipe</b><small>Funcionários, diárias, faltas e registros.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar Obras</b><small>Obras e registros vinculados.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar Financeiro</b><small>Receitas, despesas e pagamentos.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar Tudo</b><small>Apaga todos os dados do aplicativo.</small></button></div></div>
     </div>`; document.body.appendChild(m);
   }else m.classList.add('open');
@@ -3582,6 +3633,7 @@ async function loadCloud(){
     if(await loadTable(table)) okCount++;
   }
   mergeLocal();
+  normalizarVinculosFinanceiros();
   aplicarExclusoesPendentes();
   await retryEdifiqDeleteQueue();
   await retryEdifiqPendingUpdates();
@@ -5445,7 +5497,11 @@ for(const check of checks){
 
   // Cada diária fica exatamente na obra/checklist onde foi registrada.
   pendingItems.forEach((diaria,idx)=>{
-    const obraId=String(diaria.obra_id||"");
+    let obraId=String(recordObraId(diaria)||"");
+    if(!obraId){
+      const fObra=String(getFuncObra(id)||"");
+      if(fObra)obraId=fObra;
+    }
     if(!obraId)return;
     grupos.push({
       uid:'d_'+String(diaria.id||idx),
@@ -5459,7 +5515,7 @@ for(const check of checks){
 
   // Bônus/extras também entram na folha e mantêm sua própria obra/checklist.
   extrasPendentes.forEach((extra,idx)=>{
-    const obraId=String(extra.obra_id||extra.obraId||"");
+    const obraId=String(recordObraId(extra)||"");
     if(!obraId)return;
     grupos.push({
       uid:'x_'+String(extra.id||idx),
@@ -5734,6 +5790,7 @@ $("dtFin").value=today();
 $("forFin").value="";
 $("obsFin").value="";
 $("oFin").value="";
+if($("finReceitaSemChecklist"))$("finReceitaSemChecklist").checked=false;
 $("finCategoria").value="Material";
 
 atualizarCategoriaFinanceira();
@@ -5802,12 +5859,15 @@ function receitaChecklistSelecionados(){
 
 function atualizarReceitaChecklistDistribuicao(){
   const wrap=$("finReceitaChecklistWrap"), list=$("finReceitaChecklistList"), status=$("finReceitaChecklistStatus");
+  const semWrap=$("finReceitaSemChecklistWrap"), sem=$("finReceitaSemChecklist");
   if(!wrap||!list)return;
   const tipo=$("tFin")?.value||"entrada";
   const obraId=$("oFin")?.value||"";
   const total=Number($("vFin")?.value||0);
-  wrap.classList.toggle("hidden",tipo!=="entrada");
-  if(tipo!=="entrada"){list.innerHTML="";if(status)status.textContent="";return;}
+  const semChecklist=!!sem?.checked;
+  if(semWrap) semWrap.classList.toggle("hidden",tipo!=="entrada");
+  wrap.classList.toggle("hidden",tipo!=="entrada"||semChecklist);
+  if(tipo!=="entrada"||semChecklist){list.innerHTML="";if(status)status.textContent=semChecklist?"Receita sem checklist: o valor ficará somente na obra selecionada.":"";if($("finReceitaChecklistTotal"))$("finReceitaChecklistTotal").textContent=money(0);return;}
   if(!obraId){
     list.innerHTML='<div class="empty">Selecione uma obra para escolher os checklists da receita.</div>';
     if(status)status.textContent="";
@@ -5815,7 +5875,7 @@ function atualizarReceitaChecklistDistribuicao(){
   }
   const itens=checklistForObra(obraId);
   if(!itens.length){
-    list.innerHTML='<div class="empty">Esta obra ainda não possui checklists cadastrados.</div>';
+    list.innerHTML='<div class="empty">Esta obra ainda não possui checklists cadastrados. Você também pode marcar “Lançar receita sem checklist”.</div>';
     if(status)status.textContent="";
     return;
   }
@@ -5828,26 +5888,11 @@ function atualizarReceitaChecklistDistribuicao(){
       <input id="finCheckValor_${esc(id)}" type="number" min="0" step="0.01" value="${v>0?esc(String(v)):""}" placeholder="R$ 0,00" onclick="event.stopPropagation()" oninput="atualizarReceitaChecklistResumo()" style="max-width:130px">
     </label>`;
   }).join("");
-  // restore selection after rebuilding and keep typed values where possible
   atuais.forEach((v,id)=>{
-    const cb=list.querySelector(`input[data-fin-check="${CSS.escape(id)}"]`);
-    const inp=$(`finCheckValor_${id}`);
-    if(cb)cb.checked=true;
-    if(inp&&v>0)inp.value=v;
+    const cb=list.querySelector(`input[data-fin-check="${CSS.escape(id)}"]`); const inp=$("finCheckValor_"+id);
+    if(cb)cb.checked=true; if(inp&&v>0)inp.value=v;
   });
-  const dist=receitaChecklistSelecionados();
-  const soma=dist.reduce((a,x)=>a+x.valor,0);
-  const dif=total-soma;
-  if($("finReceitaChecklistTotal"))$("finReceitaChecklistTotal").textContent=money(soma);
-  if(status){
-    status.className="sub";
-    status.textContent=total>0
-      ? (Math.abs(dif)<0.01 ? `Distribuição completa: ${money(soma)} de ${money(total)}.` : `Distribuído: ${money(soma)} de ${money(total)}. Falta distribuir: ${money(Math.max(0,dif))}.`)
-      : "Informe o valor da receita para distribuir.";
-    if(Math.abs(dif)<0.01)status.style.color="var(--green,#3ddc84)";
-    else if(soma>total)status.style.color="var(--red,#ff5f56)";
-    else status.style.color="";
-  }
+  atualizarReceitaChecklistResumo();
 }
 
 function atualizarReceitaChecklistResumo(){
@@ -5904,12 +5949,13 @@ return;
 if(tipo==="entrada"){
 
 const obraId=$("oFin").value||null;
-const dist=receitaChecklistSelecionados().filter(x=>Number(x.valor||0)>0);
+const semChecklist=!!$("finReceitaSemChecklist")?.checked;
+const dist=semChecklist?[]:receitaChecklistSelecionados().filter(x=>Number(x.valor||0)>0);
 const soma=dist.reduce((a,x)=>a+Number(x.valor||0),0);
-if(obraId && Math.abs(soma-valor)>0.01){
+if(obraId && !semChecklist && Math.abs(soma-valor)>0.01){
   toast(dist.length
-    ? `Distribua exatamente ${money(valor)} entre os checklists. Total atual: ${money(soma)}.`
-    : `Selecione pelo menos um checklist e distribua os ${money(valor)} da receita.`);
+    ? `Distribua exatamente ${money(valor)} entre os checklists ou marque “Lançar receita sem checklist”. Total atual: ${money(soma)}.`
+    : `Selecione um checklist e distribua os ${money(valor)} ou marque “Lançar receita sem checklist”.`);
   return;
 }
 const observacaoBase=$("obsFin").value.trim();
@@ -9630,6 +9676,7 @@ async function apagarDadosSetor(setor){
 }
 
 function renderAll(){
+  try{if(normalizarVinculosFinanceiros())saveLocalData();}catch(e){console.warn("Falha ao normalizar vínculos",e);}
  auditEDIFIQ();
 
 renderDashboard();
@@ -10350,7 +10397,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     box.innerHTML=`<div class="card">
       <div class="row"><div><h3>${escE(o.nome)}</h3><small>${total} etapa(s)</small></div><strong class="gold">${avg}%</strong></div>
       <div class="progress"><i style="width:${avg}%"></i></div>
-      <div class="three" style="margin-top:10px"><div><small>Serviços distribuídos</small><b>${moneyE(somaServicos)}</b></div><div><small>Recebido nos checklists</small><b class="green">${moneyE(receitaRateada)}</b></div><div><small>Despesas nos checklists</small><b class="red">${moneyE(despRateada)}</b></div><div><small>Lucro</small><b class="${lucroRateado>=0?'green':'red'}">${moneyE(lucroRateado)}</b></div><div><small>Margem</small><b>${margemRateada.toFixed(1).replace('.',',')}%</b></div><div><small>Execução média</small><b>${avg}%</b></div></div>
+      <div class="edCheckTopList"><div class="edCheckTopRow"><span>Total contratado</span><b>${moneyE(num(o.valor))}</b></div><div class="edCheckTopRow"><span>Total recebido</span><b class="green">${moneyE(receitaRateada)}</b></div><div class="edCheckTopRow"><span>Saldo a receber</span><b class="gold">${moneyE(Math.max(0,num(o.valor)-receitaRateada))}</b></div></div><div class="three" style="margin-top:10px"><div><small>Serviços distribuídos</small><b>${moneyE(somaServicos)}</b></div><div><small>Despesas nos checklists</small><b class="red">${moneyE(despRateada)}</b></div><div><small>Lucro</small><b class="${lucroRateado>=0?'green':'red'}">${moneyE(lucroRateado)}</b></div><div><small>Margem</small><b>${margemRateada.toFixed(1).replace('.',',')}%</b></div><div><small>Execução média</small><b>${avg}%</b></div></div>
       ${itens.length?itens.map(item=>{
         const pct=normalizarChecklistPct(item.progresso??((item.concluida||item.concluido)?100:0));
         const st=checkStats(item);
