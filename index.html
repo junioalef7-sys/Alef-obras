@@ -1819,7 +1819,7 @@ body{min-height:100vh;min-height:100dvh}
 <section class="page" id="diarias">
 <div class="pageTitle"><div><h1>Diárias</h1><p class="sub">Registro, acompanhamento e histórico individual por funcionário.</p></div><button class="btn gold" onclick="openDia()">＋ Diária</button></div>
 <div class="toolbar"><select id="payPeriod" onchange="renderPayroll()"><option value="dia">Hoje</option><option selected="" value="semana">Semana</option><option value="quinzena">15 dias</option><option value="mes">Mês</option><option value="todos">Todos</option></select></div>
-<div class="grid kpis"><div class="kpi"><small>Total pendente</small><strong id="payTotal">R$ 0,00</strong></div><div class="kpi"><small>Registros pendentes</small><strong id="payCount">0</strong></div></div>
+<div class="grid kpis"><div class="kpi"><small>Total pago</small><strong id="payTotal">R$ 0,00</strong></div></div>
 <div id="diaList"></div>
 <div class="card">
 <h2>Histórico de diárias por funcionário</h2>
@@ -2783,8 +2783,8 @@ normalize(g.fornecedor);
 const descricao=
 normalize(g.descricao);
 
-return fornecedor===nome||
-descricao.includes(nome);
+const vinculoFuncionario = String(g.funcionario_id??g.funcionarioId??g.func_id??'') === String(funcId);
+return vinculoFuncionario || fornecedor===nome || descricao.includes(nome);
 
 })
 .map(g=>{
@@ -5273,8 +5273,13 @@ const dt=new Date(`${d.data}T00:00:00`);
 return dt>=inicio;
 });
 
-const total=items.reduce((a,d)=>a+diariaValor(d),0);
-$("payTotal").textContent=money(total);
+const totalPago=(D.diarias||[]).filter(d=>{
+  if(!diariaEstaPaga(d)) return false;
+  if(!inicio) return true;
+  const dt=new Date(`${d.data}T00:00:00`);
+  return dt>=inicio;
+}).reduce((a,d)=>a+diariaValor(d),0);
+$("payTotal").textContent=money(totalPago);
 $("payCount").textContent=items.length;
 
 if(!items.length){
@@ -5760,7 +5765,9 @@ for(const item of processados){
         obra_id:obraId,checklist_id:checklistId,data,
         descricao:`[Mão de obra] ${descricao} - ${item.f.nome}${checklistId?` - ${checklistNome(checklistId)}`:""}`,
         valor:valorLancamento,fornecedor:item.f.nome,funcionario_id:item.id,
-        observacao:`Obra das diárias: ${nomeObra}. ${observacaoBase}`,categoria:"Mão de obra",status:"pago",data_pagamento:data
+        observacao:`Obra das diárias: ${nomeObra}. ${observacaoBase}`,categoria:"Mão de obra",status:"pago",data_pagamento:data,
+        diaria_ids:[String(grupo.diariaId)],
+        pagamento_equipe_id:`${item.id}_${data}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
       });
       if(!result){falhaFuncionario=true;break;}
       setLaborLink(result.id,grupo.source==='diaria'?[String(grupo.diariaId)]:[]);
@@ -5775,8 +5782,19 @@ for(const item of processados){
     const payloadBaixa={status:"Pago",valor_pago:valorBaixado,qtd_paga:qtdOriginal,pago_em:data,valor_baixado:valorBaixado};
     const atualizado=await updateRow("diarias",diaria.id,payloadBaixa);
     const localDia=D.diarias.find(d=>String(d.id)===String(diaria.id));
-    if(localDia){Object.assign(localDia,payloadBaixa);localDia.pago=true;localDia.paga=true;localDia.data_pagamento=data;}
+    if(localDia){
+      Object.assign(localDia,payloadBaixa);
+      localDia.pago=true;
+      localDia.paga=true;
+      localDia.status="Pago";
+      localDia.data_pagamento=data;
+      localDia.pago_em=data;
+      localDia.qtd_paga=qtdOriginal;
+      localDia.valor_pago=valorBaixado;
+      localDia.valor_baixado=valorBaixado;
+    }
     markDiariasPaid([diaria.id]);
+    saveLocalData();
     if(atualizado)baixados++;
   }
 
@@ -6641,7 +6659,8 @@ function advanceAmountForEmployeeInRange(funcId,ini,fim){
     if(gastoCategoria(g)!=="Adiantamento") return false;
     if(String(g.status||"").toLowerCase()==="pago" || String(g.status||"").toLowerCase()==="quitado" || String(g.status||"").toLowerCase()==="liquidado") return false;
     if(Number(g.valor||0)>0 && Number(applied[g.id]||0)>=Number(g.valor||0)) return false;
-    return String(g.data||"")>=ini && String(g.data||"")<=fim && (normalize(g.fornecedor)===nome||normalize(g.descricao).includes(nome));
+    const vinculoFuncionario = String(g.funcionario_id??g.funcionarioId??g.func_id??'') === String(funcId);
+    return String(g.data||"")>=ini && String(g.data||"")<=fim && (vinculoFuncionario || normalize(g.fornecedor)===nome||normalize(g.descricao).includes(nome));
   }).reduce((a,g)=>a+Math.max(0,Number(g.valor||0)-Number(applied[g.id]||0)),0);
 }
 function atualizarFolha(){
@@ -6754,7 +6773,7 @@ function renderFechamentoFolha(){
             <div class="folhaFuncionarioObra">🏗️ ${esc(r.obrasDaFolha.join(", ")||"Sem obra")}</div>
           </div>
           <div class="folhaFuncionarioGrid">
-            <div><small>Diárias</small><b>${r.ds.length}</b></div>
+            <div><small>Diárias em aberto</small><b>${r.dsPendentes.length}</b></div>
             <div><small>Bruto</small><b>${money(r.bruto)}</b></div>
             <div><small>Vale</small><b>${money(r.adiant)}</b></div>
             <div><small>Líquido</small><b class="green">${money(r.liquido)}</b></div>
@@ -8823,26 +8842,49 @@ function renderHistoricoFrequencia(){
   const box=$('histFreqList'), resumo=$('histFreqResumo'); if(!box)return;
   const fid=$('histFreqFunc')?.value||'', oid=$('histFreqObra')?.value||'', ini=$('histFreqInicio')?.value||'', fim=$('histFreqFim')?.value||'';
   const map=new Map();
-  const add=(funcId,data,obraId,status,obs)=>{
-    const id=String(funcId||''), dt=String(data||''); if(!id||!dt)return;
-    if(ini&&dt<ini||fim&&dt>fim)return;
-    if(fid&&id!==String(fid))return;
-    if(oid&&String(obraId||'')!==String(oid))return;
-    const key=id+'|'+dt+'|'+String(obraId||'');
-    const prev=map.get(key);
-    const rank={falta:3,atestado:3,justificada:3,trabalhou:2,presente:2};
-    if(!prev||((rank[status]||1)>(rank[prev.status]||1)))map.set(key,{funcId:id,data:dt,obraId:obraId||'',status,obs:obs||''});
+  const normStatus=(raw)=>{
+    const s=String(raw||'').trim().toLowerCase();
+    if(['sem_justificativa','sem justificativa','injustificada','falta_sem_justificativa','falta sem justificativa'].includes(s))return 'falta';
+    if(['justificada','com_justificativa','com justificativa','falta_justificada','falta com justificativa','falta_justificada'].includes(s))return 'justificada';
+    if(['atestado','afastamento'].includes(s))return 'atestado';
+    if(['trabalhou','trabalhado','dia_trabalhado'].includes(s))return 'trabalhou';
+    if(['presente','presença','presenca'].includes(s))return 'presente';
+    if(s.includes('falta'))return s.includes('just')?'justificada':'falta';
+    return s||'falta';
   };
-  (D.diarias||[]).forEach(d=>add(d.funcionario_id??d.funcId??d.funcionarioId,d.data,d.obra_id,'trabalhou',d.observacao));
-  (D.presencas||[]).forEach(d=>{if(String(d.status||'presente').toLowerCase()==='presente')add(d.funcionario_id,d.data,d.obra_id,'presente',d.observacao);});
-  (D.faltas||[]).forEach(d=>add(d.funcionario_id,d.data,d.obra_id,d.tipo||'falta',d.observacao));
+  const add=(funcId,data,obraId,status,obs)=>{
+    const id=String(funcId??'').trim(), dt=String(data??'').trim(); if(!id||!dt)return;
+    if(ini&&dt<ini || fim&&dt>fim)return;
+    if(fid&&id!==String(fid))return;
+    if(oid&&String(obraId??'')!==String(oid))return;
+    const st=normStatus(status);
+    const key=id+'|'+dt+'|'+String(obraId??'');
+    const prev=map.get(key);
+    const rank={falta:4,justificada:4,atestado:4,trabalhou:2,presente:2};
+    if(!prev || (rank[st]||1)>(rank[prev.status]||1)) map.set(key,{funcId:id,data:dt,obraId:obraId??'',status:st,obs:obs||''});
+  };
+  (D.diarias||[]).forEach(d=>add(d.funcionario_id??d.funcId??d.funcionarioId??d.funcionario_id_fk,d.data,d.obra_id??d.obraId,'trabalhou',d.observacao));
+  (D.presencas||[]).forEach(d=>add(d.funcionario_id??d.funcId??d.funcionarioId,d.data,d.obra_id??d.obraId,'presente',d.observacao));
+  (D.faltas||[]).forEach(d=>add(d.funcionario_id??d.funcId??d.funcionarioId,d.data,(((d.obra_id??d.obraId)||getFuncObra(d.funcionario_id??d.funcId??d.funcionarioId)||'')),d.tipo??d.status??'falta',d.observacao));
+  // Compatibilidade com registros antigos que ficaram apenas no cache local.
+  try{
+    const local=typeof localData==='function'?localData():{};
+    (local?.diarias||[]).forEach(d=>add(d.funcionario_id??d.funcId??d.funcionarioId??d.funcionario_id_fk,d.data,d.obra_id??d.obraId,'trabalhou',d.observacao));
+    (local?.presencas||[]).forEach(d=>add(d.funcionario_id??d.funcId??d.funcionarioId,d.data,d.obra_id??d.obraId,d.status??'presente',d.observacao));
+    (local?.faltas||[]).forEach(d=>add(d.funcionario_id??d.funcId??d.funcionarioId,d.data,(((d.obra_id??d.obraId)||getFuncObra(d.funcionario_id??d.funcId??d.funcionarioId)||'')),d.tipo??d.status??'falta',d.observacao));
+  }catch(_){ }
   const items=[...map.values()].sort((a,b)=>String(b.data).localeCompare(String(a.data))||String(a.funcId).localeCompare(String(b.funcId)));
-  const trabalhados=items.filter(x=>x.status==='trabalhou'||x.status==='presente').length, faltas=items.filter(x=>['falta','justificada','atestado'].includes(x.status)).length, pessoas=new Set(items.map(x=>x.funcId)).size;
+  const trabalhados=items.filter(x=>['trabalhou','presente'].includes(x.status)).length;
+  const faltas=items.filter(x=>['falta','justificada','atestado'].includes(x.status)).length;
   if(resumo)resumo.innerHTML=`<div class="historyMetric"><small>Dias registrados</small><b>${items.length}</b></div><div class="historyMetric"><small>Dias trabalhados</small><b class="green">${trabalhados}</b></div><div class="historyMetric"><small>Faltas / afastamentos</small><b class="red">${faltas}</b></div>`;
   if(!items.length){box.innerHTML='<div class="empty">Nenhum registro de trabalho ou falta encontrado com os filtros selecionados.</div>';return;}
-  box.innerHTML=items.map(x=>{const f=D.funcionarios.find(y=>String(y.id)===x.funcId),o=D.obras.find(y=>String(y.id)===String(x.obraId));const falta=['falta','justificada','atestado'].includes(x.status);const label={falta:'Falta',justificada:'Falta justificada',atestado:'Atestado',trabalhou:'Trabalhou',presente:'Trabalhou'}[x.status]||x.status;return `<article class="historyCard"><div class="historyCardTop"><div class="historyAvatar">${falta?'⚠️':'✓'}</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(f?.funcao||'Função não informada')} · ${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${falta?'pending':'paid'}">${label}</span></div><div class="historyDataGrid"><div><small>Dia</small><b>${esc(formatDateBR(x.data))}</b></div><div><small>Obra</small><b>${esc(o?.nome||'—')}</b></div><div><small>Função</small><b>${esc(f?.funcao||'—')}</b></div><div><small>Observação</small><b>${esc(x.obs||'—')}</b></div></div></article>`;}).join('');
+  box.innerHTML=items.map(x=>{
+    const f=D.funcionarios.find(y=>String(y.id)===x.funcId),o=D.obras.find(y=>String(y.id)===String(x.obraId));
+    const falta=['falta','justificada','atestado'].includes(x.status);
+    const label={falta:'Falta sem justificativa',justificada:'Falta com justificativa',atestado:'Atestado',trabalhou:'Trabalhou',presente:'Trabalhou'}[x.status]||'Registro';
+    return `<article class="historyCard"><div class="historyCardTop"><div class="historyAvatar">${falta?'⚠️':'✓'}</div><div class="historyIdentity"><b>${esc(f?.nome||'Funcionário')}</b><small>${esc(f?.funcao||'Função não informada')} · ${esc(o?.nome||'Obra não definida')}</small></div><span class="historyStatus ${falta?'pending':'paid'}">${label}</span></div><div class="historyDataGrid"><div><small>Dia</small><b>${esc(formatDateBR(x.data))}</b></div><div><small>Obra</small><b>${esc(o?.nome||'—')}</b></div><div><small>Função</small><b>${esc(f?.funcao||'—')}</b></div><div><small>Observação</small><b>${esc(x.obs||'—')}</b></div></div></article>`;
+  }).join('');
 }
-
 function pagamentoEquipeHistorico(){
   const arr=[];
   for(const g of (D.gastos||[])){
@@ -8879,7 +8921,7 @@ function renderHistoricoDiariasPro(){
   const box=$('histDiaList'), resumoBox=$('histDiaResumo'); if(!box)return;
   const fid=$('histFunc2')?.value||'', ini=$('histInicio2')?.value||'', fim=$('histFim2')?.value||'';
   const dias=(D.diarias||[]).map(d=>({kind:'diaria',row:d,data:d.data||'',funcionario_id:d.funcionario_id??d.funcId??d.funcionarioId,obra_id:d.obra_id,valor:diariaValor(d),pago:diariaEstaPaga(d),observacao:d.observacao||''}));
-  const faltas=(D.faltas||[]).map(f=>({kind:'falta',row:f,data:f.data||'',funcionario_id:f.funcionario_id,obra_id:f.obra_id||getFuncObra(f.funcionario_id)||'',valor:0,pago:false,observacao:f.observacao||'',tipo:f.tipo||'sem_justificativa'}));
+  const faltas=(D.faltas||[]).map(f=>({kind:'falta',row:f,data:f.data||'',funcionario_id:f.funcionario_id??f.funcId??f.funcionarioId,obra_id:(((f.obra_id??f.obraId)||getFuncObra(f.funcionario_id??f.funcId??f.funcionarioId)||'')),valor:0,pago:false,observacao:f.observacao||'',tipo:f.tipo||'sem_justificativa'}));
   let items=[...dias,...faltas].filter(x=>String(x.funcionario_id) && (!fid||String(x.funcionario_id)===String(fid)) && (!ini||String(x.data)>=ini) && (!fim||String(x.data)<=fim));
   items.sort((a,b)=>String(b.data).localeCompare(String(a.data)));
   const total=items.filter(x=>x.kind==='diaria').reduce((a,x)=>a+x.valor,0), pag=items.filter(x=>x.kind==='diaria'&&x.pago).reduce((a,x)=>a+x.valor,0), faltasTotal=items.filter(x=>x.kind==='falta').length;
@@ -8911,7 +8953,7 @@ function renderHistoricoDiarias(){
     const id=d.funcionario_id ?? d.funcId ?? d.funcionarioId ?? d.funcionario_id_fk;
     return String(id)===String(funcId) && (!ini||String(d.data||'')>=ini) && (!fim||String(d.data||'')<=fim);
   }).map(d=>({kind:'trabalhou',data:d.data||'',obra_id:d.obra_id,valor:diariaValor(d),pago:diariaEstaPaga(d),row:d}));
-  const faltas=(D.faltas||[]).filter(f=>String(f.funcionario_id)===String(funcId) && (!ini||String(f.data||'')>=ini) && (!fim||String(f.data||'')<=fim)).map(f=>({kind:'falta',data:f.data||'',obra_id:f.obra_id||getFuncObra(funcId)||'',valor:0,pago:false,row:f}));
+  const faltas=(D.faltas||[]).filter(f=>String(f.funcionario_id??f.funcId??f.funcionarioId)===String(funcId) && (!ini||String(f.data||'')>=ini) && (!fim||String(f.data||'')<=fim)).map(f=>({kind:'falta',data:f.data||'',obra_id:f.obra_id||getFuncObra(funcId)||'',valor:0,pago:false,row:f}));
   const items=[...diarias,...faltas].sort((a,b)=>String(b.data).localeCompare(String(a.data)));
   const f=D.funcionarios.find(x=>String(x.id)===String(funcId));
   const total=diarias.reduce((a,d)=>a+d.valor,0), pend=diarias.filter(d=>!d.pago).reduce((a,d)=>a+d.valor,0), pag=diarias.filter(d=>d.pago).reduce((a,d)=>a+d.valor,0), faltasTotal=faltas.length;
