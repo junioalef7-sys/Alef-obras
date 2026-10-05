@@ -1978,6 +1978,12 @@ const PAID_DIARIAS_KEY="edifiq_diarias_baixadas_v2";
 function getPaidDiariasMap(){try{return JSON.parse(localStorage.getItem(PAID_DIARIAS_KEY)||"{}");}catch(_){return {};}}
 function markDiariasPaid(ids){const m=getPaidDiariasMap();(ids||[]).forEach(id=>{if(id!=null)m[String(id)]=true;});try{localStorage.setItem(PAID_DIARIAS_KEY,JSON.stringify(m));}catch(_){}return m;}
 function isDiariaMarkedPaid(id){return !!getPaidDiariasMap()[String(id)];}
+const LABOR_LINKS_KEY="edifiq_mao_obra_links_v1";
+function getLaborLinks(){try{const x=JSON.parse(localStorage.getItem(LABOR_LINKS_KEY)||"{}");return x&&typeof x==="object"?x:{};}catch(_){return {};}}
+function saveLaborLinks(x){try{localStorage.setItem(LABOR_LINKS_KEY,JSON.stringify(x||{}));}catch(_){}}
+function setLaborLink(gastoId,diariaIds){const x=getLaborLinks();x[String(gastoId)]=(diariaIds||[]).map(String);saveLaborLinks(x);return x;}
+function getLaborLink(gastoId){return getLaborLinks()[String(gastoId)]||[];}
+function removeLaborLink(gastoId){const x=getLaborLinks();delete x[String(gastoId)];saveLaborLinks(x);return x;}
 const SERVICE_KEY="edifiq_servicos_adicionais_v1";
 const DEFAULT_CHECKLIST=["Gabarito","Locação","Alvenaria","Chapisco","Reboco","Pintura","Limpeza","Final da obra"];
 
@@ -2121,11 +2127,23 @@ async function addServicoAdicional(obraId){
   const nome=prompt("Nome do serviço adicional:",""); if(nome===null||!nome.trim())return;
   const raw=prompt("Valor do serviço adicional (R$):","0"); if(raw===null)return;
   const valor=Number(String(raw).replace(/\./g,"").replace(",",".")); if(!Number.isFinite(valor)||valor<=0){toast("Informe um valor válido.");return;}
-  const novoValor=Number(o.valor||0)+valor;
+  const valorAnterior=Number(o.valor||0);
+  const novoValor=valorAnterior+valor;
   const result=await updateRow("obras",obraId,{valor:novoValor});
   if(result){
-    const all=getServices(); if(!all[obraId])all[obraId]=[]; all[obraId].push({id:"svc_"+Date.now(),nome:nome.trim(),valor,data:today()}); saveServices(all);
-    toast(`Serviço adicional registrado: ${money(valor)}`); renderAll();
+    const all=getServices();
+    if(!all[obraId])all[obraId]=[];
+    all[obraId].push({
+      id:"svc_"+Date.now(),
+      nome:nome.trim(),
+      valor,
+      valor_contrato_antes:valorAnterior,
+      valor_contrato_depois:novoValor,
+      data:today()
+    });
+    saveServices(all);
+    toast(`Serviço adicional registrado: ${money(valor)}. Novo valor total do contrato: ${money(novoValor)}.`);
+    renderAll();
   }
 }
 
@@ -3934,7 +3952,7 @@ return D[table][index];
 
 }
 
-async function removeRow(
+async function edifiqRemoveRowOriginal(
 table,
 id
 ){
@@ -4225,6 +4243,60 @@ try{
 
 
 /* =========================================================
+   EDIFIQ — EXCLUSÃO VINCULADA E HISTÓRICO DA EQUIPE
+   ========================================================= */
+async function removeRow(table,id){
+  const row=(D[table]||[]).find(x=>String(x.id)===String(id));
+  if(!row){ await edifiqRemoveRowOriginal(table,id); return; }
+
+  // Excluir uma mão de obra paga também desfaz o pagamento da diária
+  // vinculada, para que a Equipe volte a mostrar o valor como pendente.
+  if(table==='gastos' && gastoSubcategoria(row)==='Mão de obra'){
+    if(!confirm('Deseja realmente excluir este pagamento de mão de obra? O registro também será removido do histórico da equipe e as diárias vinculadas voltarão a ficar pendentes.')) return;
+    const ids=getLaborLink(id);
+    let linked=ids.length?(D.diarias||[]).filter(d=>ids.includes(String(d.id))):[];
+
+    // Compatibilidade com pagamentos antigos que ainda não possuem diaria_ids.
+    if(!linked.length && row.funcionario_id!=null){
+      const alvoFunc=String(row.funcionario_id), alvoObra=String(row.obra_id||'');
+      const alvoData=String(row.data_pagamento||row.data||'');
+      const valor=Math.round(Number(row.valor||0)*100);
+      const candidatas=(D.diarias||[]).filter(d=>String(d.funcionario_id)===alvoFunc && String(d.obra_id||'')===alvoObra && diariaEstaPaga(d) && (!alvoData || String(d.data_pagamento||d.pago_em||d.data||'')===alvoData));
+      let soma=0;
+      const selecionadas=[];
+      for(const d of candidatas){
+        if(soma>=valor)break;
+        selecionadas.push(d); soma+=Math.round(Number(diariaValor(d)||0)*100);
+        if(soma>=valor)break;
+      }
+      if(Math.abs(soma-valor)<=1) linked=selecionadas;
+    }
+
+    for(const d of linked){
+      const patch={status:'Pendente',valor_pago:0,qtd_paga:0,pago_em:null,valor_baixado:0};
+      await updateRow('diarias',d.id,patch);
+      const local=D.diarias.find(x=>String(x.id)===String(d.id));
+      if(local){Object.assign(local,patch);local.pago=false;local.paga=false;}
+      const paid=getPaidDiariasMap();
+      if(paid && paid[d.id]!==undefined) delete paid[d.id];
+      try{localStorage.setItem(PAID_DIARIAS_KEY,JSON.stringify(paid));}catch(_){}
+    }
+
+    // Remova somente o lançamento financeiro escolhido.
+    await edifiqRemoveRowOriginal('gastos',id);
+    removeLaborLink(id);
+    // A função original já renderiza/salva; reforçamos para manter a Equipe zerada.
+    saveLocalData(); renderAll();
+    toast(linked.length?`Pagamento excluído. ${linked.length} diária(s) voltaram para pendente.`:'Pagamento excluído do Financeiro.');
+    return;
+  }
+
+  // Exclusão de uma receita não deve apagar diárias/equipe: receita é recebimento do cliente.
+  await edifiqRemoveRowOriginal(table,id);
+}
+
+
+/* =========================================================
    OBRAS
    ========================================================= */
 
@@ -4393,6 +4465,9 @@ function obraFinanceData(obraId){
   const rows=(D.gastos||[]).filter(x=>String(recordObraId(x))===oid);
   const pagamentos=(D.pagamentos||[]).filter(x=>String(recordObraId(x))===oid);
   const contrato=Math.max(0,num(obra?.valor));
+  const servicosAdicionais=servicesForObra(obraId)||[];
+  const extras=servicosAdicionais.reduce((a,x)=>a+num(x?.valor),0);
+  const contratoBase=Math.max(0,contrato-extras);
   const receita=pagamentos.reduce((a,x)=>a+num(x.valor),0);
 
   const somaCat=(fn)=>rows.reduce((a,x)=>a+(fn(x)?num(x.valor):0),0);
@@ -4413,7 +4488,7 @@ function obraFinanceData(obraId){
   const saldoContrato=contrato-despesas;
 
   return {
-    contrato,receita,material,mao,terceirizado,outros,despesas,resultado,
+    contrato,contratoBase,servicosAdicionais:extras,receita,material,mao,terceirizado,outros,despesas,resultado,
     margemLucro,saldoContrato,saldoReceber,combustivel,locacao,
     ferramentasEquipamentos,transporte
   };
@@ -4691,6 +4766,8 @@ function renderObras(){
   const funcoesObra=Object.values(diasResumo.porFunc||{}).sort((a,b)=>String(a.funcao||'').localeCompare(String(b.funcao||''),'pt-BR'));
   const totalDias=Number(diasResumo.totais?.geral||0);
   const contrato=Number(f.contrato||o.valor||0);
+  const servicosAdicionaisTotal=Number(f.servicosAdicionais||servicesForObra(o.id).reduce((a,s)=>a+Number(s?.valor||0),0));
+  const contratoBase=Math.max(0,contrato-servicosAdicionaisTotal);
   const recebido=Number(f.receita||0);
   const aReceber=Math.max(0,contrato-recebido);
   const despesas=Number(f.despesas||0);
@@ -4746,7 +4823,8 @@ function renderObras(){
 
   const gastosHtml=`<div class="obraModelKpis four">${Object.entries(gc).map(([k,v])=>`<div><small>${esc(k)}</small><b>${money(v)}</b></div>`).join('')}</div><div class="obraModelHighlight"><span>Total de custos</span><strong class="red">${money(totalCustos)}</strong></div><div class="obraModeloList">${x.gastos.length?x.gastos.slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||''))).slice(0,60).map(g=>`<div class="obraModeloRow"><span><b>${esc(g.descricao||'Despesa')}</b><br><small>${formatDateBR(g.data)} • ${esc(gastoSubcategoria(g))}${g.fornecedor?' • '+esc(g.fornecedor):''}</small></span><b class="red">${money(g.valor)}</b></div>`).join(''):'<div class="obraModeloEmpty">Nenhum gasto registrado nesta obra.</div>'}</div><button class="btn gold" type="button" onclick="go('financeiro')">Abrir Financeiro</button>`;
 
-  const servicosHtml=x.extras.length?`<div class="obraModeloList">${x.extras.map(s=>`<div class="obraModeloRow"><span><b>${esc(s.nome||s.descricao||'Serviço adicional')}</b><br><small>${formatDateBR(s.data)}</small></span><b class="blue">${money(s.valor)}</b></div>`).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum serviço adicional cadastrado.</div>';
+  const servicosTotal=x.extras.reduce((a,s)=>a+Number(s?.valor||0),0);
+  const servicosHtml=`<div class="obraSummaryBlock" style="margin-bottom:12px"><div class="obraResultRow"><span>Serviços adicionais</span><strong class="blue">${money(servicosTotal)}</strong></div><div class="obraResultRow"><span>Valor total do contrato</span><strong class="gold">${money(contrato)}</strong></div></div>`+(x.extras.length?`<div class="obraModeloList">${x.extras.map(s=>`<div class="obraModeloRow"><span><b>${esc(s.nome||s.descricao||'Serviço adicional')}</b><br><small>${formatDateBR(s.data)}</small></span><b class="blue">${money(s.valor)}</b></div>`).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum serviço adicional cadastrado.</div>');
 
   const pagamentos=x.repasses.slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
   const recebidoStatus=recebido>=contrato&&contrato>0?'Quitado':(recebido>0?'Em andamento':'Pendente');
@@ -4761,9 +4839,9 @@ function renderObras(){
 
   const pagamentosHtml=`<div class="obraModelKpis three"><div><small>Recebimentos</small><b>${pagamentos.length}</b></div><div><small>Total recebido</small><b class="green">${money(recebido)}</b></div><div><small>A receber</small><b class="gold">${money(aReceber)}</b></div></div><div class="obraModeloList">${pagamentos.length?pagamentos.map(r=>`<div class="obraModeloRow"><span><b>${esc(r.descricao||'Pagamento recebido')}</b><br><small>${formatDateBR(r.data)} • ${esc(r.forma_pagamento||r.forma||'Recebimento')}</small></span><b class="green">${money(r.valor)}</b></div>`).join(''):'<div class="obraModeloEmpty">Nenhum pagamento recebido registrado.</div>'}</div><button class="btn gold" type="button" onclick="openFin()">＋ Registrar Pagamento</button>`;
 
-  const resumoHtml=`<div class="obraSummaryBlock"><h3>Valores da Obra</h3><div class="obraBigMetric"><small>Valor Total da Obra</small><strong class="blue">${money(contrato)}</strong></div><div class="obraBigMetric"><small>Já Recebi</small><strong class="green">${money(recebido)}</strong></div><div class="obraBigMetric"><small>Falta Receber</small><strong class="green">${money(aReceber)}</strong></div><div class="obraProgressLine"><small>Progresso de Recebimento</small><b>${pctRecebido.toFixed(0)}%</b></div><div class="obraMiniProgress"><span style="width:${pctRecebido}%"></span></div></div>
+  const resumoHtml=`<div class="obraSummaryBlock"><h3>Valores da Obra</h3><div class="obraBigMetric"><small>Valor do contrato original</small><strong class="blue">${money(contratoBase)}</strong></div><div class="obraBigMetric"><small>Serviços adicionais</small><strong class="blue">${money(servicosAdicionaisTotal)}</strong></div><div class="obraBigMetric"><small>Valor total do contrato</small><strong class="gold">${money(contrato)}</strong></div><div class="obraBigMetric"><small>Já Recebi</small><strong class="green">${money(recebido)}</strong></div><div class="obraBigMetric"><small>Falta Receber</small><strong class="green">${money(aReceber)}</strong></div><div class="obraProgressLine"><small>Progresso de Recebimento</small><b>${pctRecebido.toFixed(0)}%</b></div><div class="obraMiniProgress"><span style="width:${pctRecebido}%"></span></div></div>
     <div class="obraSummaryBlock result"><h3>Resultado</h3><div class="obraResultRow"><span>Lucro</span><strong class="green">${money(resultado)}</strong></div><div class="obraResultRow"><span>Margem</span><strong class="green">${margem.toFixed(1).replace('.',',')}%</strong></div></div>
-    <div class="obraSummaryBlock"><h3>Detalhamento de Custos</h3><div class="obraResultRow"><span>Mão de Obra</span><strong>${money(custoMao)}</strong></div><div class="obraResultRow"><span>Gastos com Materiais</span><strong>${money(custoMaterial)}</strong></div><div class="obraResultRow"><span>Serviços Adicionais</span><strong>${money(custoServicos)}</strong></div><div class="obraResultRow"><span>Terceirizados/Repasses</span><strong>${money(custoTerceiro)}</strong></div><hr><div class="obraResultRow total"><span>Total de Custos</span><strong>${money(despesas||totalCustos)}</strong></div></div>
+    <div class="obraSummaryBlock"><h3>Detalhamento de Custos</h3><div class="obraResultRow"><span>Mão de Obra</span><strong>${money(custoMao)}</strong></div><div class="obraResultRow"><span>Gastos com Materiais</span><strong>${money(custoMaterial)}</strong></div><div class="obraResultRow"><span>Serviços Adicionais</span><strong class="blue">${money(servicosAdicionaisTotal)}</strong></div><div class="obraResultRow"><span>Terceirizados/Repasses</span><strong>${money(custoTerceiro)}</strong></div><hr><div class="obraResultRow total"><span>Total de Custos</span><strong>${money(despesas||totalCustos)}</strong></div></div>
     <div class="obraSummaryBlock"><h3>Projeções</h3><div class="obraResultRow"><span>Lucro por Semana</span><strong>${money(lucroPorSemana)}</strong></div><div class="obraResultRow"><span>Dias Trabalhados</span><strong>${totalDias}</strong></div><div class="obraResultRow"><span>Gastos Registrados</span><strong>${x.gastos.length}</strong></div><div class="obraResultRow"><span>Serviços Adicionais</span><strong>${x.extras.length}</strong></div><div class="obraResultRow"><span>Serviços Terceirizados</span><strong>${x.gastos.filter(g=>gastoSubcategoria(g)==='Serviço terceirizado').length}</strong></div></div>`;
 
   const checklistHtml=x.checks.length?`<div class="obraModeloList">${x.checks.map(c=>{const pct=Math.max(0,Math.min(100,Number(c.progresso??((c.concluida||c.concluido)?100:0))));return `<div class="obraModeloRow"><span><b>${esc(c.tarefa||c.descricao||c.nome||c.titulo||'Item')}</b><br><small>${pct}% concluído</small></span><b class="blue">${pct}%</b></div>`;}).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum item de checklist cadastrado.</div>';
@@ -5665,6 +5743,7 @@ for(const item of processados){
         const ok=await updateRow("gastos",gastoExistente.id,payload);
         if(!ok){falhaFuncionario=true;break;}
         Object.assign(gastoExistente,payload,{servico_extra_id:grupo.extraId});
+        setLaborLink(gastoExistente.id,grupo.source==='diaria'?[String(grupo.diariaId)]:[]);
       }else{
         const extra=item.extrasPendentes.find(x=>String(x.id)===String(grupo.extraId));
         const result=await insertRow("gastos",{
@@ -5674,6 +5753,7 @@ for(const item of processados){
           observacao:`${observacaoBase} Obra: ${nomeObra}.`,categoria:"Mão de obra",status:"pago",data_pagamento:data
         });
         if(!result){falhaFuncionario=true;break;}
+        setLaborLink(result.id,grupo.source==='diaria'?[String(grupo.diariaId)]:[]);
       }
     }else{
       const result=await insertRow("gastos",{
@@ -5683,6 +5763,7 @@ for(const item of processados){
         observacao:`Obra das diárias: ${nomeObra}. ${observacaoBase}`,categoria:"Mão de obra",status:"pago",data_pagamento:data
       });
       if(!result){falhaFuncionario=true;break;}
+      setLaborLink(result.id,grupo.source==='diaria'?[String(grupo.diariaId)]:[]);
     }
   }
 
@@ -8824,45 +8905,20 @@ function renderHistoricoDiarias(){
   const sel=$('histFunc');
   if(!box||!sel)return;
   const funcId=sel.value||'';
-  if(!funcId){
-    box.innerHTML='Selecione um funcionário para visualizar o histórico.';
-    return;
-  }
-  const ini=$('histInicio')?.value||'';
-  const fim=$('histFim')?.value||'';
-  let items=D.diarias.filter(d=>{
-  const id=d.funcionario_id ?? d.funcId ?? d.funcionarioId ?? d.funcionario_id_fk;
-  return String(id)===String(funcId);
-});
-  if(ini)items=items.filter(d=>String(d.data||'')>=ini);
-  if(fim)items=items.filter(d=>String(d.data||'')<=fim);
-  items.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  if(!funcId){ box.innerHTML='Selecione um funcionário para visualizar o histórico.'; return; }
+  const ini=$('histInicio')?.value||'', fim=$('histFim')?.value||'';
+  const diarias=(D.diarias||[]).filter(d=>{
+    const id=d.funcionario_id ?? d.funcId ?? d.funcionarioId ?? d.funcionario_id_fk;
+    return String(id)===String(funcId) && (!ini||String(d.data||'')>=ini) && (!fim||String(d.data||'')<=fim);
+  }).map(d=>({kind:'trabalhou',data:d.data||'',obra_id:d.obra_id,valor:diariaValor(d),pago:diariaEstaPaga(d),row:d}));
+  const faltas=(D.faltas||[]).filter(f=>String(f.funcionario_id)===String(funcId) && (!ini||String(f.data||'')>=ini) && (!fim||String(f.data||'')<=fim)).map(f=>({kind:'falta',data:f.data||'',obra_id:f.obra_id||getFuncObra(funcId)||'',valor:0,pago:false,row:f}));
+  const items=[...diarias,...faltas].sort((a,b)=>String(b.data).localeCompare(String(a.data)));
   const f=D.funcionarios.find(x=>String(x.id)===String(funcId));
-  const total=items.reduce((a,d)=>a+diariaValor(d),0);
-  const pend=items.filter(d=>!diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
-  const pag=items.filter(d=>diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
-  if(!items.length){
-    box.innerHTML=`<div><b>${esc(f?.nome||'Funcionário')}</b><br><small>Nenhuma diária encontrada no período selecionado.</small></div>`;
-    return;
-  }
-  box.innerHTML=`
-    <div class="three">
-      <div><small>Total</small><br><b>${money(total)}</b></div>
-      <div><small>Pendente</small><br><b class="gold">${money(pend)}</b></div>
-      <div><small>Pago</small><br><b class="green">${money(pag)}</b></div>
-    </div>
-    <div style="overflow:auto;margin-top:10px">
-      ${items.map(d=>{
-        const o=D.obras.find(x=>String(x.id)===String(d.obra_id));
-        const v=diariaValor(d);
-        const status=diariaEstaPaga(d)?'Pago':'Pendente';
-        return `<div class="historyRow" style="display:grid;grid-template-columns:90px 1fr auto;gap:10px;align-items:center;border-top:1px solid var(--line);padding:9px 0">
-          <span>${esc(d.data||'')}</span>
-          <span><b>${esc(o?.nome||'Sem obra')}</b><br><small>${esc(d.observacao||'')}</small></span>
-          <span><b class="${status==='Pago'?'green':'gold'}">${money(v)}</b><br><small>${status}</small></span>
-        </div>`;
-      }).join('')}
-    </div>`;
+  const total=diarias.reduce((a,d)=>a+d.valor,0), pend=diarias.filter(d=>!d.pago).reduce((a,d)=>a+d.valor,0), pag=diarias.filter(d=>d.pago).reduce((a,d)=>a+d.valor,0), faltasTotal=faltas.length;
+  if(!items.length){box.innerHTML=`<div><b>${esc(f?.nome||'Funcionário')}</b><br><small>Nenhum dia trabalhado ou falta encontrada no período selecionado.</small></div>`;return;}
+  box.innerHTML=`<div class="three"><div><small>Dias/ocorrências</small><br><b>${items.length}</b></div><div><small>Dias trabalhados</small><br><b class="green">${diarias.length}</b></div><div><small>Faltas</small><br><b class="red">${faltasTotal}</b></div></div>
+    <div class="three" style="margin-top:10px"><div><small>Total diárias</small><br><b>${money(total)}</b></div><div><small>Pendente</small><br><b class="gold">${money(pend)}</b></div><div><small>Pago</small><br><b class="green">${money(pag)}</b></div></div>
+    <div style="overflow:auto;margin-top:10px">${items.map(x=>{const o=D.obras.find(y=>String(y.id)===String(x.obra_id));if(x.kind==='falta'){const tipo=x.row.tipo||'sem_justificativa';const label={falta:'Falta sem justificativa',sem_justificativa:'Falta sem justificativa',justificada:'Falta com justificativa',atestado:'Atestado'}[tipo]||'Falta';return `<div class="historyRow" style="display:grid;grid-template-columns:90px 1fr auto;gap:10px;align-items:center;border-top:1px solid var(--line);padding:9px 0"><span>${esc(x.data||'')}</span><span><b>${esc(o?.nome||'Sem obra')}</b><br><small>⚠️ ${esc(label)}${x.row.observacao?' · '+esc(x.row.observacao):''}</small></span><span><b class="red">Falta</b><br><small>Sem diária</small></span></div>`;}const status=x.pago?'Pago':'Pendente';return `<div class="historyRow" style="display:grid;grid-template-columns:90px 1fr auto;gap:10px;align-items:center;border-top:1px solid var(--line);padding:9px 0"><span>${esc(x.data||'')}</span><span><b>${esc(o?.nome||'Sem obra')}</b><br><small>✓ Dia trabalhado${x.row.observacao?' · '+esc(x.row.observacao):''}</small></span><span><b class="${status==='Pago'?'green':'gold'}">${money(x.valor)}</b><br><small>${status}</small></span></div>`;}).join('')}</div>`;
 }
 
 function fillHistoricoFuncionarioSelector(){
