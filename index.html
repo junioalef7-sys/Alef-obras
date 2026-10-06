@@ -1,5 +1,3 @@
-<!-- ETAPA 21: controle de usuários e permissões -->
-<!-- EDIFIQ — ETAPA 16: concorrência e múltiplos dispositivos -->
 <!-- EDIFIQ — ETAPA 4
      Proteção transacional da baixa de folha + idempotência por grupo + aplicação exata de vales.
      Mantém a versão anterior preservada e evita gravações parciais.
@@ -1598,7 +1596,6 @@ body{min-height:100vh;min-height:100dvh}
   <div class="edifiqMenuTitle edifiqSectionTitle">DADOS</div>
   <button class="edifiqDataRow" onclick="goMenu('config')"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
   <button class="edifiqDataRow" onclick="openBackupConfig()"><span>💾</span><b>Backup</b><span class="edifiqChevron">›</span></button>
-<button class="edifiqDataRow" onclick="goMenu('diagnostico')"><span>🛡️</span><b>Diagnóstico e Integridade</b><span class="edifiqChevron">›</span></button>
   <div class="edifiqDrawerAccount">
     <div class="edifiqAvatar">AL</div><div class="edifiqAccountText"><b id="drawerUserName">Alef Júnior</b><small id="drawerUserEmail">Conta EDIFIQ</small><em>♛ Premium</em></div>
   </div>
@@ -1872,36 +1869,6 @@ body{min-height:100vh;min-height:100dvh}
 <div class="grid kpis docKpis"><div class="kpi"><small>Documentos</small><strong id="docTotal">0</strong></div><div class="kpi"><small>Obras com documentos</small><strong id="docObras">0</strong></div><div class="kpi"><small>Contratos</small><strong id="docContratos">0</strong></div><div class="kpi"><small>Notas / comprovantes</small><strong id="docFinanceiros">0</strong></div></div>
 <div id="documentosList"></div>
 </section>
-
-<section class="page" id="config">
-  <div class="pageTitle"><div><h1>⚙️ Configurações</h1><p class="sub">Conta, segurança e permissões do EDIFIQ.</p></div></div>
-  <div class="financeModernGrid">
-    <div class="financeModernPanel">
-      <h3>👤 Conta atual</h3>
-      <div class="financeRow"><span>Usuário</span><b id="edifiqContaEmail">—</b></div>
-      <div class="financeRow"><span>Perfil de acesso</span><b id="edifiqContaPapel" class="gold">Proprietário</b></div>
-      <div class="financeRow"><span>Status da sessão</span><b id="edifiqContaStatus" class="green">Conectado</b></div>
-    </div>
-    <div class="financeModernPanel">
-      <h3>🔐 Permissões</h3>
-      <div id="edifiqPermissoesResumo" class="note">Carregando permissões…</div>
-    </div>
-  </div>
-  <div class="card">
-    <h2>Perfis disponíveis</h2>
-    <div class="financeRow"><span><b>Proprietário</b><br><small>Acesso completo à conta e gerenciamento dos membros.</small></span><b class="green">Completo</b></div>
-    <div class="financeRow"><span><b>Administrador</b><br><small>Perfil preparado para administrar a operação.</small></span><b>Administrativo</b></div>
-    <div class="financeRow"><span><b>Gestor</b><br><small>Perfil preparado para acompanhar obras e equipe.</small></span><b>Gestão</b></div>
-    <div class="financeRow"><span><b>Financeiro</b><br><small>Perfil preparado para operações financeiras.</small></span><b>Financeiro</b></div>
-    <div class="financeRow"><span><b>Equipe</b><br><small>Perfil preparado para rotinas operacionais.</small></span><b>Operacional</b></div>
-    <div class="financeRow"><span><b>Visualizador</b><br><small>Perfil preparado para consulta sem edição.</small></span><b>Consulta</b></div>
-  </div>
-  <div class="note">A estrutura de permissões foi criada de forma isolada e segura. O proprietário atual continua com o mesmo acesso de antes; nenhuma permissão existente foi reduzida nesta etapa.</div>
-</section>
-<section class="page" id="diagnostico">
-  <div class="pageTitle"><div><h1>🛡️ Diagnóstico e Integridade</h1><p class="sub">Verificação técnica dos dados, cálculos, vínculos e sincronização. Esta tela não altera lançamentos automaticamente.</p></div><button class="btn gold" type="button" onclick="executarDiagnosticoEDIFIQ()">🔎 Verificar agora</button></div>
-  <div id="diagnosticoConteudo"></div>
-</section>
 <section class="page" id="relatorios">
 <div class="pageTitle"><div><h1>Relatórios</h1><p class="sub">Os relatórios e ferramentas de exportação ficam centralizados na janela Backup.</p></div></div>
 <div class="card"><h2>💾 Relatórios centralizados no Backup</h2><p class="sub">Esta tela não duplica Equipe, Pagamentos, Adiantamentos, Histórico de Diárias ou Relatório para Cliente. Esses recursos continuam disponíveis diretamente no menu principal.</p><div class="listActions"><button class="btn gold" type="button" onclick="openBackupConfig()">Abrir Backup e Relatórios</button></div></div>
@@ -1955,25 +1922,6 @@ const SUPA_KEY="sb_publishable_yAGQ6P0-43ia5EiLcR8rJQ_VEOf-mjn";
 
 let sb=null;
 let user=null;
-
-/* EDIFIQ ETAPA 25 — contexto da empresa e permissões efetivas */
-window.EDIFIQ_EMPRESA_USER_ID=window.EDIFIQ_EMPRESA_USER_ID||null;
-window.EDIFIQ_PERMISSOES_EMPRESA=window.EDIFIQ_PERMISSOES_EMPRESA||{};
-function edifiqEmpresaUserId(){return String(window.EDIFIQ_EMPRESA_USER_ID||user?.id||'');}
-async function edifiqResolverEmpresa(){
-  if(!sb||!user?.id)return edifiqEmpresaUserId();
-  try{const {data,error}=await sb.rpc('edifiq_empresa_atual'); if(!error&&data){window.EDIFIQ_EMPRESA_USER_ID=String(data);try{localStorage.setItem('EDIFIQ_EMPRESA_USER_ID',window.EDIFIQ_EMPRESA_USER_ID);}catch(e){}}}
-  catch(e){console.warn('EDIFIQ contexto da empresa:',e);} return edifiqEmpresaUserId();
-}
-async function edifiqCarregarPermissoes(){
-  window.EDIFIQ_PERMISSOES_EMPRESA={}; const empresa=edifiqEmpresaUserId(); if(!sb||!user?.id||!empresa)return;
-  if(String(empresa)===String(user.id)){window.EDIFIQ_PAPEL_ATUAL='proprietario';return;}
-  try{const {data,error}=await sb.from('edifiq_permissoes').select('*').eq('user_id',empresa).eq('membro_user_id',user.id); if(error)throw error; for(const x of (data||[]))window.EDIFIQ_PERMISSOES_EMPRESA[String(x.modulo||'')]=x;}
-  catch(e){console.warn('EDIFIQ permissões:',e);}
-}
-function edifiqPode(modulo,acao){if(String(edifiqEmpresaUserId())===String(user?.id||''))return true;const p=window.EDIFIQ_PERMISSOES_EMPRESA?.[String(modulo||'')];return !!(p&&p[acao]===true);}
-function edifiqModuloDaTabela(table){if(['obras','servicos','servicos_adicionais','diario'].includes(table))return 'obras';if(['funcionarios','diarias','faltas','adiantamentos'].includes(table))return 'equipe';if(['gastos','pagamentos','pagamentos_terceirizados','orcamentos','terceirizados'].includes(table))return 'financeiro';if(table==='checklist')return 'checklist';return 'obras';}
-
 let editObraId=null;
 let editFuncId=null;
 
@@ -2497,22 +2445,10 @@ function saveSafeSnapshot(label="estado anterior"){
     }
   }catch(e){console.warn("Falha ao criar proteção de dados",e)}
 }
-function edifiqPendingStorageKey(){
-  const owner=String(user?.id||"local-user");
-  return "edifiq_pending_updates_v1::"+owner;
-}
 function getEdifiqPendingUpdates(){
-  try{
-    const key=edifiqPendingStorageKey();
-    const q=JSON.parse(localStorage.getItem(key)||"[]");
-    return Array.isArray(q)?q:[];
-  }catch(e){return []}
+  try{const q=JSON.parse(localStorage.getItem("edifiq_pending_updates_v1")||"[]");return Array.isArray(q)?q:[]}catch(e){return []}
 }
-function saveEdifiqPendingUpdates(q){
-  try{localStorage.setItem(edifiqPendingStorageKey(),JSON.stringify(q||[]));}
-  catch(e){console.warn("Fila de sincronização cheia",e)}
-  try{edifiqDurableSavePendingQueue();}catch(e){}
-}
+function saveEdifiqPendingUpdates(q){try{localStorage.setItem("edifiq_pending_updates_v1",JSON.stringify(q||[]));}catch(e){console.warn("Fila de sincronização cheia",e)} try{edifiqDurableSavePendingQueue();}catch(e){}}
 function addEdifiqPendingUpdate(table,id,row){
   const q=getEdifiqPendingUpdates();
   const key=table+"::"+String(id);
@@ -2602,14 +2538,9 @@ function openEdifiqDurableDB(){
   });
   return edifiqDurableReady;
 }
-function edifiqDurableStateId(){
-  const id=String(user?.id||"local-user");
-  return "current:"+id;
-}
 function edifiqDurableStatePayload(){
   const data=cloneState();
-  const owner=String(user?.id||"local-user");
-  return data?{id:edifiqDurableStateId(),owner_id:owner,version:7,saved_at:new Date().toISOString(),data}:null;
+  return data?{id:"current",version:6,saved_at:new Date().toISOString(),data}:null;
 }
 async function edifiqDurableWriteNow(){
   try{
@@ -2633,7 +2564,7 @@ async function edifiqDurableRead(){
   try{
     const db=await openEdifiqDurableDB();
     return await new Promise((resolve,reject)=>{
-      const req=db.transaction(EDIFIQ_STATE_STORE,"readonly").objectStore(EDIFIQ_STATE_STORE).get(edifiqDurableStateId());
+      const req=db.transaction(EDIFIQ_STATE_STORE,"readonly").objectStore(EDIFIQ_STATE_STORE).get("current");
       req.onsuccess=()=>resolve(req.result||null); req.onerror=()=>reject(req.error);
     });
   }catch(e){console.warn("EDIFIQ: leitura durável indisponível",e);return null}
@@ -2652,11 +2583,6 @@ async function edifiqRecoverDurableStartup(){
   if(edifiqRecoveryDone)return false;
   edifiqRecoveryDone=true;
   const durable=await edifiqDurableRead();
-  const expectedOwner=String(user?.id||"local-user");
-  if(durable?.owner_id && String(durable.owner_id)!==expectedOwner){
-    console.warn("EDIFIQ: cópia durável de outra conta ignorada.",{owner:durable.owner_id,expectedOwner});
-    return false;
-  }
   const local=localData();
   const localTotal=edifiqStateTotal(local);
   const durableTotal=edifiqStateTotal(durable?.data);
@@ -2677,17 +2603,10 @@ async function edifiqDurableSavePendingQueue(){
   try{
     const db=await openEdifiqDurableDB();
     const q=getEdifiqPendingUpdates();
-    const owner=String(user?.id||"local-user");
     await new Promise((resolve,reject)=>{
       const tx=db.transaction(EDIFIQ_PENDING_STORE,"readwrite");
       const store=tx.objectStore(EDIFIQ_PENDING_STORE);
-      const req=store.getAll();
-      req.onsuccess=()=>{
-        const old=Array.isArray(req.result)?req.result:[];
-        old.filter(x=>String(x.owner_id||"")===owner).forEach(x=>store.delete(String(x.key)));
-        q.forEach(item=>store.put({...item,key:String(item.key),owner_id:owner}));
-      };
-      req.onerror=()=>reject(req.error);
+      store.clear(); q.forEach(item=>store.put({...item,key:String(item.key)}));
       tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
     });
   }catch(e){console.warn("EDIFIQ: fila durável indisponível",e)}
@@ -2695,28 +2614,11 @@ async function edifiqDurableSavePendingQueue(){
 async function edifiqDurableReadPendingQueue(){
   try{
     const db=await openEdifiqDurableDB();
-    const owner=String(user?.id||"local-user");
     return await new Promise((resolve,reject)=>{
       const req=db.transaction(EDIFIQ_PENDING_STORE,"readonly").objectStore(EDIFIQ_PENDING_STORE).getAll();
-      req.onsuccess=()=>resolve((Array.isArray(req.result)?req.result:[]).filter(x=>String(x.owner_id||owner)===owner));
-      req.onerror=()=>reject(req.error);
+      req.onsuccess=()=>resolve(Array.isArray(req.result)?req.result:[]);req.onerror=()=>reject(req.error);
     });
   }catch(e){return []}
-}
-async function edifiqRecoverPendingQueue(){
-  try{
-    const durable=await edifiqDurableReadPendingQueue();
-    if(!durable.length)return 0;
-    const local=getEdifiqPendingUpdates();
-    const map=new Map(local.map(x=>[String(x.key),x]));
-    durable.forEach(x=>{const k=String(x.key);if(!map.has(k))map.set(k,x)});
-    const merged=[...map.values()];
-    if(merged.length!==local.length){
-      localStorage.setItem(edifiqPendingStorageKey(),JSON.stringify(merged));
-      return merged.length-local.length;
-    }
-    return 0;
-  }catch(e){console.warn("EDIFIQ: recuperação da fila pendente falhou",e);return 0}
 }
 async function edifiqDurablePersistSnapshot(label="ponto de recuperação"){
   try{
@@ -2856,7 +2758,7 @@ function saveAdvanceApplied(data){
       entries.forEach(([id,val])=>{
         const g=(D.gastos||[]).find(x=>String(x.id)===String(id));
         if(!g || String(g.id).startsWith('local_')) return;
-        sb.from('gastos').update({valor_aplicado:Number(val)||0,status:'pago'}).eq('id',g.id).eq('user_id',edifiqEmpresaUserId()).then(()=>{}).catch(()=>{});
+        sb.from('gastos').update({valor_aplicado:Number(val)||0,status:'pago'}).eq('id',g.id).eq('user_id',user.id).then(()=>{}).catch(()=>{});
       });
     }
   }catch(_){}
@@ -3157,8 +3059,8 @@ function openBackupConfig(){
     m.className='modal open';
     m.innerHTML=`<div class="modalBox" style="max-width:720px;max-height:90vh;overflow:auto">
       <div class="modalHead"><div><h2>💾 Backup</h2><p class="sub">Central de proteção, recuperação e exportação dos dados do EDIFIQ.</p></div><button class="x" onclick="closeM('edBackupConfigModal')">×</button></div>
-      <div class="card"><h3>Proteção dos dados</h3><p class="sub">O backup não substitui nem apaga os dados atuais. A importação também preserva os registros existentes e mescla somente o que for necessário.</p><div class="listActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup seguro</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Restaurar backup</button><input id="backupImportFile" accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importRelatorioData(event)" style="display:none" type="file"/></div></div>
-      <div class="card"><h3>Exportar relatórios</h3><div class="reportGrid"><button class="btn reportAction" onclick="exportPDF()"><b>📄 Exportar PDF</b><small>Relatório pronto para salvar ou compartilhar.</small></button><button class="btn reportAction" onclick="exportExcel()"><b>📊 Exportar Excel</b><small>Obras, equipe, diárias, financeiro e checklist.</small></button><button class="btn reportAction" onclick="exportCSVAll()"><b>📁 Exportar CSV</b><small>Dados compatíveis com planilhas.</small></button><button class="btn reportAction" onclick="exportFull()"><b>🗂️ Backup seguro JSON</b><small>Inclui validação de integridade para recuperação futura.</small></button></div></div>
+      <div class="card"><h3>Proteção dos dados</h3><p class="sub">O backup não substitui nem apaga os dados atuais. A importação também preserva os registros existentes e mescla somente o que for necessário.</p><div class="listActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar backup</button><input id="backupImportFile" accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="importRelatorioData(event)" style="display:none" type="file"/></div></div>
+      <div class="card"><h3>Exportar relatórios</h3><div class="reportGrid"><button class="btn reportAction" onclick="exportPDF()"><b>📄 Exportar PDF</b><small>Relatório pronto para salvar ou compartilhar.</small></button><button class="btn reportAction" onclick="exportExcel()"><b>📊 Exportar Excel</b><small>Obras, equipe, diárias, financeiro e checklist.</small></button><button class="btn reportAction" onclick="exportCSVAll()"><b>📁 Exportar CSV</b><small>Dados compatíveis com planilhas.</small></button><button class="btn reportAction" onclick="exportFull()"><b>🗂️ Exportar JSON</b><small>Backup completo para recuperação futura.</small></button></div></div>
       <div class="card"><h3>📊 Acesso rápido aos relatórios</h3><p class="sub">Os recursos continuam no menu principal, mas também ficam centralizados aqui para consulta e exportação.</p><div class="reportGrid"><button class="btn reportAction" type="button" onclick="openRelatorioCliente()"><b>📄 Relatório para Cliente</b><small>Gerar acompanhamento por obra e cliente.</small></button><button class="btn reportAction" type="button" onclick="openRelatorioTrabalhador()"><b>👷 Relatório do Trabalhador</b><small>Dados cadastrais, dias, obras, pagamentos e fechamento.</small></button><button class="btn reportAction" type="button" onclick="openPagamentoEquipe()"><b>👷 Pagamento da Equipe</b><small>Folha, diárias, adiantamentos e líquido.</small></button><button class="btn reportAction" type="button" onclick="openAdiantamento()"><b>＋ Adiantamento</b><small>Registrar e controlar adiantamentos.</small></button><button class="btn reportAction" type="button" onclick="go('diarias');closeM('edBackupConfigModal')"><b>📅 Histórico de Diárias</b><small>Consultar os registros por período e obra.</small></button></div></div>
       <div class="card dangerDataCard"><h3>🗑️ Apagar dados</h3><p class="sub">Escolha o setor que deseja apagar. O aplicativo pedirá confirmação antes de excluir.</p><div class="reportGrid dataDeleteGrid"><button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar Equipe</b><small>Funcionários, diárias, faltas e registros.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar Obras</b><small>Obras e registros vinculados.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar Financeiro</b><small>Receitas, despesas e pagamentos.</small></button><button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar Tudo</b><small>Apaga todos os dados do aplicativo.</small></button></div><div class="note dangerNote">⚠️ Esta ação não pode ser desfeita. Faça um backup antes de apagar.</div></div>
       <div class="note" id="backupStatus">Backup centralizado: seus dados atuais permanecem preservados.</div>
@@ -3395,7 +3297,7 @@ async function corrigirInconsistenciasSegurasEDIFIQ(){
           const idx=D.diarias.findIndex(x=>String(x.id)===String(apagar.id));
           if(idx>=0)D.diarias.splice(idx,1);
         }else if(sb&&user?.id){
-          const {error}=await sb.from('diarias').delete().eq('id',apagar.id).eq('user_id',edifiqEmpresaUserId());
+          const {error}=await sb.from('diarias').delete().eq('id',apagar.id).eq('user_id',user.id);
           if(error)throw error;
           const idx=D.diarias.findIndex(x=>String(x.id)===String(apagar.id));
           if(idx>=0)D.diarias.splice(idx,1);
@@ -3420,7 +3322,7 @@ async function corrigirInconsistenciasSegurasEDIFIQ(){
         const row=(D[table]||[]).find(x=>String(x.id)===String(id));
         if(row){row.checklist_id=null;row._sync_pendente=true;addEdifiqPendingUpdate(table,id,{checklist_id:null});corrigidos++;}
       }else if(sb&&user?.id){
-        const {data,error}=await sb.from(table).update({checklist_id:null,updated_at:new Date().toISOString()}).eq('id',id).eq('user_id',edifiqEmpresaUserId()).select().single();
+        const {data,error}=await sb.from(table).update({checklist_id:null,updated_at:new Date().toISOString()}).eq('id',id).eq('user_id',user.id).select().single();
         if(error)throw error;
         const idx=D[table].findIndex(x=>String(x.id)===String(id));
         if(idx>=0)D[table][idx]={...data,_sync_pendente:false};
@@ -3467,7 +3369,6 @@ const target=$(page);
 
 if(target)
 target.classList.add("active");
-if(page==='config') setTimeout(()=>{try{renderConfiguracoesEDIFIQ()}catch(e){}},0);
 
 const menuPasta=$("menuPasta");
 if(menuPasta){menuPasta.classList.remove("open");menuPasta.setAttribute("aria-hidden","true");}
@@ -3576,8 +3477,6 @@ function bindSupabaseAuth(){
       user=session?.user||null;
       if(user){
         edifiqPrepareAccountCache(user.id);
-        await edifiqResolverEmpresa();
-        await edifiqCarregarPermissoes();
         const syncStatus=$("edifiqSyncStatus"); if(syncStatus){syncStatus.textContent='↻ Sincronizando';syncStatus.className='warn';}
         $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
         await loadCloud(); renderAll(); startEdifiqRealtime();
@@ -3622,28 +3521,6 @@ function edifiqRegistroMaisNovo(a,b){
   return tb>=ta?b:a;
 }
 
-function edifiqConflictStorageKey(){
-  const owner=String(user?.id||'local-user');
-  return 'edifiq_sync_conflicts_v1::'+owner;
-}
-function getEdifiqConflicts(){
-  try{const q=JSON.parse(localStorage.getItem(edifiqConflictStorageKey())||'[]');return Array.isArray(q)?q:[];}catch(e){return []}
-}
-function saveEdifiqConflicts(q){
-  try{localStorage.setItem(edifiqConflictStorageKey(),JSON.stringify((q||[]).slice(-200)));}catch(e){console.warn('EDIFIQ: não foi possível salvar conflitos',e)}
-}
-function registerEdifiqConflict(table,id,local,remote,reason){
-  const q=getEdifiqConflicts();
-  const key=String(table)+'::'+String(id);
-  const item={key,table,id:String(id),reason:String(reason||'conflito'),local_updated_at:local?.updated_at||local?._sync_updated_at||local?.created_at||null,remote_updated_at:remote?.updated_at||remote?.created_at||null,at:new Date().toISOString()};
-  const i=q.findIndex(x=>x.key===key);
-  if(i>=0)q[i]=item;else q.push(item);
-  saveEdifiqConflicts(q);
-  return item;
-}
-function clearEdifiqConflict(table,id){
-  saveEdifiqConflicts(getEdifiqConflicts().filter(x=>x.key!==String(table)+'::'+String(id)));
-}
 function auditConflitosEDIFIQ(){
   const conflitos=[];
   for(const table of Object.keys(D)){
@@ -3652,7 +3529,7 @@ function auditConflitosEDIFIQ(){
       if(row?._sync_pendente) conflitos.push({table,id:row.id,tipo:'pendente'});
     }
   }
-  return {ok:conflitos.length===0,pendentes:conflitos.length,conflitos,registrados:getEdifiqConflicts()};
+  return {ok:conflitos.length===0,pendentes:conflitos.length,conflitos};
 }
 
 function stopEdifiqRealtime(){
@@ -3665,15 +3542,15 @@ function stopEdifiqRealtime(){
 
 function startEdifiqRealtime(){
   if(!sb||!user?.id||!sb.channel) return false;
-  if(edifiqRealtimeChannel && edifiqRealtimeUserId===String(edifiqEmpresaUserId())) return true;
+  if(edifiqRealtimeChannel && edifiqRealtimeUserId===String(user.id)) return true;
   stopEdifiqRealtime();
-  edifiqRealtimeUserId=String(edifiqEmpresaUserId());
+  edifiqRealtimeUserId=String(user.id);
 
   const syncStatus=$('edifiqSyncStatus'); if(syncStatus){syncStatus.textContent='↻ Sincronizando';syncStatus.className='warn';}
-  const channelName=`edifiq-sync-${String(edifiqEmpresaUserId()).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,32)}`;
+  const channelName=`edifiq-sync-${String(user.id).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,32)}`;
   const ch=sb.channel(channelName);
   EDIFIQ_REALTIME_TABLES.forEach(table=>{
-    ch.on('postgres_changes',{event:'*',schema:'public',table,filter:`user_id=eq.${edifiqEmpresaUserId()}`},payload=>{
+    ch.on('postgres_changes',{event:'*',schema:'public',table,filter:`user_id=eq.${user.id}`},payload=>{
       edifiqRealtimeLastEvent=Date.now();
       const tipo=payload?.eventType;
       const row=payload?.new||payload?.old;
@@ -3683,42 +3560,28 @@ function startEdifiqRealtime(){
       const remoteTs=Date.parse(String(payload?.new?.updated_at||payload?.new?.created_at||''))||0;
       const localTs=Date.parse(String(local?.updated_at||local?._sync_updated_at||local?.created_at||''))||0;
 
-      // Etapa 16 — conflito entre dispositivos: alteração local pendente
-      // nunca é descartada silenciosamente. A versão remota só vence quando
-      // é comprovadamente mais nova e a versão local já não está pendente.
+      // Conflito: uma alteração local ainda pendente sempre tem prioridade.
+      // Quando ambos estão confirmados, o registro mais novo vence.
       if(tipo==='DELETE'){
         if(local?._sync_pendente){
-          registerEdifiqConflict(table,row.id,local,row,'delete-remoto-com-local-pendente');
-          console.info('EDIFIQ: exclusão remota aguardando confirmação da alteração local.',table,row.id);
+          console.info('EDIFIQ: exclusão remota ignorada; alteração local ainda pendente.',table,row.id);
           return;
         }
         if(idx>=0) D[table].splice(idx,1);
-        clearEdifiqConflict(table,row.id);
       }else if(idx>=0){
-        if(local?._sync_pendente){
-          if(remoteTs>localTs && remoteTs>0){
-            registerEdifiqConflict(table,row.id,local,payload.new,'remoto-mais-novo-com-local-pendente');
-            console.info('EDIFIQ: conflito registrado; alteração local pendente preservada.',table,row.id);
-            return;
-          }
-          if(localTs>=remoteTs){
-            registerEdifiqConflict(table,row.id,local,payload.new,'local-pendente-preservado');
-            return;
-          }
+        if(local?._sync_pendente && localTs>remoteTs){
+          console.info('EDIFIQ: atualização remota antiga preservada contra alteração local.',table,row.id);
+          return;
         }
         if(remoteTs>=localTs || !localTs){
           D[table][idx]={...local,...payload.new,_sync_pendente:false};
           removeEdifiqPendingUpdate(table,row.id);
-          clearEdifiqConflict(table,row.id);
         }
       }else if(payload.new){
         D[table].unshift(payload.new);
       }
       saveLocalData();
-      try{
-        if(typeof window.edifiqAgendarRender==='function') window.edifiqAgendarRender();
-        else renderAll();
-      }catch(e){console.warn('Render realtime',e);}
+      try{renderAll();}catch(e){console.warn('Render realtime',e);}
     });
   });
 
@@ -3797,8 +3660,6 @@ async function login(){
     }
 
     user=session.user;
-    await edifiqResolverEmpresa();
-    await edifiqCarregarPermissoes();
 
     // Mostra o aplicativo imediatamente após a autenticação.
     $("auth")?.classList.add("hidden");
@@ -4119,7 +3980,7 @@ async function loadTable(table){
   if(!sb||!user) return false;
   const antes=Array.isArray(D[table])?[...D[table]]:[];
   try{
-    const{data,error}=await sb.from(table).select('*').eq('user_id',edifiqEmpresaUserId());
+    const{data,error}=await sb.from(table).select('*').eq('user_id',user.id);
     if(!error&&Array.isArray(data)){
       data.sort((a,b)=>String(b.updated_at||b.created_at||b.data||'').localeCompare(String(a.updated_at||a.created_at||a.data||'')));
       const locaisPendentes=new Map(antes.filter(r=>String(r?.id||'').startsWith('local_')||r?._sync_pendente).map(r=>[String(r.id),r]));
@@ -4176,7 +4037,7 @@ async function migrarDadosLocaisParaNuvem(){
     const f=(D.funcionarios||[]).find(x=>String(x.id)===String(fid));
     if(!f || String(f.obra_id||'')===String(obraId))continue;
     try{
-      const {data,error}=await sb.from('funcionarios').update({obra_id:obraId}).eq('id',f.id).eq('user_id',edifiqEmpresaUserId()).select().single();
+      const {data,error}=await sb.from('funcionarios').update({obra_id:obraId}).eq('id',f.id).eq('user_id',user.id).select().single();
       if(!error&&data){Object.assign(f,data);r.funcionarios++;}
     }catch(e){console.warn('Migração funcionário/obra:',e);}
   }
@@ -4190,7 +4051,7 @@ async function migrarDadosLocaisParaNuvem(){
     const qtd=Math.max(0,Number(d.qtd_paga??d.qtd??1));
     const valor=Math.max(0,Number(d.valor_baixado??d.valor_pago??diariaValor(d)));
     try{
-      const {data,error}=await sb.from('diarias').update({status:'Pago',qtd_paga:qtd,valor_pago:valor,valor_baixado:valor,pago_em:d.pago_em||d.data_pagamento||today()}).eq('id',d.id).eq('user_id',edifiqEmpresaUserId()).select().single();
+      const {data,error}=await sb.from('diarias').update({status:'Pago',qtd_paga:qtd,valor_pago:valor,valor_baixado:valor,pago_em:d.pago_em||d.data_pagamento||today()}).eq('id',d.id).eq('user_id',user.id).select().single();
       if(!error&&data){Object.assign(d,data);r.diarias++;}
     }catch(e){console.warn('Migração diária paga:',e);}
   }
@@ -4208,7 +4069,7 @@ async function migrarDadosLocaisParaNuvem(){
           valor:Math.max(0,Number(item?.valor||0)),
           data:item?.data||today(),
           observacao:item?.observacao||null,
-          operation_id:op,user_id:edifiqEmpresaUserId()
+          operation_id:op,user_id:user.id
         }).select().single();
         if(!error&&data){D.servicos_adicionais.unshift(data);r.servicos++;}
       }catch(e){console.warn('Migração serviço adicional:',e);}
@@ -4226,7 +4087,7 @@ async function migrarDadosLocaisParaNuvem(){
       const {data,error}=await sb.from('adiantamentos').insert({
         funcionario_id:funcionarioId,obra_id:g.obra_id||null,
         valor:Math.max(0,Number(g.valor||0)),data:g.data||today(),
-        observacao:g.observacao||g.descricao||null,operation_id:op,user_id:edifiqEmpresaUserId()
+        observacao:g.observacao||g.descricao||null,operation_id:op,user_id:user.id
       }).select().single();
       if(!error&&data){D.adiantamentos.unshift(data);r.adiantamentos++;}
     }catch(e){console.warn('Migração adiantamento:',e);}
@@ -4249,7 +4110,7 @@ async function retryLocalCloudRows(){
         let data=existing,error=null;
 
         if(!existing){
-          const payload={...local,user_id:edifiqEmpresaUserId()};
+          const payload={...local,user_id:user.id};
           delete payload.id; delete payload._sync_pendente;
           const resp=await sb.from(table).insert(payload).select().single();
           data=resp.data; error=resp.error;
@@ -4284,7 +4145,7 @@ async function retryEdifiqPendingUpdates(){
         : [row];
       let data=null,error=null;
       for(const tentativa of tentativas){
-        const resp=await sb.from(item.table).update(tentativa).eq('id',item.id).eq('user_id',edifiqEmpresaUserId()).select().single();
+        const resp=await sb.from(item.table).update(tentativa).eq('id',item.id).eq('user_id',user.id).select().single();
         data=resp.data; error=resp.error;
         if(!error&&data)break;
       }
@@ -4326,7 +4187,7 @@ async function registrarBaixaFolhaSegura(payload){
 async function findExistingByOperation(table,operationId){
   if(!sb||!user?.id||!operationId)return null;
   try{
-    const {data,error}=await sb.from(table).select("*").eq("user_id",edifiqEmpresaUserId()).eq("operation_id",operationId).maybeSingle();
+    const {data,error}=await sb.from(table).select("*").eq("user_id",user.id).eq("operation_id",operationId).maybeSingle();
     if(!error&&data)return data;
   }catch(e){ console.warn("Busca de operação EDIFIQ",table,e); }
   return null;
@@ -4341,12 +4202,10 @@ function edifiqNormalizeWriteRow(row,operation_id){
   return out;
 }
 
-async function insertRowCore(
+async function insertRow(
 table,
 row
 ){
-const _edifiqModulo=edifiqModuloDaTabela(table); if(!edifiqPode(_edifiqModulo,'criar')){toast('Sem permissão para '+_edifiqModulo+'.');return null;}
-
 
 if(!user){
   toast("Faça login primeiro.");
@@ -4360,7 +4219,7 @@ if(!user){
 const operation_id = String(row?.operation_id || edifiqOperationId());
 const payload=edifiqNormalizeWriteRow({
   ...row,
-  user_id:edifiqEmpresaUserId()
+  user_id:user.id
 },operation_id);
 
 const attempts=[payload];
@@ -4430,32 +4289,11 @@ return localRow;
 }
 
 
-/* ETAPA 14 — trava de operação em andamento.
-   Evita que dois toques rápidos/disparos simultâneos executem a mesma operação
-   antes de a primeira resposta chegar do servidor. A proteção é por tabela +
-   operation_id e não altera operações diferentes. */
-const EDIFIQ_INFLIGHT_WRITES=window.EDIFIQ_INFLIGHT_WRITES||new Map();
-window.EDIFIQ_INFLIGHT_WRITES=EDIFIQ_INFLIGHT_WRITES;
-
-async function insertRow(table,row){
-  const op=String(row?.operation_id||'');
-  const key=op?String(table)+'::'+op:'';
-  if(key && EDIFIQ_INFLIGHT_WRITES.has(key)) return EDIFIQ_INFLIGHT_WRITES.get(key);
-  const promise=insertRowCore(table,row);
-  if(!key) return promise;
-  EDIFIQ_INFLIGHT_WRITES.set(key,promise);
-  try{return await promise;}
-  finally{EDIFIQ_INFLIGHT_WRITES.delete(key);}
-}
-
-
 async function updateRow(
 table,
 id,
 row
 ){
-const _edifiqModulo=edifiqModuloDaTabela(table); if(!edifiqPode(_edifiqModulo,'editar')){toast('Sem permissão para '+_edifiqModulo+'.');return null;}
-
 
 const index=D[table].findIndex(
 x=>String(x.id)===String(id)
@@ -4507,7 +4345,7 @@ await sb
 .from(table)
 .update(tentativa)
 .eq("id",id)
-.eq("user_id",edifiqEmpresaUserId())
+.eq("user_id",user.id)
 .select()
 .single();
 
@@ -4547,8 +4385,6 @@ async function removeRow(
 table,
 id
 ){
-const _edifiqModulo=edifiqModuloDaTabela(table); if(!edifiqPode(_edifiqModulo,'excluir')){toast('Sem permissão para '+_edifiqModulo+'.');return null;}
-
 
 if(!confirm(
 "Deseja realmente excluir?"
@@ -4656,7 +4492,7 @@ if(table==="obras"){
           .from(t)
           .delete()
           .eq("obra_id",id)
-          .eq("user_id",edifiqEmpresaUserId());
+          .eq("user_id",user.id);
 
         if(error){
 
@@ -4685,7 +4521,7 @@ if(table==="obras"){
       .from("obras")
       .delete()
       .eq("id",id)
-      .eq("user_id",edifiqEmpresaUserId());
+      .eq("user_id",user.id);
 
     if(error){
 
@@ -4778,7 +4614,7 @@ async function retryEdifiqDeleteQueue(){
   const restantes=[];
   for(const item of q){
     try{
-      const {error}=await sb.from(item.table).delete().eq("id",item.id).eq("user_id",edifiqEmpresaUserId());
+      const {error}=await sb.from(item.table).delete().eq("id",item.id).eq("user_id",user.id);
       if(error){
         restantes.push(item);
       }
@@ -4810,7 +4646,7 @@ try{
     return;
   }
 
-  const {error}=await sb.from(table).delete().eq("id",id).eq("user_id",edifiqEmpresaUserId());
+  const {error}=await sb.from(table).delete().eq("id",id).eq("user_id",user.id);
 
   if(error){
     addEdifiqDeleteQueue(table,id);
@@ -5765,11 +5601,6 @@ async function saveDia(e){
 
 e.preventDefault();
 
-/* Impede duplo clique enquanto a gravação desta diária está em andamento. */
-if(window.EDIFIQ_SALVANDO_DIARIA){toast("Aguarde a confirmação da diária.");return;}
-window.EDIFIQ_SALVANDO_DIARIA=true;
-try{
-
 const funcionario_id=
 $("dFunc").value;
 
@@ -5879,10 +5710,6 @@ toast(
 `Diária registrada: ${money(valorReal)}`
 );
 
-}
-
-}finally{
-  window.EDIFIQ_SALVANDO_DIARIA=false;
 }
 
 }
@@ -6133,7 +5960,6 @@ money(total);
 
 }
 
-
 function openPagamentoEquipe(){
 
 fillSelectors();
@@ -6202,8 +6028,6 @@ async function savePagamentoEquipe(e){
 
 e.preventDefault();
 
-if(window.EDIFIQ_SALVANDO_PAGAMENTO){toast("Aguarde a confirmação do pagamento.");return;}
-window.EDIFIQ_SALVANDO_PAGAMENTO=true;
 try{
 
 const checks=[...document.querySelectorAll(".pag-check")].filter(x=>x.checked);
@@ -6480,8 +6304,6 @@ if(falhas>0){
 }catch(err){
 console.error("Erro no pagamento da equipe:",err);
 toast("Não foi possível concluir o pagamento. Os dados pendentes foram preservados.");
-}finally{
-  window.EDIFIQ_SALVANDO_PAGAMENTO=false;
 }
 
 }
@@ -6489,7 +6311,6 @@ toast("Não foi possível concluir o pagamento. Os dados pendentes foram preserv
 /* =========================================================
    ADIANTAMENTO
    ========================================================= */
-
 
 function fillAdiantamentoFuncionarios(){
 
@@ -8794,18 +8615,6 @@ f.observacao||""
 })();
 <\/script>
 
-<section id="edifiqPermissoesModulo" class="card" style="margin-top:16px"><div style="font-weight:700;margin-bottom:8px">Permissões por módulo</div><div style="font-size:13px;opacity:.72;margin-bottom:12px">Defina o que cada perfil poderá visualizar, criar, editar ou excluir. O proprietário permanece com acesso total.</div></section><script>
-(function(){
-const M=[["obras","Obras"],["equipe","Equipe"],["financeiro","Financeiro"],["checklist","Checklist"],["fotos","Fotos"],["relatorios","Relatórios"],["configuracoes","Configurações"]];
-const A=[["visualizar","Visualizar"],["criar","Criar"],["editar","Editar"],["excluir","Excluir"]];
-window.edifiqPermissoesModulos=M;
-function p(m,a){const papel=String(window.EDIFIQ_PAPEL_ATUAL||"proprietario");if(papel==="proprietario"||papel==="administrador")return true;try{const q=JSON.parse(localStorage.getItem("edifiq_permissoes_cache_v1")||"[]"),x=q.find(v=>v.modulo===m);return !!(x&&x[a])}catch(e){return false}}
-window.edifiqTemPermissao=p;
-window.edifiqAplicarPermissoesUI=function(){document.querySelectorAll("[data-edifiq-permissao]").forEach(el=>{const z=String(el.dataset.edifiqPermissao||"").split(":");if(z.length!==2)return;const ok=p(z[0],z[1]);el.disabled=!ok;el.classList.toggle("edifiq-permissao-bloqueada",!ok)})};
-window.edifiqRenderPermissoes=function(){const b=document.getElementById("edifiqPermissoesModulo");if(!b)return;const papel=String(window.EDIFIQ_PAPEL_ATUAL||"proprietario");b.innerHTML='<div class="edifiq-perm-cabecalho"><b>Permissões por módulo</b><span>Perfil: '+papel+'</span></div><div class="edifiq-perm-tabela"><div class="edifiq-perm-linha edifiq-perm-head"><span>Módulo</span>'+A.map(x=>'<span>'+x[1]+'</span>').join('')+'</div>'+M.map(([m,n])=>'<div class="edifiq-perm-linha"><span>'+n+'</span>'+A.map(([a])=>'<label><input type="checkbox" data-perm-mod="'+m+'" data-perm-acao="'+a+'" '+(p(m,a)?'checked':'')+' '+((papel==="proprietario"||papel==="administrador")?'':'disabled')+'></label>').join('')+'</div>').join('')+'</div><button type="button" onclick="edifiqSalvarPermissoesUI()">Salvar permissões</button>'};
-window.edifiqSalvarPermissoesUI=function(){const q=[];document.querySelectorAll("#edifiqPermissoesModulo [data-perm-mod]").forEach(i=>{let x=q.find(v=>v.modulo===i.dataset.permMod);if(!x){x={modulo:i.dataset.permMod,visualizar:false,criar:false,editar:false,excluir:false};q.push(x)}x[i.dataset.permAcao]=!!i.checked});localStorage.setItem("edifiq_permissoes_cache_v1",JSON.stringify(q));window.edifiqAplicarPermissoesUI();if(typeof toast==='function')toast('Permissões salvas localmente.')};
-})();
-</script><style>.edifiq-perm-cabecalho{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.edifiq-perm-tabela{overflow:auto;border:1px solid rgba(180,130,30,.18);border-radius:12px}.edifiq-perm-linha{display:grid;grid-template-columns:minmax(130px,1fr) repeat(4,76px);align-items:center;min-height:46px;border-bottom:1px solid rgba(0,0,0,.06)}.edifiq-perm-linha:last-child{border-bottom:0}.edifiq-perm-linha>span:first-child{padding:8px 10px}.edifiq-perm-linha label{text-align:center}.edifiq-perm-head{font-size:12px;font-weight:700;background:rgba(180,130,30,.07)}.edifiq-permissao-bloqueada{opacity:.55}</style>
 </body></html>`);
 
 win.document.close();
@@ -9265,60 +9074,62 @@ toast(
 
 }
 
-function edifiqBackupCanonical(value){
-  if(value===null||typeof value!=="object")return value;
-  if(Array.isArray(value))return value.map(edifiqBackupCanonical);
-  return Object.keys(value).sort().reduce((o,k)=>{o[k]=edifiqBackupCanonical(value[k]);return o;},{});
-}
-async function edifiqBackupHash(payload){
-  try{
-    const raw=JSON.stringify(edifiqBackupCanonical(payload));
-    if(globalThis.crypto?.subtle){
-      const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(raw));
-      return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
-    }
-  }catch(e){console.warn("EDIFIQ: hash do backup indisponível",e)}
-  return "";
-}
-function edifiqBackupSummary(backup){
-  const data=backup?.data||{};
-  const tables=Object.keys(D).filter(k=>Array.isArray(D[k]));
-  const counts={};
-  let total=0;
-  tables.forEach(t=>{counts[t]=Array.isArray(data[t])?data[t].length:0;total+=counts[t]});
-  return {tables,counts,total,hasFotos:Array.isArray(backup?.fotos)?backup.fotos.length:0};
-}
-function edifiqValidBackupStructure(backup){
-  if(!backup||backup.app!=="EDIFIQ"||!backup.data||typeof backup.data!=="object")return {ok:false,reason:"Arquivo não é um backup EDIFIQ válido."};
-  if(!backup.format||Number(backup.format)>=1){
-    const tables=Object.keys(D).filter(k=>Array.isArray(D[k]));
-    const invalid=tables.filter(t=>backup.data[t]!=null&&!Array.isArray(backup.data[t]));
-    if(invalid.length)return {ok:false,reason:"Estrutura inválida nas tabelas: "+invalid.join(", ")};
-  }
-  const summary=edifiqBackupSummary(backup);
-  if(summary.total===0)return {ok:false,reason:"O backup não contém registros para restaurar."};
-  return {ok:true,summary};
-}
 async function exportFull(){
-  let fotos=[];
-  try{fotos=await getAllPhotosDB();}catch(e){console.warn("Não foi possível exportar fotos",e)}
-  const payload={
-    obras:D.obras||[],funcionarios:D.funcionarios||[],diarias:D.diarias||[],gastos:D.gastos||[],
-    pagamentos:D.pagamentos||[],checklist:D.checklist||[],faltas:D.faltas||[],adiantamentos:D.adiantamentos||[],
-    servicos_adicionais:D.servicos_adicionais||[],servicos:D.servicos||[],terceirizados:D.terceirizados||[],
-    pagamentos_terceirizados:D.pagamentos_terceirizados||[],orcamentos:D.orcamentos||[],diario:D.diario||[],
-    documentos:D.documentos||[],materiais:D.materiais||[],material_movimentos:D.material_movimentos||[]
-  };
-  const backup={
-    app:"EDIFIQ",format:2,version:"19.0",date:new Date().toISOString(),
-    user_id:user?.id||null,
-    summary:{tables:Object.fromEntries(Object.entries(payload).map(([k,v])=>[k,Array.isArray(v)?v.length:0]))},
-    data:payload,fotos,funcionarioObras:localFuncObras(),
-    adiantamentosAplicados:getAdvanceApplied(),servicosAdicionais:getServices()
-  };
-  backup.integrity={algorithm:"SHA-256",hash:await edifiqBackupHash({...backup,integrity:undefined})};
-  downloadFile(JSON.stringify(backup,null,2),"EDIFIQ_backup_seguro.json","application/json");
-  toast("Backup completo validado e criado com proteção de integridade.");
+
+let fotos=[];
+
+try{
+
+fotos=
+await getAllPhotosDB();
+
+}catch(e){
+
+console.warn(
+"Não foi possível exportar fotos",
+e
+);
+
+}
+
+const backup={
+
+app:"EDIFIQ",
+
+version:"4.0",
+
+date:
+new Date().toISOString(),
+
+data:D,
+
+fotos:fotos,
+
+funcionarioObras:
+localFuncObras(),
+
+adiantamentosAplicados:
+getAdvanceApplied(),
+
+servicosAdicionais:
+getServices()
+
+};
+
+downloadFile(
+JSON.stringify(
+backup,
+null,
+2
+),
+"EDIFIQ_backup.json",
+"application/json"
+);
+
+toast(
+"Backup completo criado."
+);
+
 }
 
 async function exportExcel(){
@@ -9516,36 +9327,34 @@ async function importBackupData(backup){
   renderAll();
 }
 
-async function edifiqPrepareImport(backup){
-  const valid=edifiqValidBackupStructure(backup);
-  if(!valid.ok)throw new Error(valid.reason);
-  if(backup.integrity?.hash){
-    const actual=await edifiqBackupHash({...backup,integrity:undefined});
-    if(actual&&actual!==String(backup.integrity.hash))throw new Error("A integridade do arquivo não confere. O backup pode estar corrompido ou incompleto.");
-  }
-  const summary=valid.summary;
-  return summary;
-}
 async function importBackup(event){
   const file=event.target.files?.[0];
   if(!file)return;
+
   const reader=new FileReader();
+
   reader.onload=async()=>{
     try{
       const backup=JSON.parse(reader.result);
-      const summary=await edifiqPrepareImport(backup);
-      const resumo=`Backup EDIFIQ válido\n\nRegistros: ${summary.total}\nTabelas: ${summary.tables.length}\nFotos: ${summary.hasFotos}\n\nAntes de restaurar, será criado um ponto de recuperação local.\nOs registros atuais não serão apagados.`;
-      if(!confirm(resumo+"\n\nDeseja continuar?"))return;
-      saveSafeSnapshot("pré-restauração de backup");
-      try{await edifiqDurableWriteNow()}catch(e){console.warn("EDIFIQ: snapshot durável pré-restauração indisponível",e)}
+
+      if(!backup.data){
+        toast("Backup inválido.");
+        return;
+      }
+
+      if(!confirm(
+        "Importar este backup? Os registros serão adicionados ao sistema e seus vínculos entre obras, funcionários, despesas, materiais e financeiro serão reconstruídos."
+      )) return;
+
       await importBackupData(backup);
-      saveSafeSnapshot("após restauração de backup");
-      toast("Backup restaurado com validação de integridade. Dados existentes foram preservados.");
+
+      toast("Backup importado e despesas distribuídas por obra.");
     }catch(e){
-      console.error("EDIFIQ importação segura:",e);
-      toast(e?.message||"Arquivo de backup inválido ou não foi possível restaurar.");
+      console.error("EDIFIQ importação:",e);
+      toast("Arquivo de backup inválido ou não foi possível reconstruir os vínculos.");
     }
   };
+
   reader.onerror=()=>toast("Não foi possível ler o arquivo de backup.");
   reader.readAsText(file);
   event.target.value="";
@@ -10223,7 +10032,7 @@ function saveDiario(e){
     const i=D.diario.findIndex(x=>String(x.id)===String(editDiarioId));
     if(i>=0)D.diario[i]={...D.diario[i],...base,updated_at:new Date().toISOString()};
   }else{
-    D.diario.unshift({...base,id:"diario_"+Date.now()+"_"+Math.random().toString(36).slice(2),user_id:edifiqEmpresaUserId()||"local-user",created_at:new Date().toISOString()});
+    D.diario.unshift({...base,id:"diario_"+Date.now()+"_"+Math.random().toString(36).slice(2),user_id:user?.id||"local-user",created_at:new Date().toISOString()});
   }
   saveLocalData(); closeM("diarioM"); renderAll(); toast(editDiarioId?"Registro atualizado.":"Diário registrado.");
   editDiarioId=null;
@@ -10525,16 +10334,16 @@ async function apagarDadosSetor(setor){
       D.funcionarios=[]; D.diarias=[]; D.faltas=[]; D.presencas=[];
       try{localStorage.removeItem(FUNC_OBRA_KEY)}catch(_){ }
       if(sb&&user){
-        for(const t of ['diarias','faltas','presencas']){try{await sb.from(t).delete().eq('user_id',edifiqEmpresaUserId())}catch(_){} }
-        try{await sb.from('funcionarios').delete().eq('user_id',edifiqEmpresaUserId())}catch(_){}
+        for(const t of ['diarias','faltas','presencas']){try{await sb.from(t).delete().eq('user_id',user.id)}catch(_){} }
+        try{await sb.from('funcionarios').delete().eq('user_id',user.id)}catch(_){}
       }
       saveLocalData(); renderAll(); toast('Dados da equipe apagados.'); return;
     }
     if(setor==='obras'){
       D.obras=[]; D.checklist=[]; D.diario=[]; D.documentos=[]; D.materiais=[]; D.material_movimentos=[];
       if(sb&&user){
-        for(const t of ['checklist','diarias','gastos','pagamentos','faltas','presencas','diario','documentos']){try{await sb.from(t).delete().eq('user_id',edifiqEmpresaUserId())}catch(_){} }
-        try{await sb.from('obras').delete().eq('user_id',edifiqEmpresaUserId())}catch(_){}
+        for(const t of ['checklist','diarias','gastos','pagamentos','faltas','presencas','diario','documentos']){try{await sb.from(t).delete().eq('user_id',user.id)}catch(_){} }
+        try{await sb.from('obras').delete().eq('user_id',user.id)}catch(_){}
       }
       try{localStorage.removeItem(SERVICE_KEY)}catch(_){ }
       try{await clearPhotosDB()}catch(_){ }
@@ -10543,14 +10352,14 @@ async function apagarDadosSetor(setor){
     if(setor==='financeiro'){
       D.gastos=[]; D.pagamentos=[];
       if(sb&&user){
-        for(const t of ['gastos','pagamentos']){try{await sb.from(t).delete().eq('user_id',edifiqEmpresaUserId())}catch(_){} }
+        for(const t of ['gastos','pagamentos']){try{await sb.from(t).delete().eq('user_id',user.id)}catch(_){} }
       }
       saveLocalData(); renderAll(); toast('Dados do financeiro apagados.'); return;
     }
     if(setor==='geral'){
       D.obras=[]; D.funcionarios=[]; D.diarias=[]; D.gastos=[]; D.pagamentos=[]; D.checklist=[]; D.faltas=[]; D.presencas=[]; D.diario=[]; D.documentos=[]; D.materiais=[]; D.material_movimentos=[];
       if(sb&&user){
-        for(const t of ['checklist','diarias','gastos','pagamentos','faltas','presencas','diario','documentos','materiais','material_movimentos','obras','funcionarios']){try{await sb.from(t).delete().eq('user_id',edifiqEmpresaUserId())}catch(_){} }
+        for(const t of ['checklist','diarias','gastos','pagamentos','faltas','presencas','diario','documentos','materiais','material_movimentos','obras','funcionarios']){try{await sb.from(t).delete().eq('user_id',user.id)}catch(_){} }
       }
       try{localStorage.removeItem(LOCAL_KEY);localStorage.removeItem(FUNC_OBRA_KEY);localStorage.removeItem(ADV_KEY);localStorage.removeItem(SERVICE_KEY);localStorage.removeItem(MATERIAL_META_KEY);localStorage.removeItem(DOC_META_KEY)}catch(_){ }
       try{await clearPhotosDB()}catch(_){ }
@@ -10572,100 +10381,7 @@ function auditSegurancaEDIFIQ(){
   return {ok:problemas.length===0,problemas,usuario:user?.id||null,cacheOwner:edifiqLocalOwner()};
 }
 
-/* =========================================================
-   ETAPA 13 — TESTE DE CARGA E ESTABILIDADE (NÃO DESTRUTIVO)
-   Gera dados somente em memória, mede as auditorias e verifica
-   duplicidade/valores/vínculos. O estado real D é restaurado sempre.
-   ========================================================= */
-function testeCargaEDIFIQ(opcoes={}){
-  const original={};
-  Object.keys(D).forEach(k=>original[k]=D[k]);
-  const inicio=performance.now();
-  const n=Math.max(100,Math.min(10000,Number(opcoes.registros||2000)));
-  const agora=new Date().toISOString();
-  const obra={id:"carga_obra_1",nome:"TESTE CARGA",valor:100000,user_id:edifiqEmpresaUserId()||"local-user",created_at:agora};
-  const func={id:"carga_func_1",nome:"FUNCIONÁRIO TESTE",valor_diaria:200,obra_id:obra.id,user_id:user?.id||"local-user",ativo:true,created_at:agora};
-  const check={id:"carga_check_1",obra_id:obra.id,tarefa:"SERVIÇO TESTE",concluida:false,progresso:0,user_id:edifiqEmpresaUserId()||"local-user",created_at:agora};
-  try{
-    D.obras=[obra];
-    D.funcionarios=[func];
-    D.checklist=[check];
-    D.diarias=[]; D.gastos=[]; D.pagamentos=[]; D.faltas=[];
-    D.adiantamentos=[]; D.servicos_adicionais=[]; D.servicos=[];
-    D.terceirizados=[]; D.pagamentos_terceirizados=[]; D.orcamentos=[]; D.diario=[];
-    for(let i=0;i<n;i++){
-      const id=String(i+1);
-      D.diarias.push({id:"carga_d_"+id,funcionario_id:func.id,obra_id:obra.id,checklist_id:check.id,data:"2026-10-01",qtd:1,valor_diaria:200,status:"Pendente",observacao:"teste carga",user_id:user?.id||"local-user"});
-      D.gastos.push({id:"carga_g_"+id,obra_id:obra.id,checklist_id:check.id,descricao:"Material teste",valor:50,data:"2026-10-01",user_id:user?.id||"local-user"});
-      D.pagamentos.push({id:"carga_p_"+id,obra_id:obra.id,checklist_id:check.id,descricao:"Receita teste",valor:100,data:"2026-10-01",user_id:user?.id||"local-user"});
-    }
-    const tAudit=performance.now();
-    const financeiro=auditFinanceiroEDIFIQ();
-    const producao=auditProducaoEDIFIQ();
-    const seguranca=auditSegurancaEDIFIQ();
-    const tAuditoria=performance.now()-tAudit;
-    const resultado={
-      ok:Boolean(financeiro?.ok&&producao?.ok&&seguranca?.ok),
-      registros_por_tipo:n,
-      total_lancamentos:n*3,
-      tempo_auditoria_ms:Number(tAuditoria.toFixed(2)),
-      tempo_total_ms:Number((performance.now()-inicio).toFixed(2)),
-      financeiro_ok:Boolean(financeiro?.ok),
-      producao_ok:Boolean(producao?.ok),
-      seguranca_ok:Boolean(seguranca?.ok),
-      problemas:[...(financeiro?.issues||[]),...(producao?.issues||[]),...(seguranca?.problemas||[])].slice(0,100)
-    };
-    console.info("EDIFIQ teste de carga",resultado);
-    return resultado;
-  }finally{
-    Object.keys(original).forEach(k=>{D[k]=original[k]});
-  }
-}
-window.testeCargaEDIFIQ=testeCargaEDIFIQ;
-
-function auditarOperacoesDuplicadasEDIFIQ(){
-  const problemas=[];
-  const tabelas=['obras','funcionarios','diarias','gastos','pagamentos','checklist','faltas','adiantamentos','servicos_adicionais','servicos','terceirizados','pagamentos_terceirizados','orcamentos','diario'];
-  for(const t of tabelas){
-    const seen=new Map();
-    for(const r of (D[t]||[])){
-      const op=String(r?.operation_id||"").trim();
-      if(!op) continue;
-      if(seen.has(op)) problemas.push({tabela:t,operation_id:op,ids:[seen.get(op),r.id]});
-      else seen.set(op,r.id);
-    }
-  }
-  return {ok:problemas.length===0,problemas};
-}
-window.auditarOperacoesDuplicadasEDIFIQ=auditarOperacoesDuplicadasEDIFIQ;
-
-function testeProducaoEDIFIQ(){
-  const issues=[];
-  const tables=['obras','funcionarios','diarias','gastos','pagamentos','checklist','faltas','adiantamentos','servicos_adicionais','servicos','terceirizados','pagamentos_terceirizados','orcamentos','diario'];
-  for(const t of tables){
-    if(!Array.isArray(D[t])) issues.push(`Estrutura inválida: ${t}`);
-    for(const r of (Array.isArray(D[t])?D[t]:[])){
-      if(user?.id && String(user.id)!=='local-user' && r?.user_id && String(r.user_id)!==String(user.id)) issues.push(`Registro de outra conta em ${t}: ${r.id}`);
-    }
-  }
-  const dup=new Map();
-  for(const d of (D.diarias||[])){
-    const k=[d.funcionario_id,d.obra_id,d.checklist_id||'',d.data,d.qtd,d.valor_diaria,d.observacao||''].join('|');
-    if(dup.has(k) && !String(d.id).startsWith('local_')) issues.push(`Possível diária duplicada: ${d.id}`); else dup.set(k,d.id);
-  }
-  for(const g of (D.gastos||[])){if(Number(g.valor||0)<0)issues.push(`Despesa negativa: ${g.id}`);}
-  for(const r of (D.pagamentos||[])){if(Number(r.valor||0)<0)issues.push(`Receita negativa: ${r.id}`);}
-  const security=auditSegurancaEDIFIQ();
-  if(!security.ok) issues.push(...security.problemas);
-  return {ok:issues.length===0,issues,usuario:user?.id||null,contagens:Object.fromEntries(tables.map(t=>[t,Array.isArray(D[t])?D[t].length:0]))};
-}
-window.testeProducaoEDIFIQ=testeProducaoEDIFIQ;
-
-let edifiqUltimaAuditoriaRender=0;
-let edifiqAuditoriaRenderCache=null;
-function executarAuditoriasRender(){
- const agora=Date.now();
- if(edifiqAuditoriaRenderCache && (agora-edifiqUltimaAuditoriaRender)<2000) return edifiqAuditoriaRenderCache;
+function renderAll(){
  auditEDIFIQ();
  const _securityAudit=auditSegurancaEDIFIQ();
  if(!_securityAudit.ok) console.warn("Auditoria de segurança EDIFIQ:",_securityAudit.problemas);
@@ -10673,36 +10389,6 @@ function executarAuditoriasRender(){
  const _producaoAudit=auditProducaoEDIFIQ();
  if(!_financeAudit.ok) console.warn('Auditoria financeira EDIFIQ encontrou inconsistências:',_financeAudit.issues);
  if(!_producaoAudit.ok) console.warn('Auditoria de produção EDIFIQ encontrou inconsistências:',_producaoAudit.issues);
- edifiqUltimaAuditoriaRender=agora;
- return edifiqAuditoriaRenderCache={security:_securityAudit,finance:_financeAudit,producao:_producaoAudit};
-}
-let edifiqRenderTimer=null;
-function edifiqAgendarRender(){
-  if(edifiqRenderTimer) return;
-  edifiqRenderTimer=setTimeout(()=>{
-    edifiqRenderTimer=null;
-    try{renderAll();}catch(e){console.warn('EDIFIQ render agendado',e);}
-  },120);
-}
-window.edifiqAgendarRender=edifiqAgendarRender;
-
-function testeConcorrenciaEDIFIQ(){
-  const conflicts=getEdifiqConflicts();
-  const pending=getEdifiqPendingUpdates();
-  const problemas=[];
-  const seen=new Map();
-  for(const item of pending){
-    const key=String(item.table)+'::'+String(item.id);
-    if(seen.has(key)) problemas.push('Fila duplicada: '+key);
-    seen.set(key,item);
-    if(!item.table||!item.id) problemas.push('Item inválido na fila de sincronização');
-  }
-  return {ok:problemas.length===0,problemas,pendentes:pending.length,conflitos:conflicts.length,usuario:user?.id||null};
-}
-window.testeConcorrenciaEDIFIQ=testeConcorrenciaEDIFIQ;
-
-function renderAll(){
- executarAuditoriasRender();
 
 renderDashboard();
 renderResumoGeral();
@@ -10726,7 +10412,6 @@ renderFaltas();
 renderFotos();
 renderDocumentos();
 renderMateriais();
-renderDiagnosticoEDIFIQ();
 
 fillSelectors();
 fillHistoricoFuncionarioSelector();
@@ -10791,302 +10476,6 @@ atualizarDespesaChecklistDistribuicao();
 
 
 /* =========================================================
-   ETAPA 15 — RECUPERAÇÃO AUTOMÁTICA APÓS FALHA
-   Mantém a fila de sincronização separada por conta e recupera operações
-   pendentes do IndexedDB quando localStorage foi perdido/incompleto.
-   ========================================================= */
-function auditRecuperacaoEDIFIQ(){
-  const owner=String(user?.id||"local-user");
-  const q=getEdifiqPendingUpdates();
-  const problemas=[];
-  for(const item of q){
-    if(item?.owner_id && String(item.owner_id)!==owner) problemas.push(`Fila de outra conta: ${item.key}`);
-    if(!item?.table || !item?.id) problemas.push(`Fila inválida: ${item.key||"sem chave"}`);
-  }
-  return {ok:problemas.length===0,owner,pendentes:q.length,problemas};
-}
-window.auditRecuperacaoEDIFIQ=auditRecuperacaoEDIFIQ;
-window.edifiqAuditoriaFinalAutomatica=true;
-
-/* =========================================================
-   ETAPA 17 — AUDITORIA FINAL DE DADOS E CÁLCULOS
-   Auditoria somente leitura. Não altera lançamentos.
-   Cruza Obras → Equipe → Diárias → Vale → Folha → Financeiro → Checklist.
-   ========================================================= */
-function auditIntegridadeFinalEDIFIQ(){
-  const issues=[];
-  const n=v=>{const x=Number(v??0);return Number.isFinite(x)?x:0;};
-  const sid=v=>String(v??"");
-  const obras=new Map((D.obras||[]).map(o=>[sid(o.id),o]));
-  const funcs=new Map((D.funcionarios||[]).map(f=>[sid(f.id),f]));
-  const checks=new Map((D.checklist||[]).map(c=>[sid(c.id),c]));
-  const seen=new Map();
-  const add=(tipo,extra={})=>issues.push({tipo,...extra});
-
-  // 1) IDs duplicados e vínculos básicos.
-  for(const table of Object.keys(D)){
-    if(!Array.isArray(D[table])) continue;
-    const ids=new Set();
-    for(const r of D[table]){
-      if(r?.id==null||r.id==="") continue;
-      const k=sid(r.id);
-      if(ids.has(k)) add("id_duplicado",{table,id:r.id});
-      ids.add(k);
-    }
-  }
-  for(const d of (D.diarias||[])){
-    const fid=sid(d.funcionario_id),oid=sid(recordObraId(d));
-    if(!funcs.has(fid)) add("diaria_funcionario_inexistente",{id:d.id,funcionario_id:d.funcionario_id});
-    if(!obras.has(oid)) add("diaria_obra_inexistente",{id:d.id,obra_id:d.obra_id});
-    if(d.checklist_id){
-      const c=checks.get(sid(d.checklist_id));
-      if(!c||sid(recordObraId(c))!==oid) add("diaria_checklist_obra_diferente",{id:d.id,checklist_id:d.checklist_id});
-    }
-    const f=funcs.get(fid);
-    if(f?.obra_id && sid(f.obra_id)!==oid) add("diaria_obra_diferente_funcionario",{id:d.id,funcionario_id:d.funcionario_id,obra_id:d.obra_id,obra_funcionario:f.obra_id});
-    if(n(d.qtd)<=0||n(d.valor_diaria)<0) add("diaria_valor_invalido",{id:d.id});
-  }
-  for(const f of (D.funcionarios||[])){
-    if(f.obra_id && !obras.has(sid(f.obra_id))) add("funcionario_obra_inexistente",{id:f.id,obra_id:f.obra_id});
-    if(n(f.valor_diaria)<0||n(f.salario_mensal)<0) add("funcionario_valor_negativo",{id:f.id});
-  }
-  for(const c of (D.checklist||[])){
-    if(!obras.has(sid(recordObraId(c)))) add("checklist_obra_inexistente",{id:c.id,obra_id:c.obra_id});
-    if(n(c.valor)<0) add("checklist_valor_negativo",{id:c.id});
-    if(n(c.progresso)<0||n(c.progresso)>100) add("checklist_progresso_fora_faixa",{id:c.id,progresso:c.progresso});
-  }
-  for(const g of (D.gastos||[])){
-    const oid=sid(recordObraId(g));
-    if(!obras.has(oid)) add("despesa_obra_inexistente",{id:g.id,obra_id:g.obra_id});
-    if(g.checklist_id){const c=checks.get(sid(g.checklist_id));if(!c||sid(recordObraId(c))!==oid)add("despesa_checklist_obra_diferente",{id:g.id,checklist_id:g.checklist_id});}
-    if(n(g.valor)<0) add("despesa_negativa",{id:g.id,valor:g.valor});
-  }
-  for(const p of (D.pagamentos||[])){
-    const oid=sid(recordObraId(p));
-    if(!obras.has(oid)) add("receita_obra_inexistente",{id:p.id,obra_id:p.obra_id});
-    if(n(p.valor)<0) add("receita_negativa",{id:p.id,valor:p.valor});
-    const dist=receitaChecklistDistribuicao(p);
-    if(dist.length){
-      const soma=dist.reduce((a,x)=>a+n(x.valor),0);
-      if(Math.abs(soma-n(p.valor))>0.01) add("receita_rateio_diferente_total",{id:p.id,total:n(p.valor),rateado:soma});
-      for(const x of dist){const c=checks.get(sid(x.checklist_id));if(!c||sid(recordObraId(c))!==oid)add("receita_rateio_checklist_obra_diferente",{id:p.id,checklist_id:x.checklist_id});}
-    }else if(p.checklist_id){const c=checks.get(sid(p.checklist_id));if(!c||sid(recordObraId(c))!==oid)add("receita_checklist_obra_diferente",{id:p.id,checklist_id:p.checklist_id});}
-  }
-  for(const a of (D.adiantamentos||[])){
-    if(!funcs.has(sid(a.funcionario_id))) add("vale_funcionario_inexistente",{id:a.id,funcionario_id:a.funcionario_id});
-    if(a.obra_id&&!obras.has(sid(a.obra_id))) add("vale_obra_inexistente",{id:a.id,obra_id:a.obra_id});
-    if(n(a.valor)<0) add("vale_negativo",{id:a.id,valor:a.valor});
-  }
-
-  // 2) Duplicidade funcional de diária: mesma pessoa/obra/checklist/data/qtd/valor/observação.
-  for(const d of (D.diarias||[])){
-    const k=[d.funcionario_id,recordObraId(d),d.checklist_id||"",d.data,d.qtd??d.quantidade??1,d.valor_diaria,d.observacao||""].join("|");
-    if(seen.has(k)) add("diaria_possivelmente_duplicada",{id:d.id,igual_a:seen.get(k)}); else seen.set(k,d.id);
-  }
-
-  // 3) Folha: diárias pagas precisam estar representadas no financeiro.
-  for(const [oid,o] of obras){
-    const paid=(D.diarias||[]).filter(d=>sid(recordObraId(d))===oid&&diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
-    const payroll=(D.gastos||[]).filter(g=>sid(recordObraId(g))===oid&&gastoSubcategoria(g)==="Mão de obra"&&/\[Mão de obra\]/i.test(String(g.descricao||""))).reduce((a,g)=>a+n(g.valor),0);
-    if(paid>0.009&&payroll<0.009) add("folha_paga_sem_despesa_financeira",{obra_id:o.id,diarias_pagas:paid});
-    if(payroll>paid+0.01) add("despesa_folha_acima_diarias_pagas",{obra_id:o.id,despesa_folha:payroll,diarias_pagas:paid});
-  }
-
-  // 4) Vales aplicados: nunca podem ultrapassar o valor original do lançamento.
-  const applied=getAdvanceApplied();
-  for(const [id,val] of Object.entries(applied||{})){
-    const g=(D.gastos||[]).find(x=>sid(x.id)===sid(id));
-    const usado=n(val);
-    if(!g) add("vale_aplicado_sem_lancamento",{id,aplicado:usado});
-    else if(usado<0||usado>n(g.valor)+0.01) add("vale_aplicado_acima_do_lancamento",{id,aplicado:usado,valor:n(g.valor)});
-  }
-
-  // 5) Financeiro por obra: recalcula e compara com a função oficial do aplicativo.
-  const porObra={};
-  for(const [oid,o] of obras){
-    const f=obraFinanceData(oid);
-    const receita=(D.pagamentos||[]).filter(x=>sid(recordObraId(x))===oid).reduce((a,x)=>a+n(x.valor),0);
-    const despesas=(D.gastos||[]).filter(x=>sid(recordObraId(x))===oid).reduce((a,x)=>a+n(x.valor),0);
-    const esperado={contrato:n(o.valor),receita,despesas,resultado:receita-despesas,saldoContrato:n(o.valor)-despesas,saldoReceber:Math.max(0,n(o.valor)-receita),margemLucro:n(o.valor)>0?((receita-despesas)/n(o.valor))*100:0};
-    for(const k of Object.keys(esperado)) if(Math.abs(n(f[k])-n(esperado[k]))>0.01) add("calculo_financeiro_divergente",{obra_id:o.id,campo:k,oficial:f[k],esperado:esperado[k]});
-    porObra[oid]={nome:o.nome,...esperado};
-  }
-
-  const conflitos=auditConflitosEDIFIQ();
-  const recuperacao=auditRecuperacaoEDIFIQ();
-  return {ok:issues.length===0,issues,quantidade:issues.length,porObra,conflitos,recuperacao,gerado_em:new Date().toISOString()};
-}
-window.auditIntegridadeFinalEDIFIQ=auditIntegridadeFinalEDIFIQ;
-
-/* =========================================================
-   ETAPA 18 — CENTRAL DE DIAGNÓSTICO E INTEGRIDADE
-   Somente leitura: reúne as auditorias existentes e não altera dados.
-   ========================================================= */
-function edifiqDiagMoney(v){
-  try{return money(Number(v||0));}catch(_){return 'R$ '+Number(v||0).toFixed(2).replace('.',',');}
-}
-function executarDiagnosticoEDIFIQ(){
-  const final=auditIntegridadeFinalEDIFIQ();
-  const financeiro=auditFinanceiroEDIFIQ();
-  const producao=auditProducaoEDIFIQ();
-  const recuperacao=auditRecuperacaoEDIFIQ();
-  const concorrencia=testeConcorrenciaEDIFIQ();
-  const operacoes=auditarOperacoesDuplicadasEDIFIQ();
-  const carga={ok:true,tempo_auditoria_ms:null};
-  const checks=[
-    ['Integridade geral',final.ok,final.quantidade],
-    ['Financeiro',financeiro.ok,(financeiro.issues||[]).length],
-    ['Produção e vínculos',producao.ok,(producao.issues||[]).length],
-    ['Recuperação',recuperacao.ok,recuperacao.problemas.length],
-    ['Concorrência/sincronização',concorrencia.ok,concorrencia.problemas.length],
-    ['Operações duplicadas',operacoes.ok,operacoes.problemas.length]
-  ];
-  window._edifiqDiagnosticoAtual={final,financeiro,producao,recuperacao,concorrencia,operacoes,carga,checks,gerado_em:new Date().toISOString()};
-  renderDiagnosticoEDIFIQ();
-  setTimeout(()=>{try{renderHistoricoAlteracoesEDIFIQ();carregarHistoricoAlteracoesEDIFIQ()}catch(e){console.warn('EDIFIQ histórico',e)}},0);
-  return window._edifiqDiagnosticoAtual;
-}
-window.executarDiagnosticoEDIFIQ=executarDiagnosticoEDIFIQ;
-function renderDiagnosticoEDIFIQ(){
-  const el=$('diagnosticoConteudo');
-  if(!el)return;
-  const d=window._edifiqDiagnosticoAtual;
-  if(!d){
-    el.innerHTML='<div class="note">Nenhuma verificação executada nesta sessão. Clique em <b>Verificar agora</b>.</div>';
-    return;
-  }
-  const ok=d.checks.filter(x=>x[1]).length, total=d.checks.length;
-  const cards=d.checks.map(x=>`<div class="financeRow"><span>${esc(x[0])}</span><b class="${x[1]?'green':'red'}">${x[1]?'✓ OK':'⚠ '+x[2]+' ponto(s)'}</b></div>`).join('');
-  const issues=[...(d.final.issues||[]).map(x=>({origem:'Integridade',texto:x.tipo||String(x)})),...(d.financeiro.issues||[]).map(x=>({origem:'Financeiro',texto:x.tipo||String(x)})),...(d.producao.issues||[]).map(x=>({origem:'Produção',texto:x.tipo||String(x)})),...(d.recuperacao.problemas||[]).map(x=>({origem:'Recuperação',texto:String(x)})),...(d.concorrencia.problemas||[]).map(x=>({origem:'Sincronização',texto:String(x)})),...(d.operacoes.problemas||[]).map(x=>({origem:'Duplicidade',texto:(x.tabela||'')+' — '+(x.operation_id||'operação')}))].slice(0,80);
-  const linhas=issues.length?issues.map(i=>`<div class="financeRow"><span><small>${esc(i.origem)}</small><br>${esc(i.texto)}</span><b class="red">Revisar</b></div>`).join(''):'<div class="note green">Nenhum problema foi encontrado pelas verificações atuais.</div>';
-  const obraRows=Object.values(d.final.porObra||{}).map(o=>`<div class="financeRow"><span><b>${esc(o.nome||'Obra')}</b><br><small>Receita ${edifiqDiagMoney(o.receita)} · Despesas ${edifiqDiagMoney(o.despesas)} · Resultado ${edifiqDiagMoney(o.resultado)}</small></span><b>${Number(o.margemLucro||0).toFixed(1).replace('.',',')}%</b></div>`).join('');
-  el.innerHTML=`<div class="financeModernPanel"><h3>Saúde do aplicativo</h3><div class="financeRow"><span>Verificações aprovadas</span><b class="${ok===total?'green':'gold'}">${ok}/${total}</b></div><div class="financeRow"><span>Usuário</span><b>${esc(String(user?.email||user?.id||'local'))}</b></div><div class="financeRow"><span>Última verificação</span><b>${esc(new Date(d.gerado_em).toLocaleString('pt-BR'))}</b></div></div><div class="financeModernPanel"><h3>Testes</h3>${cards}</div><div class="financeModernPanel"><h3>Problemas para revisão</h3>${linhas}</div><div class="financeModernPanel"><h3>Resumo financeiro por obra</h3>${obraRows||'<div class="note">Nenhuma obra cadastrada.</div>'}</div><div class="financeModernPanel"><h3>Sincronização</h3><div class="financeRow"><span>Operações pendentes</span><b>${d.recuperacao.pendentes}</b></div><div class="financeRow"><span>Conflitos registrados</span><b>${d.concorrencia.conflitos}</b></div><div class="financeRow"><span>Problemas na fila</span><b class="${d.recuperacao.problemas.length?'red':'green'}">${d.recuperacao.problemas.length}</b></div></div><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn gold" type="button" onclick="executarDiagnosticoEDIFIQ()">🔄 Reexecutar diagnóstico</button><button class="btn" type="button" onclick="console.table(window._edifiqDiagnosticoAtual?.final?.issues||[]) ; toast('Detalhes enviados ao console do navegador.')">📋 Detalhes técnicos</button></div><div class="financeModernPanel edh-panel"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3>🧾 Histórico de alterações</h3><p class="sub">Rastreabilidade das inclusões, alterações e exclusões registradas no banco de dados.</p></div></div><div id="historicoAlteracoesEDIFIQ"></div></div>`;
-}
-window.renderDiagnosticoEDIFIQ=renderDiagnosticoEDIFIQ;
-
-/* =========================================================
-   ETAPA 21 — CONTROLE DE USUÁRIOS E PERMISSÕES
-   Fundação segura de papéis por conta. Nesta etapa o proprietário atual
-   mantém exatamente o comportamento anterior; novos membros não recebem
-   acesso aos dados até que a política de cada módulo seja habilitada.
-   ========================================================= */
-async function edifiqCarregarPapelAtual(){
-  const papelEl=$('edifiqContaPapel');
-  const emailEl=$('edifiqContaEmail');
-  const statusEl=$('edifiqContaStatus');
-  const resumoEl=$('edifiqPermissoesResumo');
-  if(emailEl) emailEl.textContent=String(user?.email||'Modo local');
-  if(!sb||!user||String(user.id)==='local-user'){
-    if(papelEl) papelEl.textContent='Modo local';
-    if(statusEl){statusEl.textContent='Somente neste aparelho';statusEl.className='gold';}
-    if(resumoEl) resumoEl.innerHTML='<b>Modo local.</b><br>As permissões de conta ficam disponíveis quando o EDIFIQ estiver conectado ao Supabase.';
-    return 'local';
-  }
-  try{
-    const {data,error}=await sb.rpc('edifiq_papel_atual');
-    if(error) throw error;
-    const papel=String(data||'proprietario');
-    const labels={proprietario:'Proprietário',administrador:'Administrador',gestor:'Gestor',financeiro:'Financeiro',equipe:'Equipe',visualizador:'Visualizador'};
-    if(papelEl) papelEl.textContent=labels[papel]||papel;
-    if(statusEl){statusEl.textContent='Conectado';statusEl.className='green';}
-    if(resumoEl) resumoEl.innerHTML=papel==='proprietario' ? '<b>Acesso completo.</b><br>Você é o proprietário desta conta e mantém todas as operações atuais do EDIFIQ.' : '<b>Perfil '+esc(labels[papel]||papel)+'.</b><br>O acesso aos módulos será aplicado conforme as políticas de cada área nas próximas etapas.';
-    window.edifiqPapelAtual=papel;
-    return papel;
-  }catch(e){
-    console.warn('EDIFIQ: não foi possível consultar o papel atual',e);
-    if(papelEl) papelEl.textContent='Proprietário';
-    if(resumoEl) resumoEl.innerHTML='<b>Acesso atual preservado.</b><br>Não foi possível consultar o perfil agora; o funcionamento existente permanece intacto.';
-    return 'proprietario';
-  }
-}
-window.edifiqCarregarPapelAtual=edifiqCarregarPapelAtual;
-function renderConfiguracoesEDIFIQ(){
-  edifiqCarregarPapelAtual();
-}
-window.renderConfiguracoesEDIFIQ=renderConfiguracoesEDIFIQ;
-
-/* =========================================================
-   ETAPA 20 — HISTÓRICO DE ALTERAÇÕES E RASTREABILIDADE
-   O histórico é gravado no Supabase por triggers nas tabelas principais.
-   A interface é somente leitura e nunca altera lançamentos.
-   ========================================================= */
-function edifiqAuditDate(v){
-  try{return new Date(v).toLocaleString('pt-BR');}catch(_){return String(v||'—')}
-}
-function edifiqAuditActionLabel(a){
-  const x=String(a||'').toUpperCase();
-  return x==='INSERT'?'Criado':x==='UPDATE'?'Alterado':x==='DELETE'?'Excluído':x;
-}
-function edifiqAuditTableLabel(t){
-  const m={obras:'Obras',funcionarios:'Funcionários',diarias:'Diárias',gastos:'Despesas',pagamentos:'Receitas',checklist:'Checklist',faltas:'Faltas',adiantamentos:'Vales',servicos:'Serviços',servicos_adicionais:'Serviços adicionais',terceirizados:'Terceirizados',pagamentos_terceirizados:'Pagamentos terceirizados',orcamentos:'Orçamentos',diario:'Diário'};
-  return m[String(t||'')]||String(t||'—');
-}
-function edifiqAuditResumo(before,after,action){
-  try{
-    const b=before&&typeof before==='object'?before:{};
-    const a=after&&typeof after==='object'?after:{};
-    const keys=new Set([...Object.keys(b),...Object.keys(a)]);
-    const changed=[];
-    keys.forEach(k=>{
-      if(k==='updated_at'||k==='created_at')return;
-      const vb=JSON.stringify(b[k]??null), va=JSON.stringify(a[k]??null);
-      if(vb!==va)changed.push(k);
-    });
-    if(action==='INSERT')return 'Novo registro';
-    if(action==='DELETE')return 'Registro excluído';
-    return changed.length?`Campos alterados: ${changed.slice(0,8).join(', ')}${changed.length>8?'…':''}`:'Atualização sem mudança de campos relevantes';
-  }catch(_){return 'Alteração registrada'}
-}
-async function carregarHistoricoAlteracoesEDIFIQ(){
-  const host=$('historicoAlteracoesEDIFIQLista')||$('historicoAlteracoesEDIFIQ');
-  if(!host)return [];
-  host.innerHTML='<div class="note">Carregando histórico…</div>';
-  if(!sb||!user||String(user.id)==='local-user'){
-    host.innerHTML='<div class="note">O histórico completo fica disponível quando o EDIFIQ estiver conectado à conta. No modo local, as operações pendentes continuam protegidas pelo sistema de recuperação.</div>';
-    return [];
-  }
-  try{
-    const filtroTabela=$('auditTabelaFiltro')?.value||'all';
-    const filtroAcao=$('auditAcaoFiltro')?.value||'all';
-    let q=sb.from('auditoria_edifiq').select('id,tabela,registro_id,acao,antes,depois,operation_id,criado_em').eq('user_id',edifiqEmpresaUserId()).order('criado_em',{ascending:false}).limit(150);
-    if(filtroTabela!=='all')q=q.eq('tabela',filtroTabela);
-    if(filtroAcao!=='all')q=q.eq('acao',filtroAcao);
-    const {data,error}=await q;
-    if(error)throw error;
-    const rows=Array.isArray(data)?data:[];
-    window._edifiqHistoricoAlteracoes=rows;
-    if(!rows.length){host.innerHTML='<div class="note green">Nenhuma alteração registrada ainda. As próximas inclusões, alterações e exclusões nas tabelas monitoradas aparecerão aqui.</div>';return rows;}
-    host.innerHTML=`<div class="edh-table-wrap"><table class="edh-table"><thead><tr><th>Data</th><th>Ação</th><th>Módulo</th><th>Registro</th><th>Resumo</th><th>Operação</th></tr></thead><tbody>${rows.map(r=>{
-      const ac=String(r.acao||'');
-      const cls=ac==='DELETE'?'red':ac==='INSERT'?'green':'gold';
-      const op=String(r.operation_id||'');
-      return `<tr><td>${esc(edifiqAuditDate(r.criado_em))}</td><td><span class="edh-pill ${cls}">${esc(edifiqAuditActionLabel(ac))}</span></td><td><b>${esc(edifiqAuditTableLabel(r.tabela))}</b></td><td>${esc(String(r.registro_id||'—'))}</td><td>${esc(edifiqAuditResumo(r.antes,r.depois,ac))}</td><td><small>${esc(op?op.slice(0,22)+'…':'—')}</small></td></tr>`;
-    }).join('')}</tbody></table></div><div class="note">Mostrando até 150 alterações mais recentes. O histórico é somente leitura.</div>`;
-    return rows;
-  }catch(err){
-    console.warn('EDIFIQ histórico de alterações',err);
-    host.innerHTML='<div class="note red">Não foi possível carregar o histórico agora. Os dados principais permanecem preservados.</div>';
-    return [];
-  }
-}
-async function exportarHistoricoAlteracoesEDIFIQ(){
-  const rows=window._edifiqHistoricoAlteracoes||await carregarHistoricoAlteracoesEDIFIQ();
-  if(!rows.length){toast('Nenhum histórico disponível para exportar.');return;}
-  const payload={produto:'EDIFIQ — Construção Civil',tipo:'historico_alteracoes',exportado_em:new Date().toISOString(),registros:rows};
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`edifiq-historico-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  toast('Histórico exportado.');
-}
-function renderHistoricoAlteracoesEDIFIQ(){
-  const host=$('historicoAlteracoesEDIFIQ');if(!host)return;
-  host.innerHTML=`<div class="edh-toolbar"><select id="auditTabelaFiltro" onchange="carregarHistoricoAlteracoesEDIFIQ()"><option value="all">Todos os módulos</option><option value="obras">Obras</option><option value="funcionarios">Funcionários</option><option value="diarias">Diárias</option><option value="gastos">Despesas</option><option value="pagamentos">Receitas</option><option value="checklist">Checklist</option><option value="faltas">Faltas</option><option value="adiantamentos">Vales</option><option value="servicos">Serviços</option><option value="servicos_adicionais">Serviços adicionais</option><option value="terceirizados">Terceirizados</option><option value="pagamentos_terceirizados">Pagamentos terceirizados</option><option value="orcamentos">Orçamentos</option><option value="diario">Diário</option></select><select id="auditAcaoFiltro" onchange="carregarHistoricoAlteracoesEDIFIQ()"><option value="all">Todas as ações</option><option value="INSERT">Criados</option><option value="UPDATE">Alterados</option><option value="DELETE">Excluídos</option></select><button class="btn" type="button" onclick="carregarHistoricoAlteracoesEDIFIQ()">↻ Atualizar</button><button class="btn" type="button" onclick="exportarHistoricoAlteracoesEDIFIQ()">⇩ Exportar</button></div><div id="historicoAlteracoesEDIFIQLista" class="edh-list"></div>`;
-}
-window.carregarHistoricoAlteracoesEDIFIQ=carregarHistoricoAlteracoesEDIFIQ;
-window.exportarHistoricoAlteracoesEDIFIQ=exportarHistoricoAlteracoesEDIFIQ;
-window.renderHistoricoAlteracoesEDIFIQ=renderHistoricoAlteracoesEDIFIQ;
-
-
-/* =========================================================
    INICIALIZAÇÃO
    ========================================================= */
 
@@ -11100,8 +10489,7 @@ window.addEventListener("online",async()=>{
 });
 window.addEventListener("offline",()=>{edifiqDurableWriteNow();});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")edifiqDurableWriteNow();});
-window.addEventListener("pagehide",()=>{try{edifiqDurableWriteNow();if(getEdifiqPendingUpdates().length)edifiqDurableSavePendingQueue()}catch(e){}});
-window.addEventListener("beforeunload",()=>{try{edifiqDurableWriteNow();if(getEdifiqPendingUpdates().length)edifiqDurableSavePendingQueue()}catch(e){}});
+window.addEventListener("pagehide",()=>{try{edifiqDurableWriteNow()}catch(e){}});
 
 setInterval(()=>{
   try{
@@ -11116,8 +10504,6 @@ document.addEventListener("DOMContentLoaded",async()=>{
     // 1) Recupera primeiro os dados que já estavam salvos neste aparelho.
     const local=localData(); Object.keys(D).forEach(k=>{D[k]=Array.isArray(local[k])?local[k]:[]});
     await edifiqRecoverDurableStartup();
-    const filaRecuperada=await edifiqRecoverPendingQueue();
-    if(filaRecuperada>0) toast(`Recuperadas ${filaRecuperada} operação(ões) pendente(s) para sincronização.`);
     auditEDIFIQ(); saveSafeSnapshot("estado inicial carregado");
     edifiqDurableWriteNow();
     loadDocumentoMeta();
@@ -11133,15 +10519,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
         const result=await Promise.race([sb.auth.getSession(),new Promise(resolve=>setTimeout(()=>resolve({data:{session:null},timeout:true}),5000))]);
         if(result?.data?.session){
           user=result.data.session.user;
-          edifiqPrepareAccountCache(user.id);
-          await edifiqResolverEmpresa();
-          await edifiqCarregarPermissoes();
           $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
           await loadCloud();
-          const testePosLogin=testeProducaoEDIFIQ();
-          if(!testePosLogin.ok) console.warn("EDIFIQ: teste de produção encontrou pontos para revisão",testePosLogin);
-          const auditoriaFinal= auditIntegridadeFinalEDIFIQ();
-          if(!auditoriaFinal.ok) console.warn("EDIFIQ: auditoria final encontrou pontos para revisão",auditoriaFinal);
           await limparFuncionariosSemIdentificacao();
           saveLocalData();
           renderAll();
@@ -11259,7 +10638,7 @@ async function limparFuncionariosSemIdentificacao(){
   for(const f of invalidos){
     D.funcionarios=D.funcionarios.filter(x=>String(x.id)!==String(f.id));
     if(sb&&user&&!String(f.id).startsWith('local_')){
-      try{await sb.from('funcionarios').delete().eq('id',f.id).eq('user_id',edifiqEmpresaUserId());}catch(_){ }
+      try{await sb.from('funcionarios').delete().eq('id',f.id).eq('user_id',user.id);}catch(_){ }
     }
   }
   if(invalidos.length)saveLocalData();
@@ -11396,9 +10775,6 @@ exportFull;
 window.exportExcel=
 exportExcel;
 
-window.edifiqValidBackupStructure=edifiqValidBackupStructure;
-window.edifiqBackupSummary=edifiqBackupSummary;
-window.edifiqPrepareImport=edifiqPrepareImport;
 window.importBackup=
 importBackup;
 
@@ -12892,7 +12268,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     if(!vozData.equipe?.length){toast("Selecione pelo menos um trabalhador.");renderEquipeManual();return}
     const base={obra_id:vozData.obra_id,data:vozData.data||todayV(),clima:vozData.clima||"Não informado",horas:Number(vozData.horas||0),equipe:[...new Set(vozData.equipe)],atividades:String(vozData.atividades||"").trim(),observacoes:String(vozData.observacoes||"").trim()};
     D.diario=Array.isArray(D.diario)?D.diario:[];
-    D.diario.unshift({...base,id:"diario_"+Date.now()+"_"+Math.random().toString(36).slice(2),user_id:edifiqEmpresaUserId()||"local-user",created_at:new Date().toISOString(),origem:"voz"});
+    D.diario.unshift({...base,id:"diario_"+Date.now()+"_"+Math.random().toString(36).slice(2),user_id:user?.id||"local-user",created_at:new Date().toISOString(),origem:"voz"});
     saveLocalData(); closeDiarioVoz(); renderAll(); toast("Diário de obra registrado por voz.");
   };
 
@@ -13059,252 +12435,5 @@ body.edifiq-ios-standalone .edifiqDrawerScroll{
 })();
 </script>
 
-
-<!-- EDIFIQ ETAPA 23 — gerenciamento de membros e convites -->
-<section id="edifiqGestaoMembros" class="card" style="margin-top:16px">
-  <div style="font-weight:700;margin-bottom:6px">Usuários e acessos</div>
-  <div style="font-size:13px;opacity:.72;margin-bottom:12px">Gerencie os membros da sua conta, perfil e situação de acesso.</div>
-  <div style="display:grid;grid-template-columns:minmax(180px,1fr) 150px auto;gap:8px;align-items:end">
-    <label>E-mail<input id="edifiqMembroEmail" type="email" placeholder="usuario@email.com"></label>
-    <label>Perfil<select id="edifiqMembroPapel"><option value="administrador">Administrador</option><option value="gestor">Gestor</option><option value="financeiro">Financeiro</option><option value="equipe">Equipe</option><option value="visualizador">Visualizador</option></select></label>
-    <button type="button" onclick="edifiqPrepararConvite()">Adicionar usuário</button>
-  </div>
-  <div id="edifiqMembrosLista" style="margin-top:14px"></div>
-</section>
-<script>
-(function(){
-  const KEY='edifiq_convites_v1';
-  function get(){try{const x=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(x)?x:[]}catch(e){return []}}
-  function set(x){localStorage.setItem(KEY,JSON.stringify(x||[]))}
-  function render(){
-    const el=document.getElementById('edifiqMembrosLista'); if(!el)return;
-    const q=get();
-    if(!q.length){el.innerHTML='<div style="opacity:.65;font-size:13px">Nenhum convite cadastrado nesta conta.</div>';return}
-    el.innerHTML=q.map((x,i)=>`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06)"><div><b>${String(x.email).replace(/[<>]/g,'')}</b><div style="font-size:12px;opacity:.65">${x.papel} · ${x.ativo?'Ativo':'Bloqueado'} · ${x.status||'Pendente'}</div></div><button type="button" onclick="edifiqAlternarMembro(${i})">${x.ativo?'Bloquear':'Ativar'}</button></div>`).join('');
-  }
-  window.edifiqPrepararConvite=function(){
-    const email=String(document.getElementById('edifiqMembroEmail')?.value||'').trim().toLowerCase();
-    const papel=String(document.getElementById('edifiqMembroPapel')?.value||'visualizador');
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){if(typeof toast==='function')toast('Informe um e-mail válido.');return}
-    const q=get(); if(q.some(x=>x.email===email&&x.ativo)){if(typeof toast==='function')toast('Este usuário já está cadastrado.');return}
-    q.push({email,papel,ativo:true,status:'Pendente',criado_em:new Date().toISOString()}); set(q);
-    document.getElementById('edifiqMembroEmail').value=''; render();
-    if(typeof toast==='function')toast('Usuário preparado para convite. O envio do e-mail deve ser feito pelo fluxo seguro de autenticação.');
-  };
-  window.edifiqAlternarMembro=function(i){const q=get();if(!q[i])return;q[i].ativo=!q[i].ativo;q[i].status=q[i].ativo?'Pendente':'Bloqueado';set(q);render()};
-  window.edifiqRenderMembros=render;
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render);else render();
-})();
-</script>
-
-<!-- EDIFIQ ETAPA 25 — permissões efetivas por módulo -->
-<script id="edifiq-etapa25-permissoes">
-(function(){window.EDIFIQ_ETAPA25=true;window.edifiqVerificarPermissao=edifiqPode;})();
-</script>
-
-<script>
-(function(){
-  'use strict';
-  const MODULOS=['obras','equipe','financeiro','checklist','fotos','relatorios','configuracoes'];
-  const LABEL={obras:'Obras',equipe:'Equipe',financeiro:'Financeiro',checklist:'Checklist',fotos:'Fotos',relatorios:'Relatórios',configuracoes:'Configurações'};
-  async function api(fn,args){
-    if(!window.supabase || !window.supabase.rpc) throw new Error('Supabase não disponível');
-    const {data,error}=await window.supabase.rpc(fn,args||{}); if(error) throw error; return data;
-  }
-  function esc(v){return String(v??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
-  function mount(){
-    if(document.getElementById('edifiqGerenciamentoUsuarios26')) return;
-    const host=document.querySelector('#edifiqGestaoMembros')||document.querySelector('#configuracoes')||document.body;
-    const box=document.createElement('section'); box.id='edifiqGerenciamentoUsuarios26'; box.style.cssText='margin:16px 0;padding:16px;border:1px solid #ddd;border-radius:14px;background:var(--card,#fff)';
-    box.innerHTML='<h3 style="margin:0 0 8px">Gerenciamento de usuários</h3><div id="edifiqUsuarios26Msg" style="font-size:13px;margin-bottom:10px"></div><div id="edifiqUsuarios26Lista">Carregando usuários...</div>';
-    host.appendChild(box); load();
-  }
-  async function load(){
-    const el=document.getElementById('edifiqUsuarios26Lista'); if(!el) return;
-    try{
-      const [{data:mem,error:me},{data:per,error:pe}]=await Promise.all([
-        window.supabase.from('edifiq_membros').select('*').order('atualizado_em',{ascending:false}),
-        window.supabase.from('edifiq_permissoes').select('*')
-      ]);
-      if(me||pe) throw me||pe;
-      if(!mem?.length){el.innerHTML='<div>Nenhum usuário vinculado.</div>';return;}
-      el.innerHTML=mem.map(m=>{
-        const rows=per.filter(x=>x.membro_user_id===m.membro_user_id);
-        const perms=MODULOS.map(mod=>{const x=rows.find(r=>r.modulo===mod)||{};return '<tr><td>'+LABEL[mod]+'</td>'+['visualizar','criar','editar','excluir'].map(a=>'<td><input type="checkbox" data-user="'+esc(m.membro_user_id)+'" data-mod="'+mod+'" data-act="'+a+'" '+(x[a]?'checked':'')+' '+((!m.ativo||m.membro_user_id===m.user_id)?'disabled':'')+'></td>').join('')+'</tr>'}).join('');
-        return '<div style="border-top:1px solid #eee;padding:12px 0"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>'+esc(m.membro_user_id)+'</b><select data-role="'+esc(m.membro_user_id)+'" '+(m.membro_user_id===m.user_id?'disabled':'')+'><option value="administrador" '+(m.papel==='administrador'?'selected':'')+'>Administrador</option><option value="gestor" '+(m.papel==='gestor'?'selected':'')+'>Gestor</option><option value="financeiro" '+(m.papel==='financeiro'?'selected':'')+'>Financeiro</option><option value="equipe" '+(m.papel==='equipe'?'selected':'')+'>Equipe</option><option value="visualizador" '+(m.papel==='visualizador'?'selected':'')+'>Visualizador</option></select><button type="button" data-toggle="'+esc(m.membro_user_id)+'" '+(m.membro_user_id===m.user_id?'disabled':'')+'>'+ (m.ativo?'Desativar':'Ativar') +'</button></div><table style="width:100%;margin-top:10px"><thead><tr><th>Módulo</th><th>Ver</th><th>Criar</th><th>Editar</th><th>Excluir</th></tr></thead><tbody>'+perms+'</tbody></table></div>';
-      }).join('');
-      el.querySelectorAll('[data-role]').forEach(x=>x.addEventListener('change',async()=>{try{await api('edifiq_gerenciar_membro',{p_membro_user_id:x.dataset.role,p_acao:'perfil',p_papel:x.value});msg('Perfil atualizado.');}catch(e){msg(e.message,true);await load();}}));
-      el.querySelectorAll('[data-toggle]').forEach(x=>x.addEventListener('click',async()=>{const active=x.textContent.trim()==='Ativar';try{await api('edifiq_gerenciar_membro',{p_membro_user_id:x.dataset.toggle,p_acao:'status',p_ativo:active});msg('Status atualizado.');await load();}catch(e){msg(e.message,true);}}));
-      const grouped=new Map(); el.querySelectorAll('input[data-user]').forEach(x=>{const k=x.dataset.user+'|'+x.dataset.mod;(grouped.get(k)||grouped.set(k,[]).get(k)).push(x);});
-      grouped.forEach((inputs,key)=>inputs.forEach(x=>x.addEventListener('change',async()=>{const [uid,mod]=key.split('|');const vals={};inputs.forEach(i=>vals[i.dataset.act]=i.checked);try{await api('edifiq_definir_permissao',{p_membro_user_id:uid,p_modulo:mod,p_visualizar:!!vals.visualizar,p_criar:!!vals.criar,p_editar:!!vals.editar,p_excluir:!!vals.excluir});msg('Permissão atualizada.');}catch(e){msg(e.message,true);await load();}})));
-    }catch(e){el.innerHTML='<div style="color:#b00020">Não foi possível carregar os usuários: '+esc(e.message)+'</div>';}
-  }
-  function msg(t,bad){const e=document.getElementById('edifiqUsuarios26Msg');if(e){e.textContent=t;e.style.color=bad?'#b00020':'inherit';}}
-  window.edifiqGerenciarUsuarios26=mount;
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(mount,700)); else setTimeout(mount,700);
-})();
-</script>
-
-<!-- EDIFIQ ETAPA 30 — IDENTIDADE NOS DOCUMENTOS OFICIAIS -->
-<style id="edifiq-etapa30-style">
-.edDocIdentity{display:flex;align-items:center;gap:14px;border-bottom:2px solid #c99a38;padding:0 0 12px;margin-bottom:18px}.edDocIdentityLogo{width:58px;height:58px;border-radius:14px;object-fit:contain;border:1px solid #d9ad55;background:#f7f7f7}.edDocIdentityMark{width:58px;height:58px;border-radius:14px;display:grid;place-items:center;background:#151a20;border:1px solid #c99a38;color:#c99a38;font-weight:900;font-size:20px}.edDocIdentityText h1{margin:0;font-size:20px}.edDocIdentityText div{font-size:11px;color:#64748b;margin-top:3px;line-height:1.35}.edDocIdentityFoot{margin-top:24px;padding-top:10px;border-top:1px solid #d9e0ea;font-size:10px;color:#64748b;text-align:center}.edDocConfigCard{margin-top:10px}.edDocConfigGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.edDocConfigGrid .full{grid-column:1/-1}@media(max-width:700px){.edDocConfigGrid{grid-template-columns:1fr}.edDocConfigGrid .full{grid-column:auto}}
-</style>
-<script id="edifiq-etapa30-script">
-(function(){
-  const E30={cache:null,loaded:false};
-  const n=v=>String(v??'').trim();
-  const esc30=v=>typeof esc==='function'?esc(v):n(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  async function identity(force=false){
-    if(E30.loaded&&!force&&E30.cache)return E30.cache;
-    const fallback={empresa_user_id:typeof edifiqEmpresaUserId==='function'?edifiqEmpresaUserId():(user?.id||''),nome:'EDIFIQ — Construção Civil',documento:'',telefone:'',email:'',endereco:'',logo_url:'',cor:''};
-    try{
-      if(window.sb?.rpc){const {data,error}=await sb.rpc('edifiq_empresa_identidade',{p_empresa:null});if(!error&&data){E30.cache={...fallback,...data};E30.loaded=true;return E30.cache;}}
-    }catch(e){console.warn('Identidade dos documentos:',e)}
-    E30.cache=fallback;E30.loaded=true;return E30.cache;
-  }
-  window.edifiqIdentidadeDocumento=identity;
-  window.edifiqDocumentoCabecalho=function(i,titulo,sub){i=i||{};const nome=esc30(i.nome||'EDIFIQ — Construção Civil');const logo=n(i.logo_url);return `<div class="edDocIdentity">${logo?`<img class="edDocIdentityLogo" src="${esc30(logo)}" alt="Logo">`:`<div class="edDocIdentityMark">EQ</div>`}<div class="edDocIdentityText"><h1>${nome}</h1>${i.documento?`<div>Documento: ${esc30(i.documento)}</div>`:''}${i.telefone||i.email?`<div>${[i.telefone,i.email].filter(Boolean).map(esc30).join(' · ')}</div>`:''}${i.endereco?`<div>${esc30(i.endereco)}</div>`:''}${titulo?`<div><b>${esc30(titulo)}</b>${sub?' · '+esc30(sub):''}</div>`:''}</div></div>`};
-  window.edifiqDocumentoRodape=function(i){return `<div class="edDocIdentityFoot">${esc30(i?.nome||'EDIFIQ — Construção Civil')}${i?.documento?' · '+esc30(i.documento):''}${i?.telefone?' · '+esc30(i.telefone):''} · Documento gerado pelo EDIFIQ</div>`};
-
-  async function saveIdentity(){
-    if(typeof sb==='undefined'||!sb){toast('Conecte-se à conta para salvar os dados da empresa.');return}
-    const p={p_nome:n($('e30Nome')?.value),p_documento:n($('e30Doc')?.value),p_telefone:n($('e30Tel')?.value),p_email:n($('e30Email')?.value),p_endereco:n($('e30End')?.value),p_logo_url:n($('e30Logo')?.value),p_cor:n($('e30Cor')?.value)};
-    if(!p.p_nome){toast('Informe o nome da empresa.');return}
-    try{const {data,error}=await sb.rpc('edifiq_salvar_empresa_identidade',p);if(error)throw error;E30.cache=data||null;E30.loaded=true;toast('Dados da empresa salvos.');renderIdentityCard();}catch(e){console.error(e);toast(e?.message||'Não foi possível salvar os dados da empresa.');}
-  }
-  async function renderIdentityCard(){
-    const page=$('config');if(!page)return;
-    let card=$('edifiqEmpresaDocumentosCard');
-    if(!card){card=document.createElement('div');card.id='edifiqEmpresaDocumentosCard';card.className='card edDocConfigCard';const anchor=page.querySelector('.pageTitle')?.parentElement||page;anchor.appendChild(card)}
-    const i=await identity();
-    card.innerHTML=`<div class="row"><div><h2>🏢 Identidade dos documentos</h2><p class="sub">Esses dados aparecem automaticamente nos relatórios e documentos oficiais.</p></div></div><div class="edDocConfigGrid"><label>Nome da empresa<input id="e30Nome" value="${esc30(i.nome||'')}" maxlength="160"></label><label>CNPJ / CPF<input id="e30Doc" value="${esc30(i.documento||'')}" maxlength="60"></label><label>Telefone<input id="e30Tel" value="${esc30(i.telefone||'')}" maxlength="40"></label><label>E-mail<input id="e30Email" type="email" value="${esc30(i.email||'')}" maxlength="160"></label><label class="full">Endereço<input id="e30End" value="${esc30(i.endereco||'')}" maxlength="240"></label><label class="full">Logo (URL)<input id="e30Logo" value="${esc30(i.logo_url||'')}" maxlength="1000" placeholder="https://..."></label><label>Cor da empresa<input id="e30Cor" value="${esc30(i.cor||'')}" maxlength="30" placeholder="#D9AD55"></label></div><div class="formActions"><button class="btn primary" type="button" onclick="edifiqSalvarIdentidadeDocumentos()">Salvar identidade</button></div>`;
-  }
-  window.edifiqSalvarIdentidadeDocumentos=saveIdentity;
-  window.edifiqDocumentoIdentityHTML=async function(titulo,sub){return edifiqDocumentoCabecalho(await identity(),titulo,sub)};
-
-  const oldRcPDF=window.rcExportPDF;
-  window.rcExportPDF=async function(){
-    const txt=$('rcPreviewText')?.value||'';if(!txt)return;
-    const cliente=$('rcCliente')?.value||'Cliente',i=await identity();const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return}
-    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc30(i.nome)} — Relatório para ${esc30(cliente)}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033;line-height:1.55;max-width:850px;margin:auto}.box{border:1px solid #d9e0ea;border-radius:14px;padding:24px;white-space:normal}@media print{body{padding:10px}}</style></head><body>${edifiqDocumentoCabecalho(i,'Relatório para Cliente',cliente)}<div class="box">${esc30(txt).replace(/\n/g,'<br>')}</div>${edifiqDocumentoRodape(i)}</body></html>`);w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},300);
-  };
-
-  const oldRelDiario=window.relatorioDiario;
-  window.relatorioDiario=async function(){
-    const rows=typeof diarioFiltrados==='function'?diarioFiltrados():[];if(!rows.length){toast('Não há registros para gerar o relatório.');return}const i=await identity();const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return}
-    const titulo='Relatório do Diário de Obra';
-    const body=rows.map(r=>{const names=(r.equipe||[]).map(diarioFuncionarioNome).filter(Boolean);return `<div class="item"><h2>${esc30(diarioObraNome(r.obra_id))}</h2><div class="meta">${esc30(diarioFmtData(r.data))} · ${esc30(r.clima||'Não informado')} · ${Number(r.horas||0).toLocaleString('pt-BR')} h</div><p><b>Equipe:</b> ${esc30(names.join(' · ')||'Não informada')}</p>${r.atividades?`<p><b>Atividades:</b><br>${esc30(r.atividades).replace(/\n/g,'<br>')}</p>`:''}${r.observacoes?`<p><b>Observações:</b><br>${esc30(r.observacoes).replace(/\n/g,'<br>')}</p>`:''}</div>`}).join('');
-    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc30(i.nome)} — ${titulo}</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#222}.item{border:1px solid #ddd;border-radius:10px;padding:14px;margin:12px 0;page-break-inside:avoid}.meta{color:#555;margin-bottom:8px}.item p{line-height:1.5}.edDocIdentityFoot{margin-top:30px;padding-top:10px;border-top:1px solid #ddd;color:#666;font-size:11px;text-align:center}@media print{body{padding:10px}}</style></head><body>${edifiqDocumentoCabecalho(i,titulo,new Date().toLocaleDateString('pt-BR'))}${body}${edifiqDocumentoRodape(i)}</body></html>`);w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},300);
-  };
-
-  const oldRtPrint=window.rtPrint;
-  window.rtPrint=async function(){
-    if(!window.__rtFuncId){toast('Selecione um trabalhador.');return}if(typeof rtGeneratePreview==='function')rtGeneratePreview(false);const d=typeof rtData==='function'?rtData():null;const html=$('rtPreview')?.innerHTML||'';const i=await identity();const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return}
-    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc30(i.nome)} — Relatório do Trabalhador</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#172033;line-height:1.5;max-width:950px;margin:auto}h1{font-size:24px}h2{font-size:17px;margin-top:22px;border-bottom:1px solid #ddd;padding-bottom:6px}.wrMeta{color:#64748b;font-size:12px}.wrKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.wrKpi,.wrInfo{border:1px solid #d9e0ea;border-radius:10px;padding:10px}.wrGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #d9e0ea;padding:6px;text-align:left;vertical-align:top}th{background:#f3f6fa}.edDocIdentityFoot{margin-top:24px;padding-top:10px;border-top:1px solid #ddd;color:#64748b;font-size:10px;text-align:center}@media print{body{padding:8px}}</style></head><body>${edifiqDocumentoCabecalho(i,'Relatório do Trabalhador',d?.f?.nome||'')}${html}${edifiqDocumentoRodape(i)}</body></html>`);w.document.close();setTimeout(()=>w.print(),300);
-  };
-
-  const oldExportPDF=window.exportPDF;
-  window.exportPDF=async function(){
-    const i=await identity();const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return}const rows=(arr)=>arr.map(x=>`<tr>${Object.values(x||{}).map(v=>`<td>${esc30(v)}</td>`).join('')}</tr>`).join('');
-    const table=(title,arr,fallback)=>`<h2>${esc30(title)}</h2><table><thead><tr>${Object.keys(arr[0]||fallback).map(k=>`<th>${esc30(k)}</th>`).join('')}</tr></thead><tbody>${rows(arr)}</tbody></table>`;
-    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc30(i.nome)} — Relatório</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#222}h2{margin-top:28px}table{border-collapse:collapse;width:100%;font-size:10px}th,td{border:1px solid #ccc;padding:5px;text-align:left;vertical-align:top}th{background:#eee}.edDocIdentityFoot{margin-top:24px;padding-top:10px;border-top:1px solid #ccc;text-align:center;font-size:10px;color:#666}@media print{body{padding:10px}}</style></head><body>${edifiqDocumentoCabecalho(i,'Relatório geral','Gerado em '+new Date().toLocaleString('pt-BR'))}${table('Obras',D.obras,{Nome:''})}${table('Funcionários',D.funcionarios,{Nome:''})}${table('Diárias',D.diarias,{Data:''})}${table('Financeiro',D.gastos,{'Descrição':''})}${table('Checklist',D.checklist,{Etapa:''})}${edifiqDocumentoRodape(i)}</body></html>`);w.document.close();setTimeout(()=>w.print(),300);
-  };
-
-  function boot(){setTimeout(()=>{renderIdentityCard()},900)}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
-})();
-</script>
-
 </body>
 </html>
-
-<!-- EDIFIQ ETAPA 13: teste de carga/estabilidade não destrutivo; auditoria de operation_id duplicado. -->
-
-
-<!-- EDIFIQ ETAPA 24 — aceite de convite -->
-<script id="edifiq-etapa24-convites">
-(function(){
-  async function aceitar(){
-    try{
-      if(typeof supabaseClient==='undefined' || !supabaseClient?.auth) return {ok:false,codigo:'AUTH_INDISPONIVEL'};
-      const sess=await supabaseClient.auth.getSession();
-      const u=sess?.data?.session?.user;
-      if(!u) return {ok:false,codigo:'NAO_AUTENTICADO'};
-      const r=await supabaseClient.rpc('aceitar_convite');
-      if(r?.error) throw r.error;
-      const d=r?.data||{};
-      if(d.ok){
-        window.EDIFIQ_EMPRESA_USER_ID=String(d.empresa_user_id||'');
-        window.EDIFIQ_PAPEL_ATUAL=String(d.papel||'visualizador');
-        try{localStorage.setItem('EDIFIQ_EMPRESA_USER_ID',window.EDIFIQ_EMPRESA_USER_ID)}catch(e){}
-        if(typeof toast==='function') toast('Convite aceito. Perfil ativado.');
-      }
-      return d;
-    }catch(e){
-      console.warn('EDIFIQ convite:',e);
-      return {ok:false,erro:String(e?.message||e)};
-    }
-  }
-  window.edifiqAceitarConviteReal=aceitar;
-  window.edifiqEtapa24=true;
-})();
-</script>
-
-<script>
-/* EDIFIQ ETAPA 29 — identidade da empresa por empresa */
-(function(){
-  const ID='edifiqIdentidadeEmpresaCard';
-  function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-  function mount(){
-    const cfg=document.getElementById('config'); if(!cfg || document.getElementById(ID)) return;
-    const card=document.createElement('div'); card.id=ID; card.className='card'; card.style.marginTop='16px';
-    card.innerHTML=`<div class="cardTitle"><div><b>🏢 Identidade da empresa</b><small>Esses dados ficam separados para cada empresa.</small></div></div>
-      <div class="grid2" style="margin-top:12px">
-        <label>Nome da empresa<input id="edEmpNome" autocomplete="organization"></label>
-        <label>CNPJ / CPF<input id="edEmpDoc" inputmode="text"></label>
-        <label>Telefone<input id="edEmpTel" inputmode="tel"></label>
-        <label>E-mail da empresa<input id="edEmpEmail" type="email"></label>
-        <label>Endereço<input id="edEmpEndereco"></label>
-        <label>Logo (URL)<input id="edEmpLogo" type="url" placeholder="https://..."></label>
-        <label>Cor principal<input id="edEmpCor" type="text" placeholder="#D9AD55"></label>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-        <button class="btn primary" type="button" onclick="edifiqSalvarIdentidadeEmpresa()">Salvar identidade</button>
-        <button class="btn" type="button" onclick="edifiqCarregarIdentidadeEmpresa()">Recarregar</button>
-      </div>
-      <div id="edEmpStatus" class="note" style="margin-top:10px">Identidade da empresa ativa.</div>`;
-    const title=cfg.querySelector('.pageTitle');
-    (title?.parentElement||cfg).insertBefore(card,(title?.nextElementSibling)||cfg.firstChild);
-  }
-  async function carregar(){
-    mount(); if(!window.sb && !window.supabase)return;
-    try{
-      const client=window.sb; if(!client?.rpc)return;
-      const {data,error}=await client.rpc('edifiq_empresa_identidade',{p_empresa:null});
-      if(error) throw error;
-      const x=data||{};
-      const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
-      set('edEmpNome',x.nome);set('edEmpDoc',x.documento);set('edEmpTel',x.telefone);set('edEmpEmail',x.email);set('edEmpEndereco',x.endereco);set('edEmpLogo',x.logo_url);set('edEmpCor',x.cor);
-      const st=document.getElementById('edEmpStatus');if(st)st.textContent=`Empresa ativa: ${x.nome||'EDIFIQ — Construção Civil'}`;
-    }catch(e){console.warn('EDIFIQ identidade:',e);}
-  }
-  window.edifiqCarregarIdentidadeEmpresa=carregar;
-  window.edifiqSalvarIdentidadeEmpresa=async function(){
-    try{
-      if(!window.sb?.rpc)throw new Error('Supabase indisponível');
-      const val=id=>document.getElementById(id)?.value||'';
-      const {data,error}=await window.sb.rpc('edifiq_salvar_empresa_identidade',{
-        p_nome:val('edEmpNome'),p_documento:val('edEmpDoc'),p_telefone:val('edEmpTel'),p_email:val('edEmpEmail'),
-        p_endereco:val('edEmpEndereco'),p_logo_url:val('edEmpLogo'),p_cor:val('edEmpCor')
-      });
-      if(error)throw error;
-      const st=document.getElementById('edEmpStatus');if(st)st.textContent='✓ Identidade da empresa salva com segurança.';
-      if(typeof toast==='function')toast('Identidade da empresa salva.');
-      if(data?.nome){document.title=data.nome+' — EDIFIQ';}
-    }catch(e){console.error(e);if(typeof toast==='function')toast(e?.message||'Não foi possível salvar a identidade.');}
-  };
-  const oldRenderAll=window.renderAll;
-  window.renderAll=function(){const r=oldRenderAll?.apply(this,arguments);setTimeout(carregar,0);return r;};
-  document.addEventListener('DOMContentLoaded',()=>setTimeout(carregar,500));
-})();
-</script>
