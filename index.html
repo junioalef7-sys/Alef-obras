@@ -1,3 +1,7 @@
+<!-- EDIFIQ — ETAPA 4
+     Proteção transacional da baixa de folha + idempotência por grupo + aplicação exata de vales.
+     Mantém a versão anterior preservada e evita gravações parciais.
+-->
 <!DOCTYPE html>
 
 <html lang="pt-BR">
@@ -2834,27 +2838,36 @@ advances
 
 function aplicarAdiantamentos(funcId,allocations){
   const data=getAdvanceApplied();
-  const ids=new Set();
-  (allocations||[]).forEach(a=>{
-    if(a?.id!=null){
-      const id=String(a.id); ids.add(id);
-      const g=(D.gastos||[]).find(x=>String(x.id)===id);
-      const valor=Number(g?.valor||a.valor||0);
-      data[id]=Math.max(Number(data[id]||0),valor);
-      if(g){ g.status='pago'; g.data_pagamento=today(); }
+  const idsAplicados=new Set();
+  for(const a of (allocations||[])){
+    if(a?.id==null)continue;
+    const id=String(a.id);
+    idsAplicados.add(id);
+    const g=(D.gastos||[]).find(x=>String(x.id)===id);
+    const valorDisponivel=Number(g?.valor||a.valor||0);
+    const valorAplicado=Math.min(Math.max(0,Number(a.valor||0)),Math.max(0,valorDisponivel));
+    if(valorAplicado<=0)continue;
+    data[id]=Math.max(Number(data[id]||0),valorAplicado);
+    if(g){
+      const total=Number(g.valor||0);
+      if(Number(data[id]||0)>=total-0.01){
+        g.status='pago';
+        g.aplicado=true;
+        g.data_pagamento=today();
+        g.valor_baixado=total;
+      }else{
+        g.aplicado=true;
+        g.valor_baixado=Number(data[id]||0);
+      }
     }
-  });
-  // Mantém a fonte de adiantamentos da equipe coerente com os gastos usados na folha.
-  (D.adiantamentos||[]).forEach(a=>{
-    if(String(a.funcionario_id)===String(funcId)){
-      const valor=Number(a.valor||0);
-      a.status='pago'; a.aplicado=true; a.aplicado_em=today(); a.valor_baixado=valor;
-    }
-  });
+  }
+  // A tabela oficial de adiantamentos não possui campos de baixa/status.
+  // Portanto não marcamos todos os vales do funcionário: somente os gastos
+  // efetivamente selecionados pela folha entram no mapa de aplicação.
   saveAdvanceApplied(data);
   saveLocalData();
+  return [...idsAplicados];
 }
-
 
 /* =========================================================
    NAVEGAÇÃO
@@ -2934,6 +2947,64 @@ function auditEDIFIQ(){
   for(const r of (D.checklist||[])){const p=Number(r.progresso||0);if(p<0){r.progresso=0;issues.push('checklist.progresso<0')}if(p>100){r.progresso=100;issues.push('checklist.progresso>100')}}
   if(issues.length){console.warn('Auditoria EDIFIQ encontrou/corrigiu inconsistências:',issues);saveLocalData();}
   return issues;
+}
+
+/* =========================================================
+   ETAPA 5 — AUDITORIA FINANCEIRA E INTEGRIDADE
+   Não altera lançamentos automaticamente. Identifica divergências.
+   ========================================================= */
+function auditFinanceiroEDIFIQ(){
+  const issues=[];
+  const n=v=>{const x=Number(v||0);return Number.isFinite(x)?x:0;};
+  const same=(a,b)=>String(a??"")===String(b??"");
+  const obras=new Set((D.obras||[]).map(o=>String(o.id)));
+  const checks=new Map((D.checklist||[]).map(c=>[String(c.id),c]));
+  for(const p of (D.pagamentos||[])){
+    const oid=String(recordObraId(p)||"");
+    if(!oid||!obras.has(oid))issues.push({tipo:"receita_sem_obra",id:p.id,valor:n(p.valor)});
+    const dist=receitaChecklistDistribuicao(p);
+    if(dist.length){
+      const soma=dist.reduce((a,x)=>a+n(x.valor),0);
+      if(Math.abs(soma-n(p.valor))>0.01)issues.push({tipo:"receita_rateio_nao_fecha",id:p.id,valor:n(p.valor),rateado:soma});
+      for(const d of dist){
+        const c=checks.get(String(d.checklist_id));
+        if(!c||!same(recordObraId(c),oid))issues.push({tipo:"receita_checklist_invalido",id:p.id,checklist_id:d.checklist_id});
+      }
+    }else if(p.checklist_id){
+      const c=checks.get(String(p.checklist_id));
+      if(!c||!same(recordObraId(c),oid))issues.push({tipo:"receita_checklist_invalido",id:p.id,checklist_id:p.checklist_id});
+    }
+  }
+  for(const g of (D.gastos||[])){
+    const oid=String(recordObraId(g)||"");
+    if(!oid||!obras.has(oid))issues.push({tipo:"despesa_sem_obra",id:g.id,valor:n(g.valor)});
+    if(g.checklist_id){const c=checks.get(String(g.checklist_id));if(!c||!same(recordObraId(c),oid))issues.push({tipo:"despesa_checklist_invalido",id:g.id,checklist_id:g.checklist_id});}
+  }
+  for(const d of (D.diarias||[])){
+    const oid=String(recordObraId(d)||"");
+    if(!oid||!obras.has(oid))issues.push({tipo:"diaria_sem_obra",id:d.id,valor:diariaValor(d)});
+    if(d.checklist_id){const c=checks.get(String(d.checklist_id));if(!c||!same(recordObraId(c),oid))issues.push({tipo:"diaria_checklist_invalido",id:d.id,checklist_id:d.checklist_id});}
+    const valor=n(diariaValor(d));
+    if(valor<0)issues.push({tipo:"diaria_valor_negativo",id:d.id,valor});
+    if(String(d.status||"").toLowerCase()==="pago"&&n(d.valor_baixado)>valor+0.01)issues.push({tipo:"diaria_baixa_excede_valor",id:d.id,valor,baixado:n(d.valor_baixado)});
+  }
+  const porObra=new Map();
+  for(const o of (D.obras||[])){
+    const oid=String(o.id),contrato=n(o.valor);
+    const receita=(D.pagamentos||[]).filter(p=>same(recordObraId(p),oid)).reduce((a,p)=>a+n(p.valor),0);
+    const despesa=(D.gastos||[]).filter(g=>same(recordObraId(g),oid)).reduce((a,g)=>a+n(g.valor),0);
+    if(receita>contrato+0.01)issues.push({tipo:"receita_acima_contrato",obra_id:o.id,contrato,receita});
+    const totalChecklist=(D.checklist||[]).filter(c=>same(recordObraId(c),oid)).reduce((a,c)=>a+n(c.valor),0);
+    if(totalChecklist>contrato+0.01)issues.push({tipo:"checklist_acima_contrato",obra_id:o.id,contrato,checklists:totalChecklist});
+    porObra.set(oid,{contrato,receita,despesa,saldo:Math.max(0,contrato-receita),resultado:receita-despesa,margem:contrato>0?(receita-despesa)/contrato*100:0});
+  }
+  return {ok:issues.length===0,issues,porObra};
+}
+function financeiroAuditResumo(obraId){
+  const a=auditFinanceiroEDIFIQ();
+  const f=a.porObra.get(String(obraId))||{contrato:0,receita:0,despesa:0,saldo:0,resultado:0,margem:0};
+  const issues=a.issues.filter(x=>String(x.obra_id||"")===String(obraId));
+  return {...f,issues};
 }
 
 function toggleTheme(){
@@ -3731,6 +3802,15 @@ function edifiqStableOperationId(){
     h=Math.imul(h,16777619);
   }
   return "stable_"+(h>>>0).toString(36)+"_"+raw.length.toString(36);
+}
+
+async function registrarBaixaFolhaSegura(payload){
+  if(!sb||!user?.id) throw new Error("Sessão do usuário indisponível.");
+  if(typeof sb.rpc!=="function") throw new Error("RPC do Supabase indisponível.");
+  const {data,error}=await sb.rpc("registrar_baixa_folha_segura",{p_payload:payload});
+  if(error) throw error;
+  if(!data?.ok) throw new Error("A baixa segura da folha não foi confirmada pelo banco.");
+  return data;
 }
 
 async function findExistingByOperation(table,operationId){
@@ -4842,7 +4922,7 @@ function renderObras(){
 
   const auditoriaFuncoes=funcoesObra.map(v=>`<div class="auditFunctionRow"><span>${esc(v.funcao)}</span><strong>${v.dias.size} dia(s)</strong></div>`).join('');
   const activeObraTab=EDIFIQ_OBRA_TAB_STATE[String(o.id)]||'dados';
-  const auditHtml=`<div class="auditHero"><div><small>Total de dias trabalhados</small><strong>${totalDias}</strong></div><div><small>Registros de diárias</small><strong>${x.dias.length}</strong></div></div><h3 class="obraModelSubTitle">Quantidade de dias por função</h3><div class="auditFunctionList">${auditoriaFuncoes||'<div class="obraModeloEmpty">Nenhuma função com dias registrados.</div>'}</div><div class="obraAuditChecks"><span>Gastos registrados <b>${x.gastos.length}</b></span><span>Checklist <b>${x.checks.length}</b></span><span>Serviços adicionais <b>${x.extras.length}</b></span><span>Recebimentos <b>${pagamentos.length}</b></span></div>`;
+  const auditFin=financeiroAuditResumo(o.id); const auditFinStatus=auditFin.issues.length?'⚠️ Encontradas inconsistências':'✓ Financeiro consistente'; const auditFinClass=auditFin.issues.length?'red':'green'; const auditHtml=`<div class="auditHero"><div><small>Total de dias trabalhados</small><strong>${totalDias}</strong></div><div><small>Registros de diárias</small><strong>${x.dias.length}</strong></div></div><div class="note" style="margin-bottom:14px"><b class="${auditFinClass}">${auditFinStatus}</b><br><small>Contrato: ${money(auditFin.contrato)} · Recebido: ${money(auditFin.receita)} · Despesas: ${money(auditFin.despesa)} · Resultado: ${money(auditFin.resultado)} · Margem: ${Number(auditFin.margem||0).toFixed(1).replace('.',',')}%</small>${auditFin.issues.length?`<br><small>${auditFin.issues.slice(0,5).map(i=>esc(i.tipo)).join(' · ')}</small>`:''}</div><h3 class="obraModelSubTitle">Quantidade de dias por função</h3><div class="auditFunctionList">${auditoriaFuncoes||'<div class="obraModeloEmpty">Nenhuma função com dias registrados.</div>'}</div><div class="obraAuditChecks"><span>Gastos registrados <b>${x.gastos.length}</b></span><span>Checklist <b>${x.checks.length}</b></span><span>Serviços adicionais <b>${x.extras.length}</b></span><span>Recebimentos <b>${pagamentos.length}</b></span></div>`;
 
   box.innerHTML=`<article class="card obraModeloCard" data-obra-card="${esc(String(o.id))}">
     <div class="obraDetailHero"><div class="obraDetailCrumbs"><span class="homeIcon">⌂</span><span class="sep">›</span><span>Obras</span><span class="sep">›</span><strong>${esc(o.nome||'Obra sem nome')}</strong></div><div class="obraDetailMain"><div class="obraDetailTitleWrap"><div class="obraDetailTitle"><h2>${esc(o.nome||'Obra sem nome')}</h2><p>Cliente: ${esc(o.cliente||'Não informado')}</p></div></div><div class="obraDetailActions"><button class="edit" type="button" onclick="openObra('${esc(String(o.id))}')" title="Editar obra">✎</button><button class="delete" type="button" onclick="removeRow('obras','${esc(String(o.id))}')" title="Excluir obra">🗑️</button></div></div></div>
@@ -5734,69 +5814,71 @@ for(const item of processados){
     }
   }
 
-  for(let i=0;i<grupos.length;i++){
-    const grupo=grupos[i];
+  // A partir desta etapa, despesas da folha e baixa das diárias são feitas
+  // dentro de uma única transação PostgreSQL. Se qualquer parte falhar,
+  // o banco desfaz tudo e nenhuma diária fica parcialmente paga.
+  const gruposPayload=[];
+  for(const grupo of grupos){
     const obraId=String(grupo.obraId);
     const checklistId=grupo.checklistId;
-    const brutoObra=Number(grupo.valor||0);
     const key=obraId+"::"+String(checklistId||"");
-    const brutoObraCents=toCents(brutoObra);
+    const brutoObraCents=toCents(Number(grupo.valor||0));
     const abatimentoCents=Number(abatidoPorGrupoCents.get(key)||0);
     const valorObra=fromCents(Math.max(0,brutoObraCents-abatimentoCents));
     if(valorObra<=0)continue;
 
-    const obraObj=D.obras.find(o=>String(o.id)===String(obraId));
-    const nomeObra=obraObj?.nome||"Obra";
-    /*
-      ID IDEMPOTENTE DA BAIXA:
-      a despesa é identificada pelo funcionário + data + conjunto exato
-      de diárias + obra + checklist. Se a conexão cair depois da gravação,
-      a próxima tentativa recupera o mesmo lançamento em vez de duplicá-lo.
-    */
-    const idsDiariasOperacao=item.pendingItems
+    const idsGrupoOperacao=item.pendingItems
+      .filter(d=>String(d.obra_id||fallbackObra||"")===obraId && String(d.checklist_id||"")===String(checklistId||""))
       .map(d=>String(d.id||""))
       .sort()
       .join(",");
     const operation_id=edifiqStableOperationId(
-      "folha",
-      item.id,
-      data,
-      idsDiariasOperacao,
-      obraId,
-      checklistId||"sem-checklist"
+      "folha",item.id,data,idsGrupoOperacao,obraId,checklistId||"sem-checklist"
     );
+    const obraObj=D.obras.find(o=>String(o.id)===obraId);
+    const nomeObra=obraObj?.nome||"Obra";
 
-    const result=await insertRow("gastos",{
+    gruposPayload.push({
       obra_id:obraId,
       checklist_id:checklistId||null,
       data,
       descricao:`[Mão de obra] ${descricao} - ${item.f.nome}${checklistId?` - ${checklistNome(checklistId)}`:""}`,
       valor:valorObra,
       fornecedor:item.f.nome,
-      funcionario_id:item.id,
       observacao:`Obra das diárias: ${nomeObra}. ${observacaoBase}`,
-      categoria:"Mão de obra",
       operation_id
     });
-
-    if(!result){falhas++;falhaFuncionario=true;break;}
   }
 
-  if(falhaFuncionario){
-    /* Não baixa as diárias deste funcionário se algum lançamento financeiro falhou. */
+  if(!gruposPayload.length && item.pendingDiarias>0){
+    falhas++;
     continue;
   }
 
-  /* Baixa cada diária usando exatamente as colunas existentes no Supabase. */
-  for(const diaria of item.pendingItems){
-    const qtdOriginal=Math.max(0,Number(diaria.qtd??diaria.quantidade??1));
-    const valorBaixado=Math.max(0,Number(diariaValor(diaria)||0));
-    const payloadBaixa={status:"Pago",valor_pago:valorBaixado,qtd_paga:qtdOriginal,pago_em:data,valor_baixado:valorBaixado};
-    const atualizado=await updateRow("diarias",diaria.id,payloadBaixa);
-    const localDia=D.diarias.find(d=>String(d.id)===String(diaria.id));
-    if(localDia){Object.assign(localDia,payloadBaixa);localDia.pago=true;localDia.paga=true;localDia.data_pagamento=data;}
-    markDiariasPaid([diaria.id]);
-    if(atualizado)baixados++;
+  try{
+    const rpcResult=await registrarBaixaFolhaSegura({
+      data,
+      diaria_ids:item.pendingItems.map(d=>Number(d.id)),
+      grupos:gruposPayload
+    });
+    baixados+=Number(rpcResult.diarias_baixadas||0);
+
+    // Reflete a transação confirmada pelo banco no cache local.
+    for(const diaria of item.pendingItems){
+      const qtdOriginal=Math.max(0,Number(diaria.qtd??diaria.quantidade??1));
+      const valorBaixado=Math.max(0,Number(diariaValor(diaria)||0));
+      const payloadBaixa={status:"Pago",valor_pago:valorBaixado,qtd_paga:qtdOriginal,pago_em:data,valor_baixado:valorBaixado};
+      const localDia=D.diarias.find(d=>String(d.id)===String(diaria.id));
+      if(localDia){Object.assign(localDia,payloadBaixa);localDia.pago=true;localDia.paga=true;localDia.data_pagamento=data;}
+      markDiariasPaid([diaria.id]);
+    }
+  }catch(rpcErr){
+    falhas++;
+    console.error("Baixa transacional da folha:",rpcErr);
+    toast(`Pagamento de ${item.f.nome} não foi baixado: ${rpcErr?.message||"erro no banco"}`);
+    // Não fazemos fallback para gravações separadas: isso evita exatamente
+    // o cenário que a etapa 4 está protegendo (gasto criado + diária não baixada).
+    continue;
   }
 
   for(const extra of (item.resumo.extrasPendentes||[])){
@@ -5814,31 +5896,8 @@ for(const item of processados){
     }
   }
 
-  /* Mantém a quitação dos adiantamentos exatamente como já funcionava. */
-  const advAplicados=getAdvanceApplied();
-  const nomeFunc=normalize(item.f.nome);
-  for(const g of (D.gastos||[])){
-    if(gastoCategoria(g)!=="Adiantamento") continue;
-    const pertence=String(g.funcionario_id||"")===String(item.id) || normalize(g.fornecedor)===nomeFunc || normalize(g.descricao).includes(nomeFunc);
-    if(!pertence) continue;
-    const valor=Number(g.valor||0);
-    if(valor<=0)continue;
-    advAplicados[g.id]=valor;
-    g.status="pago";
-    g.aplicado=true;
-    g.valor_baixado=valor;
-    g.data_pagamento=data;
-    g.funcionario_id=item.id;
-  }
-  for(const a of (D.adiantamentos||[])){
-    if(String(a.funcionario_id)!==String(item.id))continue;
-    const valor=Number(a.valor||0);
-    a.status="pago";
-    a.aplicado=true;
-    a.valor_baixado=valor;
-    a.data_pagamento=data;
-  }
-  saveAdvanceApplied(advAplicados);
+  /* Aplica somente os vales realmente abatidos nesta folha. */
+  aplicarAdiantamentos(item.id,item.resumo.allocations);
   saveLocalData();
 }
 
@@ -9925,6 +9984,8 @@ async function apagarDadosSetor(setor){
 
 function renderAll(){
  auditEDIFIQ();
+ const _financeAudit=auditFinanceiroEDIFIQ();
+ if(!_financeAudit.ok) console.warn('Auditoria financeira EDIFIQ encontrou inconsistências:',_financeAudit.issues);
 
 renderDashboard();
 renderResumoGeral();
