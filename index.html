@@ -3721,6 +3721,18 @@ function edifiqOperationId(){
   return "op_"+Date.now()+"_"+Math.random().toString(36).slice(2)+"_"+Math.random().toString(36).slice(2);
 }
 
+/* ID determinístico para operações que podem ser repetidas após queda de conexão. */
+function edifiqStableOperationId(){
+  const parts=[...arguments].map(v=>String(v??""));
+  let h=2166136261;
+  const raw=parts.join("|");
+  for(let i=0;i<raw.length;i++){
+    h^=raw.charCodeAt(i);
+    h=Math.imul(h,16777619);
+  }
+  return "stable_"+(h>>>0).toString(36)+"_"+raw.length.toString(36);
+}
+
 async function findExistingByOperation(table,operationId){
   if(!sb||!user?.id||!operationId)return null;
   try{
@@ -5735,6 +5747,25 @@ for(const item of processados){
 
     const obraObj=D.obras.find(o=>String(o.id)===String(obraId));
     const nomeObra=obraObj?.nome||"Obra";
+    /*
+      ID IDEMPOTENTE DA BAIXA:
+      a despesa é identificada pelo funcionário + data + conjunto exato
+      de diárias + obra + checklist. Se a conexão cair depois da gravação,
+      a próxima tentativa recupera o mesmo lançamento em vez de duplicá-lo.
+    */
+    const idsDiariasOperacao=item.pendingItems
+      .map(d=>String(d.id||""))
+      .sort()
+      .join(",");
+    const operation_id=edifiqStableOperationId(
+      "folha",
+      item.id,
+      data,
+      idsDiariasOperacao,
+      obraId,
+      checklistId||"sem-checklist"
+    );
+
     const result=await insertRow("gastos",{
       obra_id:obraId,
       checklist_id:checklistId||null,
@@ -5744,7 +5775,8 @@ for(const item of processados){
       fornecedor:item.f.nome,
       funcionario_id:item.id,
       observacao:`Obra das diárias: ${nomeObra}. ${observacaoBase}`,
-      categoria:"Mão de obra"
+      categoria:"Mão de obra",
+      operation_id
     });
 
     if(!result){falhas++;falhaFuncionario=true;break;}
