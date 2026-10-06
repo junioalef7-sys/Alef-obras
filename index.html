@@ -10413,7 +10413,11 @@ function testeProducaoEDIFIQ(){
 }
 window.testeProducaoEDIFIQ=testeProducaoEDIFIQ;
 
-function renderAll(){
+let edifiqUltimaAuditoriaRender=0;
+let edifiqAuditoriaRenderCache=null;
+function executarAuditoriasRender(){
+ const agora=Date.now();
+ if(edifiqAuditoriaRenderCache && (agora-edifiqUltimaAuditoriaRender)<2000) return edifiqAuditoriaRenderCache;
  auditEDIFIQ();
  const _securityAudit=auditSegurancaEDIFIQ();
  if(!_securityAudit.ok) console.warn("Auditoria de segurança EDIFIQ:",_securityAudit.problemas);
@@ -10421,6 +10425,11 @@ function renderAll(){
  const _producaoAudit=auditProducaoEDIFIQ();
  if(!_financeAudit.ok) console.warn('Auditoria financeira EDIFIQ encontrou inconsistências:',_financeAudit.issues);
  if(!_producaoAudit.ok) console.warn('Auditoria de produção EDIFIQ encontrou inconsistências:',_producaoAudit.issues);
+ edifiqUltimaAuditoriaRender=agora;
+ return edifiqAuditoriaRenderCache={security:_securityAudit,finance:_financeAudit,producao:_producaoAudit};
+}
+function renderAll(){
+ executarAuditoriasRender();
 
 renderDashboard();
 renderResumoGeral();
