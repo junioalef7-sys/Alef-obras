@@ -2538,9 +2538,14 @@ function openEdifiqDurableDB(){
   });
   return edifiqDurableReady;
 }
+function edifiqDurableStateId(){
+  const id=String(user?.id||"local-user");
+  return "current:"+id;
+}
 function edifiqDurableStatePayload(){
   const data=cloneState();
-  return data?{id:"current",version:6,saved_at:new Date().toISOString(),data}:null;
+  const owner=String(user?.id||"local-user");
+  return data?{id:edifiqDurableStateId(),owner_id:owner,version:7,saved_at:new Date().toISOString(),data}:null;
 }
 async function edifiqDurableWriteNow(){
   try{
@@ -2564,7 +2569,7 @@ async function edifiqDurableRead(){
   try{
     const db=await openEdifiqDurableDB();
     return await new Promise((resolve,reject)=>{
-      const req=db.transaction(EDIFIQ_STATE_STORE,"readonly").objectStore(EDIFIQ_STATE_STORE).get("current");
+      const req=db.transaction(EDIFIQ_STATE_STORE,"readonly").objectStore(EDIFIQ_STATE_STORE).get(edifiqDurableStateId());
       req.onsuccess=()=>resolve(req.result||null); req.onerror=()=>reject(req.error);
     });
   }catch(e){console.warn("EDIFIQ: leitura durável indisponível",e);return null}
@@ -2583,6 +2588,11 @@ async function edifiqRecoverDurableStartup(){
   if(edifiqRecoveryDone)return false;
   edifiqRecoveryDone=true;
   const durable=await edifiqDurableRead();
+  const expectedOwner=String(user?.id||"local-user");
+  if(durable?.owner_id && String(durable.owner_id)!==expectedOwner){
+    console.warn("EDIFIQ: cópia durável de outra conta ignorada.",{owner:durable.owner_id,expectedOwner});
+    return false;
+  }
   const local=localData();
   const localTotal=edifiqStateTotal(local);
   const durableTotal=edifiqStateTotal(durable?.data);
@@ -10381,6 +10391,28 @@ function auditSegurancaEDIFIQ(){
   return {ok:problemas.length===0,problemas,usuario:user?.id||null,cacheOwner:edifiqLocalOwner()};
 }
 
+function testeProducaoEDIFIQ(){
+  const issues=[];
+  const tables=['obras','funcionarios','diarias','gastos','pagamentos','checklist','faltas','adiantamentos','servicos_adicionais','servicos','terceirizados','pagamentos_terceirizados','orcamentos','diario'];
+  for(const t of tables){
+    if(!Array.isArray(D[t])) issues.push(`Estrutura inválida: ${t}`);
+    for(const r of (Array.isArray(D[t])?D[t]:[])){
+      if(user?.id && String(user.id)!=='local-user' && r?.user_id && String(r.user_id)!==String(user.id)) issues.push(`Registro de outra conta em ${t}: ${r.id}`);
+    }
+  }
+  const dup=new Map();
+  for(const d of (D.diarias||[])){
+    const k=[d.funcionario_id,d.obra_id,d.checklist_id||'',d.data,d.qtd,d.valor_diaria,d.observacao||''].join('|');
+    if(dup.has(k) && !String(d.id).startsWith('local_')) issues.push(`Possível diária duplicada: ${d.id}`); else dup.set(k,d.id);
+  }
+  for(const g of (D.gastos||[])){if(Number(g.valor||0)<0)issues.push(`Despesa negativa: ${g.id}`);}
+  for(const r of (D.pagamentos||[])){if(Number(r.valor||0)<0)issues.push(`Receita negativa: ${r.id}`);}
+  const security=auditSegurancaEDIFIQ();
+  if(!security.ok) issues.push(...security.problemas);
+  return {ok:issues.length===0,issues,usuario:user?.id||null,contagens:Object.fromEntries(tables.map(t=>[t,Array.isArray(D[t])?D[t].length:0]))};
+}
+window.testeProducaoEDIFIQ=testeProducaoEDIFIQ;
+
 function renderAll(){
  auditEDIFIQ();
  const _securityAudit=auditSegurancaEDIFIQ();
@@ -10521,6 +10553,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
           user=result.data.session.user;
           $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
           await loadCloud();
+          const testePosLogin=testeProducaoEDIFIQ();
+          if(!testePosLogin.ok) console.warn("EDIFIQ: teste de produção encontrou pontos para revisão",testePosLogin);
           await limparFuncionariosSemIdentificacao();
           saveLocalData();
           renderAll();
