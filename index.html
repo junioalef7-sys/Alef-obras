@@ -1933,7 +1933,9 @@ presencas:[],
 diario:[],
 documentos:[],
 materiais:[],
-material_movimentos:[]
+material_movimentos:[],
+adiantamentos:[],
+servicos_adicionais:[]
 };
 
 const LOCAL_KEY="edifiq_local_v3";
@@ -1941,14 +1943,25 @@ const FUNC_OBRA_KEY="edifiq_func_obras_v2";
 const ADV_KEY="edifiq_adiantamentos_aplicados_v1";
 const PAID_DIARIAS_KEY="edifiq_diarias_baixadas_v2";
 function getPaidDiariasMap(){try{return JSON.parse(localStorage.getItem(PAID_DIARIAS_KEY)||"{}");}catch(_){return {};}}
-function markDiariasPaid(ids){const m=getPaidDiariasMap();(ids||[]).forEach(id=>{if(id!=null)m[String(id)]=true;});try{localStorage.setItem(PAID_DIARIAS_KEY,JSON.stringify(m));}catch(_){}return m;}
+function markDiariasPaid(ids){
+  const m=getPaidDiariasMap();
+  (ids||[]).forEach(id=>{if(id!=null)m[String(id)]=true;});
+  try{localStorage.setItem(PAID_DIARIAS_KEY,JSON.stringify(m));}catch(_){}
+  // O status oficial da diária fica no Supabase; este mapa é somente compatibilidade
+  // com versões antigas e não é mais a fonte principal de verdade.
+  return m;
+}
 function isDiariaMarkedPaid(id){return !!getPaidDiariasMap()[String(id)];}
 const SERVICE_KEY="edifiq_servicos_adicionais_v1";
 const DEFAULT_CHECKLIST=["Gabarito","Locação","Alvenaria","Chapisco","Reboco","Pintura","Limpeza","Final da obra"];
 
 function getServices(){try{return JSON.parse(localStorage.getItem(SERVICE_KEY)||"{}")}catch{return {}}}
 function saveServices(x){try{localStorage.setItem(SERVICE_KEY,JSON.stringify(x))}catch(e){console.warn(e)}}
-function servicesForObra(obraId){const x=getServices();return Array.isArray(x[obraId])?x[obraId]:[]}
+function servicesForObra(obraId){
+  const cloud=(D.servicos_adicionais||[]).filter(x=>String(x.obra_id)===String(obraId));
+  if(cloud.length)return cloud;
+  const x=getServices();return Array.isArray(x[obraId])?x[obraId]:[]
+}
 function recordObraId(x){
   return x?.obra_id ?? x?.obraId ?? x?.obra_id_fk ?? x?.obra ?? "";
 }
@@ -2451,7 +2464,7 @@ function localData(){
 }
 
 function saveLocalData(){
-  const payload={obras:D.obras,funcionarios:D.funcionarios,diarias:D.diarias,gastos:D.gastos,pagamentos:D.pagamentos,checklist:D.checklist,faltas:D.faltas,presencas:D.presencas||[],diario:D.diario,documentos:(D.documentos||[]).map(d=>({...d})),materiais:D.materiais,material_movimentos:D.material_movimentos};
+  const payload={obras:D.obras,funcionarios:D.funcionarios,diarias:D.diarias,gastos:D.gastos,pagamentos:D.pagamentos,checklist:D.checklist,faltas:D.faltas,presencas:D.presencas||[],diario:D.diario,documentos:(D.documentos||[]).map(d=>({...d})),materiais:D.materiais,material_movimentos:D.material_movimentos,adiantamentos:D.adiantamentos||[]};
   let savedAny=false;
   try{ localStorage.setItem(LOCAL_KEY,JSON.stringify(payload)); savedAny=true; }catch(e){ console.warn("Cache principal cheio; usando backup por tabela.",e); }
   for(const [table,rows] of Object.entries(payload)){
@@ -2563,23 +2576,18 @@ return {};
 }
 
 function saveAdvanceApplied(data){
-
-try{
-
-localStorage.setItem(
-ADV_KEY,
-JSON.stringify(data)
-);
-
-}catch(e){
-
-console.warn(
-"Erro nos adiantamentos",
-e
-);
-
-}
-
+  try{ localStorage.setItem(ADV_KEY,JSON.stringify(data||{})); }catch(e){ console.warn("Erro nos adiantamentos",e); }
+  // Persistência oficial: o valor aplicado fica também no lançamento financeiro.
+  try{
+    if(sb&&user?.id&&navigator.onLine){
+      const entries=Object.entries(data||{});
+      entries.forEach(([id,val])=>{
+        const g=(D.gastos||[]).find(x=>String(x.id)===String(id));
+        if(!g || String(g.id).startsWith('local_')) return;
+        sb.from('gastos').update({valor_aplicado:Number(val)||0,status:'pago'}).eq('id',g.id).eq('user_id',user.id).then(()=>{}).catch(()=>{});
+      });
+    }
+  }catch(_){}
 }
 
 function normalize(v){
@@ -3557,7 +3565,7 @@ async function loadCloud(){
   saveSafeSnapshot('antes da sincronização com a nuvem');
   saveLocalData();
   let okCount=0;
-  for(const table of ['obras','funcionarios','diarias','gastos','pagamentos','checklist','documentos','faltas']){
+  for(const table of ['obras','funcionarios','diarias','gastos','pagamentos','checklist','faltas','adiantamentos','servicos_adicionais','servicos','terceirizados','pagamentos_terceirizados','orcamentos','diario']){
     if(await loadTable(table)) okCount++;
   }
   mergeLocal();
@@ -3571,25 +3579,110 @@ async function loadCloud(){
   limparChecklistsOrfaos();
   fillSelectors();
   saveLocalData();
+  if(okCount>0) await migrarDadosLocaisParaNuvem();
   return okCount>0;
+}
+
+/* Migração segura: preserva o local e copia apenas dados legados que ainda
+   não existem na nuvem. IDs de operação determinísticos evitam duplicação. */
+async function migrarDadosLocaisParaNuvem(){
+  if(!sb||!user?.id||!navigator.onLine)return {ok:false};
+  const r={funcionarios:0,diarias:0,servicos:0,adiantamentos:0};
+
+  // Funcionário -> obra: o campo oficial é funcionarios.obra_id.
+  for(const [fid,obraId] of Object.entries(localFuncObras()||{})){
+    if(!obraId)continue;
+    const f=(D.funcionarios||[]).find(x=>String(x.id)===String(fid));
+    if(!f || String(f.obra_id||'')===String(obraId))continue;
+    try{
+      const {data,error}=await sb.from('funcionarios').update({obra_id:obraId}).eq('id',f.id).eq('user_id',user.id).select().single();
+      if(!error&&data){Object.assign(f,data);r.funcionarios++;}
+    }catch(e){console.warn('Migração funcionário/obra:',e);}
+  }
+
+  // Mapa antigo de diárias pagas -> campos oficiais da diária.
+  const paid=getPaidDiariasMap();
+  for(const id of Object.keys(paid||{})){
+    if(!paid[id])continue;
+    const d=(D.diarias||[]).find(x=>String(x.id)===String(id));
+    if(!d || String(d.status||'').toLowerCase()==='pago')continue;
+    const qtd=Math.max(0,Number(d.qtd_paga??d.qtd??1));
+    const valor=Math.max(0,Number(d.valor_baixado??d.valor_pago??diariaValor(d)));
+    try{
+      const {data,error}=await sb.from('diarias').update({status:'Pago',qtd_paga:qtd,valor_pago:valor,valor_baixado:valor,pago_em:d.pago_em||d.data_pagamento||today()}).eq('id',d.id).eq('user_id',user.id).select().single();
+      if(!error&&data){Object.assign(d,data);r.diarias++;}
+    }catch(e){console.warn('Migração diária paga:',e);}
+  }
+
+  // Serviços adicionais antigos -> servicos_adicionais.
+  for(const [obraId,lista] of Object.entries(getServices()||{})){
+    if(!Array.isArray(lista))continue;
+    for(const item of lista){
+      const op='legacy-service:'+String(obraId)+':'+String(item?.id||JSON.stringify(item));
+      try{
+        if(await findExistingByOperation('servicos_adicionais',op))continue;
+        const {data,error}=await sb.from('servicos_adicionais').insert({
+          obra_id:Number(obraId)||obraId,
+          descricao:String(item?.nome||item?.descricao||'Serviço adicional'),
+          valor:Math.max(0,Number(item?.valor||0)),
+          data:item?.data||today(),
+          observacao:item?.observacao||null,
+          operation_id:op,user_id:user.id
+        }).select().single();
+        if(!error&&data){D.servicos_adicionais.unshift(data);r.servicos++;}
+      }catch(e){console.warn('Migração serviço adicional:',e);}
+    }
+  }
+
+  // Adiantamentos antigos que já estão registrados como gasto financeiro.
+  for(const g of (D.gastos||[])){
+    if(gastoCategoria(g)!=='Adiantamento')continue;
+    const funcionarioId=g.funcionario_id||null;
+    if(!funcionarioId)continue;
+    const op='legacy-adiantamento:'+String(g.id);
+    try{
+      if(await findExistingByOperation('adiantamentos',op))continue;
+      const {data,error}=await sb.from('adiantamentos').insert({
+        funcionario_id:funcionarioId,obra_id:g.obra_id||null,
+        valor:Math.max(0,Number(g.valor||0)),data:g.data||today(),
+        observacao:g.observacao||g.descricao||null,operation_id:op,user_id:user.id
+      }).select().single();
+      if(!error&&data){D.adiantamentos.unshift(data);r.adiantamentos++;}
+    }catch(e){console.warn('Migração adiantamento:',e);}
+  }
+
+  if(r.funcionarios||r.diarias||r.servicos||r.adiantamentos)saveLocalData();
+  return {ok:true,...r};
 }
 
 async function retryLocalCloudRows(){
   if(!sb||!user?.id||!navigator.onLine) return;
-  const tables=['obras','funcionarios','diarias','gastos','pagamentos','checklist','faltas','documentos'];
+  const tables=['obras','funcionarios','diarias','gastos','pagamentos','checklist','faltas','adiantamentos','servicos_adicionais','servicos','terceirizados','pagamentos_terceirizados','orcamentos','diario'];
   for(const table of tables){
     const rows=Array.isArray(D[table])?D[table]:[];
     const locals=rows.filter(r=>String(r?.id||'').startsWith('local_'));
     for(const local of locals){
       try{
-        const payload={...local,user_id:user.id};
-        delete payload.id; delete payload._sync_pendente;
-        const {data,error}=await sb.from(table).insert(payload).select().single();
-        if(!error&&data){
+        const operationId=String(local.operation_id||'');
+        let existing=operationId?await findExistingByOperation(table,operationId):null;
+        let data=existing,error=null;
+
+        if(!existing){
+          const payload={...local,user_id:user.id};
+          delete payload.id; delete payload._sync_pendente;
+          const resp=await sb.from(table).insert(payload).select().single();
+          data=resp.data; error=resp.error;
+          if(error&&operationId) existing=await findExistingByOperation(table,operationId);
+          if(existing) data=existing;
+        }
+
+        if(data){
           const idx=D[table].findIndex(x=>String(x.id)===String(local.id));
           if(idx>=0) D[table][idx]=data;
           removeEdifiqPendingUpdate(table,local.id);
           saveLocalData();
+        }else if(error){
+          console.warn('Retry cloud',table,error.message);
         }
       }catch(e){ console.warn('Retry cloud',table,e); }
     }
@@ -3622,136 +3715,108 @@ async function retryEdifiqPendingUpdates(){
   saveEdifiqPendingUpdates(restantes);
   saveLocalData();
 }
+
+function edifiqOperationId(){
+  try{ if(window.crypto?.randomUUID) return window.crypto.randomUUID(); }catch(e){}
+  return "op_"+Date.now()+"_"+Math.random().toString(36).slice(2)+"_"+Math.random().toString(36).slice(2);
+}
+
+async function findExistingByOperation(table,operationId){
+  if(!sb||!user?.id||!operationId)return null;
+  try{
+    const {data,error}=await sb.from(table).select("*").eq("user_id",user.id).eq("operation_id",operationId).maybeSingle();
+    if(!error&&data)return data;
+  }catch(e){ console.warn("Busca de operação EDIFIQ",table,e); }
+  return null;
+}
+
 async function insertRow(
 table,
 row
 ){
 
 if(!user){
-
-toast(
-"Faça login primeiro."
-);
-
-return null;
-
+  toast("Faça login primeiro.");
+  return null;
 }
 
+/*
+  ID DE OPERAÇÃO: a mesma tentativa pode ser reenviada sem criar
+  um segundo registro. O banco protege com índice único por usuário.
+*/
+const operation_id = String(row?.operation_id || edifiqOperationId());
 const payload={
-...row,
-user_id:user.id
+  ...row,
+  operation_id,
+  user_id:user.id
 };
 
-const attempts=[
-payload
-];
+const attempts=[payload];
 
 if(table==="gastos"){
-
-attempts.push(
-Object.fromEntries(
-Object.entries(payload)
-.filter(
-([k])=>k!=="categoria"
-)
-)
-);
-
+  attempts.push(Object.fromEntries(Object.entries(payload).filter(([k])=>k!=="categoria")));
 }
-
 if(table==="pagamentos"){
-
-attempts.push(
-Object.fromEntries(
-Object.entries(payload)
-.filter(
-([k])=>k!=="forma_pagamento"
-)
-)
-);
-
+  attempts.push(Object.fromEntries(Object.entries(payload).filter(([k])=>k!=="forma_pagamento")));
 }
-
 if(table==="funcionarios"){
-
-attempts.push(
-Object.fromEntries(
-Object.entries(payload)
-.filter(
-([k])=>k!=="registrar_diaria"
-)
-)
-);
-
+  attempts.push(Object.fromEntries(Object.entries(payload).filter(([k])=>k!=="registrar_diaria")));
 }
 
 for(const tentativa of attempts){
+  try{
+    const {data,error}=await sb.from(table).insert(tentativa).select().single();
+    if(!error&&data){
+      D[table].unshift(data);
+      saveLocalData();
+      renderAll();
+      return data;
+    }
 
-try{
+    /* Se a primeira gravação chegou ao servidor mas a resposta se perdeu,
+       o índice único gera conflito. Nesse caso recuperamos o registro original. */
+    const existing=await findExistingByOperation(table,operation_id);
+    if(existing){
+      const already=Array.isArray(D[table])?D[table].findIndex(x=>String(x.id)===String(existing.id)):-1;
+      if(already>=0) D[table][already]=existing;
+      else D[table].unshift(existing);
+      saveLocalData();
+      renderAll();
+      return existing;
+    }
 
-const{data,error}=
-await sb
-.from(table)
-.insert(tentativa)
-.select()
-.single();
-
-if(!error&&data){
-
-D[table].unshift(data);
-
-saveLocalData();
-
-renderAll();
-
-return data;
-
+    console.warn("Supabase recusou",table,error?.message);
+  }catch(e){
+    /* Em erro de rede, tentamos localizar a operação antes de criar fallback local. */
+    const existing=await findExistingByOperation(table,operation_id);
+    if(existing){
+      const already=Array.isArray(D[table])?D[table].findIndex(x=>String(x.id)===String(existing.id)):-1;
+      if(already>=0) D[table][already]=existing;
+      else D[table].unshift(existing);
+      saveLocalData();
+      renderAll();
+      return existing;
+    }
+    console.warn("Erro Supabase",table,e);
+  }
 }
 
-console.warn(
-"Supabase recusou",
-table,
-error?.message
-);
-
-}catch(e){
-
-console.warn(
-"Erro Supabase",
-table,
-e
-);
-
-}
-
-}
-
+/* Sem conexão/servidor: mantém a operação com o mesmo operation_id para
+   que a sincronização posterior continue sendo idempotente. */
 const localRow={
-...row,
-id:
-"local_"+Date.now()+"_"+
-Math.random()
-.toString(36)
-.slice(2),
-user_id:user.id,
-created_at:
-new Date().toISOString(),
-_sync_pendente:true
+  ...payload,
+  id:"local_"+Date.now()+"_"+Math.random().toString(36).slice(2),
+  created_at:new Date().toISOString(),
+  _sync_pendente:true
 };
 
 D[table].unshift(localRow);
-
 saveLocalData();
-
 renderAll();
-
-toast(
-"Salvo neste aparelho. O servidor recusou a gravação."
-);
-
+toast("Salvo neste aparelho. Será sincronizado automaticamente quando a nuvem estiver disponível.");
 return localRow;
-
 }
+
 
 async function updateRow(
 table,
