@@ -3138,6 +3138,81 @@ function financeiroAuditResumo(obraId){
   return {...f,issues};
 }
 
+/* =========================================================
+   ETAPA 8 — AUDITORIA COMPLETA DE PRODUÇÃO
+   Verifica vínculos e cálculos sem alterar registros.
+   ========================================================= */
+function auditProducaoEDIFIQ(){
+  const issues=[];
+  const n=v=>{const x=Number(v||0);return Number.isFinite(x)?x:0;};
+  const sid=v=>String(v??"");
+  const obras=new Map((D.obras||[]).map(o=>[sid(o.id),o]));
+  const funcs=new Map((D.funcionarios||[]).map(f=>[sid(f.id),f]));
+  const checks=new Map((D.checklist||[]).map(c=>[sid(c.id),c]));
+
+  // Vínculos básicos: nenhum lançamento deve apontar para entidade inexistente.
+  for(const d of (D.diarias||[])){
+    const fid=sid(d.funcionario_id), oid=sid(recordObraId(d));
+    if(!funcs.has(fid)) issues.push({tipo:"diaria_funcionario_invalido",id:d.id,funcionario_id:d.funcionario_id});
+    if(!obras.has(oid)) issues.push({tipo:"diaria_obra_invalida",id:d.id,obra_id:d.obra_id});
+    if(d.checklist_id && (!checks.has(sid(d.checklist_id)) || sid(recordObraId(checks.get(sid(d.checklist_id))))!==oid)) issues.push({tipo:"diaria_checklist_desvinculado",id:d.id,checklist_id:d.checklist_id});
+    if(n(d.qtd)<=0 || n(d.valor_diaria)<0) issues.push({tipo:"diaria_valor_ou_quantidade_invalida",id:d.id});
+  }
+  for(const f of (D.funcionarios||[])){
+    if(f.obra_id && !obras.has(sid(f.obra_id))) issues.push({tipo:"funcionario_obra_invalida",id:f.id,obra_id:f.obra_id});
+    if(n(f.valor_diaria)<0 || n(f.salario_mensal)<0) issues.push({tipo:"funcionario_valor_negativo",id:f.id});
+  }
+  for(const g of (D.gastos||[])){
+    const oid=sid(recordObraId(g));
+    if(!obras.has(oid)) issues.push({tipo:"gasto_obra_invalida",id:g.id,obra_id:g.obra_id});
+    if(g.checklist_id && (!checks.has(sid(g.checklist_id)) || sid(recordObraId(checks.get(sid(g.checklist_id))))!==oid)) issues.push({tipo:"gasto_checklist_desvinculado",id:g.id,checklist_id:g.checklist_id});
+    if(n(g.valor)<0) issues.push({tipo:"gasto_valor_negativo",id:g.id});
+  }
+  for(const p of (D.pagamentos||[])){
+    const oid=sid(recordObraId(p));
+    if(!obras.has(oid)) issues.push({tipo:"receita_obra_invalida",id:p.id,obra_id:p.obra_id});
+    if(p.checklist_id && (!checks.has(sid(p.checklist_id)) || sid(recordObraId(checks.get(sid(p.checklist_id))))!==oid)) issues.push({tipo:"receita_checklist_desvinculado",id:p.id,checklist_id:p.checklist_id});
+    if(n(p.valor)<0) issues.push({tipo:"receita_valor_negativo",id:p.id});
+  }
+
+  // Detecta duplicações exatas de diárias. Registros diferentes podem existir
+  // em datas/obras/checklists diferentes; só o mesmo lançamento é sinalizado.
+  const seen=new Map();
+  for(const d of (D.diarias||[])){
+    const key=[d.funcionario_id,recordObraId(d),d.checklist_id||"",d.data,n(d.qtd),n(d.valor_diaria),String(d.observacao||"")].join("|");
+    const arr=seen.get(key)||[]; arr.push(d.id); seen.set(key,arr);
+  }
+  for(const [key,ids] of seen){
+    if(ids.length>1) issues.push({tipo:"diaria_duplicada",ids,quantidade:ids.length});
+  }
+
+  // Confere o fechamento financeiro por obra.
+  const porObra=new Map();
+  for(const [oid,o] of obras){
+    const contrato=n(o.valor);
+    const receita=(D.pagamentos||[]).filter(p=>sid(recordObraId(p))===oid).reduce((a,p)=>a+n(p.valor),0);
+    const despesa=(D.gastos||[]).filter(g=>sid(recordObraId(g))===oid).reduce((a,g)=>a+n(g.valor),0);
+    const dias=(D.diarias||[]).filter(d=>sid(recordObraId(d))===oid).reduce((a,d)=>a+diariaValor(d),0);
+    const mao=(D.gastos||[]).filter(g=>sid(recordObraId(g))===oid && gastoSubcategoria(g)==="Mão de obra").reduce((a,g)=>a+n(g.valor),0);
+    if(Math.abs(receita-despesa-(receita-despesa))>0.001) issues.push({tipo:"resultado_inconsistente",obra_id:o.id});
+    if(receita>contrato+0.01) issues.push({tipo:"receita_acima_contrato",obra_id:o.id,contrato,receita});
+    if(despesa<0) issues.push({tipo:"despesa_total_negativa",obra_id:o.id,despesa});
+    porObra.set(oid,{contrato,receita,despesa,saldoReceber:Math.max(0,contrato-receita),resultado:receita-despesa,margem:contrato>0?(receita-despesa)/contrato*100:0,diasRegistrados:dias,maoFinanceiro:mao});
+  }
+
+  // Diárias pagas devem estar refletidas no fechamento de mão de obra.
+  for(const [oid,f] of porObra){
+    const paidDays=(D.diarias||[]).filter(d=>sid(recordObraId(d))===oid && diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
+    const payrollExpenses=(D.gastos||[]).filter(g=>sid(recordObraId(g))===oid && gastoSubcategoria(g)==="Mão de obra" && /\[Mão de obra\]/i.test(String(g.descricao||""))).reduce((a,g)=>a+n(g.valor),0);
+    // Só alerta quando há diárias pagas e nenhum lançamento correspondente.
+    if(paidDays>0.009 && payrollExpenses<0.009) issues.push({tipo:"diarias_pagas_sem_despesa_folha",obra_id:oid,diariasPagas:paidDays});
+    porObra.get(oid).diariasPagas=paidDays;
+    porObra.get(oid).despesasFolha=payrollExpenses;
+  }
+
+  return {ok:issues.length===0,issues,porObra};
+}
+
 function toggleTheme(){
   const light=document.body.classList.toggle('edLight');
   try{localStorage.setItem('edifiq_theme',light?'light':'dark')}catch(e){}
@@ -5435,9 +5510,8 @@ return;
 const tipo=$("dTipo").value;
 
 const qtd=
-tipo==="manha"||
-tipo==="tarde"
-?.5
+(tipo==="manha" || tipo==="tarde")
+?0.5
 :1;
 
 const valorBase=
@@ -5472,18 +5546,28 @@ observacao
 ?`${textoTipo}. ${observacao}`
 :textoTipo;
 
+const dataDiaria=$("dData").value;
+const statusDiaria=$("dStatus").value;
+
+/* Uma mesma tentativa de diária usa sempre o mesmo operation_id.
+   Isso impede duplicação quando o usuário toca novamente, a conexão
+   oscila ou o servidor confirma a gravação mas a resposta se perde. */
+const operation_id=edifiqStableOperationId(
+  "diaria",funcionario_id,obra_id,checklist_id||"sem-checklist",
+  dataDiaria,qtd,valorBase,statusDiaria,observacao
+);
+
 const row={
 funcionario_id,
 obra_id,
 checklist_id,
-data:
-$("dData").value,
+data:dataDiaria,
 qtd,
 valor_diaria:
 valorBase,
-status:
-$("dStatus").value,
-observacao
+status:statusDiaria,
+observacao,
+operation_id
 };
 
 const result=
@@ -10165,7 +10249,9 @@ async function apagarDadosSetor(setor){
 function renderAll(){
  auditEDIFIQ();
  const _financeAudit=auditFinanceiroEDIFIQ();
+ const _producaoAudit=auditProducaoEDIFIQ();
  if(!_financeAudit.ok) console.warn('Auditoria financeira EDIFIQ encontrou inconsistências:',_financeAudit.issues);
+ if(!_producaoAudit.ok) console.warn('Auditoria de produção EDIFIQ encontrou inconsistências:',_producaoAudit.issues);
 
 renderDashboard();
 renderResumoGeral();
