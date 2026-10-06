@@ -3213,6 +3213,92 @@ function auditProducaoEDIFIQ(){
   return {ok:issues.length===0,issues,porObra};
 }
 
+
+/* =========================================================
+   ETAPA 9 — CORREÇÃO AUTOMÁTICA SEGURA
+   Só corrige casos determinísticos: duplicação exata de diária e
+   checklist inexistente/desvinculado. Casos ambíguos permanecem em auditoria.
+   ========================================================= */
+async function corrigirInconsistenciasSegurasEDIFIQ(){
+  const audit=auditProducaoEDIFIQ();
+  const duplicadas=audit.issues.filter(i=>i.tipo==='diaria_duplicada');
+  const checklistRuim=audit.issues.filter(i=>
+    i.tipo==='diaria_checklist_desvinculado' ||
+    i.tipo==='gasto_checklist_desvinculado' ||
+    i.tipo==='receita_checklist_desvinculado'
+  );
+  const totalSeguras=duplicadas.length+checklistRuim.length;
+  if(!totalSeguras){
+    toast('Nenhuma inconsistência com correção automática segura.');
+    return {corrigidos:0,pendentes:audit.issues.length};
+  }
+  if(!confirm(`O EDIFIQ encontrou ${totalSeguras} correção(ões) segura(s).\n\nAntes de corrigir, será criado um ponto de recuperação. Deseja continuar?`)) return null;
+
+  try{ saveSafeSnapshot(); }catch(e){ console.warn('Snapshot antes da correção',e); }
+  try{ await edifiqDurableWrite?.('snapshot_pre_correcao',cloneState()); }catch(e){ }
+
+  let corrigidos=0;
+  const falhas=[];
+  const escolherManter=async ids=>{
+    const rows=ids.map(id=>(D.diarias||[]).find(d=>String(d.id)===String(id))).filter(Boolean);
+    if(rows.length<2)return;
+    rows.sort((a,b)=>{
+      const paidA=diariaEstaPaga(a)?1:0, paidB=diariaEstaPaga(b)?1:0;
+      if(paidA!==paidB)return paidB-paidA;
+      const localA=String(a.id).startsWith('local_')?0:1, localB=String(b.id).startsWith('local_')?0:1;
+      if(localA!==localB)return localB-localA;
+      const ta=Date.parse(String(a.updated_at||a.created_at||''))||0;
+      const tb=Date.parse(String(b.updated_at||b.created_at||''))||0;
+      return tb-ta;
+    });
+    const manter=rows[0];
+    for(const apagar of rows.slice(1)){
+      try{
+        if(String(apagar.id).startsWith('local_')){
+          const idx=D.diarias.findIndex(x=>String(x.id)===String(apagar.id));
+          if(idx>=0)D.diarias.splice(idx,1);
+        }else if(sb&&user?.id){
+          const {error}=await sb.from('diarias').delete().eq('id',apagar.id).eq('user_id',user.id);
+          if(error)throw error;
+          const idx=D.diarias.findIndex(x=>String(x.id)===String(apagar.id));
+          if(idx>=0)D.diarias.splice(idx,1);
+        }else throw new Error('Nuvem indisponível para excluir duplicata confirmada.');
+        corrigidos++;
+      }catch(e){falhas.push({tipo:'diaria_duplicada',id:apagar.id,erro:String(e?.message||e)});}
+    }
+    return manter;
+  };
+
+  for(const item of duplicadas) await escolherManter(item.ids||[]);
+
+  for(const item of checklistRuim){
+    let table='';
+    if(item.tipo.startsWith('diaria_'))table='diarias';
+    else if(item.tipo.startsWith('gasto_'))table='gastos';
+    else if(item.tipo.startsWith('receita_'))table='pagamentos';
+    if(!table)continue;
+    try{
+      const id=item.id;
+      if(String(id).startsWith('local_')){
+        const row=(D[table]||[]).find(x=>String(x.id)===String(id));
+        if(row){row.checklist_id=null;row._sync_pendente=true;addEdifiqPendingUpdate(table,id,{checklist_id:null});corrigidos++;}
+      }else if(sb&&user?.id){
+        const {data,error}=await sb.from(table).update({checklist_id:null,updated_at:new Date().toISOString()}).eq('id',id).eq('user_id',user.id).select().single();
+        if(error)throw error;
+        const idx=D[table].findIndex(x=>String(x.id)===String(id));
+        if(idx>=0)D[table][idx]={...data,_sync_pendente:false};
+        corrigidos++;
+      }else throw new Error('Nuvem indisponível.');
+    }catch(e){falhas.push({tipo:item.tipo,id:item.id,erro:String(e?.message||e)});}
+  }
+
+  saveLocalData();
+  try{ await edifiqDurableWrite?.('state',cloneState()); }catch(e){ }
+  renderAll();
+  toast(falhas.length?`Correção concluída: ${corrigidos} corrigida(s), ${falhas.length} pendente(s).`:`Correção concluída: ${corrigidos} registro(s) corrigido(s).`);
+  return {corrigidos,falhas,restantes:auditProducaoEDIFIQ().issues};
+}
+
 function toggleTheme(){
   const light=document.body.classList.toggle('edLight');
   try{localStorage.setItem('edifiq_theme',light?'light':'dark')}catch(e){}
@@ -5191,7 +5277,7 @@ function renderObras(){
       <div class="obraModeloPanel" data-panel="pagamentos" style="display:${activeObraTab==='pagamentos'?'block':'none'}"><div class="obraInfoCard"><h3>Pagamentos Recebidos</h3>${pagamentosHtml}</div></div>
       <div class="obraModeloPanel" data-panel="resumo" style="display:${activeObraTab==='resumo'?'block':'none'}"><div class="obraInfoCard obraSummaryWrap">${resumoHtml}</div></div>
       <div class="obraModeloPanel" data-panel="checklist" style="display:${activeObraTab==='checklist'?'block':'none'}"><div class="obraInfoCard"><h3>Checklist da obra — editável</h3>${checklistHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="openCheckForObra('${esc(String(o.id))}')">＋ Adicionar / editar checklist</button></div></div></div>
-      <div class="obraModeloPanel" data-panel="auditoria" style="display:${activeObraTab==='auditoria'?'block':'none'}"><div class="obraInfoCard"><h3>Auditoria da obra</h3>${auditHtml}</div></div>
+      <div class="obraModeloPanel" data-panel="auditoria" style="display:${activeObraTab==='auditoria'?'block':'none'}"><div class="obraInfoCard"><h3>Auditoria da obra</h3>${auditHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="corrigirInconsistenciasSegurasEDIFIQ()">🛠️ Corrigir inconsistências seguras</button></div></div></div>
     </div></article>`;
 }
 
