@@ -1943,6 +1943,44 @@ servicos_adicionais:[]
 };
 
 const LOCAL_KEY="edifiq_local_v3";
+const EDIFIQ_LOCAL_OWNER_KEY=LOCAL_KEY+"__OWNER_V1";
+function edifiqLocalOwner(){try{return String(localStorage.getItem(EDIFIQ_LOCAL_OWNER_KEY)||"");}catch(_){return "";}}
+function edifiqDetectCachedOwners(){
+  const owners=new Set();
+  try{
+    const base=JSON.parse(localStorage.getItem(LOCAL_KEY)||"{}");
+    for(const rows of Object.values(base||{})){if(Array.isArray(rows)) rows.forEach(r=>{if(r?.user_id) owners.add(String(r.user_id));});}
+  }catch(_){}
+  for(const table of Object.keys(D)){
+    try{const rows=JSON.parse(localStorage.getItem(LOCAL_KEY+"__"+table)||"[]");if(Array.isArray(rows)) rows.forEach(r=>{if(r?.user_id) owners.add(String(r.user_id));});}catch(_){}
+  }
+  return [...owners];
+}
+function edifiqPrepareAccountCache(accountId){
+  const id=String(accountId||""); if(!id)return true;
+  const owner=edifiqLocalOwner();
+  const cachedOwners=edifiqDetectCachedOwners();
+  const differentOwner=(owner && owner!==id) || cachedOwners.some(x=>x!==id);
+  if(differentOwner){
+    console.warn("EDIFIQ: cache local de outra conta isolado antes do carregamento.",{owner,cachedOwners,accountId:id});
+    for(const k of Object.keys(D)){D[k]=[];}
+    try{
+      localStorage.removeItem(LOCAL_KEY);
+      for(const table of Object.keys(D)) localStorage.removeItem(LOCAL_KEY+"__"+table);
+      localStorage.removeItem(EDIFIQ_LOCAL_OWNER_KEY);
+    }catch(_){}
+  }
+  try{localStorage.setItem(EDIFIQ_LOCAL_OWNER_KEY,id);}catch(_){}
+  return true;
+}
+function edifiqClearAccountCache(){
+  try{
+    localStorage.removeItem(LOCAL_KEY);
+    for(const table of Object.keys(D)) localStorage.removeItem(LOCAL_KEY+"__"+table);
+    localStorage.removeItem(EDIFIQ_LOCAL_OWNER_KEY);
+  }catch(_){}
+  for(const k of Object.keys(D)) D[k]=[];
+}
 const FUNC_OBRA_KEY="edifiq_func_obras_v2";
 const ADV_KEY="edifiq_adiantamentos_aplicados_v1";
 const PAID_DIARIAS_KEY="edifiq_diarias_baixadas_v2";
@@ -2597,6 +2635,7 @@ async function edifiqDurablePersistSnapshot(label="ponto de recuperação"){
 }
 
 function saveLocalData(){
+  if(user?.id && String(user.id)!=="local-user"){try{localStorage.setItem(EDIFIQ_LOCAL_OWNER_KEY,String(user.id));}catch(_){} }
   const payload={obras:D.obras,funcionarios:D.funcionarios,diarias:D.diarias,gastos:D.gastos,pagamentos:D.pagamentos,checklist:D.checklist,faltas:D.faltas,presencas:D.presencas||[],diario:D.diario,documentos:(D.documentos||[]).map(d=>({...d})),materiais:D.materiais,material_movimentos:D.material_movimentos,adiantamentos:D.adiantamentos||[]};
   let savedAny=false;
   try{ localStorage.setItem(LOCAL_KEY,JSON.stringify(payload)); savedAny=true; }catch(e){ console.warn("Cache principal cheio; usando backup por tabela.",e); }
@@ -3437,6 +3476,7 @@ function bindSupabaseAuth(){
     try{
       user=session?.user||null;
       if(user){
+        edifiqPrepareAccountCache(user.id);
         const syncStatus=$("edifiqSyncStatus"); if(syncStatus){syncStatus.textContent='↻ Sincronizando';syncStatus.className='warn';}
         $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
         await loadCloud(); renderAll(); startEdifiqRealtime();
@@ -3464,7 +3504,7 @@ async function ensureSupabaseClient(){
    sem precisar atualizar a página. Há uma recarga periódica leve
    como fallback caso o canal fique desconectado.
    ========================================================= */
-const EDIFIQ_REALTIME_TABLES=["obras","funcionarios","diarias","gastos","pagamentos","checklist","documentos","faltas"];
+const EDIFIQ_REALTIME_TABLES=["obras","funcionarios","diarias","gastos","pagamentos","checklist","documentos","faltas","diario"];
 let edifiqRealtimeChannel=null;
 let edifiqRealtimeRefreshTimer=null;
 let edifiqRealtimeUserId=null;
@@ -10332,8 +10372,19 @@ async function apagarDadosSetor(setor){
   }
 }
 
+function auditSegurancaEDIFIQ(){
+  const problemas=[];
+  if(sb && user?.id && String(user.id)!=="local-user"){
+    const owner=edifiqLocalOwner();
+    if(owner && owner!==String(user.id)) problemas.push("cache local pertence a outra conta");
+  }
+  return {ok:problemas.length===0,problemas,usuario:user?.id||null,cacheOwner:edifiqLocalOwner()};
+}
+
 function renderAll(){
  auditEDIFIQ();
+ const _securityAudit=auditSegurancaEDIFIQ();
+ if(!_securityAudit.ok) console.warn("Auditoria de segurança EDIFIQ:",_securityAudit.problemas);
  const _financeAudit=auditFinanceiroEDIFIQ();
  const _producaoAudit=auditProducaoEDIFIQ();
  if(!_financeAudit.ok) console.warn('Auditoria financeira EDIFIQ encontrou inconsistências:',_financeAudit.issues);
