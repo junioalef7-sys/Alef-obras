@@ -1576,7 +1576,7 @@ body{min-height:100vh;min-height:100dvh}
   </div>
   <div class="edifiqMenuTitle edifiqSectionTitle">GESTÃO</div>
   <div class="edifiqMenuList">
-    <button class="edifiqMenuItem" onclick="goMenu('funcionarios')"><span>♧</span><b>Equipe + Folha</b></button>
+    <button class="edifiqMenuItem" onclick="goMenu('funcionarios')"><span>♧</span><b>Gestão da Equipe</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('financeiro')"><span>＄</span><b>Financeiro</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('obras')"><span>▣</span><b>Obras</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('diario')"><span>▤</span><b>Diário de Obras</b></button>
@@ -1589,7 +1589,6 @@ body{min-height:100vh;min-height:100dvh}
     <button class="edifiqMenuItem" onclick="openPagamentoEquipe();toggleMenuPasta()"><span>＄</span><b>Pagamento da Equipe</b></button>
     <button class="edifiqMenuItem" onclick="openAdiantamento();toggleMenuPasta()"><span>💳</span><b>Vale</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('diarias')"><span>📅</span><b>Histórico de Diárias</b></button>
-    <button class="edifiqMenuItem" onclick="goMenu('relatorios')"><span>▧</span><b>Relatórios</b></button>
   </div>
   <div class="edifiqMenuTitle edifiqSectionTitle">DADOS</div>
   <button class="edifiqDataRow" onclick="openConfiguracoes();toggleMenuPasta()"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
@@ -1720,28 +1719,17 @@ body{min-height:100vh;min-height:100dvh}
 <div class="pageTitle"><h1>Funcionários</h1><button class="btn gold" onclick="openFunc()">＋ Funcionário</button></div>
 <div class="toolbar"><select id="funcFilter" onchange="renderFuncs()"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select><button class="btn" type="button" onclick="atualizarEquipeCompleto()">↻ Atualizar equipe</button><button class="btn gold" onclick="openPresenca()">✓ Registrar presença</button><button class="btn" onclick="openFalta()">⚠️ Registrar falta</button><button class="btn" onclick="go('diarias')">📅 Diárias</button><button class="btn gold" onclick="openExtraEquipe()">🏆 Extras e Bônus</button><button class="btn" onclick="openPagamentoEquipe()">💰 Pagamentos</button><button class="btn" onclick="openAdiantamento()">💳 Vale</button></div>
 <div class="card equipeOverview">
-<h2>Gestão da equipe</h2><p class="sub">Cadastro, presença, faltas, diárias, vales, pagamentos e fechamento da folha por período.</p>
+<h2>Gestão da equipe</h2><p class="sub">Cadastro, presença, faltas, diárias, vales, bônus, extras e pagamentos da equipe.</p>
 <div class="grid kpis equipeKpis">
 <div class="kpi"><small>Funcionários ativos</small><strong id="eqAtivos">0</strong></div>
-<div class="kpi"><small>Diárias no período</small><strong id="eqDiasPeriodo">0</strong></div>
-<div class="kpi"><small>Total trabalhado</small><strong id="eqBrutoPeriodo">R$ 0,00</strong></div>
+<div class="kpi"><small>Diárias pendentes</small><strong id="eqDiasPeriodo">0</strong></div>
+<div class="kpi"><small>Total pendente</small><strong id="eqPendentePeriodo">R$ 0,00</strong></div>
 <div class="kpi"><small>Total pago</small><strong id="eqPagoPeriodo">R$ 0,00</strong></div>
-<div class="kpi"><small>Vales</small><strong id="eqAdiantPeriodo">R$ 0,00</strong></div>
-<div class="kpi"><small>Saldo pendente</small><strong id="eqPendentePeriodo">R$ 0,00</strong></div>
+<div class="kpi"><small>Vale</small><strong id="eqAdiantPeriodo">R$ 0,00</strong></div>
+<div class="kpi"><small>Bônus e Extras</small><strong id="eqExtrasPeriodo">R$ 0,00</strong></div>
+<div class="kpi"><small>Líquido</small><strong id="eqLiquidoPeriodo">R$ 0,00</strong></div>
 </div></div>
 <div id="funcList"></div>
-<div class="card" id="folhaEquipeCard">
-<div class="row"><div><h2>Fechamento de folha</h2><p class="sub">Consolidação de 15 ou 30 dias, com funcionários, diárias, bruto, adiantamentos e líquido.</p></div><button class="btn gold" onclick="atualizarFolha()">↻ Atualizar folha</button></div>
-<div class="toolbar folhaToolbar"><label>Período<select id="folhaPeriodo" onchange="renderFechamentoFolha()"><option value="15">15 dias</option><option value="30">30 dias</option><option value="custom">Personalizado</option></select></label><label>Obra<select id="folhaObra" onchange="renderFechamentoFolha()"><option value="all">Todas as obras</option></select></label><label>De<input id="folhaInicio" type="date" onchange="renderFechamentoFolha()"></label><label>Até<input id="folhaFim" type="date" onchange="renderFechamentoFolha()"></label></div>
-<div class="grid kpis folhaKpis">
-<div class="kpi"><small>Funcionários</small><strong id="folhaFuncionarios">0</strong></div>
-<div class="kpi"><small>Diárias</small><strong id="folhaDiarias">0</strong></div>
-<div class="kpi"><small>Valor bruto</small><strong id="folhaBruto">R$ 0,00</strong></div>
-<div class="kpi"><small>Vales</small><strong id="folhaAdiant">R$ 0,00</strong></div>
-<div class="kpi"><small>Líquido total</small><strong id="folhaLiquido">R$ 0,00</strong></div>
-<div class="kpi"><small>Saldo pendente</small><strong id="folhaPendente">R$ 0,00</strong></div>
-</div><div id="folhaDetalhes"></div></div>
-
 <div class="card equipeHistoricos" id="equipeHistoricosCard">
   <div class="sectionHead">
     <div><h2>📚 Histórico da equipe</h2><p class="sub">Consulte pagamentos e diárias por funcionário, período e status.</p></div>
@@ -1868,10 +1856,7 @@ body{min-height:100vh;min-height:100dvh}
 <div class="grid kpis docKpis"><div class="kpi"><small>Documentos</small><strong id="docTotal">0</strong></div><div class="kpi"><small>Obras com documentos</small><strong id="docObras">0</strong></div><div class="kpi"><small>Contratos</small><strong id="docContratos">0</strong></div><div class="kpi"><small>Notas / comprovantes</small><strong id="docFinanceiros">0</strong></div></div>
 <div id="documentosList"></div>
 </section>
-<section class="page" id="relatorios">
-<div class="pageTitle"><div><h1>Relatórios</h1><p class="sub">Consulte os relatórios do EDIFIQ. Backup e importação ficam exclusivamente no botão Backup.</p></div></div>
-<div class="card"><h2>📊 Relatórios</h2><p class="sub">Os recursos de relatório continuam disponíveis aqui e no menu principal. O backup, a importação e a recuperação de dados ficam no botão Backup.</p><div class="reportGrid"><button class="btn reportAction" type="button" onclick="openRelatorioCliente()"><b>📄 Relatório para Cliente</b><small>Acompanhamento por obra e cliente.</small></button><button class="btn reportAction" type="button" onclick="openRelatorioTrabalhador()"><b>👷 Relatório do Trabalhador</b><small>Dados, diárias, obras e pagamentos.</small></button><button class="btn reportAction" type="button" onclick="openPagamentoEquipe()"><b>💰 Pagamento da Equipe</b><small>Fechamento da folha.</small></button><button class="btn reportAction" type="button" onclick="go('diarias')"><b>📅 Histórico de Diárias</b><small>Consulta por período e funcionário.</small></button></div></div>
-</section>
+
 </main></section>
 <!-- MODAIS -->
 <div class="modal" id="obraM"><div class="modalBox"><div class="modalHead"><h2 id="obraTitle">Nova obra</h2><button class="x" onclick="closeM('obraM')">×</button></div><form onsubmit="saveObra(event)"><div class="formGrid"><label>Nome<input id="oNome" required=""/></label><label>Cliente<input id="oCli"/></label><label class="full">Endereço<input id="oLoc"/></label><label>Valor do contrato<input id="oVal" step="0.01" type="number"/></label><label>Status<select id="oStatus"><option value="em_andamento">Em andamento</option><option value="planejada">Planejada</option><option value="concluida">Concluída</option><option value="pausada">Pausada</option></select></label><label>Início<input id="oIni" type="date"/></label><label>Previsão de término<input id="oFim" type="date"/></label><label class="full">Tipo de serviço<input id="oTipo"/></label><label class="full">Observações<textarea id="oObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('obraM')" type="button">Cancelar</button><button class="btn primary">Salvar obra</button></div></form></div></div>
@@ -1882,9 +1867,9 @@ body{min-height:100vh;min-height:100dvh}
 <div class="modal" id="checkM"><div class="modalBox"><div class="modalHead"><h2>Adicionar etapa</h2><button class="x" onclick="closeM('checkM')">×</button></div><form onsubmit="saveCheck(event)"><div class="formGrid"><label>Obra<select id="checkObra" required=""><option value="">Selecione</option></select></label><label>Valor do serviço<input id="checkValor" type="number" step="0.01" min="0" value="0" placeholder="R$ 0,00"></label><label class="full">Etapa<input id="checkDesc" placeholder="Ex.: Reboco concluído" required=""/></label></div><div class="formActions"><button class="btn" onclick="closeM('checkM')" type="button">Cancelar</button><button class="btn primary">Adicionar</button></div></form></div></div>
 <div class="modal" id="finM"><div class="modalBox"><div class="modalHead"><h2>Lançamento financeiro</h2><button class="x" onclick="closeM('finM')">×</button></div><form onsubmit="saveFin(event)"><div class="formGrid"><label>Tipo<select id="tFin" onchange="atualizarCategoriaFinanceira();atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="entrada">Entrada</option><option value="despesa">Despesa</option></select></label><label>Obra<select id="oFin" onchange="atualizarReceitaChecklistDistribuicao();atualizarDespesaChecklistDistribuicao()"><option value="">Sem obra</option></select></label><label class="full">Descrição<input id="dFin" required=""/></label><label>Valor<input id="vFin" required="" step="0.01" type="number" oninput="atualizarReceitaChecklistDistribuicao()"/></label><label>Data<input id="dtFin" type="date"/></label><label>Fornecedor<input id="forFin"/></label><div id="finReceitaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><div class="row"><div><b>Checklist da receita</b><small class="sub" style="display:block;margin-top:4px">Distribua entre um ou vários checklists ou lance sem checklist.</small></div><b id="finReceitaChecklistTotal" class="gold">R$ 0,00</b></div><label style="display:flex;align-items:center;gap:8px;margin-top:10px"><input id="finReceitaSemChecklist" type="checkbox" onchange="atualizarReceitaChecklistDistribuicao()" style="width:20px;height:20px"><span><b>Sem checklist</b><small class="sub" style="display:block">A receita ficará vinculada somente à obra.</small></span></label><div id="finReceitaChecklistList" style="margin-top:10px"></div><div id="finReceitaChecklistStatus" class="sub" style="margin-top:8px"></div></div></div><div id="finDespesaChecklistWrap" class="full hidden"><div class="card" style="margin-top:0"><label style="display:block"><b>Checklist da despesa</b><select id="finDespesaChecklist"><option value="">Sem checklist</option></select><small class="sub" style="display:block;margin-top:4px">A despesa ficará vinculada somente ao checklist da obra selecionada.</small></label></div></div><div id="finCatWrap"><label>Categoria<select id="finCategoria"><option>Material</option><option>Combustível</option><option>Mão de obra</option><option>Locação</option><option>Serviço terceirizado</option><option>Adiantamento</option><option>Ferramentas e equipamentos</option><option>Transporte</option><option>Outros</option></select></label></div><label class="full">Observação<textarea id="obsFin"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('finM')" type="button">Cancelar</button><button class="btn primary">Salvar lançamento</button></div></form></div></div>
 <div class="modal" id="fotoM"><div class="modalBox"><div class="modalHead"><h2>Relatório fotográfico</h2><button class="x" onclick="closeM('fotoM')">×</button></div><form onsubmit="saveFoto(event)"><div class="formGrid"><label>Obra<select id="fotoObra" required=""><option value="">Selecione</option></select></label><label>Data<input id="fotoData" type="date"/></label><label class="full">Título<input id="fotoTitulo"/></label><label class="full">Fotos<input accept="image/*" id="fotoFiles" multiple="" required="" type="file"/></label><label class="full">Observação<textarea id="fotoObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('fotoM')" type="button">Cancelar</button><button class="btn primary">Salvar fotos</button></div></form></div></div>
-<div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra de referência (opcional)<select id="pagObra"><option value="">Usar a obra de cada diária</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Adiantamentos</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
+<div class="modal" id="pagEquipeM"><div class="modalBox"><div class="modalHead"><h2>Pagamento da equipe</h2><button class="x" onclick="closeM('pagEquipeM')">×</button></div><form onsubmit="savePagamentoEquipe(event)"><div class="formGrid"><label>Obra de referência (opcional)<select id="pagObra"><option value="">Usar a obra de cada diária</option></select></label><label>Data<input id="pagData" type="date"/></label><label class="full">Descrição<input id="pagDescricao"/></label><label class="full">Observação<textarea id="pagObs"></textarea></label></div><div class="card"><div id="pagFuncionarios"></div></div><div class="three pay-summary"><div><small>Bruto / diárias</small><b id="pagTotal">R$ 0,00</b></div><div><small>Vale</small><b id="pagAdiantTotal">R$ 0,00</b></div><div><small>Líquido</small><b id="pagLiquidoTotal">R$ 0,00</b></div></div>
 <div class="pay-summary"><div><small>Diárias pendentes</small><b id="pagDiariasTotal">R$ 0,00</b></div></div><div class="formActions"><button class="btn" onclick="closeM('pagEquipeM')" type="button">Cancelar</button><button class="btn primary">Processar pagamento</button></div></form></div></div>
-<div class="modal" id="adiantM"><div class="modalBox"><div class="modalHead"><h2>💳 Vale</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveAdiantamento(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required=""><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" required=""><option value="">Selecione</option></select></label><label>Valor<input id="adiantValor" required="" step="0.01" type="number"/></label><label>Data<input id="adiantData" type="date"/></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('adiantM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
+<div class="modal" id="adiantM"><div class="modalBox"><div class="modalHead"><h2>💳 Vale</h2><button class="x" onclick="closeM('adiantM')">×</button></div><form onsubmit="saveAdiantamento(event)"><div class="formGrid"><label>Funcionário<select id="adiantFunc" required=""><option value="">Selecione</option></select></label><label>Obra<select id="adiantObra" onchange="fillValeChecklistSelector()" required=""><option value="">Selecione</option></select></label><label>Checklist<select id="adiantChecklist"><option value="">Sem checklist</option></select></label><label>Valor<input id="adiantValor" required="" step="0.01" type="number"/></label><label>Data<input id="adiantData" type="date"/></label><label class="full">Observação<textarea id="adiantObs"></textarea></label></div><div class="formActions"><button class="btn" onclick="closeM('adiantM')" type="button">Cancelar</button><button class="btn primary">Registrar</button></div></form></div></div>
 <div class="modal reportClientModal" id="relatorioClienteM">
 <div class="modalBox">
 <div class="modalHead rcHeader"><div><h2>📄 Relatório para Cliente</h2><p>Escolha as obras, revise a prévia e edite antes de enviar.</p></div><button class="x" onclick="closeM('relatorioClienteM')">×</button></div>
@@ -1935,6 +1920,7 @@ faltas:[],
 presencas:[],
 diario:[],
 documentos:[],
+servicos_adicionais:[],
 materiais:[],
 material_movimentos:[]
 };
@@ -1951,7 +1937,20 @@ const DEFAULT_CHECKLIST=["Gabarito","Locação","Alvenaria","Chapisco","Reboco",
 
 function getServices(){try{return JSON.parse(localStorage.getItem(SERVICE_KEY)||"{}")}catch{return {}}}
 function saveServices(x){try{localStorage.setItem(SERVICE_KEY,JSON.stringify(x))}catch(e){console.warn(e)}}
-function servicesForObra(obraId){const x=getServices();return Array.isArray(x[obraId])?x[obraId]:[]}
+function servicesForObra(obraId){
+  const out=new Map();
+  (Array.isArray(D.servicos_adicionais)?D.servicos_adicionais:[])
+    .filter(x=>String(recordObraId(x))===String(obraId))
+    .forEach(x=>out.set(String(x.id||x.operation_id||`${obraId}-${x.data}-${x.descricao||x.nome}`),{...x,nome:x.nome||x.descricao,valor:Number(x.valor||0)}));
+  try{
+    const legacy=getServices();
+    (Array.isArray(legacy?.[obraId])?legacy[obraId]:[]).forEach(x=>{
+      const k=String(x.id||`${obraId}-${x.data}-${x.descricao||x.nome}`);
+      if(!out.has(k))out.set(k,{...x,obra_id:obraId,nome:x.nome||x.descricao,valor:Number(x.valor||0)});
+    });
+  }catch(_){}
+  return [...out.values()];
+}
 function recordObraId(x){
   return x?.obra_id ?? x?.obraId ?? x?.obra_id_fk ?? x?.obra ?? "";
 }
@@ -2472,7 +2471,7 @@ const EDIFIQ_STATE_ID="principal";
 let edifiqStateSaveSeq=0;
 let edifiqStateSaveQueue=Promise.resolve();
 function edifiqStatePayload(){
-  const payload={obras:D.obras,funcionarios:D.funcionarios,diarias:D.diarias,gastos:D.gastos,pagamentos:D.pagamentos,checklist:D.checklist,faltas:D.faltas,presencas:D.presencas||[],diario:D.diario,documentos:(D.documentos||[]).map(d=>({...d})),materiais:D.materiais,material_movimentos:D.material_movimentos,_edifiqSavedAt:Date.now(),_edifiqStateVersion:1};
+  const payload={obras:D.obras,funcionarios:D.funcionarios,diarias:D.diarias,gastos:D.gastos,pagamentos:D.pagamentos,checklist:D.checklist,faltas:D.faltas,presencas:D.presencas||[],diario:D.diario,documentos:(D.documentos||[]).map(d=>({...d})),servicos_adicionais:D.servicos_adicionais||[],materiais:D.materiais,material_movimentos:D.material_movimentos,_edifiqSavedAt:Date.now(),_edifiqStateVersion:1};
   return payload;
 }
 function openEdifiqStateDB(){return new Promise((resolve,reject)=>{try{if(!window.indexedDB){reject(new Error("IndexedDB indisponível"));return;}const r=indexedDB.open(EDIFIQ_STATE_DB,1);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(EDIFIQ_STATE_STORE))db.createObjectStore(EDIFIQ_STATE_STORE,{keyPath:"id"})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error||new Error("Falha no banco de estado"));}catch(e){reject(e)}})}
@@ -4528,8 +4527,10 @@ o=>String(o.id)===
 String(obraId)
 );
 
+const servicosAdicionais=servicesForObra(obraId);
+const valorServicosAdicionais=servicosAdicionais.reduce((a,x)=>a+Number(x.valor||0),0);
 const contrato=
-Number(obra?.valor||0);
+Number(obra?.valor||0)+valorServicosAdicionais;
 
 const receita=
 D.pagamentos
@@ -4623,7 +4624,9 @@ margemLucro,
 saldoContrato,
 saldoReceber,
 combustivel,
-locacao
+locacao,
+extras:valorServicosAdicionais,
+servicosAdicionais
 };
 
 }
@@ -4921,7 +4924,7 @@ function renderObras(){
   const totalCustos=Object.values(gc).reduce((a,v)=>a+Number(v||0),0);
   const custoMao=Number(f.mao||gc['Mão de obra']||0);
   const custoMaterial=Number(f.material||gc.Material||0);
-  const custoServicos=Number(f.extras||f.servicos||0);
+  const custoServicos=0;
   const custoTerceiro=Number(f.terceirizado||gc['Serviço terceirizado']||0);
   const lucroPorSemana=resultado;
   const diasPendentes=Math.max(0,totalDias);
@@ -4987,7 +4990,7 @@ function renderObras(){
   const resumoHtml=`<div class="obraSummaryBlock"><h3>Valores da Obra</h3><div class="obraBigMetric"><small>Valor Total da Obra</small><strong class="blue">${money(contrato)}</strong></div><div class="obraBigMetric"><small>Já Recebi</small><strong class="green">${money(recebido)}</strong></div><div class="obraBigMetric"><small>Falta Receber</small><strong class="green">${money(aReceber)}</strong></div><div class="obraProgressLine"><small>Progresso de Recebimento</small><b>${pctRecebido.toFixed(0)}%</b></div><div class="obraMiniProgress"><span style="width:${pctRecebido}%"></span></div></div>
     ${servicosAdicionaisResumoHtml}
     <div class="obraSummaryBlock result"><h3>Resultado</h3><div class="obraResultRow"><span>Lucro</span><strong class="green">${money(resultado)}</strong></div><div class="obraResultRow"><span>Margem</span><strong class="green">${margem.toFixed(1).replace('.',',')}%</strong></div></div>
-    <div class="obraSummaryBlock"><h3>Detalhamento de Custos</h3><div class="obraResultRow"><span>Mão de Obra</span><strong>${money(custoMao)}</strong></div><div class="obraResultRow"><span>Gastos com Materiais</span><strong>${money(custoMaterial)}</strong></div><div class="obraResultRow"><span>Serviços Adicionais</span><strong>${money(custoServicos)}</strong></div><div class="obraResultRow"><span>Terceirizados/Repasses</span><strong>${money(custoTerceiro)}</strong></div><hr><div class="obraResultRow total"><span>Total de Custos</span><strong>${money(despesas||totalCustos)}</strong></div></div>
+    <div class="obraSummaryBlock"><h3>Detalhamento de Custos</h3><div class="obraResultRow"><span>Mão de Obra</span><strong>${money(custoMao)}</strong></div><div class="obraResultRow"><span>Gastos com Materiais</span><strong>${money(custoMaterial)}</strong></div><div class="obraResultRow"><span>Serviços adicionais no contrato</span><strong>${money(custoServicos)}</strong></div><div class="obraResultRow"><span>Terceirizados/Repasses</span><strong>${money(custoTerceiro)}</strong></div><hr><div class="obraResultRow total"><span>Total de Custos</span><strong>${money(despesas||totalCustos)}</strong></div></div>
     <div class="obraSummaryBlock"><h3>Projeções</h3><div class="obraResultRow"><span>Lucro por Semana</span><strong>${money(lucroPorSemana)}</strong></div><div class="obraResultRow"><span>Dias Trabalhados</span><strong>${totalDias}</strong></div><div class="obraResultRow"><span>Gastos Registrados</span><strong>${x.gastos.length}</strong></div><div class="obraResultRow"><span>Serviços Adicionais</span><strong>${x.extras.length}</strong></div><div class="obraResultRow"><span>Serviços Terceirizados</span><strong>${x.gastos.filter(g=>gastoSubcategoria(g)==='Serviço terceirizado').length}</strong></div></div>`;
 
   const checklistHtml=x.checks.length?`<div class="obraModeloList">${x.checks.map(c=>{const pct=Math.max(0,Math.min(100,Number(c.progresso??((c.concluida||c.concluido)?100:0))));return `<div class="obraModeloRow"><span><b>${esc(c.tarefa||c.descricao||c.nome||c.titulo||'Item')}</b><br><small>${pct}% concluído</small></span><b class="blue">${pct}%</b></div>`;}).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum item de checklist cadastrado.</div>';
@@ -5135,6 +5138,10 @@ f.registrar_diaria===false
 </div>
 
 <div class="pay-summary">
+<div>
+<small>Bônus e Extras</small><br>
+<b>${money(resumo.extrasTotal||0)}</b>
+</div>
 
 <div>
 <small>Diárias pendentes</small><br>
@@ -7055,51 +7062,32 @@ function getFuncionarioExtrasAll(){
 }
 
 function renderEquipeOverview(){
-  const ativos=D.funcionarios.filter(f=>f.ativo!==false).length;
-  if($("eqAtivos"))$("eqAtivos").textContent=ativos;
-
-  const {ini,fim}=getPeriodDates(15);
-  const ds=D.diarias.filter(d=>String(d.data||"")>=ini&&String(d.data||"")<=fim);
-  const pendentes=ds.filter(d=>!diariaEstaPaga(d));
-  const pagos=ds.filter(diariaEstaPaga);
-
-  const extrasPeriodo=getFuncionarioExtrasAll().filter(x=>{
-    const data=String(x.data||"");
-    return data>=ini&&data<=fim;
-  });
-  const extrasPendentes=extrasPeriodo.filter(x=>{
-    const st=String(x.status||"pendente").toLowerCase();
-    return st!=="pago"&&st!=="paid"&&st!=="quitado"&&st!=="liquidado";
-  });
-  const extrasPagos=extrasPeriodo.filter(x=>!extrasPendentes.includes(x));
-
-  const bruto=pendentes.reduce((a,d)=>a+diariaValor(d),0)+extrasPendentes.reduce((a,x)=>a+Number(x.valor||0),0);
-  const pago=pagos.reduce((a,d)=>a+diariaValor(d),0)+extrasPagos.reduce((a,x)=>a+Number(x.valor||0),0);
-
-  const ids=[...new Set([
-    ...ds.map(d=>String(d.funcionario_id)),
-    ...extrasPeriodo.map(x=>String(x.funcionario_id??x.funcionarioId??""))
-  ].filter(Boolean))];
-
-  const adv=ids.reduce((a,id)=>a+advanceAmountForEmployeeInRange(id,ini,fim),0);
-  const pend=Math.max(0,bruto-adv);
-
-  if($("eqDiasPeriodo"))$("eqDiasPeriodo").textContent=ds.length;
-  if($("eqBrutoPeriodo"))$("eqBrutoPeriodo").textContent=money(bruto);
-  if($("eqPagoPeriodo"))$("eqPagoPeriodo").textContent=money(pago);
-  if($("eqAdiantPeriodo"))$("eqAdiantPeriodo").textContent=money(adv);
-  if($("eqPendentePeriodo"))$("eqPendentePeriodo").textContent=money(pend);
-
-  const fo=$("folhaObra");
-  if(fo){
-    const cur=fo.value||"all";
-    fo.innerHTML='<option value="all">Todas as obras</option>'+D.obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');
-    if([...fo.options].some(x=>x.value===cur))fo.value=cur;
-  }
-
-  renderFechamentoFolha();
-  fillEquipeHistorySelectors();
-  renderHistoricoPagamentos();
+  const ativos=(D.funcionarios||[]).filter(f=>f.ativo!==false).length;
+  const pend=(D.diarias||[]).filter(d=>!diariaEstaPaga(d));
+  const paid=(D.diarias||[]).filter(diariaEstaPaga);
+  const ex=getFuncionarioExtrasAll();
+  const exPend=ex.filter(x=>!['pago','paid','quitado','liquidado'].includes(String(x.status||'').toLowerCase()));
+  const exPaid=ex.filter(x=>['pago','paid','quitado','liquidado'].includes(String(x.status||'').toLowerCase()));
+  const applied=getAdvanceApplied();
+  const vale=(D.gastos||[])
+    .filter(g=>gastoCategoria(g)==='Adiantamento'&&String(g.status||'').toLowerCase()!=='pago')
+    .reduce((a,g)=>a+Math.max(0,Number(g.valor||0)-Number(applied[g.id]||0)),0);
+  const bruto=pend.reduce((a,d)=>a+diariaValor(d),0);
+  const extraPend=exPend.reduce((a,x)=>a+Number(x.valor||0),0);
+  const pendente=Math.max(0,bruto+extraPend-vale);
+  const pago=paid.reduce((a,d)=>a+diariaValor(d),0)+exPaid.reduce((a,x)=>a+Number(x.valor||0),0);
+  const liquido=Math.max(0,bruto-vale)+extraPend;
+  const q=pend.reduce((a,d)=>a+Math.max(0,Number(d.qtd??d.quantidade??1)),0);
+  const set=(id,v)=>{const el=$(id);if(el)el.textContent=v;};
+  set('eqAtivos',ativos);
+  set('eqDiasPeriodo',q);
+  set('eqPendentePeriodo',money(pendente));
+  set('eqPagoPeriodo',money(pago));
+  set('eqAdiantPeriodo',money(vale));
+  set('eqExtrasPeriodo',money(extraPend));
+  set('eqLiquidoPeriodo',money(liquido));
+  try{fillEquipeHistorySelectors();}catch(_){}
+  try{renderHistoricoPagamentos();}catch(_){}
 }
 async function sincronizarBaixasLocaisEquipe(){
   if(!sb||!user?.id||!navigator.onLine)return 0;
@@ -12334,41 +12322,126 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
 <script id="edifiq-correcoes-20261006">
 (function(){
   const escX=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const numX=v=>Number(v||0);
+  const numX=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;const n=Number(String(v??'').trim().replace(/\./g,'').replace(',','.'));return Number.isFinite(n)?n:0};
 
   window.servicesForObra=function(obraId){
     const out=new Map();
-    (Array.isArray(D.servicos_adicionais)?D.servicos_adicionais:[]).filter(x=>String(x.obra_id??x.obraId??'')===String(obraId)).forEach(x=>out.set(String(x.id||x.operation_id),{...x,nome:x.nome||x.descricao,valor:numX(x.valor)}));
-    try{const legacy=getServices();(Array.isArray(legacy?.[obraId])?legacy[obraId]:[]).forEach(x=>{const k=String(x.id||'');if(!out.has(k))out.set(k,{...x,obra_id:obraId,nome:x.nome||x.descricao,valor:numX(x.valor)});});}catch(_){ }
+    (Array.isArray(D.servicos_adicionais)?D.servicos_adicionais:[]).filter(x=>String(x.obra_id??x.obraId??'')===String(obraId))
+      .forEach(x=>out.set(String(x.id||x.operation_id),{...x,nome:x.nome||x.descricao,valor:numX(x.valor)}));
+    try{const legacy=getServices();(Array.isArray(legacy?.[obraId])?legacy[obraId]:[]).forEach(x=>{const k=String(x.id||`${obraId}-${x.data}-${x.descricao||x.nome}`);if(!out.has(k))out.set(k,{...x,obra_id:obraId,nome:x.nome||x.descricao,valor:numX(x.valor)});});}catch(_){}
     return [...out.values()];
   };
 
   window.addServicoAdicional=async function(obraId){
-    const o=(D.obras||[]).find(x=>String(x.id)===String(obraId));if(!o)return;
+    if(!(D.obras||[]).some(x=>String(x.id)===String(obraId)))return;
     const nome=prompt('Nome do serviço adicional:','');if(nome===null||!nome.trim())return;
     const raw=prompt('Valor do serviço adicional (R$):','0');if(raw===null)return;
-    const valor=Number(String(raw).replace(/\./g,'').replace(',','.'));if(!Number.isFinite(valor)||valor<=0){toast('Informe um valor válido.');return;}
-    const operation_id=edifiqStableOperationId('servico_adicional',obraId,nome.trim(),valor,today());
+    const valor=numX(raw);if(valor<=0){toast('Informe um valor válido.');return;}
     try{
-      if(!sb||!user?.id)throw new Error('Sessão do usuário indisponível.');
-      const {data,error}=await sb.rpc('registrar_servico_adicional_seguro',{p_payload:{obra_id:String(obraId),descricao:nome.trim(),valor,data:today(),observacao:'Serviço adicional — valor incorporado ao contrato.',operation_id}});
-      if(error)throw error;if(!data?.ok)throw new Error('O banco não confirmou o serviço adicional.');
-      await loadCloud();renderAll();toast(`Serviço adicional registrado: ${money(valor)}.`);
-    }catch(err){console.error('EDIFIQ serviço adicional:',err);toast('Não foi possível registrar o serviço adicional. Nenhuma alteração parcial foi confirmada.');}
+      const data=today(),operation_id=edifiqStableOperationId('servico_adicional',obraId,nome.trim(),valor,data);
+      const row=await insertRow('servicos_adicionais',{obra_id:String(obraId),descricao:nome.trim(),valor,data,observacao:'Serviço adicional incorporado ao valor contratado da obra.',operation_id});
+      if(!row)throw new Error('Serviço não confirmado');
+      renderAll();toast(`Serviço adicional registrado: ${money(valor)}.`);
+    }catch(err){console.error('EDIFIQ serviço adicional',err);toast('Não foi possível registrar o serviço adicional. Os dados existentes foram preservados.');}
   };
 
-  function ensureExtraModal(){
-    let m=document.getElementById('edExtraM');if(m)return m;
-    m=document.createElement('div');m.id='edExtraM';m.className='modal';m.innerHTML=`<div class="modalBox"><div class="modalHead"><div><h2>🏆 Extras e Bônus</h2><p class="sub">Selecione funcionário e obra na lista.</p></div><button type="button" class="x" onclick="closeM('edExtraM')">×</button></div><form onsubmit="saveExtraEquipeLista(event)"><div class="edExtraFormGrid"><label>Funcionário<select id="edExtraFunc" class="edExtraListSelect" required></select></label><label>Obra<select id="edExtraObra" class="edExtraListSelect" required></select></label><label>Tipo<select id="edExtraTipo" class="edExtraListSelect"><option>Bônus</option><option>Serviço extra</option><option>Modificação</option></select></label><label>Valor (R$)<input id="edExtraValor" type="number" min="0.01" step="0.01" required></label><label class="full">Descrição<input id="edExtraDesc" required value="Serviço extra"></label></div><div class="modalActions"><button type="button" class="btn" onclick="closeM('edExtraM')">Cancelar</button><button class="btn gold" type="submit">Lançar</button></div></form></div>`;document.body.appendChild(m);return m;
-  }
-  function fillExtraLists(funcId,obraId){ensureExtraModal();const fs=(D.funcionarios||[]).filter(f=>f.ativo!==false),os=D.obras||[],fe=document.getElementById('edExtraFunc'),oe=document.getElementById('edExtraObra');fe.innerHTML='<option value="">Selecione o funcionário</option>'+fs.map(f=>`<option value="${escX(f.id)}">${escX(f.nome||'Funcionário')}</option>`).join('');oe.innerHTML='<option value="">Selecione a obra</option>'+os.map(o=>`<option value="${escX(o.id)}">${escX(o.nome||'Obra')}</option>`).join('');if(funcId)fe.value=String(funcId);if(obraId)oe.value=String(obraId);}
-  function resetExtra(){document.getElementById('edExtraValor').value='';document.getElementById('edExtraDesc').value='Serviço extra';}
-  window.openExtraEquipe=async function(){if(!(D.funcionarios||[]).some(f=>f.ativo!==false)){toast('Cadastre um funcionário antes de lançar Extras e Bônus.');return;}if(!(D.obras||[]).length){toast('Cadastre uma obra antes de lançar Extras e Bônus.');return;}fillExtraLists();resetExtra();openM('edExtraM');};
-  window.openExtraObra=async function(obraId){if(!(D.funcionarios||[]).some(f=>f.ativo!==false)){toast('Cadastre um funcionário antes de lançar Extras e Bônus.');return;}fillExtraLists('',obraId);resetExtra();openM('edExtraM');};
-  window.openExtraFuncionario=async function(funcId,fixedObraId=null){if(!(D.obras||[]).length){toast('Cadastre uma obra antes de lançar Extras e Bônus.');return;}fillExtraLists(funcId,fixedObraId||'');resetExtra();openM('edExtraM');};
-  window.saveExtraEquipeLista=async function(e){e.preventDefault();try{const funcionario_id=document.getElementById('edExtraFunc')?.value||'',obra_id=document.getElementById('edExtraObra')?.value||'',tipo=document.getElementById('edExtraTipo')?.value||'Bônus',descricao=document.getElementById('edExtraDesc')?.value.trim()||'',valor=numX(document.getElementById('edExtraValor')?.value),f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcionario_id));if(!f||f.ativo===false){toast('Selecione um funcionário ativo.');return;}if(!obra_id){toast('Selecione a obra.');return;}if(!descricao||valor<=0){toast('Informe descrição e valor válido.');return;}const id='sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);const item={id,funcionario_id:f.id,funcionarioId:f.id,obra_id,obraId:obra_id,descricao,tipo,valor,data:today(),status:'pendente',financeiroAplicado:true,folhaAplicado:false};const gasto=await insertRow('gastos',{obra_id,data:today(),descricao:`[${tipo}] ${descricao} - ${f.nome}`,valor,fornecedor:f.nome,observacao:'Lançamento vinculado à folha de pagamento.',categoria:'Mão de obra',funcionario_id:f.id,servico_extra_id:id,status:'pendente'});if(!gasto){toast('Não foi possível registrar o bônus/serviço extra.');return;}D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];D.servicosExtras.push(item);saveLocalData();closeM('edExtraM');renderAll();toast(`${tipo} lançado para ${f.nome}. Ele aparecerá na gestão da equipe e no fechamento da folha.`);}catch(err){console.error('EDIFIQ extras/bônus:',err);toast('Não foi possível registrar o bônus/extra.');}};
+  window.fillValeChecklistSelector=function(){
+    const el=document.getElementById('adiantChecklist'),obraId=document.getElementById('adiantObra')?.value||'';if(!el)return;
+    const items=typeof checklistForObra==='function'?checklistForObra(obraId):[],atual=el.value||'';
+    el.innerHTML='<option value="">Sem checklist</option>'+items.map(c=>`<option value="${escX(c.id)}">${escX(c.tarefa||c.descricao||c.nome||c.titulo||'Checklist')}</option>`).join('');
+    if(atual&&items.some(c=>String(c.id)===String(atual)))el.value=atual;
+  };
+  const openValeBase=window.openAdiantamento;
+  window.openAdiantamento=function(){if(typeof openValeBase==='function')openValeBase();setTimeout(()=>{window.fillValeChecklistSelector();const o=document.getElementById('adiantObra');if(o)o.onchange=window.fillValeChecklistSelector;},30)};
+  const openValeFuncBase=window.openAdiantamentoFuncionario;
+  window.openAdiantamentoFuncionario=function(id){if(typeof openValeFuncBase==='function')openValeFuncBase(id);setTimeout(window.fillValeChecklistSelector,80)};
 
-  window.saveAdiantamento=async function(e){e.preventDefault();try{const obra_id=document.getElementById('adiantObra')?.value||'',funcionario_id=document.getElementById('adiantFunc')?.value||'',valor=numX(document.getElementById('adiantValor')?.value),data=document.getElementById('adiantData')?.value||today(),observacao=document.getElementById('adiantObs')?.value.trim()||'',f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcionario_id));if(!funcionario_id){toast('Selecione o funcionário.');return;}if(!obra_id){toast('Selecione a obra.');return;}if(valor<=0){toast('Informe um valor válido.');return;}if(!f||f.ativo===false){toast('Funcionário inválido ou inativo.');return;}const operation_id=edifiqStableOperationId('vale',funcionario_id,obra_id,data,valor,observacao);if(!sb||!user?.id)throw new Error('Sessão do usuário indisponível.');const {data:ret,error}=await sb.rpc('registrar_vale_seguro',{p_payload:{funcionario_id,obra_id,valor,data,observacao,operation_id}});if(error)throw error;if(!ret?.ok)throw new Error('O banco não confirmou o Vale.');await loadCloud();closeM('adiantM');renderAll();toast(`Vale de ${money(valor)} registrado para ${f.nome}.`);}catch(err){console.error('EDIFIQ Vale seguro:',err);toast('Não foi possível registrar o Vale. Nenhum lançamento parcial foi confirmado.');}};
+  window.saveAdiantamento=async function(e){
+    e.preventDefault();
+    try{
+      const obra_id=$('adiantObra')?.value||'',funcionario_id=$('adiantFunc')?.value||'',checklist_id=$('adiantChecklist')?.value||'',
+            valor=numX($('adiantValor')?.value),data=$('adiantData')?.value||today(),observacao=$('adiantObs')?.value.trim()||'',
+            f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcionario_id));
+      if(!funcionario_id){toast('Selecione o funcionário.');return} if(!obra_id){toast('Selecione a obra.');return}
+      if(valor<=0){toast('Informe um valor válido.');return} if(!f||f.ativo===false){toast('Funcionário inválido ou inativo.');return}
+      const op=edifiqStableOperationId('vale',funcionario_id,obra_id,checklist_id,data,valor,observacao);
+      if(!await insertRow('adiantamentos',{funcionario_id,obra_id,checklist_id:checklist_id||null,valor,data,observacao,operation_id:op}))throw Error('Vale não confirmado');
+      if(!await insertRow('gastos',{obra_id,data,checklist_id:checklist_id||null,descricao:`[Vale] ${f.nome}`,valor,fornecedor:f.nome,funcionario_id:f.id,observacao,categoria:'Adiantamento',operation_id:edifiqStableOperationId('vale-gasto',op)}))throw Error('Despesa do Vale não confirmada');
+      closeM('adiantM');renderAll();toast(`Vale de ${money(valor)} registrado para ${f.nome}.`);
+    }catch(err){console.error(err);toast('Não foi possível registrar o Vale. Nenhum lançamento parcial foi confirmado.')}
+  };
+
+  function ensureExtraModalX(){
+    let m=$('edExtraM');if(m)return m;
+    m=document.createElement('div');m.id='edExtraM';m.className='modal';
+    m.innerHTML=`<div class="modalBox"><div class="modalHead"><div><h2>🏆 Extras e Bônus</h2><p class="sub">Vincule funcionário, obra e checklist.</p></div><button type="button" class="x" onclick="closeM('edExtraM')">×</button></div><form onsubmit="saveExtraEquipeLista(event)"><div class="edExtraFormGrid">
+    <label>Funcionário<select id="edExtraFunc" class="edExtraListSelect" required></select></label>
+    <label>Obra<select id="edExtraObra" class="edExtraListSelect" onchange="fillExtraChecklistX()" required></select></label>
+    <label>Checklist<select id="edExtraChecklist" class="edExtraListSelect"><option value="">Sem checklist</option></select></label>
+    <label>Tipo<select id="edExtraTipo" class="edExtraListSelect"><option>Bônus</option><option>Serviço extra</option><option>Modificação</option></select></label>
+    <label>Valor (R$)<input id="edExtraValor" type="number" min="0.01" step="0.01" required></label>
+    <label class="full">Descrição<input id="edExtraDesc" required value="Serviço extra"></label>
+    </div><div class="modalActions"><button type="button" class="btn" onclick="closeM('edExtraM')">Cancelar</button><button class="btn gold" type="submit">Lançar</button></div></form></div>`;
+    document.body.appendChild(m);return m;
+  }
+  window.fillExtraChecklistX=function(){
+    ensureExtraModalX();const el=$('edExtraChecklist'),obraId=$('edExtraObra')?.value||'';if(!el)return;
+    const items=typeof checklistForObra==='function'?checklistForObra(obraId):[],atual=el.value||'';
+    el.innerHTML='<option value="">Sem checklist</option>'+items.map(c=>`<option value="${escX(c.id)}">${escX(c.tarefa||c.descricao||c.nome||c.titulo||'Checklist')}</option>`).join('');
+    if(atual&&items.some(c=>String(c.id)===String(atual)))el.value=atual;
+  };
+  window.fillExtraLists=function(funcId,obraId){
+    ensureExtraModalX();const fs=(D.funcionarios||[]).filter(f=>f.ativo!==false),os=D.obras||[],fe=$('edExtraFunc'),oe=$('edExtraObra');
+    fe.innerHTML='<option value="">Selecione o funcionário</option>'+fs.map(f=>`<option value="${escX(f.id)}">${escX(f.nome||'Funcionário')}</option>`).join('');
+    oe.innerHTML='<option value="">Selecione a obra</option>'+os.map(o=>`<option value="${escX(o.id)}">${escX(o.nome||'Obra')}</option>`).join('');
+    if(funcId)fe.value=String(funcId);if(obraId)oe.value=String(obraId);window.fillExtraChecklistX();
+  };
+  window.resetExtra=function(){ensureExtraModalX();$('edExtraValor').value='';$('edExtraDesc').value='Serviço extra';$('edExtraChecklist').value=''};
+  window.openExtraEquipe=async function(){if(!(D.funcionarios||[]).some(f=>f.ativo!==false)){toast('Cadastre um funcionário antes de lançar Extras e Bônus.');return}if(!(D.obras||[]).length){toast('Cadastre uma obra antes de lançar Extras e Bônus.');return}fillExtraLists('','');resetExtra();openM('edExtraM')};
+  window.openExtraObra=async function(id){if(!(D.funcionarios||[]).some(f=>f.ativo!==false)){toast('Cadastre um funcionário antes de lançar Extras e Bônus.');return}fillExtraLists('',id);resetExtra();openM('edExtraM')};
+  window.openExtraFuncionario=async function(id,obraId=null){if(!(D.obras||[]).length){toast('Cadastre uma obra antes de lançar Extras e Bônus.');return}fillExtraLists(id,obraId||'');resetExtra();openM('edExtraM')};
+  window.saveExtraEquipeLista=async function(e){
+    e.preventDefault();
+    try{
+      const funcionario_id=$('edExtraFunc')?.value||'',obra_id=$('edExtraObra')?.value||'',checklist_id=$('edExtraChecklist')?.value||'',
+            tipo=$('edExtraTipo')?.value||'Bônus',descricao=$('edExtraDesc')?.value.trim()||'',valor=numX($('edExtraValor')?.value),
+            f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcionario_id));
+      if(!f||f.ativo===false){toast('Selecione um funcionário ativo.');return}if(!obra_id){toast('Selecione a obra.');return}if(!descricao||valor<=0){toast('Informe descrição e valor válido.');return}
+      const id='sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),op=edifiqStableOperationId('extra',id,funcionario_id,obra_id,checklist_id,valor,today());
+      if(!await insertRow('gastos',{obra_id,checklist_id:checklist_id||null,data:today(),descricao:`[${tipo}] ${descricao} - ${f.nome}`,valor,fornecedor:f.nome,observacao:'Lançamento vinculado à gestão da equipe.',categoria:'Mão de obra',funcionario_id:f.id,servico_extra_id:id,status:'pendente',operation_id:op}))throw Error('Bônus não confirmado');
+      D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];
+      D.servicosExtras.push({id,funcionario_id:f.id,funcionarioId:f.id,obra_id,obraId:obra_id,checklist_id:checklist_id||null,checklistId:checklist_id||'',descricao,tipo,valor,data:today(),status:'pendente',financeiroAplicado:true,folhaAplicado:false});
+      saveLocalData();closeM('edExtraM');renderAll();toast(`${tipo} lançado para ${f.nome}.`);
+    }catch(err){console.error(err);toast('Não foi possível registrar o bônus/extra.')}
+  };
+
+  window.savePagamentoEquipe=async function(e){
+    e.preventDefault();
+    try{
+      const checks=[...document.querySelectorAll('.pag-check')].filter(x=>x.checked);if(!checks.length){toast('Selecione pelo menos um funcionário.');return}
+      const fallbackObra=$('pagObra')?.value||'',data=$('pagData')?.value||today(),descricao=$('pagDescricao')?.value.trim()||'Pagamento de equipe',obs=$('pagObs')?.value.trim()||'';
+      let total=0,qtdBaixada=0,n=0;
+      for(const check of checks){
+        const id=check.dataset.id,f=(D.funcionarios||[]).find(x=>String(x.id)===String(id));if(!f||f.ativo===false)continue;
+        const ds=getPendingDiarias(id),extras=getFuncionarioExtrasPendentes(id),adv=getEmployeeAdvances(id),bruto=ds.reduce((a,d)=>a+diariaValor(d),0),extraTotal=extras.reduce((a,x)=>a+Number(x.valor||0),0);
+        if(bruto<=0&&extraTotal<=0&&!adv.length)continue;
+        let vale=adv.reduce((a,x)=>a+Number(x.disponivel||0),0);
+        const groups=new Map();
+        ds.forEach(d=>{const obraId=String(d.obra_id||fallbackObra||'');if(!obraId)return;const checklistId=String(d.checklist_id||d.checklistId||''),key=obraId+'::'+checklistId,g=groups.get(key)||{obraId,checklistId,bruto:0};g.bruto+=diariaValor(d);groups.set(key,g)});
+        if(bruto>0&&!groups.size){toast(`Não foi possível identificar a obra das diárias de ${f.nome}.`);continue}
+        for(const g of groups.values()){g.abatido=Math.min(g.bruto,vale);vale-=g.abatido;const liquido=Math.max(0,g.bruto-g.abatido);if(liquido>0&&!await insertRow('gastos',{obra_id:g.obraId,checklist_id:g.checklistId||null,data,descricao:`[Mão de obra] ${descricao} - ${f.nome}${g.checklistId?' - '+checklistNome(g.checklistId):''}`,valor:liquido,fornecedor:f.nome,observacao:`Pagamento das diárias. Vale abatido: ${money(g.abatido)}.${obs?' '+obs:''}`,categoria:'Mão de obra',funcionario_id:f.id,operation_id:edifiqStableOperationId('folha-local',id,data,g.obraId,g.checklistId,liquido)}))throw Error('Despesa não confirmada')}
+        const valeAplicado=Math.min(bruto,adv.reduce((a,x)=>a+Number(x.disponivel||0),0));
+        for(const d of ds){const v=diariaValor(d),q=Math.max(0,Number(d.qtd??d.quantidade??1));await updateRow('diarias',d.id,{status:'Pago',valor_pago:v,qtd_paga:q,pago_em:data,valor_baixado:v,data_pagamento:data,pago:true,paga:true});markDiariasPaid([d.id]);qtdBaixada+=q}
+        for(const x of extras){const le=(D.servicosExtras||[]).find(y=>String(y.id)===String(x.id));if(le){le.status='pago';le.data_pagamento=data;le.folhaAplicado=true}const g=(D.gastos||[]).find(y=>String(y.servico_extra_id||'')===String(x.id));if(g){g.status='pago';g.data_pagamento=data;if(g.id&&!String(g.id).startsWith('local_'))await updateRow('gastos',g.id,{status:'pago',data_pagamento:data})}}
+        const applied=getAdvanceApplied();let left=valeAplicado;for(const a of adv){if(left<=0)break;const use=Math.min(left,Number(a.disponivel||0));if(use<=0)continue;applied[a.id]=Number(applied[a.id]||0)+use;left-=use;const g=(D.gastos||[]).find(y=>String(y.id)===String(a.id));if(g&&applied[a.id]>=Number(a.valor||0)){g.status='pago';g.aplicado=true;g.data_pagamento=data}}
+        saveAdvanceApplied(applied);total+=Math.max(0,bruto-valeAplicado)+extraTotal;n++;
+      }
+      if(!n){toast('Nenhum funcionário selecionado possui valores pendentes.');return}
+      saveLocalData();renderAll();closeM('pagEquipeM');toast(`${n} pagamento(s) processado(s). ${qtdBaixada} diária(s) baixada(s). Total líquido: ${money(total)}.`);
+    }catch(err){console.error('EDIFIQ pagamento equipe',err);saveLocalData();renderAll();toast('Não foi possível concluir o pagamento. Os dados já confirmados foram preservados.')}
+  };
+
+
 })();
 </script>
 </body>
