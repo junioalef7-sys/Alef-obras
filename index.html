@@ -12444,5 +12444,250 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
 
 })();
 </script>
+<script id="edifiq-correcao-distribuicao-20261007">
+(function(){
+  /*
+   * CORREÇÃO 07/10/2026
+   * - remove rateio proporcional entre obras no fechamento da equipe;
+   * - cada diária permanece 100% na obra em que foi registrada;
+   * - vale só abate a obra à qual ele foi lançado;
+   * - bônus/extras permanecem na obra original e entram no líquido da folha;
+   * - evita a antiga rotina duplicada de fechamento que podia parar no meio.
+   */
+  const moneyC = v => typeof money==='function' ? money(Number(v)||0) : (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const cents = v => Math.round((Number(v)||0)*100);
+  const reais = v => Number((cents(v)/100).toFixed(2));
+  const same = (a,b) => String(a??'')===String(b??'');
+  const obraOf = x => String(x?.obra_id ?? x?.obraId ?? x?.obra_id_fk ?? x?.obra ?? '');
+  const checkOf = x => String(x?.checklist_id ?? x?.checklistId ?? '');
+
+  function getAvailableValesByObra(funcId){
+    const adv = typeof getEmployeeAdvances==='function' ? getEmployeeAdvances(funcId) : [];
+    return adv.map(a=>({
+      ...a,
+      _obra: obraOf(a),
+      _available: Math.max(0,Number(a.disponivel||0))
+    })).filter(a=>a._available>0);
+  }
+
+  function applyValeLocalOnly(adv, amount, data){
+    const n=Math.max(0,Number(amount)||0);
+    if(!adv || n<=0)return;
+    const applied = typeof getAdvanceApplied==='function' ? getAdvanceApplied() : {};
+    const id=String(adv.id);
+    const previous=Number(applied[id]||0);
+    const original=Number(adv.valorOriginal??adv.valor??0);
+    const next=Math.min(original,previous+n);
+    applied[id]=next;
+    if(Array.isArray(D.adiantamentos)){
+      D.adiantamentos.forEach(a=>{
+        if(String(a.id)!==id)return;
+        a.valor_baixado=next;
+        a.aplicado=next>=Number(a.valor||0);
+        a.status=a.aplicado?'pago':(a.status||'pendente');
+        if(a.aplicado)a.data_pagamento=data;
+      });
+    }
+    const g=(D.gastos||[]).find(x=>String(x.id)===id);
+    if(g){
+      g.valor_baixado=next;
+      g.aplicado=next>=Number(g.valor||0);
+      g.status=g.aplicado?'pago':(g.status||'pendente');
+      if(g.aplicado)g.data_pagamento=data;
+    }
+    if(typeof saveAdvanceApplied==='function')saveAdvanceApplied(applied);
+  }
+
+  function groupsByObraChecklist(diarias, fallbackObra){
+    const m=new Map();
+    for(const d of (diarias||[])){
+      const obra=obraOf(d)||String(fallbackObra||'');
+      if(!obra)continue;
+      const checklist=checkOf(d);
+      const key=obra+'::'+checklist;
+      const g=m.get(key)||{obraId:obra,checklistId:checklist,valor:0,diarias:[]};
+      g.valor+=Number(typeof diariaValor==='function'?diariaValor(d):0)||0;
+      g.diarias.push(d);
+      m.set(key,g);
+    }
+    return [...m.values()];
+  }
+
+  function reserveValesForGroups(groups, vales){
+    // IMPORTANT: no rateio. A vale is eligible only for the same obra.
+    const out=new Map();
+    const rem=new Map(vales.map(v=>[String(v.id),cents(v._available)]));
+    for(const g of groups){
+      let need=cents(g.valor); if(need<=0)continue;
+      const key=g.obraId+'::'+String(g.checklistId||'');
+      let applied=0;
+      for(const a of vales){
+        if(need<=0)break;
+        if(String(a._obra)!==String(g.obraId))continue;
+        const left=Number(rem.get(String(a.id))||0); if(left<=0)continue;
+        const use=Math.min(need,left);
+        applied+=use; need-=use; rem.set(String(a.id),left-use);
+        const byAdv=out.get(String(a.id))||0; out.set(String(a.id),byAdv+use);
+      }
+      if(applied>0)out.set(key,Number(out.get(key)||0)+applied);
+    }
+    return out;
+  }
+
+  async function saveValeCorrigido(e){
+    e.preventDefault();
+    try{
+      const obra_id=$('adiantObra')?.value||'';
+      const funcionario_id=$('adiantFunc')?.value||'';
+      const checklist_id=$('adiantChecklist')?.value||'';
+      const valor=typeof numX==='function'?numX($('adiantValor')?.value):Number($('adiantValor')?.value||0);
+      const data=$('adiantData')?.value||today();
+      const observacao=$('adiantObs')?.value?.trim()||'';
+      const f=(D.funcionarios||[]).find(x=>same(x.id,funcionario_id));
+      if(!funcionario_id){toast('Selecione o funcionário.');return;}
+      if(!obra_id){toast('Selecione a obra.');return;}
+      if(valor<=0){toast('Informe um valor válido.');return;}
+      if(!f||f.ativo===false){toast('Funcionário inválido ou inativo.');return;}
+
+      const op=edifiqStableOperationId('vale',funcionario_id,obra_id,checklist_id,data,valor,observacao);
+      const vale=await insertRow('adiantamentos',{funcionario_id,obra_id,checklist_id:checklist_id||null,valor,data,observacao,operation_id:op});
+      if(!vale)throw new Error('Vale não confirmado');
+      const gastoOp=edifiqStableOperationId('vale-gasto',op);
+      const gasto=await insertRow('gastos',{
+        obra_id,data,checklist_id:checklist_id||null,descricao:`[Vale] ${f.nome}`,
+        valor,fornecedor:f.nome,funcionario_id:f.id,observacao,categoria:'Adiantamento',operation_id:gastoOp
+      });
+      if(!gasto)throw new Error('Despesa do Vale não confirmada');
+      closeM('adiantM');
+      renderAll();
+      toast(`Vale de ${moneyC(valor)} registrado para ${f.nome}.`);
+      try{await loadCloud();renderAll();}catch(_){ }
+    }catch(err){
+      console.error('EDIFIQ Vale corrigido:',err);
+      toast('Não foi possível registrar o Vale. O lançamento não foi concluído.');
+    }
+  }
+
+  async function savePagamentoEquipeCorrigido(e){
+    e.preventDefault();
+    try{
+      const checks=[...document.querySelectorAll('.pag-check')].filter(x=>x.checked);
+      if(!checks.length){toast('Selecione pelo menos um funcionário.');return;}
+      const fallbackObra=$('pagObra')?.value||'';
+      const data=$('pagData')?.value||today();
+      const descricao=$('pagDescricao')?.value?.trim()||'Pagamento de equipe';
+      const obs=$('pagObs')?.value?.trim()||'';
+      let totalLiquido=0, totalDiarias=0, totalExtras=0, qtdBaixada=0, processados=0;
+
+      for(const check of checks){
+        const id=check.dataset.id;
+        const f=(D.funcionarios||[]).find(x=>same(x.id,id));
+        if(!f||f.ativo===false)continue;
+
+        const ds=(typeof getPendingDiarias==='function'?getPendingDiarias(id):[]).filter(d=>!diariaEstaPaga(d));
+        const extras=typeof getFuncionarioExtrasPendentes==='function'?getFuncionarioExtrasPendentes(id):[];
+        const bruto=ds.reduce((a,d)=>a+(Number(typeof diariaValor==='function'?diariaValor(d):0)||0),0);
+        const extraTotal=extras.reduce((a,x)=>a+(Number(x.valor)||0),0);
+        if(bruto<=0 && extraTotal<=0)continue;
+
+        const groups=groupsByObraChecklist(ds,fallbackObra);
+        if(bruto>0 && !groups.length){
+          toast(`Não foi possível identificar a obra das diárias de ${f.nome}.`);
+          continue;
+        }
+
+        const vales=getAvailableValesByObra(id);
+        const valeUse=reserveValesForGroups(groups,vales);
+        const inserted=[];
+        let brutoEmployee=0, abatidoEmployee=0;
+
+        // 1) Create exactly one expense per obra/checklist group. Never rateio.
+        for(const g of groups){
+          const key=g.obraId+'::'+String(g.checklistId||'');
+          const brutoC=cents(g.valor);
+          const abatC=Math.min(brutoC,Number(valeUse.get(key)||0));
+          const liquidoC=Math.max(0,brutoC-abatC);
+          brutoEmployee+=brutoC; abatidoEmployee+=abatC;
+          if(liquidoC<=0)continue;
+          const operation_id=edifiqStableOperationId('folha-exata',id,data,g.obraId,g.checklistId||'',reais(liquidoC));
+          const obraObj=(D.obras||[]).find(o=>same(o.id,g.obraId));
+          const nomeObra=obraObj?.nome||'Obra';
+          const row={
+            obra_id:g.obraId,
+            checklist_id:g.checklistId||null,
+            data,
+            descricao:`[Mão de obra] ${descricao} - ${f.nome}${g.checklistId?' - '+checklistNome(g.checklistId):''}`,
+            valor:reais(liquidoC),
+            fornecedor:f.nome,
+            observacao:`Diárias da ${nomeObra}. Valor bruto: ${moneyC(g.valor)}. Vale abatido SOMENTE nesta obra: ${moneyC(abatC/100)}.${obs?' '+obs:''}`,
+            categoria:'Mão de obra',
+            funcionario_id:f.id,
+            operation_id
+          };
+          const saved=await insertRow('gastos',row);
+          if(!saved)throw new Error(`Despesa não confirmada para ${nomeObra}`);
+          inserted.push(saved);
+        }
+
+        // 2) Mark the vales actually used, preserving any remaining balance.
+        for(const a of vales){
+          const useC=Number(valeUse.get(String(a.id))||0);
+          if(useC<=0)continue;
+          applyValeLocalOnly(a,useC/100,data);
+          if(a.id && !String(a.id).startsWith('local_') && typeof updateRow==='function'){
+            // updateRow keeps the local/cloud state coherent; the applied map is the source of partial balance.
+            await updateRow('gastos',a.id,{valor_baixado:Number(getAdvanceApplied()?.[a.id]||0),aplicado:Number(getAdvanceApplied()?.[a.id]||0)>=Number(a.valorOriginal||a.valor||0),status:Number(getAdvanceApplied()?.[a.id]||0)>=Number(a.valorOriginal||a.valor||0)?'pago':'pendente',data_pagamento:data});
+          }
+        }
+
+        // 3) Only after all expense rows are confirmed, mark every daily as paid.
+        for(const d of ds){
+          const v=Number(typeof diariaValor==='function'?diariaValor(d):0)||0;
+          const q=Math.max(0,Number(d.qtd??d.quantidade??1));
+          const updated=await updateRow('diarias',d.id,{status:'Pago',valor_pago:v,qtd_paga:q,pago_em:data,valor_baixado:v,data_pagamento:data,pago:true,paga:true});
+          if(!updated)throw new Error(`Não foi possível baixar a diária ${d.id}`);
+          if(typeof markDiariasPaid==='function')markDiariasPaid([d.id]);
+          qtdBaixada+=q;
+        }
+
+        // 4) Bônus/extras are already expenses in their original obra. Mark them paid; never move/rateio them.
+        for(const extra of extras){
+          const localExtra=(D.servicosExtras||[]).find(x=>same(x.id,extra.id));
+          if(localExtra){localExtra.status='pago';localExtra.data_pagamento=data;localExtra.folhaAplicado=true;}
+          const g=(D.gastos||[]).find(x=>same(x.servico_extra_id,extra.id));
+          if(g){
+            g.status='pago';g.data_pagamento=data;
+            if(g.id && !String(g.id).startsWith('local_') && typeof updateRow==='function'){
+              await updateRow('gastos',g.id,{status:'pago',data_pagamento:data});
+            }
+          }
+        }
+
+        const liquidoEmployee=Math.max(0,brutoEmployee-abatidoEmployee)+cents(extraTotal);
+        totalDiarias+=brutoEmployee/100;
+        totalExtras+=extraTotal;
+        totalLiquido+=liquidoEmployee/100;
+        processados++;
+        if(typeof saveLocalData==='function')saveLocalData();
+      }
+
+      if(!processados){toast('Nenhum funcionário selecionado possui valores pendentes.');return;}
+      if(typeof saveLocalData==='function')saveLocalData();
+      renderAll();
+      closeM('pagEquipeM');
+      toast(`${processados} pagamento(s) processado(s). ${qtdBaixada} diária(s) baixada(s). Total líquido: ${moneyC(totalLiquido)}. Valores mantidos nas obras corretas.`);
+    }catch(err){
+      console.error('EDIFIQ pagamento exato:',err);
+      if(typeof saveLocalData==='function')saveLocalData();
+      renderAll();
+      toast('Não foi possível concluir o pagamento. Nenhum rateio foi aplicado; os dados já confirmados foram preservados.');
+    }
+  }
+
+  // These assignments intentionally come LAST, replacing the duplicate legacy override.
+  window.saveAdiantamento=saveValeCorrigido;
+  window.savePagamentoEquipe=savePagamentoEquipeCorrigido;
+})();
+</script>
 </body>
 </html>
