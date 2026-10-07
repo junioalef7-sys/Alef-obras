@@ -9418,34 +9418,6 @@ function rcExportPDF(){
   const w=window.open('','_blank');if(!w){toast('O PDF precisa abrir uma nova janela. No iPhone, permita pop-ups no Safari em Ajustes > Apps > Safari > Bloquear Pop-ups.');return;}
   const html=esc(txt).replace(/\n/g,'<br>');
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório para ${esc(cliente)}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033;line-height:1.55;max-width:850px;margin:auto}h1{font-size:24px;text-align:center} .box{border:1px solid #d9e0ea;border-radius:14px;padding:24px;white-space:normal}@media print{body{padding:10px}}</style></head><body><h1>EDIFIQ — Relatório para Cliente</h1><div class="box">${html}</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
-<script id="edifiq-servico-extra-link">
-(function(){
-  // Vincula serviços extras à folha/financeiro sem substituir dados existentes.
-  window.edifiqRegistrarServicoExtra = function(servico){
-    try{
-      if(!servico || !servico.valor) return false;
-      const d=typeof D!=="undefined"?D:null; if(!d) return false;
-      d.servicosExtras=Array.isArray(d.servicosExtras)?d.servicosExtras:[];
-      const id=servico.id||('sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
-      const item={...servico,id,valor:Number(servico.valor)||0,folhaAplicado:false,financeiroAplicado:false};
-      d.servicosExtras.push(item);
-      if(typeof save==='function') save(); else if(typeof persist==='function') persist();
-      return id;
-    }catch(e){console.error('Serviço extra:',e);return false;}
-  };
-  window.edifiqAplicarServicoExtra = function(id){
-    try{const d=typeof D!=="undefined"?D:null;if(!d)return false;const x=(d.servicosExtras||[]).find(v=>v.id===id);if(!x||x.financeiroAplicado)return false;
-      d.gastos=Array.isArray(d.gastos)?d.gastos:[];
-      d.gastos.push({id:'g_'+Date.now(),data:new Date().toISOString().slice(0,10),descricao:'Serviço extra — '+(x.descricao||''),valor:Number(x.valor)||0,categoria:'Mão de obra',obraId:x.obraId||x.obra_id||'',funcionarioId:x.funcionarioId||x.funcionario_id||''});
-      x.financeiroAplicado=true;x.folhaAplicado=!!(x.funcionarioId||x.funcionario_id);
-      if(typeof save==='function')save();else if(typeof persist==='function')persist();
-      return true;}catch(e){console.error(e);return false;}
-  };
-})();
-<\/script>
-
-
-
 </body></html>`);w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},400);
 }
 
@@ -9457,34 +9429,6 @@ function exportPDF(){
   if(!w){toast('O PDF precisa abrir uma nova janela. No iPhone, permita pop-ups no Safari em Ajustes > Apps > Safari > Bloquear Pop-ups.');return;}
   const rows=(arr)=>arr.map(x=>`<tr>${Object.values(x||{}).map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('');
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#222}h1{margin:0 0 5px}h2{margin-top:28px}small{color:#666}.meta{margin-bottom:20px}table{border-collapse:collapse;width:100%;font-size:10px}th,td{border:1px solid #ccc;padding:5px;text-align:left;vertical-align:top}th{background:#eee}@media print{button{display:none}}</style></head><body><h1>EDIFIQ — Relatório</h1><div class="meta">Gerado em ${new Date().toLocaleString('pt-BR')}</div><h2>Obras</h2><table><thead><tr>${Object.keys(D.obras[0]||{Nome:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.obras)}</tbody></table><h2>Funcionários</h2><table><thead><tr>${Object.keys(D.funcionarios[0]||{Nome:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.funcionarios)}</tbody></table><h2>Diárias</h2><table><thead><tr>${Object.keys(D.diarias[0]||{Data:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.diarias)}</tbody></table><h2>Financeiro</h2><table><thead><tr>${Object.keys(D.gastos[0]||{Descrição:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.gastos)}</tbody></table><h2>Checklist</h2><table><thead><tr>${Object.keys(D.checklist[0]||{Etapa:''}).map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows(D.checklist)}</tbody></table><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
-<script id="edifiq-servico-extra-link">
-(function(){
-  // Vincula serviços extras à folha/financeiro sem substituir dados existentes.
-  window.edifiqRegistrarServicoExtra = function(servico){
-    try{
-      if(!servico || !servico.valor) return false;
-      const d=typeof D!=="undefined"?D:null; if(!d) return false;
-      d.servicosExtras=Array.isArray(d.servicosExtras)?d.servicosExtras:[];
-      const id=servico.id||('sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
-      const item={...servico,id,valor:Number(servico.valor)||0,folhaAplicado:false,financeiroAplicado:false};
-      d.servicosExtras.push(item);
-      if(typeof save==='function') save(); else if(typeof persist==='function') persist();
-      return id;
-    }catch(e){console.error('Serviço extra:',e);return false;}
-  };
-  window.edifiqAplicarServicoExtra = function(id){
-    try{const d=typeof D!=="undefined"?D:null;if(!d)return false;const x=(d.servicosExtras||[]).find(v=>v.id===id);if(!x||x.financeiroAplicado)return false;
-      d.gastos=Array.isArray(d.gastos)?d.gastos:[];
-      d.gastos.push({id:'g_'+Date.now(),data:new Date().toISOString().slice(0,10),descricao:'Serviço extra — '+(x.descricao||''),valor:Number(x.valor)||0,categoria:'Mão de obra',obraId:x.obraId||x.obra_id||'',funcionarioId:x.funcionarioId||x.funcionario_id||''});
-      x.financeiroAplicado=true;x.folhaAplicado=!!(x.funcionarioId||x.funcionario_id);
-      if(typeof save==='function')save();else if(typeof persist==='function')persist();
-      return true;}catch(e){console.error(e);return false;}
-  };
-})();
-<\/script>
-
-
-
 </body></html>`);
   w.document.close();
   setTimeout(()=>{try{w.print()}catch(e){}},350);
@@ -9862,34 +9806,6 @@ function relatorioDiario(){
 .dangerNote{border-color:rgba(255,85,85,.32);background:rgba(120,20,25,.16);}
 @media(max-width:700px){.dataDeleteGrid{grid-template-columns:1fr;}.dataDeleteGrid .btn{min-height:70px;}}
 </style></head><body><h1>${titulo}</h1><small>Gerado em ${new Date().toLocaleString("pt-BR")}</small><p><b>Registros:</b> ${rows.length} · <b>Dias:</b> ${new Set(rows.map(r=>r.data)).size} · <b>Horas:</b> ${rows.reduce((a,r)=>a+Number(r.horas||0),0).toLocaleString("pt-BR")} h</p>${rows.map(r=>{const names=(r.equipe||[]).map(diarioFuncionarioNome).filter(Boolean);return `<div class="item"><h2>${esc(diarioObraNome(r.obra_id))}</h2><div class="meta">${esc(diarioFmtData(r.data))} · ${esc(r.clima||"Não informado")} · ${Number(r.horas||0).toLocaleString("pt-BR")} h</div><p><span class="tag">Equipe:</span> ${esc(names.join(" · ")||"Não informada")}</p>${r.atividades?`<p><span class="tag">Atividades:</span><br>${esc(r.atividades).replace(/\n/g,"<br>")}</p>`:""}${r.observacoes?`<p><span class="tag">Observações:</span><br>${esc(r.observacoes).replace(/\n/g,"<br>")}</p>`:""}</div>`}).join("")}<div class="foot">EDIFIQ — Construção Civil</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
-<script id="edifiq-servico-extra-link">
-(function(){
-  // Vincula serviços extras à folha/financeiro sem substituir dados existentes.
-  window.edifiqRegistrarServicoExtra = function(servico){
-    try{
-      if(!servico || !servico.valor) return false;
-      const d=typeof D!=="undefined"?D:null; if(!d) return false;
-      d.servicosExtras=Array.isArray(d.servicosExtras)?d.servicosExtras:[];
-      const id=servico.id||('sx_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
-      const item={...servico,id,valor:Number(servico.valor)||0,folhaAplicado:false,financeiroAplicado:false};
-      d.servicosExtras.push(item);
-      if(typeof save==='function') save(); else if(typeof persist==='function') persist();
-      return id;
-    }catch(e){console.error('Serviço extra:',e);return false;}
-  };
-  window.edifiqAplicarServicoExtra = function(id){
-    try{const d=typeof D!=="undefined"?D:null;if(!d)return false;const x=(d.servicosExtras||[]).find(v=>v.id===id);if(!x||x.financeiroAplicado)return false;
-      d.gastos=Array.isArray(d.gastos)?d.gastos:[];
-      d.gastos.push({id:'g_'+Date.now(),data:new Date().toISOString().slice(0,10),descricao:'Serviço extra — '+(x.descricao||''),valor:Number(x.valor)||0,categoria:'Mão de obra',obraId:x.obraId||x.obra_id||'',funcionarioId:x.funcionarioId||x.funcionario_id||''});
-      x.financeiroAplicado=true;x.folhaAplicado=!!(x.funcionarioId||x.funcionario_id);
-      if(typeof save==='function')save();else if(typeof persist==='function')persist();
-      return true;}catch(e){console.error(e);return false;}
-  };
-})();
-<\/script>
-
-
-
 </body></html>`;
   const w=window.open("","_blank"); if(!w){toast("Permita pop-ups para gerar o relatório.");return;} w.document.write(html);w.document.close();setTimeout(()=>w.print(),350);
 }
