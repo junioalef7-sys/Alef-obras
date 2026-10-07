@@ -3849,6 +3849,24 @@ async function retryEdifiqPendingUpdates(){
   saveLocalData();
 }
 
+function edifiqStableOperationId(){
+  // ID determinístico: evita duplicação ao reenviar a mesma operação e,
+  // principalmente, não depende de uma função externa que possa não existir.
+  const parts=[...arguments].map(v=>{
+    if(v===null||v===undefined)return '';
+    if(typeof v==='object'){try{return JSON.stringify(v);}catch(_){return String(v);}}
+    return String(v);
+  });
+  const input=parts.join('\u001f');
+  let h=2166136261;
+  for(let i=0;i<input.length;i++){
+    h^=input.charCodeAt(i);
+    h=Math.imul(h,16777619);
+  }
+  h>>>=0;
+  return 'op_stable_'+h.toString(36);
+}
+
 function edifiqOperationId(){
   try{ if(window.crypto?.randomUUID) return window.crypto.randomUUID(); }catch(e){}
   return "op_"+Date.now()+"_"+Math.random().toString(36).slice(2)+"_"+Math.random().toString(36).slice(2);
@@ -12333,16 +12351,57 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
   };
 
   window.addServicoAdicional=async function(obraId){
-    if(!(D.obras||[]).some(x=>String(x.id)===String(obraId)))return;
-    const nome=prompt('Nome do serviço adicional:','');if(nome===null||!nome.trim())return;
-    const raw=prompt('Valor do serviço adicional (R$):','0');if(raw===null)return;
-    const valor=numX(raw);if(valor<=0){toast('Informe um valor válido.');return;}
     try{
-      const data=today(),operation_id=edifiqStableOperationId('servico_adicional',obraId,nome.trim(),valor,data);
-      const row=await insertRow('servicos_adicionais',{obra_id:String(obraId),descricao:nome.trim(),valor,data,observacao:'Serviço adicional incorporado ao valor contratado da obra.',operation_id});
-      if(!row)throw new Error('Serviço não confirmado');
-      renderAll();toast(`Serviço adicional registrado: ${money(valor)}.`);
-    }catch(err){console.error('EDIFIQ serviço adicional',err);toast('Não foi possível registrar o serviço adicional. Os dados existentes foram preservados.');}
+      const o=(D.obras||[]).find(x=>String(x.id)===String(obraId));
+      if(!o){toast('Obra não encontrada.');return;}
+      const nome=prompt('Nome do serviço adicional:','');
+      if(nome===null || !String(nome).trim())return;
+      const raw=prompt('Valor do serviço adicional (R$):','0');
+      if(raw===null)return;
+      const valor=numX(raw);
+      if(!Number.isFinite(valor)||valor<=0){toast('Informe um valor válido.');return;}
+
+      const data=today();
+      const descricao=String(nome).trim();
+      const operation_id=edifiqStableOperationId('servico_adicional',String(obraId),descricao,valor,data);
+
+      // Primeiro grava o serviço. insertRow é idempotente e mantém fallback local.
+      const servico=await insertRow('servicos_adicionais',{
+        obra_id:String(obraId),
+        descricao,
+        valor,
+        data,
+        observacao:'Serviço adicional — valor incorporado ao contrato.',
+        operation_id
+      });
+      if(!servico)throw new Error('Serviço adicional não confirmado');
+
+      // O serviço adicional aumenta o valor contratado da obra.
+      const contratoAtual=numX(o.valor);
+      const novoValor=Number((contratoAtual+valor).toFixed(2));
+      const obraAtualizada=await updateRow('obras',String(o.id),{valor:novoValor});
+      if(!obraAtualizada)throw new Error('Valor da obra não foi atualizado');
+
+      // Mantém também o cache legado, para versões anteriores do EDIFIQ.
+      try{
+        const all=getServices();
+        if(!Array.isArray(all[obraId]))all[obraId]=[];
+        const sid=String(servico.id||operation_id);
+        if(!all[obraId].some(x=>String(x.id||'')===sid)){
+          all[obraId].push({id:sid,nome:descricao,descricao,valor,data});
+          saveServices(all);
+        }
+      }catch(cacheErr){console.warn('Cache legado de serviços',cacheErr);}
+
+      saveLocalData();
+      renderAll();
+      toast(`Serviço adicional registrado: ${money(valor)}. Contrato atualizado para ${money(novoValor)}.`);
+    }catch(err){
+      console.error('EDIFIQ adicionar serviço:',err);
+      saveLocalData();
+      renderAll();
+      toast('Não foi possível registrar o serviço adicional. Nenhum dado existente foi apagado.');
+    }
   };
 
   window.fillValeChecklistSelector=function(){
