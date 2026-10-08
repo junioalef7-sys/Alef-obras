@@ -1587,8 +1587,6 @@ body{min-height:100vh;min-height:100dvh}
     <button class="edifiqMenuItem" onclick="openRelatorioCliente();toggleMenuPasta()"><span>▧</span><b>Relatório para Cliente</b></button>
      <button class="edifiqMenuItem" onclick="openRelatorioTrabalhador();toggleMenuPasta()"><span>♙</span><b>Relatório do Trabalhador</b></button>
     <button class="edifiqMenuItem" onclick="openPagamentoEquipe();toggleMenuPasta()"><span>＄</span><b>Pagamento da Equipe</b></button>
-    <button class="edifiqMenuItem" onclick="openAdiantamento();toggleMenuPasta()"><span>💳</span><b>Vale</b></button>
-    <button class="edifiqMenuItem" onclick="goMenu('diarias')"><span>📅</span><b>Histórico de Diárias</b></button>
   </div>
   <div class="edifiqMenuTitle edifiqSectionTitle">DADOS</div>
   <button class="edifiqDataRow" onclick="openConfiguracoes();toggleMenuPasta()"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
@@ -4934,7 +4932,7 @@ function renderObras(){
   const fim=/^\d{4}-\d{2}-\d{2}$/.test(String(o.data_fim||''))?formatDateBR(o.data_fim):'—';
   const ini=/^\d{4}-\d{2}-\d{2}$/.test(String(o.data_inicio||''))?formatDateBR(o.data_inicio):'—';
   const status=statusLabel(o.status);
-  const tabs=[['dados','Dados'],['dias','Dias'],['gastos','Gastos'],['servicos','Serviços+'],['repasses','Repasses'],['resumo','Resumo'],['checklist','Checklist'],['auditoria','Auditoria']];
+  const tabs=[['dados','Dados'],['dias','Dias'],['gastos','Gastos'],['servicos','Serviços+'],['repasses','Repasses'],['pagamentos','Pagamentos'],['resumo','Resumo'],['checklist','Checklist'],['auditoria','Auditoria']];
 
   const diasResumo=diasTrabalhadosPorObra(o.id), gc=obraGastosResumo(o.id);
   const funcoesObra=Object.values(diasResumo.porFunc||{}).sort((a,b)=>String(a.funcao||'').localeCompare(String(b.funcao||''),'pt-BR'));
@@ -4982,12 +4980,12 @@ function renderObras(){
       <button type="button" class="obraDiasOccurrence" onclick="openFalta('${esc(String(func.id))}')">▣ &nbsp; Ocorrência</button>
       <div class="obraDiasStats"><div><small>Diárias</small><b class="blue">${money(bruto)}</b></div><div><small>Já Pago</small><b class="green">${money(pago)}</b></div><div class="saldo"><small>Saldo</small><b class="green">${money(saldo)}</b></div></div>
       <div class="obraDiasStats two"><div><small>Esta Semana</small><b class="blue">${money(semana)}</b><small>pendente</small></div><div><small>Quinzena</small><b class="blue">${money(quinzena)}</b><small>pendente</small></div></div>
-      <div class="obraDiasPayRow"><button type="button" class="obraDiasHistory" onclick="go('diarias')" title="Histórico">◔</button></div>
+      <div class="obraDiasPayRow"><button type="button" class="obraDiasPay" onclick="openPagamentoEquipe()">＄ &nbsp; Pagamento em dia</button><button type="button" class="obraDiasHistory" onclick="go('diarias')" title="Histórico">◔</button></div>
     </article>`;
   }).join('');
 
   const diasHtml=`<div class="obraDiasTop"><div><h3>Dias Trabalhados</h3><p>Controle diário por funcionário, com resumo de valores e pagamentos.</p></div><div class="obraDiasTopActions"><button class="btn gold obraDiasAdd" type="button" onclick="openExtraObra('${esc(String(o.id))}')">🏆 Extras e Bônus</button><button class="btn gold obraDiasAdd" type="button" onclick="go('diarias')">＋ Adicionar Dia</button></div></div>
-    <div class="obraDiasQuick"><button type="button" onclick="obraTab('${esc(String(o.id))}','resumo')">Resumo</button><button type="button" onclick="obraTab('${esc(String(o.id))}','repasses')">Repasses</button></div>
+    <div class="obraDiasQuick"><button type="button" onclick="obraTab('${esc(String(o.id))}','resumo')">Resumo</button><button type="button" onclick="obraTab('${esc(String(o.id))}','repasses')">Repasses</button><button type="button" onclick="obraTab('${esc(String(o.id))}','pagamentos')">Pagamentos</button></div>
     <div class="obraModelKpis four obraDiasOverview"><div><small>Total de dias</small><b>${totalDias}</b></div><div><small>Funcionários</small><b>${idsUnicos.length}</b></div><div><small>Funções</small><b>${funcoesObra.length}</b></div><div><small>Registros</small><b>${x.dias.length}</b></div></div>
     <h4 class="obraModelSubTitle">Resumo por Trabalhador</h4>
     <div class="obraDiasWorkers">${diasEquipeHtml||'<div class="obraModeloEmpty">Nenhum funcionário ou dia trabalhado registrado nesta obra.</div>'}</div>
@@ -5033,7 +5031,7 @@ function renderObras(){
       <div class="obraModeloPanel" data-panel="gastos" style="display:${activeObraTab==='gastos'?'block':'none'}"><div class="obraInfoCard"><h3>Gastos e Custos</h3>${gastosHtml}</div></div>
       <div class="obraModeloPanel" data-panel="servicos" style="display:${activeObraTab==='servicos'?'block':'none'}"><div class="obraInfoCard"><h3>Serviços Adicionais</h3>${servicosHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="addServicoAdicional('${esc(String(o.id))}')">＋ Adicionar serviço</button></div></div></div>
       <div class="obraModeloPanel" data-panel="repasses" style="display:${activeObraTab==='repasses'?'block':'none'}"><div class="obraInfoCard">${repassesHtml}</div></div>
-      
+      <div class="obraModeloPanel" data-panel="pagamentos" style="display:${activeObraTab==='pagamentos'?'block':'none'}"><div class="obraInfoCard"><h3>Pagamentos Recebidos</h3>${pagamentosHtml}</div></div>
       <div class="obraModeloPanel" data-panel="resumo" style="display:${activeObraTab==='resumo'?'block':'none'}"><div class="obraInfoCard obraSummaryWrap">${resumoHtml}</div></div>
       <div class="obraModeloPanel" data-panel="checklist" style="display:${activeObraTab==='checklist'?'block':'none'}"><div class="obraInfoCard"><h3>Checklist da obra — editável</h3>${checklistHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="openCheckForObra('${esc(String(o.id))}')">＋ Adicionar / editar checklist</button></div></div></div>
       <div class="obraModeloPanel" data-panel="auditoria" style="display:${activeObraTab==='auditoria'?'block':'none'}"><div class="obraInfoCard"><h3>Auditoria da obra</h3>${auditHtml}</div></div>
@@ -12768,9 +12766,24 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
 .edEqHead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.edEqIdentity{min-width:0}.edEqName{font-size:20px;font-weight:900;margin:0}.edEqRole{color:var(--muted);font-size:13px;margin-top:2px}.edEqHeadRight{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.edEqBadge{display:inline-flex;align-items:center;border:1px solid rgba(80,150,255,.3);color:#6da7ff;background:rgba(50,100,200,.08);padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}.edEqBadge.off{color:#ff8088;border-color:#70343a;background:rgba(255,80,90,.08)}
 .edEqMini{font-size:10px;border:1px solid #765b28;color:var(--gold2);background:rgba(217,173,85,.07);border-radius:9px;padding:5px 8px;font-weight:800;cursor:pointer}
 .edEqRate{margin-top:12px;padding:13px 14px;border-radius:13px;background:#101626;border:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;gap:12px;align-items:center}.edEqRate small,.edEqMetric small,.edEqPeriodCard small{display:block;color:var(--muted);font-size:10px}.edEqRate b{font-size:18px;color:#4e96ff}.edEqRate strong{font-size:13px}
-.edEqDays{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.edEqPill{padding:6px 10px;border-radius:999px;background:#111b2b;border:1px solid rgba(255,255,255,.06);font-size:11px}.edEqPill.blue{background:#1b5dcc;color:#fff;border-color:#3d84ff}
+.edEqDays{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.edEqPill{padding:6px 10px;border-radius:999px;background:#111b2b;border:1px solid rgba(255,255,255,.06);font-size:11px}.edEqPill.blue{background:#1b5dcc;color:#fff!important;border-color:#3d84ff;font-weight:900;text-shadow:0 1px 1px rgba(0,0,0,.35)}
 .edEqActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.edEqAction{min-height:45px;border:0;border-radius:12px;background:#0b111a;color:#aeb7c4;font-weight:800}.edEqAction.primary{background:#3f8cff;color:#fff}.edEqAction.danger{border:1px solid #73363b;color:#ff777f;background:#151018}
 .edEqOccurrence{display:flex;gap:7px;align-items:center;margin:8px 0;color:#ff7078;border:1px solid #73363b;background:rgba(255,80,90,.05);border-radius:12px;padding:9px 11px;font-size:12px;font-weight:800;cursor:pointer}
+.edEqOccurrenceRow{display:grid;grid-template-columns:1fr 46px;gap:7px;align-items:stretch;margin:8px 0}
+.edEqOccurrenceRow .edEqOccurrence{margin:0;width:100%}
+.edEqFaultToggle{width:46px;border:1px solid #3a4350;border-radius:12px;background:#151c26;color:#fff;font-size:22px;font-weight:900;cursor:pointer}
+.edEqFaultToggle.open{transform:rotate(180deg);background:#202a36;border-color:#d9ad55;color:#fff}
+.edEqFaultHistory{margin:0 0 10px;padding:10px 11px;border:1px solid #2c3541;border-radius:13px;background:#0b1119;color:#fff}
+.edEqFaultHistoryTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.edEqFaultHistoryTitle b{font-size:12px;color:#fff}
+.edEqFaultEmpty{font-size:12px;color:#aeb7c4;padding:6px 0}
+.edEqFaultItem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px 0;border-top:1px solid rgba(255,255,255,.06)}
+.edEqFaultItem:first-child{border-top:0}
+.edEqFaultDate{font-size:11px;color:#fff;font-weight:900}
+.edEqFaultType{font-size:12px;color:#fff;font-weight:800}
+.edEqFaultObs{font-size:10px;color:#aeb7c4;margin-top:2px}
+.edEqFaultDelete{border:0;background:transparent;color:#ff747e;font-weight:900;cursor:pointer}
+
 .edEqMetricGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.edEqMetric{background:#0d1420;border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:11px}.edEqMetric b{display:block;margin-top:3px;font-size:16px;color:#4d91ff}.edEqMetric.green b{color:#39c978}.edEqMetric.gold b{color:#e5b85c}.edEqMetric.red{background:rgba(130,50,65,.12)}.edEqMetric.red b{color:#ff717c}
 .edEqPeriod{margin-top:14px;padding:13px;border:1px solid #252d37;border-radius:16px;background:#0e141c}.edEqPeriodButtons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:9px}.edEqPeriodButtons button{border:1px solid #303845;background:#111722;color:#c5cbd4;border-radius:10px;padding:9px 7px;font-weight:800}.edEqPeriodButtons button.active{background:#3f8cff;border-color:#3f8cff;color:#fff}.edEqTotals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:10px}.edEqPeriodCard{padding:10px;border-radius:11px;background:#0b1119;border:1px solid rgba(255,255,255,.05)}.edEqPeriodCard b{display:block;margin-top:4px;font-size:15px}.edEqPeriodCard.open b{color:#ff747e}.edEqPeriodCard.acc b{color:#48d18c}.edEqPeriodCard.general b{color:#d9ad55}
 .edEqHistoryTotal{margin-top:9px;color:var(--muted);font-size:11px}
@@ -12890,6 +12903,20 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
     return {ini,fim,ds,open,paid,bruto,aberto:abertoDiarias+openExtraV,pago:pagoDiarias+paidExtraV,days:new Set(ds.map(d=>d.data).filter(Boolean)).size,pendingCount:open.length,periodPaid:pagoDiarias+paidExtraV};
   }
 
+  function toggleHistoricoFaltasFuncionario(funcId,btn){
+    const box=$(`edEqFaultHistory_${funcId}`);
+    if(!box)return;
+    if(!box.hidden){
+      box.hidden=true; btn.classList.remove('open'); btn.setAttribute('aria-expanded','false'); btn.textContent='⌄'; return;
+    }
+    const faltas=(D.faltas||[]).filter(x=>sameF(x.funcionario_id??x.funcId??x.funcionarioId,funcId)).slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+    const f=(D.funcionarios||[]).find(x=>sameF(x.id,funcId));
+    const tipoLabel={falta:'Falta',justificada:'Falta justificada',atestado:'Atestado'};
+    box.innerHTML=`<div class="edEqFaultHistoryTitle"><b>⚠️ Histórico de faltas — ${escF(f?.nome||'Funcionário')}</b><span>${faltas.length} registro(s)</span></div>`+
+      (faltas.length ? faltas.map(x=>`<div class="edEqFaultItem"><div class="edEqFaultDate">${escF(formatDateBR(x.data))}</div><div><div class="edEqFaultType">${escF(tipoLabel[x.tipo]||x.tipo||'Falta')}</div><div class="edEqFaultObs">${escF(x.observacao||'Sem observação')}</div></div><button class="edEqFaultDelete" type="button" onclick="deleteFalta('${escF(x.id)}');setTimeout(()=>toggleHistoricoFaltasFuncionario('${escF(funcId)}',document.querySelector('[data-fault-toggle=\\'${escF(funcId)}\\']')),0)">Excluir</button></div>`).join('') : '<div class="edEqFaultEmpty">Nenhuma falta registrada para este funcionário.</div>');
+    box.hidden=false; btn.classList.add('open'); btn.setAttribute('aria-expanded','true'); btn.textContent='⌃';
+  }
+
   /* 4) New employee layout, based on the supplied screenshots. */
   function edifiqRenderFuncs(){
     const box=$('funcList');if(!box)return;
@@ -12903,6 +12930,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
       const vale=pendingValeEmployee(f.id);
       const pagar=Math.max(0,allOpen-vale);
       const acumulado=paidAccumulatedEmployee(f.id);
+      const extrasTotal=getFuncionarioExtrasAll().filter(x=>sameF(x.funcionario_id??x.funcionarioId,f.id)).reduce((a,x)=>a+numF(x.valor),0);
       const rate=numF(f.valor_diaria);
       const week=employeePeriodStats(f,'semana').aberto,fort=employeePeriodStats(f,'quinzena').aberto;
       const obra=getFuncObra(f.id); const obraNome=(D.obras||[]).find(o=>sameF(o.id,obra))?.nome||'Sem obra';
@@ -12912,12 +12940,16 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
         <div class="edEqRate"><div><small>Forma de pagamento</small><strong>${escF(f.tipo_pagamento==='mensal'?'Mensal':'Por diária')}</strong><div class="sub" style="margin-top:3px">Obra: ${escF(obraNome)}</div></div><b>${rate?moneyF(rate)+'/dia':moneyF(f.salario_mensal||0)}</b></div>
         <div class="edEqDays"><span class="edEqPill">${st.days} dias no período</span><span class="edEqPill blue">${st.open.length} em aberto</span><span class="edEqPill">${daysAll} dias acumulados</span></div>
         <div class="edEqActions"><button class="edEqAction" type="button" onclick="ajustarDiasFuncionarioEd('${escF(f.id)}',-1)">↩ Remover diária</button><button class="edEqAction primary" type="button" onclick="openDiaFuncionario('${escF(f.id)}')">▣ Marcar diária</button></div>
-        <button class="edEqOccurrence" type="button" onclick="openFalta('${escF(f.id)}')">🗓 Falta / ocorrência</button>
+        <div class="edEqOccurrenceRow">
+          <button class="edEqOccurrence" type="button" onclick="openFalta('${escF(f.id)}')">🗓 Falta / ocorrência</button>
+          <button class="edEqFaultToggle" data-fault-toggle="${escF(f.id)}" type="button" aria-expanded="false" title="Ver histórico de faltas" onclick="toggleHistoricoFaltasFuncionario('${escF(f.id)}',this)">⌄</button>
+        </div>
+        <div class="edEqFaultHistory" id="edEqFaultHistory_${escF(f.id)}" hidden></div>
         <div class="edEqMetricGrid"><div class="edEqMetric"><small>Total trabalhado no período</small><b>${moneyF(st.bruto)}</b></div><div class="edEqMetric green"><small>Já pago no período</small><b>${moneyF(st.pago)}</b></div><div class="edEqMetric gold"><small>Vales em aberto</small><b>${moneyF(vale)}</b></div><div class="edEqMetric red"><small>Falta pagar</small><b>${moneyF(pagar)}</b></div></div>
         <div class="edEqMetricGrid" style="margin-top:8px"><div class="edEqMetric"><small>A pagar esta semana</small><b>${moneyF(week)}</b></div><div class="edEqMetric"><small>A pagar na quinzena</small><b>${moneyF(fort)}</b></div></div>
-        <div class="edEqRate" style="margin-top:8px"><div><small>Acumulado recebido</small><strong>${moneyF(acumulado)}</strong></div><div style="text-align:right"><small>Total em aberto</small><b style="color:#ff747e">${moneyF(pagar)}</b></div></div>
+        <div class="edEqRate" style="margin-top:8px"><div><small>Extras e bônus</small><strong class="gold">${moneyF(extrasTotal)}</strong></div><div style="text-align:right"><small>Total em aberto</small><b style="color:#ff747e">${moneyF(pagar)}</b></div></div>
         <div class="edEqActions"><button class="edEqAction primary" type="button" onclick="openPagamentoFuncionario('${escF(f.id)}')">＄ Pagar</button><button class="edEqAction" type="button" onclick="openAdiantamentoFuncionario('${escF(f.id)}')">💳 Vale</button></div>
-        <div class="listActions"><button class="btn" onclick="openFunc('${escF(f.id)}')">Editar</button><button class="btn" onclick="toggleFunc('${escF(f.id)}')">${f.ativo===false?'Ativar':'Desativar'}</button><button class="btn danger" onclick="excluirFuncionario('${escF(f.id)}')">Excluir</button></div>
+        
       </article>`;
     }).join('');
   }
@@ -13120,7 +13152,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
     sel.innerHTML='<option value="">Selecione uma obra</option>'+(D.obras||[]).map(o=>`<option value="${escF(o.id)}">${escF(o.nome)}</option>`).join('');if(current)sel.value=current;else if(D.obras.length===1)sel.value=D.obras[0].id;$('edRelatorioPreview').innerHTML='<div class="empty">Selecione a obra e clique em Visualizar.</div>';openM('edRelatorioObraM');
   };
   window.edPreviewRelatorioObra=async function(){const id=$('edRelatorioObraSelect')?.value;if(!id){toast('Selecione uma obra.');return}const data=reportData(id);if(!data){toast('Obra não encontrada.');return}const photos=await getReportPhotos(id);const wrap=$('edRelatorioPreview');if(wrap)wrap.innerHTML=`<div style="background:#fff;color:#20242a;border-radius:12px;padding:18px;max-height:58vh;overflow:auto"><h2 style="margin-top:0">${escF(data.o.nome)}</h2><p><b>Contrato:</b> ${moneyF(data.finance.contrato)} · <b>Recebido:</b> ${moneyF(data.finance.receita)} · <b>Despesas:</b> ${moneyF(data.finance.despesas)} · <b>Resultado:</b> ${moneyF(data.finance.resultado)}</p><p><b>Equipe:</b> ${data.funcs.length} · <b>Diárias:</b> ${data.ds.length} · <b>Diário:</b> ${data.di.length} registro(s) · <b>Fotos:</b> ${photos.length}</p><div class="box" style="color:#20242a"><b>O relatório completo contém equipe, horas, dias, pagamentos, materiais/despesas, recebimentos, checklist, serviços adicionais, diário de obra e fotos.</b></div></div>`};
-  window.edPrintRelatorioObra=async function(){const id=$('edRelatorioObraSelect')?.value;if(!id){toast('Selecione uma obra.');return}const data=reportData(id);if(!data){toast('Obra não encontrada.');return}const photos=await getReportPhotos(id);const html=reportHTML(data,photos);const htmlComImpressao=html.replace('</body></html>','<script>window.addEventListener("load",function(){setTimeout(function(){try{window.print()}catch(e){}},500)})<\/script></body></html>');const blob=new Blob([htmlComImpressao],{type:'text/html;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.target='_self';a.rel='noopener';a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},60000)};
+  window.edPrintRelatorioObra=async function(){const id=$('edRelatorioObraSelect')?.value;if(!id){toast('Selecione uma obra.');return}const data=reportData(id);if(!data){toast('Obra não encontrada.');return}const photos=await getReportPhotos(id);const html=reportHTML(data,photos);const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return}w.document.open();w.document.write(html);w.document.close();setTimeout(()=>w.print(),700)};
 
   /* Re-render after initialization with the new routines. */
   try{if(typeof ensureEquipePeriodUI==='function')ensureEquipePeriodUI()}catch(_){ }
