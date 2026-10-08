@@ -12794,7 +12794,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
 .edEqDays{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.edEqPill{padding:6px 10px;border-radius:999px;background:#111b2b;border:1px solid rgba(255,255,255,.06);font-size:11px}.edEqPill.blue{background:#1b5dcc;color:#fff;border-color:#3d84ff}
 .edEqActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.edEqAction{min-height:45px;border:0;border-radius:12px;background:#0b111a;color:#aeb7c4;font-weight:800}.edEqAction.primary{background:#3f8cff;color:#fff}.edEqAction.danger{border:1px solid #73363b;color:#ff777f;background:#151018}
 .edEqOccurrence{display:flex;gap:7px;align-items:center;margin:8px 0;color:#ff7078;border:1px solid #73363b;background:rgba(255,80,90,.05);border-radius:12px;padding:9px 11px;font-size:12px;font-weight:800;cursor:pointer}
-.edEqMetricGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.edEqMetric{background:#0d1420;border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:11px}.edEqMetric b{display:block;margin-top:3px;font-size:16px;color:#4d91ff}.edEqMetric.green b{color:#39c978}.edEqMetric.gold b{color:#e5b85c}.edEqMetric.red{background:rgba(130,50,65,.12)}.edEqMetric.red b{color:#ff717c}
+.edEqMetricGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.edEqMetric{background:#0d1420;border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:11px}.edEqMetric b{display:block;margin-top:3px;font-size:16px;color:#4d91ff}.edEqMetric.green b{color:#39c978}.edEqMetric.gold b{color:#e5b85c}.edEqMetric.red{background:rgba(130,50,65,.12)}.edEqExtraValue{grid-column:1 / -1}.edEqExtraValue b{font-size:18px}.edEqMetric.red b{color:#ff717c}
 .edEqPeriod{margin-top:14px;padding:13px;border:1px solid #252d37;border-radius:16px;background:#0e141c}.edEqPeriodButtons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:9px}.edEqPeriodButtons button{border:1px solid #303845;background:#111722;color:#c5cbd4;border-radius:10px;padding:9px 7px;font-weight:800}.edEqPeriodButtons button.active{background:#3f8cff;border-color:#3f8cff;color:#fff}.edEqTotals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:10px}.edEqPeriodCard{padding:10px;border-radius:11px;background:#0b1119;border:1px solid rgba(255,255,255,.05)}.edEqPeriodCard b{display:block;margin-top:4px;font-size:15px}.edEqPeriodCard.open b{color:#ff747e}.edEqPeriodCard.acc b{color:#48d18c}.edEqPeriodCard.general b{color:#d9ad55}
 .edEqHistoryTotal{margin-top:9px;color:var(--muted);font-size:11px}
 .edEqCommandModal{max-width:520px}.edEqSelect{width:100%;min-height:48px;border-radius:12px;padding:10px;font-size:16px}
@@ -12918,7 +12918,8 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
     const openExtra=extras.filter(x=>!paidStatuses.has(String(x.status||'').toLowerCase())),paidExtra=extras.filter(x=>paidStatuses.has(String(x.status||'').toLowerCase()));
     const bruto=ds.reduce((a,d)=>a+diariaValor(d),0),abertoDiarias=open.reduce((a,d)=>a+diariaValor(d),0),pagoDiarias=paid.reduce((a,d)=>a+numF(d.valor_baixado??d.valor_pago??diariaValor(d)),0);
     const openExtraV=openExtra.reduce((a,x)=>a+numF(x.valor),0),paidExtraV=paidExtra.reduce((a,x)=>a+numF(x.valor),0);
-    return {ini,fim,ds,open,paid,bruto,aberto:abertoDiarias+openExtraV,pago:pagoDiarias+paidExtraV,days:new Set(ds.map(d=>d.data).filter(Boolean)).size,pendingCount:open.length,periodPaid:pagoDiarias+paidExtraV};
+    const extraTotal=openExtraV+paidExtraV;
+    return {ini,fim,ds,open,paid,bruto,extraTotal,aberto:abertoDiarias+openExtraV,pago:pagoDiarias+paidExtraV,days:new Set(ds.map(d=>d.data).filter(Boolean)).size,pendingCount:open.length,periodPaid:pagoDiarias+paidExtraV};
   }
 
   /* 4) New employee layout, based on the supplied screenshots. */
@@ -12931,8 +12932,9 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
     box.innerHTML=funcs.map(f=>{
       const st=employeePeriodStats(f,equipePeriod);
       const vale=pendingValeEmployee(f.id);
-      const brutoFolha=st.bruto;
-      const pagar=Math.max(0,brutoFolha-vale);
+      const extrasPeriodo=st.extraTotal||0;
+      const brutoFolha=st.bruto+extrasPeriodo;
+      const pagar=Math.max(0,brutoFolha-st.pago-vale);
       const rate=numF(f.valor_diaria);
       const week=employeePeriodStats(f,'semana').aberto,fort=employeePeriodStats(f,'quinzena').aberto;
       const obra=getFuncObra(f.id); const obraNome=(D.obras||[]).find(o=>sameF(o.id,obra))?.nome||'Sem obra';
@@ -12943,7 +12945,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
         <div class="edEqDays edEqDaysUniform"><span class="edEqPill">${st.days} dias no período</span><span class="edEqPill blue">${st.open.length} dias em aberto</span><span class="edEqPill">${daysAll} dias acumulados</span></div>
         <div class="edEqActions"><button class="edEqAction" type="button" onclick="ajustarDiasFuncionarioEd('${escF(f.id)}',-1)">↩ Remover diária</button><button class="edEqAction primary" type="button" onclick="openDiaFuncionario('${escF(f.id)}')">▣ Marcar diária</button></div>
         <div class="edEqOccurrenceRow"><button class="edEqOccurrence" type="button" onclick="openFalta('${escF(f.id)}')">🗓 Falta / ocorrência</button><button class="edEqOccurrenceHistory" type="button" data-func-id="${escF(f.id)}" title="Histórico de faltas" aria-label="Histórico de faltas" onclick="window.openHistoricoFaltasFuncionario && window.openHistoricoFaltasFuncionario('${escF(f.id)}')">↗</button></div>
-        <div class="edEqMetricGrid"><div class="edEqMetric"><small>Total trabalhado no período</small><b>${moneyF(st.bruto)}</b></div><div class="edEqMetric green"><small>Já pago no período</small><b>${moneyF(st.pago)}</b></div><div class="edEqMetric gold"><small>Vales em aberto</small><b>${moneyF(vale)}</b></div><div class="edEqMetric red"><small>Falta pagar</small><b>${moneyF(pagar)}</b></div></div>
+        <div class="edEqMetricGrid"><div class="edEqMetric"><small>Total trabalhado no período</small><b>${moneyF(st.bruto)}</b></div><div class="edEqMetric green"><small>Já pago no período</small><b>${moneyF(st.pago)}</b></div><div class="edEqMetric gold"><small>Vales em aberto</small><b>${moneyF(vale)}</b></div><div class="edEqMetric red"><small>Falta pagar</small><b>${moneyF(pagar)}</b></div><div class="edEqMetric gold edEqExtraValue"><small>🏆 Bônus / Extras</small><b>${moneyF(extrasPeriodo)}</b></div></div>
         <div class="edEqMetricGrid" style="margin-top:8px"><div class="edEqMetric"><small>A pagar esta semana</small><b>${moneyF(week)}</b></div><div class="edEqMetric"><small>A pagar na quinzena</small><b>${moneyF(fort)}</b></div></div>
         <div class="edEqActions"><button class="edEqAction primary" type="button" onclick="openPagamentoFuncionario('${escF(f.id)}')">＄ Pagar</button><button class="edEqAction" type="button" onclick="openAdiantamentoFuncionario('${escF(f.id)}')">💳 Vale</button></div>
 
@@ -13168,42 +13170,46 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
 };
 window.edPreviewRelatorioObra=async function(){const id=$('edRelatorioObraSelect')?.value;if(!id){toast('Selecione uma obra.');return}const data=reportData(id);if(!data){toast('Obra não encontrada.');return}const photos=await getReportPhotos(id);const wrap=$('edRelatorioPreview');if(wrap)wrap.innerHTML=`<div style="background:#fff;color:#20242a;border-radius:12px;padding:18px;max-height:58vh;overflow:auto"><h2 style="margin-top:0">${escF(data.o.nome)}</h2><p><b>Contrato:</b> ${moneyF(data.finance.contrato)} · <b>Recebido:</b> ${moneyF(data.finance.receita)} · <b>Despesas:</b> ${moneyF(data.finance.despesas)} · <b>Resultado:</b> ${moneyF(data.finance.resultado)}</p><p><b>Equipe:</b> ${data.funcs.length} · <b>Diárias:</b> ${data.ds.length} · <b>Diário:</b> ${data.di.length} registro(s) · <b>Fotos:</b> ${photos.length}</p><div class="box" style="color:#20242a"><b>O relatório completo contém equipe, horas, dias, pagamentos, materiais/despesas, recebimentos, checklist, serviços adicionais, diário de obra e fotos.</b></div></div>`};
   window.edPrintRelatorioObra=async function(){
-    const id=$('edRelatorioObraSelect')?.value;
-    if(!id){toast('Selecione uma obra.');return}
+    const id=document.getElementById('edRelatorioObraSelect')?.value;
+    if(!id){toast('Selecione uma obra.');return;}
     const data=reportData(id);
-    if(!data){toast('Obra não encontrada.');return}
+    if(!data){toast('Obra não encontrada.');return;}
+    let frame=null;
     try{
       const photos=await getReportPhotos(id);
-      const html=reportHTML(data,photos);
-      const frame=document.createElement('iframe');
-      frame.setAttribute('aria-hidden','true');
+      const html=buildReportHTML(data,photos);
+      frame=document.createElement('iframe');
+      frame.setAttribute('title','Relatório EDIFIQ');
       frame.style.position='fixed';
-      frame.style.left='-10000px';
-      frame.style.top='0';
-      frame.style.width='1px';
-      frame.style.height='1px';
+      frame.style.width='0';
+      frame.style.height='0';
       frame.style.border='0';
       frame.style.opacity='0';
+      frame.style.pointerEvents='none';
       document.body.appendChild(frame);
-      const cleanup=()=>{try{frame.remove()}catch(_){}};
-      frame.onload=()=>{
+      const printNow=()=>{
         try{
-          frame.contentWindow.focus();
-          frame.contentWindow.print();
-          setTimeout(cleanup,1500);
+          const w=frame.contentWindow;
+          if(!w)return;
+          w.focus();
+          setTimeout(()=>{try{w.print()}catch(err){console.error('print:',err);toast('Não foi possível abrir a impressão do PDF.');}},120);
+          setTimeout(()=>{try{frame.remove()}catch(_){}},3000);
         }catch(err){
           console.error('Impressão/PDF:',err);
-          cleanup();
-          toast('Não foi possível abrir a impressão do PDF.');
+          try{frame.remove()}catch(_){}
+          toast('Não foi possível gerar o PDF do relatório.');
         }
       };
+      frame.onload=printNow;
       frame.srcdoc=html;
       setTimeout(()=>{
-        if(frame.isConnected && frame.contentDocument?.readyState==='complete'){
-          try{frame.contentWindow.focus();frame.contentWindow.print();setTimeout(cleanup,1500)}catch(err){console.error(err);cleanup();}
-        }
-      },700);
-    }catch(err){console.error('PDF relatório automático',err);toast('Não foi possível gerar o PDF do relatório.');}
+        if(frame && frame.isConnected && frame.contentDocument && frame.contentDocument.readyState==='complete') printNow();
+      },800);
+    }catch(err){
+      console.error('PDF relatório automático',err);
+      try{frame?.remove()}catch(_){}
+      toast('Não foi possível gerar o PDF do relatório.');
+    }
   };
 
   /* Re-render after initialization with the new routines. */
