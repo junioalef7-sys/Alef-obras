@@ -7191,10 +7191,11 @@ box.innerHTML=items.map(x=>{
 }
 
 function getFaltasFuncionario(funcId){
-  return D.faltas.filter(x=>String(x.funcionario_id)===String(funcId));
+  return (Array.isArray(D.faltas)?D.faltas:[]).filter(x=>String(x.funcionario_id)===String(funcId));
 }
 
 function openHistoricoFaltasFuncionario(funcId){
+  try{
   const f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcId));
   if(!f){toast('Funcionário não encontrado.');return;}
   let modal=document.getElementById('historicoFaltasFuncM');
@@ -7212,7 +7213,10 @@ function openHistoricoFaltasFuncionario(funcId){
   }).join(''):'<div class="empty">Nenhuma falta registrada para este funcionário.</div>';
   modal.innerHTML=`<div class="modalBox"><div class="modalHead"><h2>⚠️ Histórico de faltas — ${escF(f.nome)}</h2><button class="x" type="button" onclick="closeM('historicoFaltasFuncM')">×</button></div><div class="historySummaryGrid"><div class="historyMetric"><small>Total de registros</small><b>${itens.length}</b></div><div class="historyMetric"><small>Faltas</small><b>${itens.filter(x=>(x.tipo||'falta')==='falta').length}</b></div><div class="historyMetric"><small>Justificadas/atestado</small><b>${itens.filter(x=>['justificada','atestado'].includes(x.tipo||'')).length}</b></div></div><div>${lista}</div></div>`;
   openM('historicoFaltasFuncM');
+  }catch(err){console.error('Histórico de faltas:',err);toast('Não foi possível abrir o histórico de faltas.');}
 }
+
+window.openHistoricoFaltasFuncionario=openHistoricoFaltasFuncionario;
 
 async function saveFalta(e){
   e.preventDefault();
@@ -7232,11 +7236,10 @@ async function saveFalta(e){
       saved=await insertRow('faltas',row);
     }
   }catch(err){console.warn('Falha ao sincronizar falta:',err);}
-  if(!saved){
-    row.id='falta_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-    D.faltas.unshift(row);
-    saveLocalData();
-  }
+  const registro=saved||{...row,id:'falta_'+Date.now()+'_'+Math.random().toString(36).slice(2)};
+  if(!Array.isArray(D.faltas))D.faltas=[];
+  D.faltas.unshift(registro);
+  saveLocalData();
   closeM('faltaM');
   renderAll();
   toast(saved?'Falta registrada e integrada à equipe, obra e frequência.':'Falta registrada localmente; será sincronizada quando a conexão estiver disponível.');
@@ -12800,8 +12803,8 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
 @media(max-width:680px){.edEquipeTopActions{grid-template-columns:1fr 1fr}.edEquipeSecondary{display:none}.edEqHead{flex-direction:column}.edEqHeadRight{justify-content:flex-start}.edEqRate{align-items:flex-start;flex-direction:column}.edEqMetricGrid{grid-template-columns:1fr 1fr}.edEqTotals{grid-template-columns:1fr 1fr}.edEqPeriodButtons{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .edEqDaysUniform{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;width:100%}
 .edEqDaysUniform .edEqPill.blue{background:#65b7e8!important;color:#fff!important;border-color:#65b7e8!important}
-@media(max-width:680px){.edEqDaysUniform{grid-template-columns:repeat(3,minmax(0,1fr))!important}.edEqDaysUniform .edEqPill{justify-content:center!important;white-space:nowrap!important;font-size:11px!important}}
-.edEqDaysUniform .edEqPill{display:flex;align-items:center;justify-content:center;text-align:center;min-height:30px;white-space:normal}
+@media(max-width:680px){.edEqDaysUniform{grid-template-columns:repeat(3,minmax(0,1fr))!important}.edEqDaysUniform .edEqPill{justify-content:center!important;white-space:nowrap!important;font-size:10px!important;padding:6px 4px!important}}
+.edEqDaysUniform .edEqPill{display:flex;align-items:center;justify-content:center;text-align:center;min-height:30px;white-space:nowrap}
 .edEqOccurrenceRow{display:grid;grid-template-columns:1fr 38px;gap:7px;align-items:stretch;margin:8px 0}
 .edEqOccurrenceRow .edEqOccurrence{margin:0!important;width:100%}
 .edEqOccurrenceHistory{border:1px solid rgba(255,255,255,.08);border-radius:10px;background:#111b2b;color:#f5c542;font-size:18px;font-weight:900;cursor:pointer;min-height:38px}
@@ -12938,7 +12941,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
         <div class="edEqRate"><div><small>Forma de pagamento</small><strong>${escF(f.tipo_pagamento==='mensal'?'Mensal':'Por diária')}</strong><div class="sub" style="margin-top:3px">Obra: ${escF(obraNome)}</div></div><b>${rate?moneyF(rate)+'/dia':moneyF(f.salario_mensal||0)}</b></div>
         <div class="edEqDays edEqDaysUniform"><span class="edEqPill">${st.days} dias no período</span><span class="edEqPill blue">${st.open.length} dias em aberto</span><span class="edEqPill">${daysAll} dias acumulados</span></div>
         <div class="edEqActions"><button class="edEqAction" type="button" onclick="ajustarDiasFuncionarioEd('${escF(f.id)}',-1)">↩ Remover diária</button><button class="edEqAction primary" type="button" onclick="openDiaFuncionario('${escF(f.id)}')">▣ Marcar diária</button></div>
-        <div class="edEqOccurrenceRow"><button class="edEqOccurrence" type="button" onclick="openFalta('${escF(f.id)}')">🗓 Falta / ocorrência</button><button class="edEqOccurrenceHistory" type="button" data-func-id="${escF(f.id)}" title="Histórico de faltas" aria-label="Histórico de faltas" onclick="openHistoricoFaltasFuncionario('${escF(f.id)}')">↗</button></div>
+        <div class="edEqOccurrenceRow"><button class="edEqOccurrence" type="button" onclick="openFalta('${escF(f.id)}')">🗓 Falta / ocorrência</button><button class="edEqOccurrenceHistory" type="button" data-func-id="${escF(f.id)}" title="Histórico de faltas" aria-label="Histórico de faltas" onclick="window.openHistoricoFaltasFuncionario && window.openHistoricoFaltasFuncionario('${escF(f.id)}')">↗</button></div>
         <div class="edEqMetricGrid"><div class="edEqMetric"><small>Total trabalhado no período</small><b>${moneyF(st.bruto)}</b></div><div class="edEqMetric green"><small>Já pago no período</small><b>${moneyF(st.pago)}</b></div><div class="edEqMetric gold"><small>Vales em aberto</small><b>${moneyF(vale)}</b></div><div class="edEqMetric red"><small>Falta pagar</small><b>${moneyF(pagar)}</b></div></div>
         <div class="edEqMetricGrid" style="margin-top:8px"><div class="edEqMetric"><small>A pagar esta semana</small><b>${moneyF(week)}</b></div><div class="edEqMetric"><small>A pagar na quinzena</small><b>${moneyF(fort)}</b></div></div>
         <div class="edEqActions"><button class="edEqAction primary" type="button" onclick="openPagamentoFuncionario('${escF(f.id)}')">＄ Pagar</button><button class="edEqAction" type="button" onclick="openAdiantamentoFuncionario('${escF(f.id)}')">💳 Vale</button></div>
