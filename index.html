@@ -7196,6 +7196,7 @@ function getFaltasFuncionario(funcId){
 
 function openHistoricoFaltasFuncionario(funcId){
   try{
+  const escHF=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
   const f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcId));
   if(!f){toast('Funcionário não encontrado.');return;}
   let modal=document.getElementById('historicoFaltasFuncM');
@@ -7209,9 +7210,9 @@ function openHistoricoFaltasFuncionario(funcId){
   const lista=itens.length?itens.map(x=>{
     const o=(D.obras||[]).find(y=>String(y.id)===String(x.obra_id));
     const label={falta:'Falta',justificada:'Falta justificada',atestado:'Atestado'}[x.tipo||'falta']||x.tipo||'Falta';
-    return `<div class="card" style="margin-bottom:8px"><div class="row"><div><b>${escF(label)}</b><br><small>${escF(formatDateBR(x.data)||x.data||'')}</small></div><span class="badge ${x.tipo==='falta'?'off':'on'}">${escF(o?.nome||'Obra não definida')}</span></div><div class="note" style="margin-top:8px">${escF(x.observacao||'Sem observação')}</div><div class="listActions"><button class="btn danger" type="button" onclick="deleteFalta('${escF(x.id)}');openHistoricoFaltasFuncionario('${escF(funcId)}')">Excluir</button></div></div>`;
+    return `<div class="card" style="margin-bottom:8px"><div class="row"><div><b>${escHF(label)}</b><br><small>${escHF(formatDateBR(x.data)||x.data||'')}</small></div><span class="badge ${x.tipo==='falta'?'off':'on'}">${escHF(o?.nome||'Obra não definida')}</span></div><div class="note" style="margin-top:8px">${escHF(x.observacao||'Sem observação')}</div><div class="listActions"><button class="btn danger" type="button" onclick="deleteFalta('${escHF(x.id)}');openHistoricoFaltasFuncionario('${escHF(funcId)}')">Excluir</button></div></div>`;
   }).join(''):'<div class="empty">Nenhuma falta registrada para este funcionário.</div>';
-  modal.innerHTML=`<div class="modalBox"><div class="modalHead"><h2>⚠️ Histórico de faltas — ${escF(f.nome)}</h2><button class="x" type="button" onclick="closeM('historicoFaltasFuncM')">×</button></div><div class="historySummaryGrid"><div class="historyMetric"><small>Total de registros</small><b>${itens.length}</b></div><div class="historyMetric"><small>Faltas</small><b>${itens.filter(x=>(x.tipo||'falta')==='falta').length}</b></div><div class="historyMetric"><small>Justificadas/atestado</small><b>${itens.filter(x=>['justificada','atestado'].includes(x.tipo||'')).length}</b></div></div><div>${lista}</div></div>`;
+  modal.innerHTML=`<div class="modalBox"><div class="modalHead"><h2>⚠️ Histórico de faltas — ${escHF(f.nome)}</h2><button class="x" type="button" onclick="closeM('historicoFaltasFuncM')">×</button></div><div class="historySummaryGrid"><div class="historyMetric"><small>Total de registros</small><b>${itens.length}</b></div><div class="historyMetric"><small>Faltas</small><b>${itens.filter(x=>(x.tipo||'falta')==='falta').length}</b></div><div class="historyMetric"><small>Justificadas/atestado</small><b>${itens.filter(x=>['justificada','atestado'].includes(x.tipo||'')).length}</b></div></div><div>${lista}</div></div>`;
   openM('historicoFaltasFuncM');
   }catch(err){console.error('Histórico de faltas:',err);toast('Não foi possível abrir o histórico de faltas.');}
 }
@@ -12808,7 +12809,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
 .edEqOccurrenceRow{display:grid;grid-template-columns:1fr 38px;gap:7px;align-items:stretch;margin:8px 0}
 .edEqOccurrenceRow .edEqOccurrence{margin:0!important;width:100%}
 .edEqOccurrenceHistory{border:1px solid rgba(255,255,255,.08);border-radius:10px;background:#111b2b;color:#f5c542;font-size:18px;font-weight:900;cursor:pointer;min-height:38px}
-@media(max-width:680px){.edEqDaysUniform{grid-template-columns:1fr!important}.edEqDaysUniform .edEqPill{justify-content:flex-start}.edEqOccurrenceRow{grid-template-columns:1fr 38px}}
+@media(max-width:680px){.edEqDaysUniform{grid-template-columns:repeat(3,minmax(0,1fr))!important}.edEqDaysUniform .edEqPill{justify-content:center!important;white-space:nowrap!important}.edEqOccurrenceRow{grid-template-columns:1fr 38px}}
 </style>
 <script id="edifiq-final-correcao-20261007">
 (function(){
@@ -13166,7 +13167,44 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
   }catch(err){console.error('PDF relatório automático',err);try{w.close();}catch(_){}toast('Não foi possível abrir o PDF do relatório.');}
 };
 window.edPreviewRelatorioObra=async function(){const id=$('edRelatorioObraSelect')?.value;if(!id){toast('Selecione uma obra.');return}const data=reportData(id);if(!data){toast('Obra não encontrada.');return}const photos=await getReportPhotos(id);const wrap=$('edRelatorioPreview');if(wrap)wrap.innerHTML=`<div style="background:#fff;color:#20242a;border-radius:12px;padding:18px;max-height:58vh;overflow:auto"><h2 style="margin-top:0">${escF(data.o.nome)}</h2><p><b>Contrato:</b> ${moneyF(data.finance.contrato)} · <b>Recebido:</b> ${moneyF(data.finance.receita)} · <b>Despesas:</b> ${moneyF(data.finance.despesas)} · <b>Resultado:</b> ${moneyF(data.finance.resultado)}</p><p><b>Equipe:</b> ${data.funcs.length} · <b>Diárias:</b> ${data.ds.length} · <b>Diário:</b> ${data.di.length} registro(s) · <b>Fotos:</b> ${photos.length}</p><div class="box" style="color:#20242a"><b>O relatório completo contém equipe, horas, dias, pagamentos, materiais/despesas, recebimentos, checklist, serviços adicionais, diário de obra e fotos.</b></div></div>`};
-  window.edPrintRelatorioObra=async function(){const id=$('edRelatorioObraSelect')?.value;if(!id){toast('Selecione uma obra.');return}const data=reportData(id);if(!data){toast('Obra não encontrada.');return}const photos=await getReportPhotos(id);const html=reportHTML(data,photos);const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return}w.document.open();w.document.write(html);w.document.close();setTimeout(()=>w.print(),700)};
+  window.edPrintRelatorioObra=async function(){
+    const id=$('edRelatorioObraSelect')?.value;
+    if(!id){toast('Selecione uma obra.');return}
+    const data=reportData(id);
+    if(!data){toast('Obra não encontrada.');return}
+    try{
+      const photos=await getReportPhotos(id);
+      const html=reportHTML(data,photos);
+      const frame=document.createElement('iframe');
+      frame.setAttribute('aria-hidden','true');
+      frame.style.position='fixed';
+      frame.style.left='-10000px';
+      frame.style.top='0';
+      frame.style.width='1px';
+      frame.style.height='1px';
+      frame.style.border='0';
+      frame.style.opacity='0';
+      document.body.appendChild(frame);
+      const cleanup=()=>{try{frame.remove()}catch(_){}};
+      frame.onload=()=>{
+        try{
+          frame.contentWindow.focus();
+          frame.contentWindow.print();
+          setTimeout(cleanup,1500);
+        }catch(err){
+          console.error('Impressão/PDF:',err);
+          cleanup();
+          toast('Não foi possível abrir a impressão do PDF.');
+        }
+      };
+      frame.srcdoc=html;
+      setTimeout(()=>{
+        if(frame.isConnected && frame.contentDocument?.readyState==='complete'){
+          try{frame.contentWindow.focus();frame.contentWindow.print();setTimeout(cleanup,1500)}catch(err){console.error(err);cleanup();}
+        }
+      },700);
+    }catch(err){console.error('PDF relatório automático',err);toast('Não foi possível gerar o PDF do relatório.');}
+  };
 
   /* Re-render after initialization with the new routines. */
   try{if(typeof ensureEquipePeriodUI==='function')ensureEquipePeriodUI()}catch(_){ }
