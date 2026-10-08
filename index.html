@@ -1587,6 +1587,8 @@ body{min-height:100vh;min-height:100dvh}
     <button class="edifiqMenuItem" onclick="openRelatorioCliente();toggleMenuPasta()"><span>▧</span><b>Relatório para Cliente</b></button>
      <button class="edifiqMenuItem" onclick="openRelatorioTrabalhador();toggleMenuPasta()"><span>♙</span><b>Relatório do Trabalhador</b></button>
     <button class="edifiqMenuItem" onclick="openPagamentoEquipe();toggleMenuPasta()"><span>＄</span><b>Pagamento da Equipe</b></button>
+    <button class="edifiqMenuItem" onclick="openAdiantamento();toggleMenuPasta()"><span>💳</span><b>Vale</b></button>
+    <button class="edifiqMenuItem" onclick="goMenu('diarias')"><span>📅</span><b>Histórico de Diárias</b></button>
   </div>
   <div class="edifiqMenuTitle edifiqSectionTitle">DADOS</div>
   <button class="edifiqDataRow" onclick="openConfiguracoes();toggleMenuPasta()"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
@@ -5853,27 +5855,21 @@ for(const item of processados){
     }
   }
 
-  // Adiantamentos sem obra (ou saldo restante) são distribuídos em centavos.
+  // Saldo de vale sem obra/checklist: NÃO faz rateio proporcional.
+  // Consome grupos inteiros na ordem das diárias; somente o último grupo
+  // pode ficar parcial se o vale não fechar exatamente. Assim R$200 + R$200 +
+  // R$200 permanece R$200 em cada obra, sem transformar em R$133,33 etc.
   if(restanteAdvCents>0){
-    const obrasComSaldo=[...gruposPorObra.entries()].filter(([obraId,c])=>c>Number(advAplicacoesPorObraCents.get(obraId)||0));
-    const baseTotal=obrasComSaldo.reduce((a,[_,c])=>a+c,0);
-    if(baseTotal>0){
-      const parcelas=obrasComSaldo.map(([obraId,brutoCents])=>{
-        const jaAplicado=Number(advAplicacoesPorObraCents.get(obraId)||0);
-        const disponivel=Math.max(0,brutoCents-jaAplicado);
-        const exato=restanteAdvCents*(disponivel/baseTotal);
-        const base=Math.min(disponivel,Math.floor(exato));
-        return {obraId,base,resto:exato-base,disponivel};
-      });
-      let usado=parcelas.reduce((a,x)=>a+x.base,0);
-      parcelas.sort((a,b)=>b.resto-a.resto);
-      for(const x of parcelas){
-        if(usado>=restanteAdvCents)break;
-        if(x.base<x.disponivel){x.base++;usado++;}
-      }
-      for(const x of parcelas){
-        advAplicacoesPorObraCents.set(x.obraId,(advAplicacoesPorObraCents.get(x.obraId)||0)+x.base);
-      }
+    for(const grupo of grupos){
+      if(restanteAdvCents<=0)break;
+      const obraId=String(grupo.obraId);
+      const jaAplicado=Number(advAplicacoesPorObraCents.get(obraId)||0);
+      const brutoGrupo=toCents(grupo.valor);
+      const restanteGrupo=Math.max(0,brutoGrupo-jaAplicado);
+      if(restanteGrupo<=0)continue;
+      const usar=Math.min(restanteAdvCents,restanteGrupo);
+      advAplicacoesPorObraCents.set(obraId,jaAplicado+usar);
+      restanteAdvCents-=usar;
     }
   }
 
@@ -7198,27 +7194,52 @@ function getFaltasFuncionario(funcId){
   return D.faltas.filter(x=>String(x.funcionario_id)===String(funcId));
 }
 
+function openHistoricoFaltasFuncionario(funcId){
+  const f=(D.funcionarios||[]).find(x=>String(x.id)===String(funcId));
+  if(!f){toast('Funcionário não encontrado.');return;}
+  let modal=document.getElementById('historicoFaltasFuncM');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='historicoFaltasFuncM';
+    modal.className='modal';
+    document.body.appendChild(modal);
+  }
+  const itens=getFaltasFuncionario(funcId).slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  const lista=itens.length?itens.map(x=>{
+    const o=(D.obras||[]).find(y=>String(y.id)===String(x.obra_id));
+    const label={falta:'Falta',justificada:'Falta justificada',atestado:'Atestado'}[x.tipo||'falta']||x.tipo||'Falta';
+    return `<div class="card" style="margin-bottom:8px"><div class="row"><div><b>${escF(label)}</b><br><small>${escF(formatDateBR(x.data)||x.data||'')}</small></div><span class="badge ${x.tipo==='falta'?'off':'on'}">${escF(o?.nome||'Obra não definida')}</span></div><div class="note" style="margin-top:8px">${escF(x.observacao||'Sem observação')}</div><div class="listActions"><button class="btn danger" type="button" onclick="deleteFalta('${escF(x.id)}');openHistoricoFaltasFuncionario('${escF(funcId)}')">Excluir</button></div></div>`;
+  }).join(''):'<div class="empty">Nenhuma falta registrada para este funcionário.</div>';
+  modal.innerHTML=`<div class="modalBox"><div class="modalHead"><h2>⚠️ Histórico de faltas — ${escF(f.nome)}</h2><button class="x" type="button" onclick="closeM('historicoFaltasFuncM')">×</button></div><div class="historySummaryGrid"><div class="historyMetric"><small>Total de registros</small><b>${itens.length}</b></div><div class="historyMetric"><small>Faltas</small><b>${itens.filter(x=>(x.tipo||'falta')==='falta').length}</b></div><div class="historyMetric"><small>Justificadas/atestado</small><b>${itens.filter(x=>['justificada','atestado'].includes(x.tipo||'')).length}</b></div></div><div>${lista}</div></div>`;
+  openM('historicoFaltasFuncM');
+}
+
 async function saveFalta(e){
-
-e.preventDefault();
-const funcionario_id=$("faltaFunc").value;
-if(!funcionario_id){toast("Selecione o funcionário.");return;}
-
-const row={
- id:"falta_"+Date.now()+"_"+Math.random().toString(36).slice(2),
- funcionario_id,
- obra_id:getFuncObra(funcionario_id)||null,
- data:$("faltaData").value||today(),
- tipo:$("faltaTipo").value||"falta",
- observacao:$("faltaObs").value.trim(),
- created_at:new Date().toISOString()
-};
-
-D.faltas.unshift(row);
-saveLocalData();
-closeM("faltaM");
-renderAll();
-toast("Falta registrada.");
+  e.preventDefault();
+  const funcionario_id=$('faltaFunc').value;
+  if(!funcionario_id){toast('Selecione o funcionário.');return;}
+  const row={
+    funcionario_id,
+    obra_id:getFuncObra(funcionario_id)||null,
+    data:$('faltaData').value||today(),
+    tipo:$('faltaTipo').value||'falta',
+    observacao:$('faltaObs').value.trim(),
+    created_at:new Date().toISOString()
+  };
+  let saved=null;
+  try{
+    if(sb&&user?.id){
+      saved=await insertRow('faltas',row);
+    }
+  }catch(err){console.warn('Falha ao sincronizar falta:',err);}
+  if(!saved){
+    row.id='falta_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    D.faltas.unshift(row);
+    saveLocalData();
+  }
+  closeM('faltaM');
+  renderAll();
+  toast(saved?'Falta registrada e integrada à equipe, obra e frequência.':'Falta registrada localmente; será sincronizada quando a conexão estiver disponível.');
 }
 
 function deleteFalta(id){
@@ -12766,24 +12787,9 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
 .edEqHead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.edEqIdentity{min-width:0}.edEqName{font-size:20px;font-weight:900;margin:0}.edEqRole{color:var(--muted);font-size:13px;margin-top:2px}.edEqHeadRight{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.edEqBadge{display:inline-flex;align-items:center;border:1px solid rgba(80,150,255,.3);color:#6da7ff;background:rgba(50,100,200,.08);padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}.edEqBadge.off{color:#ff8088;border-color:#70343a;background:rgba(255,80,90,.08)}
 .edEqMini{font-size:10px;border:1px solid #765b28;color:var(--gold2);background:rgba(217,173,85,.07);border-radius:9px;padding:5px 8px;font-weight:800;cursor:pointer}
 .edEqRate{margin-top:12px;padding:13px 14px;border-radius:13px;background:#101626;border:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;gap:12px;align-items:center}.edEqRate small,.edEqMetric small,.edEqPeriodCard small{display:block;color:var(--muted);font-size:10px}.edEqRate b{font-size:18px;color:#4e96ff}.edEqRate strong{font-size:13px}
-.edEqDays{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.edEqPill{padding:6px 10px;border-radius:999px;background:#111b2b;border:1px solid rgba(255,255,255,.06);font-size:11px}.edEqPill.blue{background:#1b5dcc;color:#fff!important;border-color:#3d84ff;font-weight:900;text-shadow:0 1px 1px rgba(0,0,0,.35)}
+.edEqDays{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.edEqPill{padding:6px 10px;border-radius:999px;background:#111b2b;border:1px solid rgba(255,255,255,.06);font-size:11px}.edEqPill.blue{background:#1b5dcc;color:#fff;border-color:#3d84ff}
 .edEqActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.edEqAction{min-height:45px;border:0;border-radius:12px;background:#0b111a;color:#aeb7c4;font-weight:800}.edEqAction.primary{background:#3f8cff;color:#fff}.edEqAction.danger{border:1px solid #73363b;color:#ff777f;background:#151018}
 .edEqOccurrence{display:flex;gap:7px;align-items:center;margin:8px 0;color:#ff7078;border:1px solid #73363b;background:rgba(255,80,90,.05);border-radius:12px;padding:9px 11px;font-size:12px;font-weight:800;cursor:pointer}
-.edEqOccurrenceRow{display:grid;grid-template-columns:1fr 46px;gap:7px;align-items:stretch;margin:8px 0}
-.edEqOccurrenceRow .edEqOccurrence{margin:0;width:100%}
-.edEqFaultToggle{width:46px;border:1px solid #3a4350;border-radius:12px;background:#151c26;color:#fff;font-size:22px;font-weight:900;cursor:pointer}
-.edEqFaultToggle.open{transform:rotate(180deg);background:#202a36;border-color:#d9ad55;color:#fff}
-.edEqFaultHistory{margin:0 0 10px;padding:10px 11px;border:1px solid #2c3541;border-radius:13px;background:#0b1119;color:#fff}
-.edEqFaultHistoryTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
-.edEqFaultHistoryTitle b{font-size:12px;color:#fff}
-.edEqFaultEmpty{font-size:12px;color:#aeb7c4;padding:6px 0}
-.edEqFaultItem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px 0;border-top:1px solid rgba(255,255,255,.06)}
-.edEqFaultItem:first-child{border-top:0}
-.edEqFaultDate{font-size:11px;color:#fff;font-weight:900}
-.edEqFaultType{font-size:12px;color:#fff;font-weight:800}
-.edEqFaultObs{font-size:10px;color:#aeb7c4;margin-top:2px}
-.edEqFaultDelete{border:0;background:transparent;color:#ff747e;font-weight:900;cursor:pointer}
-
 .edEqMetricGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.edEqMetric{background:#0d1420;border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:11px}.edEqMetric b{display:block;margin-top:3px;font-size:16px;color:#4d91ff}.edEqMetric.green b{color:#39c978}.edEqMetric.gold b{color:#e5b85c}.edEqMetric.red{background:rgba(130,50,65,.12)}.edEqMetric.red b{color:#ff717c}
 .edEqPeriod{margin-top:14px;padding:13px;border:1px solid #252d37;border-radius:16px;background:#0e141c}.edEqPeriodButtons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:9px}.edEqPeriodButtons button{border:1px solid #303845;background:#111722;color:#c5cbd4;border-radius:10px;padding:9px 7px;font-weight:800}.edEqPeriodButtons button.active{background:#3f8cff;border-color:#3f8cff;color:#fff}.edEqTotals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:10px}.edEqPeriodCard{padding:10px;border-radius:11px;background:#0b1119;border:1px solid rgba(255,255,255,.05)}.edEqPeriodCard b{display:block;margin-top:4px;font-size:15px}.edEqPeriodCard.open b{color:#ff747e}.edEqPeriodCard.acc b{color:#48d18c}.edEqPeriodCard.general b{color:#d9ad55}
 .edEqHistoryTotal{margin-top:9px;color:var(--muted);font-size:11px}
@@ -12792,6 +12798,12 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
 .obraDiasQuick,.obraDiasPayRow,.obraDiasTopActions,.obraDiasOccurrence,.obraDiasActions,.obraDiasStats.two{display:none!important}
 .obraDiasWorkerCard{padding:14px!important}
 @media(max-width:680px){.edEquipeTopActions{grid-template-columns:1fr 1fr}.edEquipeSecondary{display:none}.edEqHead{flex-direction:column}.edEqHeadRight{justify-content:flex-start}.edEqRate{align-items:flex-start;flex-direction:column}.edEqMetricGrid{grid-template-columns:1fr 1fr}.edEqTotals{grid-template-columns:1fr 1fr}.edEqPeriodButtons{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.edEqDaysUniform{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;width:100%}
+.edEqDaysUniform .edEqPill{display:flex;align-items:center;justify-content:center;text-align:center;min-height:30px;white-space:normal}
+.edEqOccurrenceRow{display:grid;grid-template-columns:1fr 38px;gap:7px;align-items:stretch;margin:8px 0}
+.edEqOccurrenceRow .edEqOccurrence{margin:0!important;width:100%}
+.edEqOccurrenceHistory{border:1px solid rgba(255,255,255,.08);border-radius:10px;background:#111b2b;color:#f5c542;font-size:18px;font-weight:900;cursor:pointer;min-height:38px}
+@media(max-width:680px){.edEqDaysUniform{grid-template-columns:1fr!important}.edEqDaysUniform .edEqPill{justify-content:flex-start}.edEqOccurrenceRow{grid-template-columns:1fr 38px}}
 </style>
 <script id="edifiq-final-correcao-20261007">
 (function(){
@@ -12903,20 +12915,6 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
     return {ini,fim,ds,open,paid,bruto,aberto:abertoDiarias+openExtraV,pago:pagoDiarias+paidExtraV,days:new Set(ds.map(d=>d.data).filter(Boolean)).size,pendingCount:open.length,periodPaid:pagoDiarias+paidExtraV};
   }
 
-  function toggleHistoricoFaltasFuncionario(funcId,btn){
-    const box=$(`edEqFaultHistory_${funcId}`);
-    if(!box)return;
-    if(!box.hidden){
-      box.hidden=true; btn.classList.remove('open'); btn.setAttribute('aria-expanded','false'); btn.textContent='⌄'; return;
-    }
-    const faltas=(D.faltas||[]).filter(x=>sameF(x.funcionario_id??x.funcId??x.funcionarioId,funcId)).slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
-    const f=(D.funcionarios||[]).find(x=>sameF(x.id,funcId));
-    const tipoLabel={falta:'Falta',justificada:'Falta justificada',atestado:'Atestado'};
-    box.innerHTML=`<div class="edEqFaultHistoryTitle"><b>⚠️ Histórico de faltas — ${escF(f?.nome||'Funcionário')}</b><span>${faltas.length} registro(s)</span></div>`+
-      (faltas.length ? faltas.map(x=>`<div class="edEqFaultItem"><div class="edEqFaultDate">${escF(formatDateBR(x.data))}</div><div><div class="edEqFaultType">${escF(tipoLabel[x.tipo]||x.tipo||'Falta')}</div><div class="edEqFaultObs">${escF(x.observacao||'Sem observação')}</div></div><button class="edEqFaultDelete" type="button" onclick="deleteFalta('${escF(x.id)}');setTimeout(()=>toggleHistoricoFaltasFuncionario('${escF(funcId)}',document.querySelector('[data-fault-toggle=\\'${escF(funcId)}\\']')),0)">Excluir</button></div>`).join('') : '<div class="edEqFaultEmpty">Nenhuma falta registrada para este funcionário.</div>');
-    box.hidden=false; btn.classList.add('open'); btn.setAttribute('aria-expanded','true'); btn.textContent='⌃';
-  }
-
   /* 4) New employee layout, based on the supplied screenshots. */
   function edifiqRenderFuncs(){
     const box=$('funcList');if(!box)return;
@@ -12928,9 +12926,9 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
       const st=employeePeriodStats(f,equipePeriod);
       const allOpen=getPendingDiarias(f.id).reduce((a,d)=>a+diariaValor(d),0)+getFuncionarioExtrasPendentes(f.id).reduce((a,x)=>a+numF(x.valor),0);
       const vale=pendingValeEmployee(f.id);
-      const pagar=Math.max(0,allOpen-vale);
+      const brutoFolha=allOpen;
+      const pagar=Math.max(0,brutoFolha-vale);
       const acumulado=paidAccumulatedEmployee(f.id);
-      const extrasTotal=getFuncionarioExtrasAll().filter(x=>sameF(x.funcionario_id??x.funcionarioId,f.id)).reduce((a,x)=>a+numF(x.valor),0);
       const rate=numF(f.valor_diaria);
       const week=employeePeriodStats(f,'semana').aberto,fort=employeePeriodStats(f,'quinzena').aberto;
       const obra=getFuncObra(f.id); const obraNome=(D.obras||[]).find(o=>sameF(o.id,obra))?.nome||'Sem obra';
@@ -12938,22 +12936,19 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
       return `<article class="edEquipeCard">
         <div class="edEqHead"><div class="edEqIdentity"><h3 class="edEqName">${escF(f.nome||'Funcionário')}</h3><div class="edEqRole">${escF(f.funcao||f.função||'Função não informada')}</div></div><div class="edEqHeadRight"><span class="edEqBadge ${f.ativo===false?'off':''}">${f.ativo===false?'Inativo':'Diária'}</span><button class="edEqMini" type="button" onclick="openExtraFuncionario('${escF(f.id)}')">🏆 Bônus / Extras</button></div></div>
         <div class="edEqRate"><div><small>Forma de pagamento</small><strong>${escF(f.tipo_pagamento==='mensal'?'Mensal':'Por diária')}</strong><div class="sub" style="margin-top:3px">Obra: ${escF(obraNome)}</div></div><b>${rate?moneyF(rate)+'/dia':moneyF(f.salario_mensal||0)}</b></div>
-        <div class="edEqDays"><span class="edEqPill">${st.days} dias no período</span><span class="edEqPill blue">${st.open.length} em aberto</span><span class="edEqPill">${daysAll} dias acumulados</span></div>
+        <div class="edEqDays edEqDaysUniform"><span class="edEqPill">${st.days} dias no período</span><span class="edEqPill blue">${st.open.length} dias em aberto</span><span class="edEqPill">${daysAll} dias acumulados</span></div>
         <div class="edEqActions"><button class="edEqAction" type="button" onclick="ajustarDiasFuncionarioEd('${escF(f.id)}',-1)">↩ Remover diária</button><button class="edEqAction primary" type="button" onclick="openDiaFuncionario('${escF(f.id)}')">▣ Marcar diária</button></div>
-        <div class="edEqOccurrenceRow">
-          <button class="edEqOccurrence" type="button" onclick="openFalta('${escF(f.id)}')">🗓 Falta / ocorrência</button>
-          <button class="edEqFaultToggle" data-fault-toggle="${escF(f.id)}" type="button" aria-expanded="false" title="Ver histórico de faltas" onclick="toggleHistoricoFaltasFuncionario('${escF(f.id)}',this)">⌄</button>
-        </div>
-        <div class="edEqFaultHistory" id="edEqFaultHistory_${escF(f.id)}" hidden></div>
+        <div class="edEqOccurrenceRow"><button class="edEqOccurrence" type="button" onclick="openFalta('${escF(f.id)}')">🗓 Falta / ocorrência</button><button class="edEqOccurrenceHistory" type="button" title="Histórico de faltas" aria-label="Histórico de faltas" onclick="openHistoricoFaltasFuncionario('${escF(f.id)}')">↗</button></div>
         <div class="edEqMetricGrid"><div class="edEqMetric"><small>Total trabalhado no período</small><b>${moneyF(st.bruto)}</b></div><div class="edEqMetric green"><small>Já pago no período</small><b>${moneyF(st.pago)}</b></div><div class="edEqMetric gold"><small>Vales em aberto</small><b>${moneyF(vale)}</b></div><div class="edEqMetric red"><small>Falta pagar</small><b>${moneyF(pagar)}</b></div></div>
         <div class="edEqMetricGrid" style="margin-top:8px"><div class="edEqMetric"><small>A pagar esta semana</small><b>${moneyF(week)}</b></div><div class="edEqMetric"><small>A pagar na quinzena</small><b>${moneyF(fort)}</b></div></div>
-        <div class="edEqRate" style="margin-top:8px"><div><small>Extras e bônus</small><strong class="gold">${moneyF(extrasTotal)}</strong></div><div style="text-align:right"><small>Total em aberto</small><b style="color:#ff747e">${moneyF(pagar)}</b></div></div>
+        <div class="edEqRate" style="margin-top:8px"><div><small>Acumulado recebido</small><strong>${moneyF(acumulado)}</strong></div><div style="text-align:right"><small>Total em aberto</small><b style="color:#ff747e">${moneyF(pagar)}</b></div></div>
         <div class="edEqActions"><button class="edEqAction primary" type="button" onclick="openPagamentoFuncionario('${escF(f.id)}')">＄ Pagar</button><button class="edEqAction" type="button" onclick="openAdiantamentoFuncionario('${escF(f.id)}')">💳 Vale</button></div>
-        
+        <div class="listActions"><button class="btn" onclick="openFunc('${escF(f.id)}')">Editar</button><button class="btn" onclick="toggleFunc('${escF(f.id)}')">${f.ativo===false?'Ativar':'Desativar'}</button><button class="btn danger" onclick="excluirFuncionario('${escF(f.id)}')">Excluir</button></div>
       </article>`;
     }).join('');
   }
   window.renderFuncs=edifiqRenderFuncs;
+  window.openHistoricoFaltasFuncionario=openHistoricoFaltasFuncionario;
 
   window.renderEquipeOverview=function(){
     ensureEquipePeriodUI();
@@ -12966,7 +12961,9 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
     const paidTotal=paid.reduce((a,d)=>a+numF(d.valor_baixado??d.valor_pago??diariaValor(d)),0)+paidExtra.reduce((a,x)=>a+numF(x.valor),0);
     const q=open.reduce((a,d)=>a+qtyF(d),0);
     const set=(id,v)=>{const el=$(id);if(el)el.textContent=v};
-    set('eqAtivos',ativos);set('eqDiasPeriodo',q);set('eqPendentePeriodo',moneyF(Math.max(0,pending-vale)));set('eqPagoPeriodo',moneyF(paidTotal));set('eqAdiantPeriodo',moneyF(vale));set('eqExtrasPeriodo',moneyF(openExtra.reduce((a,x)=>a+numF(x.valor),0)));set('eqLiquidoPeriodo',moneyF(Math.max(0,pending-vale)));
+    const totalBrutoEquipe=Math.max(0,pending);
+    const totalLiquidoEquipe=Math.max(0,totalBrutoEquipe-vale);
+    set('eqAtivos',ativos);set('eqDiasPeriodo',q);set('eqPendentePeriodo',moneyF(totalBrutoEquipe));set('eqPagoPeriodo',moneyF(paidTotal));set('eqAdiantPeriodo',moneyF(vale));set('eqExtrasPeriodo',moneyF(openExtra.reduce((a,x)=>a+numF(x.valor),0)));set('eqLiquidoPeriodo',moneyF(totalLiquidoEquipe));
     const {ini,fim}=periodRange(equipePeriod);
     const pds=ds.filter(d=>String(d.data||'')>=ini&&String(d.data||'')<=fim);
     const popen=pds.filter(d=>!isPaidF(d)),ppaid=pds.filter(isPaidF);
