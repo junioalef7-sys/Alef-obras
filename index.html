@@ -2352,24 +2352,51 @@ reject(tx.error);
 
 }
 
+async function optimizePhotoToDataURL(file){
+  // Mantém fotos legíveis, limitando cada lado a 1600 px e comprimindo em JPEG.
+  // Processa uma imagem por vez para reduzir o pico de memória no iPhone.
+  const MAX_SIDE=1600;
+  let objectUrl=null;
+  try{
+    const img=new Image();
+    objectUrl=URL.createObjectURL(file);
+    await new Promise((resolve,reject)=>{
+      img.onload=resolve;
+      img.onerror=()=>reject(new Error('Não foi possível abrir a imagem.'));
+      img.src=objectUrl;
+    });
+    const originalW=img.naturalWidth||img.width;
+    const originalH=img.naturalHeight||img.height;
+    if(!originalW||!originalH) throw new Error('Dimensões de imagem inválidas.');
+    const scale=Math.min(1,MAX_SIDE/Math.max(originalW,originalH));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(originalW*scale));
+    canvas.height=Math.max(1,Math.round(originalH*scale));
+    const ctx=canvas.getContext('2d',{alpha:false});
+    if(!ctx) throw new Error('Canvas indisponível.');
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    const result=canvas.toDataURL('image/jpeg',0.78);
+    canvas.width=1;canvas.height=1;
+    img.src='';
+    return result;
+  }catch(err){
+    // Se a compressão não for suportada, tenta manter a função existente.
+    console.warn('Compressão da foto indisponível; usando arquivo original.',err);
+    return await fileToDataURL(file);
+  }finally{
+    if(objectUrl) try{URL.revokeObjectURL(objectUrl)}catch(_){}
+  }
+}
+
 function fileToDataURL(file){
-
-return new Promise((resolve,reject)=>{
-
-const reader=new FileReader();
-
-reader.onload=()=>{
-resolve(reader.result);
-};
-
-reader.onerror=()=>{
-reject(reader.error);
-};
-
-reader.readAsDataURL(file);
-
-});
-
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(reader.error||new Error('Falha ao ler arquivo.'));
+    reader.readAsDataURL(file);
+  });
 }
 
 
@@ -7605,8 +7632,8 @@ continue;
 
 }
 
-const src=
-await fileToDataURL(file);
+// Reduz a resolução das fotos antes de gravar para evitar estouro de memória no Safari/iPhone.
+const src=await optimizePhotoToDataURL(file);
 
 const foto={
 
@@ -7626,7 +7653,7 @@ observacao:observacao,
 
 nome_arquivo:file.name,
 
-tipo:file.type,
+tipo:"image/jpeg",
 
 tamanho:file.size,
 
@@ -13123,7 +13150,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
           const brutoC=Math.round(g.valor*100),liquidoC=Math.max(0,brutoC-abat);abatidoTotal+=abat;
           if(liquidoC<=0)continue;
           const dailyIds=g.diarias.map(d=>String(d.id)).join(',');
-          const operation_id=edifiqStableOperationId('folha-exata-v2',id,data,g.obraId,g.checklistId||'',liquidoC);
+          const operation_id=edifiqStableOperationId('folha-exata-v2',id,data,g.obraId,g.checklistId||'',dailyIds,liquidoC);
           const desc=`[Mão de obra] ${descricao} - ${f.nome}${g.checklistId?' - '+checklistNome(g.checklistId):''}`;
           const observacao=`EDIFIQ_DIARIAS:${dailyIds}. Valor bruto: ${moneyF(g.valor)}. Vale abatido nesta obra: ${moneyF(abat/100)}.${obs?' '+obs:''}`;
           const saved=await insertRow('gastos',{obra_id:g.obraId,checklist_id:g.checklistId||null,data,descricao:desc,valor:liquidoC/100,fornecedor:f.nome,observacao,categoria:'Mão de obra',funcionario_id:f.id,operation_id});
