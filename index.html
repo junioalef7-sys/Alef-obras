@@ -12945,7 +12945,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
     const openExtraV=openExtra.reduce((a,x)=>a+numF(x.valor),0),paidExtraV=paidExtra.reduce((a,x)=>a+numF(x.valor),0);
     const extraTotal=openExtraV+paidExtraV;
     const vales=rowsG().filter(g=>gastoCategoria(g)==='Adiantamento'&&sameF(g.funcionario_id,f.id)&&String(g.data||'')>=ini&&String(g.data||'')<=fim).reduce((a,g)=>a+Math.max(0,numF(g.valor)-numF(g.valor_baixado)),0);
-    const daysInt=ds.reduce((a,d)=>a+(qtyF(d)>=1?1:0),0),halfDays=ds.reduce((a,d)=>a+(qtyF(d)===0.5?1:0),0);
+    const daysInt=open.reduce((a,d)=>a+Math.floor(Math.max(0,qtyF(d))),0),halfDays=open.reduce((a,d)=>a+(Math.max(0,qtyF(d))-Math.floor(Math.max(0,qtyF(d)))>=0.5?1:0),0);
     const periodPaid=pagoDiarias+paidExtraV,accrued=bruto+extraTotal,openGross=abertoDiarias+openExtraV;
     return {ini,fim,ds,open,paid,bruto,extraTotal,aberto:Math.max(0,openGross-vales),openGross,vales,accrued,pago:periodPaid,daysInt,halfDays,days:daysInt+halfDays,pendingCount:open.length,periodPaid,openExtraV,paidExtraV};
   }
@@ -13214,7 +13214,7 @@ window.edPreviewRelatorioObra=async function(){const id=$('edRelatorioObraSelect
       const html=reportHTML(data,photos);
       w.document.open();w.document.write(html);w.document.close();
       // O relatório traz os botões Fechar e Salvar PDF; Salvar PDF abre a impressão do navegador.
-      setTimeout(()=>{try{w.focus();w.print();}catch(err){console.error('Impressão/PDF:',err);toast('Relatório aberto. Use Compartilhar/Imprimir no Safari para salvar em PDF.');}},700);
+      setTimeout(()=>{try{w.focus();}catch(err){console.error('Foco do relatório:',err);} },250);
     }catch(err){
       console.error('PDF relatório automático',err);
       try{w.document.body.innerHTML='<p>Não foi possível montar o relatório. Feche esta aba e tente novamente.</p>';}catch(_){}
