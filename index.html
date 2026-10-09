@@ -1625,7 +1625,7 @@ body{min-height:100vh;min-height:100dvh}
 
     <div class="edHomeFilters">
       <select class="edHomeSelect" id="homeFiltroObra" onchange="renderHomeObras()">
-        <option value="all">Todas as obras</option><option value="em_andamento">Em andamento</option><option value="planejada">Planejadas</option><option value="concluida">Concluídas</option><option value="pausada">Pausadas</option>
+        <option value="em_andamento">Obras em andamento</option>
       </select>
       <select class="edHomeSelect" id="homeOrdenar" onchange="renderHomeObras()">
         <option value="recentes">Mais recentes</option><option value="nome">Nome A–Z</option><option value="progresso">Maior progresso</option><option value="valor">Maior contrato</option>
@@ -8562,10 +8562,13 @@ function renderHomeObras(){
   const filtro=$("homeFiltroObra")?.value||"all";
   const ordem=$("homeOrdenar")?.value||"recentes";
   let obras=[...D.obras].filter(o=>{
+    const statusNorm=String(o.status||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[\s-]+/g,'_');
+    const emAndamento=['em_andamento','andamento','ativa','ativo'].includes(statusNorm);
     const texto=[o.nome,o.cliente,o.endereco,o.tipo].filter(Boolean).join(" ").toLowerCase();
     const okBusca=!busca||texto.includes(busca);
-    const okFiltro=filtro==="all"||String(o.status||"")===filtro;
-    return okBusca&&okFiltro;
+    // A tela inicial lista somente obras em andamento; obras concluídas e demais
+    // status continuam cadastrados e disponíveis nas outras telas.
+    return emAndamento&&okBusca;
   });
   const progressoOf=o=>{
     const itens=(D.checklist||[]).filter(x=>String(x.obra_id||x.obraId)===String(o.id));
@@ -9481,7 +9484,7 @@ function rcExportPDF(){
   const cliente=$('rcCliente')?.value||'Cliente';
   const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
   const html=esc(txt).replace(/\n/g,'<br>');
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório para ${esc(cliente)}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033;line-height:1.55;max-width:850px;margin:auto}h1{font-size:24px;text-align:center} .box{border:1px solid #d9e0ea;border-radius:14px;padding:24px;white-space:normal}@media print{body{padding:10px}}</style></head><body><h1>EDIFIQ — Relatório para Cliente</h1><div class="box">${html}</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EDIFIQ — Relatório para ${esc(cliente)}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033;line-height:1.55;max-width:850px;margin:auto}h1{font-size:24px;text-align:center}.box{border:1px solid #d9e0ea;border-radius:14px;padding:24px;white-space:normal}.edReportToolbar{position:sticky;top:0;z-index:9999;display:flex;gap:8px;justify-content:flex-end;background:#111827;padding:12px;margin:-12px -12px 18px}.edReportToolbar button{border:0;border-radius:8px;padding:11px 15px;font-weight:700;cursor:pointer}.edReportClose{background:#29313b;color:#fff}.edReportSave{background:#d5a33b;color:#111}@media print{.edReportToolbar{display:none!important}body{padding:10px}}@media(max-width:600px){body{padding:12px}.box{padding:14px}.edReportToolbar{position:static;flex-wrap:wrap}}</style></head><body><div class="edReportToolbar"><button class="edReportClose" type="button" onclick="try{window.close()}catch(e){};setTimeout(()=>{if(!window.closed&&history.length>1)history.back()},100)">× Fechar e voltar</button><button class="edReportSave" type="button" onclick="window.print()">📄 Gerar PDF / Salvar / Imprimir</button></div><h1>EDIFIQ — Relatório para Cliente</h1><div class="box">${html}</div><div id="edifiqBuildBadge" style="display:none">EDIFIQ V2 — documentos e materiais corrigidos</div>
 <script id="edifiq-servico-extra-link">
 (function(){
   // Vincula serviços extras à folha/financeiro sem substituir dados existentes.
@@ -10775,7 +10778,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
         <div class="wrActions">
           <button class="btn" type="button" onclick="closeM('relatorioTrabalhadorM')">Cancelar</button>
           <button class="btn gold" type="button" onclick="rtGeneratePreview()">Gerar Prévia →</button>
-          <button class="btn" type="button" onclick="rtPrint()">🖨️ Imprimir / PDF</button>
+          <button class="btn" type="button" onclick="rtPrint()">📄 Gerar PDF / Imprimir</button>
           <button class="btn" type="button" onclick="rtWhatsApp()">WhatsApp</button>
         </div>
        </div>
@@ -10848,9 +10851,9 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     rtGeneratePreview(false);
     const d=rtData(),html=$('rtPreview')?.innerHTML||'';
     const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
-    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório do Trabalhador</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#172033;line-height:1.5;max-width:950px;margin:auto}h1{font-size:24px}h2{font-size:17px;margin-top:22px;border-bottom:1px solid #ddd;padding-bottom:6px}.wrMeta{color:#64748b;font-size:12px}.wrKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.wrKpi,.wrInfo{border:1px solid #d9e0ea;border-radius:10px;padding:10px}.wrKpi small,.wrInfo small{display:block;color:#64748b;font-size:10px}.wrGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #d9e0ea;padding:6px;text-align:left;vertical-align:top}th{background:#f3f6fa}@media print{body{padding:8px}}</style></head><body>${html}</body></html>`);
+    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EDIFIQ — Relatório do Trabalhador</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#172033;line-height:1.5;max-width:950px;margin:auto}h1{font-size:24px}h2{font-size:17px;margin-top:22px;border-bottom:1px solid #ddd;padding-bottom:6px}.wrMeta{color:#64748b;font-size:12px}.wrKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.wrKpi,.wrInfo{border:1px solid #d9e0ea;border-radius:10px;padding:10px}.wrKpi small,.wrInfo small{display:block;color:#64748b;font-size:10px}.wrGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #d9e0ea;padding:6px;text-align:left;vertical-align:top}th{background:#f3f6fa}.edReportToolbar{position:sticky;top:0;z-index:9999;display:flex;gap:8px;justify-content:flex-end;background:#111827;padding:12px;margin:-12px -12px 18px}.edReportToolbar button{border:0;border-radius:8px;padding:11px 15px;font-weight:700;cursor:pointer}.edReportClose{background:#29313b;color:#fff}.edReportSave{background:#d5a33b;color:#111}@media print{.edReportToolbar{display:none!important}body{padding:8px}}@media(max-width:600px){body{padding:12px}.wrKpis{grid-template-columns:1fr 1fr}.wrGrid{grid-template-columns:1fr}.edReportToolbar{position:static;margin:-12px -12px 18px;flex-wrap:wrap}}</style></head><body><div class="edReportToolbar"><button class="edReportClose" type="button" onclick="try{window.close()}catch(e){};setTimeout(()=>{if(!window.closed&&history.length>1)history.back()},100)">× Fechar e voltar</button><button class="edReportSave" type="button" onclick="window.print()">📄 Gerar PDF / Salvar / Imprimir</button></div>${html}</body></html>`);
 
-    w.document.close();setTimeout(()=>w.print(),300);
+    w.document.close();
   };
   window.rtWhatsApp=function(){
     if(!window.__rtFuncId){toast('Selecione um trabalhador.');return;}
@@ -12936,8 +12939,11 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
   function pendingValeEmployee(id){return typeof getEmployeeAdvances==='function'?getEmployeeAdvances(id).reduce((a,x)=>a+numF(x.disponivel),0):0}
   function employeePeriodStats(f,mode){
     const {ini,fim}=periodRange(mode);
-    const ds=(D.diarias||[]).filter(d=>sameF(d.funcionario_id,f.id)&&String(d.data||'')>=ini&&String(d.data||'')<=fim);
-    const open=ds.filter(d=>!isPaidF(d)),paid=ds.filter(isPaidF);
+    const allEmployeeDays=(D.diarias||[]).filter(d=>sameF(d.funcionario_id,f.id));
+    const ds=allEmployeeDays.filter(d=>String(d.data||'')>=ini&&String(d.data||'')<=fim);
+    // O período filtra apenas os indicadores de período; o saldo em aberto considera
+    // todas as diárias ainda não quitadas, mesmo as antigas.
+    const open=allEmployeeDays.filter(d=>!isPaidF(d)),paid=ds.filter(isPaidF);
     const extras=getFuncionarioExtrasAll().filter(x=>sameF(x.funcionario_id??x.funcionarioId,f.id)&&String(x.data||'')>=ini&&String(x.data||'')<=fim);
     const openExtra=extras.filter(x=>!paidStatuses.has(String(x.status||'').toLowerCase())),paidExtra=extras.filter(x=>paidStatuses.has(String(x.status||'').toLowerCase()));
     const abertoDiarias=open.reduce((a,d)=>a+diariaValor(d),0);
