@@ -2815,41 +2815,26 @@ String(b.data||"")
 }
 
 function getFuncionarioExtras(funcId){
-
   const extrasMap=new Map();
-
-  // Fonte principal local dos bônus/serviços extras.
+  const paidStates=new Set(['pago','paid','quitado','liquidado']);
+  // O bônus é um único lançamento lógico, mesmo existindo também em gastos para o financeiro.
   for(const x of (D.servicosExtras||[])){
-    if(String(x.funcionario_id??x.funcionarioId??'')!==String(funcId))continue;
-    if(!x.id)continue;
-    extrasMap.set(String(x.id),{...x,valor:Number(x.valor||0)});
+    if(String(x.funcionario_id??x.funcionarioId??'')!==String(funcId)||!x.id)continue;
+    const linked=(D.gastos||[]).find(g=>String(g.servico_extra_id||'')===String(x.id));
+    const paid=!!x.folhaAplicado||paidStates.has(String(x.status||'').trim().toLowerCase())||!!linked&&paidStates.has(String(linked.status||'').trim().toLowerCase());
+    extrasMap.set(String(x.id),{...x,valor:Number(x.valor||0),status:paid?'pago':(x.status||'pendente'),folhaAplicado:paid||!!x.folhaAplicado});
   }
-
-  // Recupera extras também a partir do lançamento financeiro vinculado.
-  // Isso mantém a folha funcionando mesmo depois de sincronizar/reabrir o aplicativo.
+  // Recupera lançamentos financeiros antigos que ainda não tenham registro local; não duplica os já mapeados.
   for(const g of (D.gastos||[])){
-    if(!g.servico_extra_id)continue;
-    if(String(g.funcionario_id??g.funcionarioId??'')!==String(funcId))continue;
+    if(!g.servico_extra_id||String(g.funcionario_id??g.funcionarioId??'')!==String(funcId))continue;
     const id=String(g.servico_extra_id);
-    if(extrasMap.has(id))continue;
-
-    const desc=String(g.descricao||'').replace(/^\[[^\]]+\]\s*/,'');
-    extrasMap.set(id,{
-      id,
-      funcionario_id:funcId,
-      funcionarioId:funcId,
-      obra_id:g.obra_id,
-      obraId:g.obra_id,
-      descricao:desc,
-      tipo:'Serviço extra',
-      valor:Number(g.valor||0),
-      data:g.data||today(),
-      status:String(g.status||'pendente').toLowerCase()==='pago'?'pago':'pendente',
-      financeiroAplicado:true,
-      folhaAplicado:String(g.status||'pendente').toLowerCase()==='pago'
-    });
+    if(extrasMap.has(id)){
+      if(paidStates.has(String(g.status||'').trim().toLowerCase())){const current=extrasMap.get(id);current.status='pago';current.folhaAplicado=true;}
+      continue;
+    }
+    const paid=paidStates.has(String(g.status||'').trim().toLowerCase());
+    extrasMap.set(id,{id,funcionario_id:funcId,funcionarioId:funcId,obra_id:g.obra_id,obraId:g.obra_id,descricao:String(g.descricao||'').replace(/^\[[^\]]+\]\s*/,''),tipo:'Serviço extra',valor:Number(g.valor||0),data:g.data||today(),status:paid?'pago':'pendente',financeiroAplicado:true,folhaAplicado:paid});
   }
-
   return [...extrasMap.values()];
 }
 
@@ -2857,7 +2842,7 @@ function getFuncionarioExtrasPendentes(funcId){
 
   return getFuncionarioExtras(funcId).filter(x=>{
     const st=String(x.status||'pendente').trim().toLowerCase();
-    return st!=='pago' && st!=='paid' && st!=='quitado' && st!=='liquidado';
+    return !x.folhaAplicado && st!=='pago' && st!=='paid' && st!=='quitado' && st!=='liquidado';
   });
 
 }
@@ -7070,31 +7055,19 @@ function renderFechamentoFolha(){
   }
 }
 function getFuncionarioExtrasAll(){
-  const ids=new Map();
-
+  const ids=new Map(),paidStates=new Set(['pago','paid','quitado','liquidado']);
   for(const x of (D.servicosExtras||[])){
     if(!x.id)continue;
-    ids.set(String(x.id),{...x,valor:Number(x.valor||0)});
+    const linked=(D.gastos||[]).find(g=>String(g.servico_extra_id||'')===String(x.id));
+    const paid=!!x.folhaAplicado||paidStates.has(String(x.status||'').trim().toLowerCase())||!!linked&&paidStates.has(String(linked.status||'').trim().toLowerCase());
+    ids.set(String(x.id),{...x,valor:Number(x.valor||0),status:paid?'pago':(x.status||'pendente'),folhaAplicado:paid||!!x.folhaAplicado});
   }
-
   for(const g of (D.gastos||[])){
     if(!g.servico_extra_id)continue;
-    const id=String(g.servico_extra_id);
-    if(ids.has(id))continue;
-    ids.set(id,{
-      id,
-      funcionario_id:g.funcionario_id,
-      funcionarioId:g.funcionario_id,
-      obra_id:g.obra_id,
-      obraId:g.obra_id,
-      descricao:String(g.descricao||'').replace(/^\[[^\]]+\]\s*/,''),
-      tipo:'Serviço extra',
-      valor:Number(g.valor||0),
-      data:g.data||today(),
-      status:String(g.status||'pendente').toLowerCase()==='pago'?'pago':'pendente'
-    });
+    const id=String(g.servico_extra_id),paid=paidStates.has(String(g.status||'').trim().toLowerCase());
+    if(ids.has(id)){if(paid){const x=ids.get(id);x.status='pago';x.folhaAplicado=true;}continue;}
+    ids.set(id,{id,funcionario_id:g.funcionario_id,funcionarioId:g.funcionario_id,obra_id:g.obra_id,obraId:g.obra_id,descricao:String(g.descricao||'').replace(/^\[[^\]]+\]\s*/,''),tipo:'Serviço extra',valor:Number(g.valor||0),data:g.data||today(),status:paid?'pago':'pendente',folhaAplicado:paid});
   }
-
   return [...ids.values()];
 }
 
