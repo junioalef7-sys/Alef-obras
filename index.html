@@ -3358,6 +3358,19 @@ function startEdifiqRealtime(){
     });
   });
 
+  // Relatório fotográfico usa IndexedDB + Storage e precisa de tratamento próprio.
+  // Não incluir edifiq_fotos no handler genérico porque essa tabela não pertence a D[].
+  ch.on('postgres_changes',{event:'*',schema:'public',table:'edifiq_fotos',filter:`user_id=eq.${edifiqEmpresaUserId()}`},()=>{
+    edifiqRealtimeLastEvent=Date.now();
+    if(!window.__edifiqFotoRealtimeSync){
+      window.__edifiqFotoRealtimeSync=true;
+      setTimeout(async()=>{
+        try{await edifiqSyncCloudFotos();await renderFotos();}catch(err){console.warn('EDIFIQ realtime fotos',err);}
+        finally{window.__edifiqFotoRealtimeSync=false;}
+      },250);
+    }
+  });
+
   ch.subscribe(status=>{
     if(status==='SUBSCRIBED'){
       console.info('EDIFIQ: sincronização em tempo real ativa.');
@@ -3805,26 +3818,31 @@ async function edifiqSyncCloudFotos(){
   if(!sb||!user?.id||!navigator.onLine)return false;
   try{
     const empresa=edifiqEmpresaUserId();
-    const {data,error}=await sb.from('edifiq_fotos').select('*').eq('user_id',empresa).order('updated_at',{ascending:false});
-    if(error)return false;
-    const locais=await getAllPhotosDB(); const ids=new Set();
+    if(!empresa)return false;
+    // Primeiro tenta enviar todas as fotos locais pendentes; não depende do
+    // momento em que a consulta da nuvem foi iniciada.
+    const locais=await getAllPhotosDB();
     for(const local of locais){
-      if(local?.src && !local.storage_synced_at){
+      if(local?.src && (!local.storage_synced_at || local.storage_sync_pendente)){
         const up=await edifiqStorageUploadFoto(local);
-        if(up.ok){ local.storage_synced_at=new Date().toISOString(); }
+        if(!up?.ok)console.warn('EDIFIQ: foto aguardando sincronização',local.id,up?.error||'sem detalhes');
       }
     }
+    // Consulta novamente depois dos envios para incluir fotos que acabaram de subir.
+    const {data,error}=await sb.from('edifiq_fotos').select('*').eq('user_id',empresa).order('updated_at',{ascending:false});
+    if(error){console.warn('EDIFIQ: consulta de fotos na nuvem',error.message);return false;}
     for(const row of (data||[])){
-      ids.add(String(row.id));
+      if(!row?.id || !row?.storage_path)continue;
       const local=locais.find(x=>String(x.id)===String(row.id));
       if(local?.src && local.storage_synced_at && String(local.storage_synced_at)>=String(row.updated_at||''))continue;
-      const signed=await sb.storage.from('edifiq-arquivos').createSignedUrl(row.storage_path,3600);
-      if(signed.error||!signed.data?.signedUrl)continue;
       try{
-        const resp=await fetch(signed.data.signedUrl); if(!resp.ok)continue;
+        const signed=await sb.storage.from('edifiq-arquivos').createSignedUrl(row.storage_path,3600);
+        if(signed.error||!signed.data?.signedUrl){console.warn('EDIFIQ: não foi possível gerar link da foto',row.id,signed.error?.message);continue;}
+        const resp=await fetch(signed.data.signedUrl);
+        if(!resp.ok)continue;
         const blob=await resp.blob(); const src=await edifiqBlobToDataURL(blob);
-        await savePhotoDB({...row,src,storage_synced_at:row.updated_at});
-      }catch(_){ }
+        await savePhotoDB({...row,obra_id:String(row.obra_id),src,storage_synced_at:row.updated_at||new Date().toISOString(),storage_sync_pendente:false});
+      }catch(photoErr){console.warn('EDIFIQ: falha ao baixar foto da nuvem',row.id,photoErr);}
     }
     return true;
   }catch(e){console.warn('EDIFIQ fotos nuvem',e);return false;}
@@ -4760,7 +4778,17 @@ return`
 <div class="finance-mini">
 
 <div class="finance-line">
-<span>Valor do contrato</span>
+<span>Valor original do contrato</span>
+<b class="gold">
+${money(Math.max(0,Number(f.contrato||0)-Number(f.valorServicosAdicionais||0)))}
+</b>
+</div>
+<div class="finance-line">
+<span>Serviços extras adicionados</span>
+<b class="blue">${money(f.valorServicosAdicionais||0)}</b>
+</div>
+<div class="finance-line">
+<span>Valor total atualizado do contrato</span>
 <b class="gold">
 ${money(f.contrato)}
 </b>
@@ -5006,6 +5034,8 @@ function renderObras(){
   const funcoesObra=Object.values(diasResumo.porFunc||{}).sort((a,b)=>String(a.funcao||'').localeCompare(String(b.funcao||''),'pt-BR'));
   const totalDias=Number(diasResumo.totais?.geral||0);
   const contrato=Number(f.contrato||o.valor||0);
+  const valorServicosExtrasContrato=(x.extras||[]).reduce((total,s)=>total+Number(s.valor||0),0);
+  const contratoOriginal=Math.max(0,Number((contrato-valorServicosExtrasContrato).toFixed(2)));
   const recebido=Number(f.receita||0);
   const aReceber=Math.max(0,contrato-recebido);
   const despesas=Number(f.despesas||0);
@@ -5076,7 +5106,7 @@ function renderObras(){
 
   const pagamentosHtml=`<div class="obraModelKpis three"><div><small>Recebimentos</small><b>${pagamentos.length}</b></div><div><small>Total recebido</small><b class="green">${money(recebido)}</b></div><div><small>A receber</small><b class="gold">${money(aReceber)}</b></div></div><div class="obraModeloList">${pagamentos.length?pagamentos.map(r=>`<div class="obraModeloRow"><span><b>${esc(r.descricao||'Pagamento recebido')}</b><br><small>${formatDateBR(r.data)} • ${esc(r.forma_pagamento||r.forma||'Recebimento')}</small></span><b class="green">${money(r.valor)}</b></div>`).join(''):'<div class="obraModeloEmpty">Nenhum pagamento recebido registrado.</div>'}</div><button class="btn gold" type="button" onclick="openFin()">＋ Registrar Pagamento</button>`;
 
-  const servicosAdicionaisResumoHtml=`<div class="obraSummaryBlock edServicosResumo"><h3>Serviços adicionados</h3><div class="obraResultRow"><span>Valor do contrato atual</span><strong class="blue">${money(contrato)}</strong></div>${x.extras.length?`<div class="edServicosResumoList">${x.extras.map(s=>`<div class="edServicosResumoItem"><span><b>${esc(s.nome||s.descricao||'Serviço adicional')}</b><small>${formatDateBR(s.data||today())}</small></span><strong class="blue">${money(s.valor||0)}</strong></div>`).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum serviço adicional cadastrado.</div>'}</div>`;
+  const servicosAdicionaisResumoHtml=`<div class="obraSummaryBlock edServicosResumo"><h3>Contrato e serviços adicionais</h3><div class="obraResultRow"><span>Valor original do contrato</span><strong>${money(contratoOriginal)}</strong></div><div class="obraResultRow"><span>Total de serviços extras adicionados</span><strong class="blue">${money(valorServicosExtrasContrato)}</strong></div><div class="obraResultRow total"><span>Valor total atualizado do contrato</span><strong class="blue">${money(contrato)}</strong></div>${x.extras.length?`<div class="edServicosResumoList">${x.extras.map(s=>`<div class="edServicosResumoItem"><span><b>${esc(s.nome||s.descricao||'Serviço adicional')}</b><small>${formatDateBR(s.data||today())}</small></span><strong class="blue">${money(s.valor||0)}</strong></div>`).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum serviço adicional cadastrado.</div>'}</div>`;
 
   const resumoHtml=`<div class="obraSummaryBlock"><h3>Valores da Obra</h3><div class="obraBigMetric"><small>Valor Total da Obra</small><strong class="blue">${money(contrato)}</strong></div><div class="obraBigMetric"><small>Já Recebi</small><strong class="green">${money(recebido)}</strong></div><div class="obraBigMetric"><small>Falta Receber</small><strong class="green">${money(aReceber)}</strong></div><div class="obraProgressLine"><small>Progresso de Recebimento</small><b>${pctRecebido.toFixed(0)}%</b></div><div class="obraMiniProgress"><span style="width:${pctRecebido}%"></span></div></div>
     ${servicosAdicionaisResumoHtml}
@@ -5094,7 +5124,7 @@ function renderObras(){
     <div class="obraDetailHero"><div class="obraDetailCrumbs"><span class="homeIcon">⌂</span><span class="sep">›</span><span>Obras</span><span class="sep">›</span><strong>${esc(o.nome||'Obra sem nome')}</strong></div><div class="obraDetailMain"><div class="obraDetailTitleWrap"><div class="obraDetailTitle"><h2>${esc(o.nome||'Obra sem nome')}</h2><p>Cliente: ${esc(o.cliente||'Não informado')}</p></div></div><div class="obraDetailActions"><button class="edit" type="button" onclick="openObra('${esc(String(o.id))}')" title="Editar obra">✎</button><button class="delete" type="button" onclick="removeRow('obras','${esc(String(o.id))}')" title="Excluir obra">🗑️</button></div></div></div>
     <div class="obraModeloTabs">${tabs.map(([id,label])=>`<button type="button" class="obraModeloTab ${activeObraTab===id?'active':''}" data-tab="${id}" onclick="obraTab('${esc(String(o.id))}','${id}')">${label}</button>`).join('')}</div>
     <div class="obraModeloBody">
-      <div class="obraModeloPanel" data-panel="dados" style="display:${activeObraTab==='dados'?'block':'none'}"><div class="obraInfoCard"><h3>Informações da Obra</h3><div class="obraDataGrid"><div class="obraDataItem"><small>Tipo de Serviço</small><b>${esc(o.tipo_servico||'Não informado')}</b></div><div class="obraDataItem"><small>Status</small><b>${esc(status)}</b></div><div class="obraDataItem"><small>Valor Contratado</small><b class="blue">${money(o.valor)}</b></div><div class="obraDataItem"><small>Endereço</small><b>${esc(o.endereco||'Não informado')}</b></div><div class="obraDataItem"><small>Data de Início</small><b>${ini}</b></div><div class="obraDataItem"><small>Data de Término</small><b>${fim}</b></div></div><div class="obraProgressWrap"><div class="obraProgressLine"><small>Progresso da obra</small><b>${p}%</b></div><div class="progress"><i style="width:${p}%"></i></div></div>${o.observacoes?`<div class="note" style="margin-top:16px">${esc(o.observacoes)}</div>`:''}</div></div>
+      <div class="obraModeloPanel" data-panel="dados" style="display:${activeObraTab==='dados'?'block':'none'}"><div class="obraInfoCard"><h3>Informações da Obra</h3><div class="obraDataGrid"><div class="obraDataItem"><small>Tipo de Serviço</small><b>${esc(o.tipo_servico||'Não informado')}</b></div><div class="obraDataItem"><small>Status</small><b>${esc(status)}</b></div><div class="obraDataItem"><small>Valor original do contrato</small><b>${money(contratoOriginal)}</b></div><div class="obraDataItem"><small>Serviços extras adicionados</small><b class="blue">${money(valorServicosExtrasContrato)}</b></div><div class="obraDataItem"><small>Valor total atualizado do contrato</small><b class="blue">${money(contrato)}</b></div><div class="obraDataItem"><small>Endereço</small><b>${esc(o.endereco||'Não informado')}</b></div><div class="obraDataItem"><small>Data de Início</small><b>${ini}</b></div><div class="obraDataItem"><small>Data de Término</small><b>${fim}</b></div></div><div class="obraProgressWrap"><div class="obraProgressLine"><small>Progresso da obra</small><b>${p}%</b></div><div class="progress"><i style="width:${p}%"></i></div></div>${o.observacoes?`<div class="note" style="margin-top:16px">${esc(o.observacoes)}</div>`:''}</div></div>
       <div class="obraModeloPanel" data-panel="dias" style="display:${activeObraTab==='dias'?'block':'none'}"><div class="obraInfoCard">${diasHtml}</div></div>
       <div class="obraModeloPanel" data-panel="gastos" style="display:${activeObraTab==='gastos'?'block':'none'}"><div class="obraInfoCard"><h3>Gastos e Custos</h3>${gastosHtml}</div></div>
       <div class="obraModeloPanel" data-panel="servicos" style="display:${activeObraTab==='servicos'?'block':'none'}"><div class="obraInfoCard"><h3>Extras</h3>${servicosHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="addServicoAdicional('${esc(String(o.id))}')">＋ Adicionar Extra</button></div></div></div>
