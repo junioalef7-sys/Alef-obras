@@ -2124,10 +2124,18 @@ function openPhotoDB(){
 
 return new Promise((resolve,reject)=>{
 
-const request=indexedDB.open(
-PHOTO_DB,
-PHOTO_DB_VERSION
-);
+if(!window.indexedDB){
+  reject(new Error("Este navegador não disponibiliza armazenamento local de fotos. Abra o EDIFIQ em uma versão atual do Safari ou Chrome."));
+  return;
+}
+
+let request;
+try{
+  request=indexedDB.open(PHOTO_DB,PHOTO_DB_VERSION);
+}catch(err){
+  reject(err);
+  return;
+}
 
 request.onupgradeneeded=e=>{
 
@@ -2188,8 +2196,12 @@ resolve(foto);
 };
 
 tx.onerror=()=>{
-db.close();
-reject(tx.error);
+try{db.close()}catch(_){}
+reject(tx.error||new Error("Falha ao gravar a foto no armazenamento local."));
+};
+tx.onabort=()=>{
+try{db.close()}catch(_){}
+reject(tx.error||new Error("A gravação da foto foi cancelada pelo navegador."));
 };
 
 });
@@ -7559,165 +7571,79 @@ $("fotoObra").value=id;
 }
 
 async function saveFoto(e){
+  e.preventDefault();
+  const obra_id=$("fotoObra")?.value;
+  const input=$("fotoFiles");
+  const files=[...(input?.files||[])];
+  if(!obra_id){toast("Selecione a obra.");return;}
+  if(!files.length){toast("Selecione pelo menos uma foto.");return;}
 
-e.preventDefault();
+  const btn=e.submitter||document.querySelector("#fotoM button.primary");
+  if(btn){btn.disabled=true;btn.textContent="Salvando fotos...";}
 
-const obra_id=
-$("fotoObra").value;
+  let salvas=0, falhas=0, pendentesNuvem=0;
+  const erros=[];
+  try{
+    const data=$("fotoData")?.value||today();
+    const titulo=$("fotoTitulo")?.value?.trim()||"";
+    const observacao=$("fotoObs")?.value?.trim()||"";
 
-const files=
-[...$("fotoFiles").files];
+    // Processa uma imagem por vez para evitar sobrecarga de memória em celulares.
+    for(const file of files){
+      try{
+        if(!file.type || !file.type.startsWith("image/")){
+          falhas++; erros.push(file.name+": arquivo não reconhecido como imagem"); continue;
+        }
+        const src=await optimizePhotoToDataURL(file);
+        if(typeof src!=="string" || !src.startsWith("data:image/")){
+          throw new Error("O navegador não conseguiu preparar esta imagem.");
+        }
+        const foto={
+          id:"foto_"+Date.now()+"_"+Math.random().toString(36).slice(2),
+          obra_id:String(obra_id),data,titulo,observacao,
+          nome_arquivo:file.name,tipo:"image/jpeg",tamanho:file.size,src,
+          created_at:new Date().toISOString(),storage_sync_pendente:true
+        };
 
-if(!obra_id){
+        // Primeiro grava no aparelho. A nuvem é secundária e não deve impedir o salvamento local.
+        await savePhotoDB(foto);
+        salvas++;
+        try{
+          const cloud=await edifiqStorageUploadFoto(foto);
+          if(cloud?.ok){foto.storage_sync_pendente=false;}
+          else if(!cloud?.skipped){pendentesNuvem++;console.warn("Foto salva localmente; sincronização pendente:",cloud?.error||"sem detalhes");}
+          await savePhotoDB(foto);
+        }catch(cloudErr){
+          pendentesNuvem++;
+          console.warn("Foto salva localmente; falha ao sincronizar com a nuvem:",cloudErr);
+          try{await savePhotoDB(foto)}catch(_){}
+        }
+      }catch(fileErr){
+        falhas++; erros.push(file.name+": "+(fileErr?.message||"falha ao processar"));
+        console.error("Erro ao salvar foto "+file.name,fileErr);
+      }
+    }
 
-toast(
-"Selecione a obra."
-);
-
-return;
-
-}
-
-if(!files.length){
-
-toast(
-"Selecione pelo menos uma foto."
-);
-
-return;
-
-}
-
-const btn=
-e.submitter||
-document.querySelector(
-"#fotoM button.primary"
-);
-
-if(btn){
-
-btn.disabled=true;
-
-btn.textContent=
-"Salvando fotos...";
-}
-
-try{
-
-const data=
-$("fotoData").value;
-
-const titulo=
-$("fotoTitulo")
-.value
-.trim();
-
-const observacao=
-$("fotoObs")
-.value
-.trim();
-
-let salvas=0;
-
-for(const file of files){
-
-if(!file.type.startsWith("image/")){
-
-console.warn(
-"Arquivo ignorado:",
-file.name
-);
-
-continue;
-
-}
-
-// Reduz a resolução das fotos antes de gravar para evitar estouro de memória no Safari/iPhone.
-const src=await optimizePhotoToDataURL(file);
-
-const foto={
-
-id:
-"foto_"+Date.now()+"_"+
-Math.random()
-.toString(36)
-.slice(2),
-
-obra_id:String(obra_id),
-
-data:data,
-
-titulo:titulo,
-
-observacao:observacao,
-
-nome_arquivo:file.name,
-
-tipo:"image/jpeg",
-
-tamanho:file.size,
-
-src:src,
-
-created_at:
-new Date().toISOString()
-
-};
-
-await savePhotoDB(foto);
-
-const cloud=await edifiqStorageUploadFoto(foto);
-if(!cloud.ok&&!cloud.skipped) foto.storage_sync_pendente=true;
-await savePhotoDB(foto);
-
-salvas++;
-
-}
-
-if(!salvas){
-
-throw new Error(
-"Nenhuma imagem válida foi selecionada."
-);
-
-}
-
-closeM("fotoM");
-
-$("fotoFiles").value="";
-
-await renderFotos();
-
-toast(
-salvas>1
-?`${salvas} fotos salvas com sucesso.`
-:"Foto salva com sucesso."
-);
-
-}catch(err){
-
-console.error(
-"Erro ao salvar fotos:",
-err
-);
-
-toast(
-"Não foi possível salvar as fotos. Tente novamente."
-);
-
-}finally{
-
-if(btn){
-
-btn.disabled=false;
-
-btn.textContent=
-"Salvar fotos";
-
-}
-
-}
-
+    if(salvas>0){
+      closeM("fotoM");
+      if(input)input.value="";
+      await renderFotos();
+      let msg=salvas===1?"1 foto salva no aparelho.":`${salvas} fotos salvas no aparelho.`;
+      if(pendentesNuvem)msg+=` ${pendentesNuvem} aguardando sincronização com a nuvem.`;
+      if(falhas)msg+=` ${falhas} arquivo(s) não foram salvos.`;
+      toast(msg);
+      if(falhas)console.warn("Resumo de falhas ao salvar fotos:",erros);
+    }else{
+      const detalhe=erros[0]||"Confira o formato da imagem e tente novamente.";
+      console.error("Nenhuma foto foi salva:",erros);
+      toast("Não foi possível salvar as fotos. "+detalhe);
+    }
+  }catch(err){
+    console.error("Erro geral ao salvar fotos:",err);
+    toast("Erro ao acessar o armazenamento de fotos. Confira o espaço livre do aparelho e tente novamente.");
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="Salvar fotos";}
+  }
 }
 
 async function renderFotos(){
