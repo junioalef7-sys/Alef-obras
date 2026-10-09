@@ -12915,12 +12915,15 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
   let equipePeriod='mes';
   function ensureEquipePeriodUI(){
     let box=document.getElementById('edEquipePeriod');
-    if(box)return box;
-    const list=document.getElementById('funcList'),hist=document.getElementById('equipeHistoricosCard');if(!list||!hist)return null;
-    box=document.createElement('div');box.id='edEquipePeriod';box.className='edEqPeriod';
-    box.innerHTML=`<div class="row"><div><b>Resumo da mão de obra</b><small class="sub" style="display:block;margin-top:3px">Filtre o total por período. O acumulado geral nunca zera.</small></div><b id="edEqPeriodLabel">Mês</b></div><div class="edEqPeriodButtons"><button type="button" data-p="dia">Dia</button><button type="button" data-p="semana">Semana</button><button type="button" data-p="quinzena">Quinzena</button><button type="button" data-p="mes" class="active">Mês</button></div><div class="edEqTotals"><div class="edEqPeriodCard"><small>Mão de obra no período</small><b id="edEqPeriodoTotal">R$ 0,00</b></div><div class="edEqPeriodCard open"><small>Dias/valores em aberto</small><b id="edEqPeriodoAberto">R$ 0,00</b></div><div class="edEqPeriodCard acc"><small>Total pago acumulado</small><b id="edEqAcumuladoPago">R$ 0,00</b></div><div class="edEqPeriodCard general"><small>Total acumulado geral</small><b id="edEqAcumuladoGeral">R$ 0,00</b></div></div><div class="edEqHistoryTotal" id="edEqPeriodoQtd">0 diária(s) em aberto</div>`;
-    hist.parentNode.insertBefore(box,hist);
-    box.querySelectorAll('button[data-p]').forEach(b=>b.addEventListener('click',()=>{equipePeriod=b.dataset.p;box.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));renderFuncs();renderEquipeOverview();}));
+    const list=document.getElementById('funcList');
+    if(!list)return null;
+    // O resumo da mão de obra pertence à tela Funcionários/Equipe, nunca à tela Diárias.
+    if(!box){
+      box=document.createElement('div');box.id='edEquipePeriod';box.className='edEqPeriod';
+      box.innerHTML=`<div class="row"><div><b>Resumo da mão de obra</b><small class="sub" style="display:block;margin-top:3px">Filtre o total por período. O acumulado geral nunca zera.</small></div><b id="edEqPeriodLabel">Mês</b></div><div class="edEqPeriodButtons"><button type="button" data-p="dia">Dia</button><button type="button" data-p="semana">Semana</button><button type="button" data-p="quinzena">Quinzena</button><button type="button" data-p="mes" class="active">Mês</button></div><div class="edEqTotals"><div class="edEqPeriodCard"><small>Mão de obra no período</small><b id="edEqPeriodoTotal">R$ 0,00</b></div><div class="edEqPeriodCard open"><small>Dias/valores em aberto</small><b id="edEqPeriodoAberto">R$ 0,00</b></div><div class="edEqPeriodCard acc"><small>Total pago acumulado</small><b id="edEqAcumuladoPago">R$ 0,00</b></div><div class="edEqPeriodCard general"><small>Total acumulado geral</small><b id="edEqAcumuladoGeral">R$ 0,00</b></div></div><div class="edEqHistoryTotal" id="edEqPeriodoQtd">0 diária(s) em aberto</div>`;
+      box.querySelectorAll('button[data-p]').forEach(b=>b.addEventListener('click',()=>{equipePeriod=b.dataset.p;box.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));renderFuncs();renderEquipeOverview();}));
+    }
+    if(box.parentElement!==list.parentElement || box.previousElementSibling!==list) list.insertAdjacentElement('afterend',box);
     return box;
   }
   function paidAccumulatedEmployee(id){
