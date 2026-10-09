@@ -1736,16 +1736,20 @@ body{min-height:100vh;min-height:100dvh}
 <div class="kpi"><small>Líquido</small><strong id="eqLiquidoPeriodo">R$ 0,00</strong></div>
 </div></div>
 <div id="funcList"></div>
+</section>
+<section class="page" id="diarias">
+<div class="pageTitle"><div><h1>Diárias</h1><p class="sub">Registro, acompanhamento e histórico individual por funcionário.</p></div><button class="btn gold" onclick="openDia()">＋ Diária</button></div>
+<div class="toolbar"><select id="payPeriod" onchange="renderPayroll()"><option value="dia">Hoje</option><option selected="" value="semana">Semana</option><option value="quinzena">15 dias</option><option value="mes">Mês</option><option value="todos">Todos</option></select></div>
+<div class="grid kpis"><div class="kpi"><small>Total pendente</small><strong id="payTotal">R$ 0,00</strong></div><div class="kpi"><small>Registros pendentes</small><strong id="payCount">0</strong></div></div>
+<div id="diaList"></div>
 <div class="card equipeHistoricos" id="equipeHistoricosCard">
   <div class="sectionHead">
-    <div><h2>📚 Histórico da equipe</h2><p class="sub">Consulte pagamentos e diárias por funcionário, período e status.</p></div>
+    <div><h2>📋 Histórico da equipe</h2><p class="sub">Consulte os registros da equipe por funcionário e período.</p></div>
   </div>
   <div class="equipeHistoryTabs">
-    <button class="historyTab active" id="histTabPag" type="button" onclick="showEquipeHistoryTab('pag')">💰 Pagamentos</button>
-    <button class="historyTab" id="histTabDia" type="button" onclick="showEquipeHistoryTab('dia')">📅 Diárias</button>
-    <button class="historyTab" id="histTabFreq" type="button" onclick="showEquipeHistoryTab('freq')">📋 Frequência</button>
+    <button class="historyTab active" id="histTabDia" type="button" onclick="showEquipeHistoryTab('dia')">📅 Histórico de diárias</button>
   </div>
-  <div id="equipeHistoryPag">
+  <div id="equipeHistoryPag" style="display:none!important">
     <div class="historyFilters equipeHistoryFilters">
       <label>Funcionário<select id="histPagFunc" onchange="renderHistoricoPagamentos()"><option value="">Todos os funcionários</option></select></label>
       <label>De<input id="histPagInicio" type="date" onchange="renderHistoricoPagamentos()"></label>
@@ -1754,7 +1758,7 @@ body{min-height:100vh;min-height:100dvh}
     <div class="historySummaryGrid" id="histPagResumo"></div>
     <div id="histPagList"></div>
   </div>
-  <div id="equipeHistoryDia" class="hidden">
+  <div id="equipeHistoryDia">
     <div class="historyFilters equipeHistoryFilters">
       <label>Funcionário<select id="histFunc2" onchange="renderHistoricoDiariasPro()"><option value="">Todos os funcionários</option></select></label>
       <label>De<input id="histInicio2" type="date" onchange="renderHistoricoDiariasPro()"></label>
@@ -1763,7 +1767,7 @@ body{min-height:100vh;min-height:100dvh}
     <div class="historySummaryGrid" id="histDiaResumo"></div>
     <div id="histDiaList"></div>
   </div>
-  <div id="equipeHistoryFreq" class="hidden">
+  <div id="equipeHistoryFreq" class="hidden" style="display:none!important">
     <div class="historyFilters equipeHistoryFilters">
       <label>Funcionário<select id="histFreqFunc" onchange="renderHistoricoFrequencia()"><option value="">Todos os funcionários</option></select></label>
       <label>Obra<select id="histFreqObra" onchange="renderHistoricoFrequencia()"><option value="">Todas as obras</option></select></label>
@@ -1774,12 +1778,7 @@ body{min-height:100vh;min-height:100dvh}
     <div id="histFreqList"></div>
   </div>
 </div>
-</section>
-<section class="page" id="diarias">
-<div class="pageTitle"><div><h1>Diárias</h1><p class="sub">Registro, acompanhamento e histórico individual por funcionário.</p></div><button class="btn gold" onclick="openDia()">＋ Diária</button></div>
-<div class="toolbar"><select id="payPeriod" onchange="renderPayroll()"><option value="dia">Hoje</option><option selected="" value="semana">Semana</option><option value="quinzena">15 dias</option><option value="mes">Mês</option><option value="todos">Todos</option></select></div>
-<div class="grid kpis"><div class="kpi"><small>Total pendente</small><strong id="payTotal">R$ 0,00</strong></div><div class="kpi"><small>Registros pendentes</small><strong id="payCount">0</strong></div></div>
-<div id="diaList"></div>
+
 <div class="card">
 <h2>Histórico de diárias por funcionário</h2>
 <p class="sub">Selecione o funcionário que quiser para consultar somente o histórico dele.</p>
@@ -13153,7 +13152,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
     const ds=(D.diarias||[]).filter(d=>sameF(d.obra_id,id)), gs=rowsG().filter(g=>sameF(recordObraId(g),id)), ps=rowsP().filter(g=>sameF(recordObraId(g),id)), cs=(D.checklist||[]).filter(c=>sameF(recordObraId(c),id)), di=(D.diario||[]).filter(r=>sameF(r.obra_id,id)).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
     const funcs=new Map();for(const d of ds){const f=(D.funcionarios||[]).find(x=>sameF(x.id,d.funcionario_id));if(f)funcs.set(String(f.id),f)};for(const r of di){for(const fid of (r.equipe||[])){const f=(D.funcionarios||[]).find(x=>sameF(x.id,fid));if(f)funcs.set(String(f.id),f)}}
     const fRows=[...funcs.values()].map(f=>{const rows=ds.filter(d=>sameF(d.funcionario_id,f.id)),days=new Set(rows.map(d=>d.data).filter(Boolean)).size,hours=di.filter(r=>(r.equipe||[]).map(String).includes(String(f.id))).reduce((a,r)=>a+numF(r.horas),0),paid=rows.filter(isPaidF).reduce((a,d)=>a+numF(d.valor_baixado??d.valor_pago??diariaValor(d)),0);return {f,days,hours,paid,rate:numF(f.valor_diaria)}});
-    const finance=obraFinanceData(id);return {o,ds,gs,ps,cs,di,funcs:fRows,finance,services:typeof servicesForObra==='function'?servicesForObra(id):[]};
+    const finance=obraFinanceData(id);return {o,ds,gs,ps,cs,di,funcs:fRows,finance,services:(typeof servicesForObra==='function'?servicesForObra(id):[])||[]};
   }
   function reportHTML(data,photos=[]){
     const x=data,o=x.o,f=x.finance;
@@ -13184,7 +13183,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
   if(!w){toast('O navegador bloqueou a abertura do PDF. Permita pop-ups para o EDIFIQ.');return;}
   try{
     const photos=await getReportPhotos(id);
-    const html=buildReportHTML(data,photos);
+    const html=reportHTML(data,photos);
     w.document.open();w.document.write(html);w.document.close();
     setTimeout(()=>{try{w.focus();w.print();}catch(e){console.error(e);}},350);
   }catch(err){console.error('PDF relatório automático',err);try{w.close();}catch(_){}toast('Não foi possível abrir o PDF do relatório.');}
@@ -13195,53 +13194,22 @@ window.edPreviewRelatorioObra=async function(){const id=$('edRelatorioObraSelect
     if(!id){toast('Selecione uma obra.');return;}
     const data=reportData(id);
     if(!data){toast('Obra não encontrada.');return;}
-    let frame=null;
-    let framePrinted=false;
+    // iOS Safari blocks windows opened after an await; open immediately on the tap.
+    let w=null;
+    try{w=window.open('','_blank');}catch(_){}
+    if(!w){toast('O Safari bloqueou a abertura do relatório. Permita pop-ups para o EDIFIQ e tente novamente.');return;}
     try{
-      const photos=await getReportPhotos(id);
-      const html=buildReportHTML(data,photos);
-      frame=document.createElement('iframe');
-      frame.setAttribute('title','Relatório EDIFIQ');
-      frame.style.position='fixed';
-      frame.style.width='0';
-      frame.style.height='0';
-      frame.style.border='0';
-      frame.style.opacity='0';
-      frame.style.pointerEvents='none';
-      document.body.appendChild(frame);
-      const printNow=()=>{
-        try{
-          const w=frame.contentWindow;
-          if(!w)return;
-          w.focus();
-          framePrinted=true;
-          setTimeout(()=>{try{w.print()}catch(err){console.error('print:',err);toast('Não foi possível abrir a impressão do PDF.');}},120);
-          setTimeout(()=>{try{frame.remove()}catch(_){}},3000);
-        }catch(err){
-          console.error('Impressão/PDF:',err);
-          try{frame.remove()}catch(_){}
-          toast('Não foi possível gerar o PDF do relatório.');
-        }
-      };
-      frame.onload=printNow;
-      frame.srcdoc=html;
-      setTimeout(()=>{
-        if(frame && frame.isConnected && frame.contentDocument && frame.contentDocument.readyState==='complete') printNow();
-      },800);
-      setTimeout(()=>{
-        if(!framePrinted && frame && frame.isConnected){
-          try{
-            const w=window.open('','_blank','width=1100,height=850');
-            if(w){
-              w.document.open();w.document.write(html);w.document.close();
-              setTimeout(()=>{try{w.focus();w.print();}catch(_){ }},500);
-            }
-          }catch(_){}
-        }
-      },1800);
+      w.document.open();
+      w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preparando relatório EDIFIQ</title></head><body style="font-family:Arial,sans-serif;padding:24px">Preparando relatório da obra…</body></html>');
+      w.document.close();
+      let photos=[];try{photos=await getReportPhotos(id)||[]}catch(photoErr){console.warn('Fotos indisponíveis; gerando relatório sem fotos.',photoErr)}
+      const html=reportHTML(data,photos);
+      w.document.open();w.document.write(html);w.document.close();
+      // Print after the document has had time to render; user can choose “Salvar em Arquivos/PDF”.
+      setTimeout(()=>{try{w.focus();w.print();}catch(err){console.error('Impressão/PDF:',err);toast('Relatório aberto. Use Compartilhar/Imprimir no Safari para salvar em PDF.');}},700);
     }catch(err){
       console.error('PDF relatório automático',err);
-      try{frame?.remove()}catch(_){}
+      try{w.document.body.innerHTML='<p>Não foi possível montar o relatório. Feche esta aba e tente novamente.</p>';}catch(_){}
       toast('Não foi possível gerar o PDF do relatório.');
     }
   };
