@@ -21,7 +21,7 @@
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%23090b0e'/%3E%3Ccircle cx='96' cy='96' r='66' fill='none' stroke='%23d9ad55' stroke-width='12'/%3E%3Cpath d='M61 128V64h39c20 0 32 12 32 32s-12 32-32 32H61zm17-16h21c10 0 16-6 16-16s-6-16-16-16H78v32z' fill='%23d9ad55'/%3E%3C/svg%3E"/>
 <title>EDIFIQ — Construção Civil</title>
-<meta content="2026-10-03-edifiq-brand-v7" name="edifiq-version"/>
+<meta content="2026-10-10-safari-memory-v8" name="edifiq-version"/>
 <style>
 :root{--bg:#090b0e;--panel:#11151a;--panel2:#171c22;--gold:#d9ad55;--gold2:#f1d58d;--text:#f5f5f5;--muted:#9ba3ad;--line:#252b33;--green:#49d18d;--red:#ff7078;--shadow:0 12px 30px rgba(0,0,0,.28)}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{min-height:100vh}.hidden{display:none!important}.gold{color:var(--gold)}.green{color:var(--green)}.red{color:var(--red)}.muted,.sub,small{color:var(--muted)}
@@ -2239,6 +2239,39 @@ reject(request.error);
 
 }
 
+// EDIFIQ SAFARI/iPHONE — leitura leve: não mantém todas as imagens base64 na memória.
+async function getPhotoDB(id){
+  const db=await openPhotoDB();
+  return new Promise((resolve,reject)=>{
+    const req=db.transaction(PHOTO_STORE,"readonly").objectStore(PHOTO_STORE).get(String(id));
+    req.onsuccess=()=>{db.close();resolve(req.result||null);};
+    req.onerror=()=>{db.close();reject(req.error);};
+  });
+}
+
+async function getAllPhotoMetaDB(){
+  const db=await openPhotoDB();
+  return new Promise((resolve,reject)=>{
+    const out=[];
+    const tx=db.transaction(PHOTO_STORE,"readonly");
+    const req=tx.objectStore(PHOTO_STORE).openCursor();
+    req.onsuccess=e=>{
+      const cur=e.target.result;
+      if(!cur){
+        out.sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+        db.close(); resolve(out); return;
+      }
+      const v=cur.value||{};
+      // Copia apenas metadados. O campo src pode ter vários MB e fica fora desta lista.
+      const {src,...meta}=v;
+      meta.__has_local_src=!!src;
+      out.push(meta);
+      cur.continue();
+    };
+    req.onerror=()=>{db.close();reject(req.error);};
+  });
+}
+
 async function getPhotosByObraDB(obraId){
 
 const db=await openPhotoDB();
@@ -3298,6 +3331,7 @@ function startEdifiqRealtime(){
       const tipo=payload?.eventType;
       const row=payload?.new||payload?.old;
       if(!row?.id) return;
+      if(!Array.isArray(D[table])) return;
       const idx=D[table].findIndex(x=>String(x.id)===String(row.id));
       if(tipo==='DELETE'){
         if(idx>=0){
@@ -3348,7 +3382,8 @@ function startEdifiqRealtime(){
       const el=$('edifiqSyncStatus'); if(el){el.textContent='↻ Tentando sincronizar';el.className='warn';}
     }
   };
-  edifiqRealtimeRefreshTimer=setInterval(syncNow,15000);
+  const edifiqSyncInterval=/iPhone|iPad|iPod/i.test(navigator.userAgent)?60000:30000;
+  edifiqRealtimeRefreshTimer=setInterval(syncNow,edifiqSyncInterval);
   if(!window.__edifiqSyncEventsBound){
     window.__edifiqSyncEventsBound=true;
     window.addEventListener('online',()=>{ setTimeout(syncNow,250); });
@@ -3777,32 +3812,54 @@ async function edifiqSyncCloudFotosRun(){
   if(!sb||!user?.id||!navigator.onLine)return false;
   try{
     const empresa=edifiqEmpresaUserId();
-    const data=await edifiqFetchAllRows('edifiq_fotos'); const error=null;
-    if(error)return false;
-    const locais=await getAllPhotosDB(); const ids=new Set(); let failures=0;
-    for(const local of locais){
-      if(local?.src && (!local.storage_synced_at || local.storage_sync_pendente)){
-        const up=await edifiqStorageUploadFoto(local);
-        if(!up.ok)failures++;else data.push({...local,updated_at:local.storage_synced_at});
+    const data=await edifiqFetchAllRows('edifiq_fotos');
+    const locais=await getAllPhotoMetaDB();
+    const localMap=new Map(locais.map(x=>[String(x.id),x]));
+    let failures=0;
+
+    // 1) Envia somente fotos realmente pendentes, uma por vez.
+    for(const meta of locais){
+      if(meta.__has_local_src && (!meta.storage_synced_at || meta.storage_sync_pendente)){
+        try{
+          const full=await getPhotoDB(meta.id);
+          if(full?.src){
+            const up=await edifiqStorageUploadFoto(full);
+            if(!up.ok) failures++;
+          }
+        }catch(_){failures++;}
+        // Dá chance ao WebKit de liberar memória entre imagens.
+        await new Promise(r=>setTimeout(r,20));
       }
     }
-    const remoteIds=new Set(data.map(r=>String(r.id)));
-    for(const local of locais){if(local.storage_synced_at&&!local.storage_sync_pendente&&!remoteIds.has(String(local.id)))await deletePhotoDB(local.id);}
+
+    // 2) Traz do servidor SOMENTE metadados. A imagem é carregada por URL assinada
+    // quando o usuário abre o Relatório Fotográfico. Isso evita o crash do Safari/PWA.
     for(const row of (data||[])){
-      ids.add(String(row.id));
-      const local=locais.find(x=>String(x.id)===String(row.id));
-      if(local?.src && local.storage_synced_at && String(local.storage_synced_at)>=String(row.updated_at||''))continue;
-      const signed=await sb.storage.from('edifiq-arquivos').createSignedUrl(row.storage_path,3600);
-      if(signed.error||!signed.data?.signedUrl){failures++;continue;}
+      const id=String(row.id);
+      const localMeta=localMap.get(id);
+      if(!localMeta){
+        await savePhotoDB({...row,src:"",storage_synced_at:row.updated_at||row.created_at||new Date().toISOString()});
+        continue;
+      }
+      // Preserva a imagem local existente e apenas atualiza os metadados se necessário.
       try{
-        const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),20000);
-        let resp;try{resp=await fetch(signed.data.signedUrl,{signal:controller.signal});}finally{clearTimeout(timer);}
-        if(!resp.ok){failures++;continue;}
-        const blob=await resp.blob(); const src=await edifiqBlobToDataURL(blob);
-        await savePhotoDB({...row,src,storage_synced_at:row.updated_at});
+        const full=await getPhotoDB(id);
+        if(full){
+          const merged={...full,...row,src:full.src||"",storage_synced_at:row.updated_at||full.storage_synced_at||row.created_at};
+          delete merged.storage_sync_pendente;
+          await savePhotoDB(merged);
+        }
       }catch(_){failures++;}
+      await new Promise(r=>setTimeout(r,5));
     }
-    if(failures){const status=$('edifiqSyncStatus');if(status){status.textContent=failures+' foto(s) pendente(s) — nova tentativa automática';status.className='warn';}return false;}
+
+    // IMPORTANTE: nunca apagar uma foto local automaticamente só porque ela não veio
+    // numa consulta remota. Isso protege contra paginação, rede instável e conflitos.
+    if(failures){
+      const status=$('edifiqSyncStatus');
+      if(status){status.textContent=failures+' foto(s) pendente(s) — nova tentativa automática';status.className='warn';}
+      return false;
+    }
     return true;
   }catch(e){console.warn('EDIFIQ fotos nuvem',e);return false;}
 }
@@ -7727,7 +7784,7 @@ Carregando fotos...
 try{
 
 const fotos=
-await getAllPhotosDB();
+await getAllPhotoMetaDB();
 
 if(!fotos.length){
 
@@ -7798,6 +7855,8 @@ lista
 }
 
 box.innerHTML=html;
+// Imagens locais e remotas são resolvidas somente quando esta tela é aberta.
+setTimeout(()=>hydrateEdifiqPhotoImages(box),0);
 
 }catch(err){
 
@@ -7863,7 +7922,9 @@ position:relative;
 ">
 
 <img
-src="${esc(f.src)}"
+src="${esc(f.src||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22%2310151a%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%23d9ad55%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2232%22%3EEDIFIQ%3C/text%3E%3C/svg%3E')}"
+data-photo-id="${esc(String(f.id))}"
+data-storage-path="${esc(f.storage_path||'')}"
 alt="${esc(
 f.titulo||
 "Foto da obra"
@@ -7952,18 +8013,38 @@ ${esc(f.observacao)}
 
 }
 
+async function edifiqSignedPhotoUrl(storagePath){
+  if(!storagePath||!sb||!user?.id||!navigator.onLine)return '';
+  try{
+    const r=await sb.storage.from('edifiq-arquivos').createSignedUrl(String(storagePath),3600);
+    return r?.data?.signedUrl||'';
+  }catch(_){return '';}
+}
+
+async function hydrateEdifiqPhotoImages(container){
+  if(!container)return;
+  const imgs=[...container.querySelectorAll('img[data-photo-id]')];
+  // Uma por vez para não estourar a memória do Safari/iPhone.
+  for(const img of imgs){
+    if(!document.body.contains(img))break;
+    const id=img.dataset.photoId;
+    try{
+      const f=await getPhotoDB(id);
+      if(f?.src){img.src=f.src;continue;}
+      const path=f?.storage_path||img.dataset.storagePath;
+      const url=await edifiqSignedPhotoUrl(path);
+      if(url)img.src=url;
+    }catch(_){ }
+    await new Promise(r=>setTimeout(r,15));
+  }
+}
+
 async function openFotoVisual(id){
 
-const fotos=
-await getAllPhotosDB();
-
-const f=
-fotos.find(
-x=>String(x.id)===
-String(id)
-);
-
+const f=await getPhotoDB(id);
 if(!f)return;
+const visualSrc=f.src||await edifiqSignedPhotoUrl(f.storage_path);
+if(!visualSrc){toast("Não foi possível carregar esta foto agora.");return;}
 
 const win=
 window.open(
@@ -8025,7 +8106,7 @@ color:#aaa;
 </style>
 </head>
 <body>
-<img src="${esc(f.src)}">
+<img src="${esc(visualSrc)}">
 <h3>${esc(
 f.titulo||
 "Registro fotográfico"
@@ -10247,7 +10328,10 @@ renderDiario();
 
 renderFaltas();
 
-renderFotos();
+if($("fotos")?.classList.contains("active")){
+  // Não carrega dezenas de imagens na inicialização. No iPhone isso pode encerrar o WebKit.
+  setTimeout(()=>{try{renderFotos();}catch(e){console.warn("Fotos",e);}},0);
+}
 renderDocumentos();
 renderMateriais();
 
