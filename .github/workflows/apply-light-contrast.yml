@@ -1,0 +1,193 @@
+name: Apply light mode contrast fix
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply final light-mode contrast override
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          marker = 'edifiq-light-contrast-final-v4'
+          if marker in text:
+              print('Final light contrast override already present.')
+              raise SystemExit(0)
+
+          css = r'''
+<style id="edifiq-light-contrast-final-v4">
+/* EDIFIQ — CORREÇÃO FINAL DO MODO CLARO
+   Contraste forte e uniforme em todo o aplicativo.
+   Este bloco fica por último para impedir que CSS legado volte a clarear os textos. */
+body.edLight{
+  --text:#111827!important;
+  --muted:#374151!important;
+  --line:#cbd5e1!important;
+  color:#111827!important;
+}
+
+/* Texto de apoio e rótulos: cinza-escuro legível, sem transparência. */
+body.edLight :is(
+  .muted,.sub,small,label,.finance-percent,.analysisSub,.financeRecentItem small,
+  .homeProKpi small,.homeProKpi em,.homeTool small,.homeAction small,.homeQuick small,
+  .homeObraClient,.homeObraFoot,.homeObraStat small,.homeWelcome p,.homeSectionTitle span,
+  .summaryTotal small,.summaryMetric small,.dashMini small,.kpi small,
+  .edHomeKpi small,.edHomeWorkType,.edHomeWorkMeta,.edHomeWorkSub,.edHomeProgressHead,
+  .edEqRate small,.edEqMetric small,.edEqPeriodCard small,.historyMetric small,
+  .historyIdentity small,.historyDataGrid small,.folhaFuncionarioGrid small,
+  .obraModelKpis small,.obraPaymentMain small,.obraPaymentMain span,.obraPaymentMain em,
+  .docMetaItem small,.edf3-head p,.edf3-kpi small,.edf3-empty,.edf3-field label,
+  .wrInfo small,.wrKpi small,.rcTab,.rgFilters label
+){
+  color:#374151!important;
+  opacity:1!important;
+  -webkit-text-fill-color:currentColor!important;
+  text-shadow:none!important;
+}
+
+/* Títulos, nomes, valores e números principais. */
+body.edLight :is(
+  h1,h2,h3,h4,h5,h6,b,strong,.fmValue,.edHomeKpiValue,.edHomeWorkName,.edEqName,
+  .homeObraTitle,.homeObraStat b,.summaryMetric b,.summaryTotal b,.kpi strong,
+  .financeModernCard .fmValue,.financeRow b,.finance-line b,.finance-cat b,
+  .historyMetric b,.historyIdentity b,.historyDataGrid b,.wrInfo b,.wrKpi b
+){
+  color:#111827!important;
+  opacity:1!important;
+  -webkit-text-fill-color:currentColor!important;
+  text-shadow:none!important;
+}
+body.edLight :is(.fmValue,.edHomeKpiValue,.kpi strong,.summaryMetric b,.summaryTotal b,.homeObraStat b,
+.financeModernCard .fmValue,.financeRow b,.finance-line b,.finance-cat b){font-weight:900!important}
+
+/* Financeiro e Visão Geral — reforço específico onde havia textos apagados. */
+body.edLight :is(.fmLabel,.financeRow span,.financeCategoryTop span,.finance-line>span:first-child,
+.finance-cat>span:first-child,.financeRecentItem small,.rgMoneyCard small,.rgCostCard small,.rgTotalCost small,
+.rgStatusCard small,.rgHealth small,.rgRankCard small){
+  color:#1f2937!important;
+  opacity:1!important;
+  font-weight:600!important;
+  -webkit-text-fill-color:currentColor!important;
+}
+body.edLight :is(.financeModernPanel h3,.financeModernCard .fmValue,.rgMoneyCard b,.rgCostCard b,.rgTotalCost b){
+  color:#111827!important;
+  opacity:1!important;
+  font-weight:900!important;
+}
+
+/* Equipe — nomes, indicadores, histórico e tabela sempre nítidos. */
+body.edLight :is(.edEqName,.edEqMetric b,.edEqPeriodCard b,.folhaFuncionarioNome b,.historyIdentity b){
+  color:#111827!important;
+  opacity:1!important;
+  font-weight:800!important;
+}
+body.edLight :is(.folhaTable th,.folhaTable td){
+  opacity:1!important;
+  color:#1f2937!important;
+  -webkit-text-fill-color:currentColor!important;
+}
+body.edLight .folhaTable th{font-weight:800!important}
+
+/* Campos, placeholders e opções de formulário. */
+body.edLight :is(input,select,textarea){
+  color:#111827!important;
+  -webkit-text-fill-color:#111827!important;
+}
+body.edLight :is(input,textarea)::placeholder{
+  color:#4b5563!important;
+  opacity:1!important;
+  -webkit-text-fill-color:#4b5563!important;
+}
+body.edLight option{color:#111827!important;background:#fff!important}
+body.edLight :is(input,select,textarea):disabled,
+body.edLight :is(input,select,textarea)[readonly]{
+  color:#4b5563!important;
+  opacity:1!important;
+  -webkit-text-fill-color:#4b5563!important;
+}
+
+/* Navegação e menu. */
+body.edLight :is(.nav,.bottomNav,nav.nav) button{
+  color:#374151!important;
+  opacity:1!important;
+  font-weight:700!important;
+  -webkit-text-fill-color:currentColor!important;
+}
+body.edLight :is(.nav,.bottomNav,nav.nav) button.active{
+  color:#1d4ed8!important;
+  -webkit-text-fill-color:#1d4ed8!important;
+}
+body.edLight :is(.edifiqBrandDrawer strong,.edHomeBrandName){
+  color:#000!important;
+  opacity:1!important;
+  font-weight:900!important;
+  -webkit-text-fill-color:#000!important;
+}
+body.edLight .edHomeBrandText small{color:#374151!important;opacity:1!important}
+
+/* Dourado textual muito claro vira azul-escuro no tema claro. */
+body.edLight .gold,
+body.edLight :is(.homeObraStatus,.homeObraProgressLine b,.homeObraFoot .openLink,.homePrimary b,
+.homeAction b,.homeEyebrow,.analysisCard h3,.analysisFolderBtn b,.pastaInternaHead,.homeBrandSub){
+  color:#1d4ed8!important;
+  opacity:1!important;
+  -webkit-text-fill-color:#1d4ed8!important;
+}
+
+/* Estados sem perder significado e com contraste adequado. */
+body.edLight .green{color:#08783e!important;-webkit-text-fill-color:#08783e!important}
+body.edLight .red{color:#b42332!important;-webkit-text-fill-color:#b42332!important}
+body.edLight .blue{color:#1d4ed8!important;-webkit-text-fill-color:#1d4ed8!important}
+body.edLight .historyStatus.paid{color:#08783e!important}
+body.edLight .historyStatus.pending{color:#9a5b00!important}
+
+/* Botões coloridos preservam contraste interno. */
+body.edLight :is(.edEqAction.primary,.edEqPeriodButtons button.active,.edEqPill.blue){color:#fff!important}
+body.edLight :is(.edEqAction.primary,.edEqPeriodButtons button.active,.edEqPill.blue) *{
+  color:#fff!important;-webkit-text-fill-color:#fff!important
+}
+body.edLight :is(.btn.primary,.btn.gold),
+body.edLight :is(.btn.primary,.btn.gold) *{color:#111!important;-webkit-text-fill-color:#111!important}
+
+/* Remove opacidade herdada dos principais textos do aplicativo. */
+body.edLight :is(.pageTitle,.card,.item,.kpi,.financeModernCard,.financeModernPanel,.summaryCard,
+.edHomeWorkCard,.edEquipeCard,.folhaEquipeCard,.historyCard,.analysisCard) :is(p,small,label,b,strong,span){
+  text-shadow:none!important;
+}
+</style>
+'''
+
+          pos = text.lower().rfind('</body>')
+          if pos == -1:
+              raise SystemExit('Could not find closing </body> tag in index.html')
+          text = text[:pos] + css + '\n' + text[pos:]
+          path.write_text(text, encoding='utf-8')
+          print('Applied final light-mode contrast override.')
+          PY
+
+      - name: Commit fix
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "fix: aumentar contraste do modo claro em todo o app"
+          git push
