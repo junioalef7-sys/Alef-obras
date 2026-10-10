@@ -1932,15 +1932,10 @@ gastos:[],
 pagamentos:[],
 checklist:[],
 faltas:[],
-adiantamentos:[],
-servicos_adicionais:[],
-servicos:[],
-terceirizados:[],
-pagamentos_terceirizados:[],
-orcamentos:[],
 presencas:[],
 diario:[],
 documentos:[],
+servicos_adicionais:[],
 materiais:[],
 material_movimentos:[]
 };
@@ -2089,36 +2084,28 @@ async function excluirExtraObra(id,obraId){
     const itens=(D.servicos_adicionais||[]).filter(x=>String(recordObraId(x))===String(obraId));
     const alvo=itens.find(x=>String(x.id||x.operation_id||"")===String(id));
     if(!alvo){toast("Extra não encontrado.");return;}
-    const valor=Math.max(0,Number(alvo.valor||0));
+    const valor=Number(alvo.valor||0);
     const o=(D.obras||[]).find(x=>String(x.id)===String(obraId));
-    if(!o){toast('Obra não encontrada.');return;}
-    const novoValor=Math.max(0,Number(o.valor||0)-valor);
-
-    // Primeiro confirma a exclusão na nuvem. Offline, coloca a exclusão na fila.
-    if(alvo.id&&!String(alvo.id).startsWith('local_')){
-      if(sb&&user?.id&&navigator.onLine){
-        const resp=await sb.from('servicos_adicionais').delete().eq('id',alvo.id).eq('user_id',edifiqEmpresaUserId()).select('id').maybeSingle();
-        if(resp.error){
-          console.warn('Excluir extra cloud',resp.error.message);
-          addEdifiqDeleteQueue('servicos_adicionais',alvo.id);
-        }else removeEdifiqDeleteQueue('servicos_adicionais',alvo.id);
-      }else addEdifiqDeleteQueue('servicos_adicionais',alvo.id);
+    if(sb&&user?.id&&alvo.id&&!String(alvo.id).startsWith("local_")){
+      try{await sb.from("servicos_adicionais").delete().eq("id",alvo.id).eq("user_id",edifiqEmpresaUserId());}catch(e){console.warn("Excluir extra cloud",e);}
     }
-
     D.servicos_adicionais=(D.servicos_adicionais||[]).filter(x=>String(x.id)!==String(alvo.id));
-    const atualizado=await updateRow('obras',obraId,{valor:novoValor});
-    if(atualizado)o.valor=novoValor;
-
+    if(o){
+      const novoValor=Math.max(0,Number(o.valor||0)-valor);
+      const atualizado=await updateRow("obras",obraId,{valor:novoValor});
+      if(atualizado)o.valor=novoValor;
+    }
     try{
       const all=getServices();
       if(Array.isArray(all[obraId]))all[obraId]=all[obraId].filter(x=>String(x.id)!==String(alvo.id));
       saveServices(all);
-    }catch(_){ }
-    saveLocalData();renderAll();
-    toast(`Extra excluído. Valor atualizado: ${money(novoValor)}.`);
+    }catch(_){}
+    saveLocalData();
+    renderAll();
+    toast(`Extra excluído. Contrato atualizado para ${money(Number(o?.valor||0))}.`);
   }catch(err){
-    console.error('Excluir extra:',err);
-    toast('Não foi possível excluir o extra. Os dados existentes foram preservados.');
+    console.error("Excluir extra:",err);
+    toast("Não foi possível excluir o extra.");
   }
 }
 
@@ -2453,9 +2440,7 @@ function cloneState(){
   try{return JSON.parse(JSON.stringify({
     obras:D.obras||[], funcionarios:D.funcionarios||[], diarias:D.diarias||[],
     gastos:D.gastos||[], pagamentos:D.pagamentos||[], checklist:D.checklist||[],
-    faltas:D.faltas||[], adiantamentos:D.adiantamentos||[], servicos_adicionais:D.servicos_adicionais||[],
-    servicos:D.servicos||[], terceirizados:D.terceirizados||[], pagamentos_terceirizados:D.pagamentos_terceirizados||[],
-    orcamentos:D.orcamentos||[], presencas:D.presencas||[], diario:D.diario||[],
+    faltas:D.faltas||[], presencas:D.presencas||[], diario:D.diario||[],
     documentos:D.documentos||[], materiais:D.materiais||[], material_movimentos:D.material_movimentos||[]
   }))}catch(e){return null}
 }
@@ -2535,7 +2520,7 @@ const EDIFIQ_STATE_ID="principal";
 let edifiqStateSaveSeq=0;
 let edifiqStateSaveQueue=Promise.resolve();
 function edifiqStatePayload(){
-  const payload={obras:D.obras,funcionarios:D.funcionarios,diarias:D.diarias,gastos:D.gastos,pagamentos:D.pagamentos,checklist:D.checklist,faltas:D.faltas,adiantamentos:D.adiantamentos||[],servicos_adicionais:D.servicos_adicionais||[],servicos:D.servicos||[],terceirizados:D.terceirizados||[],pagamentos_terceirizados:D.pagamentos_terceirizados||[],orcamentos:D.orcamentos||[],presencas:D.presencas||[],diario:D.diario,documentos:(D.documentos||[]).map(d=>({...d})),materiais:D.materiais,material_movimentos:D.material_movimentos,_edifiqSavedAt:Date.now(),_edifiqStateVersion:2};
+  const payload={obras:D.obras,funcionarios:D.funcionarios,diarias:D.diarias,gastos:D.gastos,pagamentos:D.pagamentos,checklist:D.checklist,faltas:D.faltas,presencas:D.presencas||[],diario:D.diario,documentos:(D.documentos||[]).map(d=>({...d})),servicos_adicionais:D.servicos_adicionais||[],materiais:D.materiais,material_movimentos:D.material_movimentos,_edifiqSavedAt:Date.now(),_edifiqStateVersion:1};
   return payload;
 }
 function openEdifiqStateDB(){return new Promise((resolve,reject)=>{try{if(!window.indexedDB){reject(new Error("IndexedDB indisponível"));return;}const r=indexedDB.open(EDIFIQ_STATE_DB,1);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(EDIFIQ_STATE_STORE))db.createObjectStore(EDIFIQ_STATE_STORE,{keyPath:"id"})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error||new Error("Falha no banco de estado"));}catch(e){reject(e)}})}
@@ -3287,155 +3272,89 @@ async function ensureSupabaseClient(){
 const EDIFIQ_REALTIME_TABLES=["obras","funcionarios","diarias","gastos","pagamentos","checklist","faltas","adiantamentos","servicos_adicionais","servicos","terceirizados","pagamentos_terceirizados","orcamentos","diario"];
 let edifiqRealtimeChannel=null;
 let edifiqRealtimeRefreshTimer=null;
-let edifiqRealtimeRestartTimer=null;
 let edifiqRealtimeUserId=null;
 let edifiqRealtimeLastEvent=0;
-let edifiqRealtimeReconnectAttempts=0;
-let edifiqFallbackRunning=false;
-
-function edifiqRowTime(row){
-  const raw=row?._sync_updated_at||row?.updated_at||row?.created_at||row?.data||'';
-  const n=Date.parse(raw);
-  return Number.isFinite(n)?n:0;
-}
-function edifiqRegistroMaisNovo(local,remote){
-  if(!local)return remote;
-  if(!remote)return local;
-  const lt=edifiqRowTime(local),rt=edifiqRowTime(remote);
-  if(local?._sync_pendente && lt>=rt)return local;
-  return rt>=lt?remote:local;
-}
-function registerEdifiqConflict(table,id,local,remote,motivo){
-  try{
-    const key='edifiq_sync_conflicts_v1';
-    const list=JSON.parse(localStorage.getItem(key)||'[]');
-    const item={table,id:String(id),motivo:String(motivo||'conflito de sincronização'),at:new Date().toISOString(),local_updated_at:local?._sync_updated_at||local?.updated_at||null,remote_updated_at:remote?.updated_at||null};
-    const safe=Array.isArray(list)?list.filter(x=>!(x.table===table&&String(x.id)===String(id))):[];
-    safe.push(item);localStorage.setItem(key,JSON.stringify(safe.slice(-100)));
-  }catch(_){ }
-}
-function clearEdifiqConflict(table,id){
-  try{
-    const key='edifiq_sync_conflicts_v1';
-    const list=JSON.parse(localStorage.getItem(key)||'[]');
-    if(Array.isArray(list))localStorage.setItem(key,JSON.stringify(list.filter(x=>!(x.table===table&&String(x.id)===String(id)))));
-  }catch(_){ }
-}
-
-function edifiqSetSyncStatus(text,cls='warn'){
-  const el=$('edifiqSyncStatus');if(el){el.textContent=text;el.className=cls;}
-}
-function edifiqEnsureTable(table){if(!Array.isArray(D[table]))D[table]=[];return D[table];}
 
 function stopEdifiqRealtime(){
-  try{if(edifiqRealtimeRefreshTimer){clearInterval(edifiqRealtimeRefreshTimer);edifiqRealtimeRefreshTimer=null;}}catch(_){ }
-  try{if(edifiqRealtimeRestartTimer){clearTimeout(edifiqRealtimeRestartTimer);edifiqRealtimeRestartTimer=null;}}catch(_){ }
-  try{if(edifiqRealtimeChannel&&sb?.removeChannel)sb.removeChannel(edifiqRealtimeChannel);}catch(_){ }
-  edifiqRealtimeChannel=null;edifiqRealtimeUserId=null;edifiqRealtimeReconnectAttempts=0;
-  edifiqSetSyncStatus('☁️ Aguardando sincronização','warn');
-}
-
-function edifiqScheduleRealtimeRestart(){
-  if(edifiqRealtimeRestartTimer||!sb||!user?.id)return;
-  const delay=Math.min(15000,1500*Math.pow(2,Math.min(edifiqRealtimeReconnectAttempts++,3)));
-  edifiqRealtimeRestartTimer=setTimeout(()=>{
-    edifiqRealtimeRestartTimer=null;
-    try{if(edifiqRealtimeChannel&&sb?.removeChannel)sb.removeChannel(edifiqRealtimeChannel);}catch(_){ }
-    edifiqRealtimeChannel=null;edifiqRealtimeUserId=null;
-    startEdifiqRealtime();
-  },delay);
-}
-
-async function edifiqRealtimeFallbackSync(){
-  if(edifiqFallbackRunning||!sb||!user?.id||document.hidden||!navigator.onLine)return;
-  edifiqFallbackRunning=true;
-  try{
-    await retryEdifiqDeleteQueue();
-    await retryEdifiqPendingUpdates();
-    await retryLocalCloudRows();
-    await loadCloud();
-    renderAll();
-    if(!window.edifiqFotosPendentes)edifiqSetSyncStatus('☁️ Sincronizado','ok');
-  }catch(e){
-    console.warn('Fallback de sincronização:',e);
-    edifiqSetSyncStatus('↻ Tentando sincronizar','warn');
-  }finally{edifiqFallbackRunning=false;}
-}
-
-function edifiqApplyRealtimeEvent(table,payload){
-  const rows=edifiqEnsureTable(table);
-  const tipo=payload?.eventType;
-  const row=(tipo==='DELETE'?payload?.old:payload?.new)||payload?.old;
-  if(!row?.id)return;
-  const idx=rows.findIndex(x=>String(x.id)===String(row.id));
-
-  if(tipo==='DELETE'){
-    // A exclusão remota é a fonte da verdade. Não restaura o registro pelo cache local.
-    if(idx>=0)rows.splice(idx,1);
-    removeEdifiqPendingUpdate(table,row.id);
-    clearEdifiqConflict(table,row.id);
-  }else if(payload?.new){
-    if(idx>=0){
-      const local=rows[idx];
-      const vencedor=edifiqRegistroMaisNovo(local,payload.new);
-      if(vencedor===local && local?._sync_pendente){
-        registerEdifiqConflict(table,row.id,local,payload.new,'alteração local pendente é mais recente');
-        return;
-      }
-      rows[idx]={...local,...payload.new,_sync_pendente:false};
-      removeEdifiqPendingUpdate(table,row.id);
-      clearEdifiqConflict(table,row.id);
-    }else rows.unshift({...payload.new,_sync_pendente:false});
-  }
-  saveLocalData();
-  clearTimeout(window.__edifiqRealtimeRenderTimer);
-  window.__edifiqRealtimeRenderTimer=setTimeout(()=>{try{renderAll();if(typeof edifiqFitDesktopNumbers==='function')edifiqFitDesktopNumbers();}catch(e){console.warn('Render realtime',e);}},80);
+  try{ if(edifiqRealtimeRefreshTimer){clearInterval(edifiqRealtimeRefreshTimer);edifiqRealtimeRefreshTimer=null;} }catch(_){ }
+  try{ if(edifiqRealtimeChannel&&sb?.removeChannel) sb.removeChannel(edifiqRealtimeChannel); }catch(_){ }
+  edifiqRealtimeChannel=null;
+  edifiqRealtimeUserId=null;
+  const el=$('edifiqSyncStatus'); if(el){el.textContent='☁️ Aguardando sincronização';el.className='warn';}
 }
 
 function startEdifiqRealtime(){
-  if(!sb||!user?.id||!sb.channel)return false;
-  const owner=String(edifiqEmpresaUserId()||'');if(!owner)return false;
-  if(edifiqRealtimeChannel&&edifiqRealtimeUserId===owner)return true;
-  try{if(edifiqRealtimeChannel&&sb?.removeChannel)sb.removeChannel(edifiqRealtimeChannel);}catch(_){ }
-  if(edifiqRealtimeRefreshTimer){clearInterval(edifiqRealtimeRefreshTimer);edifiqRealtimeRefreshTimer=null;}
-  edifiqRealtimeUserId=owner;
-  EDIFIQ_REALTIME_TABLES.forEach(edifiqEnsureTable);
-  edifiqSetSyncStatus('↻ Sincronizando','warn');
+  if(!sb||!user?.id||!sb.channel) return false;
+  if(edifiqRealtimeChannel && edifiqRealtimeUserId===String(edifiqEmpresaUserId())) return true;
+  stopEdifiqRealtime();
+  edifiqRealtimeUserId=String(edifiqEmpresaUserId());
 
-  const channelName=`edifiq-sync-${owner.replace(/[^a-zA-Z0-9_-]/g,'').slice(0,32)}-${Date.now().toString(36)}`;
+  const syncStatus=$('edifiqSyncStatus'); if(syncStatus){syncStatus.textContent='↻ Sincronizando';syncStatus.className='warn';}
+  const channelName=`edifiq-sync-${String(edifiqEmpresaUserId()).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,32)}`;
   const ch=sb.channel(channelName);
   EDIFIQ_REALTIME_TABLES.forEach(table=>{
-    ch.on('postgres_changes',{event:'*',schema:'public',table,filter:`user_id=eq.${owner}`},payload=>{
-      try{
-        edifiqRealtimeLastEvent=Date.now();
-        edifiqApplyRealtimeEvent(table,payload);
-      }catch(e){
-        console.warn('EDIFIQ realtime '+table,e);
-        // Se um evento isolado falhar, reconcilia somente pela nuvem em seguida.
-        setTimeout(()=>loadTable(table).then(()=>{saveLocalData();renderAll();}).catch(()=>{}),250);
+    ch.on('postgres_changes',{event:'*',schema:'public',table,filter:`user_id=eq.${edifiqEmpresaUserId()}`},payload=>{
+      edifiqRealtimeLastEvent=Date.now();
+      const tipo=payload?.eventType;
+      const row=payload?.new||payload?.old;
+      if(!row?.id) return;
+      const idx=D[table].findIndex(x=>String(x.id)===String(row.id));
+      if(tipo==='DELETE'){
+        if(idx>=0){
+          const local=D[table][idx];
+          if(local?._sync_pendente){ registerEdifiqConflict(table,row.id,local,row,'exclusão remota enquanto havia alteração local pendente'); return; }
+          D[table].splice(idx,1);
+        }
+      }else if(idx>=0){
+        const local=D[table][idx];
+        const vencedor=edifiqRegistroMaisNovo(local,payload.new||{});
+        if(vencedor===local && local?._sync_pendente){
+          registerEdifiqConflict(table,row.id,local,payload.new,'alteração remota mais antiga que a alteração local pendente');
+          return;
+        }
+        D[table][idx]={...local,...payload.new,_sync_pendente:false};
+        clearEdifiqConflict(table,row.id);
+      }else if(payload.new){
+        D[table].unshift(payload.new);
       }
+      saveLocalData();
+      clearTimeout(window.__edifiqRealtimeRenderTimer);
+      window.__edifiqRealtimeRenderTimer=setTimeout(()=>{try{renderAll();}catch(e){console.warn('Render realtime',e);}},120);
     });
   });
+
   ch.subscribe(status=>{
     if(status==='SUBSCRIBED'){
-      edifiqRealtimeReconnectAttempts=0;
-      edifiqSetSyncStatus(window.edifiqFotosPendentes?'↻ Fotos pendentes':'☁️ Sincronizado',window.edifiqFotosPendentes?'warn':'ok');
-    }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+      console.info('EDIFIQ: sincronização em tempo real ativa.');
+      const el=$('edifiqSyncStatus'); if(el&&!window.edifiqFotosPendentes){el.textContent='☁️ Sincronizado';el.className='ok';}
+    }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
       console.warn('EDIFIQ Realtime:',status);
-      edifiqSetSyncStatus('↻ Reconectando','warn');
-      edifiqScheduleRealtimeRestart();
+      const el=$('edifiqSyncStatus'); if(el){el.textContent='↻ Sincronizando';el.className='warn';}
     }
   });
   edifiqRealtimeChannel=ch;
 
-  // Reconciliador: o Realtime é imediato; esta rotina é apenas uma rede de segurança.
-  edifiqRealtimeRefreshTimer=setInterval(edifiqRealtimeFallbackSync,8000);
+  // Fallback: se o Realtime não estiver habilitado para alguma tabela,
+  // uma consulta leve mantém celular e computador alinhados.
+  // Também sincroniza imediatamente ao voltar para a aba ou para a internet.
+  const syncNow=async()=>{
+    if(!sb||!user?.id||document.hidden) return;
+    try{
+      await retryLocalCloudRows();
+      await loadCloud();
+      renderAll();
+      const el=$('edifiqSyncStatus'); if(el&&!window.edifiqFotosPendentes){el.textContent='☁️ Sincronizado';el.className='ok';}
+    }catch(e){ console.warn('Fallback de sincronização:',e);
+      const el=$('edifiqSyncStatus'); if(el){el.textContent='↻ Tentando sincronizar';el.className='warn';}
+    }
+  };
+  edifiqRealtimeRefreshTimer=setInterval(syncNow,15000);
   if(!window.__edifiqSyncEventsBound){
     window.__edifiqSyncEventsBound=true;
-    window.addEventListener('online',()=>setTimeout(()=>{edifiqRealtimeFallbackSync();if(!edifiqRealtimeChannel)startEdifiqRealtime();},150));
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(()=>{edifiqRealtimeFallbackSync();if(!edifiqRealtimeChannel)startEdifiqRealtime();},120);});
+    window.addEventListener('online',()=>{ setTimeout(syncNow,250); });
+    document.addEventListener('visibilitychange',()=>{ if(!document.hidden) setTimeout(syncNow,150); });
   }
-  setTimeout(edifiqRealtimeFallbackSync,120);
+  setTimeout(syncNow,150);
   return true;
 }
 
@@ -3858,56 +3777,32 @@ async function edifiqSyncCloudFotosRun(){
   if(!sb||!user?.id||!navigator.onLine)return false;
   try{
     const empresa=edifiqEmpresaUserId();
-    const data=await edifiqFetchAllRows('edifiq_fotos');
-    const locais=await getAllPhotosDB();
-    let failures=0;
-
-    // Envia primeiro tudo o que existe somente neste aparelho.
+    const data=await edifiqFetchAllRows('edifiq_fotos'); const error=null;
+    if(error)return false;
+    const locais=await getAllPhotosDB(); const ids=new Set(); let failures=0;
     for(const local of locais){
-      if(local?.src&&(!local.storage_synced_at||local.storage_sync_pendente)){
+      if(local?.src && (!local.storage_synced_at || local.storage_sync_pendente)){
         const up=await edifiqStorageUploadFoto(local);
         if(!up.ok)failures++;else data.push({...local,updated_at:local.storage_synced_at});
       }
     }
-
-    // Remove localmente fotos que já haviam sido sincronizadas e foram excluídas em outro aparelho.
-    const remoteIds=new Set((data||[]).map(r=>String(r.id)));
-    for(const local of locais){
-      if(local.storage_synced_at&&!local.storage_sync_pendente&&!remoteIds.has(String(local.id)))await deletePhotoDB(local.id);
+    const remoteIds=new Set(data.map(r=>String(r.id)));
+    for(const local of locais){if(local.storage_synced_at&&!local.storage_sync_pendente&&!remoteIds.has(String(local.id)))await deletePhotoDB(local.id);}
+    for(const row of (data||[])){
+      ids.add(String(row.id));
+      const local=locais.find(x=>String(x.id)===String(row.id));
+      if(local?.src && local.storage_synced_at && String(local.storage_synced_at)>=String(row.updated_at||''))continue;
+      const signed=await sb.storage.from('edifiq-arquivos').createSignedUrl(row.storage_path,3600);
+      if(signed.error||!signed.data?.signedUrl){failures++;continue;}
+      try{
+        const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),20000);
+        let resp;try{resp=await fetch(signed.data.signedUrl,{signal:controller.signal});}finally{clearTimeout(timer);}
+        if(!resp.ok){failures++;continue;}
+        const blob=await resp.blob(); const src=await edifiqBlobToDataURL(blob);
+        await savePhotoDB({...row,src,storage_synced_at:row.updated_at});
+      }catch(_){failures++;}
     }
-
-    const locaisMap=new Map((await getAllPhotosDB()).map(x=>[String(x.id),x]));
-    const pendentes=(data||[]).filter(row=>{
-      const local=locaisMap.get(String(row.id));
-      return !(local?.src&&local.storage_synced_at&&String(local.storage_synced_at)>=String(row.updated_at||''));
-    });
-
-    async function baixarUma(row){
-      if(!row?.storage_path)return false;
-      for(let tentativa=0;tentativa<2;tentativa++){
-        try{
-          const signed=await sb.storage.from('edifiq-arquivos').createSignedUrl(row.storage_path,3600);
-          if(signed.error||!signed.data?.signedUrl)throw new Error(signed.error?.message||'URL da foto indisponível');
-          const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),25000);
-          let resp;try{resp=await fetch(signed.data.signedUrl,{signal:controller.signal,cache:'no-store'});}finally{clearTimeout(timer);}
-          if(!resp.ok)throw new Error('HTTP '+resp.status);
-          const blob=await resp.blob();const src=await edifiqBlobToDataURL(blob);
-          await savePhotoDB({...row,src,storage_synced_at:row.updated_at||new Date().toISOString(),storage_sync_pendente:false});
-          return true;
-        }catch(e){if(tentativa===1)console.warn('Foto pendente',row.id,e);}
-      }
-      return false;
-    }
-
-    // Quatro downloads simultâneos: mais rápido no computador sem sobrecarregar o celular.
-    let cursor=0;
-    async function worker(){while(cursor<pendentes.length){const row=pendentes[cursor++];if(!(await baixarUma(row)))failures++;}}
-    await Promise.all(Array.from({length:Math.min(4,Math.max(1,pendentes.length))},()=>worker()));
-
-    if(failures){
-      const status=$('edifiqSyncStatus');if(status){status.textContent=failures+' foto(s) pendente(s) — nova tentativa automática';status.className='warn';}
-      return false;
-    }
+    if(failures){const status=$('edifiqSyncStatus');if(status){status.textContent=failures+' foto(s) pendente(s) — nova tentativa automática';status.className='warn';}return false;}
     return true;
   }catch(e){console.warn('EDIFIQ fotos nuvem',e);return false;}
 }
@@ -3934,9 +3829,7 @@ async function loadCloud(){
   window.edifiqFotosPendentes=!fotosOk;
   aplicarExclusoesPendentes();
   auditEDIFIQ();
-  // Durante sincronização, uma redução de contagem pode ser uma exclusão legítima feita em outro aparelho.
-  // O snapshot continua salvo para recuperação manual, mas não ressuscitamos registros apagados na nuvem.
-  if(okCount===0) console.warn('EDIFIQ: nenhuma tabela foi atualizada nesta tentativa; estado local preservado.');
+  if(okCount>0) protectAgainstUnexpectedLoss(estadoAntesCloud,{});
   limparChecklistsOrfaos();
   fillSelectors();
   saveLocalData();
@@ -5164,7 +5057,7 @@ function renderObras(){
 
   const totalServicosAdicionais=x.extras.reduce((a,s)=>a+Number(s.valor||0),0);
   const contratoOriginal=Math.max(0,contrato-totalServicosAdicionais);
-  const servicosAdicionaisResumoHtml=`<div class="obraSummaryBlock edServicosResumo"><h3>Serviços adicionados</h3><div class="obraResultRow"><span>Valor original do contrato</span><strong>${money(contratoOriginal)}</strong></div><div class="obraResultRow"><span>Valor dos serviços extras</span><strong class="gold">${money(totalServicosAdicionais)}</strong></div><div class="obraResultRow total"><span>Valor atualizado</span><strong class="blue">${money(contrato)}</strong></div>${x.extras.length?`<div class="edServicosResumoList">${x.extras.map(s=>`<div class="edServicosResumoItem"><span><b>${esc(s.nome||s.descricao||'Serviço adicional')}</b><small>${formatDateBR(s.data||today())}</small></span><strong class="blue">${money(s.valor||0)}</strong></div>`).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum serviço adicional cadastrado.</div>'}</div>`;
+  const servicosAdicionaisResumoHtml=`<div class="obraSummaryBlock edServicosResumo"><h3>Serviços adicionados</h3><div class="obraResultRow"><span>Valor original do contrato</span><strong>${money(contratoOriginal)}</strong></div><div class="obraResultRow"><span>Serviços extras</span><strong class="gold">${money(totalServicosAdicionais)}</strong></div><div class="obraResultRow total"><span>Valor atualizado</span><strong class="blue">${money(contrato)}</strong></div>${x.extras.length?`<div class="edServicosResumoList">${x.extras.map(s=>`<div class="edServicosResumoItem"><span><b>${esc(s.nome||s.descricao||'Serviço adicional')}</b><small>${formatDateBR(s.data||today())}</small></span><strong class="blue">${money(s.valor||0)}</strong></div>`).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum serviço adicional cadastrado.</div>'}</div>`;
 
   const resumoHtml=`<div class="obraSummaryBlock"><h3>Valores da Obra</h3><div class="obraBigMetric"><small>Valor Total da Obra</small><strong class="blue">${money(contrato)}</strong></div><div class="obraBigMetric"><small>Já Recebi</small><strong class="green">${money(recebido)}</strong></div><div class="obraBigMetric"><small>Falta Receber</small><strong class="green">${money(aReceber)}</strong></div><div class="obraProgressLine"><small>Progresso de Recebimento</small><b>${pctRecebido.toFixed(0)}%</b></div><div class="obraMiniProgress"><span style="width:${pctRecebido}%"></span></div></div>
     ${servicosAdicionaisResumoHtml}
@@ -5182,7 +5075,7 @@ function renderObras(){
     <div class="obraDetailHero"><div class="obraDetailCrumbs"><span class="homeIcon">⌂</span><span class="sep">›</span><span>Obras</span><span class="sep">›</span><strong>${esc(o.nome||'Obra sem nome')}</strong></div><div class="obraDetailMain"><div class="obraDetailTitleWrap"><div class="obraDetailTitle"><h2>${esc(o.nome||'Obra sem nome')}</h2><p>Cliente: ${esc(o.cliente||'Não informado')}</p></div></div><div class="obraDetailActions"><button class="edit" type="button" onclick="openObra('${esc(String(o.id))}')" title="Editar obra">✎</button><button class="delete" type="button" onclick="removeRow('obras','${esc(String(o.id))}')" title="Excluir obra">🗑️</button></div></div></div>
     <div class="obraModeloTabs">${tabs.map(([id,label])=>`<button type="button" class="obraModeloTab ${activeObraTab===id?'active':''}" data-tab="${id}" onclick="obraTab('${esc(String(o.id))}','${id}')">${label}</button>`).join('')}</div>
     <div class="obraModeloBody">
-      <div class="obraModeloPanel" data-panel="dados" style="display:${activeObraTab==='dados'?'block':'none'}"><div class="obraInfoCard"><h3>Informações da Obra</h3><div class="obraDataGrid"><div class="obraDataItem"><small>Tipo de Serviço</small><b>${esc(o.tipo_servico||'Não informado')}</b></div><div class="obraDataItem"><small>Status</small><b>${esc(status)}</b></div><div class="obraDataItem"><small>Valor original do contrato</small><b class="blue">${money(contratoOriginal)}</b></div><div class="obraDataItem"><small>Serviços extras</small><b class="gold">${money(totalServicosAdicionais)}</b></div><div class="obraDataItem"><small>Valor atualizado</small><b class="green">${money(contrato)}</b></div><div class="obraDataItem"><small>Endereço</small><b>${esc(o.endereco||'Não informado')}</b></div><div class="obraDataItem"><small>Data de Início</small><b>${ini}</b></div><div class="obraDataItem"><small>Data de Término</small><b>${fim}</b></div></div><div class="obraProgressWrap"><div class="obraProgressLine"><small>Progresso da obra</small><b>${p}%</b></div><div class="progress"><i style="width:${p}%"></i></div></div>${o.observacoes?`<div class="note" style="margin-top:16px">${esc(o.observacoes)}</div>`:''}</div></div>
+      <div class="obraModeloPanel" data-panel="dados" style="display:${activeObraTab==='dados'?'block':'none'}"><div class="obraInfoCard"><h3>Informações da Obra</h3><div class="obraDataGrid"><div class="obraDataItem"><small>Tipo de Serviço</small><b>${esc(o.tipo_servico||'Não informado')}</b></div><div class="obraDataItem"><small>Status</small><b>${esc(status)}</b></div><div class="obraDataItem"><small>Valor Contratado</small><b class="blue">${money(o.valor)}</b></div><div class="obraDataItem"><small>Endereço</small><b>${esc(o.endereco||'Não informado')}</b></div><div class="obraDataItem"><small>Data de Início</small><b>${ini}</b></div><div class="obraDataItem"><small>Data de Término</small><b>${fim}</b></div></div><div class="obraProgressWrap"><div class="obraProgressLine"><small>Progresso da obra</small><b>${p}%</b></div><div class="progress"><i style="width:${p}%"></i></div></div>${o.observacoes?`<div class="note" style="margin-top:16px">${esc(o.observacoes)}</div>`:''}</div></div>
       <div class="obraModeloPanel" data-panel="dias" style="display:${activeObraTab==='dias'?'block':'none'}"><div class="obraInfoCard">${diasHtml}</div></div>
       <div class="obraModeloPanel" data-panel="gastos" style="display:${activeObraTab==='gastos'?'block':'none'}"><div class="obraInfoCard"><h3>Gastos e Custos</h3>${gastosHtml}</div></div>
       <div class="obraModeloPanel" data-panel="servicos" style="display:${activeObraTab==='servicos'?'block':'none'}"><div class="obraInfoCard"><h3>Extras</h3>${servicosHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="addServicoAdicional('${esc(String(o.id))}')">＋ Adicionar Extra</button></div></div></div>
@@ -13404,31 +13297,163 @@ const __edifiqStopRealtimeOriginal=stopEdifiqRealtime;stopEdifiqRealtime=functio
 const __edifiqStartRealtimeOriginal=startEdifiqRealtime;startEdifiqRealtime=function(){const r=__edifiqStartRealtimeOriginal.apply(this,arguments);setTimeout(startEdifiqPhotoRealtime,0);return r;};
 setTimeout(()=>{if(sb&&user?.id)startEdifiqPhotoRealtime();},500);window.addEventListener('online',()=>edifiqSchedulePhotoSync(250));document.addEventListener('visibilitychange',()=>{if(!document.hidden)edifiqSchedulePhotoSync(250);});
 </script>
-<style id="edifiq-kpi-desktop-ajuste-final-20261010">
-@media(min-width:760px){
-  .edHomeKpis .edHomeKpi strong{font-size:31px!important;line-height:1.05!important;white-space:nowrap!important;overflow:hidden!important;max-width:100%!important}
-  #funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{font-size:26px!important;line-height:1.08!important;white-space:nowrap!important;overflow:hidden!important;max-width:100%!important}
+
+<!-- =========================================================
+     EDIFIQ — CORREÇÃO 2026-10-10
+     Backup seguro + serviços extras em Obras + cards PC + Safari
+     ========================================================= -->
+<style id="edifiq-fix-pc-cards-retangulares-20261010">
+@media (min-width:760px){
+  #dashboard .edHomeKpis{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:12px!important;
+  }
+  #dashboard .edHomeKpi{
+    min-height:82px!important;
+    height:auto!important;
+    aspect-ratio:auto!important;
+    padding:12px 14px!important;
+    border-radius:14px!important;
+  }
+  #dashboard .edHomeKpi strong{
+    font-size:clamp(18px,1.65vw,24px)!important;
+    line-height:1.08!important;
+    white-space:nowrap!important;
+  }
+  #dashboard .edHomeKpi small{font-size:11px!important}
 }
 </style>
-<script id="edifiq-kpi-desktop-autofit-20261010">
+<script id="edifiq-fix-backup-extras-safari-20261010">
 (function(){
-  let queued=false;
-  function fitOne(el,max,min){
-    if(!el||innerWidth<760)return;
-    const box=el.parentElement;if(!box)return;
-    let size=max;el.style.setProperty('font-size',size+'px','important');
-    const available=Math.max(24,box.clientWidth-2);
-    while(el.scrollWidth>available&&size>min){size-=0.5;el.style.setProperty('font-size',size+'px','important');}
-  }
-  window.edifiqFitDesktopNumbers=function(){
-    if(innerWidth<760)return;
-    document.querySelectorAll('.edHomeKpi strong').forEach(el=>fitOne(el,31,20));
-    document.querySelectorAll('#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong').forEach(el=>fitOne(el,26,18));
+  'use strict';
+
+  // 1) Serviços extras lançados dentro de OBRAS devem aumentar o contrato.
+  // Corrige a sobrescrita posterior de openExtraObra pela rotina de bônus da equipe.
+  window.openExtraObra = async function(obraId){
+    try{
+      if(!obraId){ if(window.toast) toast('Obra não encontrada.'); return; }
+      const obra=(window.D?.obras||[]).find(o=>String(o.id)===String(obraId));
+      if(!obra){ if(window.toast) toast('Obra não encontrada.'); return; }
+
+      const nome=prompt('Nome do serviço extra:','');
+      if(nome===null || !String(nome).trim())return;
+      const raw=prompt('Valor do serviço extra (R$):','0');
+      if(raw===null)return;
+      const valor=Number(String(raw).trim().replace(/\s/g,'').replace(/\./g,'').replace(',','.'));
+      if(!Number.isFinite(valor)||valor<=0){ if(window.toast) toast('Informe um valor válido.'); return; }
+
+      const valorOriginalAtual=Number(obra.valor||0);
+      const op=(typeof window.edifiqStableOperationId==='function')
+        ? window.edifiqStableOperationId('servico_adicional',obraId,String(nome).trim(),valor,(typeof window.today==='function'?window.today():new Date().toISOString().slice(0,10)))
+        : ('servico_adicional_'+Date.now()+'_'+Math.random().toString(36).slice(2));
+      const data=(typeof window.today==='function'?window.today():new Date().toISOString().slice(0,10));
+
+      let servico=null;
+      if(typeof window.insertRow==='function'){
+        servico=await window.insertRow('servicos_adicionais',{
+          obra_id:obraId,descricao:String(nome).trim(),valor,data,
+          observacao:'Serviço adicional — valor incorporado ao contrato.',operation_id:op
+        });
+      }
+      if(!servico){ if(window.toast) toast('Não foi possível salvar o serviço extra.'); return; }
+
+      const novoValor=valorOriginalAtual+valor;
+      let obraAtualizada=true;
+      if(typeof window.updateRow==='function') obraAtualizada=!!(await window.updateRow('obras',obraId,{valor:novoValor}));
+      if(!obraAtualizada){
+        // Não deixa um extra isolado sem refletir no contrato.
+        try{
+          if(typeof window.removeRow==='function' && servico?.id) await window.removeRow('servicos_adicionais',servico.id);
+        }catch(_){ }
+        if(window.toast) toast('Não foi possível atualizar o contrato. O lançamento foi cancelado.');
+        return;
+      }
+
+      obra.valor=novoValor;
+      window.D.servicos_adicionais=Array.isArray(window.D.servicos_adicionais)?window.D.servicos_adicionais:[];
+      if(!window.D.servicos_adicionais.some(x=>String(x.id||x.operation_id)===String(servico.id||servico.operation_id||op))){
+        window.D.servicos_adicionais.push({...servico,id:servico.id||op,operation_id:servico.operation_id||op,obra_id:obraId,descricao:String(nome).trim(),valor,data});
+      }
+
+      // Mantém a cópia legada usada por versões anteriores e pelo backup.
+      try{
+        if(typeof window.getServices==='function' && typeof window.saveServices==='function'){
+          const all=window.getServices()||{};
+          all[obraId]=Array.isArray(all[obraId])?all[obraId]:[];
+          const sid=String(servico.id||op);
+          if(!all[obraId].some(x=>String(x.id)===sid)) all[obraId].push({id:sid,nome:String(nome).trim(),valor,data});
+          window.saveServices(all);
+        }
+      }catch(e){ console.warn('EDIFIQ extra legado',e); }
+
+      try{ if(typeof window.saveLocalData==='function') window.saveLocalData(); }catch(_){ }
+      try{ if(typeof window.renderAll==='function') window.renderAll(); }catch(_){ }
+      if(window.toast) toast('Serviço extra registrado. Contrato atualizado para '+(typeof window.money==='function'?window.money(novoValor):novoValor));
+    }catch(err){
+      console.error('EDIFIQ serviço extra em Obras',err);
+      if(window.toast) toast('Não foi possível registrar o serviço extra.');
+    }
   };
-  function schedule(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;window.edifiqFitDesktopNumbers();});}
-  window.addEventListener('resize',schedule);
-  new MutationObserver(schedule).observe(document.body,{subtree:true,childList:true,characterData:true});
-  setTimeout(schedule,120);
+
+  // 2) Backup: antes de importar, cria automaticamente uma cópia de segurança do estado atual.
+  // Depois chama a importação original. Assim, mesmo se o arquivo importado estiver incompleto,
+  // existe uma cópia anterior para recuperação.
+  const originalImportRelatorioData=window.importRelatorioData;
+  if(typeof originalImportRelatorioData==='function'){
+    window.importRelatorioData=async function(event){
+      try{
+        const file=event?.target?.files?.[0];
+        if(!file)return;
+        // Validação mínima antes de iniciar qualquer alteração.
+        if(file.name.toLowerCase().endsWith('.json')){
+          const txt=await file.text();
+          const parsed=JSON.parse(txt);
+          if(!parsed || parsed.app!=='EDIFIQ' || !parsed.data || typeof parsed.data!=='object'){
+            if(window.toast) toast('Backup inválido. Nenhum dado foi alterado.');
+            if(event?.target) event.target.value='';
+            return;
+          }
+          // Faz snapshot pré-importação sem impedir a importação se o download for bloqueado.
+          try{ if(typeof window.exportFull==='function') await window.exportFull(); }catch(e){ console.warn('Backup pré-importação',e); }
+        }
+        return await originalImportRelatorioData.call(this,event);
+      }catch(err){
+        console.error('EDIFIQ importação protegida',err);
+        if(window.toast) toast('Importação cancelada por segurança. Seus dados atuais foram preservados.');
+        if(event?.target) event.target.value='';
+      }
+    };
+  }
+
+  // 3) Proteção extra de persistência: salva ao sair/ocultar e ao perder conexão.
+  let saveTimer=0;
+  function safePersist(){
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(()=>{
+      try{ if(typeof window.saveLocalData==='function') window.saveLocalData(); }catch(e){ console.warn('EDIFIQ persistência local',e); }
+    },120);
+  }
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden')safePersist(); },{passive:true});
+  window.addEventListener('pagehide',safePersist,{passive:true});
+  window.addEventListener('offline',safePersist,{passive:true});
+
+  // 4) Safari/iPhone: reduz custo de imagens fora da tela, evitando picos de memória.
+  function optimizeImages(root=document){
+    try{
+      root.querySelectorAll('img').forEach(img=>{
+        if(!img.hasAttribute('loading'))img.loading='lazy';
+        if(!img.hasAttribute('decoding'))img.decoding='async';
+      });
+    }catch(_){ }
+  }
+  optimizeImages();
+  let imgQueued=false;
+  const imgObs=new MutationObserver(()=>{
+    if(imgQueued)return;
+    imgQueued=true;
+    setTimeout(()=>{imgQueued=false;optimizeImages();},350);
+  });
+  imgObs.observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script>
 </body>
