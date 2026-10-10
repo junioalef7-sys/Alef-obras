@@ -3106,14 +3106,26 @@ function toggleTheme(){
   const light=document.body.classList.toggle('edLight');
   try{localStorage.setItem('edifiq_theme',light?'light':'dark')}catch(e){}
   const b=document.getElementById('themeToggleBtn');
-  if(b){b.textContent=light?'☀':'☾';b.setAttribute('aria-label',light?'Ativar modo escuro':'Ativar modo claro');}
+  if(b){
+    b.textContent=light?'☀️':'🌙';
+    b.setAttribute('aria-label',light?'Ativar modo escuro':'Ativar modo claro');
+    b.setAttribute('title',light?'Modo claro — tocar para modo escuro':'Modo escuro — tocar para modo claro');
+  }
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute('content',light?'#f4f7fb':'#090b0e');
 }
 function restoreTheme(){
   let light=false;
   try{light=localStorage.getItem('edifiq_theme')==='light'}catch(e){}
   document.body.classList.toggle('edLight',light);
   const b=document.getElementById('themeToggleBtn');
-  if(b){b.textContent=light?'☀':'☾';b.setAttribute('aria-label',light?'Ativar modo escuro':'Ativar modo claro');}
+  if(b){
+    b.textContent=light?'☀️':'🌙';
+    b.setAttribute('aria-label',light?'Ativar modo escuro':'Ativar modo claro');
+    b.setAttribute('title',light?'Modo claro — tocar para modo escuro':'Modo escuro — tocar para modo claro');
+  }
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute('content',light?'#f4f7fb':'#090b0e');
 }
 
 function goMenu(page){
@@ -4914,6 +4926,35 @@ contrato
 
 }
 
+function obraGastoCategorias(obraId){
+  const mapa=new Map();
+  const vistos=new Set();
+  (D.gastos||[]).forEach(g=>{
+    if(String(recordObraId(g))!==String(obraId)) return;
+    const op=String(g.operation_id||g.operacao_id||g.sync_id||'').trim();
+    const id=String(g.id||'').trim();
+    const dedup=op?('op:'+op):(id?('id:'+id):'');
+    if(dedup){ if(vistos.has(dedup)) return; vistos.add(dedup); }
+
+    const raw=String(g.categoria||'').trim();
+    let nome=gastoSubcategoria(g);
+    // Não esconde categorias personalizadas dentro de "Outros".
+    if(nome==='Outros' && raw && normalize(raw)!=='outros') nome=raw;
+    if(!nome) nome='Outros';
+    mapa.set(nome,(mapa.get(nome)||0)+Number(g.valor||0));
+  });
+  return Array.from(mapa.entries())
+    .map(([nome,valor])=>({nome,valor}))
+    .filter(x=>Math.abs(Number(x.valor||0))>0.000001)
+    .sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt-BR'));
+}
+
+function financeCategoryRowsForObra(obraId,contrato){
+  const cats=obraGastoCategorias(obraId);
+  if(!cats.length) return '<div class="finance-cat"><span>Despesas por categoria</span><span><b>R$ 0,00</b></span></div>';
+  return cats.map(c=>`<div class="finance-cat"><span>${esc(c.nome)}</span><span><b>${money(c.valor)}</b><br><span class="finance-percent">${pctText(c.valor,contrato)} do contrato</span></span></div>`).join('');
+}
+
 function obraFinanceMini(o){
 
 const f=
@@ -4938,71 +4979,7 @@ ${money(f.receita)}
 </div>
 
 <div style="margin-top:8px">
-
-<div class="finance-cat">
-<span>Material</span>
-<span>
-<b>${money(f.material)}</b>
-<br>
-<span class="finance-percent">
-${pctText(f.material,f.contrato)}
-do contrato
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>Mão de obra</span>
-<span>
-<b>${money(f.mao)}</b>
-<br>
-<span class="finance-percent">
-${pctText(f.mao,f.contrato)}
-do contrato
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>Serviço terceirizado</span>
-<span>
-<b>${money(f.terceirizado)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.terceirizado,
-f.contrato
-)}
-do contrato
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>Combustível</span>
-<span><b>${money(f.combustivel||0)}</b><br><span class="finance-percent">${pctText(f.combustivel||0,f.contrato)} do contrato</span></span>
-</div>
-
-<div class="finance-cat">
-<span>Locação</span>
-<span><b>${money(f.locacao||0)}</b><br><span class="finance-percent">${pctText(f.locacao||0,f.contrato)} do contrato</span></span>
-</div>
-
-<div class="finance-cat">
-<span>Outras despesas</span>
-<span>
-<b>${money(f.outros)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.outros,
-f.contrato
-)}
-do contrato
-</span>
-</span>
-</div>
-
+${financeCategoryRowsForObra(o.id,f.contrato)}
 </div>
 
 <div class="finance-line"
@@ -6955,77 +6932,7 @@ ${money(f.receita)}
 </b>
 </div>
 
-<div class="finance-cat">
-<span>Material</span>
-<span>
-<b>${money(f.material)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.material,
-f.contrato
-)}
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>Mão de obra</span>
-<span>
-<b>${money(f.mao)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.mao,
-f.contrato
-)}
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>
-Serviço terceirizado
-</span>
-<span>
-<b>${money(
-f.terceirizado
-)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.terceirizado,
-f.contrato
-)}
-</span>
-</span>
-</div>
-
-<div class="finance-cat">
-<span>Ferramentas e equipamentos</span>
-<span><b>${money(f.ferramentasEquipamentos||0)}</b><br><span class="finance-percent">${pctText(f.ferramentasEquipamentos||0,f.contrato)}</span></span>
-</div>
-
-<div class="finance-cat">
-<span>Transporte</span>
-<span><b>${money(f.transporte||0)}</b><br><span class="finance-percent">${pctText(f.transporte||0,f.contrato)}</span></span>
-</div>
-
-<div class="finance-cat">
-<span>
-Outras despesas
-</span>
-<span>
-<b>${money(f.outros)}</b>
-<br>
-<span class="finance-percent">
-${pctText(
-f.outros,
-f.contrato
-)}
-</span>
-</span>
-</div>
+${financeCategoryRowsForObra(o.id,f.contrato)}
 
 <div class="finance-line"
 style="margin-top:8px">
@@ -13702,5 +13609,59 @@ function edifiqSalvarPDF(){
 })();
 </script>
 
+
+<style id="edifiq-light-mode-complete">
+/* EDIFIQ — modo claro completo em todas as telas */
+body.edLight{
+  --bg:#f4f7fb;
+  --panel:#ffffff;
+  --panel2:#f0f4f9;
+  --text:#172033;
+  --muted:#68758a;
+  --line:#d7e0ee;
+  --shadow:0 10px 28px rgba(34,52,80,.10);
+  background:#f4f7fb!important;
+  color:#172033!important;
+}
+body.edLight .wrap,body.edLight .page,body.edLight main,body.edLight section{color:var(--text)}
+body.edLight .card,body.edLight .item,body.edLight .kpi,body.edLight .modalBox,body.edLight .modalContent,
+body.edLight .finance-mini,body.edLight .financeModernPanel,body.edLight .folhaEquipeCard,
+body.edLight .obraModeloPanel,body.edLight .obraSummaryBlock,body.edLight .obraBigMetric,
+body.edLight .obraModelKpis>div,body.edLight .obraModelMetricRow,body.edLight .obraPaymentHistory,
+body.edLight .auditHero>div,body.edLight .auditFunctionRow,body.edLight .obraAuditChecks span,
+body.edLight .edci-panel,body.edLight .edci-kpi,body.edLight .homeTool,body.edLight .homeProKpi,
+body.edLight .homeProContract,body.edLight .docUploadBox{
+  background:#fff!important;color:#172033!important;border-color:#d7e0ee!important;box-shadow:var(--shadow);
+}
+body.edLight input,body.edLight select,body.edLight textarea{
+  background:#fff!important;color:#172033!important;border-color:#cbd6e5!important;
+}
+body.edLight input::placeholder,body.edLight textarea::placeholder{color:#8390a3!important}
+body.edLight option{background:#fff;color:#172033}
+body.edLight .btn:not(.primary):not(.gold):not(.danger),body.edLight .edHomeIconBtn,
+body.edLight .iconBtn{background:#eef3f9!important;color:#172033!important;border-color:#cbd6e5!important}
+body.edLight .sub,body.edLight small,body.edLight .muted,body.edLight .finance-percent,
+body.edLight .homeProKpi small,body.edLight .homeProKpi em,body.edLight .homeTool small,
+body.edLight .obraModelKpis small,body.edLight .obraResultRow,body.edLight .obraPaymentMain small,
+body.edLight .obraPaymentMain span,body.edLight .obraPaymentMain em{color:#68758a!important}
+body.edLight h1,body.edLight h2,body.edLight h3,body.edLight h4,body.edLight b,body.edLight strong,
+body.edLight .finance-line span:first-child,body.edLight .finance-cat>span:first-child{color:#172033}
+body.edLight .finance-line,body.edLight .finance-cat,body.edLight .row,
+body.edLight .folhaTable th,body.edLight .folhaTable td{border-color:#d7e0ee!important}
+body.edLight .homeWelcome,body.edLight .homeProTitle,body.edLight .homeProMainBtn,body.edLight .homeAction,
+body.edLight .edifiqHomeMenuCard{background:linear-gradient(145deg,#ffffff,#f1f5fa)!important;color:#172033!important;border-color:#d7e0ee!important}
+body.edLight .homeProMainBtn,body.edLight .homeAction,body.edLight .homeTool{color:#172033!important}
+body.edLight .homeProStatus{background:#fff!important;color:#42516a!important;border-color:#d7e0ee!important}
+body.edLight .edifiqMenuDrawer,body.edLight .drawer,body.edLight .sidebar{background:#fff!important;color:#172033!important;border-color:#d7e0ee!important}
+body.edLight .edifiqMenuItem{color:#172033!important}
+body.edLight .edifiqMenuItem:hover,body.edLight .edifiqMenuItem.active{background:#f1f5fa!important}
+body.edLight .bottomNav,body.edLight nav{background:rgba(255,255,255,.96)!important;border-color:#d7e0ee!important}
+body.edLight .bottomNav button,body.edLight nav button{color:#526176!important}
+body.edLight .bottomNav button.active,body.edLight nav button.active{color:#a77a2d!important}
+body.edLight table{color:#172033}
+body.edLight thead th{background:#eef3f9!important;color:#42516a!important}
+body.edLight .red{color:#d63b47!important}.edLight .green{color:#178a57!important}.edLight .gold{color:#9b6f20!important}
+body.edLight #themeToggleBtn{background:#fff!important;color:#172033!important;border-color:#cbd6e5!important}
+</style>
 </body>
 </html>
