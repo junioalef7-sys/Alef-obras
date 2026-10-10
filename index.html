@@ -767,7 +767,7 @@ table{width:100%;border-collapse:collapse}
       var box=el.parentElement;
       if(!box)return;
       var available=Math.max(20, box.clientWidth);
-      var size=Math.min(17, Math.max(9, available/Math.max(5.5, el.textContent.length*0.58)));
+      var size=Math.min(innerWidth>=760?29:17, Math.max(9, available/Math.max(5.5, el.textContent.length*0.58)));
       el.style.fontSize=size+'px';
       el.style.letterSpacing=(el.textContent.length>14?'-.75px':'-.35px');
       while(el.scrollWidth>available && size>9){
@@ -2291,7 +2291,8 @@ async function edifiqStorageDeleteFoto(foto){
   try{
     const {error}=await sb.storage.from('edifiq-arquivos').remove([String(foto.storage_path)]);
     if(error)return false;
-    await sb.from('edifiq_fotos').delete().eq('id',String(foto.id)).eq('user_id',edifiqEmpresaUserId());
+    const removed=await sb.from('edifiq_fotos').delete().eq('id',String(foto.id)).eq('user_id',edifiqEmpresaUserId());
+    if(removed.error)return false;
     return true;
   }catch(_){return false;}
 }
@@ -3209,7 +3210,8 @@ function bindSupabaseAuth(){
   if(!sb || sb.__edifiqAuthBound) return;
   sb.__edifiqAuthBound=true;
   sb.__edifiqAuthProcessing=null;
-  sb.auth.onAuthStateChange(async(event,session)=>{
+  sb.auth.onAuthStateChange((event,session)=>{
+    setTimeout(async()=>{
     try{
       const nextUser=session?.user||null;
       const nextId=String(nextUser?.id||'');
@@ -3247,6 +3249,7 @@ function bindSupabaseAuth(){
     finally{
       if(sb?.__edifiqAuthProcessing?.userId===String(session?.user?.id||'')) sb.__edifiqAuthProcessing=null;
     }
+    },0);
   });
 }
 
@@ -3323,7 +3326,7 @@ function startEdifiqRealtime(){
   ch.subscribe(status=>{
     if(status==='SUBSCRIBED'){
       console.info('EDIFIQ: sincronização em tempo real ativa.');
-      const el=$('edifiqSyncStatus'); if(el){el.textContent='☁️ Sincronizado';el.className='ok';}
+      const el=$('edifiqSyncStatus'); if(el&&!window.edifiqFotosPendentes){el.textContent='☁️ Sincronizado';el.className='ok';}
     }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
       console.warn('EDIFIQ Realtime:',status);
       const el=$('edifiqSyncStatus'); if(el){el.textContent='↻ Sincronizando';el.className='warn';}
@@ -3340,12 +3343,12 @@ function startEdifiqRealtime(){
       await retryLocalCloudRows();
       await loadCloud();
       renderAll();
-      const el=$('edifiqSyncStatus'); if(el){el.textContent='☁️ Sincronizado';el.className='ok';}
+      const el=$('edifiqSyncStatus'); if(el&&!window.edifiqFotosPendentes){el.textContent='☁️ Sincronizado';el.className='ok';}
     }catch(e){ console.warn('Fallback de sincronização:',e);
       const el=$('edifiqSyncStatus'); if(el){el.textContent='↻ Tentando sincronizar';el.className='warn';}
     }
   };
-  edifiqRealtimeRefreshTimer=setInterval(syncNow,60000);
+  edifiqRealtimeRefreshTimer=setInterval(syncNow,15000);
   if(!window.__edifiqSyncEventsBound){
     window.__edifiqSyncEventsBound=true;
     window.addEventListener('online',()=>{ setTimeout(syncNow,250); });
@@ -3395,7 +3398,6 @@ async function login(){
     }
 
     user=session.user;
-    await edifiqCarregarEmpresaAtiva();
 
     // Mostra o aplicativo imediatamente após a autenticação.
     $("auth")?.classList.add("hidden");
@@ -3414,6 +3416,8 @@ async function login(){
       console.warn("Não foi possível persistir a sessão do Supabase:",e);
     }
 
+    await edifiqCarregarEmpresaAtiva();
+    startEdifiqRealtime();
     // A sincronização não pode impedir a entrada no aplicativo.
     try{
       if(sb){
@@ -3717,7 +3721,7 @@ async function loadTable(table){
   if(!sb||!user) return false;
   const antes=Array.isArray(D[table])?[...D[table]]:[];
   try{
-    const{data,error}=await sb.from(table).select('*').eq('user_id',edifiqEmpresaUserId());
+    const data=await edifiqFetchAllRows(table); const error=null;
     if(!error&&Array.isArray(data)){
       data.sort((a,b)=>String(b.updated_at||b.created_at||b.data||'').localeCompare(String(a.updated_at||a.created_at||a.data||'')));
       const locaisPendentes=new Map(antes.filter(r=>String(r?.id||'').startsWith('local_')||r?._sync_pendente).map(r=>[String(r.id),r]));
@@ -3763,31 +3767,42 @@ async function edifiqStorageUploadFoto(foto){
     await savePhotoDB(foto); return {ok:true,path};
   }catch(e){return {ok:false,error:e?.message||String(e)};}
 }
+let edifiqFotosInFlight=null;
 async function edifiqSyncCloudFotos(){
+  if(edifiqFotosInFlight)return edifiqFotosInFlight;
+  edifiqFotosInFlight=edifiqSyncCloudFotosRun();
+  try{return await edifiqFotosInFlight;}finally{edifiqFotosInFlight=null;}
+}
+async function edifiqSyncCloudFotosRun(){
   if(!sb||!user?.id||!navigator.onLine)return false;
   try{
     const empresa=edifiqEmpresaUserId();
-    const {data,error}=await sb.from('edifiq_fotos').select('*').eq('user_id',empresa).order('updated_at',{ascending:false});
+    const data=await edifiqFetchAllRows('edifiq_fotos'); const error=null;
     if(error)return false;
-    const locais=await getAllPhotosDB(); const ids=new Set();
+    const locais=await getAllPhotosDB(); const ids=new Set(); let failures=0;
     for(const local of locais){
-      if(local?.src && !local.storage_synced_at){
+      if(local?.src && (!local.storage_synced_at || local.storage_sync_pendente)){
         const up=await edifiqStorageUploadFoto(local);
-        if(up.ok){ local.storage_synced_at=new Date().toISOString(); }
+        if(!up.ok)failures++;else data.push({...local,updated_at:local.storage_synced_at});
       }
     }
+    const remoteIds=new Set(data.map(r=>String(r.id)));
+    for(const local of locais){if(local.storage_synced_at&&!local.storage_sync_pendente&&!remoteIds.has(String(local.id)))await deletePhotoDB(local.id);}
     for(const row of (data||[])){
       ids.add(String(row.id));
       const local=locais.find(x=>String(x.id)===String(row.id));
       if(local?.src && local.storage_synced_at && String(local.storage_synced_at)>=String(row.updated_at||''))continue;
       const signed=await sb.storage.from('edifiq-arquivos').createSignedUrl(row.storage_path,3600);
-      if(signed.error||!signed.data?.signedUrl)continue;
+      if(signed.error||!signed.data?.signedUrl){failures++;continue;}
       try{
-        const resp=await fetch(signed.data.signedUrl); if(!resp.ok)continue;
+        const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),20000);
+        let resp;try{resp=await fetch(signed.data.signedUrl,{signal:controller.signal});}finally{clearTimeout(timer);}
+        if(!resp.ok){failures++;continue;}
         const blob=await resp.blob(); const src=await edifiqBlobToDataURL(blob);
         await savePhotoDB({...row,src,storage_synced_at:row.updated_at});
-      }catch(_){ }
+      }catch(_){failures++;}
     }
+    if(failures){const status=$('edifiqSyncStatus');if(status){status.textContent=failures+' foto(s) pendente(s) — nova tentativa automática';status.className='warn';}return false;}
     return true;
   }catch(e){console.warn('EDIFIQ fotos nuvem',e);return false;}
 }
@@ -3801,15 +3816,17 @@ async function loadCloud(){
   saveSafeSnapshot('antes da sincronização com a nuvem');
   saveLocalData();
   let okCount=0;
-  for(const table of ['obras','funcionarios','diarias','gastos','pagamentos','checklist','faltas','adiantamentos','servicos_adicionais','servicos','terceirizados','pagamentos_terceirizados','orcamentos','diario']){
-    if(await loadTable(table)) okCount++;
+  for(let i=0;i<EDIFIQ_REALTIME_TABLES.length;i+=4){
+    const results=await Promise.all(EDIFIQ_REALTIME_TABLES.slice(i,i+4).map(loadTable));
+    okCount+=results.filter(Boolean).length;
   }
   mergeLocal();
   aplicarExclusoesPendentes();
   await retryEdifiqDeleteQueue();
   await retryEdifiqPendingUpdates();
   await retryLocalCloudRows();
-  await edifiqSyncCloudFotos();
+  const fotosOk=await edifiqSyncCloudFotos();
+  window.edifiqFotosPendentes=!fotosOk;
   aplicarExclusoesPendentes();
   auditEDIFIQ();
   if(okCount>0) protectAgainstUnexpectedLoss(estadoAntesCloud,{});
@@ -8338,20 +8355,7 @@ f.observacao||""
 <\/script>
 
 
-<style id="edifiq-desktop-performance-sync-20261010">
-@media (min-width:760px){
-.edHomeKpi strong{font-size:clamp(23px,2vw,29px)!important;line-height:1.08!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-.equipeOverview .kpi strong,.equipeKpis .kpi strong,.folhaKpis .kpi strong{font-size:clamp(22px,1.85vw,28px)!important;line-height:1.08!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-}
-</style>
-<script id="edifiq-photo-realtime-performance-20261010">
-let edifiqPhotoRealtimeChannel=null,edifiqPhotoSyncTimer=null,edifiqPhotoSyncRunning=false;
-async function edifiqPhotoSyncAndRender(){if(edifiqPhotoSyncRunning||!navigator.onLine||!sb||!user?.id)return;edifiqPhotoSyncRunning=true;try{await edifiqSyncCloudFotos();if(document.getElementById('fotos')?.classList.contains('active'))await renderFotos();}catch(e){console.warn('EDIFIQ foto realtime',e);}finally{edifiqPhotoSyncRunning=false;}}
-function edifiqSchedulePhotoSync(delay=180){clearTimeout(edifiqPhotoSyncTimer);edifiqPhotoSyncTimer=setTimeout(edifiqPhotoSyncAndRender,delay);}
-function startEdifiqPhotoRealtime(){if(!sb||!user?.id||edifiqPhotoRealtimeChannel)return;try{edifiqPhotoRealtimeChannel=sb.channel('edifiq-fotos-'+edifiqEmpresaUserId()).on('postgres_changes',{event:'*',schema:'public',table:'edifiq_fotos',filter:`user_id=eq.${edifiqEmpresaUserId()}`},()=>edifiqSchedulePhotoSync(100)).subscribe(status=>{if(status==='SUBSCRIBED')edifiqSchedulePhotoSync(50);});}catch(e){console.warn('Canal realtime de fotos',e);}}
-const __edifiqStartRealtimeOriginal=startEdifiqRealtime;startEdifiqRealtime=function(){const r=__edifiqStartRealtimeOriginal.apply(this,arguments);setTimeout(startEdifiqPhotoRealtime,0);return r;};
-setTimeout(()=>{if(sb&&user?.id)startEdifiqPhotoRealtime();},500);window.addEventListener('online',()=>edifiqSchedulePhotoSync(250));document.addEventListener('visibilitychange',()=>{if(!document.hidden)edifiqSchedulePhotoSync(250);});
-</script>
+
 </body></html>`);
 
 win.document.close();
@@ -8369,7 +8373,9 @@ return;
 
 try{
 
-const __pf=(await getAllPhotosDB()).find(x=>String(x.id)===String(id)); await edifiqStorageDeleteFoto(__pf); await deletePhotoDB(id);
+const __pf=(await getAllPhotosDB()).find(x=>String(x.id)===String(id));
+if(__pf?.storage_synced_at && !(await edifiqStorageDeleteFoto(__pf))){toast("Não foi possível confirmar a exclusão na nuvem. Tente novamente com internet.");return;}
+await deletePhotoDB(id);
 
 await renderFotos();
 
@@ -13269,5 +13275,26 @@ window.edPreviewRelatorioObra=async function(){const id=$('edRelatorioObraSelect
 })();
 </script>
 
-</body>
+
+<script id="edifiq-sync-pagination-fix">
+async function edifiqFetchAllRows(table){
+  const rows=[]; const owner=edifiqEmpresaUserId();
+  for(let offset=0;;offset+=500){
+    const result=await sb.from(table).select('*').eq('user_id',owner).order('id',{ascending:true}).range(offset,offset+499);
+    if(result.error)throw result.error;
+    rows.push(...(result.data||[]));
+    if((result.data||[]).length<500)break;
+  }
+  return rows;
+}
+</script>
+<style id="edifiq-desktop-kpi-final">@media(min-width:760px){.edHomeKpi{overflow:hidden!important}.edHomeKpi strong{font-size:29px;max-width:100%!important}.equipeOverview .kpi strong,.equipeKpis .kpi strong,.folhaKpis .kpi strong{font-size:clamp(21px,1.85vw,28px);line-height:1.15;overflow-wrap:anywhere;}.equipeKpis .kpi{min-width:0}}</style><script id="edifiq-photo-realtime-performance-20261010">
+let edifiqPhotoRealtimeChannel=null,edifiqPhotoSyncTimer=null,edifiqPhotoSyncRunning=false;
+async function edifiqPhotoSyncAndRender(){if(edifiqPhotoSyncRunning||!navigator.onLine||!sb||!user?.id)return;edifiqPhotoSyncRunning=true;try{await edifiqSyncCloudFotos();if(document.getElementById('fotos')?.classList.contains('active'))await renderFotos();}catch(e){console.warn('EDIFIQ foto realtime',e);}finally{edifiqPhotoSyncRunning=false;}}
+function edifiqSchedulePhotoSync(delay=180){clearTimeout(edifiqPhotoSyncTimer);edifiqPhotoSyncTimer=setTimeout(edifiqPhotoSyncAndRender,delay);}
+function startEdifiqPhotoRealtime(){if(!sb||!user?.id||edifiqPhotoRealtimeChannel)return;try{edifiqPhotoRealtimeChannel=sb.channel('edifiq-fotos-'+edifiqEmpresaUserId()).on('postgres_changes',{event:'*',schema:'public',table:'edifiq_fotos',filter:`user_id=eq.${edifiqEmpresaUserId()}`},()=>edifiqSchedulePhotoSync(100)).subscribe(status=>{if(status==='SUBSCRIBED')edifiqSchedulePhotoSync(50);});}catch(e){console.warn('Canal realtime de fotos',e);}}
+const __edifiqStopRealtimeOriginal=stopEdifiqRealtime;stopEdifiqRealtime=function(){if(edifiqPhotoRealtimeChannel&&sb)sb.removeChannel(edifiqPhotoRealtimeChannel);edifiqPhotoRealtimeChannel=null;clearTimeout(edifiqPhotoSyncTimer);return __edifiqStopRealtimeOriginal.apply(this,arguments);};
+const __edifiqStartRealtimeOriginal=startEdifiqRealtime;startEdifiqRealtime=function(){const r=__edifiqStartRealtimeOriginal.apply(this,arguments);setTimeout(startEdifiqPhotoRealtime,0);return r;};
+setTimeout(()=>{if(sb&&user?.id)startEdifiqPhotoRealtime();},500);window.addEventListener('online',()=>edifiqSchedulePhotoSync(250));document.addEventListener('visibilitychange',()=>{if(!document.hidden)edifiqSchedulePhotoSync(250);});
+</script></body>
 </html>
