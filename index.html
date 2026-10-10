@@ -3496,7 +3496,16 @@ async function initSupabase(){
 }
 
 async function login(){
-  const email=($("email")?.value||"").trim().toLowerCase();
+  // iOS/Safari may autofill the account e-mail into the first text field (Nome).
+  // If that happens, move it to the correct e-mail field before validating login.
+  const nomeInput=$("nomeUsuario");
+  const emailInput=$("email");
+  const nomeDigitado=(nomeInput?.value||"").trim();
+  if(emailInput && !String(emailInput.value||"").trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nomeDigitado)){
+    emailInput.value=nomeDigitado;
+    nomeInput.value="";
+  }
+  const email=(emailInput?.value||"").trim().toLowerCase();
   const password=$("password")?.value||"";
 
   if(!email||!password){
@@ -8562,7 +8571,7 @@ f.observacao||""
  if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
  setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
 })();
-</script>
+<\/script>
 
 </body></html>`);
 
@@ -9758,7 +9767,7 @@ function rcExportPDF(){
  if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
  setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
 })();
-</script>
+<\/script>
 
 </body></html>`);w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},400);
 }
@@ -9831,7 +9840,7 @@ function exportPDF(){
  if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
  setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
 })();
-</script>
+<\/script>
 
 </body></html>`);
   w.document.close();
@@ -10270,7 +10279,7 @@ function relatorioDiario(){
  if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
  setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
 })();
-</script>
+<\/script>
 
 </body></html>`;
   const w=window.open("","_blank"); if(!w){toast("Permita pop-ups para gerar o relatório.");return;} w.document.write(html);w.document.close();setTimeout(()=>w.print(),350);
@@ -11197,7 +11206,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
  if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
  setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
 })();
-</script>
+<\/script>
 
 </body></html>`);
 
@@ -12039,41 +12048,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     const o=obraP(oid);if(!o){toast("Obra não encontrada.");return}
     const w=window.open("","_blank");
     if(!w){toast("Permita a abertura de nova janela para gerar o relatório.");return}
-    w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório da Obra</title></head><body><p style="font-family:Arial;padding:30px">Preparando relatório...</p>
-<style id="edifiq-kpi-fit-final">
-/* Ajuste exclusivo dos números: ligeiramente maiores, sem sair dos cartões. */
-.edHomeKpi strong{font-size:clamp(15px,1.45vw,19px)!important;line-height:1.08!important;max-width:100%;font-variant-numeric:tabular-nums;}
-#funcionarios .equipeKpis .kpi strong,
-#funcionarios .folhaKpis .kpi strong,
-.equipeOverview .kpi strong,.folhaKpis .kpi strong{font-size:clamp(16px,1.35vw,19px)!important;line-height:1.12!important;max-width:100%;font-variant-numeric:tabular-nums;}
-.edHomeKpi>div:last-child,.equipeKpis .kpi,.folhaKpis .kpi{min-width:0;}
-.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{overflow:hidden;text-overflow:clip;white-space:nowrap;}
-@media(max-width:430px){.edHomeKpi strong{font-size:15px!important}#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{font-size:16px!important}}
-</style>
-<script id="edifiq-fit-all-kpi-values-final">
-(function(){
- function fit(){
-  document.querySelectorAll('.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong,.equipeOverview .kpi strong,.folhaKpis .kpi strong').forEach(function(el){
-   var parent=el.parentElement;if(!parent)return;
-   el.style.fontSize='';
-   var available=Math.max(24,parent.clientWidth-2);
-   var css=parseFloat(getComputedStyle(el).fontSize)||16;
-   var size=Math.min(css,19);
-   el.style.fontSize=size+'px';
-   while(el.scrollWidth>available&&size>11){size-=0.5;el.style.fontSize=size+'px';}
-  });
- }
- window.edifiqFitAllKpiValues=fit;
- window.addEventListener('resize',fit,{passive:true});
- document.addEventListener('DOMContentLoaded',fit);
- if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit).catch(function(){});
- var timer=null;var mo=new MutationObserver(function(){if(timer)cancelAnimationFrame(timer);timer=requestAnimationFrame(fit)});
- if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
- setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
-})();
-</script>
-
-</body></html>');w.document.close();
+    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório da Obra</title></head><body><p style="font-family:Arial;padding:30px">Preparando relatório...</p></body></html>`);w.document.close();
     const x=obraDataP(o), cats=categoryTotalsP(x.gs), services=x.ex, prod=producoesP(o.id);
     let photos=[];try{photos=typeof getPhotosByObraDB==="function"?await getPhotosByObraDB(o.id):[]}catch(_){}
     const checkRows=x.cs.map(c=>{const st=checkStatsP(c);return `<tr><td><b>${escP(c.tarefa||c.descricao||"Etapa")}</b></td><td>${pctP(st.progresso)}</td><td>${moneyP(st.valor)}</td><td>${moneyP(st.recebido)}</td><td>${moneyP(st.despesas)}</td><td>${moneyP(st.lucro)}</td><td>${st.margem.toFixed(1).replace(".",",")}%</td></tr>`}).join("");
@@ -12258,7 +12233,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
  if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
  setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
 })();
-</script>
+<\/script>
 
 </body></html>`;
     w.setTimeout(()=>w.print(),600);
@@ -13651,7 +13626,7 @@ function edifiqSalvarPDF(){
  if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
  setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
 })();
-</script>
+<\/script>
 
 </body></html>`;
   }
