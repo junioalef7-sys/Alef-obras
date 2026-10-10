@@ -3897,48 +3897,80 @@ async function edifiqStorageUploadFoto(foto){
     await savePhotoDB(foto); return {ok:true,path};
   }catch(e){return {ok:false,error:e?.message||String(e)};}
 }
+let edifiqPhotoSyncInFlight=null;
 async function edifiqSyncCloudFotos(){
   if(!sb||!user?.id||!navigator.onLine)return false;
-  try{
+  if(edifiqPhotoSyncInFlight)return edifiqPhotoSyncInFlight;
+  edifiqPhotoSyncInFlight=(async()=>{
     const empresa=edifiqEmpresaUserId();
     if(!empresa)return false;
-    const locais=await getAllPhotosDB();
-    for(const local of locais){
-      if(!local?.src)continue;
-      if(local.storage_sync_pendente || !local.storage_path || !local.storage_synced_at){
-        const up=await edifiqStorageUploadFoto(local);
-        if(!up.ok)console.warn("EDIFIQ: foto aguardando sincronização",local.id,up.error||"upload indisponível");
+    try{
+      // 1) Leia TODOS os metadados em páginas: a resposta padrão do Supabase é limitada.
+      const fetchCloudRows=async()=>{
+        const all=[]; const pageSize=250; let from=0;
+        while(true){
+          const res=await sb.from('edifiq_fotos').select('*').eq('user_id',empresa)
+            .order('updated_at',{ascending:false}).range(from,from+pageSize-1);
+          if(res.error)throw res.error;
+          const batch=res.data||[]; all.push(...batch);
+          if(batch.length<pageSize)break;
+          from+=pageSize;
+        }
+        return all;
+      };
+      let cloudRows=await fetchCloudRows();
+      const cloudById=new Map(cloudRows.filter(x=>x?.id).map(x=>[String(x.id),x]));
+      let locais=await getAllPhotosDB();
+      // 2) Reconcilie cada foto local contra a nuvem. Se faltar metadado, envie novamente,
+      // mesmo que a versão local esteja marcada como sincronizada. O upsert evita duplicação.
+      for(const local of locais){
+        if(!local?.id||!local?.src)continue;
+        const remote=cloudById.get(String(local.id));
+        const precisaEnviar=!remote||!remote.storage_path||local.storage_sync_pendente||
+          !local.storage_path||String(local.storage_path)!==String(remote?.storage_path||'');
+        if(precisaEnviar){
+          const up=await edifiqStorageUploadFoto(local);
+          if(up.ok){
+            // Atualiza mapa para não reenviar o mesmo ID neste ciclo.
+            cloudById.set(String(local.id),{id:String(local.id),storage_path:up.path,updated_at:local.storage_synced_at||new Date().toISOString()});
+          }else if(!up.skipped){
+            console.warn('EDIFIQ: foto pendente de sincronização',local.id,up.error||'falha no envio');
+          }
+        }
       }
-    }
-    const {data,error}=await sb.from('edifiq_fotos').select('*').eq('user_id',empresa).order('updated_at',{ascending:false});
-    if(error){console.warn("EDIFIQ: não foi possível listar fotos da nuvem",error.message);return false;}
-    const refreshed=await getAllPhotosDB();
-    for(const row of (data||[])){
-      if(!row?.id||!row.storage_path)continue;
-      const local=refreshed.find(x=>String(x.id)===String(row.id));
-      if(local?.src && local.storage_path===row.storage_path &&
-         String(local.storage_synced_at||'')>=String(row.updated_at||''))continue;
-      try{
-        let blob=null;
-        const signed=await sb.storage.from('edifiq-arquivos').createSignedUrl(row.storage_path,3600);
-        if(!signed.error&&signed.data?.signedUrl){
-          const resp=await fetch(signed.data.signedUrl,{cache:'no-store'});
-          if(resp.ok)blob=await resp.blob();
-        }
-        if(!blob){
-          const dl=await sb.storage.from('edifiq-arquivos').download(row.storage_path);
-          if(!dl.error&&dl.data)blob=dl.data;
-        }
-        if(!blob)continue;
-        const src=await edifiqBlobToDataURL(blob);
-        await savePhotoDB({...row,src,storage_synced_at:row.updated_at||new Date().toISOString(),storage_sync_pendente:false});
-      }catch(e){console.warn("EDIFIQ: não foi possível baixar foto",row.id,e?.message||e);}
-    }
-    try{window.dispatchEvent(new CustomEvent('edifiq:fotos-sincronizadas'));}catch(_){}
-    return true;
-  }catch(e){console.warn('EDIFIQ fotos nuvem',e);return false;}
+      // 3) Releia após uploads para incluir fotos recém-enviadas e pagine todos os resultados.
+      cloudRows=await fetchCloudRows();
+      const refreshed=await getAllPhotosDB();
+      const localById=new Map(refreshed.filter(x=>x?.id).map(x=>[String(x.id),x]));
+      // 4) Baixe as fotos ausentes neste aparelho, preservando todas as obras e IDs.
+      for(const row of cloudRows){
+        if(!row?.id||!row.storage_path)continue;
+        const local=localById.get(String(row.id));
+        if(local?.src&&local.storage_path===row.storage_path&&
+           String(local.storage_synced_at||'')>=String(row.updated_at||''))continue;
+        try{
+          let blob=null;
+          const signed=await sb.storage.from('edifiq-arquivos').createSignedUrl(row.storage_path,3600);
+          if(!signed.error&&signed.data?.signedUrl){
+            const resp=await fetch(signed.data.signedUrl,{cache:'no-store'});
+            if(resp.ok)blob=await resp.blob();
+          }
+          if(!blob){
+            const dl=await sb.storage.from('edifiq-arquivos').download(row.storage_path);
+            if(!dl.error&&dl.data)blob=dl.data;
+          }
+          if(!blob){console.warn('EDIFIQ: download de foto pendente',row.id);continue;}
+          const src=await edifiqBlobToDataURL(blob);
+          await savePhotoDB({...row,src,storage_synced_at:row.updated_at||new Date().toISOString(),storage_sync_pendente:false});
+        }catch(e){console.warn('EDIFIQ: não foi possível baixar foto',row.id,e?.message||e);}
+      }
+      try{window.dispatchEvent(new CustomEvent('edifiq:fotos-sincronizadas'));}catch(_){}
+      return true;
+    }catch(e){console.warn('EDIFIQ fotos nuvem',e?.message||e);return false;}
+  })();
+  try{return await edifiqPhotoSyncInFlight;}
+  finally{edifiqPhotoSyncInFlight=null;}
 }
-
 if(!window.__edifiqPhotoSyncEventsBound){
   window.__edifiqPhotoSyncEventsBound=true;
   const retryPhotoSync=()=>{if(navigator.onLine&&sb&&user?.id)setTimeout(()=>edifiqSyncCloudFotos().catch(()=>{}),900);};
@@ -8493,6 +8525,40 @@ f.observacao||""
 })();
 <\/script>
 
+
+<style id="edifiq-kpi-fit-final">
+/* Ajuste exclusivo dos números: ligeiramente maiores, sem sair dos cartões. */
+.edHomeKpi strong{font-size:clamp(15px,1.45vw,19px)!important;line-height:1.08!important;max-width:100%;font-variant-numeric:tabular-nums;}
+#funcionarios .equipeKpis .kpi strong,
+#funcionarios .folhaKpis .kpi strong,
+.equipeOverview .kpi strong,.folhaKpis .kpi strong{font-size:clamp(16px,1.35vw,19px)!important;line-height:1.12!important;max-width:100%;font-variant-numeric:tabular-nums;}
+.edHomeKpi>div:last-child,.equipeKpis .kpi,.folhaKpis .kpi{min-width:0;}
+.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{overflow:hidden;text-overflow:clip;white-space:nowrap;}
+@media(max-width:430px){.edHomeKpi strong{font-size:15px!important}#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{font-size:16px!important}}
+</style>
+<script id="edifiq-fit-all-kpi-values-final">
+(function(){
+ function fit(){
+  document.querySelectorAll('.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong,.equipeOverview .kpi strong,.folhaKpis .kpi strong').forEach(function(el){
+   var parent=el.parentElement;if(!parent)return;
+   el.style.fontSize='';
+   var available=Math.max(24,parent.clientWidth-2);
+   var css=parseFloat(getComputedStyle(el).fontSize)||16;
+   var size=Math.min(css,19);
+   el.style.fontSize=size+'px';
+   while(el.scrollWidth>available&&size>11){size-=0.5;el.style.fontSize=size+'px';}
+  });
+ }
+ window.edifiqFitAllKpiValues=fit;
+ window.addEventListener('resize',fit,{passive:true});
+ document.addEventListener('DOMContentLoaded',fit);
+ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit).catch(function(){});
+ var timer=null;var mo=new MutationObserver(function(){if(timer)cancelAnimationFrame(timer);timer=requestAnimationFrame(fit)});
+ if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
+ setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
+})();
+</script>
+
 </body></html>`);
 
 win.document.close();
@@ -9655,6 +9721,40 @@ function rcExportPDF(){
 
 
 
+
+<style id="edifiq-kpi-fit-final">
+/* Ajuste exclusivo dos números: ligeiramente maiores, sem sair dos cartões. */
+.edHomeKpi strong{font-size:clamp(15px,1.45vw,19px)!important;line-height:1.08!important;max-width:100%;font-variant-numeric:tabular-nums;}
+#funcionarios .equipeKpis .kpi strong,
+#funcionarios .folhaKpis .kpi strong,
+.equipeOverview .kpi strong,.folhaKpis .kpi strong{font-size:clamp(16px,1.35vw,19px)!important;line-height:1.12!important;max-width:100%;font-variant-numeric:tabular-nums;}
+.edHomeKpi>div:last-child,.equipeKpis .kpi,.folhaKpis .kpi{min-width:0;}
+.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{overflow:hidden;text-overflow:clip;white-space:nowrap;}
+@media(max-width:430px){.edHomeKpi strong{font-size:15px!important}#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{font-size:16px!important}}
+</style>
+<script id="edifiq-fit-all-kpi-values-final">
+(function(){
+ function fit(){
+  document.querySelectorAll('.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong,.equipeOverview .kpi strong,.folhaKpis .kpi strong').forEach(function(el){
+   var parent=el.parentElement;if(!parent)return;
+   el.style.fontSize='';
+   var available=Math.max(24,parent.clientWidth-2);
+   var css=parseFloat(getComputedStyle(el).fontSize)||16;
+   var size=Math.min(css,19);
+   el.style.fontSize=size+'px';
+   while(el.scrollWidth>available&&size>11){size-=0.5;el.style.fontSize=size+'px';}
+  });
+ }
+ window.edifiqFitAllKpiValues=fit;
+ window.addEventListener('resize',fit,{passive:true});
+ document.addEventListener('DOMContentLoaded',fit);
+ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit).catch(function(){});
+ var timer=null;var mo=new MutationObserver(function(){if(timer)cancelAnimationFrame(timer);timer=requestAnimationFrame(fit)});
+ if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
+ setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
+})();
+</script>
+
 </body></html>`);w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},400);
 }
 
@@ -9693,6 +9793,40 @@ function exportPDF(){
 <\/script>
 
 
+
+
+<style id="edifiq-kpi-fit-final">
+/* Ajuste exclusivo dos números: ligeiramente maiores, sem sair dos cartões. */
+.edHomeKpi strong{font-size:clamp(15px,1.45vw,19px)!important;line-height:1.08!important;max-width:100%;font-variant-numeric:tabular-nums;}
+#funcionarios .equipeKpis .kpi strong,
+#funcionarios .folhaKpis .kpi strong,
+.equipeOverview .kpi strong,.folhaKpis .kpi strong{font-size:clamp(16px,1.35vw,19px)!important;line-height:1.12!important;max-width:100%;font-variant-numeric:tabular-nums;}
+.edHomeKpi>div:last-child,.equipeKpis .kpi,.folhaKpis .kpi{min-width:0;}
+.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{overflow:hidden;text-overflow:clip;white-space:nowrap;}
+@media(max-width:430px){.edHomeKpi strong{font-size:15px!important}#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{font-size:16px!important}}
+</style>
+<script id="edifiq-fit-all-kpi-values-final">
+(function(){
+ function fit(){
+  document.querySelectorAll('.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong,.equipeOverview .kpi strong,.folhaKpis .kpi strong').forEach(function(el){
+   var parent=el.parentElement;if(!parent)return;
+   el.style.fontSize='';
+   var available=Math.max(24,parent.clientWidth-2);
+   var css=parseFloat(getComputedStyle(el).fontSize)||16;
+   var size=Math.min(css,19);
+   el.style.fontSize=size+'px';
+   while(el.scrollWidth>available&&size>11){size-=0.5;el.style.fontSize=size+'px';}
+  });
+ }
+ window.edifiqFitAllKpiValues=fit;
+ window.addEventListener('resize',fit,{passive:true});
+ document.addEventListener('DOMContentLoaded',fit);
+ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit).catch(function(){});
+ var timer=null;var mo=new MutationObserver(function(){if(timer)cancelAnimationFrame(timer);timer=requestAnimationFrame(fit)});
+ if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
+ setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
+})();
+</script>
 
 </body></html>`);
   w.document.close();
@@ -10098,6 +10232,40 @@ function relatorioDiario(){
 <\/script>
 
 
+
+
+<style id="edifiq-kpi-fit-final">
+/* Ajuste exclusivo dos números: ligeiramente maiores, sem sair dos cartões. */
+.edHomeKpi strong{font-size:clamp(15px,1.45vw,19px)!important;line-height:1.08!important;max-width:100%;font-variant-numeric:tabular-nums;}
+#funcionarios .equipeKpis .kpi strong,
+#funcionarios .folhaKpis .kpi strong,
+.equipeOverview .kpi strong,.folhaKpis .kpi strong{font-size:clamp(16px,1.35vw,19px)!important;line-height:1.12!important;max-width:100%;font-variant-numeric:tabular-nums;}
+.edHomeKpi>div:last-child,.equipeKpis .kpi,.folhaKpis .kpi{min-width:0;}
+.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{overflow:hidden;text-overflow:clip;white-space:nowrap;}
+@media(max-width:430px){.edHomeKpi strong{font-size:15px!important}#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{font-size:16px!important}}
+</style>
+<script id="edifiq-fit-all-kpi-values-final">
+(function(){
+ function fit(){
+  document.querySelectorAll('.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong,.equipeOverview .kpi strong,.folhaKpis .kpi strong').forEach(function(el){
+   var parent=el.parentElement;if(!parent)return;
+   el.style.fontSize='';
+   var available=Math.max(24,parent.clientWidth-2);
+   var css=parseFloat(getComputedStyle(el).fontSize)||16;
+   var size=Math.min(css,19);
+   el.style.fontSize=size+'px';
+   while(el.scrollWidth>available&&size>11){size-=0.5;el.style.fontSize=size+'px';}
+  });
+ }
+ window.edifiqFitAllKpiValues=fit;
+ window.addEventListener('resize',fit,{passive:true});
+ document.addEventListener('DOMContentLoaded',fit);
+ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit).catch(function(){});
+ var timer=null;var mo=new MutationObserver(function(){if(timer)cancelAnimationFrame(timer);timer=requestAnimationFrame(fit)});
+ if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
+ setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
+})();
+</script>
 
 </body></html>`;
   const w=window.open("","_blank"); if(!w){toast("Permita pop-ups para gerar o relatório.");return;} w.document.write(html);w.document.close();setTimeout(()=>w.print(),350);
@@ -10993,7 +11161,41 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     rtGeneratePreview(false);
     const d=rtData(),html=$('rtPreview')?.innerHTML||'';
     const w=window.open('','_blank');if(!w){toast('Permita pop-ups para gerar o PDF.');return;}
-    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EDIFIQ — Relatório do Trabalhador</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#172033;line-height:1.5;max-width:950px;margin:auto}h1{font-size:24px}h2{font-size:17px;margin-top:22px;border-bottom:1px solid #ddd;padding-bottom:6px}.wrMeta{color:#64748b;font-size:12px}.wrKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.wrKpi,.wrInfo{border:1px solid #d9e0ea;border-radius:10px;padding:10px}.wrKpi small,.wrInfo small{display:block;color:#64748b;font-size:10px}.wrGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #d9e0ea;padding:6px;text-align:left;vertical-align:top}th{background:#f3f6fa}.edReportToolbar{position:sticky;top:0;z-index:9999;display:flex;gap:8px;justify-content:flex-end;background:#111827;padding:12px;margin:-12px -12px 18px}.edReportToolbar button{border:0;border-radius:8px;padding:11px 15px;font-weight:700;cursor:pointer}.edReportClose{background:#29313b;color:#fff}.edReportSave{background:#d5a33b;color:#111}@media print{.edReportToolbar{display:none!important}body{padding:8px}}@media(max-width:600px){body{padding:12px}.wrKpis{grid-template-columns:1fr 1fr}.wrGrid{grid-template-columns:1fr}.edReportToolbar{position:static;margin:-12px -12px 18px;flex-wrap:wrap}}</style></head><body><div class="edReportToolbar"><button class="edReportClose" type="button" onclick="try{window.close()}catch(e){};setTimeout(()=>{if(!window.closed&&history.length>1)history.back()},100)">× Fechar e voltar</button><button class="edReportSave" type="button" onclick="window.print()">📄 Gerar PDF / Salvar / Imprimir</button></div>${html}</body></html>`);
+    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EDIFIQ — Relatório do Trabalhador</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#172033;line-height:1.5;max-width:950px;margin:auto}h1{font-size:24px}h2{font-size:17px;margin-top:22px;border-bottom:1px solid #ddd;padding-bottom:6px}.wrMeta{color:#64748b;font-size:12px}.wrKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.wrKpi,.wrInfo{border:1px solid #d9e0ea;border-radius:10px;padding:10px}.wrKpi small,.wrInfo small{display:block;color:#64748b;font-size:10px}.wrGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #d9e0ea;padding:6px;text-align:left;vertical-align:top}th{background:#f3f6fa}.edReportToolbar{position:sticky;top:0;z-index:9999;display:flex;gap:8px;justify-content:flex-end;background:#111827;padding:12px;margin:-12px -12px 18px}.edReportToolbar button{border:0;border-radius:8px;padding:11px 15px;font-weight:700;cursor:pointer}.edReportClose{background:#29313b;color:#fff}.edReportSave{background:#d5a33b;color:#111}@media print{.edReportToolbar{display:none!important}body{padding:8px}}@media(max-width:600px){body{padding:12px}.wrKpis{grid-template-columns:1fr 1fr}.wrGrid{grid-template-columns:1fr}.edReportToolbar{position:static;margin:-12px -12px 18px;flex-wrap:wrap}}</style></head><body><div class="edReportToolbar"><button class="edReportClose" type="button" onclick="try{window.close()}catch(e){};setTimeout(()=>{if(!window.closed&&history.length>1)history.back()},100)">× Fechar e voltar</button><button class="edReportSave" type="button" onclick="window.print()">📄 Gerar PDF / Salvar / Imprimir</button></div>${html}
+<style id="edifiq-kpi-fit-final">
+/* Ajuste exclusivo dos números: ligeiramente maiores, sem sair dos cartões. */
+.edHomeKpi strong{font-size:clamp(15px,1.45vw,19px)!important;line-height:1.08!important;max-width:100%;font-variant-numeric:tabular-nums;}
+#funcionarios .equipeKpis .kpi strong,
+#funcionarios .folhaKpis .kpi strong,
+.equipeOverview .kpi strong,.folhaKpis .kpi strong{font-size:clamp(16px,1.35vw,19px)!important;line-height:1.12!important;max-width:100%;font-variant-numeric:tabular-nums;}
+.edHomeKpi>div:last-child,.equipeKpis .kpi,.folhaKpis .kpi{min-width:0;}
+.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{overflow:hidden;text-overflow:clip;white-space:nowrap;}
+@media(max-width:430px){.edHomeKpi strong{font-size:15px!important}#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{font-size:16px!important}}
+</style>
+<script id="edifiq-fit-all-kpi-values-final">
+(function(){
+ function fit(){
+  document.querySelectorAll('.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong,.equipeOverview .kpi strong,.folhaKpis .kpi strong').forEach(function(el){
+   var parent=el.parentElement;if(!parent)return;
+   el.style.fontSize='';
+   var available=Math.max(24,parent.clientWidth-2);
+   var css=parseFloat(getComputedStyle(el).fontSize)||16;
+   var size=Math.min(css,19);
+   el.style.fontSize=size+'px';
+   while(el.scrollWidth>available&&size>11){size-=0.5;el.style.fontSize=size+'px';}
+  });
+ }
+ window.edifiqFitAllKpiValues=fit;
+ window.addEventListener('resize',fit,{passive:true});
+ document.addEventListener('DOMContentLoaded',fit);
+ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit).catch(function(){});
+ var timer=null;var mo=new MutationObserver(function(){if(timer)cancelAnimationFrame(timer);timer=requestAnimationFrame(fit)});
+ if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
+ setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
+})();
+</script>
+
+</body></html>`);
 
     w.document.close();
   };
@@ -11833,7 +12035,41 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     const o=obraP(oid);if(!o){toast("Obra não encontrada.");return}
     const w=window.open("","_blank");
     if(!w){toast("Permita a abertura de nova janela para gerar o relatório.");return}
-    w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório da Obra</title></head><body><p style="font-family:Arial;padding:30px">Preparando relatório...</p></body></html>');w.document.close();
+    w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>EDIFIQ — Relatório da Obra</title></head><body><p style="font-family:Arial;padding:30px">Preparando relatório...</p>
+<style id="edifiq-kpi-fit-final">
+/* Ajuste exclusivo dos números: ligeiramente maiores, sem sair dos cartões. */
+.edHomeKpi strong{font-size:clamp(15px,1.45vw,19px)!important;line-height:1.08!important;max-width:100%;font-variant-numeric:tabular-nums;}
+#funcionarios .equipeKpis .kpi strong,
+#funcionarios .folhaKpis .kpi strong,
+.equipeOverview .kpi strong,.folhaKpis .kpi strong{font-size:clamp(16px,1.35vw,19px)!important;line-height:1.12!important;max-width:100%;font-variant-numeric:tabular-nums;}
+.edHomeKpi>div:last-child,.equipeKpis .kpi,.folhaKpis .kpi{min-width:0;}
+.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{overflow:hidden;text-overflow:clip;white-space:nowrap;}
+@media(max-width:430px){.edHomeKpi strong{font-size:15px!important}#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{font-size:16px!important}}
+</style>
+<script id="edifiq-fit-all-kpi-values-final">
+(function(){
+ function fit(){
+  document.querySelectorAll('.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong,.equipeOverview .kpi strong,.folhaKpis .kpi strong').forEach(function(el){
+   var parent=el.parentElement;if(!parent)return;
+   el.style.fontSize='';
+   var available=Math.max(24,parent.clientWidth-2);
+   var css=parseFloat(getComputedStyle(el).fontSize)||16;
+   var size=Math.min(css,19);
+   el.style.fontSize=size+'px';
+   while(el.scrollWidth>available&&size>11){size-=0.5;el.style.fontSize=size+'px';}
+  });
+ }
+ window.edifiqFitAllKpiValues=fit;
+ window.addEventListener('resize',fit,{passive:true});
+ document.addEventListener('DOMContentLoaded',fit);
+ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit).catch(function(){});
+ var timer=null;var mo=new MutationObserver(function(){if(timer)cancelAnimationFrame(timer);timer=requestAnimationFrame(fit)});
+ if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
+ setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
+})();
+</script>
+
+</body></html>');w.document.close();
     const x=obraDataP(o), cats=categoryTotalsP(x.gs), services=x.ex, prod=producoesP(o.id);
     let photos=[];try{photos=typeof getPhotosByObraDB==="function"?await getPhotosByObraDB(o.id):[]}catch(_){}
     const checkRows=x.cs.map(c=>{const st=checkStatsP(c);return `<tr><td><b>${escP(c.tarefa||c.descricao||"Etapa")}</b></td><td>${pctP(st.progresso)}</td><td>${moneyP(st.valor)}</td><td>${moneyP(st.recebido)}</td><td>${moneyP(st.despesas)}</td><td>${moneyP(st.lucro)}</td><td>${st.margem.toFixed(1).replace(".",",")}%</td></tr>`}).join("");
@@ -11986,7 +12222,41 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
       <h2>4. Produção da equipe</h2><div class="box"><div class="row"><span>Valor produzido</span><b>${moneyP(prod.reduce((a,r)=>a+n(r.valor),0))}</b></div><div class="row"><span>Quantidade produzida</span><b>${prod.reduce((a,r)=>a+n(r.quantidade),0).toLocaleString("pt-BR",{maximumFractionDigits:2})}</b></div><div class="row"><span>Funcionários com produção</span><b>${new Set(prod.map(r=>String(r.funcionario_id))).size}</b></div></div>${prod.length?`<table><thead><tr><th>Data</th><th>Funcionário</th><th>Checklist</th><th>Quantidade</th><th>Valor</th></tr></thead><tbody>${prodRows}</tbody></table>`:"<p>Nenhuma produção registrada.</p>"}
       <h2>5. Relatório fotográfico</h2><div class="photoGrid">${photoHtml}</div>
       <div class="foot">EDIFIQ — Construção Civil · Relatório gerado automaticamente a partir dos dados existentes nesta obra. Este relatório é somente leitura.</div>
-      </body></html>`;
+      
+<style id="edifiq-kpi-fit-final">
+/* Ajuste exclusivo dos números: ligeiramente maiores, sem sair dos cartões. */
+.edHomeKpi strong{font-size:clamp(15px,1.45vw,19px)!important;line-height:1.08!important;max-width:100%;font-variant-numeric:tabular-nums;}
+#funcionarios .equipeKpis .kpi strong,
+#funcionarios .folhaKpis .kpi strong,
+.equipeOverview .kpi strong,.folhaKpis .kpi strong{font-size:clamp(16px,1.35vw,19px)!important;line-height:1.12!important;max-width:100%;font-variant-numeric:tabular-nums;}
+.edHomeKpi>div:last-child,.equipeKpis .kpi,.folhaKpis .kpi{min-width:0;}
+.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{overflow:hidden;text-overflow:clip;white-space:nowrap;}
+@media(max-width:430px){.edHomeKpi strong{font-size:15px!important}#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{font-size:16px!important}}
+</style>
+<script id="edifiq-fit-all-kpi-values-final">
+(function(){
+ function fit(){
+  document.querySelectorAll('.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong,.equipeOverview .kpi strong,.folhaKpis .kpi strong').forEach(function(el){
+   var parent=el.parentElement;if(!parent)return;
+   el.style.fontSize='';
+   var available=Math.max(24,parent.clientWidth-2);
+   var css=parseFloat(getComputedStyle(el).fontSize)||16;
+   var size=Math.min(css,19);
+   el.style.fontSize=size+'px';
+   while(el.scrollWidth>available&&size>11){size-=0.5;el.style.fontSize=size+'px';}
+  });
+ }
+ window.edifiqFitAllKpiValues=fit;
+ window.addEventListener('resize',fit,{passive:true});
+ document.addEventListener('DOMContentLoaded',fit);
+ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit).catch(function(){});
+ var timer=null;var mo=new MutationObserver(function(){if(timer)cancelAnimationFrame(timer);timer=requestAnimationFrame(fit)});
+ if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
+ setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
+})();
+</script>
+
+</body></html>`;
     w.setTimeout(()=>w.print(),600);
     w.document.open();w.document.write(report);w.document.close();
   }
@@ -13354,7 +13624,41 @@ async function edifiqSalvarPDF(){
     setTimeout(()=>{if(btn){btn.disabled=false;btn.textContent='⬇ Salvar PDF'}},500);
   }
 }
-<\/script></body></html>`;
+<\/script>
+<style id="edifiq-kpi-fit-final">
+/* Ajuste exclusivo dos números: ligeiramente maiores, sem sair dos cartões. */
+.edHomeKpi strong{font-size:clamp(15px,1.45vw,19px)!important;line-height:1.08!important;max-width:100%;font-variant-numeric:tabular-nums;}
+#funcionarios .equipeKpis .kpi strong,
+#funcionarios .folhaKpis .kpi strong,
+.equipeOverview .kpi strong,.folhaKpis .kpi strong{font-size:clamp(16px,1.35vw,19px)!important;line-height:1.12!important;max-width:100%;font-variant-numeric:tabular-nums;}
+.edHomeKpi>div:last-child,.equipeKpis .kpi,.folhaKpis .kpi{min-width:0;}
+.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{overflow:hidden;text-overflow:clip;white-space:nowrap;}
+@media(max-width:430px){.edHomeKpi strong{font-size:15px!important}#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{font-size:16px!important}}
+</style>
+<script id="edifiq-fit-all-kpi-values-final">
+(function(){
+ function fit(){
+  document.querySelectorAll('.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong,.equipeOverview .kpi strong,.folhaKpis .kpi strong').forEach(function(el){
+   var parent=el.parentElement;if(!parent)return;
+   el.style.fontSize='';
+   var available=Math.max(24,parent.clientWidth-2);
+   var css=parseFloat(getComputedStyle(el).fontSize)||16;
+   var size=Math.min(css,19);
+   el.style.fontSize=size+'px';
+   while(el.scrollWidth>available&&size>11){size-=0.5;el.style.fontSize=size+'px';}
+  });
+ }
+ window.edifiqFitAllKpiValues=fit;
+ window.addEventListener('resize',fit,{passive:true});
+ document.addEventListener('DOMContentLoaded',fit);
+ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit).catch(function(){});
+ var timer=null;var mo=new MutationObserver(function(){if(timer)cancelAnimationFrame(timer);timer=requestAnimationFrame(fit)});
+ if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
+ setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
+})();
+</script>
+
+</body></html>`;
   }
   async function getReportPhotos(id){try{const all=await getAllPhotosDB();return all.filter(p=>sameF(p.obra_id,id)&&p.src)}catch(_){return []}}
   window.openRelatorioObraEdifiq=function(){
@@ -13387,7 +13691,41 @@ window.edPreviewRelatorioObra=async function(){const id=$('edRelatorioObraSelect
     if(!w){toast('O Safari bloqueou a abertura do relatório. Permita pop-ups para o EDIFIQ e tente novamente.');return;}
     try{
       w.document.open();
-      w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preparando relatório EDIFIQ</title></head><body style="font-family:Arial,sans-serif;padding:24px">Preparando relatório da obra…</body></html>');
+      w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preparando relatório EDIFIQ</title></head><body style="font-family:Arial,sans-serif;padding:24px">Preparando relatório da obra…
+<style id="edifiq-kpi-fit-final">
+/* Ajuste exclusivo dos números: ligeiramente maiores, sem sair dos cartões. */
+.edHomeKpi strong{font-size:clamp(15px,1.45vw,19px)!important;line-height:1.08!important;max-width:100%;font-variant-numeric:tabular-nums;}
+#funcionarios .equipeKpis .kpi strong,
+#funcionarios .folhaKpis .kpi strong,
+.equipeOverview .kpi strong,.folhaKpis .kpi strong{font-size:clamp(16px,1.35vw,19px)!important;line-height:1.12!important;max-width:100%;font-variant-numeric:tabular-nums;}
+.edHomeKpi>div:last-child,.equipeKpis .kpi,.folhaKpis .kpi{min-width:0;}
+.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{overflow:hidden;text-overflow:clip;white-space:nowrap;}
+@media(max-width:430px){.edHomeKpi strong{font-size:15px!important}#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{font-size:16px!important}}
+</style>
+<script id="edifiq-fit-all-kpi-values-final">
+(function(){
+ function fit(){
+  document.querySelectorAll('.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong,.equipeOverview .kpi strong,.folhaKpis .kpi strong').forEach(function(el){
+   var parent=el.parentElement;if(!parent)return;
+   el.style.fontSize='';
+   var available=Math.max(24,parent.clientWidth-2);
+   var css=parseFloat(getComputedStyle(el).fontSize)||16;
+   var size=Math.min(css,19);
+   el.style.fontSize=size+'px';
+   while(el.scrollWidth>available&&size>11){size-=0.5;el.style.fontSize=size+'px';}
+  });
+ }
+ window.edifiqFitAllKpiValues=fit;
+ window.addEventListener('resize',fit,{passive:true});
+ document.addEventListener('DOMContentLoaded',fit);
+ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit).catch(function(){});
+ var timer=null;var mo=new MutationObserver(function(){if(timer)cancelAnimationFrame(timer);timer=requestAnimationFrame(fit)});
+ if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
+ setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
+})();
+</script>
+
+</body></html>');
       w.document.close();
       let photos=[];try{photos=await getReportPhotos(id)||[]}catch(photoErr){console.warn('Fotos indisponíveis; gerando relatório sem fotos.',photoErr)}
       const html=reportHTML(data,photos);
@@ -13403,6 +13741,40 @@ window.edPreviewRelatorioObra=async function(){const id=$('edRelatorioObraSelect
 
   /* Re-render after initialization with the new routines. */
   try{if(typeof ensureEquipePeriodUI==='function')ensureEquipePeriodUI()}catch(_){ }
+})();
+</script>
+
+
+<style id="edifiq-kpi-fit-final">
+/* Ajuste exclusivo dos números: ligeiramente maiores, sem sair dos cartões. */
+.edHomeKpi strong{font-size:clamp(15px,1.45vw,19px)!important;line-height:1.08!important;max-width:100%;font-variant-numeric:tabular-nums;}
+#funcionarios .equipeKpis .kpi strong,
+#funcionarios .folhaKpis .kpi strong,
+.equipeOverview .kpi strong,.folhaKpis .kpi strong{font-size:clamp(16px,1.35vw,19px)!important;line-height:1.12!important;max-width:100%;font-variant-numeric:tabular-nums;}
+.edHomeKpi>div:last-child,.equipeKpis .kpi,.folhaKpis .kpi{min-width:0;}
+.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{overflow:hidden;text-overflow:clip;white-space:nowrap;}
+@media(max-width:430px){.edHomeKpi strong{font-size:15px!important}#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{font-size:16px!important}}
+</style>
+<script id="edifiq-fit-all-kpi-values-final">
+(function(){
+ function fit(){
+  document.querySelectorAll('.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong,.equipeOverview .kpi strong,.folhaKpis .kpi strong').forEach(function(el){
+   var parent=el.parentElement;if(!parent)return;
+   el.style.fontSize='';
+   var available=Math.max(24,parent.clientWidth-2);
+   var css=parseFloat(getComputedStyle(el).fontSize)||16;
+   var size=Math.min(css,19);
+   el.style.fontSize=size+'px';
+   while(el.scrollWidth>available&&size>11){size-=0.5;el.style.fontSize=size+'px';}
+  });
+ }
+ window.edifiqFitAllKpiValues=fit;
+ window.addEventListener('resize',fit,{passive:true});
+ document.addEventListener('DOMContentLoaded',fit);
+ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit).catch(function(){});
+ var timer=null;var mo=new MutationObserver(function(){if(timer)cancelAnimationFrame(timer);timer=requestAnimationFrame(fit)});
+ if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
+ setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
 })();
 </script>
 
