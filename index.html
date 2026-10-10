@@ -3390,13 +3390,17 @@ function startEdifiqRealtime(){
     try{
       await retryLocalCloudRows();
       await loadCloud();
+      // Reconsulta explicitamente o relatório fotográfico em cada ciclo de fallback:
+      // o Realtime pode não estar habilitado para a tabela de fotos em todos os projetos.
+      await edifiqSyncCloudFotos();
+      await renderFotos();
       renderAll();
       const el=$('edifiqSyncStatus'); if(el){el.textContent='☁️ Sincronizado';el.className='ok';}
     }catch(e){ console.warn('Fallback de sincronização:',e);
       const el=$('edifiqSyncStatus'); if(el){el.textContent='↻ Tentando sincronizar';el.className='warn';}
     }
   };
-  edifiqRealtimeRefreshTimer=setInterval(syncNow,30000);
+  edifiqRealtimeRefreshTimer=setInterval(syncNow,10000);
   if(!window.__edifiqSyncEventsBound){
     window.__edifiqSyncEventsBound=true;
     window.addEventListener('online',()=>{ setTimeout(syncNow,250); });
