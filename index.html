@@ -1575,8 +1575,7 @@ body{min-height:100vh;min-height:100dvh}
 <section class="auth" id="auth">
 <div class="authBox">
 <div class="authLogo authLogoSimple"><h1>EDIFIQ</h1></div>
-<label>Nome</label><input autocomplete="name" id="nomeUsuario" placeholder="Seu nome" type="text"/>
-<label>E-mail</label><input autocomplete="email" id="email" placeholder="seu@email.com" type="email"/>
+<label>Login</label><input autocomplete="email" id="email" placeholder="seu@email.com" type="email"/>
 <label>Senha</label><div class="passwordWrap"><input autocomplete="current-password" id="password" placeholder="••••••••" type="password"/><button type="button" class="passwordToggle" id="passwordToggle" aria-label="Mostrar senha" title="Mostrar senha">👁</button></div>
 <div class="authBtns">
 <button class="btn primary" onclick="login()">Entrar</button>
@@ -3508,15 +3507,7 @@ async function initSupabase(){
 }
 
 async function login(){
-  // iOS/Safari may autofill the account e-mail into the first text field (Nome).
-  // If that happens, move it to the correct e-mail field before validating login.
-  const nomeInput=$("nomeUsuario");
   const emailInput=$("email");
-  const nomeDigitado=(nomeInput?.value||"").trim();
-  if(emailInput && !String(emailInput.value||"").trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nomeDigitado)){
-    emailInput.value=nomeDigitado;
-    nomeInput.value="";
-  }
   const email=(emailInput?.value||"").trim().toLowerCase();
   const password=$("password")?.value||"";
 
@@ -3691,14 +3682,10 @@ async function login(){
 }
 
 async function signup(){
-  const nome=($('nomeUsuario')?.value||'').trim();
   const email=($('email')?.value||'').trim().toLowerCase();
   const password=$('password')?.value||'';
+  const nome=(email.split('@')[0]||'Usuário').replace(/[._-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()).trim()||'Usuário';
 
-  if(!nome){
-    authMsg('Informe seu nome.');
-    return;
-  }
 
   if(!email){
     authMsg('Informe seu e-mail.');
@@ -13731,6 +13718,72 @@ body.edLight .bootErrorBox{background:#fff!important;color:#172033!important;bor
 body.edLight .bootErrorBox p{color:#68758a!important}
 body.edLight .red{color:#c93645!important}body.edLight .green{color:#178a57!important}body.edLight .gold{color:#94691f!important}
 body.edLight #themeToggleBtn{background:#fff!important;color:#172033!important;border-color:#cbd6e5!important}
+</style>
+
+
+<style id="edifiq-light-mode-absolute-final">
+/* EDIFIQ — correção definitiva do modo claro: elimina superfícies escuras legadas. */
+body.edLight,body.edLight #app,body.edLight .wrap,body.edLight .page,body.edLight main,body.edLight #dashboard{
+  background:#f7f9fc!important;color:#111827!important;
+}
+body.edLight #dashboard{margin-left:-16px;margin-right:-16px}
+body.edLight :is(.top,.edHomeHeader,.edHomeSearch,.edHomeSelect,.edHomeKpi,.edHomeWorkCard,.edHomeEmpty,
+.edKpiDetailRow,.edKpiFuncRow,.card,.item,.kpi,.three>div,.note,.summaryTotal,.summaryMetric,.summaryCard,
+.finance-mini,.financeModernCard,.financeModernPanel,.analysisCard,.dashMini,.diarioBlock,.diarioTeamItem,.docMetaItem,.docUploadBox,
+.homeWelcome,.homeProTitle,.homeProKpi,.homeProContract,.homeTool,.homeAction,.homeQuick,.homeProMainBtn,.homeProStatus,
+.pay-summary>div,.pastaInterna,.historyCard,.historyDataGrid>div,.folhaEquipeCard,.folhaFuncionarioCard,.folhaFuncionarioGrid>div,
+.obraModeloCard,.obraModeloPanel,.obraInfoCard,.obraModeloRow,.obraModeloEmpty,.obraSummaryWrap,.obraSummaryBlock,.obraBigMetric,
+.obraModelKpis>div,.obraModelMetricRow,.obraPaymentHistory,.obraDiasWorkerCard,.obraDiasStats>div,
+.auditHero>div,.auditFunctionRow,.obraAuditChecks span,.rgStatusCard,.rgHealth,.rgMoneyCard,.rgCostCard,.rgTotalCost,.rgChartCard,.rgRankCard,
+.edf3-box,.edf3-kpi,.edf3-worker,.edci-panel,.edci-kpi,.rcSection,.rcMetric,
+.edEquipeCard,.edEqRate,.edEqPeriod,.edEqPeriodCard,.edEqMetric,.edEqPill,.edEqOccurrenceHistory,
+.wrPanel,.wrCard,.wrBox,.wrItem,.wrKpi,.wrSection,.wrDates input,.wrSelect){
+  background:#fff!important;background-image:none!important;color:#111827!important;border-color:#d5dde8!important;
+  box-shadow:0 6px 18px rgba(31,41,55,.08)!important;
+}
+/* Abrangência para componentes criados dinamicamente que ainda carreguem fundos pretos. */
+body.edLight :is([class*="Card"],[class*="card"],[class*="Panel"],[class*="panel"],[class*="Box"],[class*="box"],[class*="Tile"],[class*="tile"]):not(.bootError):not(.modal){
+  background-color:#fff!important;
+  border-color:#d5dde8!important;
+}
+body.edLight :is([class*="Header"],[class*="header"],[class*="Head"],[class*="head"]):not(.edReportToolbar){
+  background-color:#fff!important;color:#111827!important;border-color:#d5dde8!important;
+}
+body.edLight :is(.edHomeWorkIcon,.edHomeKpiIcon,.badge,.obraDiasBadge,.obraDiasCounts span,.homeProStatus,.edEqPill){
+  background:#eef3f8!important;background-image:none!important;color:#243244!important;border-color:#ccd6e3!important;
+}
+body.edLight :is(.edHomeProgressBar,.progress,.financeProgress,.financeCategoryBar,.analysisBar,.obraMiniProgress,.edf3-bar,.rgCostBar){background:#e5eaf1!important}
+body.edLight :is(input,select,textarea,.wrDates input,.wrSelect,.rcPreviewText,.rgFilters select,.rgFilters input){background:#fff!important;color:#111827!important;border-color:#c8d2df!important}
+body.edLight :is(label,p,span,div,li,td,th){text-shadow:none}
+body.edLight :is(h1,h2,h3,h4,h5,h6,b,strong,.edHomeWorkName,.edEqName,.folhaFuncionarioNome b){color:#111827!important}
+body.edLight :is(.sub,.muted,small,.edHomeWorkType,.edHomeWorkMeta,.edHomeProgressHead,.edEqRate small,.edEqMetric small,.edEqPeriodCard small){color:#667085!important}
+/* Menu lateral e menu inferior 100% claros. */
+body.edLight :is(.edifiqDrawer,.edifiqMenuDrawer,.drawer,.sidebar,.menuPasta){background:#fff!important;background-image:none!important;color:#111827!important;border-color:#d5dde8!important}
+body.edLight :is(.edifiqDrawerHead,.menuPastaHead){background:#fff!important;background-image:none!important;color:#111827!important}
+body.edLight :is(.edifiqMenuItem,.edifiqDataRow,.edifiqExit){background:transparent!important;background-image:none!important}
+body.edLight .edifiqMenuItem:hover,body.edLight .edifiqMenuItem.active,body.edLight .edifiqDataRow:hover{background:#f1f4f8!important}
+body.edLight :is(.edifiqBrandDrawer strong,.edHomeBrandName){color:#000!important;opacity:1!important;font-weight:900!important;text-shadow:none!important;-webkit-text-fill-color:#000!important}
+body.edLight .edHomeBrandText small{color:#4b5563!important;opacity:1!important}
+body.edLight :is(.nav,.bottomNav,nav.nav){background:#fff!important;background-image:none!important;border-color:#d5dde8!important}
+/* Modais e formulários claros. O fundo externo fica só cinza translúcido, nunca preto. */
+body.edLight .modal{background:rgba(100,116,139,.22)!important}
+body.edLight :is(.modalBox,.modalContent,.reportClientModal .modalB){background:#fff!important;background-image:none!important;color:#111827!important}
+body.edLight .modalHead{background:#fff!important;background-image:none!important}
+/* Equipe: remove os últimos blocos escuros. */
+body.edLight :is(.edEqCmd,.edEqAction,.edEqPeriodButtons button){background:#f3f6fa!important;background-image:none!important;color:#243244!important;border-color:#cfd8e5!important}
+body.edLight :is(.edEqAction.primary,.edEqPeriodButtons button.active,.edEqPill.blue){background:#3f8cff!important;color:#fff!important;border-color:#3f8cff!important}
+body.edLight .edEqAction.danger{background:#fff1f2!important;color:#b42332!important;border-color:#efb8be!important}
+/* Ações principais continuam destacadas; o restante permanece claro. */
+body.edLight :is(.btn,.mini,.x,.iconBtn,.menuPastaGrid button,.homeProTools button,.obraDiasQuick button,.obraDiasPay,.obraDiasHistory,.rgClose){background:#f1f4f8!important;background-image:none!important;color:#111827!important;border-color:#ccd6e3!important}
+body.edLight :is(.btn.primary,.btn.gold){background:linear-gradient(180deg,#e2b85f,#c49338)!important;color:#111!important;border-color:#c99d48!important}
+body.edLight .btn.danger{background:#fff1f2!important;color:#b42332!important;border-color:#efb8be!important}
+body.edLight #themeToggleBtn{background:#fff!important;color:#111827!important;border-color:#c8d2df!important}
+/* Login totalmente claro quando o tema claro estiver salvo. */
+body.edLight .auth{background:#f7f9fc!important;background-image:none!important}
+body.edLight .authBox{background:#fff!important;background-image:none!important;color:#111827!important;border-color:#d5dde8!important;box-shadow:0 16px 40px rgba(31,41,55,.10)!important}
+body.edLight .authLogo h1{color:#111827!important;opacity:1!important;-webkit-text-fill-color:#111827!important}
+/* Garante que nenhuma barra fixa de formulário mantenha preto no modo claro. */
+body.edLight :is(.formActions,.wrActions,.folhaTodosHeader){background:#fff!important;background-image:none!important;color:#111827!important;border-color:#d5dde8!important}
 </style>
 
 </body>
