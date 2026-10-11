@@ -15242,5 +15242,250 @@ body.edLight .edEqDaysUniform .edEqPill.blue{
   };
 })();
 </script>
+<!-- =========================================================
+     EDIFIQ — ETAPA 8
+     Central de relatórios + PDF real para navegador e PWA
+     ========================================================= -->
+<style id="edifiq-etapa8-relatorios-style">
+#edifiqReportHub{z-index:10080!important}
+#edifiqReportHub .modalBox{width:min(1120px,98vw);height:min(94vh,980px);max-height:94vh;padding:0;overflow:hidden;display:flex;flex-direction:column;background:var(--panel,#101419)}
+.edReportHubHead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border-bottom:1px solid var(--line,#2a3037);background:var(--panel,#101419)}
+.edReportHubHead h2{margin:0;font-size:16px}.edReportHubHead small{display:block;color:var(--muted,#98a2b3);margin-top:3px}
+.edReportHubActions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.edReportHubActions .btn{min-height:40px}
+#edifiqReportFrame{display:block;width:100%;flex:1 1 auto;min-height:0;border:0;background:#fff}
+.edReportHubStatus{padding:7px 14px;border-top:1px solid var(--line,#2a3037);font-size:11px;color:var(--muted,#98a2b3);background:var(--panel,#101419)}
+.edReportHubStatus.busy{color:#d9ad55;font-weight:800}
+@media(max-width:680px){#edifiqReportHub .modalBox{width:100vw;height:100dvh;max-height:100dvh;border-radius:0}.edReportHubHead{align-items:flex-start;flex-direction:column}.edReportHubActions{width:100%;display:grid;grid-template-columns:1fr 1fr 1fr}.edReportHubActions .btn{width:100%;padding:8px 6px;font-size:11px}.edReportHubStatus{padding-bottom:calc(8px + env(safe-area-inset-bottom))}}
+</style>
+<script id="edifiq-etapa8-relatorios-pdf">
+(function(){
+  'use strict';
+  const PDF_LIB='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+  const DATE_TAG=()=>new Date().toISOString().slice(0,10);
+  let current={html:'',title:'Relatório EDIFIQ',filename:'EDIFIQ_Relatorio_'+DATE_TAG()+'.pdf'};
+
+  function safeName(v){
+    return String(v||'EDIFIQ_Relatorio').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,110)||'EDIFIQ_Relatorio';
+  }
+  function isAppleMobile(){return /iphone|ipad|ipod/i.test(navigator.userAgent)||(/Macintosh/i.test(navigator.userAgent)&&navigator.maxTouchPoints>1)}
+  function isStandalone(){return navigator.standalone===true||!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)}
+  function reportTitle(raw,fallback){
+    try{const d=new DOMParser().parseFromString(String(raw||''),'text/html');return (d.querySelector('title')?.textContent||d.querySelector('h1')?.textContent||fallback||'Relatório EDIFIQ').trim()}catch(_){return fallback||'Relatório EDIFIQ'}
+  }
+  function cleanHTML(raw){
+    const doc=new DOMParser().parseFromString(String(raw||''),'text/html');
+    doc.querySelectorAll('script,.edReportToolbar,#edifiqBuildBadge,.noPrint').forEach(el=>el.remove());
+    doc.querySelectorAll('style[id^="edifiq-"]').forEach(el=>el.remove());
+    doc.querySelectorAll('button').forEach(el=>{if(el.closest('.edReportToolbar'))el.remove()});
+    let vp=doc.querySelector('meta[name="viewport"]');if(!vp){vp=doc.createElement('meta');vp.name='viewport';doc.head.appendChild(vp)}vp.content='width=device-width,initial-scale=1';
+    const fix=doc.createElement('style');
+    fix.textContent='html{background:#fff!important;color-scheme:light}body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}img{max-width:100%;height:auto}table{page-break-inside:auto}tr{page-break-inside:avoid;page-break-after:auto}.pageBreak{break-before:page;page-break-before:always}@media print{html,body{background:#fff!important}}';
+    doc.head.appendChild(fix);
+    return '<!doctype html>'+doc.documentElement.outerHTML;
+  }
+  function ensureHub(){
+    let m=document.getElementById('edifiqReportHub');
+    if(m)return m;
+    m=document.createElement('div');m.id='edifiqReportHub';m.className='modal';
+    m.innerHTML='<div class="modalBox"><div class="edReportHubHead"><div><h2 id="edifiqReportHubTitle">📄 Relatório EDIFIQ</h2><small>Visualize, salve em PDF ou imprima sem sair do aplicativo.</small></div><div class="edReportHubActions"><button class="btn" type="button" onclick="edifiqReportClose()">✕ Fechar</button><button class="btn" type="button" onclick="edifiqReportPrint()">🖨️ Imprimir</button><button class="btn gold" type="button" onclick="edifiqReportSavePDF()">⬇ Salvar PDF</button></div></div><iframe id="edifiqReportFrame" title="Pré-visualização do relatório"></iframe><div class="edReportHubStatus" id="edifiqReportHubStatus">Relatório pronto.</div></div>';
+    document.body.appendChild(m);return m;
+  }
+  function status(msg,busy){const el=document.getElementById('edifiqReportHubStatus');if(el){el.textContent=msg;el.classList.toggle('busy',!!busy)}}
+  function waitFrame(frame){return new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;resolve()};frame.addEventListener('load',finish,{once:true});setTimeout(finish,700)})}
+  async function waitImages(doc){const imgs=[...(doc?.images||[])];await Promise.all(imgs.map(img=>img.complete?Promise.resolve():new Promise(r=>{img.onload=img.onerror=r;setTimeout(r,2500)})))}
+
+  window.edifiqReportOpenHTML=async function(raw,meta={}){
+    if(!raw){if(typeof toast==='function')toast('Relatório vazio.');return false}
+    const cleaned=cleanHTML(raw),title=meta.title||reportTitle(cleaned,'Relatório EDIFIQ');
+    const filename=(meta.filename?String(meta.filename).replace(/\.pdf$/i,''):safeName(title))+'_'+DATE_TAG()+'.pdf';
+    current={html:cleaned,title,filename:safeName(filename.replace(/\.pdf$/i,''))+'.pdf'};
+    const m=ensureHub(),frame=document.getElementById('edifiqReportFrame');
+    document.getElementById('edifiqReportHubTitle').textContent='📄 '+title;
+    status('Preparando visualização…',true);m.classList.add('open');
+    frame.srcdoc=cleaned;await waitFrame(frame);status('Relatório pronto. Você pode salvar em PDF ou imprimir.',false);return true;
+  };
+  window.edifiqReportClose=function(){const m=document.getElementById('edifiqReportHub');if(m)m.classList.remove('open')};
+  window.edifiqReportPrint=async function(){
+    const frame=document.getElementById('edifiqReportFrame');if(!frame?.contentWindow){if(typeof toast==='function')toast('Abra um relatório primeiro.');return}
+    try{await waitImages(frame.contentDocument);frame.contentWindow.focus();frame.contentWindow.print()}catch(e){console.error('EDIFIQ impressão',e);if(typeof toast==='function')toast('Não foi possível abrir a impressão neste dispositivo.')}
+  };
+  async function loadPdfLib(){
+    if(typeof window.html2pdf==='function')return true;
+    try{if(typeof loadExternalScript==='function')return !!(await loadExternalScript(PDF_LIB,'html2pdf',18000));
+      await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=PDF_LIB;s.onload=resolve;s.onerror=reject;document.head.appendChild(s)});return typeof window.html2pdf==='function';
+    }catch(e){console.warn('EDIFIQ PDF lib',e);return false}
+  }
+  async function deliverBlob(blob,filename,title){
+    const file=new File([blob],filename,{type:'application/pdf'});
+    if(isAppleMobile()&&(isStandalone()||navigator.standalone===true)&&navigator.share){
+      try{if(!navigator.canShare||navigator.canShare({files:[file]})){await navigator.share({files:[file],title:title||filename});return 'shared'}}catch(e){if(e?.name==='AbortError')return 'cancelled';console.warn('EDIFIQ share PDF',e)}
+    }
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.rel='noopener';
+    if(isAppleMobile()){a.target='_blank'}document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);return 'download';
+  }
+  window.edifiqReportSavePDF=async function(){
+    const frame=document.getElementById('edifiqReportFrame'),doc=frame?.contentDocument;if(!doc?.body){if(typeof toast==='function')toast('Abra um relatório primeiro.');return}
+    status('Gerando o arquivo PDF…',true);
+    try{
+      await waitImages(doc);
+      const ok=await loadPdfLib();if(!ok)throw new Error('Gerador de PDF não carregou');
+      const options={margin:[8,8,9,8],filename:current.filename,image:{type:'jpeg',quality:.96},html2canvas:{scale:1.7,useCORS:true,backgroundColor:'#ffffff',logging:false},jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},pagebreak:{mode:['css','legacy']}};
+      const worker=window.html2pdf().set(options).from(doc.body).toPdf();
+      const blob=await worker.outputPdf('blob');
+      const result=await deliverBlob(blob,current.filename,current.title);
+      if(result==='cancelled'){status('Salvamento cancelado. O relatório continua aberto.',false);return}
+      status(isAppleMobile()&&isStandalone()?'PDF gerado. Use a folha de compartilhamento para Salvar em Arquivos.':'PDF gerado com sucesso.',false);
+      if(typeof toast==='function')toast('PDF gerado com sucesso.');
+    }catch(e){
+      console.error('EDIFIQ salvar PDF',e);status('Não foi possível gerar o arquivo diretamente. A impressão continua disponível.',false);
+      if(typeof toast==='function')toast('Falha ao gerar o PDF direto. Use Imprimir como alternativa.');
+    }
+  };
+
+  function fakePopupCapture(original,ctx,args,meta){
+    const nativeOpen=window.open;let buffer='';
+    const fakeDoc={
+      open(){buffer='';return fakeDoc},write(v){buffer+=String(v??'')},writeln(v){buffer+=String(v??'')+'\n'},close(){},
+      body:{}
+    };
+    Object.defineProperty(fakeDoc.body,'innerHTML',{get(){return buffer},set(v){buffer=String(v??'')}});
+    const fakeWin={document:fakeDoc,focus(){},print(){},close(){},closed:false,history:{length:1,back(){}},setTimeout(fn,ms){return setTimeout(()=>{try{fn()}catch(_){}},ms)}};
+    window.open=function(url,target,features){if(url&&String(url).trim()&&!/^about:blank$/i.test(String(url)))return nativeOpen.call(window,url,target,features);return fakeWin};
+    const finish=async()=>{window.open=nativeOpen;if(buffer.trim()){const opts=typeof meta==='function'?meta():meta||{};await window.edifiqReportOpenHTML(buffer,opts)}return buffer};
+    try{
+      const r=original.apply(ctx,args);
+      if(r&&typeof r.then==='function')return Promise.resolve(r).then(finish,e=>{window.open=nativeOpen;throw e});
+      finish();return r;
+    }catch(e){window.open=nativeOpen;throw e}
+  }
+  function wrap(name,meta){
+    const original=window[name];if(typeof original!=='function'||original.__edifiqPdfWrapped)return;
+    const wrapped=function(...args){return fakePopupCapture(original,this,args,meta)};wrapped.__edifiqPdfWrapped=true;wrapped.__edifiqOriginal=original;window[name]=wrapped;
+  }
+  function selectedObraName(){const id=document.getElementById('edRelatorioObraSelect')?.value||document.getElementById('obraSelecionada')?.value;return (window.D?.obras||[]).find(o=>String(o.id)===String(id))?.nome||'Obra'}
+  function selectedWorkerName(){const id=window.__rtFuncId;return (window.D?.funcionarios||[]).find(f=>String(f.id)===String(id))?.nome||'Trabalhador'}
+  function selectedClient(){return document.getElementById('rcCliente')?.value||'Cliente'}
+
+  wrap('rcExportPDF',()=>({title:'Relatório para Cliente — '+selectedClient(),filename:'EDIFIQ_Relatorio_Cliente_'+safeName(selectedClient())}));
+  wrap('exportPDF',{title:'Relatório geral EDIFIQ',filename:'EDIFIQ_Relatorio_Geral'});
+  wrap('relatorioDiario',{title:'Relatório do Diário de Obra',filename:'EDIFIQ_Diario_de_Obra'});
+  wrap('rtPrint',()=>({title:'Relatório do Trabalhador — '+selectedWorkerName(),filename:'EDIFIQ_Trabalhador_'+safeName(selectedWorkerName())}));
+  wrap('edPrintRelatorioObra',()=>({title:'Relatório automático — '+selectedObraName(),filename:'EDIFIQ_Obra_'+safeName(selectedObraName())}));
+  wrap('edifiqPortalReport',()=>({title:'Relatório da Obra — '+selectedObraName(),filename:'EDIFIQ_Portal_Obra_'+safeName(selectedObraName())}));
+  wrap('edifiqPortalReportSelected',()=>({title:'Relatório da Obra — '+selectedObraName(),filename:'EDIFIQ_Portal_Obra_'+safeName(selectedObraName())}));
+
+  window.EDIFIQ_BUILD='2026-10-11-etapa8-relatorios-pdf';
+})();
+</script>
+
+
+<!-- =========================================================
+     EDIFIQ — ETAPA 9
+     Teste geral, compatibilidade de status e estabilização final
+     ========================================================= -->
+<script id="edifiq-etapa9-estabilizacao-final">
+(function(){
+  'use strict';
+
+  /* D é const global (não vira window.D automaticamente). A Etapa 8 usa
+     window.D para nomes de arquivos PDF; expor a mesma referência corrige
+     os nomes sem criar uma segunda cópia dos dados. */
+  try{ if(typeof D==='object' && D) window.D=D; }catch(_){ }
+
+  function norm9(v){
+    const s=String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/[\s-]+/g,'_');
+    if(!s)return 'em_andamento';
+    if(['em_andamento','andamento','ativa','ativo','em_execucao','execucao'].includes(s))return 'em_andamento';
+    if(['planejada','planejado','planejamento'].includes(s))return 'planejada';
+    if(['concluida','concluido','finalizada','finalizado'].includes(s))return 'concluida';
+    if(['pausada','pausado','paralisada','paralisado'].includes(s))return 'pausada';
+    if(['cancelada','cancelado'].includes(s))return 'cancelada';
+    return s;
+  }
+  window.edifiqNormalizeObraStatus=norm9;
+  window.edifiqObraEmAndamento=o=>norm9(o?.status)==='em_andamento';
+  window.edifiqObraAtiva=o=>['em_andamento','planejada'].includes(norm9(o?.status));
+
+  /* Rótulos antigos deixam de aparecer crus como "andamento". */
+  window.statusLabel=function(v){
+    const s=norm9(v);
+    return ({em_andamento:'Em andamento',planejada:'Planejada',concluida:'Concluída',pausada:'Pausada',cancelada:'Cancelada'})[s]||String(v||'—');
+  };
+
+  /* Obra concluída sem checklist continua em 100%, inclusive em dados legados. */
+  const obraProgress9=window.obraProgress;
+  window.obraProgress=function(obra){
+    try{
+      const itens=(D.checklist||[]).filter(x=>String(x.obra_id??x.obraId)===String(obra?.id));
+      if(!itens.length && norm9(obra?.status)==='concluida')return 100;
+      return typeof obraProgress9==='function'?obraProgress9(obra):Number(obra?.progresso||0);
+    }catch(_){return Number(obra?.progresso||0)}
+  };
+
+  /* Executa telas antigas com status canonizado apenas em memória durante o
+     render. O valor original é restaurado logo depois; nada é regravado no banco. */
+  function withCanonicalStatuses9(fn,ctx,args,after){
+    const obras=(D.obras||[]),old=obras.map(o=>o.status);
+    try{
+      obras.forEach(o=>{o.status=norm9(o.status)});
+      const r=fn.apply(ctx,args||[]);
+      if(typeof after==='function')after();
+      return r;
+    }finally{
+      obras.forEach((o,i)=>{o.status=old[i]});
+    }
+  }
+  function wrapRender9(name,after){
+    const base=window[name];if(typeof base!=='function'||base.__edifiqStage9)return;
+    const w=function(...args){return withCanonicalStatuses9(base,this,args,after)};
+    w.__edifiqStage9=true;w.__edifiqOriginal=base;window[name]=w;
+  }
+
+  wrapRender9('renderResumoGeral');
+  wrapRender9('renderAnalises');
+  wrapRender9('openHomeKpi');
+  wrapRender9('renderDashboard',function(){
+    const el=document.getElementById('kObras');
+    if(el)el.textContent=(D.obras||[]).filter(window.edifiqObraAtiva).length;
+    const em=document.getElementById('kObrasAndamento');
+    if(em)em.textContent=(D.obras||[]).filter(window.edifiqObraEmAndamento).length;
+  });
+
+  /* Ao editar uma obra criada em versões antigas, o select de status passa a
+     reconhecer "andamento", "ativa", "concluído" etc. */
+  const openObra9=window.openObra;
+  window.openObra=function(id=null){
+    const r=typeof openObra9==='function'?openObra9.apply(this,arguments):undefined;
+    if(id!=null){
+      const o=(D.obras||[]).find(x=>String(x.id)===String(id));
+      const sel=document.getElementById('oStatus');
+      if(o&&sel)sel.value=norm9(o.status);
+    }
+    return r;
+  };
+
+  /* Diagnóstico não destrutivo usado na validação da Etapa 9. */
+  window.edifiqStage9Diagnostico=function(){
+    const same=(a,b)=>String(a??'')===String(b??'');
+    const issues=[];
+    const obras=D.obras||[],funcs=D.funcionarios||[],checks=D.checklist||[],diarias=D.diarias||[],gastos=D.gastos||[],pag=D.pagamentos||[],vales=D.adiantamentos||[];
+    for(const d of diarias){
+      if(d.obra_id!=null&&!obras.some(o=>same(o.id,d.obra_id)))issues.push({tipo:'diaria_obra_inexistente',id:d.id});
+      if(d.funcionario_id!=null&&!funcs.some(f=>same(f.id,d.funcionario_id)))issues.push({tipo:'diaria_funcionario_inexistente',id:d.id});
+      if(d.checklist_id!=null){const c=checks.find(x=>same(x.id,d.checklist_id));if(c&&!same(c.obra_id,d.obra_id))issues.push({tipo:'diaria_checklist_outra_obra',id:d.id});}
+    }
+    for(const [tipo,arr] of [['gasto',gastos],['pagamento',pag],['vale',vales]])for(const x of arr){
+      if(x.checklist_id!=null){const c=checks.find(z=>same(z.id,x.checklist_id));if(c&&!same(c.obra_id,x.obra_id))issues.push({tipo:tipo+'_checklist_outra_obra',id:x.id});}
+    }
+    const ops={};
+    for(const [nome,arr] of Object.entries(D))if(Array.isArray(arr))for(const x of arr){if(!x?.operation_id)continue;const k=nome+'::'+x.operation_id;ops[k]=(ops[k]||0)+1}
+    const dupOps=Object.entries(ops).filter(([,n])=>n>1).map(([k,n])=>({chave:k,quantidade:n}));
+    return {ok:issues.length===0&&dupOps.length===0,issues,duplicateOperationIds:dupOps,counts:{obras:obras.length,funcionarios:funcs.length,checklist:checks.length,diarias:diarias.length,gastos:gastos.length,pagamentos:pag.length,vales:vales.length},build:window.EDIFIQ_BUILD};
+  };
+
+  window.EDIFIQ_BUILD='2026-10-11-etapa9-estabilizacao-final';
+})();
+</script>
+
 </body>
 </html>
