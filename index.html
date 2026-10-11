@@ -3801,7 +3801,7 @@ async function signup(){
       password,
       options:{
         data:{full_name:nome,name:nome,nome:nome},
-        emailRedirectTo:location.origin
+        emailRedirectTo:(window.ed23SignupRedirect?window.ed23SignupRedirect():location.origin)
       }
     });
 
@@ -8396,6 +8396,77 @@ body.edLight .authLogo h1{color:#000!important;font-weight:900!important;-webkit
 /* Evita transparência em textos no tema claro. */
 body.edLight :is(.page,.card,.item,.kpi,.financeModernCard,.financeModernPanel,.edHomeWorkCard,.edEquipeCard) *{text-shadow:none}
 </style>
+
+
+
+<style id="ed26Style">
+#edDomain26M .modalBox{max-width:940px}
+.ed26Hero{padding:16px;border:1px solid var(--line,#343a43);border-radius:14px;margin-bottom:12px}
+.ed26Hero.ok{background:rgba(22,163,74,.10);border-color:rgba(22,163,74,.45)}
+.ed26Hero.block{background:rgba(220,38,38,.09);border-color:rgba(220,38,38,.38)}
+.ed26Grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.ed26Card{padding:14px;border:1px solid var(--line,#343a43);border-radius:14px;background:var(--card,#15181d);margin:10px 0}
+.ed26Row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line,#343a43)}
+.ed26Row:first-child{border-top:0}.ed26State{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+.ed26State.ok{background:rgba(22,163,74,.16);color:#86efac}.ed26State.warn{background:rgba(245,158,11,.16);color:#fcd34d}.ed26State.block{background:rgba(220,38,38,.16);color:#fca5a5}
+.ed26Code{padding:10px 12px;border:1px dashed var(--line,#4b5563);border-radius:10px;word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+body.edLight #edDomain26M .ed26Card{background:#fff;border-color:#d0d5dd;color:#111827}body.edLight #edDomain26M .ed26Row{border-color:#e5e7eb}
+body.edLight #edDomain26M .ed26State.ok{color:#067647}body.edLight #edDomain26M .ed26State.warn{color:#92400e}body.edLight #edDomain26M .ed26State.block{color:#b42318}
+@media(max-width:700px){.ed26Grid{grid-template-columns:1fr}.ed26Row{align-items:flex-start;flex-direction:column}.ed26State{align-self:flex-start}}
+</style>
+<script id="ed26Script">
+(()=>{
+  'use strict';
+  const VERSION26='26.0.0';
+  const ADMIN='junioalef7@gmail.com';
+  const KEY25='edifiq_stage25_first_client_checks';
+  window.EDIFIQ_VERSION='v'+VERSION26;
+  window.EDIFIQ_BUILD='2026-10-11-etapa26-dominio-final-convite-real';
+  const q=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const state={session:false,publicHealth:null,inviteProbe:false,privacy:false,deletion:false,manifest:false,sw:false};
+  function env(){const p=location.protocol,h=location.hostname;const local=['localhost','127.0.0.1','::1'].includes(h);return{stable:p==='https:'&&!local,origin:location.origin,base:location.origin+location.pathname.replace(/[^/]*$/,'')}}
+  async function admin(){try{if(!window.sb?.auth)return null;const {data}=await sb.auth.getUser();const u=data?.user;return u?.id&&String(u.email||'').toLowerCase()===ADMIN?u:null}catch(_){return null}}
+  async function probe(path){try{const r=await fetch(path,{cache:'no-store',redirect:'follow'});return !!r.ok}catch(_){return false}}
+  function syncStage25Match(v){try{const c=JSON.parse(localStorage.getItem(KEY25)||'{}')||{};c.public_url_match=!!v;localStorage.setItem(KEY25,JSON.stringify(c))}catch(_){}}
+  async function tests(){const e=env();state.manifest=!!document.querySelector('link[rel="manifest"]');state.sw='serviceWorker' in navigator;state.session=false;state.publicHealth=null;state.inviteProbe=false;state.privacy=false;state.deletion=false;
+    try{const {data}=await sb.auth.getSession();state.session=!!data?.session?.user}catch(_){ }
+    if(e.stable){state.privacy=await probe('./privacidade.html');state.deletion=await probe('./exclusao-conta.html')}
+    if(state.session&&window.sb?.functions){
+      try{const r=await sb.functions.invoke('edifiq-public-health',{body:{current_origin:e.origin}});if(!r.error)state.publicHealth=r.data||null}catch(_){ }
+      try{const r=await sb.functions.invoke('edifiq-piloto-convite-validar',{body:{token:'edifiq-stage26-probe-invalid'}});state.inviteProbe=!r.error&&(r.data?.valid===false||!!r.data?.reason)}catch(_){ }
+    }
+    syncStage25Match(!!state.publicHealth?.matches);
+    return e
+  }
+  function ready(e){return !!(e.stable&&state.session&&state.manifest&&state.sw&&state.privacy&&state.deletion&&state.inviteProbe&&state.publicHealth?.configured&&state.publicHealth?.valid&&state.publicHealth?.matches)}
+  const badge=(ok,labelOk='PRONTO',labelNo='PENDENTE')=>`<span class="ed26State ${ok?'ok':'block'}">${ok?'✓ '+labelOk:'✕ '+labelNo}</span>`;
+  function modal(){let m=q('edDomain26M');if(m)return m;m=document.createElement('div');m.id='edDomain26M';m.className='modal';m.innerHTML=`<div class="modalBox"><div class="modalHead"><div><h2>🔐 Domínio final • Convite real</h2><p class="sub">EDIFIQ v${VERSION26} • liberação automática do endereço</p></div><button class="x" onclick="closeM('edDomain26M')">×</button></div><div id="ed26Body"><div class="card"><b>Verificando domínio…</b></div></div></div>`;document.body.appendChild(m);return m}
+  function render(e){const b=q('ed26Body');if(!b)return;const ok=ready(e);const ph=state.publicHealth||{};const app=e.stable?e.base:'https://SEU-DOMINIO-OFICIAL/';const rows=[
+    ['HTTPS estável',e.stable,e.stable?e.origin:'O app ainda está em arquivo/local ou endereço inseguro'],
+    ['Sessão administradora',state.session,state.session?'Sessão confirmada':'Faça login na conta administradora'],
+    ['EDIFIQ_PUBLIC_URL configurada',!!ph.configured,ph.configured?'Segredo de ambiente encontrado':'Ainda não existe URL pública configurada no servidor'],
+    ['URL pública válida',!!ph.valid,ph.valid?'Configuração usa uma origem aceita':'A URL configurada não é válida'],
+    ['Domínio aberto = domínio configurado',!!ph.matches,ph.matches?'Correspondência exata confirmada pelo servidor':'O domínio atual ainda não corresponde à EDIFIQ_PUBLIC_URL'],
+    ['Política de Privacidade',state.privacy,state.privacy?'Página respondeu neste domínio':'privacidade.html não respondeu'],
+    ['Exclusão de Conta',state.deletion,state.deletion?'Página respondeu neste domínio':'exclusao-conta.html não respondeu'],
+    ['API de convites',state.inviteProbe,state.inviteProbe?'Validação de convite respondeu':'API de convites indisponível'],
+    ['PWA',state.manifest&&state.sw,state.manifest&&state.sw?'Manifest + Service Worker disponíveis':'PWA incompleta neste navegador']
+  ];
+  b.innerHTML=`<div class="ed26Hero ${ok?'ok':'block'}"><h3 style="margin:0 0 6px">${ok?'Domínio confirmado • convite real liberado':'Domínio ainda não liberado'}</h3><div>${ok?'O servidor confirmou que este é exatamente o endereço público configurado para o EDIFIQ.':'Nenhum convite real deve ser enviado até todos os itens abaixo ficarem verdes.'}</div></div>
+    <div class="ed26Grid"><div class="ed26Card"><small>Endereço atual</small><b style="display:block;overflow-wrap:anywhere">${esc(app)}</b></div><div class="ed26Card"><small>Correspondência servidor</small><b style="display:block">${ph.matches?'CONFIRMADA':'PENDENTE'}</b></div><div class="ed26Card"><small>Convite real</small><b style="display:block">${ok?'LIBERADO':'BLOQUEADO'}</b></div></div>
+    <div class="ed26Card"><b>Verificação automática</b>${rows.map(r=>`<div class="ed26Row"><div><b style="font-size:14px">${esc(r[0])}</b><div class="sub">${esc(r[2])}</div></div>${badge(r[1])}</div>`).join('')}</div>
+    <div class="ed26Card"><b>Endereço que o cliente receberá</b><p class="sub">O token só será acrescentado depois que o domínio estiver confirmado.</p><div class="ed26Code">${esc(app)}?piloto=TOKEN-INDIVIDUAL</div></div>
+    <div class="ed26Card"><b>Teste técnico sem criar cliente</b><p class="sub">Esta verificação consulta sessão, domínio, páginas legais e API de convites. Ela não cria conta, convite ou cobrança.</p><div class="ed21Toolbar"><button class="btn primary" onclick="ed26RunDryTest()">🧪 Executar teste técnico</button></div><div id="ed26DryResult" class="sub" style="margin-top:8px"></div></div>
+    <div class="ed21Toolbar"><button class="btn" onclick="openInvite23&&openInvite23()" ${ok?'':'disabled'}>✉️ Abrir convites</button><button class="btn" onclick="openOfficial25&&openOfficial25()">🏁 Primeiro cliente</button><button class="btn" onclick="openDomain26()">↻ Verificar novamente</button></div>`}
+  window.ed26RunDryTest=async function(){const box=q('ed26DryResult');if(box)box.textContent='Executando…';const e=await tests();const ok=ready(e);if(box)box.innerHTML=ok?'<b>✓ Teste aprovado.</b> O ambiente técnico está pronto para gerar o primeiro convite real.':'<b>✕ Teste ainda não aprovado.</b> Corrija os itens vermelhos acima.';render(e)};
+  window.openDomain26=async function(){const u=await admin();if(!u){alert('Área disponível somente para a conta administradora do EDIFIQ.');return}const m=modal();m.classList.add('open');q('ed26Body').innerHTML='<div class="card"><b>Verificando domínio…</b></div>';const e=await tests();render(e)};
+  const previousGenerate26=window.ed23Generate;
+  if(typeof previousGenerate26==='function')window.ed23Generate=async function(){const e=await tests();if(!ready(e)){try{await openDomain26()}catch(_){ }alert('Convite real bloqueado: o servidor ainda não confirmou este domínio como endereço oficial do EDIFIQ.');return}return previousGenerate26.apply(this,arguments)};
+  async function menu(){if(q('edDomainMenu26'))return;const u=await admin();if(!u)return;const anchor=q('edOfficialMenu25')||q('edDeployMenu24')||document.querySelector('.edifiqDrawerAccount');if(!anchor)return;const bt=document.createElement('button');bt.id='edDomainMenu26';bt.className='edifiqDataRow';bt.type='button';bt.setAttribute('onclick','openDomain26()');bt.innerHTML='<span>🔐</span><b>Domínio final • Convite real</b><span class="edifiqChevron">›</span>';anchor.classList.contains('edifiqDrawerAccount')?anchor.insertAdjacentElement('beforebegin',bt):anchor.insertAdjacentElement('afterend',bt)}
+  function init(){setTimeout(menu,1200);setTimeout(menu,2400)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();new MutationObserver(()=>{if(!q('edDomainMenu26'))setTimeout(menu,350)}).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
 
 </body></html>`);
 
@@ -17390,5 +17461,411 @@ body.edLight #edPilot21M .sub{color:#4b5563!important}
 })();
 </script>
 
+
+<style id="edifiq-etapa22-css">
+#edMetrics22M .modalBox{max-width:1100px}
+.ed22Grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
+.ed22Kpi{padding:14px;border-radius:16px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.1)}
+.ed22Kpi small{opacity:.78}.ed22Kpi b{display:block;font-size:23px;margin-top:4px}
+.ed22Bar{height:10px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:7px}
+.ed22Bar>span{display:block;height:100%;background:currentColor;border-radius:999px}
+.ed22Card{padding:14px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);margin:10px 0}
+.ed22Decision{padding:18px;border-radius:18px;border:1px solid rgba(255,255,255,.13);margin:12px 0}
+.ed22Decision.ready{background:rgba(41,179,93,.12);border-color:rgba(41,179,93,.4)}
+.ed22Decision.warn{background:rgba(245,166,35,.12);border-color:rgba(245,166,35,.42)}
+.ed22Decision.block{background:rgba(229,72,77,.12);border-color:rgba(229,72,77,.42)}
+.ed22Row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.ed22Row:last-child{border-bottom:0}
+.ed22Pill{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(56,139,253,.16);border:1px solid rgba(56,139,253,.35)}
+body.edLight #edMetrics22M .ed22Kpi,body.edLight #edMetrics22M .ed22Card{background:#fff;border-color:#d8e0ea;color:#172033}
+body.edLight #edMetrics22M .ed22Row{border-color:#e5e7eb}
+body.edLight #edMetrics22M .sub{color:#4b5563!important}
+@media(max-width:759px){.ed22Grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ed22Row{align-items:flex-start;flex-direction:column}}
+</style>
+<script id="edifiq-etapa22-metricas">
+(()=>{
+  const VERSION22='22.0.0';
+  const BUILD22='2026-10-11-etapa22-metricas-decisao-lancamento';
+  window.EDIFIQ_VERSION='v'+VERSION22;
+  window.EDIFIQ_BUILD=BUILD22;
+  const q=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const pct=n=>Math.max(0,Math.min(100,Math.round(Number(n)||0)));
+  const onboard=['onboarding_conta','onboarding_obra','onboarding_equipe','onboarding_financeiro','onboarding_backup','onboarding_pdf'];
+  let S={clients:[],incidents:[],health:null};
+  async function operator(){
+    try{const {data}=await sb.auth.getUser();const u=data?.user;return u&&String(u.email||'').toLowerCase()==='junioalef7@gmail.com'?u:null}catch(_){return null}
+  }
+  function modal(){
+    let m=q('edMetrics22M');if(m)return m;
+    m=document.createElement('div');m.id='edMetrics22M';m.className='modal';
+    m.innerHTML=`<div class="modalBox" style="max-height:94vh;overflow:auto"><div class="modalHead"><div><h2>📊 Métricas • Piloto</h2><p class="sub">EDIFIQ v${VERSION22} • decisão de lançamento</p></div><button class="x" onclick="closeM('edMetrics22M')">×</button></div><div id="ed22Body"><div class="card"><b>Calculando métricas...</b></div></div></div>`;
+    document.body.appendChild(m);return m;
+  }
+  async function load(){
+    const u=await operator();if(!u)throw new Error('Área interna disponível somente para a conta administradora do EDIFIQ.');
+    const [c,i]=await Promise.all([
+      sb.from('edifiq_piloto_clientes').select('*').eq('operador_user_id',u.id),
+      sb.from('edifiq_piloto_incidentes').select('*').eq('operador_user_id',u.id)
+    ]);
+    if(c.error)throw c.error;if(i.error)throw i.error;
+    S.clients=c.data||[];S.incidents=i.data||[];
+    S.health=null;
+    try{if(sb.functions){const r=await sb.functions.invoke('edifiq-billing-health',{body:{}});if(!r.error)S.health=r.data||null}}catch(_){ }
+  }
+  function metrics(){
+    const total=S.clients.length;
+    const active=S.clients.filter(c=>c.status==='ativo').length;
+    const complete=S.clients.filter(c=>onboard.every(f=>!!c[f])).length;
+    const avg=total?S.clients.reduce((a,c)=>a+onboard.filter(f=>!!c[f]).length/onboard.length*100,0)/total:0;
+    const open=S.incidents.filter(i=>!['resolvido','descartado'].includes(i.status)).length;
+    const critical=S.incidents.filter(i=>!['resolvido','descartado'].includes(i.status)&&i.severidade==='critica').length;
+    const high=S.incidents.filter(i=>!['resolvido','descartado'].includes(i.status)&&i.severidade==='alta').length;
+    const resolved=S.incidents.filter(i=>i.status==='resolvido').length;
+    const resolution=S.incidents.length?resolved/S.incidents.length*100:100;
+    const billingReady=!!(S.health?.ready||S.health?.ok===true||S.health?.status==='ready');
+    let score=0;
+    if(total>=5)score+=20; else if(total>=3)score+=10;
+    if(total&&complete/total>=.8)score+=25; else if(total&&complete/total>=.5)score+=12;
+    if(avg>=85)score+=15; else if(avg>=60)score+=8;
+    if(critical===0)score+=15;
+    if(high===0)score+=10;
+    if(open===0)score+=5;
+    if(resolution>=80)score+=5;
+    if(billingReady)score+=5;
+    let state='block',label='Ainda não liberar',reason='O piloto ainda não tem evidência suficiente para lançamento público.';
+    if(total>=5&&complete/total>=.8&&critical===0&&high===0&&avg>=80&&score>=80){state='ready';label='Pronto para lançamento controlado';reason='Os indicadores mínimos do piloto foram atendidos.'}
+    else if(total>=3&&critical===0&&score>=55){state='warn';label='Atenção • ampliar piloto';reason='A base está evoluindo, mas ainda faltam evidências para abertura pública.'}
+    return {total,active,complete,avg,open,critical,high,resolution,billingReady,score,state,label,reason};
+  }
+  function render(){
+    const m=metrics(), b=q('ed22Body');if(!b)return;
+    const completedRate=m.total?m.complete/m.total*100:0;
+    const activeRate=m.total?m.active/m.total*100:0;
+    const criteria=[
+      ['Amostra mínima',m.total>=5,`${m.total}/5 clientes`],
+      ['Onboarding concluído',m.total>0&&completedRate>=80,`${Math.round(completedRate)}% / meta 80%`],
+      ['Progresso médio',m.avg>=80,`${Math.round(m.avg)}% / meta 80%`],
+      ['Incidentes críticos',m.critical===0,`${m.critical} aberto(s)`],
+      ['Incidentes altos',m.high===0,`${m.high} aberto(s)`],
+      ['Cobrança pronta',m.billingReady,m.billingReady?'Pronta':'Pendente']
+    ];
+    b.innerHTML=`
+      <div class="ed22Decision ${m.state}"><h3 style="margin:0 0 6px">${esc(m.label)}</h3><div>${esc(m.reason)}</div><div class="sub" style="margin-top:6px">Nota de prontidão: <b>${m.score}/100</b></div></div>
+      <div class="ed22Grid">
+        <div class="ed22Kpi"><small>Clientes piloto</small><b>${m.total}</b><div class="sub">Meta mínima: 5</div></div>
+        <div class="ed22Kpi"><small>Ativos</small><b>${m.active}</b><div class="sub">${Math.round(activeRate)}% do piloto</div></div>
+        <div class="ed22Kpi"><small>Onboarding completo</small><b>${m.complete}</b><div class="sub">${Math.round(completedRate)}%</div></div>
+        <div class="ed22Kpi"><small>Incidentes abertos</small><b>${m.open}</b><div class="sub">Críticos: ${m.critical}</div></div>
+      </div>
+      <div class="ed22Card"><b>Ativação e onboarding</b><div class="sub">Progresso médio dos 6 passos do piloto</div><div class="ed22Bar" style="color:#3b82f6"><span style="width:${pct(m.avg)}%"></span></div><div style="margin-top:6px"><b>${Math.round(m.avg)}%</b></div></div>
+      <div class="ed22Card"><b>Estabilidade</b>
+        <div class="ed22Row"><span>Incidentes críticos abertos</span><span class="ed22Pill">${m.critical}</span></div>
+        <div class="ed22Row"><span>Incidentes altos abertos</span><span class="ed22Pill">${m.high}</span></div>
+        <div class="ed22Row"><span>Taxa de resolução</span><span class="ed22Pill">${Math.round(m.resolution)}%</span></div>
+      </div>
+      <div class="ed22Card"><b>Critérios de liberação</b>${criteria.map(([l,ok,d])=>`<div class="ed22Row"><span>${ok?'✅':'⏳'} ${esc(l)}</span><span>${esc(d)}</span></div>`).join('')}</div>
+      <div class="ed22Card"><b>Próxima decisão</b><p class="sub">O painel é conservador: ausência de erros sem clientes suficientes não conta como aprovação. A recomendação só fica verde quando existe amostra mínima, onboarding consistente e nenhum incidente crítico/alto aberto.</p><div class="ed21Toolbar"><button class="btn" onclick="openPilotLaunch21&&openPilotLaunch21()">Clientes • Piloto</button><button class="btn" onclick="openOps20&&openOps20()">Operação • Pré-lançamento</button><button class="btn" onclick="ed22Export()">⬇️ Exportar métricas</button><button class="btn primary" onclick="openMetrics22()">↻ Atualizar</button></div></div>`;
+  }
+  window.openMetrics22=async function(){const m=modal();m.classList.add('open');q('ed22Body').innerHTML='<div class="card"><b>Calculando métricas...</b></div>';try{await load();render()}catch(e){q('ed22Body').innerHTML=`<div class="card"><b>Não foi possível calcular</b><p class="sub">${esc(e?.message||e)}</p></div>`}};
+  window.ed22Export=function(){const m=metrics();const payload={app:'EDIFIQ',version:VERSION22,build:BUILD22,gerado_em:new Date().toISOString(),metricas:m,criterios:{amostra_minima:5,onboarding_completo_percentual:80,progresso_medio_percentual:80,incidentes_criticos_abertos_max:0,incidentes_altos_abertos_max:0}};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='EDIFIQ-metricas-piloto-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+  async function menu(){if(q('edMetricsMenu22'))return;const u=await operator();if(!u)return;const anchor=q('edPilotMenu21')||q('edOpsMenu20')||document.querySelector('.edifiqDrawerAccount');if(!anchor)return;const b=document.createElement('button');b.id='edMetricsMenu22';b.className='edifiqDataRow';b.type='button';b.setAttribute('onclick','openMetrics22()');b.innerHTML='<span>📊</span><b>Métricas • Piloto</b><span class="edifiqChevron">›</span>';if(anchor.classList.contains('edifiqDrawerAccount'))anchor.insertAdjacentElement('beforebegin',b);else anchor.insertAdjacentElement('afterend',b)}
+  let busy=false,t=null;async function safe(){if(busy||q('edMetricsMenu22'))return;busy=true;try{await menu()}finally{busy=false}}
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(safe,1000));setTimeout(safe,2000);new MutationObserver(()=>{if(q('edMetricsMenu22'))return;clearTimeout(t);t=setTimeout(safe,500)}).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+<style id="edifiq-etapa23-css">
+#edInvite23M .modalBox{max-width:1000px}
+.ed23Grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.ed23Card{padding:14px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);margin:10px 0}
+.ed23Row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.ed23Row:last-child{border-bottom:0}.ed23Pill{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;border:1px solid rgba(255,255,255,.15)}
+.ed23Pill.ativo{background:rgba(41,179,93,.13);border-color:rgba(41,179,93,.38)}.ed23Pill.usado{background:rgba(56,139,253,.14);border-color:rgba(56,139,253,.35)}.ed23Pill.revogado,.ed23Pill.expirado{background:rgba(229,72,77,.12);border-color:rgba(229,72,77,.35)}
+.ed23InviteBanner{padding:12px 14px;border-radius:14px;margin:0 0 14px;border:1px solid rgba(41,179,93,.45);background:rgba(41,179,93,.12);line-height:1.35}
+.ed23InviteBanner.bad{border-color:rgba(229,72,77,.45);background:rgba(229,72,77,.11)}
+.ed23LinkBox{display:flex;gap:8px;align-items:center;margin-top:10px}.ed23LinkBox input{flex:1;min-width:0}
+body.edLight #edInvite23M .ed23Card{background:#fff;border-color:#d8e0ea;color:#172033}body.edLight #edInvite23M .ed23Row{border-color:#e5e7eb}
+body.edLight .ed23InviteBanner{color:#15351f;background:#edfdf3;border-color:#9fdab4}body.edLight .ed23InviteBanner.bad{color:#6e1f22;background:#fff1f1;border-color:#efb4b7}
+@media(max-width:759px){.ed23Grid{grid-template-columns:1fr}.ed23Row{flex-direction:column}.ed23LinkBox{flex-direction:column;align-items:stretch}}
+</style>
+<script id="edifiq-etapa23-convites-piloto">
+(()=>{
+  const VERSION23='23.0.0';
+  const BUILD23='2026-10-11-etapa23-convites-piloto';
+  const OPERATOR_EMAIL='junioalef7@gmail.com';
+  window.EDIFIQ_VERSION='v'+VERSION23; window.EDIFIQ_BUILD=BUILD23;
+  const q=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt=v=>{if(!v)return '—';try{return new Date(v).toLocaleString('pt-BR')}catch(_){return String(v)}};
+  const state={token:'',valid:false,invite:null,clients:[],invites:[],user:null,redeeming:false};
+  function rawToken(){try{return new URLSearchParams(location.search).get('piloto')||sessionStorage.getItem('edifiq_piloto_token')||''}catch(_){return ''}}
+  state.token=rawToken(); if(state.token){try{sessionStorage.setItem('edifiq_piloto_token',state.token)}catch(_){}}
+  window.ed23SignupRedirect=function(){
+    try{const u=new URL(location.href);u.hash=''; if(state.token)u.searchParams.set('piloto',state.token);return u.toString()}catch(_){return location.origin}
+  };
+  function authBanner(html,bad=false){
+    const box=document.querySelector('#auth .authBox');if(!box)return;
+    let b=q('ed23InviteBanner'); if(!b){b=document.createElement('div');b.id='ed23InviteBanner';b.className='ed23InviteBanner';const logo=box.querySelector('.authLogo');logo?logo.insertAdjacentElement('afterend',b):box.prepend(b)}
+    b.className='ed23InviteBanner'+(bad?' bad':''); b.innerHTML=html; b.style.display='block';
+  }
+  function clearBanner(){const b=q('ed23InviteBanner');if(b)b.style.display='none'}
+  async function ensure(){try{return await ensureSupabaseClient()}catch(_){return false}}
+  async function validateInvite(){
+    if(!state.token){clearBanner();return false}
+    authBanner('<b>Convite do piloto</b><br><small>Validando convite…</small>');
+    if(!(await ensure())){authBanner('<b>Convite do piloto</b><br><small>Não foi possível conectar ao servidor. Verifique a internet.</small>',true);return false}
+    try{
+      const {data,error}=await sb.functions.invoke('edifiq-piloto-convite-validar',{body:{token:state.token}});
+      if(error||!data?.valid){state.valid=false;state.invite=null;authBanner(`<b>Convite indisponível</b><br><small>${esc(data?.reason==='expired'?'Este convite expirou.':data?.reason==='usado'?'Este convite já foi utilizado.':data?.reason==='revogado'?'Este convite foi revogado.':'O link não é válido ou não está mais ativo.')}</small>`,true);return false}
+      state.valid=true;state.invite=data;
+      const email=q('email');if(email){email.value=data.email||'';email.readOnly=true}
+      const local=q('localModeBtn');if(local)local.style.display='none';
+      authBanner(`<b>Convite confirmado para ${esc(data.nome||data.email)}</b><br><small>${esc(data.perfil==='empresa'?'Empresa':'Autônomo')} • válido até ${esc(fmt(data.expira_em))}. Crie a conta com o e-mail ${esc(data.email)}.</small>`);
+      return true;
+    }catch(e){authBanner(`<b>Não foi possível validar o convite</b><br><small>${esc(e?.message||e)}</small>`,true);return false}
+  }
+  const originalSignup=window.signup;
+  if(typeof originalSignup==='function') window.signup=async function(){
+    if(!state.token||!state.valid){authMsg('Novos cadastros estão em piloto controlado. Use um link de convite válido.');return}
+    const email=(q('email')?.value||'').trim().toLowerCase(); if(email!==String(state.invite?.email||'').toLowerCase()){authMsg('Use o mesmo e-mail que recebeu o convite.');return}
+    return originalSignup.apply(this,arguments)
+  };
+  async function redeem(){
+    if(!state.token||state.redeeming||!sb?.functions)return false; state.redeeming=true;
+    try{
+      const {data,error}=await sb.functions.invoke('edifiq-piloto-convite-resgatar',{body:{token:state.token}});
+      if(error||!data?.ok)return false;
+      state.token='';state.valid=false;try{sessionStorage.removeItem('edifiq_piloto_token')}catch(_){}
+      try{const u=new URL(location.href);u.searchParams.delete('piloto');history.replaceState({},'',u.pathname+(u.search||'')+(u.hash||''))}catch(_){}
+      try{toast('Convite do piloto ativado. Bem-vindo ao EDIFIQ!')}catch(_){}
+      return true;
+    }catch(_){return false}finally{state.redeeming=false}
+  }
+  async function currentOperator(){
+    if(!(await ensure()))return null; try{const {data}=await sb.auth.getUser();const u=data?.user;return u?.id&&String(u.email||'').toLowerCase()===OPERATOR_EMAIL?u:null}catch(_){return null}
+  }
+  function modal(){
+    let m=q('edInvite23M');if(m)return m;m=document.createElement('div');m.id='edInvite23M';m.className='modal';
+    m.innerHTML=`<div class="modalBox" style="max-height:94vh;overflow:auto"><div class="modalHead"><div><h2>✉️ Convites • Piloto</h2><p class="sub">EDIFIQ v${VERSION23} • entrada controlada</p></div><button class="x" onclick="closeM('edInvite23M')">×</button></div><div id="ed23Body"><div class="card"><b>Carregando convites…</b></div></div></div>`;document.body.appendChild(m);return m
+  }
+  async function loadAdmin(){
+    const u=await currentOperator();if(!u)throw new Error('Área disponível somente para a conta administradora do EDIFIQ.');state.user=u;
+    const [c,i]=await Promise.all([
+      sb.from('edifiq_piloto_clientes').select('*').eq('operador_user_id',u.id).order('atualizado_em',{ascending:false}),
+      sb.from('edifiq_piloto_convites').select('id,cliente_id,email,status,expira_em,usado_em,criado_em,atualizado_em').eq('operador_user_id',u.id).order('criado_em',{ascending:false})
+    ]);if(c.error)throw c.error;if(i.error)throw i.error;state.clients=c.data||[];state.invites=i.data||[];
+  }
+  function activeFor(clientId){return state.invites.find(i=>String(i.cliente_id)===String(clientId)&&i.status==='ativo')||null}
+  function lastFor(clientId){return state.invites.find(i=>String(i.cliente_id)===String(clientId))||null}
+  function renderAdmin(){
+    const b=q('ed23Body');if(!b)return; const active=state.invites.filter(i=>i.status==='ativo'&&new Date(i.expira_em)>new Date()).length;const used=state.invites.filter(i=>i.status==='usado').length;
+    const cards=state.clients.map(c=>{const a=activeFor(c.id),last=lastFor(c.id);return `<div class="ed23Card"><div class="ed23Row"><div><b>${esc(c.nome)}</b><div class="sub">${esc(c.email||'Sem e-mail')} • ${esc(c.perfil==='empresa'?'Empresa':'Autônomo')} • ${esc(c.status)}</div></div>${last?`<span class="ed23Pill ${esc(last.status)}">${esc(last.status)}</span>`:'<span class="ed23Pill">sem convite</span>'}</div>${a?`<div class="sub">Convite ativo até ${esc(fmt(a.expira_em))}. O link original não fica armazenado; para obter outro, gere um novo.</div><div class="ed21Toolbar"><button class="btn" onclick="ed23Generate(${c.id})">↻ Gerar novo link</button><button class="btn danger" onclick="ed23Revoke(${a.id})">Revogar</button></div>`:`<div class="sub">${c.email?'Pronto para gerar um link individual.':'Cadastre o e-mail do cliente antes de gerar o convite.'}</div><div class="ed21Toolbar"><button class="btn primary" ${c.email?'':'disabled'} onclick="ed23Generate(${c.id})">🔗 Gerar convite</button></div>`}</div>`}).join('')||'<div class="card"><b>Nenhum cliente piloto cadastrado.</b><p class="sub">Cadastre primeiro em Clientes • Piloto.</p></div>';
+    b.innerHTML=`<div class="ed23Grid"><div class="ed23Card"><small>Clientes piloto</small><b style="display:block;font-size:24px">${state.clients.length}</b></div><div class="ed23Card"><small>Convites ativos</small><b style="display:block;font-size:24px">${active}</b></div><div class="ed23Card"><small>Convites usados</small><b style="display:block;font-size:24px">${used}</b></div></div><div class="ed23Card"><b>Entrada controlada</b><p class="sub">Cada link é individual, expira e só pode ser resgatado pelo e-mail cadastrado. O EDIFIQ não envia o convite automaticamente: copie o link e envie pelo canal que preferir.</p><div class="ed21Toolbar"><button class="btn" onclick="openPilotLaunch21&&openPilotLaunch21()">Clientes • Piloto</button><button class="btn" onclick="openInvite23()">↻ Atualizar</button></div></div>${cards}`;
+  }
+  window.openInvite23=async function(){const m=modal();m.classList.add('open');q('ed23Body').innerHTML='<div class="card"><b>Carregando convites…</b></div>';try{await loadAdmin();renderAdmin()}catch(e){q('ed23Body').innerHTML=`<div class="card"><b>Não foi possível abrir</b><p class="sub">${esc(e?.message||e)}</p></div>`}}
+  window.ed23Generate=async function(clientId){
+    if(!confirm('Gerar um novo convite? Qualquer convite ativo anterior deste cliente será revogado.'))return;
+    try{const {data,error}=await sb.functions.invoke('edifiq-piloto-convite-criar',{body:{cliente_id:clientId,validade_dias:7}});if(error||!data?.token)throw new Error(data?.error||error?.message||'Não foi possível gerar o convite.');
+      const u=new URL(location.href);u.hash='';u.search='';u.searchParams.set('piloto',data.token);let m=q('ed23LinkM');if(m)m.remove();m=document.createElement('div');m.id='ed23LinkM';m.className='modal';m.innerHTML=`<div class="modalBox" style="max-width:720px"><div class="modalHead"><div><h2>🔗 Convite criado</h2><p class="sub">Válido até ${esc(fmt(data.convite?.expira_em))}</p></div><button class="x" onclick="closeM('ed23LinkM')">×</button></div><p>Envie este link somente para <b>${esc(data.cliente?.nome||data.convite?.email)}</b>.</p><div class="ed23LinkBox"><input id="ed23GeneratedLink" readonly value="${esc(u.toString())}"><button class="btn primary" onclick="ed23CopyLink()">Copiar link</button></div><p class="sub">Por segurança, o token completo não fica salvo no banco. Se perder este link, gere outro.</p></div>`;document.body.appendChild(m);m.classList.add('open');await loadAdmin();renderAdmin();
+    }catch(e){alert(e?.message||e)}
+  };
+  window.ed23CopyLink=async function(){const v=q('ed23GeneratedLink')?.value||'';try{await navigator.clipboard.writeText(v);toast('Link copiado.')}catch(_){q('ed23GeneratedLink')?.select();document.execCommand('copy');toast('Link copiado.')}};
+  window.ed23Revoke=async function(id){if(!confirm('Revogar este convite?'))return;const u=await currentOperator();if(!u)return;const {error}=await sb.from('edifiq_piloto_convites').update({status:'revogado',atualizado_em:new Date().toISOString()}).eq('id',id).eq('operador_user_id',u.id);if(error)alert(error.message);else await openInvite23()};
+  async function menu(){if(q('edInviteMenu23'))return;const u=await currentOperator();if(!u)return;const anchor=q('edPilotMenu21')||q('edMetricsMenu22')||document.querySelector('.edifiqDrawerAccount');if(!anchor)return;const b=document.createElement('button');b.id='edInviteMenu23';b.className='edifiqDataRow';b.type='button';b.setAttribute('onclick','openInvite23()');b.innerHTML='<span>✉️</span><b>Convites • Piloto</b><span class="edifiqChevron">›</span>';anchor.classList.contains('edifiqDrawerAccount')?anchor.insertAdjacentElement('beforebegin',b):anchor.insertAdjacentElement('afterend',b)}
+  async function init(){
+    await validateInvite();
+    try{if(await ensure()&&sb?.auth?.onAuthStateChange){sb.auth.onAuthStateChange((event,session)=>{if(session?.user&&state.token&&['SIGNED_IN','INITIAL_SESSION','TOKEN_REFRESHED'].includes(event))setTimeout(redeem,100)}) ;const {data}=await sb.auth.getSession();if(data?.session?.user&&state.token)setTimeout(redeem,150)}}catch(_){}
+    setTimeout(menu,900);setTimeout(menu,1900);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+  const mo=new MutationObserver(()=>{if(!q('edInviteMenu23'))setTimeout(menu,350)});mo.observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+<style id="edifiq-etapa24-css">
+#edDeploy24M .modalBox{max-width:1040px;max-height:94vh;overflow:auto}
+.ed24Grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.ed24Card{padding:14px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.11)}
+.ed24Card small{opacity:.76}.ed24Card b{display:block;margin-top:4px;font-size:18px}
+.ed24Row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.ed24Row:last-child{border-bottom:0}
+.ed24State{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap}
+.ed24State.ok{background:rgba(41,179,93,.15);border:1px solid rgba(41,179,93,.42)}
+.ed24State.warn{background:rgba(245,166,35,.14);border:1px solid rgba(245,166,35,.42)}
+.ed24State.block{background:rgba(229,72,77,.14);border:1px solid rgba(229,72,77,.42)}
+.ed24Hero{padding:18px;border-radius:18px;border:1px solid rgba(255,255,255,.12);margin:12px 0}
+.ed24Hero.ok{background:rgba(41,179,93,.10);border-color:rgba(41,179,93,.38)}
+.ed24Hero.block{background:rgba(229,72,77,.10);border-color:rgba(229,72,77,.38)}
+.ed24Code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);font-size:12px}
+body.edLight #edDeploy24M .ed24Card,body.edLight #edDeploy24M .ed24Hero{background:#fff;border-color:#d8e0ea;color:#172033}
+body.edLight #edDeploy24M .ed24Row{border-color:#e5e7eb}
+body.edLight #edDeploy24M .ed24Code{background:#f4f6f8;border-color:#d8e0ea;color:#111827}
+body.edLight #edDeploy24M .sub{color:#4b5563!important}
+#ed24EnvBanner{position:fixed;left:12px;right:12px;bottom:74px;z-index:9996;padding:10px 12px;border-radius:14px;background:#7f1d1d;color:#fff;border:1px solid rgba(255,255,255,.22);box-shadow:0 10px 30px rgba(0,0,0,.28);font-size:12px;font-weight:700;display:none}
+@media(max-width:759px){.ed24Grid{grid-template-columns:1fr}.ed24Row{flex-direction:column}.ed24State{align-self:flex-start}#ed24EnvBanner{bottom:88px}}
+</style>
+<script id="edifiq-etapa24-implantacao-privada">
+(()=>{
+  const VERSION24='24.0.0';
+  const BUILD24='2026-10-11-etapa24-implantacao-privada-convite-real';
+  const ADMIN='junioalef7@gmail.com';
+  window.EDIFIQ_VERSION='v'+VERSION24;
+  window.EDIFIQ_BUILD=BUILD24;
+  const q=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const state={billing:null,inviteProbe:null,session:false};
+  function env(){
+    const p=location.protocol,h=location.hostname||'';
+    const local=['localhost','127.0.0.1','::1'].includes(h);
+    const file=p==='file:';
+    const https=p==='https:';
+    const stable=https&&!local&&!!h&&h.includes('.');
+    return {protocol:p,host:h,origin:location.origin,local,file,https,stable,realInvite:stable};
+  }
+  async function admin(){
+    try{if(!window.sb?.auth)return null;const {data}=await sb.auth.getUser();const u=data?.user;return u?.id&&String(u.email||'').toLowerCase()===ADMIN?u:null}catch(_){return null}
+  }
+  function modal(){
+    let m=q('edDeploy24M');if(m)return m;
+    m=document.createElement('div');m.id='edDeploy24M';m.className='modal';
+    m.innerHTML=`<div class="modalBox"><div class="modalHead"><div><h2>🌐 Implantação • Piloto</h2><p class="sub">EDIFIQ v${VERSION24} • HTTPS privado/controlado</p></div><button class="x" onclick="closeM('edDeploy24M')">×</button></div><div id="ed24Body"><div class="card"><b>Verificando ambiente…</b></div></div></div>`;
+    document.body.appendChild(m);return m;
+  }
+  async function tests(){
+    const e=env();state.billing=null;state.inviteProbe=null;state.session=false;
+    try{const {data}=await sb.auth.getSession();state.session=!!data?.session?.user}catch(_){ }
+    if(state.session&&sb?.functions){
+      try{const r=await sb.functions.invoke('edifiq-billing-health',{body:{}});if(!r.error)state.billing=r.data||null}catch(_){ }
+      try{const r=await sb.functions.invoke('edifiq-piloto-convite-validar',{body:{token:'edifiq-stage24-probe-invalid'}});state.inviteProbe={reachable:!r.error,invalidExpected:r.data?.valid===false||!!r.data?.reason}}catch(_){state.inviteProbe={reachable:false}}
+    }
+    return e;
+  }
+  const badge=(ok,labelWarn='PENDENTE')=>`<span class="ed24State ${ok?'ok':'block'}">${ok?'✓ PRONTO':'✕ '+labelWarn}</span>`;
+  function render(e){
+    const b=q('ed24Body');if(!b)return;
+    const manifest=!!document.querySelector('link[rel="manifest"]');
+    const sw='serviceWorker' in navigator;
+    const publicCfg=!!state.billing?.checks?.public_url_valid;
+    const billingReady=!!state.billing?.ready;
+    const inviteApi=!!state.inviteProbe?.reachable;
+    const ready=e.realInvite&&state.session&&manifest&&sw&&inviteApi;
+    const rows=[
+      ['Endereço HTTPS estável',e.realInvite, e.realInvite?location.origin:(e.file?'Arquivo local (file://)':e.local?'Ambiente local':'HTTPS estável ainda não disponível')],
+      ['Sessão do administrador',state.session,state.session?'Autenticada':'Faça login para executar testes privados'],
+      ['Manifest PWA',manifest,manifest?'Detectado':'Manifest não encontrado'],
+      ['Service Worker suportado',sw,sw?'Navegador compatível':'Navegador sem suporte'],
+      ['API de convites',inviteApi,inviteApi?'Função de validação respondeu':'Não foi possível validar a função'],
+      ['URL pública no servidor',publicCfg,publicCfg?'EDIFIQ_PUBLIC_URL válida':'Ainda pendente para cobrança/retorno'],
+      ['Cobrança completa',billingReady,billingReady?'Mercado Pago e webhook prontos':'Pode continuar piloto sem cobrança real']
+    ];
+    b.innerHTML=`
+      <div class="ed24Hero ${ready?'ok':'block'}"><h3 style="margin:0 0 6px">${ready?'Ambiente apto para convite real':'Ainda não enviar convite real'}</h3><div>${ready?'Este endereço pode ser usado como base dos links de convite do piloto.':'Abra o EDIFIQ em um endereço HTTPS estável antes de compartilhar links com clientes.'}</div></div>
+      <div class="ed24Grid"><div class="ed24Card"><small>Endereço atual</small><b>${esc(e.host||e.protocol)}</b></div><div class="ed24Card"><small>Convite real</small><b>${e.realInvite?'Liberado':'Bloqueado'}</b></div><div class="ed24Card"><small>Modo</small><b>${e.https?'HTTPS':e.file?'Arquivo local':'HTTP/local'}</b></div></div>
+      <div class="ed24Card"><b>Checklist técnico</b>${rows.map(r=>`<div class="ed24Row"><div><b style="font-size:14px">${esc(r[0])}</b><div class="sub">${esc(r[2])}</div></div>${badge(r[1])}</div>`).join('')}</div>
+      <div class="ed24Card"><b>Base correta do convite</b><p class="sub">Quando hospedado, o link deverá começar exatamente por este endereço:</p><div class="ed24Code">${esc(e.realInvite?location.origin+location.pathname:'https://SEU-ENDERECO-OFICIAL/')}</div></div>
+      <div class="ed24Card"><b>Teste de ponta a ponta</b><div class="ed24Row"><span>1. Abrir o endereço em outro aparelho</span><span class="ed24State ${e.realInvite?'ok':'warn'}">${e.realInvite?'PODE TESTAR':'AGUARDE HTTPS'}</span></div><div class="ed24Row"><span>2. Gerar convite para cliente piloto cadastrado</span><span class="ed24State ${e.realInvite?'ok':'warn'}">${e.realInvite?'LIBERADO':'BLOQUEADO'}</span></div><div class="ed24Row"><span>3. Abrir link em janela privada</span><span class="ed24State warn">MANUAL</span></div><div class="ed24Row"><span>4. Criar conta com o mesmo e-mail</span><span class="ed24State warn">MANUAL</span></div><div class="ed24Row"><span>5. Confirmar status Onboarding em Clientes • Piloto</span><span class="ed24State warn">MANUAL</span></div></div>
+      <div class="ed21Toolbar"><button class="btn" onclick="openInvite23&&openInvite23()">✉️ Convites • Piloto</button><button class="btn" onclick="openPilotLaunch21&&openPilotLaunch21()">🚀 Clientes • Piloto</button><button class="btn" onclick="openDeploy24()">↻ Verificar novamente</button></div>`;
+  }
+  window.openDeploy24=async function(){
+    const u=await admin();if(!u){alert('Área disponível somente para a conta administradora do EDIFIQ.');return}
+    const m=modal();m.classList.add('open');q('ed24Body').innerHTML='<div class="card"><b>Verificando ambiente…</b></div>';
+    const e=await tests();render(e)
+  };
+  function banner(){
+    let x=q('ed24EnvBanner');if(!x){x=document.createElement('div');x.id='ed24EnvBanner';document.body.appendChild(x)}
+    const e=env();
+    if(e.realInvite){x.style.display='none';return}
+    x.innerHTML='Ambiente local/inseguro: links reais do piloto estão bloqueados. Hospede a Etapa 24 em HTTPS para convidar clientes.';x.style.display='block';
+  }
+  const oldGenerate=window.ed23Generate;
+  if(typeof oldGenerate==='function')window.ed23Generate=async function(clientId){
+    const e=env();
+    if(!e.realInvite){
+      try{await openDeploy24()}catch(_){ }
+      alert('Convite real bloqueado neste endereço. Use uma versão hospedada em HTTPS estável para gerar o link do cliente.');
+      return;
+    }
+    return oldGenerate.apply(this,arguments)
+  };
+  async function menu(){
+    if(q('edDeployMenu24'))return;const u=await admin();if(!u)return;
+    const anchor=q('edInviteMenu23')||q('edMetricsMenu22')||document.querySelector('.edifiqDrawerAccount');if(!anchor)return;
+    const bt=document.createElement('button');bt.id='edDeployMenu24';bt.className='edifiqDataRow';bt.type='button';bt.setAttribute('onclick','openDeploy24()');bt.innerHTML='<span>🌐</span><b>Implantação • Piloto</b><span class="edifiqChevron">›</span>';
+    anchor.classList.contains('edifiqDrawerAccount')?anchor.insertAdjacentElement('beforebegin',bt):anchor.insertAdjacentElement('afterend',bt)
+  }
+  function init(){banner();setTimeout(menu,1100);setTimeout(menu,2200)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+  const mo=new MutationObserver(()=>{if(!q('edDeployMenu24'))setTimeout(menu,400)});mo.observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+
+<style id="ed25Style">
+#edOfficial25M .modalBox{max-width:940px}
+.ed25Hero{padding:16px;border:1px solid var(--line,#343a43);border-radius:14px;margin-bottom:12px}
+.ed25Hero.ok{background:rgba(22,163,74,.10);border-color:rgba(22,163,74,.45)}
+.ed25Hero.block{background:rgba(220,38,38,.09);border-color:rgba(220,38,38,.38)}
+.ed25Grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.ed25Card{padding:14px;border:1px solid var(--line,#343a43);border-radius:14px;background:var(--card,#15181d);margin:10px 0}
+.ed25Card small{display:block;opacity:.72;margin-bottom:5px}.ed25Card b{overflow-wrap:anywhere}
+.ed25Row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line,#343a43)}
+.ed25Row:first-child{border-top:0}.ed25State{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+.ed25State.ok{background:rgba(22,163,74,.16);color:#86efac}.ed25State.warn{background:rgba(245,158,11,.16);color:#fcd34d}.ed25State.block{background:rgba(220,38,38,.16);color:#fca5a5}
+.ed25Code{padding:10px 12px;border:1px dashed var(--line,#4b5563);border-radius:10px;word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.ed25Check{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line,#343a43)}.ed25Check input{margin-top:3px;transform:scale(1.15)}
+body.edLight #edOfficial25M .ed25Card{background:#fff;border-color:#d0d5dd;color:#111827}body.edLight #edOfficial25M .ed25Row,body.edLight #edOfficial25M .ed25Check{border-color:#e5e7eb}
+body.edLight #edOfficial25M .ed25State.ok{color:#067647}body.edLight #edOfficial25M .ed25State.warn{color:#92400e}body.edLight #edOfficial25M .ed25State.block{color:#b42318}
+@media(max-width:700px){.ed25Grid{grid-template-columns:1fr}.ed25Row{align-items:flex-start;flex-direction:column}.ed25State{align-self:flex-start}}
+</style>
+<script id="ed25Script">
+(()=>{
+  'use strict';
+  const VERSION25='25.0.0';
+  const ADMIN='junioalef7@gmail.com';
+  const KEY='edifiq_stage25_first_client_checks';
+  window.EDIFIQ_VERSION='v'+VERSION25;
+  window.EDIFIQ_BUILD='2026-10-11-etapa25-endereco-oficial-primeiro-cliente';
+  const q=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const state={session:false,billing:null,invite:false,privacy:false,deletion:false,manifest:false,sw:false};
+  function env(){const p=location.protocol,h=location.hostname;const local=['localhost','127.0.0.1','::1'].includes(h);return{https:p==='https:',file:p==='file:',local,stable:p==='https:'&&!local,origin:location.origin,base:location.origin+location.pathname.replace(/[^/]*$/,'')}}
+  async function admin(){try{if(!window.sb?.auth)return null;const {data}=await sb.auth.getUser();const u=data?.user;return u?.id&&String(u.email||'').toLowerCase()===ADMIN?u:null}catch(_){return null}}
+  async function probe(path){try{const r=await fetch(path,{method:'GET',cache:'no-store',redirect:'follow'});return !!(r.ok&&/text\/html/i.test(r.headers.get('content-type')||'text/html'))}catch(_){return false}}
+  function getChecks(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(_){return{}}}
+  function setCheck(k,v){const x=getChecks();x[k]=!!v;localStorage.setItem(KEY,JSON.stringify(x));renderLast().catch(()=>{})}
+  window.ed25SetCheck=setCheck;
+  function modal(){let m=q('edOfficial25M');if(m)return m;m=document.createElement('div');m.id='edOfficial25M';m.className='modal';m.innerHTML=`<div class="modalBox"><div class="modalHead"><div><h2>🏁 Endereço oficial • Primeiro cliente</h2><p class="sub">EDIFIQ v${VERSION25} • pré-liberação do piloto real</p></div><button class="x" onclick="closeM('edOfficial25M')">×</button></div><div id="ed25Body"><div class="card"><b>Verificando ambiente…</b></div></div></div>`;document.body.appendChild(m);return m}
+  async function tests(){const e=env();state.manifest=!!document.querySelector('link[rel="manifest"]');state.sw='serviceWorker' in navigator;state.session=false;state.billing=null;state.invite=false;try{const {data}=await sb.auth.getSession();state.session=!!data?.session?.user}catch(_){ }
+    if(e.stable){state.privacy=await probe('./privacidade.html');state.deletion=await probe('./exclusao-conta.html')}else{state.privacy=false;state.deletion=false}
+    if(state.session&&window.sb?.functions){try{const r=await sb.functions.invoke('edifiq-billing-health',{body:{}});if(!r.error)state.billing=r.data||null}catch(_){ }
+      try{const r=await sb.functions.invoke('edifiq-piloto-convite-validar',{body:{token:'edifiq-stage25-probe-invalid'}});state.invite=!r.error&&(r.data?.valid===false||!!r.data?.reason)}catch(_){state.invite=false}}
+    return e}
+  const badge=(ok,w='PENDENTE')=>`<span class="ed25State ${ok?'ok':'block'}">${ok?'✓ PRONTO':'✕ '+w}</span>`;
+  function techReady(e){const c=getChecks();return !!(e.stable&&state.session&&state.manifest&&state.sw&&state.privacy&&state.deletion&&state.invite&&c.public_url_match)}
+  function clientChecklist(){const c=getChecks();const items=[['public_url_match','EDIFIQ_PUBLIC_URL confirmada neste mesmo endereço',true],['iphone_pwa','Instalação PWA testada em iPhone real'],['computer_ok','Acesso testado no computador'],['invite_other_device','Convite aberto em outro aparelho'],['account_created','Conta piloto criada pelo link'],['onboarding_seen','Cliente apareceu como Onboarding'],['first_obra','Primeira obra criada pelo cliente'],['backup_test','Backup gerado e conferido'],['pdf_test','PDF salvo em aparelho real'],['support_ready','Canal de suporte informado ao cliente']];return{c,items}}
+  function render(e){const b=q('ed25Body');if(!b)return;const {c,items}=clientChecklist();const ready=techReady(e);const done=items.filter(([k])=>!!c[k]).length;const appUrl=e.stable?e.base:'https://SEU-ENDERECO-OFICIAL/';const privacy=appUrl+'privacidade.html';const deletion=appUrl+'exclusao-conta.html';const rows=[
+    ['HTTPS oficial/estável',e.stable,e.stable?e.origin:'Abra o pacote em domínio HTTPS, não file:// ou localhost'],
+    ['Sessão administradora',state.session,state.session?'Autenticada':'Faça login com a conta administradora'],
+    ['Manifest PWA',state.manifest,state.manifest?'Detectado':'Manifest não encontrado'],
+    ['Service Worker',state.sw,state.sw?'Suportado':'Sem suporte neste navegador'],
+    ['Política pública',state.privacy,state.privacy?privacy:'privacidade.html ainda não responde'],
+    ['Exclusão pública',state.deletion,state.deletion?deletion:'exclusao-conta.html ainda não responde'],
+    ['API de convites',state.invite,state.invite?'Funções responderam':'API de convite indisponível'],
+    ['URL pública no Supabase',!!c.public_url_match,c.public_url_match?'Confirmada manualmente para este domínio':'Confirme após configurar EDIFIQ_PUBLIC_URL']
+  ];
+  b.innerHTML=`<div class="ed25Hero ${ready?'ok':'block'}"><h3 style="margin:0 0 6px">${ready?'Convite técnico liberado':'Primeiro cliente ainda bloqueado'}</h3><div>${ready?'O endereço atende os requisitos mínimos para gerar um convite piloto real.':'Conclua os itens técnicos abaixo antes de enviar o primeiro convite.'}</div></div>
+  <div class="ed25Grid"><div class="ed25Card"><small>Aplicativo</small><b>${esc(appUrl)}</b></div><div class="ed25Card"><small>Checklist primeiro cliente</small><b>${done}/${items.length}</b></div><div class="ed25Card"><small>Cobrança</small><b>${state.billing?.ready?'Pronta':'Ainda separada do convite'}</b></div></div>
+  <div class="ed25Card"><b>Liberação técnica</b>${rows.map(r=>`<div class="ed25Row"><div><b style="font-size:14px">${esc(r[0])}</b><div class="sub">${esc(r[2])}</div></div>${badge(r[1])}</div>`).join('')}</div>
+  <div class="ed25Card"><b>URLs oficiais</b><p class="sub">Esses três endereços devem permanecer estáveis.</p><div class="ed25Code">App: ${esc(appUrl)}</div><div class="ed25Code" style="margin-top:7px">Privacidade: ${esc(privacy)}</div><div class="ed25Code" style="margin-top:7px">Exclusão: ${esc(deletion)}</div><div class="ed21Toolbar"><button class="btn" onclick="navigator.clipboard?.writeText('${esc(appUrl).replace(/'/g,"\\'")}')">Copiar endereço do app</button><button class="btn" onclick="navigator.clipboard?.writeText('${esc(privacy).replace(/'/g,"\\'")}')">Copiar privacidade</button></div></div>
+  <div class="ed25Card"><b>Confirmação do domínio no Supabase</b><label class="ed25Check"><input type="checkbox" ${c.public_url_match?'checked':''} onchange="ed25SetCheck('public_url_match',this.checked)"><span><b>Confirmei que EDIFIQ_PUBLIC_URL usa este mesmo endereço HTTPS.</b><div class="sub">A Central Comercial consegue verificar se existe uma URL válida, mas não expõe o valor configurado. Esta confirmação evita retorno de pagamento para domínio errado.</div></span></label></div>
+  <div class="ed25Card"><b>Checklist do primeiro cliente piloto</b><p class="sub">Os itens abaixo acompanham o teste real e ficam apenas neste aparelho administrativo.</p>${items.slice(1).map(([k,label])=>`<label class="ed25Check"><input type="checkbox" ${c[k]?'checked':''} onchange="ed25SetCheck('${k}',this.checked)"><span>${esc(label)}</span></label>`).join('')}</div>
+  <div class="ed21Toolbar"><button class="btn" onclick="openInvite23&&openInvite23()" ${ready?'':'disabled'}>✉️ Abrir convites</button><button class="btn" onclick="openPilotLaunch21&&openPilotLaunch21()">🚀 Clientes • Piloto</button><button class="btn" onclick="openMetrics22&&openMetrics22()">📊 Métricas</button><button class="btn" onclick="openOfficial25()">↻ Verificar novamente</button></div>`}
+  async function renderLast(){const m=q('edOfficial25M');if(!m?.classList.contains('open'))return;const e=await tests();render(e)}
+  window.openOfficial25=async function(){const u=await admin();if(!u){alert('Área disponível somente para a conta administradora do EDIFIQ.');return}const m=modal();m.classList.add('open');q('ed25Body').innerHTML='<div class="card"><b>Verificando ambiente…</b></div>';const e=await tests();render(e)};
+  const previousGenerate=window.ed23Generate;
+  if(typeof previousGenerate==='function')window.ed23Generate=async function(){const e=await tests();if(!techReady(e)){try{await openOfficial25()}catch(_){ }alert('Primeiro convite real bloqueado: conclua a liberação técnica em Endereço oficial • Primeiro cliente.');return}return previousGenerate.apply(this,arguments)};
+  async function menu(){if(q('edOfficialMenu25'))return;const u=await admin();if(!u)return;const anchor=q('edDeployMenu24')||q('edInviteMenu23')||document.querySelector('.edifiqDrawerAccount');if(!anchor)return;const bt=document.createElement('button');bt.id='edOfficialMenu25';bt.className='edifiqDataRow';bt.type='button';bt.setAttribute('onclick','openOfficial25()');bt.innerHTML='<span>🏁</span><b>Endereço oficial • Primeiro cliente</b><span class="edifiqChevron">›</span>';anchor.classList.contains('edifiqDrawerAccount')?anchor.insertAdjacentElement('beforebegin',bt):anchor.insertAdjacentElement('afterend',bt)}
+  function init(){setTimeout(menu,1100);setTimeout(menu,2300)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();new MutationObserver(()=>{if(!q('edOfficialMenu25'))setTimeout(menu,350)}).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
 </body>
 </html>
