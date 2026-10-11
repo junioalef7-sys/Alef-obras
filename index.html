@@ -1624,7 +1624,7 @@ body{min-height:100vh;min-height:100dvh}
   </div>
   <div class="edifiqMenuTitle edifiqSectionTitle">DADOS</div>
   <button class="edifiqDataRow" onclick="openConfiguracoes();toggleMenuPasta()"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
-  <button class="edifiqDataRow" onclick="openBackupConfig()"><span>💾</span><b>Backup</b><span class="edifiqChevron">›</span></button>
+  <button class="edifiqDataRow" onclick="openBackupConfigDirect()"><span>💾</span><b>Backup</b><span class="edifiqChevron">›</span></button>
   <button class="edifiqDataRow" type="button" onclick="runEdifiqDiagnostico()"><span>🩺</span><b>Diagnóstico do aplicativo</b><span class="edifiqChevron">›</span></button>
   <div class="edifiqDrawerAccount">
     <div class="edifiqAvatar" id="drawerUserAvatar">ED</div><div class="edifiqAccountText"><b id="drawerUserName">Minha conta</b><small id="drawerUserEmail">Conta EDIFIQ</small></div>
@@ -14973,5 +14973,274 @@ body.edLight #financeiro > .pageTitle > button.btn.gold:active{
 </script>
 <script id="edifiq-etapa6-marker">window.EDIFIQ_BUILD="2026-10-11-etapa6-checklist-perfil";</script>
 
+
+
+<!-- =========================================================
+     EDIFIQ — ETAPA 7
+     Backup completo, importação idempotente e recuperação durável
+     ========================================================= -->
+<style id="edifiq-etapa7-backup-style">
+.edBackupHealth{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.edBackupHealth>div{padding:12px;border:1px solid var(--line,#d0d5dd);border-radius:12px;background:var(--card,#fff)}.edBackupHealth small{display:block;opacity:.72;margin-bottom:4px}.edBackupHealth b{font-size:15px}.edBackupGood{color:#067647}.edBackupWarn{color:#b54708}.edBackupDanger{color:#b42318}.edBackupActions{display:flex;gap:8px;flex-wrap:wrap}.edBackupList{display:flex;flex-direction:column;gap:7px;margin-top:10px}.edBackupList>div{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line,#eaecf0);font-size:13px}.edBackupList>div:last-child{border-bottom:0}.edBackupList b{font-variant-numeric:tabular-nums}@media(max-width:680px){.edBackupHealth{grid-template-columns:1fr}.edBackupActions .btn{width:100%}}
+</style>
+<script id="edifiq-etapa7-backup-recuperacao">
+(function(){
+  const CLOUD_TABLES=["obras","funcionarios","checklist","servicos_adicionais","servicos","terceirizados","orcamentos","diarias","gastos","pagamentos","faltas","adiantamentos","diario","presencas","pagamentos_terceirizados"];
+  const PARENT_ORDER=["obras","funcionarios","checklist","servicos_adicionais","servicos","terceirizados","orcamentos"];
+  const DEP_ORDER=["diarias","gastos","pagamentos","faltas","adiantamentos","diario","presencas","pagamentos_terceirizados"];
+  const LAST_BACKUP_PREFIX='edifiq_last_full_backup_v1::';
+
+  function deepCopy(v){try{return JSON.parse(JSON.stringify(v));}catch(_){return v}}
+  function scopeKey(){try{return typeof edifiqStorageScope==='function'?(edifiqStorageScope()||'sem-escopo'):'sem-escopo'}catch(_){return 'sem-escopo'}}
+  function lastBackupKey(){return LAST_BACKUP_PREFIX+scopeKey()}
+  function setLastBackupMeta(meta){try{localStorage.setItem(lastBackupKey(),JSON.stringify(meta||{}))}catch(_){}}
+  function getLastBackupMeta(){try{return JSON.parse(localStorage.getItem(lastBackupKey())||'null')}catch(_){return null}}
+  function countMap(data){const out={};Object.keys(D||{}).forEach(k=>out[k]=Array.isArray(data?.[k])?data[k].length:0);return out}
+  function totalCount(counts){return Object.values(counts||{}).reduce((a,n)=>a+(Number(n)||0),0)}
+  function backupHashPayload(backup){const x=deepCopy(backup);delete x.integrity;return JSON.stringify(x)}
+  async function sha256(text){
+    try{
+      if(window.crypto?.subtle&&window.TextEncoder){
+        const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(text)));
+        return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+      }
+    }catch(e){console.warn('SHA-256 indisponível',e)}
+    let h=2166136261,s=String(text);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return 'fnv1a-'+(h>>>0).toString(16).padStart(8,'0');
+  }
+  async function getProfileBackup(){
+    try{
+      if(!sb||!user?.id||String(user.id)==='local-user')return null;
+      const {data,error}=await sb.from('profiles').select('nome,telefone,endereco,empresa_nome,empresa_documento,empresa_telefone,empresa_email,empresa_endereco,empresa_logo_url,empresa_cor,updated_at').eq('id',user.id).maybeSingle();
+      if(error)return null;return data||null;
+    }catch(_){return null}
+  }
+  async function verifyBackup(backup){
+    if(!backup||backup.app!=='EDIFIQ'||!backup.data||typeof backup.data!=='object')throw new Error('Arquivo não reconhecido como backup EDIFIQ.');
+    for(const [name,val] of Object.entries(backup.data)){if(val!=null&&!Array.isArray(val))throw new Error(`Backup inválido: ${name} não é uma lista.`)}
+    const actual=countMap(backup.data);
+    const declared=backup.manifest?.tables||null;
+    if(declared){for(const [k,n] of Object.entries(declared)){if(Number(n)!==Number(actual[k]||0))throw new Error(`Backup incompleto: a contagem de ${k} não confere.`)}}
+    if(backup.manifest&&backup.manifest.photos!=null&&Number(backup.manifest.photos)!==Number((backup.fotos||[]).length))throw new Error('Backup incompleto: a contagem de fotos não confere.');
+    if(backup.integrity?.value){const got=await sha256(backupHashPayload(backup));if(String(got)!==String(backup.integrity.value))throw new Error('A verificação de integridade falhou. O arquivo pode estar incompleto ou alterado.');}
+    return {counts:actual,total:totalCount(actual),photos:Array.isArray(backup.fotos)?backup.fotos.length:0,documents:Array.isArray(backup.data.documentos)?backup.data.documentos.length:0,verified:!!backup.integrity?.value};
+  }
+
+  async function exportFullV7(){
+    try{
+      saveLocalData();
+      try{saveMaterialMeta()}catch(_){}
+      try{saveDocumentoMeta()}catch(_){}
+      try{await edifiqStateSaveQueue}catch(_){}
+      let fotos=[],documentos=[],warnings=[];
+      try{fotos=await getAllPhotosDB()}catch(e){console.warn(e);warnings.push('Fotos locais indisponíveis')}
+      try{documentos=await edifiqExportDocumentosComArquivo()}catch(e){console.warn(e);documentos=(D.documentos||[]).map(d=>({...d,_arquivo_indisponivel:true}));warnings.push('Alguns documentos não puderam incluir o arquivo')}
+      const data={};for(const k of Object.keys(D)){data[k]=deepCopy(Array.isArray(D[k])?D[k]:[])}data.documentos=documentos;
+      const counts=countMap(data);
+      const now=new Date().toISOString();
+      const backup={
+        app:'EDIFIQ',version:'7.0',backup_id:'bkp_'+Date.now()+'_'+Math.random().toString(36).slice(2,10),date:now,
+        scope_hint:scopeKey(),
+        manifest:{tables:counts,total_records:totalCount(counts),photos:fotos.length,documents:documentos.length,document_files_included:true},
+        data,fotos,documentos_arquivos:true,
+        funcionarioObras:deepCopy(localFuncObras()),adiantamentosAplicados:deepCopy(getAdvanceApplied()),servicosAdicionais:deepCopy(getServices()),diariasBaixadas:deepCopy(getPaidDiariasMap()),
+        profile:await getProfileBackup(),
+        diagnostics:{pendingUpdates:getEdifiqPendingUpdates().length,deleteQueue:getEdifiqDeleteQueue().length,syncConflicts:getEdifiqSyncConflicts().length},
+        warnings
+      };
+      backup.integrity={algorithm:'SHA-256',value:await sha256(backupHashPayload(backup))};
+      const filename='EDIFIQ_backup_'+now.slice(0,10)+'.json';
+      downloadFile(JSON.stringify(backup,null,2),filename,'application/json');
+      setLastBackupMeta({at:now,records:backup.manifest.total_records,photos:fotos.length,documents:documentos.length,verified:true});
+      const status=document.getElementById('backupStatus');if(status)status.textContent=`Backup completo criado: ${backup.manifest.total_records} registros, ${fotos.length} foto(s) e ${documentos.length} documento(s).`;
+      toast(warnings.length?'Backup criado com aviso. Confira a Central de Backup.':'Backup completo criado e verificado.');
+      return backup;
+    }catch(e){console.error('EDIFIQ backup 7',e);toast('Não foi possível concluir o backup. Seus dados atuais não foram alterados.');throw e}
+  }
+
+  function backupIdentity(backup){return String(backup.backup_id||backup.integrity?.value||backup.date||'backup-legado')}
+  function mapValue(maps,type,v){if(v===null||v===undefined||v==='')return v;return maps?.[type]?.[String(v)]??v}
+  function remapChecklistRateio(value,maps){
+    if(Array.isArray(value))return value.map(v=>remapChecklistRateio(v,maps));
+    if(value&&typeof value==='object'){
+      const o={};for(const [k,v] of Object.entries(value)){
+        if(['checklist_id','checklistId','id'].includes(k)&&maps.checklist?.[String(v)]!=null)o[k]=maps.checklist[String(v)];else o[k]=remapChecklistRateio(v,maps);
+      }return o;
+    }
+    return value;
+  }
+  function prepareRowV7(table,row,maps,identity){
+    const copy={...(row||{})};const oldId=copy.id;
+    delete copy.id;delete copy.created_at;delete copy.updated_at;delete copy.user_id;delete copy._sync_pendente;delete copy._sync_updated_at;delete copy._remote_updated_at;
+    const fields=[['obra_id','obras'],['obraId','obras'],['funcionario_id','funcionarios'],['funcionarioId','funcionarios'],['funcId','funcionarios'],['checklist_id','checklist'],['checklistId','checklist'],['terceirizado_id','terceirizados'],['terceirizadoId','terceirizados'],['material_id','materiais'],['materialId','materiais']];
+    fields.forEach(([k,m])=>{if(copy[k]!=null)copy[k]=mapValue(maps,m,copy[k])});
+    if(copy.checklist_rateio!=null)copy.checklist_rateio=remapChecklistRateio(copy.checklist_rateio,maps);
+    if(!copy.operation_id)copy.operation_id=edifiqStableOperationId('restore',identity,table,oldId??JSON.stringify(row||{}));
+    return {copy,oldId};
+  }
+  async function insertMappedV7(table,row,maps,identity){
+    const {copy,oldId}=prepareRowV7(table,row,maps,identity);const created=await insertRow(table,copy);
+    if(!created)throw new Error(`Falha ao restaurar ${table}.`);
+    maps[table]=maps[table]||{};if(oldId!=null)maps[table][String(oldId)]=created.id;
+    return created;
+  }
+  function mergeLocalArray(target,source,maps,identity,table){
+    const out=Array.isArray(target)?target:[];const seen=new Set(out.map(x=>String(x.operation_id||x.id||'')));
+    for(const row of (Array.isArray(source)?source:[])){
+      const oldId=row?.id;const copy={...(row||{})};
+      for(const [k,m] of [['obra_id','obras'],['obraId','obras'],['funcionario_id','funcionarios'],['funcionarioId','funcionarios'],['funcId','funcionarios'],['checklist_id','checklist'],['checklistId','checklist']])if(copy[k]!=null)copy[k]=mapValue(maps,m,copy[k]);
+      const key=String(copy.operation_id||copy.id||edifiqStableOperationId('restore-local',identity,table,oldId??JSON.stringify(row||{})));
+      if(seen.has(key))continue;if(!copy.id)copy.id=key;out.push(copy);seen.add(key);
+    }return out;
+  }
+  async function restoreProfileV7(profile){
+    if(!profile||!sb||!user?.id||String(user.id)==='local-user')return;
+    const allowed={id:user.id,updated_at:new Date().toISOString()};
+    ['nome','telefone','endereco','empresa_nome','empresa_documento','empresa_telefone','empresa_email','empresa_endereco','empresa_logo_url','empresa_cor'].forEach(k=>{if(profile[k]!==undefined)allowed[k]=profile[k]});
+    try{const {error}=await sb.from('profiles').upsert(allowed,{onConflict:'id'});if(error)console.warn('Perfil do backup não restaurado',error)}catch(e){console.warn(e)}
+  }
+  async function restorePhotosV7(backup,maps,identity){
+    let n=0;for(const row of (Array.isArray(backup.fotos)?backup.fotos:[])){
+      try{const f={...(row||{})};f.obra_id=mapValue(maps,'obras',f.obra_id);if(!f.id)f.id=edifiqStableOperationId('restore-photo',identity,n,JSON.stringify(row||{}));await savePhotoDB(f);n++}catch(e){console.warn('Foto não restaurada',e)}
+    }return n;
+  }
+  async function importBackupDataV7(backup){
+    const check=await verifyBackup(backup);const identity=backupIdentity(backup);
+    saveSafeSnapshot('antes da importação de backup');saveLocalData();try{await edifiqStateSaveQueue}catch(_){}
+    const maps={obras:{},funcionarios:{},checklist:{},servicos_adicionais:{},servicos:{},terceirizados:{},orcamentos:{},diarias:{},gastos:{},pagamentos:{},faltas:{},adiantamentos:{},diario:{},presencas:{},pagamentos_terceirizados:{},materiais:{},documentos:{}};
+    const data=backup.data||{};
+    for(const table of PARENT_ORDER){for(const row of (data[table]||[]))await insertMappedV7(table,row,maps,identity)}
+    for(const table of DEP_ORDER){for(const row of (data[table]||[]))await insertMappedV7(table,row,maps,identity)}
+
+    // Materiais locais: IDs determinísticos tornam a restauração repetível sem duplicar.
+    for(const row of (data.materiais||[])){
+      const oldId=row?.id;const newId='mat_restore_'+edifiqStableOperationId(identity,'material',oldId??JSON.stringify(row||{})).replace(/[^a-z0-9_]/gi,'');maps.materiais[String(oldId)]=newId;
+      if(!(D.materiais||[]).some(x=>String(x.id)===newId)){const x={...(row||{}),id:newId};if(x.obra_id!=null)x.obra_id=mapValue(maps,'obras',x.obra_id);D.materiais.push(x)}
+    }
+    for(const row of (data.material_movimentos||[])){
+      const oldId=row?.id;const newId='mm_restore_'+edifiqStableOperationId(identity,'mov',oldId??JSON.stringify(row||{})).replace(/[^a-z0-9_]/gi,'');
+      if(!(D.material_movimentos||[]).some(x=>String(x.id)===newId)){const x={...(row||{}),id:newId};if(x.material_id!=null)x.material_id=mapValue(maps,'materiais',x.material_id);if(x.obra_id!=null)x.obra_id=mapValue(maps,'obras',x.obra_id);D.material_movimentos.push(x)}
+    }
+
+    // Documentos com o arquivo real, quando o backup contém DataURL.
+    for(const row of (data.documentos||[])){
+      const oldId=row?.id;const newId='doc_restore_'+edifiqStableOperationId(identity,'doc',oldId??JSON.stringify(row||{})).replace(/[^a-z0-9_]/gi,'');maps.documentos[String(oldId)]=newId;
+      let meta=(D.documentos||[]).find(x=>String(x.id)===newId);
+      if(!meta){meta={...(row||{}),id:newId};if(meta.obra_id!=null)meta.obra_id=mapValue(maps,'obras',meta.obra_id);delete meta._arquivo_indisponivel;delete meta.conteudo;D.documentos.unshift(meta)}
+      if(row?.conteudo){try{const res=await fetch(row.conteudo);const blob=await res.blob();await putDocumentoArquivo(newId,new File([blob],meta.nome_arquivo||'documento',{type:meta.tipo_mime||blob.type||'application/octet-stream'}))}catch(e){console.warn('Arquivo do documento não restaurado',e)}}
+    }
+
+    D.servicosExtras=mergeLocalArray(D.servicosExtras,data.servicosExtras,maps,identity,'servicosExtras');
+    D.producoesEquipe=mergeLocalArray(D.producoesEquipe,data.producoesEquipe,maps,identity,'producoesEquipe');
+
+    if(backup.funcionarioObras){const destino=localFuncObras()||{};for(const [fid,oid] of Object.entries(backup.funcionarioObras)){destino[mapValue(maps,'funcionarios',fid)]=mapValue(maps,'obras',oid)||''}try{localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(destino))}catch(_){}}
+    if(backup.adiantamentosAplicados){const atual=getAdvanceApplied()||{};for(const [oldId,val] of Object.entries(backup.adiantamentosAplicados||{})){const nid=mapValue(maps,'gastos',oldId);if(nid!=null)atual[nid]=Number(val||0)}try{localStorage.setItem(ADV_KEY,JSON.stringify(atual))}catch(_){}}
+    if(backup.diariasBaixadas){const atual=getPaidDiariasMap()||{};for(const [oldId,val] of Object.entries(backup.diariasBaixadas||{})){const nid=mapValue(maps,'diarias',oldId);if(nid!=null&&val)atual[String(nid)]=true}try{localStorage.setItem(PAID_DIARIAS_KEY,JSON.stringify(atual))}catch(_){}}
+    if(backup.servicosAdicionais){const atual=getServices()||{};for(const [oid,list] of Object.entries(backup.servicosAdicionais||{})){const no=mapValue(maps,'obras',oid);const dest=Array.isArray(atual[no])?atual[no]:[];const seen=new Set(dest.map(x=>String(x.id||x.operation_id||JSON.stringify(x))));for(const x of (Array.isArray(list)?list:[])){const key=String(x.id||x.operation_id||JSON.stringify(x));if(!seen.has(key)){dest.push(x);seen.add(key)}}atual[no]=dest}saveServices(atual)}
+
+    const photos=await restorePhotosV7(backup,maps,identity);
+    await restoreProfileV7(backup.profile);
+    saveDocumentoMeta();saveMaterialMeta();try{await saveMaterialDB()}catch(_){}saveLocalData();try{await edifiqStateSaveQueue}catch(_){}
+    try{await loadCloud()}catch(e){console.warn('Releitura da nuvem após backup',e)}
+    try{await loadMaterialMeta()}catch(_){}try{loadDocumentoMeta()}catch(_){}fillSelectors();renderAll();
+    return {...check,restoredPhotos:photos};
+  }
+
+  async function readBackupFile(file){return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>{try{resolve(JSON.parse(r.result))}catch(e){reject(e)}};r.onerror=()=>reject(r.error||new Error('Falha na leitura'));r.readAsText(file)})}
+  async function importBackupFileV7(event){
+    const file=event.target.files?.[0];if(!file)return;
+    try{
+      const backup=await readBackupFile(file);const info=await verifyBackup(backup);
+      const verified=info.verified?'integridade verificada':'backup legado sem assinatura de integridade';
+      if(!confirm(`Importar este backup?\n\n${info.total} registros\n${info.photos} foto(s)\n${info.documents} documento(s)\n${verified}\n\nA importação é aditiva e pode ser repetida sem duplicar o mesmo backup.`))return;
+      const result=await importBackupDataV7(backup);
+      const status=document.getElementById('backupStatus');if(status)status.textContent=`Backup restaurado: ${result.total} registros validados e ${result.restoredPhotos} foto(s) recuperada(s).`;
+      toast('Backup importado com sucesso. Vínculos preservados.');
+    }catch(e){console.error('EDIFIQ importação 7',e);const status=document.getElementById('backupStatus');if(status)status.textContent='Falha na importação: '+(e.message||'arquivo incompatível');toast(e.message||'Não foi possível importar o backup.')}finally{event.target.value=''}
+  }
+
+  // Mantém duas versões duráveis: a atual e a imediatamente anterior.
+  window.writeEdifiqStateIDB=function(payload,seq){
+    const recordId=edifiqStateRecordId();if(!recordId)return;
+    edifiqStateSaveQueue=edifiqStateSaveQueue.then(async()=>{
+      const db=await openEdifiqStateDB();
+      try{await new Promise((resolve,reject)=>{
+        const tx=db.transaction(EDIFIQ_STATE_STORE,'readwrite'),store=tx.objectStore(EDIFIQ_STATE_STORE),get=store.get(recordId);
+        get.onsuccess=()=>{try{const old=get.result;if(old?.payload)store.put({id:'anterior::'+scopeKey(),savedAt:old.savedAt||old.payload?._edifiqSavedAt||Date.now(),payload:old.payload});store.put({id:recordId,savedAt:payload._edifiqSavedAt,payload})}catch(e){try{tx.abort()}catch(_){}reject(e)}};
+        get.onerror=()=>{try{store.put({id:recordId,savedAt:payload._edifiqSavedAt,payload})}catch(e){reject(e)}};
+        tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('Falha ao gravar estado'));tx.onabort=()=>reject(tx.error||new Error('Gravação abortada'));
+      })}finally{try{db.close()}catch(_){}}
+    }).catch(e=>{console.warn('EDIFIQ: backup durável não gravado',e);window.__edifiqStorageFailed=true;toast('Não foi possível gravar a cópia durável. Faça um backup completo antes de fechar.')});
+  };
+
+  async function restorePreviousDurable(){
+    if(!confirm('Restaurar o estado local anterior? O estado atual será preservado como ponto de recuperação antes da restauração.'))return;
+    try{
+      const db=await openEdifiqStateDB();const rec=await new Promise((resolve,reject)=>{const q=db.transaction(EDIFIQ_STATE_STORE,'readonly').objectStore(EDIFIQ_STATE_STORE).get('anterior::'+scopeKey());q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>reject(q.error)});try{db.close()}catch(_){}
+      if(!rec?.payload){toast('Ainda não existe um estado anterior disponível.');return}
+      saveSafeSnapshot('antes de restaurar estado durável anterior');
+      const p=rec.payload;for(const k of Object.keys(D))if(Array.isArray(p[k]))D[k]=deepCopy(p[k]);
+      const aux=p._edifiqAux||{};for(const [key,val] of [[FUNC_OBRA_KEY,aux.funcionarioObras],[ADV_KEY,aux.adiantamentosAplicados],[SERVICE_KEY,aux.servicosAdicionais],[PAID_DIARIAS_KEY,aux.diariasBaixadas]])if(val!=null)try{localStorage.setItem(key,JSON.stringify(val))}catch(_){}
+      saveLocalData();fillSelectors();renderAll();toast('Estado anterior restaurado.');
+    }catch(e){console.error(e);toast('Não foi possível restaurar o estado anterior.')}
+  }
+
+  function renderBackupSummary(){
+    const counts=countMap(D),meta=getLastBackupMeta(),last=meta?.at?new Date(meta.at).toLocaleString('pt-BR'):'Ainda não feito nesta conta';
+    return `<div class="edBackupHealth"><div><small>Dados atuais</small><b>${totalCount(counts)} registros</b></div><div><small>Último backup completo</small><b>${last}</b></div><div><small>Sincronização pendente</small><b class="${getEdifiqPendingUpdates().length?'edBackupWarn':'edBackupGood'}">${getEdifiqPendingUpdates().length} atualização(ões)</b></div></div><div class="edBackupList">${Object.entries(counts).filter(([,n])=>Number(n)>0).map(([k,n])=>`<div><span>${esc(k)}</span><b>${n}</b></div>`).join('')||'<div><span>Nenhum registro local</span><b>0</b></div>'}</div>`;
+  }
+  window.openBackupConfig=function(){
+    let m=document.getElementById('edBackupConfigModal');if(!m){m=document.createElement('div');m.className='modal';m.id='edBackupConfigModal';document.body.appendChild(m)}
+    m.innerHTML=`<div class="modalBox"><div class="modalHead"><div><h2>💾 Backup e recuperação</h2><p class="sub">Proteção completa dos dados do EDIFIQ.</p></div><button class="x" onclick="closeM('edBackupConfigModal')">×</button></div>
+      <div class="card"><h3>Estado dos dados</h3>${renderBackupSummary()}</div>
+      <div class="card"><h3>Backup completo</h3><p class="sub">Inclui Obras, Equipe, Financeiro, Checklist, Vales, serviços, terceirizados, orçamentos, materiais, documentos e fotos locais disponíveis.</p><div class="edBackupActions"><button class="btn gold" type="button" onclick="exportFull()">💾 Fazer backup completo</button><button class="btn" type="button" onclick="document.getElementById('backupImportFile').click()">📥 Importar backup</button><input id="backupImportFile" accept=".json,application/json" onchange="importRelatorioData(event)" style="display:none" type="file"/></div></div>
+      <div class="card"><h3>Recuperação local</h3><p class="sub">O aplicativo mantém uma cópia durável atual e outra imediatamente anterior neste aparelho.</p><div class="edBackupActions"><button class="btn" type="button" onclick="edifiqRestorePreviousDurable()">↩️ Restaurar estado anterior</button><button class="btn" type="button" onclick="runEdifiqDiagnostico()">🩺 Verificar armazenamento</button></div></div>
+      <div class="card"><h3>Exportar relatórios</h3><div class="reportGrid"><button class="btn reportAction" onclick="exportPDF()"><b>📄 PDF</b><small>Relatório para salvar ou imprimir.</small></button><button class="btn reportAction" onclick="exportExcel()"><b>📊 Excel</b><small>Dados em planilha.</small></button><button class="btn reportAction" onclick="exportCSVAll()"><b>📁 CSV</b><small>Dados tabulares.</small></button></div></div>
+      <div class="note" id="backupStatus">A importação é aditiva, preserva os dados atuais e pode ser repetida com segurança.</div></div>`;
+    openM('edBackupConfigModal');
+  };
+
+  window.exportFull=exportFullV7;
+  window.importBackupData=importBackupDataV7;
+  window.importBackup=importBackupFileV7;
+  window.importRelatorioData=importBackupFileV7;
+  window.edifiqRestorePreviousDurable=restorePreviousDurable;
+  window.edifiqVerifyBackup=verifyBackup;
+})();
+</script>
+
+
+
+<!-- EDIFIQ — ajuste final da Etapa 7: Meias Diárias + Backup direto -->
+<style id="edifiq-etapa7-ajustes-menu-equipe">
+/* O contador "meias diárias" de cada funcionário fica branco, como solicitado. */
+.edEqDaysUniform .edEqPill.blue,
+body.edLight .edEqDaysUniform .edEqPill.blue{
+  background:#fff!important;
+  background-color:#fff!important;
+  background-image:none!important;
+  color:#1f2937!important;
+  -webkit-text-fill-color:#1f2937!important;
+  border-color:#d0d5dd!important;
+  box-shadow:none!important;
+}
+.edEqDaysUniform .edEqPill.blue *{color:#1f2937!important;-webkit-text-fill-color:#1f2937!important}
+</style>
+<script id="edifiq-etapa7-ajustes-menu-backup">
+(function(){
+  'use strict';
+  window.openBackupConfigDirect=function(){
+    try{
+      const menu=document.getElementById('menuPasta');
+      if(menu&&menu.classList.contains('open')){
+        if(typeof toggleMenuPasta==='function') toggleMenuPasta();
+        else menu.classList.remove('open');
+      }
+      const backdrop=document.getElementById('menuPastaBackdrop');
+      if(backdrop) backdrop.classList.remove('open');
+    }catch(e){console.warn('EDIFIQ: menu não pôde ser fechado antes do Backup',e)}
+    if(typeof openBackupConfig==='function') openBackupConfig();
+    else if(typeof toast==='function') toast('Central de Backup indisponível.');
+  };
+})();
+</script>
 </body>
 </html>
