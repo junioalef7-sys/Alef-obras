@@ -17093,5 +17093,82 @@ body:not(.edLight) #edCommercial19M .modalBox,body:not(.edLight) #edCommercial19
   setTimeout(()=>{menu19();version19()},800);
 })();
 </script>
+
+
+<!-- =========================================================
+     EDIFIQ — ETAPA 20
+     Pré-lançamento comercial + central de operação e suporte
+     ========================================================= -->
+<style id="edifiq-etapa20-ops-style">
+.ed20Grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ed20Card{border:1px solid var(--line,#d0d5dd);border-radius:14px;padding:14px;background:var(--card,#fff)}.ed20Row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line,#e5e7eb)}.ed20Row:last-child{border-bottom:0}.ed20Row small{display:block;margin-top:3px;color:var(--muted,#667085)}.ed20Badge{display:inline-flex;align-items:center;justify-content:center;min-width:82px;padding:6px 9px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:.03em}.ed20Ok{background:#ecfdf3;color:#067647}.ed20Warn{background:#fffaeb;color:#b54708}.ed20Fail{background:#fef3f2;color:#b42318}.ed20Hero{padding:14px;border-radius:14px;margin-bottom:12px;border:1px solid var(--line,#d0d5dd)}.ed20Hero.ok{background:rgba(34,197,94,.10);border-color:rgba(34,197,94,.30)}.ed20Hero.warn{background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.30)}.ed20Hero.fail{background:rgba(239,68,68,.09);border-color:rgba(239,68,68,.28)}.ed20Actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.ed20Mini{font-size:12px;opacity:.82}.ed20Manual label{display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line,#e5e7eb)}.ed20Manual label:last-child{border-bottom:0}.ed20Manual input{margin-top:3px}.ed20Block{padding:11px;border-radius:12px;background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.18);margin-top:10px}.ed20Mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;word-break:break-word}
+body:not(.edLight) #edOps20M .modalBox,body:not(.edLight) #edOps20M .ed20Card{background:#11151a!important;color:#f8fafc!important;border-color:#303944!important}body:not(.edLight) #edOps20M .ed20Row,body:not(.edLight) #edOps20M .ed20Manual label{border-color:#303944!important}body:not(.edLight) #edOps20M small,body:not(.edLight) #edOps20M .sub{color:#cbd5e1!important;opacity:1!important}
+@media(max-width:700px){.ed20Grid{grid-template-columns:1fr}.ed20Actions .btn{width:100%}}
+</style>
+<script id="edifiq-etapa20-prelaunch-ops">
+(function(){
+  'use strict';
+  const VERSION20='20.0.0',BUILD20='2026-10-11-etapa20-pre-lancamento-operacao';
+  window.EDIFIQ_VERSION=VERSION20;window.EDIFIQ_BUILD=BUILD20;window.EDIFIQ_RELEASE_CHANNEL='pre-lancamento-controlado';
+  const MANUAL_KEY='edifiq_prelaunch_manual_v20';
+  function e20(id){return document.getElementById(id)}
+  function esc20(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function closeDrawer20(){try{if(document.querySelector('.edifiqDrawer')?.classList.contains('open'))toggleMenuPasta()}catch(_){}}
+  function badge20(state){const cls=state==='ok'?'ed20Ok':state==='warn'?'ed20Warn':'ed20Fail';const t=state==='ok'?'PRONTO':state==='warn'?'ATENÇÃO':'BLOQUEADO';return `<span class="ed20Badge ${cls}">${t}</span>`}
+  function row20(label,detail,state){return `<div class="ed20Row"><span><b>${esc20(label)}</b><small>${esc20(detail)}</small></span>${badge20(state)}</div>`}
+  function getLocalErrorCount20(){
+    try{let total=0;for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i)||'';if(!k.startsWith('edifiq_prod_errors_v16::'))continue;try{const a=JSON.parse(localStorage.getItem(k)||'[]');if(Array.isArray(a))total+=a.length}catch(_){}}return total}catch(_){return 0}
+  }
+  function manual20(){try{return JSON.parse(localStorage.getItem(MANUAL_KEY)||'{}')||{}}catch(_){return {}}}
+  function setManual20(key,val){const m=manual20();m[key]=!!val;try{localStorage.setItem(MANUAL_KEY,JSON.stringify(m))}catch(_){} }
+  window.edifiqSetPrelaunchManual20=function(key,el){setManual20(key,!!el.checked);refreshGate20()}
+  async function safeSession20(){try{if(!window.sb&&typeof ensureSupabaseClient==='function')await ensureSupabaseClient();if(!window.sb)return null;const r=await sb.auth.getSession();return r?.data?.session||null}catch(_){return null}}
+  async function checks20(){
+    const out=[];const secure=location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1';
+    out.push({label:'HTTPS / origem segura',detail:secure?'Origem compatível com PWA e recursos protegidos.':'Hospede o pacote em HTTPS antes de liberar clientes.',state:secure?'ok':'fail'});
+    const session=await safeSession20();out.push({label:'Sessão autenticada',detail:session?'Sessão válida confirmada pelo Supabase.':'Entre na conta proprietária para concluir as verificações da nuvem.',state:session?'ok':'warn'});
+    let cloud='warn';let cloudDetail='Verificação da nuvem depende de login.';
+    if(session&&window.sb){try{const r=await sb.from('obras').select('id').limit(1);cloud=r.error?'fail':'ok';cloudDetail=r.error?('Falha de leitura: '+r.error.message):'Leitura autenticada da nuvem concluída.'}catch(e){cloud='fail';cloudDetail=String(e?.message||e)}}
+    out.push({label:'Nuvem / dados privados',detail:cloudDetail,state:cloud});
+    let billing='warn',billingDetail='Ambiente comercial ainda não verificado.';
+    if(session&&typeof window.edifiqBillingHealth19==='function'){
+      try{const h=await window.edifiqBillingHealth19();billing=h?.ready?'ok':'fail';const c=h?.checks||{};const missing=[];if(!c.access_token_valid)missing.push('Access Token');if(!c.webhook_secret_present)missing.push('Webhook');if(!c.public_url_valid)missing.push('URL pública');billingDetail=h?.ready?'Mercado Pago e retorno do checkout prontos.':('Pendências: '+(missing.join(', ')||'configuração comercial'));}catch(e){billing='fail';billingDetail=String(e?.message||e)}
+    }
+    out.push({label:'Cobrança / Mercado Pago',detail:billingDetail,state:billing});
+    let sw=false;try{sw=!!(await navigator.serviceWorker?.getRegistration('./'))}catch(_){}
+    out.push({label:'PWA / service worker',detail:sw?'Service worker registrado nesta origem.':(secure?'Service worker ainda não registrado nesta instalação.':'Registro depende de hospedagem HTTPS.'),state:sw?'ok':'warn'});
+    const backup=typeof window.exportFull==='function'&&typeof window.importBackupData==='function';out.push({label:'Backup e recuperação',detail:backup?'Exportação e importação completas disponíveis.':'Funções de backup não encontradas.',state:backup?'ok':'fail'});
+    const pdf=typeof window.openReportCenter8==='function'||typeof window.salvarPdfRelatorio8==='function'||typeof window.exportPDF==='function';out.push({label:'Relatórios / PDF',detail:pdf?'Fluxo de relatório/PDF disponível nesta build.':'Fluxo de PDF não localizado.',state:pdf?'ok':'fail'});
+    const deletion=typeof window.openExcluirConta14==='function'||!!document.querySelector('[onclick*="ExcluirConta"]');out.push({label:'Exclusão de conta',detail:deletion?'Fluxo de solicitação disponível.':'Fluxo de exclusão não localizado.',state:deletion?'ok':'fail'});
+    const errs=getLocalErrorCount20();out.push({label:'Erros técnicos locais',detail:errs?`${errs} ocorrência(s) técnica(s) registrada(s) neste dispositivo.`:'Nenhum erro técnico local registrado.',state:errs?'warn':'ok'});
+    return out;
+  }
+  function gate20(rows){
+    const hard=rows.filter(r=>r.state==='fail');const warns=rows.filter(r=>r.state==='warn');
+    const m=manual20();const manualDone=['pilot_mobile','pilot_desktop','backup_restore','pdf_real','support_ready'].every(k=>m[k]);
+    if(hard.length)return {state:'fail',title:'LIBERAÇÃO BLOQUEADA',text:`${hard.length} requisito(s) crítico(s) ainda não estão prontos.`};
+    if(warns.length||!manualDone)return {state:'warn',title:'PRÉ-LANÇAMENTO EM VALIDAÇÃO',text:'A base técnica está funcional, mas ainda existem verificações ou testes manuais pendentes.'};
+    return {state:'ok',title:'PRONTO PARA PILOTO COM CLIENTES SELECIONADOS',text:'Todos os bloqueios automáticos e o checklist manual deste dispositivo foram concluídos.'};
+  }
+  function manualHtml20(){const m=manual20();const items=[['pilot_mobile','Teste completo em celular'],['pilot_desktop','Teste completo em computador'],['backup_restore','Backup exportado e restaurado em teste'],['pdf_real','PDF salvo/impresso em aparelho real'],['support_ready','Canal de suporte definido para clientes piloto']];return `<div class="ed20Manual">${items.map(([k,t])=>`<label><input type="checkbox" ${m[k]?'checked':''} onchange="edifiqSetPrelaunchManual20('${k}',this)"><span><b>${esc20(t)}</b></span></label>`).join('')}</div>`}
+  function report20(rows){const g=gate20(rows),counts={ok:0,warn:0,fail:0};rows.forEach(r=>counts[r.state]++);return {app:'EDIFIQ',version:VERSION20,build:BUILD20,channel:'pre-lancamento-controlado',generated_at:new Date().toISOString(),origin_secure:(location.protocol==='https:'),online:navigator.onLine,checks:rows.map(r=>({label:r.label,state:r.state})),summary:counts,release_gate:g.state,manual:manual20(),local_technical_error_count:getLocalErrorCount20()}}
+  let lastRows20=[];
+  function render20(rows){lastRows20=rows;const g=gate20(rows);return `<div class="ed20Hero ${g.state}"><b>${esc20(g.title)}</b><div class="ed20Mini">${esc20(g.text)}</div></div><div class="ed20Grid"><div class="ed20Card"><h3>Status automático</h3>${rows.map(r=>row20(r.label,r.detail,r.state)).join('')}</div><div class="ed20Card"><h3>Checklist manual do piloto</h3>${manualHtml20()}<div class="ed20Block"><b>Regra de liberação:</b><br><span class="ed20Mini">Não libere clientes pagantes enquanto houver item automático BLOQUEADO. Itens em ATENÇÃO devem ser revisados antes do piloto.</span></div></div></div>`}
+  window.refreshGate20=function(){const b=e20('ed20Body');if(b&&lastRows20.length)b.innerHTML=render20(lastRows20)}
+  window.edifiqExportSupportReport20=function(){
+    if(!lastRows20.length){if(typeof toast==='function')toast('Execute a verificação antes de exportar.');return}
+    const payload=report20(lastRows20),blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='EDIFIQ_relatorio_suporte_v20_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);if(typeof toast==='function')toast('Relatório técnico exportado sem dados das obras.');
+  }
+  window.openOps20=async function(){
+    closeDrawer20();let m=e20('edOps20M');if(!m){m=document.createElement('div');m.id='edOps20M';m.className='modal';document.body.appendChild(m)}
+    m.innerHTML=`<div class="modalBox" style="max-width:980px;max-height:93vh;overflow:auto"><div class="modalHead"><div><h2>🛡️ Operação • Pré-lançamento</h2><p class="sub">EDIFIQ v${VERSION20} • liberação controlada de clientes</p></div><button class="x" onclick="closeM('edOps20M')">×</button></div><div id="ed20Body"><div class="card"><b>Verificando ambiente...</b><p class="sub">Somente leituras e testes técnicos. Nenhum dado será alterado.</p></div></div><div class="ed20Actions"><button class="btn" type="button" onclick="openOps20()">↻ Verificar novamente</button><button class="btn" type="button" onclick="edifiqExportSupportReport20()">⬇️ Relatório de suporte</button><button class="btn" type="button" onclick="openComercialTeste19&&openComercialTeste19()">Comercial • Teste</button><button class="btn" type="button" onclick="openTestePiloto18&&openTestePiloto18()">Teste final • Piloto</button></div></div>`;
+    if(typeof openM==='function')openM('edOps20M');else m.classList.add('open');
+    try{const rows=await checks20(),b=e20('ed20Body');if(b)b.innerHTML=render20(rows)}catch(e){const b=e20('ed20Body');if(b)b.innerHTML=`<div class="ed20Hero fail"><b>Falha na verificação</b><div class="ed20Mini">${esc20(e?.message||e)}</div></div>`}
+  };
+  function menu20(){if(e20('edOpsMenu20'))return;const c=e20('edCommercialMenu19'),t=e20('edPilotTestMenu18'),a=document.querySelector('.edifiqDrawerAccount');if(!c&&!t&&!a)return;const b=document.createElement('button');b.id='edOpsMenu20';b.className='edifiqDataRow';b.type='button';b.setAttribute('onclick','openOps20()');b.innerHTML='<span>🛡️</span><b>Operação • Pré-lançamento</b><span class="edifiqChevron">›</span>';if(c)c.insertAdjacentElement('afterend',b);else if(t)t.insertAdjacentElement('afterend',b);else a.insertAdjacentElement('beforebegin',b)}
+  function version20(){const brand=document.querySelector('.edifiqBrandDrawer small');if(brand)brand.textContent=`Gestão de Obras • v${VERSION20}`}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{menu20();version20()},{once:true});else{menu20();version20()}setTimeout(()=>{menu20();version20()},900);
+})();
+</script>
+
 </body>
 </html>
