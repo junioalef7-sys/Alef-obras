@@ -15487,5 +15487,201 @@ body.edLight .edEqDaysUniform .edEqPill.blue{
 })();
 </script>
 
+
+
+<!-- =========================================================
+     EDIFIQ — ETAPA 10
+     Clientes reais, teste grátis e estrutura de assinatura
+     ========================================================= -->
+<style id="edifiq-etapa10-commercial-style">
+.edSubBanner{margin:0 0 14px;padding:11px 13px;border:1px solid var(--line,#d0d5dd);border-radius:13px;background:var(--card,#fff);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.edSubBanner strong{display:block;font-size:14px}.edSubBanner small{display:block;margin-top:3px;opacity:.76}.edSubBadge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:900;background:#f2f4f7;color:#344054}.edSubBadge.trial{background:#eff8ff;color:#175cd3}.edSubBadge.ok{background:#ecfdf3;color:#067647}.edSubBadge.warn{background:#fffaeb;color:#b54708}.edSubBadge.bad{background:#fef3f2;color:#b42318}.edPlanGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.edPlanCard{border:1px solid var(--line,#d0d5dd);border-radius:15px;padding:15px;background:var(--card,#fff);position:relative}.edPlanCard.selected{outline:2px solid #2563eb;border-color:#2563eb}.edPlanCard h3{margin:0 0 4px}.edPlanPrice{font-size:25px;font-weight:950;letter-spacing:-.5px;margin:8px 0}.edPlanPrice small{font-size:11px;font-weight:700;opacity:.65}.edPlanTag{position:absolute;right:10px;top:10px;font-size:10px;font-weight:900;border-radius:999px;padding:5px 8px;background:#ecfdf3;color:#067647}.edCommercialNote{font-size:12px;line-height:1.45;opacity:.78}.edSignupGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.edSignupGrid .full{grid-column:1/-1}.edSignupGrid label{font-size:12px;font-weight:800;display:flex;flex-direction:column;gap:5px}.edSignupGrid input,.edSignupGrid select{width:100%;box-sizing:border-box}.edSubscriptionGate{position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.86);display:flex;align-items:center;justify-content:center;padding:18px}.edSubscriptionGate.hidden{display:none!important}.edSubscriptionGateBox{width:min(720px,100%);max-height:92vh;overflow:auto;border-radius:20px;background:var(--card,#fff);color:var(--text,#111827);padding:20px;box-shadow:0 30px 80px rgba(0,0,0,.35)}.edSubscriptionGateBox h2{margin:0 0 7px}.edSubConfigRows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.edSubConfigRows>div{padding:10px;border:1px solid var(--line,#eaecf0);border-radius:11px}.edSubConfigRows small{display:block;opacity:.7;margin-bottom:4px}.authCommercialHint{margin:12px 0 0;text-align:center;font-size:11px;line-height:1.45;opacity:.74}.authCommercialHint b{font-weight:900}
+@media(max-width:680px){.edPlanGrid,.edSignupGrid,.edSubConfigRows{grid-template-columns:1fr}.edSignupGrid .full{grid-column:auto}.edPlanCard{padding:14px}.edSubscriptionGate{padding:10px}.edSubscriptionGateBox{padding:16px}}
+body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionGateBox{background:#fff;color:#111827}
+</style>
+<script id="edifiq-etapa10-commercial">
+(function(){
+  const FALLBACK_PLANS=[
+    {codigo:'mensal',nome:'EDIFIQ Mensal',ciclo:'mensal',preco_centavos:3990,dias_trial:14,ordem:10},
+    {codigo:'anual',nome:'EDIFIQ Anual',ciclo:'anual',preco_centavos:39900,dias_trial:14,ordem:20}
+  ];
+  const SUB_CACHE_PREFIX='edifiq_subscription_cache_v1::';
+  window.__edifiqPlans=FALLBACK_PLANS.slice();
+  window.__edifiqSubscription=null;
+  window.__edifiqCommercialInit=false;
+
+  function esc10(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]))}
+  function brl10(cents){return (Number(cents||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+  function currentCompany10(){try{return String((typeof edifiqEmpresaUserId==='function'&&edifiqEmpresaUserId())||edifiqEmpresaAtivaId||user?.id||'')}catch(_){return String(user?.id||'')}}
+  function isOwner10(){return !!user?.id && currentCompany10()===String(user.id)}
+  function cacheKey10(){return SUB_CACHE_PREFIX+String(user?.id||'sem-user')+'::'+currentCompany10()}
+  function cacheSub10(s){if(!s)return;try{localStorage.setItem(cacheKey10(),JSON.stringify({...s,_cached_at:new Date().toISOString()}))}catch(_){}}
+  function cachedSub10(){try{return JSON.parse(localStorage.getItem(cacheKey10())||'null')}catch(_){return null}}
+  function computeAccess10(s){
+    if(!s)return null;
+    const status=String(s.status||'').toLowerCase(),now=Date.now();
+    if(status==='cortesia')return true;
+    if(status==='ativa')return !s.periodo_fim||new Date(s.periodo_fim).getTime()>now;
+    if(status==='trial')return !!s.trial_fim&&new Date(s.trial_fim).getTime()>now;
+    return false;
+  }
+  function daysRemaining10(s){
+    if(!s)return null;let end=null;
+    if(String(s.status)==='trial')end=s.trial_fim;else if(String(s.status)==='ativa')end=s.periodo_fim;
+    if(!end)return null;return Math.max(0,Math.ceil((new Date(end).getTime()-Date.now())/86400000));
+  }
+  function label10(s){
+    const st=String(s?.status||'').toLowerCase();
+    return ({trial:'Teste grátis',ativa:'Assinatura ativa',cortesia:'Acesso cortesia',vencida:'Assinatura vencida',cancelada:'Assinatura cancelada',pendente:'Pagamento pendente'})[st]||'Assinatura';
+  }
+  function badgeClass10(s){const st=String(s?.status||'').toLowerCase();return st==='trial'?'trial':(st==='ativa'||st==='cortesia')?'ok':st==='pendente'?'warn':'bad'}
+  function selectedPlan10(){return String(window.__edifiqSubscription?.plano_preferido||user?.user_metadata?.preferred_plan||'')}
+
+  async function loadPlans10(){
+    if(!sb){window.__edifiqPlans=FALLBACK_PLANS.slice();return window.__edifiqPlans}
+    try{
+      const {data,error}=await sb.from('edifiq_planos').select('codigo,nome,ciclo,preco_centavos,dias_trial,ordem').eq('ativo',true).order('ordem');
+      if(error)throw error;if(Array.isArray(data)&&data.length)window.__edifiqPlans=data;
+    }catch(e){console.warn('EDIFIQ planos:',e);window.__edifiqPlans=FALLBACK_PLANS.slice()}
+    return window.__edifiqPlans;
+  }
+
+  async function loadSubscription10(ensure=true){
+    if(!user?.id)return null;
+    if(!sb){const c=cachedSub10();if(c){c.acesso_liberado=computeAccess10(c);c.dias_restantes=daysRemaining10(c);window.__edifiqSubscription=c}return window.__edifiqSubscription}
+    try{
+      let {data,error}=await sb.rpc('edifiq_assinatura_atual');if(error)throw error;
+      if(!data&&ensure&&isOwner10()){
+        const r=await sb.rpc('edifiq_iniciar_trial');if(r.error)throw r.error;
+        data=r.data;
+      }
+      if(data){data.acesso_liberado=computeAccess10(data);data.dias_restantes=daysRemaining10(data);window.__edifiqSubscription=data;cacheSub10(data)}
+      else{window.__edifiqSubscription=cachedSub10()}
+      return window.__edifiqSubscription;
+    }catch(e){
+      console.warn('EDIFIQ assinatura:',e);
+      const c=cachedSub10();if(c){c.acesso_liberado=computeAccess10(c);c.dias_restantes=daysRemaining10(c);window.__edifiqSubscription=c}
+      return window.__edifiqSubscription;
+    }
+  }
+
+  async function persistMetadataPlan10(){
+    const p=String(user?.user_metadata?.preferred_plan||'');
+    const s=window.__edifiqSubscription;
+    if(!sb||!isOwner10()||!['mensal','anual'].includes(p)||s?.plano_preferido)return;
+    try{await sb.from('edifiq_assinaturas').update({plano_preferido:p}).eq('empresa_user_id',user.id);await loadSubscription10(false)}catch(e){console.warn('Plano preferido:',e)}
+  }
+
+  function planCards10(options={}){
+    const selected=selectedPlan10();
+    return `<div class="edPlanGrid">${(window.__edifiqPlans||FALLBACK_PLANS).map((p,i)=>{
+      const annual=p.ciclo==='anual',sel=selected===p.codigo;
+      const monthlyEquivalent=annual?brl10(Math.round(Number(p.preco_centavos||0)/12)):'';
+      return `<div class="edPlanCard ${sel?'selected':''}">${annual?'<span class="edPlanTag">Melhor valor</span>':''}<h3>${esc10(p.nome)}</h3><div class="edPlanPrice">${brl10(p.preco_centavos)} <small>/${annual?'ano':'mês'}</small></div>${annual?`<div class="edCommercialNote">Equivale a aproximadamente <b>${monthlyEquivalent}/mês</b>.</div>`:'<div class="edCommercialNote">Cobrança mensal, simples para começar.</div>'}<p class="edCommercialNote"><b>${Number(p.dias_trial||14)} dias grátis</b> para novos clientes.</p>${options.hideButtons?'':`<button class="btn ${sel?'primary':''}" type="button" onclick="escolherPlanoEdifiq10('${esc10(p.codigo)}')">${sel?'✓ Escolhido':'Escolher '+(annual?'Anual':'Mensal')}</button>`}</div>`
+    }).join('')}</div>`;
+  }
+
+  window.escolherPlanoEdifiq10=async function(codigo){
+    codigo=String(codigo||'');if(!['mensal','anual'].includes(codigo)){toast('Plano inválido.');return}
+    if(!user?.id||!sb){toast('Conecte-se à internet para salvar a escolha do plano.');return}
+    if(!isOwner10()){toast('Somente o proprietário da conta pode escolher o plano.');return}
+    try{
+      const {error}=await sb.from('edifiq_assinaturas').update({plano_preferido:codigo}).eq('empresa_user_id',user.id);if(error)throw error;
+      await loadSubscription10(false);renderCommercial10();
+      const plan=(window.__edifiqPlans||[]).find(p=>p.codigo===codigo);
+      toast((plan?.nome||'Plano')+' escolhido. Nenhuma cobrança foi realizada.');
+      const m=$('edPlanosModal');if(m?.classList.contains('open'))window.openPlanosEdifiq10();
+      if($('edConfiguracoesModal')?.classList.contains('open'))renderConfigSubscription10();
+    }catch(e){console.error('EDIFIQ escolher plano',e);toast('Não foi possível salvar a escolha do plano. '+(e?.message||''))}
+  };
+
+  window.openPlanosEdifiq10=async function(){
+    await loadPlans10();await loadSubscription10(true);
+    let m=$('edPlanosModal');if(!m){m=document.createElement('div');m.id='edPlanosModal';m.className='modal open';document.body.appendChild(m)}else m.classList.add('open');
+    const s=window.__edifiqSubscription,days=daysRemaining10(s);
+    m.innerHTML=`<div class="modalBox" style="max-width:760px;max-height:92vh;overflow:auto"><div class="modalHead"><div><h2>⭐ Planos EDIFIQ</h2><p class="sub">Escolha o plano que pretende usar após o teste grátis.</p></div><button class="x" onclick="closeM('edPlanosModal')">×</button></div><div class="card"><div class="financeRow"><span>Status atual</span><b>${esc10(label10(s))}</b></div>${days!=null?`<div class="financeRow"><span>Dias restantes</span><b>${days}</b></div>`:''}</div>${planCards10()}<div class="note" style="margin-top:12px">A escolha do plano <b>não realiza cobrança</b>. A ativação financeira será feita pelo meio de pagamento na próxima etapa.</div></div>`;
+  };
+
+  function renderConfigSubscription10(){
+    const modal=$('edConfiguracoesModal');if(!modal)return;
+    let old=$('edSubscriptionConfigCard');if(old)old.remove();
+    const s=window.__edifiqSubscription,days=daysRemaining10(s),selected=selectedPlan10();
+    const plan=(window.__edifiqPlans||[]).find(p=>p.codigo===selected);
+    const card=document.createElement('div');card.id='edSubscriptionConfigCard';card.className='card edAccountCard';
+    card.innerHTML=`<h3>⭐ Plano e assinatura</h3><p class="sub">Controle comercial da conta da empresa atual.</p><div class="edSubConfigRows"><div><small>Status</small><b>${esc10(label10(s||{}))}</b></div><div><small>Plano escolhido</small><b>${esc10(plan?.nome||s?.plano||'Ainda não escolhido')}</b></div>${days!=null?`<div><small>Dias restantes</small><b>${days}</b></div>`:''}<div><small>Teste grátis</small><b>14 dias</b></div></div><div class="edAccountActions" style="margin-top:12px"><button class="btn primary" type="button" onclick="openPlanosEdifiq10()">Ver planos</button></div><div class="edAccountStatus">Mensal: R$ 39,90 • Anual: R$ 399,00. A cobrança real ainda não está conectada nesta versão.</div>`;
+    const head=modal.querySelector('.modalHead');if(head)head.insertAdjacentElement('afterend',card);else modal.querySelector('.modalBox')?.prepend(card);
+  }
+
+  function renderBanner10(){
+    const dash=$('dashboard');if(!dash)return;
+    let b=$('edSubscriptionBanner');if(b)b.remove();
+    const s=window.__edifiqSubscription;if(!s||String(s.status)==='cortesia')return;
+    const days=daysRemaining10(s),access=computeAccess10(s);
+    b=document.createElement('div');b.id='edSubscriptionBanner';b.className='edSubBanner';
+    b.innerHTML=`<div><strong>${esc10(label10(s))}${days!=null?` • ${days} dia${days===1?'':'s'} restante${days===1?'':'s'}`:''}</strong><small>${access?'Seu EDIFIQ está liberado.':'Escolha um plano para continuar usando o EDIFIQ.'}</small></div><div style="display:flex;align-items:center;gap:8px"><span class="edSubBadge ${badgeClass10(s)}">${esc10(label10(s))}</span><button class="btn" type="button" onclick="openPlanosEdifiq10()">Planos</button></div>`;
+    const anchor=dash.querySelector('.pageTitle,.pageHead,.titleRow');if(anchor)anchor.insertAdjacentElement('afterend',b);else dash.prepend(b);
+  }
+
+  function renderGate10(){
+    let gate=$('edSubscriptionGate');const s=window.__edifiqSubscription,access=computeAccess10(s);
+    if(!s||access!==false){if(gate)gate.classList.add('hidden');return}
+    if(!gate){gate=document.createElement('div');gate.id='edSubscriptionGate';gate.className='edSubscriptionGate';document.body.appendChild(gate)}
+    gate.classList.remove('hidden');
+    gate.innerHTML=`<div class="edSubscriptionGateBox"><h2>Seu acesso precisa de uma assinatura</h2><p class="sub">${esc10(label10(s))}. Seus dados continuam preservados; nenhuma obra, funcionário ou lançamento foi apagado.</p>${planCards10()}<div class="note" style="margin-top:12px">Nesta etapa a cobrança ainda não é processada. A integração com o pagamento será conectada na próxima etapa antes da venda pública.</div><div class="edAccountActions" style="margin-top:14px"><button class="btn" type="button" onclick="logout()">Sair da conta</button></div></div>`;
+  }
+
+  function renderCommercial10(){renderBanner10();renderGate10();if($('edConfiguracoesModal')?.classList.contains('open'))renderConfigSubscription10()}
+  window.renderCommercial10=renderCommercial10;
+
+  async function initCommercial10(){
+    if(!user?.id)return;
+    await loadPlans10();await loadSubscription10(true);await persistMetadataPlan10();renderCommercial10();window.__edifiqCommercialInit=true;
+  }
+  window.initCommercial10=initCommercial10;
+
+  /* Cadastro comercial: mantém o Auth oficial e coleta os dados necessários. */
+  window.openSignup10=async function(){
+    await loadPlans10();
+    let m=$('edSignupModal');if(!m){m=document.createElement('div');m.id='edSignupModal';m.className='modal open';document.body.appendChild(m)}else m.classList.add('open');
+    const email=String($('email')?.value||'').trim();
+    m.innerHTML=`<div class="modalBox" style="max-width:660px;max-height:92vh;overflow:auto"><div class="modalHead"><div><h2>Criar conta EDIFIQ</h2><p class="sub">14 dias grátis. Nenhuma cobrança agora.</p></div><button class="x" onclick="closeM('edSignupModal')">×</button></div><div class="edSignupGrid"><label class="full">Nome completo<input id="signup10Nome" autocomplete="name" placeholder="Seu nome"></label><label>Perfil<select id="signup10Tipo"><option value="autonomo">Autônomo</option><option value="empresa">Empresa</option></select></label><label>Plano pretendido<select id="signup10Plano"><option value="mensal">Mensal — R$ 39,90/mês</option><option value="anual">Anual — R$ 399,00/ano</option></select></label><label class="full">E-mail<input id="signup10Email" type="email" autocomplete="email" value="${esc10(email)}" placeholder="seu@email.com"></label><label>Senha<input id="signup10Senha" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo 8 caracteres"></label><label>Confirmar senha<input id="signup10Senha2" type="password" autocomplete="new-password" minlength="8"></label></div><div class="edAccountActions" style="margin-top:14px"><button class="btn primary" id="signup10Btn" type="button" onclick="criarContaEdifiq10()">Criar conta e iniciar teste grátis</button></div><p class="edCommercialNote">Ao criar a conta, o teste começa quando o primeiro acesso autenticado for concluído. Dependendo da configuração do Supabase, será necessário confirmar o e-mail.</p><div id="signup10Msg" class="edAccountStatus"></div></div>`;
+  };
+
+  window.criarContaEdifiq10=async function(){
+    const nome=String($('signup10Nome')?.value||'').trim(),tipo=String($('signup10Tipo')?.value||'autonomo'),plano=String($('signup10Plano')?.value||'mensal'),email=String($('signup10Email')?.value||'').trim().toLowerCase(),senha=String($('signup10Senha')?.value||''),senha2=String($('signup10Senha2')?.value||'');
+    const msg=$('signup10Msg'),btn=$('signup10Btn');
+    function say(t){if(msg)msg.textContent=t}
+    if(nome.length<2){say('Informe seu nome.');return}if(!/^\S+@\S+\.\S+$/.test(email)){say('Informe um e-mail válido.');return}if(senha.length<8){say('Use uma senha com pelo menos 8 caracteres.');return}if(senha!==senha2){say('A confirmação da senha não confere.');return}
+    if(btn){btn.disabled=true;btn.textContent='Criando conta...'}say('Criando sua conta com segurança...');
+    try{
+      if(!(await ensureSupabaseClient()))throw new Error('Não foi possível conectar ao servidor.');
+      const {data,error}=await sb.auth.signUp({email,password:senha,options:{data:{full_name:nome,name:nome,nome,tipo_conta:tipo,preferred_plan:plano},emailRedirectTo:location.origin}});if(error)throw error;
+      if(data?.session?.user){closeM('edSignupModal');if(typeof finishSignupLogin==='function')await finishSignupLogin(data.session);await initCommercial10();toast('Conta criada. Seu teste grátis começou.');return}
+      if(data?.user){say('Conta criada. Confirme o e-mail recebido e depois entre no EDIFIQ para iniciar o teste grátis.');return}
+      say('Conta criada. Agora tente entrar com seu e-mail e senha.');
+    }catch(e){console.error('EDIFIQ cadastro comercial',e);let t=String(e?.message||'Não foi possível criar a conta.');if(/already|registered|exists/i.test(t))t='Este e-mail já possui uma conta. Use Entrar ou Esqueci a senha.';say(t)}finally{if(btn){btn.disabled=false;btn.textContent='Criar conta e iniciar teste grátis'}}
+  };
+
+  /* Integra assinatura às telas já existentes, sem reescrever Login/Configurações. */
+  const oldOpenConfig10=window.openConfiguracoes;
+  if(typeof oldOpenConfig10==='function')window.openConfiguracoes=async function(){const r=await oldOpenConfig10.apply(this,arguments);await loadPlans10();await loadSubscription10(true);renderConfigSubscription10();return r};
+
+  const oldLogin10=window.login;
+  if(typeof oldLogin10==='function')window.login=async function(){const r=await oldLogin10.apply(this,arguments);if(user?.id)setTimeout(()=>initCommercial10().catch(()=>{}),50);return r};
+
+  const oldFinishSignup10=window.finishSignupLogin;
+  if(typeof oldFinishSignup10==='function')window.finishSignupLogin=async function(){const r=await oldFinishSignup10.apply(this,arguments);if(user?.id)await initCommercial10();return r};
+
+  function patchAuth10(){
+    const buttons=[...document.querySelectorAll('#auth .authBtns .btn')];
+    const create=buttons.find(b=>/Criar conta/i.test(b.textContent||''));if(create){create.setAttribute('onclick','openSignup10()');create.textContent='Criar conta'}
+    const box=document.querySelector('#auth .authBox');if(box&&!box.querySelector('.authCommercialHint')){const p=document.createElement('div');p.className='authCommercialHint';p.innerHTML='<b>14 dias grátis</b> • Mensal R$ 39,90 • Anual R$ 399,00';box.appendChild(p)}
+  }
+
+  patchAuth10();
+  let tries10=0;const timer10=setInterval(()=>{tries10++;patchAuth10();if(user?.id&&!window.__edifiqCommercialInit)initCommercial10().catch(()=>{});if(window.__edifiqCommercialInit||tries10>30)clearInterval(timer10)},700);
+
+  window.EDIFIQ_BUILD='2026-10-11-etapa10-clientes-assinatura';
+})();
+</script>
 </body>
 </html>
