@@ -1614,7 +1614,7 @@ body{min-height:100vh;min-height:100dvh}
     <button class="edifiqMenuItem" onclick="goMenu('obras')"><span>▣</span><b>Obras</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('diario')"><span>▤</span><b>Diário de Obras</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('checklist')"><span>☑</span><b>Checklist</b></button>
-    <button class="edifiqMenuItem" onclick="goMenu('documentos');toggleMenuPasta()"><span>▤</span><b>Documentos</b></button>
+    <button class="edifiqMenuItem" onclick="openDocumentosDireto12()"><span>▤</span><b>Documentos</b></button>
     <button class="edifiqMenuItem" type="button" onclick="openRelatorioObraEdifiq();toggleMenuPasta()"><span>📄</span><b>Relatório automático</b></button>
     <button class="edifiqMenuItem" onclick="openRelatorioCliente();toggleMenuPasta()"><span>▧</span><b>Relatório para Cliente</b></button>
      <button class="edifiqMenuItem" onclick="openRelatorioTrabalhador();toggleMenuPasta()"><span>♙</span><b>Relatório do Trabalhador</b></button>
@@ -1625,7 +1625,7 @@ body{min-height:100vh;min-height:100dvh}
   <div class="edifiqMenuTitle edifiqSectionTitle">DADOS</div>
   <button class="edifiqDataRow" onclick="openConfiguracoes();toggleMenuPasta()"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
   <button class="edifiqDataRow" onclick="openBackupConfigDirect()"><span>💾</span><b>Backup</b><span class="edifiqChevron">›</span></button>
-  <button class="edifiqDataRow" type="button" onclick="runEdifiqDiagnostico()"><span>🩺</span><b>Diagnóstico do aplicativo</b><span class="edifiqChevron">›</span></button>
+  <button class="edifiqDataRow" type="button" onclick="openDiagnosticoDireto12()"><span>🩺</span><b>Diagnóstico do aplicativo</b><span class="edifiqChevron">›</span></button>
   <div class="edifiqDrawerAccount">
     <div class="edifiqAvatar" id="drawerUserAvatar">ED</div><div class="edifiqAccountText"><b id="drawerUserName">Minha conta</b><small id="drawerUserEmail">Conta EDIFIQ</small></div>
   </div>
@@ -15868,6 +15868,148 @@ body.edLight .edBillingPlan{background:#fff;color:#111827}
   let tries11=0;const timer11=setInterval(()=>{tries11++;if(user?.id&&window.__edifiqCommercialInit){initBilling11().catch(()=>{});clearInterval(timer11)}else if(tries11>40)clearInterval(timer11)},650);
 
   window.EDIFIQ_BUILD='2026-10-11-etapa11-cobranca-mercadopago';
+})();
+</script>
+
+
+<!-- =========================================================
+     EDIFIQ — ETAPA 12
+     Onboarding de novos clientes + correções de navegação e contraste
+     ========================================================= -->
+<style id="edifiq-etapa12-style">
+/* Checklist — contraste reforçado somente no modo claro. */
+body.edLight #checklist,
+body.edLight #checklist .card,
+body.edLight #checklist .check-item{color:#111827!important}
+body.edLight #checklist .pageTitle h1,
+body.edLight #checklist h2,
+body.edLight #checklist h3,
+body.edLight #checklist b,
+body.edLight #checklist strong,
+body.edLight #checklist .checkPercent{color:#111827!important;opacity:1!important}
+body.edLight #checklist .sub,
+body.edLight #checklist small,
+body.edLight #checklist .empty{color:#374151!important;opacity:1!important}
+body.edLight #checklist select,
+body.edLight #checklist input[type="number"],
+body.edLight #checklist .progressNumber{background:#fff!important;color:#111827!important;border-color:#98a2b3!important}
+body.edLight #checklist .mini,
+body.edLight #checklist .btn:not(.gold){background:#fff!important;color:#111827!important;border-color:#c4c9d1!important}
+body.edLight #checklist .gold{color:#7a4b00!important}
+body.edLight #checklist .green{color:#067647!important}
+body.edLight #checklist .red{color:#b42318!important}
+body.edLight #checklist .three>div{background:#fff!important;border-color:#d0d5dd!important}
+body.edLight #checklist .three>div small{color:#475467!important}
+
+/* Etapa 12 — primeiros passos. */
+.edOnboard12Grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.edOnboard12Step{border:1px solid var(--line,#d0d5dd);border-radius:14px;padding:13px;background:var(--card,#fff);display:flex;gap:10px;align-items:flex-start}
+.edOnboard12Icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#f2f4f7;font-weight:900;flex:0 0 34px}
+.edOnboard12Step.done .edOnboard12Icon{background:#ecfdf3;color:#067647}
+.edOnboard12Step h4{margin:0 0 4px;font-size:14px}.edOnboard12Step p{margin:0;color:var(--muted,#667085);font-size:12px;line-height:1.4}
+.edOnboard12Step .btn{margin-top:9px}
+.edOnboard12Progress{height:9px;border-radius:999px;background:#eaecf0;overflow:hidden;margin-top:9px}.edOnboard12Progress i{display:block;height:100%;background:#2563eb;border-radius:999px}
+.edOnboard12Banner{border:1px solid #b2ddff;background:#eff8ff;border-radius:14px;padding:12px 14px;margin:10px 0;color:#1849a9;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.edOnboard12Banner strong{display:block}.edOnboard12Banner small{display:block;margin-top:3px;color:#175cd3}
+body.edLight .edOnboard12Step{background:#fff;color:#111827}body.edLight .edOnboard12Step p{color:#475467}body.edLight .edOnboard12Icon{color:#344054}
+@media(max-width:680px){.edOnboard12Grid{grid-template-columns:1fr}.edOnboard12Banner{align-items:flex-start;flex-direction:column}.edOnboard12Banner .btn{width:100%}}
+</style>
+<script id="edifiq-etapa12-onboarding-correcoes">
+(function(){
+  const $12=id=>document.getElementById(id);
+  const esc12=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+  function closeDrawer12(){
+    const m=$12('menuPasta'),b=$12('menuPastaBackdrop');
+    if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true')}
+    if(b)b.classList.remove('open');
+  }
+  window.edifiqCloseDrawer12=closeDrawer12;
+
+  /* Documentos: goMenu já fechava o drawer; o toggle adicional o reabria. */
+  window.openDocumentosDireto12=function(){
+    closeDrawer12();
+    try{go('documentos')}catch(e){console.error('EDIFIQ documentos',e);toast('Não foi possível abrir Documentos.')}
+  };
+
+  /* Diagnóstico: abre primeiro e só depois executa as verificações assíncronas. */
+  window.openDiagnosticoDireto12=function(){
+    closeDrawer12();
+    const modal=$12('edifiqDiagnosticoM'),body=$12('edifiqDiagnosticoBody');
+    if(body)body.textContent='Verificando armazenamento, sincronização e conexão…';
+    if(modal)modal.classList.add('open');
+    setTimeout(()=>{
+      try{
+        const p=runEdifiqDiagnostico();
+        if(p&&typeof p.catch==='function')p.catch(e=>{console.error('EDIFIQ diagnóstico',e);if(body)body.textContent='Não foi possível concluir o diagnóstico: '+(e?.message||e)});
+      }catch(e){console.error('EDIFIQ diagnóstico',e);if(body)body.textContent='Não foi possível concluir o diagnóstico: '+(e?.message||e)}
+    },20);
+  };
+
+  function steps12(){
+    const obras=(typeof D!=='undefined'&&Array.isArray(D.obras))?D.obras:[];
+    const funcionarios=(typeof D!=='undefined'&&Array.isArray(D.funcionarios))?D.funcionarios:[];
+    const financeiros=((typeof D!=='undefined'&&Array.isArray(D.gastos))?D.gastos.length:0)+((typeof D!=='undefined'&&Array.isArray(D.pagamentos))?D.pagamentos.length:0);
+    const checks=(typeof D!=='undefined'&&Array.isArray(D.checklist))?D.checklist:[];
+    return [
+      {id:'obra',icon:'🏗️',title:'Cadastrar a primeira obra',desc:'Crie a obra para centralizar contrato, equipe, checklist e financeiro.',done:obras.length>0,action:'Cadastrar obra'},
+      {id:'checklist',icon:'☑️',title:'Montar o checklist',desc:'Organize as etapas e acompanhe a execução física da obra.',done:checks.length>0,action:'Abrir checklist'},
+      {id:'equipe',icon:'👷',title:'Cadastrar a equipe',desc:'Adicione funcionários para registrar diárias, vales, faltas e pagamentos.',done:funcionarios.length>0,action:'Cadastrar funcionário'},
+      {id:'financeiro',icon:'💰',title:'Fazer o primeiro lançamento',desc:'Registre uma receita ou despesa vinculada à obra.',done:financeiros>0,action:'Abrir Financeiro'}
+    ];
+  }
+  window.edifiqOnboardingSteps12=steps12;
+
+  window.edifiqOnboardingGo12=function(id){
+    closeM('edOnboarding12M');
+    if(id==='obra'){go('obras');setTimeout(()=>{try{openObra()}catch(_){ }},80);return}
+    if(id==='checklist'){go('checklist');return}
+    if(id==='equipe'){go('funcionarios');setTimeout(()=>{try{openFunc()}catch(_){ }},80);return}
+    if(id==='financeiro'){go('financeiro');setTimeout(()=>{try{openFin()}catch(_){ }},80);return}
+  };
+
+  function renderOnboardingModal12(){
+    const steps=steps12(),done=steps.filter(x=>x.done).length,pct=Math.round(done/steps.length*100);
+    let m=$12('edOnboarding12M');
+    if(!m){m=document.createElement('div');m.id='edOnboarding12M';m.className='modal';document.body.appendChild(m)}
+    m.innerHTML=`<div class="modalBox" style="max-width:760px;max-height:92vh;overflow:auto"><div class="modalHead"><div><h2>🚀 Primeiros passos no EDIFIQ</h2><p class="sub">Configure o essencial para começar a controlar sua primeira obra.</p></div><button class="x" type="button" onclick="closeM('edOnboarding12M')">×</button></div><div class="card"><div class="row"><span><b>Progresso da configuração</b><small class="sub" style="display:block;margin-top:3px">${done} de ${steps.length} etapas concluídas</small></span><strong>${pct}%</strong></div><div class="edOnboard12Progress"><i style="width:${pct}%"></i></div></div><div class="edOnboard12Grid">${steps.map(x=>`<div class="edOnboard12Step ${x.done?'done':''}"><div class="edOnboard12Icon">${x.done?'✓':x.icon}</div><div style="min-width:0;flex:1"><h4>${esc12(x.title)}</h4><p>${esc12(x.desc)}</p>${x.done?'<span class="badge" style="display:inline-block;margin-top:8px">Concluído</span>':`<button class="btn" type="button" onclick="edifiqOnboardingGo12('${x.id}')">${esc12(x.action)}</button>`}</div></div>`).join('')}</div>${pct===100?'<div class="note" style="margin-top:12px">✅ Configuração essencial concluída. O EDIFIQ já está pronto para o uso diário desta conta.</div>':'<div class="note" style="margin-top:12px">Você pode fazer essas etapas na ordem que preferir. Nenhuma delas altera ou apaga dados existentes.</div>'}</div>`;
+    return m;
+  }
+  window.openOnboarding12=function(){closeDrawer12();const m=renderOnboardingModal12();m.classList.add('open')};
+
+  function ensureMenuEntry12(){
+    const account=$12('drawerUserAvatar')?.closest('.edifiqDrawerAccount');
+    if(!account||$12('edOnboardingMenu12'))return;
+    const b=document.createElement('button');b.id='edOnboardingMenu12';b.className='edifiqDataRow';b.type='button';b.setAttribute('onclick','openOnboarding12()');b.innerHTML='<span>🚀</span><b>Primeiros passos</b><span class="edifiqChevron">›</span>';
+    account.parentNode.insertBefore(b,account);
+  }
+
+  function renderBanner12(){
+    const dash=$12('dashboard');if(!dash)return;
+    let old=$12('edOnboardingBanner12');if(old)old.remove();
+    const steps=steps12(),done=steps.filter(x=>x.done).length;
+    if(done===steps.length||typeof user==='undefined'||!user?.id)return;
+    const pct=Math.round(done/steps.length*100),b=document.createElement('div');b.id='edOnboardingBanner12';b.className='edOnboard12Banner';
+    b.innerHTML=`<div><strong>Primeiros passos • ${pct}% concluído</strong><small>${done} de ${steps.length} configurações essenciais concluídas.</small></div><button class="btn" type="button" onclick="openOnboarding12()">Continuar configuração</button>`;
+    const anchor=dash.querySelector('.pageTitle,.edHomeHeader');if(anchor)anchor.insertAdjacentElement('afterend',b);else dash.prepend(b);
+  }
+
+  /* Corrige qualquer versão antiga do onclick mesmo em cache/restauração de HTML. */
+  function patchButtons12(){
+    document.querySelectorAll('.edifiqMenuItem,.edifiqDataRow').forEach(btn=>{
+      const t=String(btn.textContent||'').trim();
+      if(/^Documentos$/i.test(t))btn.setAttribute('onclick','openDocumentosDireto12()');
+      if(/Diagnóstico do aplicativo/i.test(t))btn.setAttribute('onclick','openDiagnosticoDireto12()');
+    });
+    ensureMenuEntry12();
+  }
+
+  const oldRender12=window.renderAll;
+  if(typeof oldRender12==='function')window.renderAll=function(){const r=oldRender12.apply(this,arguments);setTimeout(()=>{patchButtons12();renderBanner12()},0);return r};
+
+  patchButtons12();renderBanner12();
+  let tries=0;const timer=setInterval(()=>{tries++;patchButtons12();renderBanner12();if(tries>20)clearInterval(timer)},600);
+  window.EDIFIQ_BUILD='2026-10-11-etapa12-onboarding-correcoes';
 })();
 </script>
 </body>
