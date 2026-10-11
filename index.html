@@ -3942,6 +3942,12 @@ function mergeLocal(){
 
 async function loadTable(table){
  if(!edifiqCanSync())return false;
+ try{
+   // Etapa 18: nunca consulta tabelas privadas antes da sessão do SDK estar confirmada.
+   const sessionResult=await sb.auth.getSession();
+   const sessionUser=sessionResult?.data?.session?.user||null;
+   if(!sessionUser?.id||String(sessionUser.id)!==String(user?.id||''))return false;
+ }catch(_){return false;}
  const owner=String(edifiqEmpresaUserId());
  try{
    const data=[]; let offset=0;
@@ -14822,8 +14828,15 @@ body.edLight #financeiro > .pageTitle > button.btn.gold:active{
   window.__edifiqProfile=null;
   async function currentUser6(){
     if(!sb)return user||null;
-    try{const {data,error}=await sb.auth.getUser();if(error)throw error;if(data?.user){user=data.user;return data.user}}catch(e){console.warn('EDIFIQ perfil: não foi possível validar usuário',e)}
-    return user||null;
+    try{
+      const {data:sessionData,error:sessionError}=await sb.auth.getSession();
+      if(sessionError)throw sessionError;
+      const sessionUser=sessionData?.session?.user||null;
+      if(!sessionUser)return null;
+      user=sessionUser;
+      return sessionUser;
+    }catch(e){console.warn('EDIFIQ perfil: sessão ainda não confirmada',e)}
+    return null;
   }
   async function loadProfile6(){
     const u=await currentUser6();if(!u||!sb)return null;
@@ -14969,8 +14982,16 @@ body.edLight #financeiro > .pageTitle > button.btn.gold:active{
     }catch(e){console.error('EDIFIQ trocar senha',e);toast(e?.message||'Não foi possível trocar a senha.')}
   };
 
-  // Carrega o nome do perfil sem bloquear a abertura do app.
-  setTimeout(()=>{loadProfile6().then(()=>renderDrawerAccount()).catch(()=>{})},600);
+  // Carrega o nome do perfil somente após a sessão estar confirmada.
+  setTimeout(async()=>{
+    try{
+      if(!sb)return;
+      const {data}=await sb.auth.getSession();
+      if(!data?.session?.user)return;
+      await loadProfile6();
+      renderDrawerAccount();
+    }catch(_){ }
+  },600);
   try{if(typeof renderAll==='function')renderAll()}catch(e){console.warn('EDIFIQ Etapa 6 render',e)}
 })();
 </script>
@@ -16872,6 +16893,204 @@ body:not(.edLight) #edBackupConfigModal .edBackupDanger{color:#fda29b!important;
   if(document.body)observer.observe(document.body,{attributes:true,attributeFilter:['class'],childList:true,subtree:false});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sync17,{once:true});else sync17();
   setTimeout(sync17,300);
+})();
+</script>
+
+
+<!-- =========================================================
+     EDIFIQ — ETAPA 18
+     Teste final do piloto + proteção de inicialização autenticada
+     ========================================================= -->
+<style id="edifiq-etapa18-pilot-test-style">
+.ed18Summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}.ed18Summary>div{padding:12px;border:1px solid var(--line,#d0d5dd);border-radius:13px;text-align:center;background:var(--card,#fff)}.ed18Summary b{display:block;font-size:24px}.ed18Summary small{opacity:.72}.ed18Grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ed18Card{border:1px solid var(--line,#d0d5dd);border-radius:14px;padding:14px;background:var(--card,#fff)}.ed18Card h3{margin:0 0 10px}.ed18Check{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line,#eaecf0);align-items:flex-start}.ed18Check:last-child{border-bottom:0}.ed18Check span{min-width:0}.ed18Check small{display:block;opacity:.74;line-height:1.35;margin-top:2px}.ed18Tag{font-size:10px;font-weight:900;border-radius:999px;padding:4px 7px;white-space:nowrap}.ed18Tag.ok{background:#ecfdf3;color:#067647}.ed18Tag.warn{background:#fffaeb;color:#b54708}.ed18Tag.fail{background:#fef3f2;color:#b42318}.ed18Manual{display:flex;flex-direction:column;gap:7px}.ed18Manual label{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line,#eaecf0);border-radius:11px;padding:10px;cursor:pointer}.ed18Manual input{margin-top:2px}.ed18Actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.ed18PilotNote{border:1px solid #b2ddff;background:#eff8ff;color:#175cd3;border-radius:12px;padding:11px 12px;font-size:12px;line-height:1.45}.ed18Blocked{border:1px solid #fedf89;background:#fffaeb;color:#7a2e0e;border-radius:12px;padding:11px 12px;font-size:12px;line-height:1.45;margin-top:10px}
+body:not(.edLight) #edPilotTest18M .modalBox,body:not(.edLight) #edPilotTest18M .ed18Card,body:not(.edLight) #edPilotTest18M .ed18Summary>div{background:#0f1419!important;color:#f8fafc!important;border-color:#2f3740!important}body:not(.edLight) #edPilotTest18M .ed18PilotNote{background:#0d1d32!important;color:#dbeafe!important;border-color:#244b76!important}body:not(.edLight) #edPilotTest18M .ed18Blocked{background:#2a1c05!important;color:#fde68a!important;border-color:#6b4b13!important}body:not(.edLight) #edPilotTest18M .ed18Check,body:not(.edLight) #edPilotTest18M .ed18Manual label{border-color:#2f3740!important}body:not(.edLight) #edPilotTest18M .ed18Tag.ok{background:#073d2d;color:#6ce9a6}body:not(.edLight) #edPilotTest18M .ed18Tag.warn{background:#3b2b08;color:#fec84b}body:not(.edLight) #edPilotTest18M .ed18Tag.fail{background:#441515;color:#fda29b}
+@media(max-width:760px){.ed18Grid{grid-template-columns:1fr}.ed18Summary{grid-template-columns:repeat(3,1fr)}.ed18Actions .btn{flex:1 1 150px}}
+</style>
+<script id="edifiq-etapa18-final-pilot-test">
+(function(){
+  'use strict';
+  const BUILD18='2026-10-11-etapa18-teste-final-piloto';
+  const VERSION18='18.0.0';
+  const MANUAL_KEY='edifiq_pilot_manual_v18';
+  window.EDIFIQ_BUILD=BUILD18;
+  window.EDIFIQ_VERSION=VERSION18;
+  window.EDIFIQ_RELEASE_CHANNEL='piloto-validacao-final';
+
+  function $18(id){return document.getElementById(id)}
+  function esc18(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function closeDrawer18(){try{if(document.querySelector('.edifiqDrawer')?.classList.contains('open'))toggleMenuPasta()}catch(_){}}
+  function tag18(s){return `<span class="ed18Tag ${s}">${s==='ok'?'OK':s==='fail'?'ERRO':'ATENÇÃO'}</span>`}
+  function item18(label,detail,state='warn'){return {label,detail,state}}
+  function readManual18(){try{return JSON.parse(localStorage.getItem(MANUAL_KEY)||'{}')||{}}catch(_){return {}}}
+  function saveManual18(key,val){const x=readManual18();x[key]=!!val;try{localStorage.setItem(MANUAL_KEY,JSON.stringify(x))}catch(_){};renderManual18()}
+  window.edifiqPilotManual18=saveManual18;
+
+  const manualSteps18=[
+    ['conta','Criar uma conta nova de teste','Confirmar cadastro, confirmação de e-mail (se habilitada), login e 14 dias grátis.'],
+    ['obra','Cadastrar a primeira obra','Criar, editar, fechar/reabrir e confirmar sincronização em outro dispositivo.'],
+    ['checklist','Criar Checklist','Adicionar etapas, valores e progresso e conferir os resumos.'],
+    ['equipe','Cadastrar funcionário e diária','Registrar diária inteira e meia diária; confirmar que não duplica.'],
+    ['financeiro','Lançar receita e despesa','Vincular à obra/checklist e conferir Caixa, saldo e lucro projetado.'],
+    ['backup','Exportar e importar Backup','Fazer backup completo e validar uma restauração em ambiente de teste.'],
+    ['pdf','Gerar e salvar PDF','Testar Relatório Automático e Trabalhador no computador e no PWA do iPhone.'],
+    ['segundo','Entrar em um segundo dispositivo','Confirmar sincronização celular ↔ computador sem perda de dados.'],
+    ['pagamento','Concluir uma assinatura controlada','Somente depois de configurar Mercado Pago; confirmar webhook, renovação e cancelamento.']
+  ];
+  function renderManual18(){
+    const box=$18('ed18Manual');if(!box)return;const st=readManual18();
+    box.innerHTML=manualSteps18.map(([k,t,d])=>`<label><input type="checkbox" ${st[k]?'checked':''} onchange="edifiqPilotManual18('${k}',this.checked)"><span><b>${esc18(t)}</b><small>${esc18(d)}</small></span></label>`).join('');
+  }
+
+  async function cloudRead18(table){
+    try{
+      const {data,error}=await sb.from(table).select('id').limit(1);
+      if(error)throw error;return {ok:true,count:Array.isArray(data)?data.length:0};
+    }catch(e){return {ok:false,error:String(e?.message||e)}}
+  }
+  async function checks18(){
+    const rows=[];
+    const secure=location.protocol==='https:'||['localhost','127.0.0.1'].includes(location.hostname);
+    rows.push(item18('Ambiente',secure?'HTTPS/localhost disponível.':'Use HTTPS no piloto hospedado.',secure?'ok':'warn'));
+
+    const core=[['Obras','saveObra'],['Equipe / diária','saveDia'],['Pagamento da equipe','savePagamentoEquipe'],['Backup','exportFull'],['PDF','edifiqReportSavePDF'],['Relatório do Trabalhador','openRelatorioTrabalhador'],['Assinatura','openPlanosEdifiq11']];
+    const missing=core.filter(([,fn])=>typeof window[fn]!=='function');
+    rows.push(item18('Funções essenciais',missing.length?`Não localizadas: ${missing.map(x=>x[0]).join(', ')}.`:'Obras, Equipe, Financeiro/folha, Backup, PDF e assinatura presentes.',missing.length?'fail':'ok'));
+
+    let session=null;
+    try{if(sb?.auth){const r=await sb.auth.getSession();session=r?.data?.session||null}}catch(_){ }
+    rows.push(item18('Sessão autenticada',session?.user?'Sessão confirmada pelo Supabase SDK.':'Entre em uma conta para executar os testes de nuvem.',session?.user?'ok':'warn'));
+
+    if(session?.user&&sb){
+      let empresa=null;
+      try{const r=await sb.rpc('edifiq_empresa_atual');if(!r.error)empresa=r.data}catch(_){ }
+      rows.push(item18('Isolamento por empresa',empresa?'Contexto da empresa resolvido pelo servidor.':'Não foi possível resolver a empresa atual.',empresa?'ok':'fail'));
+
+      const tables=['obras','funcionarios','checklist','diarias','gastos','pagamentos'];
+      const reads=await Promise.all(tables.map(async t=>[t,await cloudRead18(t)]));
+      const bad=reads.filter(([,r])=>!r.ok);
+      rows.push(item18('Leitura dos módulos na nuvem',bad.length?`Falha: ${bad.map(x=>x[0]).join(', ')}.`:'Obras, Equipe, Checklist, diárias e Financeiro respondendo com a sessão autenticada.',bad.length?'fail':'ok'));
+
+      try{
+        const r=await sb.rpc('edifiq_assinatura_atual');
+        if(r.error)throw r.error;
+        const a=r.data||{};
+        rows.push(item18('Acesso comercial',a.acesso_liberado?`Conta liberada (${a.status||'status atual'}).`:`Conta sem acesso liberado (${a.status||'sem assinatura'}).`,a.acesso_liberado?'ok':'warn'));
+      }catch(e){rows.push(item18('Acesso comercial','Não foi possível consultar a assinatura.','warn'))}
+
+      try{
+        const [c,p]=await Promise.all([
+          sb.from('edifiq_checkout_sessoes').select('id',{count:'exact',head:true}),
+          sb.from('edifiq_pagamentos_assinatura').select('id',{count:'exact',head:true})
+        ]);
+        const tested=Number(c.count||0)>0||Number(p.count||0)>0;
+        rows.push(item18('Pagamento Mercado Pago',tested?'Já existe registro de checkout/cobrança para validação.':'Nenhum checkout/pagamento concluído no banco. Credenciais do Mercado Pago continuam como etapa manual.',tested?'warn':'warn'));
+      }catch(_){rows.push(item18('Pagamento Mercado Pago','Teste de cobrança ainda não confirmado.','warn'))}
+    }
+
+    let sw=false;try{sw=!!(await navigator.serviceWorker?.getRegistration('./'))}catch(_){ }
+    rows.push(item18('PWA / service worker',secure?(sw?'Service worker registrado.':'Pacote PWA presente; registro depende da hospedagem HTTPS.'):'O service worker não funciona via arquivo local.',secure&&sw?'ok':'warn'));
+    rows.push(item18('Inicialização protegida','A Etapa 18 bloqueia leituras privadas até o Supabase confirmar a sessão do SDK.','ok'));
+    rows.push(item18('Dados reais','Este teste automático é somente leitura e não cria, altera nem apaga registros.','ok'));
+    return rows;
+  }
+
+  function renderChecks18(rows){
+    const ok=rows.filter(x=>x.state==='ok').length,w=rows.filter(x=>x.state==='warn').length,f=rows.filter(x=>x.state==='fail').length;
+    return `<div class="ed18PilotNote"><b>Teste automático não destrutivo.</b><br>Ele verifica código, sessão e leitura da nuvem. O roteiro manual abaixo continua obrigatório para validar o comportamento real no celular e computador.</div>
+      <div class="ed18Summary"><div><b>${ok}</b><small>OK</small></div><div><b>${w}</b><small>ATENÇÃO</small></div><div><b>${f}</b><small>ERROS</small></div></div>
+      <div class="ed18Grid"><div class="ed18Card"><h3>Verificação automática</h3>${rows.map(x=>`<div class="ed18Check"><span><b>${esc18(x.label)}</b><small>${esc18(x.detail)}</small></span>${tag18(x.state)}</div>`).join('')}</div>
+      <div class="ed18Card"><h3>Roteiro do cliente real</h3><div class="ed18Manual" id="ed18Manual"></div><div class="ed18Blocked"><b>Pagamento:</b> não marque o teste como aprovado enquanto as credenciais do Mercado Pago não estiverem configuradas e uma cobrança controlada não tiver passado pelo webhook.</div></div></div>`;
+  }
+
+  window.openTestePiloto18=async function(){
+    closeDrawer18();
+    let m=$18('edPilotTest18M');if(!m){m=document.createElement('div');m.id='edPilotTest18M';m.className='modal';document.body.appendChild(m)}
+    m.innerHTML=`<div class="modalBox" style="max-width:980px;max-height:93vh;overflow:auto"><div class="modalHead"><div><h2>🧪 Teste final do piloto</h2><p class="sub">EDIFIQ v${VERSION18} • validação antes dos primeiros clientes</p></div><button class="x" type="button" onclick="closeM('edPilotTest18M')">×</button></div><div id="ed18Body"><div class="card"><b>Executando testes seguros...</b><p class="sub">Nenhum dado real será alterado.</p></div></div><div class="ed18Actions"><button class="btn" type="button" onclick="openTestePiloto18()">↻ Executar novamente</button><button class="btn" type="button" onclick="openProducao16&&openProducao16()">Produção • Piloto</button><button class="btn" type="button" onclick="openBackupConfigDirect&&openBackupConfigDirect()">Backup</button></div></div>`;
+    if(typeof openM==='function')openM('edPilotTest18M');else m.classList.add('open');
+    try{const rows=await checks18();const b=$18('ed18Body');if(b)b.innerHTML=renderChecks18(rows);renderManual18()}catch(e){const b=$18('ed18Body');if(b)b.innerHTML=`<div class="card"><b>Não foi possível concluir todos os testes.</b><p class="sub">${esc18(e?.message||e)}</p></div>`}
+  };
+
+  function ensureMenu18(){
+    if($18('edPilotTestMenu18'))return;
+    const prod=$18('edProducaoMenu16'),account=document.querySelector('.edifiqDrawerAccount');
+    if(!prod&&!account)return;
+    const b=document.createElement('button');b.id='edPilotTestMenu18';b.className='edifiqDataRow';b.type='button';b.setAttribute('onclick','openTestePiloto18()');
+    b.innerHTML='<span>🧪</span><b>Teste final • Piloto</b><span class="edifiqChevron">›</span>';
+    if(prod)prod.insertAdjacentElement('afterend',b);else account.insertAdjacentElement('beforebegin',b);
+  }
+  function version18(){const brand=document.querySelector('.edifiqBrandDrawer small');if(brand)brand.textContent=`Gestão de Obras • v${VERSION18}`}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{ensureMenu18();version18()},{once:true});else{ensureMenu18();version18()}
+  setTimeout(()=>{ensureMenu18();version18()},700);
+})();
+</script>
+
+
+<!-- =========================================================
+     EDIFIQ — ETAPA 19
+     Ambiente comercial de teste + health check seguro de cobrança
+     ========================================================= -->
+<style id="edifiq-etapa19-commercial-style">
+.ed19Grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ed19Card{border:1px solid var(--line,#d0d5dd);border-radius:14px;padding:14px;background:var(--card,#fff)}.ed19Row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line,#e5e7eb)}.ed19Row:last-child{border-bottom:0}.ed19Row small{display:block;opacity:.72;margin-top:3px}.ed19Badge{display:inline-flex;align-items:center;justify-content:center;min-width:74px;padding:6px 9px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:.04em}.ed19Ok{background:#ecfdf3;color:#067647}.ed19Warn{background:#fffaeb;color:#b54708}.ed19Fail{background:#fef3f2;color:#b42318}.ed19Actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.ed19Note{padding:12px;border-radius:12px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.28);margin:12px 0}.ed19Good{padding:12px;border-radius:12px;background:rgba(34,197,94,.10);border:1px solid rgba(34,197,94,.25);margin:12px 0}.ed19Steps{counter-reset:ed19}.ed19Steps>div{position:relative;padding:10px 10px 10px 40px;border-bottom:1px solid var(--line,#e5e7eb)}.ed19Steps>div:before{counter-increment:ed19;content:counter(ed19);position:absolute;left:6px;top:9px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:900;background:#2563eb;color:#fff}.ed19Steps>div:last-child{border-bottom:0}
+body:not(.edLight) #edCommercial19M .modalBox,body:not(.edLight) #edCommercial19M .ed19Card{background:#11151a!important;color:#f8fafc!important;border-color:#303944!important}body:not(.edLight) #edCommercial19M .ed19Row,body:not(.edLight) #edCommercial19M .ed19Steps>div{border-color:#303944!important}body:not(.edLight) #edCommercial19M .sub,body:not(.edLight) #edCommercial19M small{color:#cbd5e1!important;opacity:1!important}
+@media(max-width:700px){.ed19Grid{grid-template-columns:1fr}.ed19Actions .btn{width:100%}}
+</style>
+<script id="edifiq-etapa19-commercial-test">
+(function(){
+  'use strict';
+  const VERSION19='19.0.0',BUILD19='2026-10-11-etapa19-ambiente-comercial-teste';
+  window.EDIFIQ_VERSION=VERSION19;window.EDIFIQ_BUILD=BUILD19;window.EDIFIQ_RELEASE_CHANNEL='piloto-comercial-teste';
+  window.__edifiqBillingHealth19=null;
+  function el(id){return document.getElementById(id)}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function closeDrawer(){try{if(document.querySelector('.edifiqDrawer')?.classList.contains('open'))toggleMenuPasta()}catch(_){}}
+  function badge(ok,missing=false){return `<span class="ed19Badge ${ok?'ed19Ok':missing?'ed19Warn':'ed19Fail'}">${ok?'PRONTO':missing?'PENDENTE':'ERRO'}</span>`}
+  async function health19(){
+    if(!sb&&typeof ensureSupabaseClient==='function')await ensureSupabaseClient();
+    if(!sb)throw new Error('Servidor Supabase indisponível.');
+    const sr=await sb.auth.getSession();
+    if(!sr?.data?.session)throw new Error('Entre na sua conta para verificar o ambiente comercial.');
+    const {data,error}=await sb.functions.invoke('edifiq-billing-health',{body:{}});
+    if(error)throw new Error(error.message||'Não foi possível verificar a cobrança.');
+    if(data?.error)throw new Error(data.error);
+    window.__edifiqBillingHealth19=data||null;
+    window.__edifiqBillingNotConfigured=!(data?.ready);
+    return data||{};
+  }
+  window.edifiqBillingHealth19=health19;
+  function row(label,detail,ok,missing=false){return `<div class="ed19Row"><span><b>${esc(label)}</b><small>${esc(detail)}</small></span>${badge(ok,missing)}</div>`}
+  function render19(h){
+    const c=h?.checks||{},ready=!!h?.ready;
+    const tokenMissing=!c.access_token_present,webhookMissing=!c.webhook_secret_present,urlMissing=!c.public_url_present;
+    return `${ready?'<div class="ed19Good"><b>Ambiente comercial pronto para teste controlado.</b><br><small>As três configurações privadas foram encontradas e o Access Token respondeu corretamente à API do Mercado Pago.</small></div>':'<div class="ed19Note"><b>Pagamento real ainda bloqueado para segurança.</b><br><small>O EDIFIQ só libera o teste de checkout quando todas as verificações abaixo estiverem prontas.</small></div>'}
+      <div class="ed19Grid"><div class="ed19Card"><h3>Servidor e credenciais</h3>
+      ${row('Access Token',tokenMissing?'Credencial ainda não cadastrada no servidor.':(c.access_token_valid?'Credencial presente e validada na API do Mercado Pago.':`Credencial presente, mas validação: ${c.access_token_check||'falhou'}.`),!!c.access_token_valid,tokenMissing)}
+      ${row('Segredo do webhook',webhookMissing?'Segredo HMAC ainda não cadastrado.':'Segredo do webhook presente no servidor.',!!c.webhook_secret_present,webhookMissing)}
+      ${row('URL pública',urlMissing?'EDIFIQ_PUBLIC_URL ainda não cadastrada.':(c.public_url_valid?'URL pública válida para retorno do checkout.':'URL cadastrada, mas não é HTTPS válida.'),!!c.public_url_valid,urlMissing)}
+      ${row('Checkout',ready?'Liberado para teste controlado.':'Bloqueado até concluir a configuração.',ready,true)}</div>
+      <div class="ed19Card"><h3>Teste comercial controlado</h3><div class="ed19Steps"><div><b>Usar uma conta proprietária de teste</b><small>Não utilizar conta de cliente real no primeiro pagamento.</small></div><div><b>Assinar plano Mensal</b><small>Confirmar redirecionamento ao Mercado Pago sem erro.</small></div><div><b>Voltar ao EDIFIQ</b><small>Usar “Já paguei / verificar” e confirmar status sincronizado.</small></div><div><b>Validar webhook</b><small>Confirmar criação do histórico da cobrança sem duplicação.</small></div><div><b>Testar cancelamento</b><small>Cancelar renovação e confirmar preservação do período já pago.</small></div></div></div></div>`;
+  }
+  window.openComercialTeste19=async function(){
+    closeDrawer();let m=el('edCommercial19M');if(!m){m=document.createElement('div');m.id='edCommercial19M';m.className='modal';document.body.appendChild(m)}
+    m.innerHTML=`<div class="modalBox" style="max-width:920px;max-height:93vh;overflow:auto"><div class="modalHead"><div><h2>💳 Comercial • Teste</h2><p class="sub">EDIFIQ v${VERSION19} • prontidão da cobrança real</p></div><button class="x" onclick="closeM('edCommercial19M')">×</button></div><div id="ed19Body"><div class="card"><b>Verificando servidor...</b><p class="sub">Nenhuma credencial será exibida.</p></div></div><div class="ed19Actions"><button class="btn" type="button" onclick="openComercialTeste19()">↻ Verificar novamente</button><button class="btn" type="button" onclick="openPlanosEdifiq11&&openPlanosEdifiq11()">Planos e assinatura</button><button class="btn" type="button" onclick="openTestePiloto18&&openTestePiloto18()">Teste final do piloto</button></div></div>`;
+    if(typeof openM==='function')openM('edCommercial19M');else m.classList.add('open');
+    try{const h=await health19();const b=el('ed19Body');if(b)b.innerHTML=render19(h)}catch(e){const b=el('ed19Body');if(b)b.innerHTML=`<div class="ed19Note"><b>Não foi possível concluir a verificação.</b><br><small>${esc(e?.message||e)}</small></div>`}
+  };
+  const originalCheckout=window.assinarPlanoEdifiq11;
+  if(typeof originalCheckout==='function'){
+    window.assinarPlanoEdifiq11=async function(codigo){
+      try{const h=await health19();if(!h?.ready){toast('Pagamento real bloqueado: finalize a configuração comercial primeiro.');await window.openComercialTeste19();return}}
+      catch(e){toast(String(e?.message||'Não foi possível verificar o ambiente de cobrança.'));return}
+      return originalCheckout(codigo);
+    };
+  }
+  function menu19(){
+    if(el('edCommercialMenu19'))return;const test=el('edPilotTestMenu18'),prod=el('edProducaoMenu16'),account=document.querySelector('.edifiqDrawerAccount');if(!test&&!prod&&!account)return;
+    const b=document.createElement('button');b.id='edCommercialMenu19';b.className='edifiqDataRow';b.type='button';b.setAttribute('onclick','openComercialTeste19()');b.innerHTML='<span>💳</span><b>Comercial • Teste</b><span class="edifiqChevron">›</span>';
+    if(test)test.insertAdjacentElement('afterend',b);else if(prod)prod.insertAdjacentElement('afterend',b);else account.insertAdjacentElement('beforebegin',b);
+  }
+  function version19(){const brand=document.querySelector('.edifiqBrandDrawer small');if(brand)brand.textContent=`Gestão de Obras • v${VERSION19}`}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{menu19();version19()},{once:true});else{menu19();version19()}
+  setTimeout(()=>{menu19();version19()},800);
 })();
 </script>
 </body>
