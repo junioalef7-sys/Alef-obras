@@ -8397,6 +8397,77 @@ body.edLight .authLogo h1{color:#000!important;font-weight:900!important;-webkit
 body.edLight :is(.page,.card,.item,.kpi,.financeModernCard,.financeModernPanel,.edHomeWorkCard,.edEquipeCard) *{text-shadow:none}
 </style>
 
+
+
+<style id="ed26Style">
+#edDomain26M .modalBox{max-width:940px}
+.ed26Hero{padding:16px;border:1px solid var(--line,#343a43);border-radius:14px;margin-bottom:12px}
+.ed26Hero.ok{background:rgba(22,163,74,.10);border-color:rgba(22,163,74,.45)}
+.ed26Hero.block{background:rgba(220,38,38,.09);border-color:rgba(220,38,38,.38)}
+.ed26Grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.ed26Card{padding:14px;border:1px solid var(--line,#343a43);border-radius:14px;background:var(--card,#15181d);margin:10px 0}
+.ed26Row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line,#343a43)}
+.ed26Row:first-child{border-top:0}.ed26State{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+.ed26State.ok{background:rgba(22,163,74,.16);color:#86efac}.ed26State.warn{background:rgba(245,158,11,.16);color:#fcd34d}.ed26State.block{background:rgba(220,38,38,.16);color:#fca5a5}
+.ed26Code{padding:10px 12px;border:1px dashed var(--line,#4b5563);border-radius:10px;word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+body.edLight #edDomain26M .ed26Card{background:#fff;border-color:#d0d5dd;color:#111827}body.edLight #edDomain26M .ed26Row{border-color:#e5e7eb}
+body.edLight #edDomain26M .ed26State.ok{color:#067647}body.edLight #edDomain26M .ed26State.warn{color:#92400e}body.edLight #edDomain26M .ed26State.block{color:#b42318}
+@media(max-width:700px){.ed26Grid{grid-template-columns:1fr}.ed26Row{align-items:flex-start;flex-direction:column}.ed26State{align-self:flex-start}}
+</style>
+<script id="ed26Script">
+(()=>{
+  'use strict';
+  const VERSION26='26.0.0';
+  const ADMIN='junioalef7@gmail.com';
+  const KEY25='edifiq_stage25_first_client_checks';
+  window.EDIFIQ_VERSION='v'+VERSION26;
+  window.EDIFIQ_BUILD='2026-10-11-etapa26-dominio-final-convite-real';
+  const q=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const state={session:false,publicHealth:null,inviteProbe:false,privacy:false,deletion:false,manifest:false,sw:false};
+  function env(){const p=location.protocol,h=location.hostname;const local=['localhost','127.0.0.1','::1'].includes(h);return{stable:p==='https:'&&!local,origin:location.origin,base:location.origin+location.pathname.replace(/[^/]*$/,'')}}
+  async function admin(){try{if(!window.sb?.auth)return null;const {data}=await sb.auth.getUser();const u=data?.user;return u?.id&&String(u.email||'').toLowerCase()===ADMIN?u:null}catch(_){return null}}
+  async function probe(path){try{const r=await fetch(path,{cache:'no-store',redirect:'follow'});return !!r.ok}catch(_){return false}}
+  function syncStage25Match(v){try{const c=JSON.parse(localStorage.getItem(KEY25)||'{}')||{};c.public_url_match=!!v;localStorage.setItem(KEY25,JSON.stringify(c))}catch(_){}}
+  async function tests(){const e=env();state.manifest=!!document.querySelector('link[rel="manifest"]');state.sw='serviceWorker' in navigator;state.session=false;state.publicHealth=null;state.inviteProbe=false;state.privacy=false;state.deletion=false;
+    try{const {data}=await sb.auth.getSession();state.session=!!data?.session?.user}catch(_){ }
+    if(e.stable){state.privacy=await probe('./privacidade.html');state.deletion=await probe('./exclusao-conta.html')}
+    if(state.session&&window.sb?.functions){
+      try{const r=await sb.functions.invoke('edifiq-public-health',{body:{current_origin:e.origin}});if(!r.error)state.publicHealth=r.data||null}catch(_){ }
+      try{const r=await sb.functions.invoke('edifiq-piloto-convite-validar',{body:{token:'edifiq-stage26-probe-invalid'}});state.inviteProbe=!r.error&&(r.data?.valid===false||!!r.data?.reason)}catch(_){ }
+    }
+    syncStage25Match(!!state.publicHealth?.matches);
+    return e
+  }
+  function ready(e){return !!(e.stable&&state.session&&state.manifest&&state.sw&&state.privacy&&state.deletion&&state.inviteProbe&&state.publicHealth?.configured&&state.publicHealth?.valid&&state.publicHealth?.matches)}
+  const badge=(ok,labelOk='PRONTO',labelNo='PENDENTE')=>\`<span class="ed26State \${ok?'ok':'block'}">\${ok?'✓ '+labelOk:'✕ '+labelNo}</span>\`;
+  function modal(){let m=q('edDomain26M');if(m)return m;m=document.createElement('div');m.id='edDomain26M';m.className='modal';m.innerHTML=\`<div class="modalBox"><div class="modalHead"><div><h2>🔐 Domínio final • Convite real</h2><p class="sub">EDIFIQ v\${VERSION26} • liberação automática do endereço</p></div><button class="x" onclick="closeM('edDomain26M')">×</button></div><div id="ed26Body"><div class="card"><b>Verificando domínio…</b></div></div></div>\`;document.body.appendChild(m);return m}
+  function render(e){const b=q('ed26Body');if(!b)return;const ok=ready(e);const ph=state.publicHealth||{};const app=e.stable?e.base:'https://SEU-DOMINIO-OFICIAL/';const rows=[
+    ['HTTPS estável',e.stable,e.stable?e.origin:'O app ainda está em arquivo/local ou endereço inseguro'],
+    ['Sessão administradora',state.session,state.session?'Sessão confirmada':'Faça login na conta administradora'],
+    ['EDIFIQ_PUBLIC_URL configurada',!!ph.configured,ph.configured?'Segredo de ambiente encontrado':'Ainda não existe URL pública configurada no servidor'],
+    ['URL pública válida',!!ph.valid,ph.valid?'Configuração usa uma origem aceita':'A URL configurada não é válida'],
+    ['Domínio aberto = domínio configurado',!!ph.matches,ph.matches?'Correspondência exata confirmada pelo servidor':'O domínio atual ainda não corresponde à EDIFIQ_PUBLIC_URL'],
+    ['Política de Privacidade',state.privacy,state.privacy?'Página respondeu neste domínio':'privacidade.html não respondeu'],
+    ['Exclusão de Conta',state.deletion,state.deletion?'Página respondeu neste domínio':'exclusao-conta.html não respondeu'],
+    ['API de convites',state.inviteProbe,state.inviteProbe?'Validação de convite respondeu':'API de convites indisponível'],
+    ['PWA',state.manifest&&state.sw,state.manifest&&state.sw?'Manifest + Service Worker disponíveis':'PWA incompleta neste navegador']
+  ];
+  b.innerHTML=\`<div class="ed26Hero \${ok?'ok':'block'}"><h3 style="margin:0 0 6px">\${ok?'Domínio confirmado • convite real liberado':'Domínio ainda não liberado'}</h3><div>\${ok?'O servidor confirmou que este é exatamente o endereço público configurado para o EDIFIQ.':'Nenhum convite real deve ser enviado até todos os itens abaixo ficarem verdes.'}</div></div>
+    <div class="ed26Grid"><div class="ed26Card"><small>Endereço atual</small><b style="display:block;overflow-wrap:anywhere">\${esc(app)}</b></div><div class="ed26Card"><small>Correspondência servidor</small><b style="display:block">\${ph.matches?'CONFIRMADA':'PENDENTE'}</b></div><div class="ed26Card"><small>Convite real</small><b style="display:block">\${ok?'LIBERADO':'BLOQUEADO'}</b></div></div>
+    <div class="ed26Card"><b>Verificação automática</b>\${rows.map(r=>\`<div class="ed26Row"><div><b style="font-size:14px">\${esc(r[0])}</b><div class="sub">\${esc(r[2])}</div></div>\${badge(r[1])}</div>\`).join('')}</div>
+    <div class="ed26Card"><b>Endereço que o cliente receberá</b><p class="sub">O token só será acrescentado depois que o domínio estiver confirmado.</p><div class="ed26Code">\${esc(app)}?piloto=TOKEN-INDIVIDUAL</div></div>
+    <div class="ed26Card"><b>Teste técnico sem criar cliente</b><p class="sub">Esta verificação consulta sessão, domínio, páginas legais e API de convites. Ela não cria conta, convite ou cobrança.</p><div class="ed21Toolbar"><button class="btn primary" onclick="ed26RunDryTest()">🧪 Executar teste técnico</button></div><div id="ed26DryResult" class="sub" style="margin-top:8px"></div></div>
+    <div class="ed21Toolbar"><button class="btn" onclick="openInvite23&&openInvite23()" \${ok?'':'disabled'}>✉️ Abrir convites</button><button class="btn" onclick="openOfficial25&&openOfficial25()">🏁 Primeiro cliente</button><button class="btn" onclick="openDomain26()">↻ Verificar novamente</button></div>\`}
+  window.ed26RunDryTest=async function(){const box=q('ed26DryResult');if(box)box.textContent='Executando…';const e=await tests();const ok=ready(e);if(box)box.innerHTML=ok?'<b>✓ Teste aprovado.</b> O ambiente técnico está pronto para gerar o primeiro convite real.':'<b>✕ Teste ainda não aprovado.</b> Corrija os itens vermelhos acima.';render(e)};
+  window.openDomain26=async function(){const u=await admin();if(!u){alert('Área disponível somente para a conta administradora do EDIFIQ.');return}const m=modal();m.classList.add('open');q('ed26Body').innerHTML='<div class="card"><b>Verificando domínio…</b></div>';const e=await tests();render(e)};
+  const previousGenerate26=window.ed23Generate;
+  if(typeof previousGenerate26==='function')window.ed23Generate=async function(){const e=await tests();if(!ready(e)){try{await openDomain26()}catch(_){ }alert('Convite real bloqueado: o servidor ainda não confirmou este domínio como endereço oficial do EDIFIQ.');return}return previousGenerate26.apply(this,arguments)};
+  async function menu(){if(q('edDomainMenu26'))return;const u=await admin();if(!u)return;const anchor=q('edOfficialMenu25')||q('edDeployMenu24')||document.querySelector('.edifiqDrawerAccount');if(!anchor)return;const bt=document.createElement('button');bt.id='edDomainMenu26';bt.className='edifiqDataRow';bt.type='button';bt.setAttribute('onclick','openDomain26()');bt.innerHTML='<span>🔐</span><b>Domínio final • Convite real</b><span class="edifiqChevron">›</span>';anchor.classList.contains('edifiqDrawerAccount')?anchor.insertAdjacentElement('beforebegin',bt):anchor.insertAdjacentElement('afterend',bt)}
+  function init(){setTimeout(menu,1200);setTimeout(menu,2400)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();new MutationObserver(()=>{if(!q('edDomainMenu26'))setTimeout(menu,350)}).observe(document.documentElement,{childList:true,subtree:true});
+})();
+<\/script>
+
 </body></html>`);
 
 win.document.close();
@@ -17610,10 +17681,820 @@ body.edLight .ed23InviteBanner{color:#15351f;background:#edfdf3;border-color:#9f
   const mo=new MutationObserver(()=>{if(!q('edInviteMenu23'))setTimeout(menu,350)});mo.observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script>
+<style id="edifiq-etapa24-css">
+#edDeploy24M .modalBox{max-width:1040px;max-height:94vh;overflow:auto}
+.ed24Grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.ed24Card{padding:14px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.11)}
+.ed24Card small{opacity:.76}.ed24Card b{display:block;margin-top:4px;font-size:18px}
+.ed24Row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.ed24Row:last-child{border-bottom:0}
+.ed24State{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap}
+.ed24State.ok{background:rgba(41,179,93,.15);border:1px solid rgba(41,179,93,.42)}
+.ed24State.warn{background:rgba(245,166,35,.14);border:1px solid rgba(245,166,35,.42)}
+.ed24State.block{background:rgba(229,72,77,.14);border:1px solid rgba(229,72,77,.42)}
+.ed24Hero{padding:18px;border-radius:18px;border:1px solid rgba(255,255,255,.12);margin:12px 0}
+.ed24Hero.ok{background:rgba(41,179,93,.10);border-color:rgba(41,179,93,.38)}
+.ed24Hero.block{background:rgba(229,72,77,.10);border-color:rgba(229,72,77,.38)}
+.ed24Code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);font-size:12px}
+body.edLight #edDeploy24M .ed24Card,body.edLight #edDeploy24M .ed24Hero{background:#fff;border-color:#d8e0ea;color:#172033}
+body.edLight #edDeploy24M .ed24Row{border-color:#e5e7eb}
+body.edLight #edDeploy24M .ed24Code{background:#f4f6f8;border-color:#d8e0ea;color:#111827}
+body.edLight #edDeploy24M .sub{color:#4b5563!important}
+#ed24EnvBanner{position:fixed;left:12px;right:12px;bottom:74px;z-index:9996;padding:10px 12px;border-radius:14px;background:#7f1d1d;color:#fff;border:1px solid rgba(255,255,255,.22);box-shadow:0 10px 30px rgba(0,0,0,.28);font-size:12px;font-weight:700;display:none}
+@media(max-width:759px){.ed24Grid{grid-template-columns:1fr}.ed24Row{flex-direction:column}.ed24State{align-self:flex-start}#ed24EnvBanner{bottom:88px}}
+</style>
+<script id="edifiq-etapa24-implantacao-privada">
+(()=>{
+  const VERSION24='24.0.0';
+  const BUILD24='2026-10-11-etapa24-implantacao-privada-convite-real';
+  const ADMIN='junioalef7@gmail.com';
+  window.EDIFIQ_VERSION='v'+VERSION24;
+  window.EDIFIQ_BUILD=BUILD24;
+  const q=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const state={billing:null,inviteProbe:null,session:false};
+  function env(){
+    const p=location.protocol,h=location.hostname||'';
+    const local=['localhost','127.0.0.1','::1'].includes(h);
+    const file=p==='file:';
+    const https=p==='https:';
+    const stable=https&&!local&&!!h&&h.includes('.');
+    return {protocol:p,host:h,origin:location.origin,local,file,https,stable,realInvite:stable};
+  }
+  async function admin(){
+    try{if(!window.sb?.auth)return null;const {data}=await sb.auth.getUser();const u=data?.user;return u?.id&&String(u.email||'').toLowerCase()===ADMIN?u:null}catch(_){return null}
+  }
+  function modal(){
+    let m=q('edDeploy24M');if(m)return m;
+    m=document.createElement('div');m.id='edDeploy24M';m.className='modal';
+    m.innerHTML=`<div class="modalBox"><div class="modalHead"><div><h2>🌐 Implantação • Piloto</h2><p class="sub">EDIFIQ v${VERSION24} • HTTPS privado/controlado</p></div><button class="x" onclick="closeM('edDeploy24M')">×</button></div><div id="ed24Body"><div class="card"><b>Verificando ambiente…</b></div></div></div>`;
+    document.body.appendChild(m);return m;
+  }
+  async function tests(){
+    const e=env();state.billing=null;state.inviteProbe=null;state.session=false;
+    try{const {data}=await sb.auth.getSession();state.session=!!data?.session?.user}catch(_){ }
+    if(state.session&&sb?.functions){
+      try{const r=await sb.functions.invoke('edifiq-billing-health',{body:{}});if(!r.error)state.billing=r.data||null}catch(_){ }
+      try{const r=await sb.functions.invoke('edifiq-piloto-convite-validar',{body:{token:'edifiq-stage24-probe-invalid'}});state.inviteProbe={reachable:!r.error,invalidExpected:r.data?.valid===false||!!r.data?.reason}}catch(_){state.inviteProbe={reachable:false}}
+    }
+    return e;
+  }
+  const badge=(ok,labelWarn='PENDENTE')=>`<span class="ed24State ${ok?'ok':'block'}">${ok?'✓ PRONTO':'✕ '+labelWarn}</span>`;
+  function render(e){
+    const b=q('ed24Body');if(!b)return;
+    const manifest=!!document.querySelector('link[rel="manifest"]');
+    const sw='serviceWorker' in navigator;
+    const publicCfg=!!state.billing?.checks?.public_url_valid;
+    const billingReady=!!state.billing?.ready;
+    const inviteApi=!!state.inviteProbe?.reachable;
+    const ready=e.realInvite&&state.session&&manifest&&sw&&inviteApi;
+    const rows=[
+      ['Endereço HTTPS estável',e.realInvite, e.realInvite?location.origin:(e.file?'Arquivo local (file://)':e.local?'Ambiente local':'HTTPS estável ainda não disponível')],
+      ['Sessão do administrador',state.session,state.session?'Autenticada':'Faça login para executar testes privados'],
+      ['Manifest PWA',manifest,manifest?'Detectado':'Manifest não encontrado'],
+      ['Service Worker suportado',sw,sw?'Navegador compatível':'Navegador sem suporte'],
+      ['API de convites',inviteApi,inviteApi?'Função de validação respondeu':'Não foi possível validar a função'],
+      ['URL pública no servidor',publicCfg,publicCfg?'EDIFIQ_PUBLIC_URL válida':'Ainda pendente para cobrança/retorno'],
+      ['Cobrança completa',billingReady,billingReady?'Mercado Pago e webhook prontos':'Pode continuar piloto sem cobrança real']
+    ];
+    b.innerHTML=`
+      <div class="ed24Hero ${ready?'ok':'block'}"><h3 style="margin:0 0 6px">${ready?'Ambiente apto para convite real':'Ainda não enviar convite real'}</h3><div>${ready?'Este endereço pode ser usado como base dos links de convite do piloto.':'Abra o EDIFIQ em um endereço HTTPS estável antes de compartilhar links com clientes.'}</div></div>
+      <div class="ed24Grid"><div class="ed24Card"><small>Endereço atual</small><b>${esc(e.host||e.protocol)}</b></div><div class="ed24Card"><small>Convite real</small><b>${e.realInvite?'Liberado':'Bloqueado'}</b></div><div class="ed24Card"><small>Modo</small><b>${e.https?'HTTPS':e.file?'Arquivo local':'HTTP/local'}</b></div></div>
+      <div class="ed24Card"><b>Checklist técnico</b>${rows.map(r=>`<div class="ed24Row"><div><b style="font-size:14px">${esc(r[0])}</b><div class="sub">${esc(r[2])}</div></div>${badge(r[1])}</div>`).join('')}</div>
+      <div class="ed24Card"><b>Base correta do convite</b><p class="sub">Quando hospedado, o link deverá começar exatamente por este endereço:</p><div class="ed24Code">${esc(e.realInvite?location.origin+location.pathname:'https://SEU-ENDERECO-OFICIAL/')}</div></div>
+      <div class="ed24Card"><b>Teste de ponta a ponta</b><div class="ed24Row"><span>1. Abrir o endereço em outro aparelho</span><span class="ed24State ${e.realInvite?'ok':'warn'}">${e.realInvite?'PODE TESTAR':'AGUARDE HTTPS'}</span></div><div class="ed24Row"><span>2. Gerar convite para cliente piloto cadastrado</span><span class="ed24State ${e.realInvite?'ok':'warn'}">${e.realInvite?'LIBERADO':'BLOQUEADO'}</span></div><div class="ed24Row"><span>3. Abrir link em janela privada</span><span class="ed24State warn">MANUAL</span></div><div class="ed24Row"><span>4. Criar conta com o mesmo e-mail</span><span class="ed24State warn">MANUAL</span></div><div class="ed24Row"><span>5. Confirmar status Onboarding em Clientes • Piloto</span><span class="ed24State warn">MANUAL</span></div></div>
+      <div class="ed21Toolbar"><button class="btn" onclick="openInvite23&&openInvite23()">✉️ Convites • Piloto</button><button class="btn" onclick="openPilotLaunch21&&openPilotLaunch21()">🚀 Clientes • Piloto</button><button class="btn" onclick="openDeploy24()">↻ Verificar novamente</button></div>`;
+  }
+  window.openDeploy24=async function(){
+    const u=await admin();if(!u){alert('Área disponível somente para a conta administradora do EDIFIQ.');return}
+    const m=modal();m.classList.add('open');q('ed24Body').innerHTML='<div class="card"><b>Verificando ambiente…</b></div>';
+    const e=await tests();render(e)
+  };
+  function banner(){
+    let x=q('ed24EnvBanner');if(!x){x=document.createElement('div');x.id='ed24EnvBanner';document.body.appendChild(x)}
+    const e=env();
+    if(e.realInvite){x.style.display='none';return}
+    x.innerHTML='Ambiente local/inseguro: links reais do piloto estão bloqueados. Hospede a Etapa 24 em HTTPS para convidar clientes.';x.style.display='block';
+  }
+  const oldGenerate=window.ed23Generate;
+  if(typeof oldGenerate==='function')window.ed23Generate=async function(clientId){
+    const e=env();
+    if(!e.realInvite){
+      try{await openDeploy24()}catch(_){ }
+      alert('Convite real bloqueado neste endereço. Use uma versão hospedada em HTTPS estável para gerar o link do cliente.');
+      return;
+    }
+    return oldGenerate.apply(this,arguments)
+  };
+  async function menu(){
+    if(q('edDeployMenu24'))return;const u=await admin();if(!u)return;
+    const anchor=q('edInviteMenu23')||q('edMetricsMenu22')||document.querySelector('.edifiqDrawerAccount');if(!anchor)return;
+    const bt=document.createElement('button');bt.id='edDeployMenu24';bt.className='edifiqDataRow';bt.type='button';bt.setAttribute('onclick','openDeploy24()');bt.innerHTML='<span>🌐</span><b>Implantação • Piloto</b><span class="edifiqChevron">›</span>';
+    anchor.classList.contains('edifiqDrawerAccount')?anchor.insertAdjacentElement('beforebegin',bt):anchor.insertAdjacentElement('afterend',bt)
+  }
+  function init(){banner();setTimeout(menu,1100);setTimeout(menu,2200)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+  const mo=new MutationObserver(()=>{if(!q('edDeployMenu24'))setTimeout(menu,400)});mo.observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
 
-<style id="ed27css">#ed27M .g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}#ed27M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}#ed27M .n{font-size:24px;font-weight:900}#ed27M .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:7px}#ed27M .s{padding:6px;border-radius:8px;background:#1e293b;font-size:12px}#ed27M .s.ok{background:#14532d;color:#dcfce7}body.edLight #ed27M .c{background:#fff;color:#111827;border-color:#cbd5e1}body.edLight #ed27M .s{background:#f1f5f9;color:#334155}body.edLight #ed27M .s.ok{background:#dcfce7;color:#14532d}@media(max-width:700px){#ed27M .g{grid-template-columns:repeat(2,1fr)}#ed27M .steps{grid-template-columns:repeat(2,1fr)}}</style>
-<script id="ed27js">
-(function(){'use strict';window.EDIFIQ_BUILD='2026-10-11-etapa27-primeiro-cliente-onboarding';window.EDIFIQ_VERSION='27.0.0';const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));function SB(){return window.supabaseClient||window.sb||window.supabase||null}function prog(c){let a=['onboarding_conta','onboarding_obra','onboarding_equipe','onboarding_financeiro','onboarding_backup','onboarding_pdf'];let n=a.filter(k=>!!c[k]).length;return[n,Math.round(n/6*100)]}function modal(){let m=document.getElementById('ed27M');if(m)return m;m=document.createElement('div');m.id='ed27M';m.className='modal';m.style.zIndex='10050';m.innerHTML='<div class="modalBox" style="max-width:960px;width:min(96vw,960px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>👤 Primeiro cliente • Piloto</b><div class="small muted">Etapa 27 • domínio + onboarding acompanhado</div></div><button class="iconBtn" id="ed27close">×</button></div><div id="ed27B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('ed27close').onclick=()=>m.classList.remove('show');return m}async function open27(){let m=modal(),b=document.getElementById('ed27B');m.classList.add('show');b.textContent='Verificando ambiente e piloto…';try{let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let se=await s.auth.getSession(),session=se?.data?.session;if(!session)throw Error('Entre na conta administradora.');let origin=location.origin,secure=location.protocol==='https:';let health={configured:false,valid:false,matches:false};try{let r=await s.functions.invoke('edifiq-public-health',{body:{current_origin:origin}});if(!r.error&&r.data)health=r.data}catch(_){}let legal=false,del=false;if(secure){try{legal=(await fetch('./privacidade.html',{cache:'no-store'})).ok}catch(_){}try{del=(await fetch('./exclusao-conta.html',{cache:'no-store'})).ok}catch(_){}}let [cr,ir,vr]=await Promise.all([s.from('edifiq_piloto_clientes').select('*').order('criado_em',{ascending:true}),s.from('edifiq_piloto_incidentes').select('*').order('criado_em',{ascending:false}),s.from('edifiq_piloto_convites').select('id,cliente_piloto_id,status,resgatado_em').order('criado_em',{ascending:false})]);if(cr.error)throw cr.error;if(ir.error)throw ir.error;if(vr.error)throw vr.error;let c=cr.data||[],i=ir.data||[],v=vr.data||[],ab=i.filter(x=>x.status!=='resolvido'),crit=ab.filter(x=>['alta','critica','crítica'].includes(String(x.severidade||'').toLowerCase())),res=v.filter(x=>x.status==='resgatado').length,comp=c.filter(x=>prog(x)[0]===6).length,domainOK=secure&&health.configured&&health.valid&&health.matches&&legal&&del;let steps=[['Conta','onboarding_conta'],['Obra','onboarding_obra'],['Equipe','onboarding_equipe'],['Financeiro','onboarding_financeiro'],['Backup','onboarding_backup'],['PDF','onboarding_pdf']];let clients=c.length?c.map(x=>{let p=prog(x);return '<div class="c" style="margin-top:8px"><div style="display:flex;justify-content:space-between"><div><b>'+E(x.nome)+'</b><div class="small muted">'+E(x.email||'Sem e-mail')+' • '+E(x.status)+'</div></div><b>'+p[1]+'%</b></div><div class="steps">'+steps.map(q=>'<div class="s '+(x[q[1]]?'ok':'')+'">'+(x[q[1]]?'✓':'○')+' '+q[0]+'</div>').join('')+'</div></div>'}).join(''):'<div class="c" style="margin-top:8px"><b>Nenhum cliente piloto ainda.</b><div class="small muted">Cadastre somente o primeiro cliente autorizado.</div></div>';let status=!domainOK?'DOMÍNIO AINDA NÃO LIBERADO':!c.length?'AGUARDANDO PRIMEIRO CLIENTE':crit.length?'BLOQUEADO POR INCIDENTE':comp&&res?'PRIMEIRO CLIENTE VALIDADO':'ONBOARDING EM ANDAMENTO';b.innerHTML='<div class="c"><b>'+status+'</b><div class="small muted">O lançamento público continua bloqueado nesta etapa.</div></div><div class="g" style="margin-top:8px"><div class="c"><div class="small muted">HTTPS + domínio</div><div class="n">'+(domainOK?'✓':'!')+'</div></div><div class="c"><div class="small muted">Clientes</div><div class="n">'+c.length+'</div></div><div class="c"><div class="small muted">Convites resgatados</div><div class="n">'+res+'</div></div><div class="c"><div class="small muted">Incidentes</div><div class="n">'+ab.length+'</div></div></div><div class="c" style="margin-top:8px"><b>Domínio oficial</b><div class="small muted">HTTPS: '+(secure?'OK':'Pendente')+' • URL pública: '+(health.matches?'corresponde':'pendente')+' • Privacidade: '+(legal?'OK':'pendente')+' • Exclusão: '+(del?'OK':'pendente')+'</div></div>'+clients+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="primary" id="e27clients">👥 Clientes • Piloto</button><button class="secondary" id="e27inv">✉️ Convites</button><button class="secondary" id="e27refresh">↻ Atualizar</button></div>';document.getElementById('e27clients').onclick=()=>window.openPiloto21?.();document.getElementById('e27inv').onclick=()=>{if(!domainOK){alert('Convite real bloqueado até HTTPS, URL pública e páginas legais estarem corretos.');return}window.openConvites23?.()};document.getElementById('e27refresh').onclick=open27}catch(e){b.innerHTML='<div class="c"><b>Não foi possível carregar.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}}window.openEtapa27=open27;function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Primeiro cliente • Piloto')))return;let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>👤</span><span>Primeiro cliente • Piloto</span>';q.onclick=open27;d.appendChild(q)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);new MutationObserver(add).observe(document.documentElement,{childList:true,subtree:true});})();
+
+<style id="ed25Style">
+#edOfficial25M .modalBox{max-width:940px}
+.ed25Hero{padding:16px;border:1px solid var(--line,#343a43);border-radius:14px;margin-bottom:12px}
+.ed25Hero.ok{background:rgba(22,163,74,.10);border-color:rgba(22,163,74,.45)}
+.ed25Hero.block{background:rgba(220,38,38,.09);border-color:rgba(220,38,38,.38)}
+.ed25Grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.ed25Card{padding:14px;border:1px solid var(--line,#343a43);border-radius:14px;background:var(--card,#15181d);margin:10px 0}
+.ed25Card small{display:block;opacity:.72;margin-bottom:5px}.ed25Card b{overflow-wrap:anywhere}
+.ed25Row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line,#343a43)}
+.ed25Row:first-child{border-top:0}.ed25State{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+.ed25State.ok{background:rgba(22,163,74,.16);color:#86efac}.ed25State.warn{background:rgba(245,158,11,.16);color:#fcd34d}.ed25State.block{background:rgba(220,38,38,.16);color:#fca5a5}
+.ed25Code{padding:10px 12px;border:1px dashed var(--line,#4b5563);border-radius:10px;word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.ed25Check{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line,#343a43)}.ed25Check input{margin-top:3px;transform:scale(1.15)}
+body.edLight #edOfficial25M .ed25Card{background:#fff;border-color:#d0d5dd;color:#111827}body.edLight #edOfficial25M .ed25Row,body.edLight #edOfficial25M .ed25Check{border-color:#e5e7eb}
+body.edLight #edOfficial25M .ed25State.ok{color:#067647}body.edLight #edOfficial25M .ed25State.warn{color:#92400e}body.edLight #edOfficial25M .ed25State.block{color:#b42318}
+@media(max-width:700px){.ed25Grid{grid-template-columns:1fr}.ed25Row{align-items:flex-start;flex-direction:column}.ed25State{align-self:flex-start}}
+</style>
+<script id="ed25Script">
+(()=>{
+  'use strict';
+  const VERSION25='25.0.0';
+  const ADMIN='junioalef7@gmail.com';
+  const KEY='edifiq_stage25_first_client_checks';
+  window.EDIFIQ_VERSION='v'+VERSION25;
+  window.EDIFIQ_BUILD='2026-10-11-etapa25-endereco-oficial-primeiro-cliente';
+  const q=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const state={session:false,billing:null,invite:false,privacy:false,deletion:false,manifest:false,sw:false};
+  function env(){const p=location.protocol,h=location.hostname;const local=['localhost','127.0.0.1','::1'].includes(h);return{https:p==='https:',file:p==='file:',local,stable:p==='https:'&&!local,origin:location.origin,base:location.origin+location.pathname.replace(/[^/]*$/,'')}}
+  async function admin(){try{if(!window.sb?.auth)return null;const {data}=await sb.auth.getUser();const u=data?.user;return u?.id&&String(u.email||'').toLowerCase()===ADMIN?u:null}catch(_){return null}}
+  async function probe(path){try{const r=await fetch(path,{method:'GET',cache:'no-store',redirect:'follow'});return !!(r.ok&&/text\/html/i.test(r.headers.get('content-type')||'text/html'))}catch(_){return false}}
+  function getChecks(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(_){return{}}}
+  function setCheck(k,v){const x=getChecks();x[k]=!!v;localStorage.setItem(KEY,JSON.stringify(x));renderLast().catch(()=>{})}
+  window.ed25SetCheck=setCheck;
+  function modal(){let m=q('edOfficial25M');if(m)return m;m=document.createElement('div');m.id='edOfficial25M';m.className='modal';m.innerHTML=`<div class="modalBox"><div class="modalHead"><div><h2>🏁 Endereço oficial • Primeiro cliente</h2><p class="sub">EDIFIQ v${VERSION25} • pré-liberação do piloto real</p></div><button class="x" onclick="closeM('edOfficial25M')">×</button></div><div id="ed25Body"><div class="card"><b>Verificando ambiente…</b></div></div></div>`;document.body.appendChild(m);return m}
+  async function tests(){const e=env();state.manifest=!!document.querySelector('link[rel="manifest"]');state.sw='serviceWorker' in navigator;state.session=false;state.billing=null;state.invite=false;try{const {data}=await sb.auth.getSession();state.session=!!data?.session?.user}catch(_){ }
+    if(e.stable){state.privacy=await probe('./privacidade.html');state.deletion=await probe('./exclusao-conta.html')}else{state.privacy=false;state.deletion=false}
+    if(state.session&&window.sb?.functions){try{const r=await sb.functions.invoke('edifiq-billing-health',{body:{}});if(!r.error)state.billing=r.data||null}catch(_){ }
+      try{const r=await sb.functions.invoke('edifiq-piloto-convite-validar',{body:{token:'edifiq-stage25-probe-invalid'}});state.invite=!r.error&&(r.data?.valid===false||!!r.data?.reason)}catch(_){state.invite=false}}
+    return e}
+  const badge=(ok,w='PENDENTE')=>`<span class="ed25State ${ok?'ok':'block'}">${ok?'✓ PRONTO':'✕ '+w}</span>`;
+  function techReady(e){const c=getChecks();return !!(e.stable&&state.session&&state.manifest&&state.sw&&state.privacy&&state.deletion&&state.invite&&c.public_url_match)}
+  function clientChecklist(){const c=getChecks();const items=[['public_url_match','EDIFIQ_PUBLIC_URL confirmada neste mesmo endereço',true],['iphone_pwa','Instalação PWA testada em iPhone real'],['computer_ok','Acesso testado no computador'],['invite_other_device','Convite aberto em outro aparelho'],['account_created','Conta piloto criada pelo link'],['onboarding_seen','Cliente apareceu como Onboarding'],['first_obra','Primeira obra criada pelo cliente'],['backup_test','Backup gerado e conferido'],['pdf_test','PDF salvo em aparelho real'],['support_ready','Canal de suporte informado ao cliente']];return{c,items}}
+  function render(e){const b=q('ed25Body');if(!b)return;const {c,items}=clientChecklist();const ready=techReady(e);const done=items.filter(([k])=>!!c[k]).length;const appUrl=e.stable?e.base:'https://SEU-ENDERECO-OFICIAL/';const privacy=appUrl+'privacidade.html';const deletion=appUrl+'exclusao-conta.html';const rows=[
+    ['HTTPS oficial/estável',e.stable,e.stable?e.origin:'Abra o pacote em domínio HTTPS, não file:// ou localhost'],
+    ['Sessão administradora',state.session,state.session?'Autenticada':'Faça login com a conta administradora'],
+    ['Manifest PWA',state.manifest,state.manifest?'Detectado':'Manifest não encontrado'],
+    ['Service Worker',state.sw,state.sw?'Suportado':'Sem suporte neste navegador'],
+    ['Política pública',state.privacy,state.privacy?privacy:'privacidade.html ainda não responde'],
+    ['Exclusão pública',state.deletion,state.deletion?deletion:'exclusao-conta.html ainda não responde'],
+    ['API de convites',state.invite,state.invite?'Funções responderam':'API de convite indisponível'],
+    ['URL pública no Supabase',!!c.public_url_match,c.public_url_match?'Confirmada manualmente para este domínio':'Confirme após configurar EDIFIQ_PUBLIC_URL']
+  ];
+  b.innerHTML=`<div class="ed25Hero ${ready?'ok':'block'}"><h3 style="margin:0 0 6px">${ready?'Convite técnico liberado':'Primeiro cliente ainda bloqueado'}</h3><div>${ready?'O endereço atende os requisitos mínimos para gerar um convite piloto real.':'Conclua os itens técnicos abaixo antes de enviar o primeiro convite.'}</div></div>
+  <div class="ed25Grid"><div class="ed25Card"><small>Aplicativo</small><b>${esc(appUrl)}</b></div><div class="ed25Card"><small>Checklist primeiro cliente</small><b>${done}/${items.length}</b></div><div class="ed25Card"><small>Cobrança</small><b>${state.billing?.ready?'Pronta':'Ainda separada do convite'}</b></div></div>
+  <div class="ed25Card"><b>Liberação técnica</b>${rows.map(r=>`<div class="ed25Row"><div><b style="font-size:14px">${esc(r[0])}</b><div class="sub">${esc(r[2])}</div></div>${badge(r[1])}</div>`).join('')}</div>
+  <div class="ed25Card"><b>URLs oficiais</b><p class="sub">Esses três endereços devem permanecer estáveis.</p><div class="ed25Code">App: ${esc(appUrl)}</div><div class="ed25Code" style="margin-top:7px">Privacidade: ${esc(privacy)}</div><div class="ed25Code" style="margin-top:7px">Exclusão: ${esc(deletion)}</div><div class="ed21Toolbar"><button class="btn" onclick="navigator.clipboard?.writeText('${esc(appUrl).replace(/'/g,"\\'")}')">Copiar endereço do app</button><button class="btn" onclick="navigator.clipboard?.writeText('${esc(privacy).replace(/'/g,"\\'")}')">Copiar privacidade</button></div></div>
+  <div class="ed25Card"><b>Confirmação do domínio no Supabase</b><label class="ed25Check"><input type="checkbox" ${c.public_url_match?'checked':''} onchange="ed25SetCheck('public_url_match',this.checked)"><span><b>Confirmei que EDIFIQ_PUBLIC_URL usa este mesmo endereço HTTPS.</b><div class="sub">A Central Comercial consegue verificar se existe uma URL válida, mas não expõe o valor configurado. Esta confirmação evita retorno de pagamento para domínio errado.</div></span></label></div>
+  <div class="ed25Card"><b>Checklist do primeiro cliente piloto</b><p class="sub">Os itens abaixo acompanham o teste real e ficam apenas neste aparelho administrativo.</p>${items.slice(1).map(([k,label])=>`<label class="ed25Check"><input type="checkbox" ${c[k]?'checked':''} onchange="ed25SetCheck('${k}',this.checked)"><span>${esc(label)}</span></label>`).join('')}</div>
+  <div class="ed21Toolbar"><button class="btn" onclick="openInvite23&&openInvite23()" ${ready?'':'disabled'}>✉️ Abrir convites</button><button class="btn" onclick="openPilotLaunch21&&openPilotLaunch21()">🚀 Clientes • Piloto</button><button class="btn" onclick="openMetrics22&&openMetrics22()">📊 Métricas</button><button class="btn" onclick="openOfficial25()">↻ Verificar novamente</button></div>`}
+  async function renderLast(){const m=q('edOfficial25M');if(!m?.classList.contains('open'))return;const e=await tests();render(e)}
+  window.openOfficial25=async function(){const u=await admin();if(!u){alert('Área disponível somente para a conta administradora do EDIFIQ.');return}const m=modal();m.classList.add('open');q('ed25Body').innerHTML='<div class="card"><b>Verificando ambiente…</b></div>';const e=await tests();render(e)};
+  const previousGenerate=window.ed23Generate;
+  if(typeof previousGenerate==='function')window.ed23Generate=async function(){const e=await tests();if(!techReady(e)){try{await openOfficial25()}catch(_){ }alert('Primeiro convite real bloqueado: conclua a liberação técnica em Endereço oficial • Primeiro cliente.');return}return previousGenerate.apply(this,arguments)};
+  async function menu(){if(q('edOfficialMenu25'))return;const u=await admin();if(!u)return;const anchor=q('edDeployMenu24')||q('edInviteMenu23')||document.querySelector('.edifiqDrawerAccount');if(!anchor)return;const bt=document.createElement('button');bt.id='edOfficialMenu25';bt.className='edifiqDataRow';bt.type='button';bt.setAttribute('onclick','openOfficial25()');bt.innerHTML='<span>🏁</span><b>Endereço oficial • Primeiro cliente</b><span class="edifiqChevron">›</span>';anchor.classList.contains('edifiqDrawerAccount')?anchor.insertAdjacentElement('beforebegin',bt):anchor.insertAdjacentElement('afterend',bt)}
+  function init(){setTimeout(menu,1100);setTimeout(menu,2300)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();new MutationObserver(()=>{if(!q('edOfficialMenu25'))setTimeout(menu,350)}).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+<!-- EDIFIQ V8 — sincronização verificada + backup integral -->
+<script id="edifiq-sync-backup-v8">
+(function(){
+'use strict';
+if(window.__EDIFIQ_SYNC_BACKUP_V8__)return;
+window.__EDIFIQ_SYNC_BACKUP_V8__=true;
+
+const V8_CLOUD_TABLES=['obras','funcionarios','checklist','servicos_adicionais','servicos','terceirizados','orcamentos','diarias','gastos','pagamentos','faltas','adiantamentos','diario','presencas','pagamentos_terceirizados'];
+const V8_SCOPE_TIMEOUT=9000;
+let v8ScopeFlight=null;
+let v8SyncFlight=null;
+let v8VerifyTimer=null;
+const baseLoadCloudV8=loadCloud;
+const baseStartRealtimeV8=startEdifiqRealtime;
+const baseStopRealtimeV8=stopEdifiqRealtime;
+const baseSyncStatusV8=edifiqUpdateSyncStatus;
+const baseCompanyLoaderV8=edifiqCarregarEmpresaAtiva;
+const baseExportV8=window.exportFull;
+const baseImportV8=window.importBackupData;
+
+function v8copy(v){try{return JSON.parse(JSON.stringify(v));}catch(_){return v}}
+function v8uid(){try{return edifiqSanitizeScope(user?.id||'')}catch(_){return String(user?.id||'')}}
+function v8scope(){try{return edifiqStorageScope()||''}catch(_){return ''}}
+function v8owner(){try{return String(edifiqEmpresaUserId()||'')}catch(_){return String(user?.id||'')}}
+function v8pendingCount(){
+  let n=0;
+  try{n+=getEdifiqPendingUpdates().length+getEdifiqDeleteQueue().length}catch(_){}
+  try{for(const rows of Object.values(D||{}))if(Array.isArray(rows))n+=rows.filter(r=>r&&r._sync_pendente).length}catch(_){}
+  return n;
+}
+function v8tableCounts(data){const out={};for(const k of Object.keys(D||{}))out[k]=Array.isArray(data?.[k])?data[k].length:0;return out}
+function v8total(counts){return Object.values(counts||{}).reduce((a,n)=>a+(Number(n)||0),0)}
+function v8stableKey(table,row,scopeHint=''){
+  if(!row||typeof row!=='object')return 'x:'+String(row);
+  if(row.operation_id)return 'op:'+String(row.operation_id);
+  if(row.client_operation_id)return 'cop:'+String(row.client_operation_id);
+  if(row.id!=null)return 'id:'+String(row.user_id||scopeHint||'')+':'+String(row.id);
+  try{return 'raw:'+edifiqStableOperationId('v8-backup',table,scopeHint,JSON.stringify(row))}catch(_){return 'raw:'+JSON.stringify(row)}
+}
+function v8mergeTables(sources){
+  const result={};for(const k of Object.keys(D||{}))result[k]=[];
+  const maps={};for(const k of Object.keys(result))maps[k]=new Map();
+  for(const src of sources||[]){
+    if(!src?.data)continue;const hint=String(src.scope||'');
+    for(const k of Object.keys(result)){
+      const rows=Array.isArray(src.data[k])?src.data[k]:[];
+      for(const row of rows){
+        const key=v8stableKey(k,row,hint),prev=maps[k].get(key);
+        maps[k].set(key,prev?{...prev,...v8copy(row)}:v8copy(row));
+      }
+    }
+  }
+  for(const k of Object.keys(result))result[k]=[...maps[k].values()];
+  return result;
+}
+function v8readLocalPayloadByScope(scope){
+  if(!scope)return null;
+  const key=LOCAL_KEY_BASE+'::'+scope;let base={};
+  try{base=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch(_){base={}}
+  for(const table of Object.keys(D||{})){
+    try{const raw=localStorage.getItem(key+'__'+table);if(raw){const rows=JSON.parse(raw);if(Array.isArray(rows)&&(!Array.isArray(base[table])||rows.length>base[table].length))base[table]=rows}}catch(_){}
+  }
+  return Object.keys(D||{}).some(k=>Array.isArray(base[k])&&base[k].length)?base:null;
+}
+async function v8readDurableByScope(scope){
+  if(!scope)return {current:null,previous:null};
+  try{
+    const db=await openEdifiqStateDB();
+    const get=id=>new Promise((resolve,reject)=>{const q=db.transaction(EDIFIQ_STATE_STORE,'readonly').objectStore(EDIFIQ_STATE_STORE).get(id);q.onsuccess=()=>resolve(q.result?.payload||null);q.onerror=()=>reject(q.error)});
+    let current=null,previous=null;
+    try{current=await get(EDIFIQ_STATE_ID+'::'+scope)}catch(_){}
+    try{previous=await get('anterior::'+scope)}catch(_){}
+    try{db.close()}catch(_){}
+    return {current,previous};
+  }catch(_){return {current:null,previous:null}}
+}
+function v8candidateScopes(){
+  const uid=v8uid(),cur=v8scope(),set=new Set();if(cur)set.add(cur);if(uid)set.add(uid+'__'+uid);
+  return [...set];
+}
+async function v8captureRecoverySources(){
+  const out=[{kind:'memory',scope:v8scope(),data:v8copy(D)}];
+  for(const s of v8candidateScopes()){
+    const local=v8readLocalPayloadByScope(s);if(local)out.push({kind:'localStorage',scope:s,data:local});
+    const durable=await v8readDurableByScope(s);if(durable.current)out.push({kind:'indexedDB-current',scope:s,data:durable.current});if(durable.previous)out.push({kind:'indexedDB-previous',scope:s,data:durable.previous});
+  }
+  return out;
+}
+async function v8resolveCanonicalScope(){
+  if(!sb||!user?.id||!navigator.onLine)return v8owner();
+  if(v8ScopeFlight)return v8ScopeFlight;
+  v8ScopeFlight=(async()=>{
+    let resolved='';
+    try{
+      const rpc=sb.rpc('edifiq_empresa_atual');
+      const result=await Promise.race([rpc,new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout contexto empresa')),V8_SCOPE_TIMEOUT))]);
+      if(!result?.error&&result?.data)resolved=String(result.data);
+    }catch(e){console.warn('EDIFIQ V8 contexto da empresa:',e?.message||e)}
+    if(!resolved)return v8owner();
+    const previous=String(edifiqEmpresaAtivaId||'');
+    if(previous!==resolved){
+      try{saveLocalData();await edifiqStateSaveQueue}catch(_){}
+      try{baseStopRealtimeV8()}catch(_){}
+      edifiqEmpresaAtivaId=resolved;edifiqRememberEmpresaForUser(user.id,resolved);edifiqApplyScopedKeys();
+      try{await edifiqLoadScopedLocalState()}catch(e){console.warn('EDIFIQ V8 troca de escopo:',e)}
+      window.__edifiqLastSyncComplete=false;window.__edifiqLastSyncVerified=false;
+    }else{edifiqRememberEmpresaForUser(user.id,resolved)}
+    return resolved;
+  })();
+  try{return await v8ScopeFlight}finally{v8ScopeFlight=null}
+}
+// Revalida o contexto online. A versão antiga aceitava um cache local como definitivo,
+// o que podia fazer celular e computador consultarem user_id diferentes.
+edifiqCarregarEmpresaAtiva=async function(){
+  const resolved=await v8resolveCanonicalScope();
+  if(resolved)return resolved;
+  return baseCompanyLoaderV8.apply(this,arguments);
+};
+
+async function v8fetchRemoteTable(table){
+  if(!sb||!user?.id||!navigator.onLine)return null;
+  const owner=v8owner();const rows=[];let offset=0;
+  while(true){
+    const r=await sb.from(table).select('*').eq('user_id',owner).order('id',{ascending:true}).range(offset,offset+499);
+    if(r.error)throw r.error;if(!Array.isArray(r.data))throw new Error('Resposta inválida em '+table);
+    rows.push(...r.data);offset+=r.data.length;if(r.data.length===0)break;
+  }
+  return rows;
+}
+function v8paidFromFields(d){
+  const status=String(d?.status||'').trim().toLowerCase();if(['pago','paid','quitado','liquidado'].includes(status)||d?.pago===true||d?.paga===true)return true;
+  const q=Math.max(.5,Number(d?.qtd??d?.quantidade??1)||1),qp=Number(d?.qtd_paga||0),v=Number(typeof diariaValor==='function'?diariaValor(d):0),vb=Number(d?.valor_baixado??d?.valor_pago??0);
+  return qp>=q||(v>0&&vb>=v-.01);
+}
+async function v8promoteLegacyAux(){
+  const owner=v8owner();
+  // Funcionário -> obra: promove o vínculo local antigo para a linha sincronizada.
+  try{const map=localFuncObras();for(const f of D.funcionarios||[]){const legacy=map[String(f.id)];if(!f.obra_id&&legacy&&!String(f.id).startsWith('local_')){try{await updateRow('funcionarios',f.id,{obra_id:legacy})}catch(_){}}}}catch(_){}
+  // Diárias pagas: se um aparelho antigo só marcou o mapa local, converte para campos de nuvem.
+  try{const paid=getPaidDiariasMap();for(const d of D.diarias||[]){if(!paid[String(d.id)]||v8paidFromFields(d)||String(d.id).startsWith('local_'))continue;const q=Number(d.qtd??d.quantidade??1)||1,v=Number(typeof diariaValor==='function'?diariaValor(d):0);try{await updateRow('diarias',d.id,{status:'pago',qtd_paga:q,valor_baixado:v,valor_pago:v,pago_em:d.pago_em||d.data_pagamento||new Date().toISOString().slice(0,10)})}catch(_){}}}catch(_){}
+  // Vales: o maior valor aplicado conhecido nunca é perdido e passa a ser compartilhado pela nuvem.
+  try{
+    const applied=getAdvanceApplied();
+    for(const g of D.gastos||[]){
+      const local=Number(applied[String(g.id)]||0),remote=Number(g.valor_baixado||0);
+      if(local>remote+.009&&!String(g.id).startsWith('local_')){
+        const total=Number(g.valor||0),next=Math.min(total||local,local);
+        try{await updateRow('gastos',g.id,{valor_baixado:next,aplicado:total>0&&next>=total-.01,status:total>0&&next>=total-.01?'pago':(g.status||'pendente')})}catch(_){}
+      }
+    }
+  }catch(_){}
+  // Serviços extras legados do localStorage viram registros sincronizáveis.
+  try{
+    const legacy=getServices()||{};
+    for(const [obraId,list] of Object.entries(legacy))for(const s of (Array.isArray(list)?list:[])){
+      const fingerprint=[String(obraId),String(s.id||''),String(s.data||''),String(s.descricao||s.nome||''),Number(s.valor||0)].join('|');
+      const exists=(D.servicos_adicionais||[]).some(x=>String(x.obra_id)===String(obraId)&&((s.id&&String(x.id)===String(s.id))||(String(x.data||'')===String(s.data||'')&&String(x.descricao||x.nome||'')===String(s.descricao||s.nome||'')&&Number(x.valor||0)===Number(s.valor||0))));
+      if(!exists){try{await insertRow('servicos_adicionais',{obra_id:obraId,descricao:s.descricao||s.nome||'Serviço adicional',valor:Number(s.valor||0),data:s.data||new Date().toISOString().slice(0,10),observacao:s.observacao||'',operation_id:s.operation_id||edifiqStableOperationId('legacy-service',owner,fingerprint)})}catch(_){}}
+    }
+  }catch(_){}
+}
+function v8rebuildAuxFromCanonical(){
+  try{const map={};for(const f of D.funcionarios||[])if(f?.id!=null&&f.obra_id)map[String(f.id)]=f.obra_id;localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(map))}catch(_){}
+  try{const paid={};for(const d of D.diarias||[])if(d?.id!=null&&v8paidFromFields(d))paid[String(d.id)]=true;localStorage.setItem(PAID_DIARIAS_KEY,JSON.stringify(paid))}catch(_){}
+  try{const adv={};for(const g of D.gastos||[]){const n=Number(g?.valor_baixado||0);if(g?.id!=null&&n>0)adv[String(g.id)]=n;}localStorage.setItem(ADV_KEY,JSON.stringify(adv))}catch(_){}
+  try{const svc={};for(const s of D.servicos_adicionais||[]){const oid=String(s?.obra_id??'');if(!oid)continue;(svc[oid]||(svc[oid]=[])).push({...s,nome:s.nome||s.descricao})}saveServices(svc)}catch(_){}
+}
+async function v8verifyRemote(){
+  if(!sb||!user?.id||!navigator.onLine)return {ok:false,offline:true,mismatch:[]};
+  const owner=v8owner(),mismatch=[];
+  for(const table of V8_CLOUD_TABLES){
+    try{
+      const r=await sb.from(table).select('id',{count:'exact',head:true}).eq('user_id',owner);if(r.error)throw r.error;
+      const local=(D[table]||[]).filter(x=>!String(x.id).startsWith('local_')&&(!x.user_id||String(x.user_id)===owner)).length;
+      if(Number(r.count||0)!==local)mismatch.push({table,local,remote:Number(r.count||0)});
+    }catch(e){mismatch.push({table,error:String(e?.message||e)})}
+  }
+  const pending=v8pendingCount();return {ok:!mismatch.length&&!pending,mismatch,pending};
+}
+async function v8fullSync(){
+  if(v8SyncFlight)return v8SyncFlight;
+  v8SyncFlight=(async()=>{
+    if(!sb||!user?.id||!navigator.onLine){window.__edifiqLastSyncVerified=false;return false}
+    await v8resolveCanonicalScope();
+    await v8promoteLegacyAux();
+    for(let pass=0;pass<3;pass++){
+      try{await edifiqFlushWrites()}catch(e){console.warn('EDIFIQ V8 envio:',e)}
+      try{await baseLoadCloudV8()}catch(e){console.warn('EDIFIQ V8 leitura:',e)}
+      if(v8pendingCount()===0)break;
+    }
+    v8rebuildAuxFromCanonical();saveLocalData();try{await edifiqStateSaveQueue}catch(_){}
+    let audit=await v8verifyRemote();
+    if(!audit.ok&&!audit.offline){
+      try{await baseLoadCloudV8()}catch(_){}
+      audit=await v8verifyRemote();
+    }
+    window.__edifiqLastSyncVerified=!!audit.ok;window.__edifiqSyncAuditV8=audit;
+    try{baseSyncStatusV8()}catch(_){}
+    const el=document.getElementById('edifiqSyncStatus');
+    if(el&&audit.ok){el.textContent='☁️ Sincronizado e conferido';el.className='ok'}
+    else if(el&&navigator.onLine){el.textContent=audit.pending?'↻ Alterações aguardando sincronização':'⚠️ Conferindo dados entre aparelhos';el.className='warn'}
+    return audit.ok;
+  })();
+  try{return await v8SyncFlight}finally{v8SyncFlight=null}
+}
+window.edifiqForceFullSync=v8fullSync;
+
+loadCloud=async function(){return await v8fullSync()};
+edifiqUpdateSyncStatus=function(){
+  try{baseSyncStatusV8()}catch(_){}
+  const el=document.getElementById('edifiqSyncStatus');if(!el)return;
+  if(window.__edifiqLastSyncVerified===true&&!v8pendingCount()){el.textContent='☁️ Sincronizado e conferido';el.className='ok'}
+  else if(navigator.onLine&&el.textContent==='☁️ Sincronizado'){el.textContent='↻ Conferindo sincronização';el.className='warn'}
+};
+startEdifiqRealtime=function(){
+  const r=baseStartRealtimeV8.apply(this,arguments);
+  clearInterval(v8VerifyTimer);v8VerifyTimer=setInterval(()=>{if(!document.hidden&&navigator.onLine)v8fullSync().catch(()=>{})},15000);
+  setTimeout(()=>v8fullSync().catch(()=>{}),300);
+  return r;
+};
+stopEdifiqRealtime=function(){clearInterval(v8VerifyTimer);v8VerifyTimer=null;return baseStopRealtimeV8.apply(this,arguments)};
+window.addEventListener('online',()=>setTimeout(()=>v8fullSync().catch(()=>{}),350));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&navigator.onLine)setTimeout(()=>v8fullSync().catch(()=>{}),250)});
+window.addEventListener('focus',()=>{if(navigator.onLine)setTimeout(()=>v8fullSync().catch(()=>{}),250)});
+
+async function v8sha256(text){
+  try{if(window.crypto?.subtle&&window.TextEncoder){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(text)));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}}catch(_){}
+  let h=2166136261,s=String(text);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return 'fnv1a-'+(h>>>0).toString(16).padStart(8,'0');
+}
+function v8backupHashPayload(backup){const x=v8copy(backup);delete x.integrity;return JSON.stringify(x)}
+async function v8verifyBackup(backup){
+  if(!backup||backup.app!=='EDIFIQ'||!backup.data||typeof backup.data!=='object')throw new Error('Arquivo não reconhecido como backup EDIFIQ.');
+  for(const [k,v] of Object.entries(backup.data))if(v!=null&&!Array.isArray(v))throw new Error('Backup inválido: '+k+' não é uma lista.');
+  if(backup.integrity?.value){const got=await v8sha256(v8backupHashPayload(backup));if(String(got)!==String(backup.integrity.value))throw new Error('A verificação de integridade falhou. O arquivo pode estar incompleto ou alterado.');}
+  const counts=v8tableCounts(backup.data);if(backup.manifest?.tables){for(const [k,n] of Object.entries(backup.manifest.tables))if(Number(n)!==Number(counts[k]||0))throw new Error('Backup incompleto: a contagem de '+k+' não confere.');}
+  return {counts,total:v8total(counts),photos:Array.isArray(backup.fotos)?backup.fotos.length:0,documents:Array.isArray(backup.data.documentos)?backup.data.documentos.length:0,verified:!!backup.integrity?.value};
+}
+async function v8exportFull(){
+  const recoverySources=await v8captureRecoverySources();
+  try{saveLocalData();await edifiqStateSaveQueue}catch(_){}
+  const warnings=[];let remoteSources=[];
+  if(sb&&user?.id&&navigator.onLine){
+    try{await v8resolveCanonicalScope();await edifiqFlushWrites()}catch(e){warnings.push('Existem alterações locais ainda não enviadas à nuvem.')}
+    for(const table of V8_CLOUD_TABLES){
+      try{const rows=await v8fetchRemoteTable(table);remoteSources.push({kind:'cloud-'+table,scope:v8scope(),data:{[table]:rows}})}catch(e){warnings.push('Não foi possível conferir '+table+' na nuvem.')}
+    }
+  }else warnings.push('Backup criado sem conferência da nuvem porque o aplicativo está offline.');
+  // O backup reúne memória + localStorage + IndexedDB atual/anterior + nuvem. Nenhuma fonte isolada pode cortar registros.
+  const currentSources=await v8captureRecoverySources();
+  const data=v8mergeTables([...recoverySources,...currentSources,...remoteSources]);
+  let fotos=[],documentos=[];
+  try{fotos=await getAllPhotosDB()}catch(e){warnings.push('Fotos locais indisponíveis.')}
+  try{documentos=await edifiqExportDocumentosComArquivo();if(Array.isArray(documentos)&&documentos.length){const by=new Map((data.documentos||[]).map(x=>[String(x.id),x]));for(const d of documentos)by.set(String(d.id),{...(by.get(String(d.id))||{}),...d});data.documentos=[...by.values()]}}catch(e){warnings.push('Alguns documentos não puderam incluir o arquivo.')}
+  const counts=v8tableCounts(data),now=new Date().toISOString();
+  const backup={app:'EDIFIQ',version:'8.0',backup_id:'bkp8_'+Date.now()+'_'+Math.random().toString(36).slice(2,10),date:now,scope_hint:v8scope(),manifest:{tables:counts,total_records:v8total(counts),photos:fotos.length,documents:(data.documentos||[]).length,recovery_sources:recoverySources.length+currentSources.length,cloud_checked:!!(sb&&user?.id&&navigator.onLine)},data,fotos,funcionarioObras:v8copy(localFuncObras()),adiantamentosAplicados:v8copy(getAdvanceApplied()),servicosAdicionais:v8copy(getServices()),diariasBaixadas:v8copy(getPaidDiariasMap()),syncConflicts:v8copy(getEdifiqSyncConflicts?.()||[]),recovery:{sources:[...recoverySources,...currentSources].map(s=>({kind:s.kind,scope:s.scope,data:s.data})),pendingUpdates:v8copy(getEdifiqPendingUpdates?.()||[]),deleteQueue:v8copy(getEdifiqDeleteQueue?.()||[])},diagnostics:{pending:v8pendingCount(),syncVerified:window.__edifiqLastSyncVerified===true,audit:v8copy(window.__edifiqSyncAuditV8||null)},warnings:[...new Set(warnings)]};
+  backup.integrity={algorithm:'SHA-256',value:await v8sha256(v8backupHashPayload(backup))};
+  const filename='EDIFIQ_backup_COMPLETO_'+now.slice(0,10)+'.json';downloadFile(JSON.stringify(backup,null,2),filename,'application/json');
+  const status=document.getElementById('backupStatus');if(status)status.textContent=`Backup protegido: ${backup.manifest.total_records} registros, ${fotos.length} foto(s). ${warnings.length?'Com '+warnings.length+' aviso(s).':'Integridade conferida.'}`;
+  toast(warnings.length?'Backup criado com proteção extra; veja os avisos na Central de Backup.':'Backup completo criado, conferido e protegido.');
+  return backup;
+}
+function v8mergeAuxMap(target,source){const out={...(target||{})};for(const [k,v] of Object.entries(source||{}))if(out[k]==null)out[k]=v;return out}
+function v8effectiveBackup(backup){
+  const sources=[{kind:'main',scope:backup.scope_hint||'',data:backup.data||{}}];
+  for(const s of (backup.recovery?.sources||[]))if(s?.data)sources.push(s);
+  const data=v8mergeTables(sources);
+  const aux={funcionarioObras:{},adiantamentosAplicados:{},servicosAdicionais:{},diariasBaixadas:{}};
+  Object.assign(aux.funcionarioObras,backup.funcionarioObras||{});Object.assign(aux.adiantamentosAplicados,backup.adiantamentosAplicados||{});Object.assign(aux.servicosAdicionais,backup.servicosAdicionais||{});Object.assign(aux.diariasBaixadas,backup.diariasBaixadas||{});
+  for(const s of (backup.recovery?.sources||[])){
+    const a=s?.data?._edifiqAux;if(!a)continue;
+    aux.funcionarioObras=v8mergeAuxMap(aux.funcionarioObras,a.funcionarioObras);aux.adiantamentosAplicados=v8mergeAuxMap(aux.adiantamentosAplicados,a.adiantamentosAplicados);aux.servicosAdicionais=v8mergeAuxMap(aux.servicosAdicionais,a.servicosAdicionais);aux.diariasBaixadas=v8mergeAuxMap(aux.diariasBaixadas,a.diariasBaixadas);
+  }
+  return {...backup,data,...aux,syncConflicts:backup.syncConflicts||[]};
+}
+async function v8auditImported(effective){
+  const missing=[];
+  for(const [table,rows] of Object.entries(effective.data||{})){
+    if(!Array.isArray(rows)||!Array.isArray(D[table]))continue;
+    const ops=new Set((D[table]||[]).map(r=>String(r.operation_id||'')));const ids=new Set((D[table]||[]).map(r=>String(r.id||'')));
+    for(const row of rows){
+      const op=String(row?.operation_id||edifiqStableOperationId('backup',table,row?.user_id||effective.app,row?.id??JSON.stringify(row||{})));
+      if(!ops.has(op)&&row?.id!=null&&!ids.has(String(row.id)))missing.push(table+':'+String(row.id));
+    }
+  }
+  return missing;
+}
+async function v8importBackupData(backup){
+  const info=await v8verifyBackup(backup),effective=v8effectiveBackup(backup);
+  // A restauração completa é primeiro confirmada localmente e de forma durável; só depois é enviada à nuvem.
+  await edifiqImportComplete(effective);
+  const missing=await v8auditImported(effective);if(missing.length)throw new Error('A restauração local não confirmou '+missing.length+' registro(s). Nenhum dado anterior foi apagado.');
+  let synced=false;try{synced=await v8fullSync()}catch(_){}
+  return {...info,totalRestored:v8total(v8tableCounts(effective.data)),synced};
+}
+async function v8readBackupFile(file){return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>{try{resolve(JSON.parse(r.result))}catch(e){reject(e)}};r.onerror=()=>reject(r.error||new Error('Falha na leitura'));r.readAsText(file)})}
+async function v8importFile(event){
+  const file=event?.target?.files?.[0];if(!file)return;
+  try{
+    const backup=await v8readBackupFile(file),info=await v8verifyBackup(backup);
+    if(!confirm(`Importar este backup?\n\n${info.total} registros detectados\n${info.photos} foto(s)\n\nA restauração será gravada primeiro no aparelho e depois sincronizada com a nuvem. Os dados atuais não serão apagados.`))return;
+    const result=await v8importBackupData(backup);const status=document.getElementById('backupStatus');
+    if(status)status.textContent=result.synced?`Backup restaurado e sincronizado: ${result.totalRestored} registros processados.`:`Backup restaurado no aparelho: ${result.totalRestored} registros. A sincronização com a nuvem continuará automaticamente.`;
+    toast(result.synced?'Backup restaurado e conferido entre os aparelhos.':'Backup restaurado integralmente no aparelho; sincronização pendente.');
+  }catch(e){console.error('EDIFIQ V8 importação',e);const status=document.getElementById('backupStatus');if(status)status.textContent='Falha na importação: '+(e?.message||'arquivo incompatível');toast(e?.message||'Não foi possível importar o backup.')}finally{try{event.target.value=''}catch(_){}}
+}
+window.exportFull=v8exportFull;window.importBackupData=v8importBackupData;window.importBackup=v8importFile;window.importRelatorioData=v8importFile;window.edifiqVerifyBackup=v8verifyBackup;
+
+setTimeout(()=>{if(user?.id&&navigator.onLine)v8fullSync().catch(()=>{})},800);
+})();
+
+</script>
+<!-- EDIFIQ V9 — backup financeiro exato + restauração sem duplicação -->
+<script id="edifiq-backup-v9-financial-integrity">
+(function(){
+'use strict';
+if(window.__EDIFIQ_BACKUP_V9__)return;
+window.__EDIFIQ_BACKUP_V9__=true;
+
+const V9_VERSION='9.0';
+const V9_CLOUD_TABLES=(typeof V8_CLOUD_TABLES!=='undefined'?V8_CLOUD_TABLES:['obras','funcionarios','checklist','servicos_adicionais','servicos','terceirizados','orcamentos','diarias','gastos','pagamentos','faltas','adiantamentos','diario','presencas','pagamentos_terceirizados']);
+const V9_AUX_KEYS=[FUNC_OBRA_KEY,ADV_KEY,SERVICE_KEY,PAID_DIARIAS_KEY,PENDING_UPDATES_KEY,DELETE_QUEUE_KEY,SYNC_CONFLICTS_KEY];
+const v9BaseStopRealtime=stopEdifiqRealtime;
+const v9BaseStartRealtime=startEdifiqRealtime;
+const v9BaseVerifyBackup=window.edifiqVerifyBackup;
+const v9BaseFullSync=window.edifiqForceFullSync;
+
+function v9copy(v){try{return JSON.parse(JSON.stringify(v));}catch(_){return v}}
+function v9money(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+function v9owner(){try{return String(edifiqEmpresaUserId()||user?.id||'')}catch(_){return String(user?.id||'')}}
+function v9scope(){try{return String(edifiqStorageScope()||'')}catch(_){return ''}}
+function v9readJSON(key,fallback){try{const x=JSON.parse(localStorage.getItem(key)||'');return x??fallback}catch(_){return fallback}}
+function v9writeJSON(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch(_){}}
+function v9rows(data,table){return Array.isArray(data?.[table])?data[table]:[]}
+function v9op(table,row,scopeHint=''){
+  return String(row?.operation_id||row?.client_operation_id||edifiqStableOperationId('v9-restore',table,row?.user_id||scopeHint||'EDIFIQ',row?.id??JSON.stringify(row||{})));
+}
+function v9sameIdentity(table,a,b){
+  if(!a||!b)return false;
+  const ao=String(a.operation_id||a.client_operation_id||''),bo=String(b.operation_id||b.client_operation_id||'');
+  if(ao&&bo&&ao===bo)return true;
+  return a.id!=null&&b.id!=null&&String(a.id)===String(b.id);
+}
+function v9dedupeData(data){
+  const out={};
+  for(const table of Object.keys(D||{})){
+    const m=new Map();
+    for(const row of v9rows(data,table)){
+      const key=row?.operation_id?'op:'+row.operation_id:row?.client_operation_id?'cop:'+row.client_operation_id:row?.id!=null?'id:'+String(row.id):'raw:'+edifiqStableOperationId('v9-dedupe',table,JSON.stringify(row||{}));
+      if(!m.has(key))m.set(key,v9copy(row));
+      else m.set(key,{...m.get(key),...v9copy(row)});
+    }
+    out[table]=[...m.values()];
+  }
+  return out;
+}
+function v9latestRecoverySource(backup){
+  const srcs=(backup?.recovery?.sources||[]).filter(s=>s?.data);
+  const memories=srcs.filter(s=>String(s.kind||'').toLowerCase()==='memory');
+  if(memories.length)return memories[memories.length-1];
+  const preferred=srcs.filter(s=>['indexeddb-current','localstorage'].includes(String(s.kind||'').toLowerCase()));
+  preferred.sort((a,b)=>Number(a?.data?._edifiqSavedAt||0)-Number(b?.data?._edifiqSavedAt||0));
+  return preferred[preferred.length-1]||null;
+}
+function v9authoritativeData(backup){
+  const ver=parseFloat(String(backup?.version||'0'))||0;
+  if(ver>=9)return v9dedupeData(backup.data||{});
+  // V8 guardava snapshots antigos como fontes de recuperação e depois fazia união deles.
+  // Para restaurar o que o usuário realmente via no momento do backup, usamos o snapshot de memória mais recente.
+  if(ver>=8){const src=v9latestRecoverySource(backup);if(src?.data)return v9dedupeData(src.data)}
+  return v9dedupeData(backup.data||{});
+}
+function v9auxFromBackup(backup){
+  return {
+    funcionarioObras:v9copy(backup?.funcionarioObras||{}),
+    adiantamentosAplicados:v9copy(backup?.adiantamentosAplicados||{}),
+    servicosAdicionais:v9copy(backup?.servicosAdicionais||{}),
+    diariasBaixadas:v9copy(backup?.diariasBaixadas||{})
+  };
+}
+function v9teamSnapshot(data,aux){
+  const oldData={},oldAux={};
+  for(const k of Object.keys(D||{})){oldData[k]=D[k];D[k]=v9copy(v9rows(data,k))}
+  for(const k of [FUNC_OBRA_KEY,ADV_KEY,SERVICE_KEY,PAID_DIARIAS_KEY])oldAux[k]=localStorage.getItem(k);
+  try{
+    v9writeJSON(FUNC_OBRA_KEY,aux?.funcionarioObras||{});v9writeJSON(ADV_KEY,aux?.adiantamentosAplicados||{});v9writeJSON(SERVICE_KEY,aux?.servicosAdicionais||{});v9writeJSON(PAID_DIARIAS_KEY,aux?.diariasBaixadas||{});
+    const ds=(typeof edifiqDiariasCanonicas==='function'?edifiqDiariasCanonicas():D.diarias||[]);
+    const paid=ds.filter(d=>typeof diariaEstaPaga==='function'?diariaEstaPaga(d):/^(pago|paid|quitado|liquidado)$/i.test(String(d?.status||'')));
+    const paidDays=paid.reduce((a,d)=>a+Number(d?.valor_baixado ?? d?.valor_pago ?? (typeof diariaValor==='function'?diariaValor(d):0) ?? 0),0);
+    const statuses=new Set(['pago','paid','quitado','liquidado']);
+    const extras=(typeof getFuncionarioExtrasAll==='function'?getFuncionarioExtrasAll():[]);
+    const paidExtras=extras.filter(x=>statuses.has(String(x?.status||'').toLowerCase())).reduce((a,x)=>a+Number(x?.valor||0),0);
+    let vales=0;const perEmployee={};
+    for(const f of (D.funcionarios||[])){
+      const fid=String(f.id),fds=paid.filter(d=>String(d.funcionario_id)===fid),fp=fds.reduce((a,d)=>a+Number(d?.valor_baixado ?? d?.valor_pago ?? (typeof diariaValor==='function'?diariaValor(d):0) ?? 0),0);
+      const fe=extras.filter(x=>String(x?.funcionario_id??x?.funcionarioId??'')===fid&&statuses.has(String(x?.status||'').toLowerCase())).reduce((a,x)=>a+Number(x?.valor||0),0);
+      const fv=(typeof getEmployeeAdvances==='function'?getEmployeeAdvances(f.id):[]).reduce((a,x)=>a+Number(x?.disponivel||0),0);vales+=fv;
+      perEmployee[fid]={quitado:Math.round((fp+fe)*100)/100,vales:Math.round(fv*100)/100};
+    }
+    return {totalQuitado:Math.round((paidDays+paidExtras)*100)/100,valesAbertos:Math.round(vales*100)/100,perEmployee};
+  }finally{
+    for(const k of Object.keys(oldData))D[k]=oldData[k];
+    for(const [k,v] of Object.entries(oldAux)){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(_){}}
+  }
+}
+function v9currentTeamSnapshot(){return v9teamSnapshot(v9copy(D),{funcionarioObras:localFuncObras(),adiantamentosAplicados:getAdvanceApplied(),servicosAdicionais:getServices(),diariasBaixadas:getPaidDiariasMap()})}
+function v9snapshotMatches(a,b){return Math.abs(Number(a?.totalQuitado||0)-Number(b?.totalQuitado||0))<.01&&Math.abs(Number(a?.valesAbertos||0)-Number(b?.valesAbertos||0))<.01}
+function v9captureLocal(){
+  const aux={};for(const k of V9_AUX_KEYS)aux[k]=localStorage.getItem(k);
+  return {data:cloneState(),aux};
+}
+function v9restoreLocal(snap){
+  for(const k of Object.keys(D))delete D[k];Object.assign(D,v9copy(snap.data||{}));
+  for(const [k,v] of Object.entries(snap.aux||{})){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(_){}}
+  saveLocalData();
+}
+function v9buildMaps(target,current,backup){
+  const maps={},ops={};
+  for(const table of Object.keys(D||{})){
+    maps[table]={};ops[table]={};const cur=v9rows(current,table);
+    for(const row of v9rows(target,table)){
+      const op=v9op(table,row,backup?.scope_hint||'');
+      const found=cur.find(x=>v9sameIdentity(table,row,x));
+      const id=found?.id??('local_'+op);
+      if(row?.id!=null)maps[table][String(row.id)]=id;
+      ops[table][String(row?.id??op)]={op,id,found};
+    }
+  }
+  return {maps,ops};
+}
+function v9mapAux(aux,maps){
+  const func={},adv={},paid={},svc={};
+  for(const [id,val] of Object.entries(aux?.funcionarioObras||{})){const k=maps.funcionarios?.[String(id)]??id;func[String(k)]=maps.obras?.[String(val)]??val}
+  for(const [id,val] of Object.entries(aux?.adiantamentosAplicados||{})){const k=maps.gastos?.[String(id)]??id;adv[String(k)]=Number(val||0)}
+  for(const [id,val] of Object.entries(aux?.diariasBaixadas||{})){const k=maps.diarias?.[String(id)]??id;if(val)paid[String(k)]=true}
+  for(const [oid,list] of Object.entries(aux?.servicosAdicionais||{})){
+    const noid=maps.obras?.[String(oid)]??oid;
+    svc[String(noid)]=(Array.isArray(list)?list:[]).map(x=>{const y=edifiqRemapReferences(v9copy(x),maps);if(y?.id!=null&&maps.servicos_adicionais?.[String(y.id)]!=null)y.id=maps.servicos_adicionais[String(y.id)];return y});
+  }
+  return {funcionarioObras:func,adiantamentosAplicados:adv,servicosAdicionais:svc,diariasBaixadas:paid};
+}
+async function v9restoreExactLocal(backup,target,aux){
+  const previous=v9captureLocal(),current=v9copy(previous.data),owner=v9owner();
+  const {maps}=v9buildMaps(target,current,backup);const mappedAux=v9mapAux(aux,maps);const staged={};
+  // Monta exatamente o estado do backup. O conteúdo do backup vence; apenas a identidade remota existente é reaproveitada.
+  for(const table of Object.keys(D||{})){
+    staged[table]=[];const cur=v9rows(current,table);
+    for(const raw of v9rows(target,table)){
+      const op=v9op(table,raw,backup?.scope_hint||''),found=cur.find(x=>v9sameIdentity(table,raw,x));
+      const id=raw?.id!=null?(maps[table]?.[String(raw.id)]??found?.id??('local_'+op)):('local_'+op);
+      const next=edifiqRemapReferences(v9copy(raw),maps);
+      const row={...next,id,operation_id:found?.operation_id||next.operation_id||op,user_id:owner};
+      if(EDIFIQ_SYNC_COLUMNS?.[table])row._sync_pendente=String(id).startsWith('local_');
+      staged[table].push(row);
+    }
+  }
+  // Descarta filas antigas e agenda exclusão apenas do que não pertence ao backup exato.
+  v9writeJSON(PENDING_UPDATES_KEY,[]);v9writeJSON(DELETE_QUEUE_KEY,[]);
+  for(const table of V9_CLOUD_TABLES){
+    const targets=v9rows(target,table),cur=v9rows(current,table);
+    for(const row of cur){
+      if(String(row?.id||'').startsWith('local_'))continue;
+      if(!targets.some(t=>v9sameIdentity(table,t,row)))try{addEdifiqDeleteQueue(table,row.id,row)}catch(_){ }
+    }
+  }
+  for(const k of Object.keys(D))D[k]=staged[k]||[];
+  v9writeJSON(FUNC_OBRA_KEY,mappedAux.funcionarioObras);v9writeJSON(ADV_KEY,mappedAux.adiantamentosAplicados);v9writeJSON(SERVICE_KEY,mappedAux.servicosAdicionais);v9writeJSON(PAID_DIARIAS_KEY,mappedAux.diariasBaixadas);
+  saveLocalData();try{await edifiqStateSaveQueue}catch(_){ }
+  // Anexos são restaurados somente depois de o estado principal estar durável.
+  const warnings=[];
+  for(const foto of (backup.fotos||[])){try{await savePhotoDB(edifiqRemapReferences(v9copy(foto),maps))}catch(_){warnings.push('foto')}}
+  for(const doc of D.documentos||[]){if(!doc?.conteudo)continue;try{const blob=await (await fetch(doc.conteudo)).blob();await putDocumentoArquivo(doc.id,new File([blob],doc.nome_arquivo||'documento',{type:doc.tipo_mime||blob.type}));delete doc.conteudo}catch(_){warnings.push('documento')}}
+  try{saveDocumentoMeta()}catch(_){ }try{saveMaterialMeta()}catch(_){ }saveLocalData();try{await edifiqStateSaveQueue}catch(_){ }
+  return {previous,maps,mappedAux,warnings};
+}
+async function v9queueExactCloudUpdates(){
+  const owner=v9owner();
+  for(const table of V9_CLOUD_TABLES){
+    if(!EDIFIQ_SYNC_COLUMNS?.[table])continue;
+    for(const row of (D[table]||[])){
+      if(String(row.id).startsWith('local_')||String(row.user_id||owner)!==owner)continue;
+      try{addEdifiqPendingUpdate(table,row.id,edifiqCloudPayload(table,row),null)}catch(_){ }
+    }
+  }
+}
+async function v9syncExact(){
+  if(!navigator.onLine||!sb||!user?.id)return false;
+  try{await retryEdifiqDeleteQueue()}catch(_){ }
+  try{await edifiqFlushWrites()}catch(_){ }
+  await v9queueExactCloudUpdates();
+  try{await edifiqFlushWrites()}catch(_){ }
+  try{return typeof v9BaseFullSync==='function'?await v9BaseFullSync():false}catch(_){return false}
+}
+async function v9sha256(text){
+  try{if(window.crypto?.subtle&&window.TextEncoder){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(text)));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}}catch(_){}
+  let h=2166136261,s=String(text);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return 'fnv1a-'+(h>>>0).toString(16).padStart(8,'0');
+}
+async function v9verifyBackupBasic(backup){
+  if(!backup||backup.app!=='EDIFIQ'||!backup.data||typeof backup.data!=='object')throw new Error('Arquivo não reconhecido como backup EDIFIQ.');
+  if(backup.integrity?.value&&typeof v9BaseVerifyBackup==='function')await v9BaseVerifyBackup(backup);
+  return true;
+}
+async function v9exportFull(){
+  const warnings=[];
+  if(sb&&user?.id&&navigator.onLine){try{if(typeof v9BaseFullSync==='function')await v9BaseFullSync()}catch(_){warnings.push('A conferência da nuvem não terminou antes do backup.')}}
+  try{saveLocalData();await edifiqStateSaveQueue}catch(_){ }
+  // Fonte principal = estado atual que o usuário realmente está vendo. Snapshots antigos não entram na restauração normal.
+  const data=v9dedupeData(v9copy(D));
+  let fotos=[],documentos=[];
+  try{fotos=await getAllPhotosDB()}catch(_){warnings.push('Fotos locais indisponíveis.')}
+  try{documentos=await edifiqExportDocumentosComArquivo();if(Array.isArray(documentos)&&documentos.length){const by=new Map((data.documentos||[]).map(x=>[String(x.id),x]));for(const d of documentos)by.set(String(d.id),{...(by.get(String(d.id))||{}),...d});data.documentos=[...by.values()]}}catch(_){warnings.push('Alguns documentos não puderam incluir o arquivo.')}
+  const aux={funcionarioObras:v9copy(localFuncObras()),adiantamentosAplicados:v9copy(getAdvanceApplied()),servicosAdicionais:v9copy(getServices()),diariasBaixadas:v9copy(getPaidDiariasMap())};
+  const financial=v9teamSnapshot(data,aux),counts={};for(const k of Object.keys(D||{}))counts[k]=v9rows(data,k).length;
+  const now=new Date().toISOString();
+  const backup={app:'EDIFIQ',version:V9_VERSION,backup_id:'bkp9_'+Date.now()+'_'+Math.random().toString(36).slice(2,10),date:now,scope_hint:v9scope(),manifest:{tables:counts,total_records:Object.values(counts).reduce((a,n)=>a+Number(n||0),0),photos:fotos.length,documents:(data.documentos||[]).length,restore_mode:'exact',financial_snapshot:financial},data,fotos,...aux,syncConflicts:v9copy(getEdifiqSyncConflicts?.()||[]),diagnostics:{syncVerified:window.__edifiqLastSyncVerified===true,warnings},warnings:[...new Set(warnings)]};
+  {const x=v9copy(backup);delete x.integrity;backup.integrity={algorithm:'SHA-256',value:await v9sha256(JSON.stringify(x))}}
+  downloadFile(JSON.stringify(backup,null,2),'EDIFIQ_backup_EXATO_'+now.slice(0,10)+'.json','application/json');
+  const status=document.getElementById('backupStatus');if(status)status.textContent=`Backup exato criado · Quitado ${v9money(financial.totalQuitado)} · Vales ${v9money(financial.valesAbertos)}.`;
+  toast('Backup exato criado com conferência dos totais da equipe.');return backup;
+}
+async function v9importBackupData(backup){
+  await v9verifyBackupBasic(backup);
+  if(!user)throw new Error('Entre no aplicativo antes de importar.');
+  const target=v9authoritativeData(backup),aux=v9auxFromBackup(backup),expected=backup?.manifest?.financial_snapshot||v9teamSnapshot(target,aux);
+  const previous=v9captureLocal();window.__edifiqImporting=true;try{try{v9BaseStopRealtime()}catch(_){ }
+    const restored=await v9restoreExactLocal(backup,target,aux),actual=v9currentTeamSnapshot();
+    if(!v9snapshotMatches(expected,actual))throw new Error(`A restauração foi interrompida porque os totais não conferiram. Esperado: quitado ${v9money(expected.totalQuitado)} e vales ${v9money(expected.valesAbertos)}. Obtido: quitado ${v9money(actual.totalQuitado)} e vales ${v9money(actual.valesAbertos)}.`);
+    window.__edifiqImporting=false;const synced=await v9syncExact();try{edifiqRenderAfterSync()}catch(_){ }try{v9BaseStartRealtime()}catch(_){ }
+    return {expected,actual,synced,warnings:restored.warnings};
+  }catch(e){window.__edifiqImporting=false;v9restoreLocal(previous);try{v9BaseStartRealtime()}catch(_){ }throw e}
+}
+async function v9readFile(file){return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>{try{resolve(JSON.parse(r.result))}catch(e){reject(e)}};r.onerror=()=>reject(r.error||new Error('Falha na leitura'));r.readAsText(file)})}
+async function v9importFile(event){
+  const file=event?.target?.files?.[0];if(!file)return;
+  try{
+    const backup=await v9readFile(file);await v9verifyBackupBasic(backup);const target=v9authoritativeData(backup),aux=v9auxFromBackup(backup),expected=backup?.manifest?.financial_snapshot||v9teamSnapshot(target,aux);
+    const msg=`Restaurar este backup exatamente?\n\nTotal quitado detectado: ${v9money(expected.totalQuitado)}\nVales em aberto detectados: ${v9money(expected.valesAbertos)}\n\nA restauração vai voltar os dados para o estado salvo no backup. Registros criados depois do backup serão removidos, mas uma cópia de segurança do estado atual será feita antes.`;
+    if(!confirm(msg))return;
+    const result=await v9importBackupData(backup),status=document.getElementById('backupStatus');
+    if(status)status.textContent=`Restauração conferida · Quitado ${v9money(result.actual.totalQuitado)} · Vales ${v9money(result.actual.valesAbertos)}${result.synced?' · sincronizado':' · sincronização pendente'}.`;
+    toast(result.synced?'Backup restaurado exatamente e sincronizado.':'Backup restaurado exatamente; a sincronização continuará quando possível.');
+  }catch(e){console.error('EDIFIQ V9 importação',e);const status=document.getElementById('backupStatus');if(status)status.textContent='Importação interrompida: '+(e?.message||'erro');toast(e?.message||'Não foi possível importar o backup.')}finally{try{event.target.value=''}catch(_){}}
+}
+
+window.exportFull=v9exportFull;
+window.importBackupData=v9importBackupData;
+window.importBackup=v9importFile;
+window.importRelatorioData=v9importFile;
+window.edifiqBackupTeamSnapshot=v9currentTeamSnapshot;
+// API explícita: V10 reutiliza as funções fechadas no escopo da V9.
+window.edifiqBackupV9Core=Object.freeze({
+  v9authoritativeData,
+  v9auxFromBackup,
+  v9captureLocal,
+  v9currentTeamSnapshot,
+  v9dedupeData,
+  v9money,
+  v9restoreExactLocal,
+  v9restoreLocal,
+  v9scope,
+  v9sha256,
+  v9snapshotMatches,
+  v9teamSnapshot,
+  v9verifyBackupBasic
+});
+
+})();
+</script>
+
+<!-- EDIFIQ V10 — importação completa com conferência de todas as tabelas -->
+<script id="edifiq-backup-v10-importacao-integral">
+(function(){
+'use strict';
+if(window.__EDIFIQ_BACKUP_V10__)return;
+const backupCore=window.edifiqBackupV9Core;
+if(!backupCore)throw new Error('O módulo de backup não foi carregado. Reabra o aplicativo.');
+const {v9authoritativeData, v9auxFromBackup, v9captureLocal, v9currentTeamSnapshot, v9dedupeData, v9money, v9restoreExactLocal, v9restoreLocal, v9scope, v9sha256, v9snapshotMatches, v9teamSnapshot, v9verifyBackupBasic}=backupCore;
+window.__EDIFIQ_BACKUP_V10__=true;
+const V10_TABLES=['obras','funcionarios','checklist','servicos_adicionais','servicos','terceirizados','orcamentos','diarias','gastos','pagamentos','faltas','adiantamentos','diario','presencas','pagamentos_terceirizados'];
+const V10_CRITICAL=['funcionarios','diarias','gastos','pagamentos','faltas','adiantamentos'];
+function cp(v){return JSON.parse(JSON.stringify(v??null))}
+function rows(d,t){return Array.isArray(d?.[t])?d[t]:[]}
+function cents(v){return Math.round(Number(v||0)*100)}
+function rowValue(r){return Number(r?.valor??r?.valor_pago??r?.valor_baixado??0)||0}
+function signature(data){const o={};for(const t of Object.keys(D||{})){const a=rows(data,t);o[t]={count:a.length};if(['gastos','pagamentos','diarias','adiantamentos'].includes(t))o[t].sum=a.reduce((x,r)=>x+cents(rowValue(r)),0)}return o}
+function sigEqual(a,b){for(const t of Object.keys(a||{})){if(Number(a[t]?.count||0)!==Number(b[t]?.count||0))return false;if(a[t]?.sum!=null&&Number(a[t].sum)!==Number(b[t]?.sum||0))return false}return true}
+function diffText(a,b){const out=[];for(const t of Object.keys(a||{})){if(Number(a[t]?.count||0)!==Number(b[t]?.count||0)||Number(a[t]?.sum||0)!==Number(b[t]?.sum||0))out.push(`${t}: backup ${a[t]?.count||0}, importado ${b[t]?.count||0}`)}return out.join(' · ')}
+async function cloudRows(table){const owner=String(edifiqEmpresaUserId());const all=[];let from=0;while(true){const q=await sb.from(table).select('*').eq('user_id',owner).order('id',{ascending:true}).range(from,from+499);if(q.error)throw q.error;const part=q.data||[];all.push(...part);if(part.length<500)break;from+=part.length}return all}
+async function cloudSignature(){const data={};for(const t of V10_TABLES){try{data[t]=await cloudRows(t)}catch(e){data[t]=[];data['__err_'+t]=String(e?.message||e)}}return {data,sig:signature(data)}}
+async function flushUntilStable(max=8){for(let i=0;i<max;i++){await edifiqFlushWrites();await retryEdifiqDeleteQueue();await edifiqFlushWrites();const pending=Object.values(D).some(a=>Array.isArray(a)&&a.some(r=>String(r?.id||'').startsWith('local_')||r?._sync_pendente))||getEdifiqPendingUpdates().length||getEdifiqDeleteQueue().length;if(!pending)return true;await new Promise(r=>setTimeout(r,350))}return false}
+async function syncAndVerify(expectedData){if(!navigator.onLine||!sb||!user?.id)return false;await flushUntilStable();const exp=signature(expectedData);for(let n=0;n<3;n++){const c=await cloudSignature();let ok=true;for(const t of V10_CRITICAL){if(Number(exp[t]?.count||0)!==Number(c.sig[t]?.count||0)){ok=false;break}if(exp[t]?.sum!=null&&Number(exp[t].sum)!==Number(c.sig[t]?.sum||0)){ok=false;break}}if(ok)return true;await flushUntilStable();await new Promise(r=>setTimeout(r,500))}return false}
+const baseVerify=window.edifiqVerifyBackup;
+async function exportV10(){
+  try{saveLocalData();await edifiqStateSaveQueue}catch(_){}
+  const data=v9dedupeData(cp(D));let fotos=[],documentos=[],warnings=[];
+  try{fotos=await getAllPhotosDB()}catch(_){warnings.push('Fotos locais indisponíveis.')}
+  try{documentos=await edifiqExportDocumentosComArquivo();if(Array.isArray(documentos)&&documentos.length){const m=new Map((data.documentos||[]).map(x=>[String(x.id),x]));for(const d of documentos)m.set(String(d.id),{...(m.get(String(d.id))||{}),...d});data.documentos=[...m.values()]}}catch(_){warnings.push('Documentos incompletos.')}
+  const aux={funcionarioObras:cp(localFuncObras()),adiantamentosAplicados:cp(getAdvanceApplied()),servicosAdicionais:cp(getServices()),diariasBaixadas:cp(getPaidDiariasMap())};
+  const financial=v9teamSnapshot(data,aux),sig=signature(data),now=new Date().toISOString();
+  const backup={app:'EDIFIQ',version:'10.0',backup_id:'bkp10_'+Date.now(),date:now,scope_hint:v9scope(),manifest:{tables:Object.fromEntries(Object.entries(sig).map(([k,v])=>[k,v.count])),total_records:Object.values(sig).reduce((a,v)=>a+v.count,0),restore_mode:'exact-v10',financial_snapshot:financial,integrity_snapshot:sig},data,fotos,...aux,warnings};
+  const x=cp(backup);backup.integrity={algorithm:'SHA-256',value:await v9sha256(JSON.stringify(x))};downloadFile(JSON.stringify(backup,null,2),'EDIFIQ_backup_INTEGRAL_'+now.slice(0,10)+'.json','application/json');
+  const st=document.getElementById('backupStatus');if(st)st.textContent=`Backup integral criado · ${backup.manifest.total_records} registros · Quitado ${v9money(financial.totalQuitado)} · Vales ${v9money(financial.valesAbertos)}.`;toast('Backup integral criado com conferência de todas as tabelas.');return backup;
+}
+async function importV10Data(backup){
+  await v9verifyBackupBasic(backup);if(!user)throw new Error('Entre no aplicativo antes de importar.');
+  const target=v9authoritativeData(backup),aux=v9auxFromBackup(backup),expectedSig=backup?.manifest?.integrity_snapshot||signature(target),expectedTeam=backup?.manifest?.financial_snapshot||v9teamSnapshot(target,aux);
+  const previous=v9captureLocal();window.__edifiqImporting=true;try{try{stopEdifiqRealtime()}catch(_){}
+    await v9restoreExactLocal(backup,target,aux);const localSig=signature(D),actualTeam=v9currentTeamSnapshot();
+    if(!sigEqual(expectedSig,localSig))throw new Error('Importação local incompleta: '+diffText(expectedSig,localSig));
+    if(!v9snapshotMatches(expectedTeam,actualTeam))throw new Error(`Equipe não conferiu. Esperado quitado ${v9money(expectedTeam.totalQuitado)} / vales ${v9money(expectedTeam.valesAbertos)}; obtido ${v9money(actualTeam.totalQuitado)} / ${v9money(actualTeam.valesAbertos)}.`);
+    window.__edifiqImporting=false;const cloudOk=await syncAndVerify(target);
+    // Só permite a nuvem reler e substituir a memória depois que as tabelas críticas estiverem completas no servidor.
+    if(cloudOk){try{await loadCloud()}catch(_){}}
+    try{startEdifiqRealtime()}catch(_){}try{renderAll()}catch(_){}
+    return {localSig,actualTeam,cloudOk};
+  }catch(e){window.__edifiqImporting=false;v9restoreLocal(previous);try{startEdifiqRealtime()}catch(_){}throw e}
+}
+async function readFile(f){return await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{try{res(JSON.parse(r.result))}catch(e){rej(e)}};r.onerror=()=>rej(r.error);r.readAsText(f)})}
+async function importV10(ev){const f=ev?.target?.files?.[0];if(!f)return;try{const b=await readFile(f);await v9verifyBackupBasic(b);const target=v9authoritativeData(b),aux=v9auxFromBackup(b),team=b?.manifest?.financial_snapshot||v9teamSnapshot(target,aux),sig=b?.manifest?.integrity_snapshot||signature(target);const fin=(sig.gastos?.count||0)+(sig.pagamentos?.count||0),eq=(sig.funcionarios?.count||0)+(sig.diarias?.count||0)+(sig.faltas?.count||0);if(!confirm(`Importar backup integral?\
+\
+Financeiro: ${fin} registros\
+Equipe: ${eq} registros\
+Total quitado: ${v9money(team.totalQuitado)}\
+Vales: ${v9money(team.valesAbertos)}\
+\
+A importação será conferida antes de a nuvem substituir qualquer dado.`))return;const r=await importV10Data(b);const st=document.getElementById('backupStatus');if(st)st.textContent=r.cloudOk?'Importação integral conferida no aparelho e na nuvem.':'Importação integral conferida no aparelho · sincronização da nuvem pendente; os dados locais foram preservados.';toast(r.cloudOk?'Backup importado integralmente e conferido.':'Backup importado integralmente no aparelho; nuvem ainda pendente.');}catch(e){console.error(e);toast(e?.message||'Falha na importação integral.')}finally{try{ev.target.value=''}catch(_){}}}
+window.exportFull=exportV10;window.importBackupData=importV10Data;window.importBackup=importV10;window.importRelatorioData=importV10;
+})();
 </script>
 </body>
 </html>
