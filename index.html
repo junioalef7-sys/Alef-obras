@@ -17867,5 +17867,317 @@ body.edLight #edOfficial25M .ed25State.ok{color:#067647}body.edLight #edOfficial
   function init(){setTimeout(menu,1100);setTimeout(menu,2300)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();new MutationObserver(()=>{if(!q('edOfficialMenu25'))setTimeout(menu,350)}).observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script>
+
+<!-- EDIFIQ V8 — sincronização verificada + backup integral -->
+<script id="edifiq-sync-backup-v8">
+(function(){
+'use strict';
+if(window.__EDIFIQ_SYNC_BACKUP_V8__)return;
+window.__EDIFIQ_SYNC_BACKUP_V8__=true;
+
+const V8_CLOUD_TABLES=['obras','funcionarios','checklist','servicos_adicionais','servicos','terceirizados','orcamentos','diarias','gastos','pagamentos','faltas','adiantamentos','diario','presencas','pagamentos_terceirizados'];
+const V8_SCOPE_TIMEOUT=9000;
+let v8ScopeFlight=null;
+let v8SyncFlight=null;
+let v8VerifyTimer=null;
+const baseLoadCloudV8=loadCloud;
+const baseStartRealtimeV8=startEdifiqRealtime;
+const baseStopRealtimeV8=stopEdifiqRealtime;
+const baseSyncStatusV8=edifiqUpdateSyncStatus;
+const baseCompanyLoaderV8=edifiqCarregarEmpresaAtiva;
+const baseExportV8=window.exportFull;
+const baseImportV8=window.importBackupData;
+
+function v8copy(v){try{return JSON.parse(JSON.stringify(v));}catch(_){return v}}
+function v8uid(){try{return edifiqSanitizeScope(user?.id||'')}catch(_){return String(user?.id||'')}}
+function v8scope(){try{return edifiqStorageScope()||''}catch(_){return ''}}
+function v8owner(){try{return String(edifiqEmpresaUserId()||'')}catch(_){return String(user?.id||'')}}
+function v8pendingCount(){
+  let n=0;
+  try{n+=getEdifiqPendingUpdates().length+getEdifiqDeleteQueue().length}catch(_){}
+  try{for(const rows of Object.values(D||{}))if(Array.isArray(rows))n+=rows.filter(r=>r&&r._sync_pendente).length}catch(_){}
+  return n;
+}
+function v8tableCounts(data){const out={};for(const k of Object.keys(D||{}))out[k]=Array.isArray(data?.[k])?data[k].length:0;return out}
+function v8total(counts){return Object.values(counts||{}).reduce((a,n)=>a+(Number(n)||0),0)}
+function v8stableKey(table,row,scopeHint=''){
+  if(!row||typeof row!=='object')return 'x:'+String(row);
+  if(row.operation_id)return 'op:'+String(row.operation_id);
+  if(row.client_operation_id)return 'cop:'+String(row.client_operation_id);
+  if(row.id!=null)return 'id:'+String(row.user_id||scopeHint||'')+':'+String(row.id);
+  try{return 'raw:'+edifiqStableOperationId('v8-backup',table,scopeHint,JSON.stringify(row))}catch(_){return 'raw:'+JSON.stringify(row)}
+}
+function v8mergeTables(sources){
+  const result={};for(const k of Object.keys(D||{}))result[k]=[];
+  const maps={};for(const k of Object.keys(result))maps[k]=new Map();
+  for(const src of sources||[]){
+    if(!src?.data)continue;const hint=String(src.scope||'');
+    for(const k of Object.keys(result)){
+      const rows=Array.isArray(src.data[k])?src.data[k]:[];
+      for(const row of rows){
+        const key=v8stableKey(k,row,hint),prev=maps[k].get(key);
+        maps[k].set(key,prev?{...prev,...v8copy(row)}:v8copy(row));
+      }
+    }
+  }
+  for(const k of Object.keys(result))result[k]=[...maps[k].values()];
+  return result;
+}
+function v8readLocalPayloadByScope(scope){
+  if(!scope)return null;
+  const key=LOCAL_KEY_BASE+'::'+scope;let base={};
+  try{base=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch(_){base={}}
+  for(const table of Object.keys(D||{})){
+    try{const raw=localStorage.getItem(key+'__'+table);if(raw){const rows=JSON.parse(raw);if(Array.isArray(rows)&&(!Array.isArray(base[table])||rows.length>base[table].length))base[table]=rows}}catch(_){}
+  }
+  return Object.keys(D||{}).some(k=>Array.isArray(base[k])&&base[k].length)?base:null;
+}
+async function v8readDurableByScope(scope){
+  if(!scope)return {current:null,previous:null};
+  try{
+    const db=await openEdifiqStateDB();
+    const get=id=>new Promise((resolve,reject)=>{const q=db.transaction(EDIFIQ_STATE_STORE,'readonly').objectStore(EDIFIQ_STATE_STORE).get(id);q.onsuccess=()=>resolve(q.result?.payload||null);q.onerror=()=>reject(q.error)});
+    let current=null,previous=null;
+    try{current=await get(EDIFIQ_STATE_ID+'::'+scope)}catch(_){}
+    try{previous=await get('anterior::'+scope)}catch(_){}
+    try{db.close()}catch(_){}
+    return {current,previous};
+  }catch(_){return {current:null,previous:null}}
+}
+function v8candidateScopes(){
+  const uid=v8uid(),cur=v8scope(),set=new Set();if(cur)set.add(cur);if(uid)set.add(uid+'__'+uid);
+  return [...set];
+}
+async function v8captureRecoverySources(){
+  const out=[{kind:'memory',scope:v8scope(),data:v8copy(D)}];
+  for(const s of v8candidateScopes()){
+    const local=v8readLocalPayloadByScope(s);if(local)out.push({kind:'localStorage',scope:s,data:local});
+    const durable=await v8readDurableByScope(s);if(durable.current)out.push({kind:'indexedDB-current',scope:s,data:durable.current});if(durable.previous)out.push({kind:'indexedDB-previous',scope:s,data:durable.previous});
+  }
+  return out;
+}
+async function v8resolveCanonicalScope(){
+  if(!sb||!user?.id||!navigator.onLine)return v8owner();
+  if(v8ScopeFlight)return v8ScopeFlight;
+  v8ScopeFlight=(async()=>{
+    let resolved='';
+    try{
+      const rpc=sb.rpc('edifiq_empresa_atual');
+      const result=await Promise.race([rpc,new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout contexto empresa')),V8_SCOPE_TIMEOUT))]);
+      if(!result?.error&&result?.data)resolved=String(result.data);
+    }catch(e){console.warn('EDIFIQ V8 contexto da empresa:',e?.message||e)}
+    if(!resolved)return v8owner();
+    const previous=String(edifiqEmpresaAtivaId||'');
+    if(previous!==resolved){
+      try{saveLocalData();await edifiqStateSaveQueue}catch(_){}
+      try{baseStopRealtimeV8()}catch(_){}
+      edifiqEmpresaAtivaId=resolved;edifiqRememberEmpresaForUser(user.id,resolved);edifiqApplyScopedKeys();
+      try{await edifiqLoadScopedLocalState()}catch(e){console.warn('EDIFIQ V8 troca de escopo:',e)}
+      window.__edifiqLastSyncComplete=false;window.__edifiqLastSyncVerified=false;
+    }else{edifiqRememberEmpresaForUser(user.id,resolved)}
+    return resolved;
+  })();
+  try{return await v8ScopeFlight}finally{v8ScopeFlight=null}
+}
+// Revalida o contexto online. A versão antiga aceitava um cache local como definitivo,
+// o que podia fazer celular e computador consultarem user_id diferentes.
+edifiqCarregarEmpresaAtiva=async function(){
+  const resolved=await v8resolveCanonicalScope();
+  if(resolved)return resolved;
+  return baseCompanyLoaderV8.apply(this,arguments);
+};
+
+async function v8fetchRemoteTable(table){
+  if(!sb||!user?.id||!navigator.onLine)return null;
+  const owner=v8owner();const rows=[];let offset=0;
+  while(true){
+    const r=await sb.from(table).select('*').eq('user_id',owner).order('id',{ascending:true}).range(offset,offset+499);
+    if(r.error)throw r.error;if(!Array.isArray(r.data))throw new Error('Resposta inválida em '+table);
+    rows.push(...r.data);offset+=r.data.length;if(r.data.length===0)break;
+  }
+  return rows;
+}
+function v8paidFromFields(d){
+  const status=String(d?.status||'').trim().toLowerCase();if(['pago','paid','quitado','liquidado'].includes(status)||d?.pago===true||d?.paga===true)return true;
+  const q=Math.max(.5,Number(d?.qtd??d?.quantidade??1)||1),qp=Number(d?.qtd_paga||0),v=Number(typeof diariaValor==='function'?diariaValor(d):0),vb=Number(d?.valor_baixado??d?.valor_pago??0);
+  return qp>=q||(v>0&&vb>=v-.01);
+}
+async function v8promoteLegacyAux(){
+  const owner=v8owner();
+  // Funcionário -> obra: promove o vínculo local antigo para a linha sincronizada.
+  try{const map=localFuncObras();for(const f of D.funcionarios||[]){const legacy=map[String(f.id)];if(!f.obra_id&&legacy&&!String(f.id).startsWith('local_')){try{await updateRow('funcionarios',f.id,{obra_id:legacy})}catch(_){}}}}catch(_){}
+  // Diárias pagas: se um aparelho antigo só marcou o mapa local, converte para campos de nuvem.
+  try{const paid=getPaidDiariasMap();for(const d of D.diarias||[]){if(!paid[String(d.id)]||v8paidFromFields(d)||String(d.id).startsWith('local_'))continue;const q=Number(d.qtd??d.quantidade??1)||1,v=Number(typeof diariaValor==='function'?diariaValor(d):0);try{await updateRow('diarias',d.id,{status:'pago',qtd_paga:q,valor_baixado:v,valor_pago:v,pago_em:d.pago_em||d.data_pagamento||new Date().toISOString().slice(0,10)})}catch(_){}}}catch(_){}
+  // Vales: o maior valor aplicado conhecido nunca é perdido e passa a ser compartilhado pela nuvem.
+  try{
+    const applied=getAdvanceApplied();
+    for(const g of D.gastos||[]){
+      const local=Number(applied[String(g.id)]||0),remote=Number(g.valor_baixado||0);
+      if(local>remote+.009&&!String(g.id).startsWith('local_')){
+        const total=Number(g.valor||0),next=Math.min(total||local,local);
+        try{await updateRow('gastos',g.id,{valor_baixado:next,aplicado:total>0&&next>=total-.01,status:total>0&&next>=total-.01?'pago':(g.status||'pendente')})}catch(_){}
+      }
+    }
+  }catch(_){}
+  // Serviços extras legados do localStorage viram registros sincronizáveis.
+  try{
+    const legacy=getServices()||{};
+    for(const [obraId,list] of Object.entries(legacy))for(const s of (Array.isArray(list)?list:[])){
+      const fingerprint=[String(obraId),String(s.id||''),String(s.data||''),String(s.descricao||s.nome||''),Number(s.valor||0)].join('|');
+      const exists=(D.servicos_adicionais||[]).some(x=>String(x.obra_id)===String(obraId)&&((s.id&&String(x.id)===String(s.id))||(String(x.data||'')===String(s.data||'')&&String(x.descricao||x.nome||'')===String(s.descricao||s.nome||'')&&Number(x.valor||0)===Number(s.valor||0))));
+      if(!exists){try{await insertRow('servicos_adicionais',{obra_id:obraId,descricao:s.descricao||s.nome||'Serviço adicional',valor:Number(s.valor||0),data:s.data||new Date().toISOString().slice(0,10),observacao:s.observacao||'',operation_id:s.operation_id||edifiqStableOperationId('legacy-service',owner,fingerprint)})}catch(_){}}
+    }
+  }catch(_){}
+}
+function v8rebuildAuxFromCanonical(){
+  try{const map={};for(const f of D.funcionarios||[])if(f?.id!=null&&f.obra_id)map[String(f.id)]=f.obra_id;localStorage.setItem(FUNC_OBRA_KEY,JSON.stringify(map))}catch(_){}
+  try{const paid={};for(const d of D.diarias||[])if(d?.id!=null&&v8paidFromFields(d))paid[String(d.id)]=true;localStorage.setItem(PAID_DIARIAS_KEY,JSON.stringify(paid))}catch(_){}
+  try{const adv={};for(const g of D.gastos||[]){const n=Number(g?.valor_baixado||0);if(g?.id!=null&&n>0)adv[String(g.id)]=n;}localStorage.setItem(ADV_KEY,JSON.stringify(adv))}catch(_){}
+  try{const svc={};for(const s of D.servicos_adicionais||[]){const oid=String(s?.obra_id??'');if(!oid)continue;(svc[oid]||(svc[oid]=[])).push({...s,nome:s.nome||s.descricao})}saveServices(svc)}catch(_){}
+}
+async function v8verifyRemote(){
+  if(!sb||!user?.id||!navigator.onLine)return {ok:false,offline:true,mismatch:[]};
+  const owner=v8owner(),mismatch=[];
+  for(const table of V8_CLOUD_TABLES){
+    try{
+      const r=await sb.from(table).select('id',{count:'exact',head:true}).eq('user_id',owner);if(r.error)throw r.error;
+      const local=(D[table]||[]).filter(x=>!String(x.id).startsWith('local_')&&(!x.user_id||String(x.user_id)===owner)).length;
+      if(Number(r.count||0)!==local)mismatch.push({table,local,remote:Number(r.count||0)});
+    }catch(e){mismatch.push({table,error:String(e?.message||e)})}
+  }
+  const pending=v8pendingCount();return {ok:!mismatch.length&&!pending,mismatch,pending};
+}
+async function v8fullSync(){
+  if(v8SyncFlight)return v8SyncFlight;
+  v8SyncFlight=(async()=>{
+    if(!sb||!user?.id||!navigator.onLine){window.__edifiqLastSyncVerified=false;return false}
+    await v8resolveCanonicalScope();
+    await v8promoteLegacyAux();
+    for(let pass=0;pass<3;pass++){
+      try{await edifiqFlushWrites()}catch(e){console.warn('EDIFIQ V8 envio:',e)}
+      try{await baseLoadCloudV8()}catch(e){console.warn('EDIFIQ V8 leitura:',e)}
+      if(v8pendingCount()===0)break;
+    }
+    v8rebuildAuxFromCanonical();saveLocalData();try{await edifiqStateSaveQueue}catch(_){}
+    let audit=await v8verifyRemote();
+    if(!audit.ok&&!audit.offline){
+      try{await baseLoadCloudV8()}catch(_){}
+      audit=await v8verifyRemote();
+    }
+    window.__edifiqLastSyncVerified=!!audit.ok;window.__edifiqSyncAuditV8=audit;
+    try{baseSyncStatusV8()}catch(_){}
+    const el=document.getElementById('edifiqSyncStatus');
+    if(el&&audit.ok){el.textContent='☁️ Sincronizado e conferido';el.className='ok'}
+    else if(el&&navigator.onLine){el.textContent=audit.pending?'↻ Alterações aguardando sincronização':'⚠️ Conferindo dados entre aparelhos';el.className='warn'}
+    return audit.ok;
+  })();
+  try{return await v8SyncFlight}finally{v8SyncFlight=null}
+}
+window.edifiqForceFullSync=v8fullSync;
+
+loadCloud=async function(){return await v8fullSync()};
+edifiqUpdateSyncStatus=function(){
+  try{baseSyncStatusV8()}catch(_){}
+  const el=document.getElementById('edifiqSyncStatus');if(!el)return;
+  if(window.__edifiqLastSyncVerified===true&&!v8pendingCount()){el.textContent='☁️ Sincronizado e conferido';el.className='ok'}
+  else if(navigator.onLine&&el.textContent==='☁️ Sincronizado'){el.textContent='↻ Conferindo sincronização';el.className='warn'}
+};
+startEdifiqRealtime=function(){
+  const r=baseStartRealtimeV8.apply(this,arguments);
+  clearInterval(v8VerifyTimer);v8VerifyTimer=setInterval(()=>{if(!document.hidden&&navigator.onLine)v8fullSync().catch(()=>{})},15000);
+  setTimeout(()=>v8fullSync().catch(()=>{}),300);
+  return r;
+};
+stopEdifiqRealtime=function(){clearInterval(v8VerifyTimer);v8VerifyTimer=null;return baseStopRealtimeV8.apply(this,arguments)};
+window.addEventListener('online',()=>setTimeout(()=>v8fullSync().catch(()=>{}),350));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&navigator.onLine)setTimeout(()=>v8fullSync().catch(()=>{}),250)});
+window.addEventListener('focus',()=>{if(navigator.onLine)setTimeout(()=>v8fullSync().catch(()=>{}),250)});
+
+async function v8sha256(text){
+  try{if(window.crypto?.subtle&&window.TextEncoder){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(text)));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}}catch(_){}
+  let h=2166136261,s=String(text);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return 'fnv1a-'+(h>>>0).toString(16).padStart(8,'0');
+}
+function v8backupHashPayload(backup){const x=v8copy(backup);delete x.integrity;return JSON.stringify(x)}
+async function v8verifyBackup(backup){
+  if(!backup||backup.app!=='EDIFIQ'||!backup.data||typeof backup.data!=='object')throw new Error('Arquivo não reconhecido como backup EDIFIQ.');
+  for(const [k,v] of Object.entries(backup.data))if(v!=null&&!Array.isArray(v))throw new Error('Backup inválido: '+k+' não é uma lista.');
+  if(backup.integrity?.value){const got=await v8sha256(v8backupHashPayload(backup));if(String(got)!==String(backup.integrity.value))throw new Error('A verificação de integridade falhou. O arquivo pode estar incompleto ou alterado.');}
+  const counts=v8tableCounts(backup.data);if(backup.manifest?.tables){for(const [k,n] of Object.entries(backup.manifest.tables))if(Number(n)!==Number(counts[k]||0))throw new Error('Backup incompleto: a contagem de '+k+' não confere.');}
+  return {counts,total:v8total(counts),photos:Array.isArray(backup.fotos)?backup.fotos.length:0,documents:Array.isArray(backup.data.documentos)?backup.data.documentos.length:0,verified:!!backup.integrity?.value};
+}
+async function v8exportFull(){
+  const recoverySources=await v8captureRecoverySources();
+  try{saveLocalData();await edifiqStateSaveQueue}catch(_){}
+  const warnings=[];let remoteSources=[];
+  if(sb&&user?.id&&navigator.onLine){
+    try{await v8resolveCanonicalScope();await edifiqFlushWrites()}catch(e){warnings.push('Existem alterações locais ainda não enviadas à nuvem.')}
+    for(const table of V8_CLOUD_TABLES){
+      try{const rows=await v8fetchRemoteTable(table);remoteSources.push({kind:'cloud-'+table,scope:v8scope(),data:{[table]:rows}})}catch(e){warnings.push('Não foi possível conferir '+table+' na nuvem.')}
+    }
+  }else warnings.push('Backup criado sem conferência da nuvem porque o aplicativo está offline.');
+  // O backup reúne memória + localStorage + IndexedDB atual/anterior + nuvem. Nenhuma fonte isolada pode cortar registros.
+  const currentSources=await v8captureRecoverySources();
+  const data=v8mergeTables([...recoverySources,...currentSources,...remoteSources]);
+  let fotos=[],documentos=[];
+  try{fotos=await getAllPhotosDB()}catch(e){warnings.push('Fotos locais indisponíveis.')}
+  try{documentos=await edifiqExportDocumentosComArquivo();if(Array.isArray(documentos)&&documentos.length){const by=new Map((data.documentos||[]).map(x=>[String(x.id),x]));for(const d of documentos)by.set(String(d.id),{...(by.get(String(d.id))||{}),...d});data.documentos=[...by.values()]}}catch(e){warnings.push('Alguns documentos não puderam incluir o arquivo.')}
+  const counts=v8tableCounts(data),now=new Date().toISOString();
+  const backup={app:'EDIFIQ',version:'8.0',backup_id:'bkp8_'+Date.now()+'_'+Math.random().toString(36).slice(2,10),date:now,scope_hint:v8scope(),manifest:{tables:counts,total_records:v8total(counts),photos:fotos.length,documents:(data.documentos||[]).length,recovery_sources:recoverySources.length+currentSources.length,cloud_checked:!!(sb&&user?.id&&navigator.onLine)},data,fotos,funcionarioObras:v8copy(localFuncObras()),adiantamentosAplicados:v8copy(getAdvanceApplied()),servicosAdicionais:v8copy(getServices()),diariasBaixadas:v8copy(getPaidDiariasMap()),syncConflicts:v8copy(getEdifiqSyncConflicts?.()||[]),recovery:{sources:[...recoverySources,...currentSources].map(s=>({kind:s.kind,scope:s.scope,data:s.data})),pendingUpdates:v8copy(getEdifiqPendingUpdates?.()||[]),deleteQueue:v8copy(getEdifiqDeleteQueue?.()||[])},diagnostics:{pending:v8pendingCount(),syncVerified:window.__edifiqLastSyncVerified===true,audit:v8copy(window.__edifiqSyncAuditV8||null)},warnings:[...new Set(warnings)]};
+  backup.integrity={algorithm:'SHA-256',value:await v8sha256(v8backupHashPayload(backup))};
+  const filename='EDIFIQ_backup_COMPLETO_'+now.slice(0,10)+'.json';downloadFile(JSON.stringify(backup,null,2),filename,'application/json');
+  const status=document.getElementById('backupStatus');if(status)status.textContent=`Backup protegido: ${backup.manifest.total_records} registros, ${fotos.length} foto(s). ${warnings.length?'Com '+warnings.length+' aviso(s).':'Integridade conferida.'}`;
+  toast(warnings.length?'Backup criado com proteção extra; veja os avisos na Central de Backup.':'Backup completo criado, conferido e protegido.');
+  return backup;
+}
+function v8mergeAuxMap(target,source){const out={...(target||{})};for(const [k,v] of Object.entries(source||{}))if(out[k]==null)out[k]=v;return out}
+function v8effectiveBackup(backup){
+  const sources=[{kind:'main',scope:backup.scope_hint||'',data:backup.data||{}}];
+  for(const s of (backup.recovery?.sources||[]))if(s?.data)sources.push(s);
+  const data=v8mergeTables(sources);
+  const aux={funcionarioObras:{},adiantamentosAplicados:{},servicosAdicionais:{},diariasBaixadas:{}};
+  Object.assign(aux.funcionarioObras,backup.funcionarioObras||{});Object.assign(aux.adiantamentosAplicados,backup.adiantamentosAplicados||{});Object.assign(aux.servicosAdicionais,backup.servicosAdicionais||{});Object.assign(aux.diariasBaixadas,backup.diariasBaixadas||{});
+  for(const s of (backup.recovery?.sources||[])){
+    const a=s?.data?._edifiqAux;if(!a)continue;
+    aux.funcionarioObras=v8mergeAuxMap(aux.funcionarioObras,a.funcionarioObras);aux.adiantamentosAplicados=v8mergeAuxMap(aux.adiantamentosAplicados,a.adiantamentosAplicados);aux.servicosAdicionais=v8mergeAuxMap(aux.servicosAdicionais,a.servicosAdicionais);aux.diariasBaixadas=v8mergeAuxMap(aux.diariasBaixadas,a.diariasBaixadas);
+  }
+  return {...backup,data,...aux,syncConflicts:backup.syncConflicts||[]};
+}
+async function v8auditImported(effective){
+  const missing=[];
+  for(const [table,rows] of Object.entries(effective.data||{})){
+    if(!Array.isArray(rows)||!Array.isArray(D[table]))continue;
+    const ops=new Set((D[table]||[]).map(r=>String(r.operation_id||'')));const ids=new Set((D[table]||[]).map(r=>String(r.id||'')));
+    for(const row of rows){
+      const op=String(row?.operation_id||edifiqStableOperationId('backup',table,row?.user_id||effective.app,row?.id??JSON.stringify(row||{})));
+      if(!ops.has(op)&&row?.id!=null&&!ids.has(String(row.id)))missing.push(table+':'+String(row.id));
+    }
+  }
+  return missing;
+}
+async function v8importBackupData(backup){
+  const info=await v8verifyBackup(backup),effective=v8effectiveBackup(backup);
+  // A restauração completa é primeiro confirmada localmente e de forma durável; só depois é enviada à nuvem.
+  await edifiqImportComplete(effective);
+  const missing=await v8auditImported(effective);if(missing.length)throw new Error('A restauração local não confirmou '+missing.length+' registro(s). Nenhum dado anterior foi apagado.');
+  let synced=false;try{synced=await v8fullSync()}catch(_){}
+  return {...info,totalRestored:v8total(v8tableCounts(effective.data)),synced};
+}
+async function v8readBackupFile(file){return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>{try{resolve(JSON.parse(r.result))}catch(e){reject(e)}};r.onerror=()=>reject(r.error||new Error('Falha na leitura'));r.readAsText(file)})}
+async function v8importFile(event){
+  const file=event?.target?.files?.[0];if(!file)return;
+  try{
+    const backup=await v8readBackupFile(file),info=await v8verifyBackup(backup);
+    if(!confirm(`Importar este backup?\n\n${info.total} registros detectados\n${info.photos} foto(s)\n\nA restauração será gravada primeiro no aparelho e depois sincronizada com a nuvem. Os dados atuais não serão apagados.`))return;
+    const result=await v8importBackupData(backup);const status=document.getElementById('backupStatus');
+    if(status)status.textContent=result.synced?`Backup restaurado e sincronizado: ${result.totalRestored} registros processados.`:`Backup restaurado no aparelho: ${result.totalRestored} registros. A sincronização com a nuvem continuará automaticamente.`;
+    toast(result.synced?'Backup restaurado e conferido entre os aparelhos.':'Backup restaurado integralmente no aparelho; sincronização pendente.');
+  }catch(e){console.error('EDIFIQ V8 importação',e);const status=document.getElementById('backupStatus');if(status)status.textContent='Falha na importação: '+(e?.message||'arquivo incompatível');toast(e?.message||'Não foi possível importar o backup.')}finally{try{event.target.value=''}catch(_){}}
+}
+window.exportFull=v8exportFull;window.importBackupData=v8importBackupData;window.importBackup=v8importFile;window.importRelatorioData=v8importFile;window.edifiqVerifyBackup=v8verifyBackup;
+
+setTimeout(()=>{if(user?.id&&navigator.onLine)v8fullSync().catch(()=>{})},800);
+})();
+
+</script>
 </body>
 </html>
