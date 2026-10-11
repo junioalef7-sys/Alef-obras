@@ -18179,5 +18179,245 @@ setTimeout(()=>{if(user?.id&&navigator.onLine)v8fullSync().catch(()=>{})},800);
 })();
 
 </script>
+<!-- EDIFIQ V9 — backup financeiro exato + restauração sem duplicação -->
+<script id="edifiq-backup-v9-financial-integrity">
+(function(){
+'use strict';
+if(window.__EDIFIQ_BACKUP_V9__)return;
+window.__EDIFIQ_BACKUP_V9__=true;
+
+const V9_VERSION='9.0';
+const V9_CLOUD_TABLES=(typeof V8_CLOUD_TABLES!=='undefined'?V8_CLOUD_TABLES:['obras','funcionarios','checklist','servicos_adicionais','servicos','terceirizados','orcamentos','diarias','gastos','pagamentos','faltas','adiantamentos','diario','presencas','pagamentos_terceirizados']);
+const V9_AUX_KEYS=[FUNC_OBRA_KEY,ADV_KEY,SERVICE_KEY,PAID_DIARIAS_KEY,PENDING_UPDATES_KEY,DELETE_QUEUE_KEY,SYNC_CONFLICTS_KEY];
+const v9BaseStopRealtime=stopEdifiqRealtime;
+const v9BaseStartRealtime=startEdifiqRealtime;
+const v9BaseVerifyBackup=window.edifiqVerifyBackup;
+const v9BaseFullSync=window.edifiqForceFullSync;
+
+function v9copy(v){try{return JSON.parse(JSON.stringify(v));}catch(_){return v}}
+function v9money(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+function v9owner(){try{return String(edifiqEmpresaUserId()||user?.id||'')}catch(_){return String(user?.id||'')}}
+function v9scope(){try{return String(edifiqStorageScope()||'')}catch(_){return ''}}
+function v9readJSON(key,fallback){try{const x=JSON.parse(localStorage.getItem(key)||'');return x??fallback}catch(_){return fallback}}
+function v9writeJSON(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch(_){}}
+function v9rows(data,table){return Array.isArray(data?.[table])?data[table]:[]}
+function v9op(table,row,scopeHint=''){
+  return String(row?.operation_id||row?.client_operation_id||edifiqStableOperationId('v9-restore',table,row?.user_id||scopeHint||'EDIFIQ',row?.id??JSON.stringify(row||{})));
+}
+function v9sameIdentity(table,a,b){
+  if(!a||!b)return false;
+  const ao=String(a.operation_id||a.client_operation_id||''),bo=String(b.operation_id||b.client_operation_id||'');
+  if(ao&&bo&&ao===bo)return true;
+  return a.id!=null&&b.id!=null&&String(a.id)===String(b.id);
+}
+function v9dedupeData(data){
+  const out={};
+  for(const table of Object.keys(D||{})){
+    const m=new Map();
+    for(const row of v9rows(data,table)){
+      const key=row?.operation_id?'op:'+row.operation_id:row?.client_operation_id?'cop:'+row.client_operation_id:row?.id!=null?'id:'+String(row.id):'raw:'+edifiqStableOperationId('v9-dedupe',table,JSON.stringify(row||{}));
+      if(!m.has(key))m.set(key,v9copy(row));
+      else m.set(key,{...m.get(key),...v9copy(row)});
+    }
+    out[table]=[...m.values()];
+  }
+  return out;
+}
+function v9latestRecoverySource(backup){
+  const srcs=(backup?.recovery?.sources||[]).filter(s=>s?.data);
+  const memories=srcs.filter(s=>String(s.kind||'').toLowerCase()==='memory');
+  if(memories.length)return memories[memories.length-1];
+  const preferred=srcs.filter(s=>['indexeddb-current','localstorage'].includes(String(s.kind||'').toLowerCase()));
+  preferred.sort((a,b)=>Number(a?.data?._edifiqSavedAt||0)-Number(b?.data?._edifiqSavedAt||0));
+  return preferred[preferred.length-1]||null;
+}
+function v9authoritativeData(backup){
+  const ver=parseFloat(String(backup?.version||'0'))||0;
+  if(ver>=9)return v9dedupeData(backup.data||{});
+  // V8 guardava snapshots antigos como fontes de recuperação e depois fazia união deles.
+  // Para restaurar o que o usuário realmente via no momento do backup, usamos o snapshot de memória mais recente.
+  if(ver>=8){const src=v9latestRecoverySource(backup);if(src?.data)return v9dedupeData(src.data)}
+  return v9dedupeData(backup.data||{});
+}
+function v9auxFromBackup(backup){
+  return {
+    funcionarioObras:v9copy(backup?.funcionarioObras||{}),
+    adiantamentosAplicados:v9copy(backup?.adiantamentosAplicados||{}),
+    servicosAdicionais:v9copy(backup?.servicosAdicionais||{}),
+    diariasBaixadas:v9copy(backup?.diariasBaixadas||{})
+  };
+}
+function v9teamSnapshot(data,aux){
+  const oldData={},oldAux={};
+  for(const k of Object.keys(D||{})){oldData[k]=D[k];D[k]=v9copy(v9rows(data,k))}
+  for(const k of [FUNC_OBRA_KEY,ADV_KEY,SERVICE_KEY,PAID_DIARIAS_KEY])oldAux[k]=localStorage.getItem(k);
+  try{
+    v9writeJSON(FUNC_OBRA_KEY,aux?.funcionarioObras||{});v9writeJSON(ADV_KEY,aux?.adiantamentosAplicados||{});v9writeJSON(SERVICE_KEY,aux?.servicosAdicionais||{});v9writeJSON(PAID_DIARIAS_KEY,aux?.diariasBaixadas||{});
+    const ds=(typeof edifiqDiariasCanonicas==='function'?edifiqDiariasCanonicas():D.diarias||[]);
+    const paid=ds.filter(d=>typeof diariaEstaPaga==='function'?diariaEstaPaga(d):/^(pago|paid|quitado|liquidado)$/i.test(String(d?.status||'')));
+    const paidDays=paid.reduce((a,d)=>a+Number(d?.valor_baixado ?? d?.valor_pago ?? (typeof diariaValor==='function'?diariaValor(d):0) ?? 0),0);
+    const statuses=new Set(['pago','paid','quitado','liquidado']);
+    const extras=(typeof getFuncionarioExtrasAll==='function'?getFuncionarioExtrasAll():[]);
+    const paidExtras=extras.filter(x=>statuses.has(String(x?.status||'').toLowerCase())).reduce((a,x)=>a+Number(x?.valor||0),0);
+    let vales=0;const perEmployee={};
+    for(const f of (D.funcionarios||[])){
+      const fid=String(f.id),fds=paid.filter(d=>String(d.funcionario_id)===fid),fp=fds.reduce((a,d)=>a+Number(d?.valor_baixado ?? d?.valor_pago ?? (typeof diariaValor==='function'?diariaValor(d):0) ?? 0),0);
+      const fe=extras.filter(x=>String(x?.funcionario_id??x?.funcionarioId??'')===fid&&statuses.has(String(x?.status||'').toLowerCase())).reduce((a,x)=>a+Number(x?.valor||0),0);
+      const fv=(typeof getEmployeeAdvances==='function'?getEmployeeAdvances(f.id):[]).reduce((a,x)=>a+Number(x?.disponivel||0),0);vales+=fv;
+      perEmployee[fid]={quitado:Math.round((fp+fe)*100)/100,vales:Math.round(fv*100)/100};
+    }
+    return {totalQuitado:Math.round((paidDays+paidExtras)*100)/100,valesAbertos:Math.round(vales*100)/100,perEmployee};
+  }finally{
+    for(const k of Object.keys(oldData))D[k]=oldData[k];
+    for(const [k,v] of Object.entries(oldAux)){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(_){}}
+  }
+}
+function v9currentTeamSnapshot(){return v9teamSnapshot(v9copy(D),{funcionarioObras:localFuncObras(),adiantamentosAplicados:getAdvanceApplied(),servicosAdicionais:getServices(),diariasBaixadas:getPaidDiariasMap()})}
+function v9snapshotMatches(a,b){return Math.abs(Number(a?.totalQuitado||0)-Number(b?.totalQuitado||0))<.01&&Math.abs(Number(a?.valesAbertos||0)-Number(b?.valesAbertos||0))<.01}
+function v9captureLocal(){
+  const aux={};for(const k of V9_AUX_KEYS)aux[k]=localStorage.getItem(k);
+  return {data:cloneState(),aux};
+}
+function v9restoreLocal(snap){
+  for(const k of Object.keys(D))delete D[k];Object.assign(D,v9copy(snap.data||{}));
+  for(const [k,v] of Object.entries(snap.aux||{})){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(_){}}
+  saveLocalData();
+}
+function v9buildMaps(target,current,backup){
+  const maps={},ops={};
+  for(const table of Object.keys(D||{})){
+    maps[table]={};ops[table]={};const cur=v9rows(current,table);
+    for(const row of v9rows(target,table)){
+      const op=v9op(table,row,backup?.scope_hint||'');
+      const found=cur.find(x=>v9sameIdentity(table,row,x));
+      const id=found?.id??('local_'+op);
+      if(row?.id!=null)maps[table][String(row.id)]=id;
+      ops[table][String(row?.id??op)]={op,id,found};
+    }
+  }
+  return {maps,ops};
+}
+function v9mapAux(aux,maps){
+  const func={},adv={},paid={},svc={};
+  for(const [id,val] of Object.entries(aux?.funcionarioObras||{})){const k=maps.funcionarios?.[String(id)]??id;func[String(k)]=maps.obras?.[String(val)]??val}
+  for(const [id,val] of Object.entries(aux?.adiantamentosAplicados||{})){const k=maps.gastos?.[String(id)]??id;adv[String(k)]=Number(val||0)}
+  for(const [id,val] of Object.entries(aux?.diariasBaixadas||{})){const k=maps.diarias?.[String(id)]??id;if(val)paid[String(k)]=true}
+  for(const [oid,list] of Object.entries(aux?.servicosAdicionais||{})){
+    const noid=maps.obras?.[String(oid)]??oid;
+    svc[String(noid)]=(Array.isArray(list)?list:[]).map(x=>{const y=edifiqRemapReferences(v9copy(x),maps);if(y?.id!=null&&maps.servicos_adicionais?.[String(y.id)]!=null)y.id=maps.servicos_adicionais[String(y.id)];return y});
+  }
+  return {funcionarioObras:func,adiantamentosAplicados:adv,servicosAdicionais:svc,diariasBaixadas:paid};
+}
+async function v9restoreExactLocal(backup,target,aux){
+  const previous=v9captureLocal(),current=v9copy(previous.data),owner=v9owner();
+  const {maps}=v9buildMaps(target,current,backup);const mappedAux=v9mapAux(aux,maps);const staged={};
+  // Monta exatamente o estado do backup. O conteúdo do backup vence; apenas a identidade remota existente é reaproveitada.
+  for(const table of Object.keys(D||{})){
+    staged[table]=[];const cur=v9rows(current,table);
+    for(const raw of v9rows(target,table)){
+      const op=v9op(table,raw,backup?.scope_hint||''),found=cur.find(x=>v9sameIdentity(table,raw,x));
+      const id=raw?.id!=null?(maps[table]?.[String(raw.id)]??found?.id??('local_'+op)):('local_'+op);
+      const next=edifiqRemapReferences(v9copy(raw),maps);
+      const row={...next,id,operation_id:found?.operation_id||next.operation_id||op,user_id:owner};
+      if(EDIFIQ_SYNC_COLUMNS?.[table])row._sync_pendente=String(id).startsWith('local_');
+      staged[table].push(row);
+    }
+  }
+  // Descarta filas antigas e agenda exclusão apenas do que não pertence ao backup exato.
+  v9writeJSON(PENDING_UPDATES_KEY,[]);v9writeJSON(DELETE_QUEUE_KEY,[]);
+  for(const table of V9_CLOUD_TABLES){
+    const targets=v9rows(target,table),cur=v9rows(current,table);
+    for(const row of cur){
+      if(String(row?.id||'').startsWith('local_'))continue;
+      if(!targets.some(t=>v9sameIdentity(table,t,row)))try{addEdifiqDeleteQueue(table,row.id,row)}catch(_){ }
+    }
+  }
+  for(const k of Object.keys(D))D[k]=staged[k]||[];
+  v9writeJSON(FUNC_OBRA_KEY,mappedAux.funcionarioObras);v9writeJSON(ADV_KEY,mappedAux.adiantamentosAplicados);v9writeJSON(SERVICE_KEY,mappedAux.servicosAdicionais);v9writeJSON(PAID_DIARIAS_KEY,mappedAux.diariasBaixadas);
+  saveLocalData();try{await edifiqStateSaveQueue}catch(_){ }
+  // Anexos são restaurados somente depois de o estado principal estar durável.
+  const warnings=[];
+  for(const foto of (backup.fotos||[])){try{await savePhotoDB(edifiqRemapReferences(v9copy(foto),maps))}catch(_){warnings.push('foto')}}
+  for(const doc of D.documentos||[]){if(!doc?.conteudo)continue;try{const blob=await (await fetch(doc.conteudo)).blob();await putDocumentoArquivo(doc.id,new File([blob],doc.nome_arquivo||'documento',{type:doc.tipo_mime||blob.type}));delete doc.conteudo}catch(_){warnings.push('documento')}}
+  try{saveDocumentoMeta()}catch(_){ }try{saveMaterialMeta()}catch(_){ }saveLocalData();try{await edifiqStateSaveQueue}catch(_){ }
+  return {previous,maps,mappedAux,warnings};
+}
+async function v9queueExactCloudUpdates(){
+  const owner=v9owner();
+  for(const table of V9_CLOUD_TABLES){
+    if(!EDIFIQ_SYNC_COLUMNS?.[table])continue;
+    for(const row of (D[table]||[])){
+      if(String(row.id).startsWith('local_')||String(row.user_id||owner)!==owner)continue;
+      try{addEdifiqPendingUpdate(table,row.id,edifiqCloudPayload(table,row),null)}catch(_){ }
+    }
+  }
+}
+async function v9syncExact(){
+  if(!navigator.onLine||!sb||!user?.id)return false;
+  try{await retryEdifiqDeleteQueue()}catch(_){ }
+  try{await edifiqFlushWrites()}catch(_){ }
+  await v9queueExactCloudUpdates();
+  try{await edifiqFlushWrites()}catch(_){ }
+  try{return typeof v9BaseFullSync==='function'?await v9BaseFullSync():false}catch(_){return false}
+}
+async function v9sha256(text){
+  try{if(window.crypto?.subtle&&window.TextEncoder){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(text)));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}}catch(_){}
+  let h=2166136261,s=String(text);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return 'fnv1a-'+(h>>>0).toString(16).padStart(8,'0');
+}
+async function v9verifyBackupBasic(backup){
+  if(!backup||backup.app!=='EDIFIQ'||!backup.data||typeof backup.data!=='object')throw new Error('Arquivo não reconhecido como backup EDIFIQ.');
+  if(backup.integrity?.value&&typeof v9BaseVerifyBackup==='function')await v9BaseVerifyBackup(backup);
+  return true;
+}
+async function v9exportFull(){
+  const warnings=[];
+  if(sb&&user?.id&&navigator.onLine){try{if(typeof v9BaseFullSync==='function')await v9BaseFullSync()}catch(_){warnings.push('A conferência da nuvem não terminou antes do backup.')}}
+  try{saveLocalData();await edifiqStateSaveQueue}catch(_){ }
+  // Fonte principal = estado atual que o usuário realmente está vendo. Snapshots antigos não entram na restauração normal.
+  const data=v9dedupeData(v9copy(D));
+  let fotos=[],documentos=[];
+  try{fotos=await getAllPhotosDB()}catch(_){warnings.push('Fotos locais indisponíveis.')}
+  try{documentos=await edifiqExportDocumentosComArquivo();if(Array.isArray(documentos)&&documentos.length){const by=new Map((data.documentos||[]).map(x=>[String(x.id),x]));for(const d of documentos)by.set(String(d.id),{...(by.get(String(d.id))||{}),...d});data.documentos=[...by.values()]}}catch(_){warnings.push('Alguns documentos não puderam incluir o arquivo.')}
+  const aux={funcionarioObras:v9copy(localFuncObras()),adiantamentosAplicados:v9copy(getAdvanceApplied()),servicosAdicionais:v9copy(getServices()),diariasBaixadas:v9copy(getPaidDiariasMap())};
+  const financial=v9teamSnapshot(data,aux),counts={};for(const k of Object.keys(D||{}))counts[k]=v9rows(data,k).length;
+  const now=new Date().toISOString();
+  const backup={app:'EDIFIQ',version:V9_VERSION,backup_id:'bkp9_'+Date.now()+'_'+Math.random().toString(36).slice(2,10),date:now,scope_hint:v9scope(),manifest:{tables:counts,total_records:Object.values(counts).reduce((a,n)=>a+Number(n||0),0),photos:fotos.length,documents:(data.documentos||[]).length,restore_mode:'exact',financial_snapshot:financial},data,fotos,...aux,syncConflicts:v9copy(getEdifiqSyncConflicts?.()||[]),diagnostics:{syncVerified:window.__edifiqLastSyncVerified===true,warnings},warnings:[...new Set(warnings)]};
+  {const x=v9copy(backup);delete x.integrity;backup.integrity={algorithm:'SHA-256',value:await v9sha256(JSON.stringify(x))}}
+  downloadFile(JSON.stringify(backup,null,2),'EDIFIQ_backup_EXATO_'+now.slice(0,10)+'.json','application/json');
+  const status=document.getElementById('backupStatus');if(status)status.textContent=`Backup exato criado · Quitado ${v9money(financial.totalQuitado)} · Vales ${v9money(financial.valesAbertos)}.`;
+  toast('Backup exato criado com conferência dos totais da equipe.');return backup;
+}
+async function v9importBackupData(backup){
+  await v9verifyBackupBasic(backup);
+  if(!user)throw new Error('Entre no aplicativo antes de importar.');
+  const target=v9authoritativeData(backup),aux=v9auxFromBackup(backup),expected=backup?.manifest?.financial_snapshot||v9teamSnapshot(target,aux);
+  const previous=v9captureLocal();window.__edifiqImporting=true;try{try{v9BaseStopRealtime()}catch(_){ }
+    const restored=await v9restoreExactLocal(backup,target,aux),actual=v9currentTeamSnapshot();
+    if(!v9snapshotMatches(expected,actual))throw new Error(`A restauração foi interrompida porque os totais não conferiram. Esperado: quitado ${v9money(expected.totalQuitado)} e vales ${v9money(expected.valesAbertos)}. Obtido: quitado ${v9money(actual.totalQuitado)} e vales ${v9money(actual.valesAbertos)}.`);
+    window.__edifiqImporting=false;const synced=await v9syncExact();try{edifiqRenderAfterSync()}catch(_){ }try{v9BaseStartRealtime()}catch(_){ }
+    return {expected,actual,synced,warnings:restored.warnings};
+  }catch(e){window.__edifiqImporting=false;v9restoreLocal(previous);try{v9BaseStartRealtime()}catch(_){ }throw e}
+}
+async function v9readFile(file){return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>{try{resolve(JSON.parse(r.result))}catch(e){reject(e)}};r.onerror=()=>reject(r.error||new Error('Falha na leitura'));r.readAsText(file)})}
+async function v9importFile(event){
+  const file=event?.target?.files?.[0];if(!file)return;
+  try{
+    const backup=await v9readFile(file);await v9verifyBackupBasic(backup);const target=v9authoritativeData(backup),aux=v9auxFromBackup(backup),expected=backup?.manifest?.financial_snapshot||v9teamSnapshot(target,aux);
+    const msg=`Restaurar este backup exatamente?\n\nTotal quitado detectado: ${v9money(expected.totalQuitado)}\nVales em aberto detectados: ${v9money(expected.valesAbertos)}\n\nA restauração vai voltar os dados para o estado salvo no backup. Registros criados depois do backup serão removidos, mas uma cópia de segurança do estado atual será feita antes.`;
+    if(!confirm(msg))return;
+    const result=await v9importBackupData(backup),status=document.getElementById('backupStatus');
+    if(status)status.textContent=`Restauração conferida · Quitado ${v9money(result.actual.totalQuitado)} · Vales ${v9money(result.actual.valesAbertos)}${result.synced?' · sincronizado':' · sincronização pendente'}.`;
+    toast(result.synced?'Backup restaurado exatamente e sincronizado.':'Backup restaurado exatamente; a sincronização continuará quando possível.');
+  }catch(e){console.error('EDIFIQ V9 importação',e);const status=document.getElementById('backupStatus');if(status)status.textContent='Importação interrompida: '+(e?.message||'erro');toast(e?.message||'Não foi possível importar o backup.')}finally{try{event.target.value=''}catch(_){}}
+}
+
+window.exportFull=v9exportFull;
+window.importBackupData=v9importBackupData;
+window.importBackup=v9importFile;
+window.importRelatorioData=v9importFile;
+window.edifiqBackupTeamSnapshot=v9currentTeamSnapshot;
+})();
+</script>
+
 </body>
 </html>
