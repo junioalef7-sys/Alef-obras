@@ -15683,5 +15683,192 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
   window.EDIFIQ_BUILD='2026-10-11-etapa10-clientes-assinatura';
 })();
 </script>
+
+
+<!-- =========================================================
+     EDIFIQ — ETAPA 11
+     Cobrança recorrente, checkout, renovação e cancelamento
+     Mercado Pago + Supabase Edge Functions
+     ========================================================= -->
+<style id="edifiq-etapa11-billing-style">
+.edBillingGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.edBillingPlan{border:1px solid var(--line,#d0d5dd);border-radius:16px;padding:16px;background:var(--card,#fff);position:relative}.edBillingPlan.current{outline:2px solid #2563eb;border-color:#2563eb}.edBillingPlan h3{margin:0 0 5px}.edBillingPrice{font-size:26px;font-weight:950;letter-spacing:-.6px;margin:9px 0}.edBillingPrice small{font-size:11px;font-weight:800;opacity:.68}.edBillingMeta{font-size:12px;line-height:1.45;opacity:.8}.edBillingRows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.edBillingRows>div{border:1px solid var(--line,#eaecf0);border-radius:11px;padding:10px}.edBillingRows small{display:block;opacity:.7;margin-bottom:4px}.edBillingActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.edBillingHistory{display:flex;flex-direction:column;margin-top:9px}.edBillingHistory>div{display:grid;grid-template-columns:1fr auto auto;gap:9px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line,#eaecf0);font-size:12px}.edBillingHistory>div:last-child{border-bottom:0}.edBillingStatus{font-weight:900}.edBillingStatus.ok{color:#067647}.edBillingStatus.bad{color:#b42318}.edBillingStatus.warn{color:#b54708}.edBillingProvider{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 8px;background:#eff8ff;color:#175cd3;font-size:10px;font-weight:900}.edBillingSetup{border:1px solid #fedf89;background:#fffaeb;color:#7a2e0e;border-radius:12px;padding:11px 12px;font-size:12px;line-height:1.45;margin-top:10px}.edBillingSpinner{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:edSpin11 .75s linear infinite;vertical-align:-2px;margin-right:5px}@keyframes edSpin11{to{transform:rotate(360deg)}}
+@media(max-width:680px){.edBillingGrid,.edBillingRows{grid-template-columns:1fr}.edBillingHistory>div{grid-template-columns:1fr auto}.edBillingHistory>div span:last-child{grid-column:1/-1}.edBillingActions .btn{flex:1 1 160px}}
+body.edLight .edBillingPlan{background:#fff;color:#111827}
+</style>
+<script id="edifiq-etapa11-billing">
+(function(){
+  const BILLING_PROVIDER='Mercado Pago';
+  window.__edifiqBillingHistory=[];
+  window.__edifiqBillingBusy=false;
+
+  function esc11(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]))}
+  function brl11(cents){return (Number(cents||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+  function date11(v){if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR')}
+  function time11(v){if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('pt-BR')}
+  function owner11(){try{return !!user?.id&&String((typeof edifiqEmpresaUserId==='function'&&edifiqEmpresaUserId())||edifiqEmpresaAtivaId||user.id)===String(user.id)}catch(_){return !!user?.id}}
+  function plans11(){return Array.isArray(window.__edifiqPlans)&&window.__edifiqPlans.length?window.__edifiqPlans:[{codigo:'mensal',nome:'EDIFIQ Mensal',ciclo:'mensal',preco_centavos:3990,dias_trial:14},{codigo:'anual',nome:'EDIFIQ Anual',ciclo:'anual',preco_centavos:39900,dias_trial:14}]}
+  function sub11(){return window.__edifiqSubscription||{}}
+  function selected11(){return String(sub11().plano_preferido||sub11().plano||user?.user_metadata?.preferred_plan||'mensal')}
+  function access11(s=sub11()){
+    if(typeof s?.acesso_liberado==='boolean')return s.acesso_liberado;
+    const st=String(s?.status||'').toLowerCase(),now=Date.now();
+    if(st==='cortesia')return true;
+    if(st==='ativa')return !s.periodo_fim||new Date(s.periodo_fim).getTime()>now;
+    if(st==='trial')return !!s.trial_fim&&new Date(s.trial_fim).getTime()>now;
+    return false;
+  }
+  function labelProvider11(v){return ({authorized:'Autorizada',pending:'Aguardando pagamento',paused:'Pausada',canceled:'Cancelada'})[String(v||'').toLowerCase()]||String(v||'Não iniciada')}
+  function paymentLabel11(v){const s=String(v||'').toLowerCase();return ({approved:'Aprovado',authorized:'Autorizado',pending:'Pendente',in_process:'Em processamento',rejected:'Recusado',cancelled:'Cancelado',canceled:'Cancelado',refunded:'Estornado'})[s]||String(v||'—')}
+  function payClass11(v){const s=String(v||'').toLowerCase();return s==='approved'?'ok':(['pending','in_process','authorized'].includes(s)?'warn':'bad')}
+
+  async function invoke11(name,body){
+    if(!sb&&typeof ensureSupabaseClient==='function')await ensureSupabaseClient();
+    if(!sb)throw new Error('Sem conexão com o servidor.');
+    const {data,error}=await sb.functions.invoke(name,{body});
+    if(error){
+      let detail='';
+      try{if(error.context&&typeof error.context.clone==='function'){const r=error.context.clone();const j=await r.json();detail=j?.error||j?.detail||''}}catch(_){}
+      const e=new Error(detail||error.message||'Falha ao comunicar com o servidor.');
+      e.code=detail==='Mercado Pago ainda não configurado'?'mercado_pago_not_configured':'';
+      throw e;
+    }
+    if(data?.error){const e=new Error(data.error);e.code=data.code||'';throw e}
+    return data||{};
+  }
+
+  async function loadHistory11(){
+    if(!sb||!user?.id)return [];
+    try{
+      const {data,error}=await sb.from('edifiq_pagamentos_assinatura').select('id,status,status_detalhe,valor_centavos,moeda,pago_em,criado_em,provedor_pagamento_id').order('criado_em',{ascending:false}).limit(12);
+      if(error)throw error;window.__edifiqBillingHistory=Array.isArray(data)?data:[];
+    }catch(e){console.warn('EDIFIQ histórico assinatura',e);window.__edifiqBillingHistory=[]}
+    return window.__edifiqBillingHistory;
+  }
+
+  async function refreshBilling11(showToast=false){
+    try{
+      if(typeof window.initCommercial10==='function')await window.initCommercial10();
+      else if(sb){const r=await sb.rpc('edifiq_assinatura_atual');if(!r.error&&r.data)window.__edifiqSubscription=r.data}
+      await loadHistory11();
+      renderBilling11();
+      if(showToast)toast('Assinatura atualizada.');
+    }catch(e){console.warn('EDIFIQ refresh billing',e)}
+  }
+  window.refreshBilling11=refreshBilling11;
+
+  window.assinarPlanoEdifiq11=async function(codigo){
+    codigo=String(codigo||'').toLowerCase();
+    if(!['mensal','anual'].includes(codigo)){toast('Plano inválido.');return}
+    if(!owner11()){toast('Somente o proprietário da conta pode contratar ou alterar o plano.');return}
+    if(window.__edifiqBillingBusy)return;
+    window.__edifiqBillingBusy=true;
+    const btn=document.querySelector(`[data-ed-billing-plan="${codigo}"]`);const old=btn?.innerHTML;
+    if(btn){btn.disabled=true;btn.innerHTML='<span class="edBillingSpinner"></span>Preparando pagamento...'}
+    try{
+      if(sb){const r=await sb.from('edifiq_assinaturas').update({plano_preferido:codigo}).eq('empresa_user_id',user.id);if(r.error)throw r.error}
+      const data=await invoke11('edifiq-assinatura-checkout',{plano:codigo,return_url:location.href.split('#')[0]});
+      if(data.already_active){toast('Sua assinatura já está ativa.');await refreshBilling11();return}
+      if(!data.checkout_url)throw new Error('O servidor não retornou o endereço de pagamento.');
+      try{localStorage.setItem('edifiq_billing_return_v1',JSON.stringify({at:new Date().toISOString(),plano:codigo}))}catch(_){}
+      toast(data.reused?'Continuando pagamento pendente...':'Abrindo pagamento seguro...');
+      location.assign(String(data.checkout_url));
+    }catch(e){
+      console.error('EDIFIQ checkout',e);
+      const msg=String(e?.message||'Não foi possível iniciar o pagamento.');
+      if(/não configurado|nao configurado/i.test(msg)){toast('A cobrança está pronta, mas as credenciais do Mercado Pago ainda precisam ser configuradas no servidor.');window.__edifiqBillingNotConfigured=true}
+      else toast(msg);
+      renderBilling11();
+    }finally{window.__edifiqBillingBusy=false;if(btn&&document.body.contains(btn)){btn.disabled=false;btn.innerHTML=old||'Assinar'}}
+  };
+
+  window.sincronizarAssinaturaEdifiq11=async function(showToast=true){
+    if(!owner11()){toast('Somente o proprietário pode sincronizar a assinatura.');return}
+    if(window.__edifiqBillingBusy)return;window.__edifiqBillingBusy=true;
+    try{await invoke11('edifiq-assinatura-gerenciar',{action:'sincronizar'});await refreshBilling11(showToast)}
+    catch(e){const msg=String(e?.message||'Não foi possível sincronizar.');if(/não configurado/i.test(msg)){window.__edifiqBillingNotConfigured=true;toast('Credenciais do Mercado Pago ainda não configuradas no servidor.')}else toast(msg)}
+    finally{window.__edifiqBillingBusy=false}
+  };
+
+  window.cancelarAssinaturaEdifiq11=async function(){
+    if(!owner11()){toast('Somente o proprietário pode cancelar a assinatura.');return}
+    const s=sub11();if(!s.provedor_status&&!s.provedor){toast('Não há assinatura de cobrança para cancelar.');return}
+    if(!confirm('Cancelar a renovação automática do EDIFIQ? Se houver período já pago, o acesso será preservado até o fim desse período.'))return;
+    if(window.__edifiqBillingBusy)return;window.__edifiqBillingBusy=true;
+    try{const r=await invoke11('edifiq-assinatura-gerenciar',{action:'cancelar'});await refreshBilling11();toast(r?.access_until?'Renovação cancelada. Seu acesso segue até '+date11(r.access_until)+'.':'Assinatura cancelada.')}
+    catch(e){toast(String(e?.message||'Não foi possível cancelar a assinatura.'))}
+    finally{window.__edifiqBillingBusy=false}
+  };
+
+  function billingPlansHtml11(){
+    const selected=selected11(),s=sub11(),trialFuture=String(s.status)==='trial'&&s.trial_fim&&new Date(s.trial_fim).getTime()>Date.now();
+    return `<div class="edBillingGrid">${plans11().map(p=>{const annual=String(p.ciclo)==='anual',sel=selected===p.codigo;return `<div class="edBillingPlan ${sel?'current':''}">${annual?'<span class="edPlanTag">Economize no ano</span>':''}<h3>${esc11(p.nome)}</h3><div class="edBillingPrice">${brl11(p.preco_centavos)} <small>/${annual?'ano':'mês'}</small></div><div class="edBillingMeta">${annual?'Uma cobrança a cada 12 meses.':'Cobrança automática mensal.'}${trialFuture?`<br><b>Seu teste grátis vai até ${date11(s.trial_fim)}.</b> A cobrança é programada para depois do teste.`:''}</div><button class="btn ${sel?'primary':''}" data-ed-billing-plan="${esc11(p.codigo)}" type="button" onclick="assinarPlanoEdifiq11('${esc11(p.codigo)}')" style="margin-top:12px">${String(s.provedor_status)==='pending'&&sel?'Continuar pagamento':'Assinar '+(annual?'Anual':'Mensal')}</button></div>`}).join('')}</div>`;
+  }
+
+  function historyHtml11(){
+    const rows=window.__edifiqBillingHistory||[];
+    if(!rows.length)return '<div class="edAccountStatus">Nenhuma cobrança registrada ainda.</div>';
+    return `<div class="edBillingHistory">${rows.map(r=>`<div><span><b>${date11(r.pago_em||r.criado_em)}</b><br><small>${esc11(r.status_detalhe||'Mercado Pago')}</small></span><b>${brl11(r.valor_centavos)}</b><span class="edBillingStatus ${payClass11(r.status)}">${esc11(paymentLabel11(r.status))}</span></div>`).join('')}</div>`;
+  }
+
+  window.openPlanosEdifiq11=async function(){
+    await refreshBilling11();
+    let m=$('edPlanosModal');if(!m){m=document.createElement('div');m.id='edPlanosModal';m.className='modal open';document.body.appendChild(m)}else m.classList.add('open');
+    const s=sub11();
+    m.innerHTML=`<div class="modalBox" style="max-width:780px;max-height:92vh;overflow:auto"><div class="modalHead"><div><h2>💳 Planos e pagamento</h2><p class="sub">Assinatura recorrente processada com segurança pelo Mercado Pago.</p></div><button class="x" onclick="closeM('edPlanosModal')">×</button></div><div class="card"><div class="financeRow"><span>Status EDIFIQ</span><b>${esc11((typeof label10==='function'?label10(s):s.status)||'Assinatura')}</b></div><div class="financeRow"><span>Mercado Pago</span><b>${esc11(labelProvider11(s.provedor_status))}</b></div>${s.proxima_cobranca_em?`<div class="financeRow"><span>Próxima cobrança</span><b>${date11(s.proxima_cobranca_em)}</b></div>`:''}</div>${billingPlansHtml11()}${window.__edifiqBillingNotConfigured?'<div class="edBillingSetup"><b>Integração preparada.</b> Falta configurar o Access Token e a assinatura secreta do webhook do Mercado Pago no servidor Supabase.</div>':''}<div class="note" style="margin-top:12px">O EDIFIQ não recebe nem armazena número de cartão. A autorização e a cobrança acontecem no ambiente do Mercado Pago.</div></div>`;
+  };
+  window.openPlanosEdifiq10=window.openPlanosEdifiq11;
+
+  function renderConfigBilling11(){
+    const modal=$('edConfiguracoesModal');if(!modal)return;
+    const old=$('edSubscriptionConfigCard');if(old)old.remove();
+    let card=$('edBillingConfig11');if(card)card.remove();
+    const s=sub11(),plan=plans11().find(p=>p.codigo===selected11());
+    card=document.createElement('div');card.id='edBillingConfig11';card.className='card edAccountCard';
+    const canCancel=owner11()&&['authorized','pending','paused'].includes(String(s.provedor_status||''));
+    card.innerHTML=`<h3>💳 Plano e assinatura</h3><p class="sub">Cobrança do EDIFIQ. Não interfere no Financeiro das obras.</p><div class="edBillingRows"><div><small>Status EDIFIQ</small><b>${esc11((typeof label10==='function'?label10(s):s.status)||'Assinatura')}</b></div><div><small>Plano</small><b>${esc11(plan?.nome||s.plano||'Não escolhido')}</b></div><div><small>Provedor</small><b>${esc11(s.provedor?BILLING_PROVIDER:'Ainda não iniciado')}</b></div><div><small>Status da cobrança</small><b>${esc11(labelProvider11(s.provedor_status))}</b></div><div><small>Próxima cobrança</small><b>${date11(s.proxima_cobranca_em||s.periodo_fim)}</b></div><div><small>Último pagamento</small><b>${esc11(paymentLabel11(s.ultimo_pagamento_status))}</b></div></div><div class="edBillingActions"><button class="btn primary" type="button" onclick="openPlanosEdifiq11()">${s.provedor_status==='authorized'?'Alterar / ver plano':'Assinar plano'}</button>${s.provedor_assinatura_id||s.provedor?'<button class="btn" type="button" onclick="sincronizarAssinaturaEdifiq11()">↻ Sincronizar</button>':''}${canCancel?'<button class="btn danger" type="button" onclick="cancelarAssinaturaEdifiq11()">Cancelar renovação</button>':''}</div>${window.__edifiqBillingNotConfigured?'<div class="edBillingSetup"><b>Configuração pendente:</b> adicione as credenciais privadas do Mercado Pago às Edge Functions para liberar checkout e webhooks.</div>':''}<h4 style="margin:15px 0 0">Histórico de cobranças</h4>${historyHtml11()}`;
+    const head=modal.querySelector('.modalHead');if(head)head.insertAdjacentElement('afterend',card);else modal.querySelector('.modalBox')?.prepend(card);
+  }
+
+  function renderGateBilling11(){
+    const gate=$('edSubscriptionGate'),s=sub11();if(!gate||access11(s)!==false)return;
+    gate.classList.remove('hidden');
+    gate.innerHTML=`<div class="edSubscriptionGateBox"><h2>Renove seu acesso ao EDIFIQ</h2><p class="sub">Seu período atual terminou. Todos os seus dados continuam preservados.</p>${billingPlansHtml11()}${window.__edifiqBillingNotConfigured?'<div class="edBillingSetup">O checkout ainda precisa das credenciais do Mercado Pago no servidor.</div>':''}<div class="edBillingActions"><button class="btn" type="button" onclick="sincronizarAssinaturaEdifiq11()">↻ Já paguei / verificar</button><button class="btn" type="button" onclick="logout()">Sair da conta</button></div></div>`;
+  }
+
+  function patchBanner11(){
+    const b=$('edSubscriptionBanner'),s=sub11();if(!b)return;
+    const small=b.querySelector('small');
+    if(small){if(String(s.provedor_status)==='pending')small.textContent='Pagamento iniciado. Conclua no Mercado Pago ou toque em Planos para continuar.';else if(String(s.provedor_status)==='authorized')small.textContent='Renovação automática ativa pelo Mercado Pago.'}
+    const btn=b.querySelector('button');if(btn){btn.setAttribute('onclick','openPlanosEdifiq11()');btn.textContent=String(s.provedor_status)==='pending'?'Continuar pagamento':'Plano'}
+  }
+
+  function renderBilling11(){patchBanner11();renderGateBilling11();if($('edConfiguracoesModal')?.classList.contains('open'))renderConfigBilling11()}
+  window.renderBilling11=renderBilling11;
+
+  const oldOpenConfig11=window.openConfiguracoes;
+  if(typeof oldOpenConfig11==='function')window.openConfiguracoes=async function(){const r=await oldOpenConfig11.apply(this,arguments);await loadHistory11();renderConfigBilling11();return r};
+
+  async function handleReturn11(){
+    if(!user?.id||!owner11())return;
+    let should=false;
+    try{const saved=JSON.parse(localStorage.getItem('edifiq_billing_return_v1')||'null');if(saved?.at&&Date.now()-new Date(saved.at).getTime()<48*3600_000)should=true}catch(_){}
+    const u=new URL(location.href);if([...u.searchParams.keys()].some(k=>/preapproval|payment|status|collection/i.test(k)))should=true;
+    if(!should)return;
+    try{await window.sincronizarAssinaturaEdifiq11(false)}catch(_){}
+    try{localStorage.removeItem('edifiq_billing_return_v1')}catch(_){}
+    try{for(const k of [...u.searchParams.keys()])if(/preapproval|payment|status|collection|external_reference/i.test(k))u.searchParams.delete(k);history.replaceState({},'',u.pathname+(u.search?u.search:'')+u.hash)}catch(_){}
+  }
+
+  async function initBilling11(){
+    if(!user?.id)return;
+    await loadHistory11();renderBilling11();setTimeout(()=>handleReturn11().catch(()=>{}),300);
+  }
+  window.initBilling11=initBilling11;
+
+  let tries11=0;const timer11=setInterval(()=>{tries11++;if(user?.id&&window.__edifiqCommercialInit){initBilling11().catch(()=>{});clearInterval(timer11)}else if(tries11>40)clearInterval(timer11)},650);
+
+  window.EDIFIQ_BUILD='2026-10-11-etapa11-cobranca-mercadopago';
+})();
+</script>
 </body>
 </html>
