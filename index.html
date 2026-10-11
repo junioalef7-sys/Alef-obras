@@ -16157,5 +16157,203 @@ body.edLight .ed13Status{border-color:#e2e8f0!important;color:#111827!important}
 })();
 </script>
 
+
+
+<!-- =========================================================
+     EDIFIQ — ETAPA 14
+     Exclusão de conta + fechamento consistente + ajustes Equipe
+     ========================================================= -->
+<style id="edifiq-etapa14-style">
+/* Equipe — ajustes SOMENTE no modo escuro. */
+body:not(.edLight) .edEqDaysUniform .edEqPill.blue{
+  background:#111b2b!important;
+  background-color:#111b2b!important;
+  background-image:none!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  border-color:rgba(255,255,255,.06)!important;
+  box-shadow:none!important;
+}
+body:not(.edLight) .edEqDaysUniform .edEqPill.blue *{
+  color:#fff!important;-webkit-text-fill-color:#fff!important;
+}
+body:not(.edLight) .edEqAction.primary[onclick*="openDiaFuncionario"]{
+  background:#2563eb!important;
+  background-color:#2563eb!important;
+  background-image:none!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  border:1px solid #3b82f6!important;
+  box-shadow:none!important;
+}
+body:not(.edLight) .edEqAction.primary[onclick*="openDiaFuncionario"] *{
+  color:#fff!important;-webkit-text-fill-color:#fff!important;
+}
+
+/* Fechar telas abertas pelo menu. */
+.ed14PageClose{margin-left:auto!important;min-width:38px!important;width:38px!important;height:38px!important;padding:0!important;border-radius:10px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;font-size:21px!important;line-height:1!important}
+.ed14FloatingClose{position:absolute!important;right:12px!important;top:12px!important;z-index:30!important;width:38px!important;height:38px!important;border-radius:10px!important;border:1px solid var(--line,#2a3037)!important;background:var(--panel,#101419)!important;color:var(--text,#e6eaf0)!important;font-size:22px!important;display:flex!important;align-items:center!important;justify-content:center!important;cursor:pointer!important}
+body.edLight .ed14FloatingClose{background:#fff!important;color:#111827!important;border-color:#d0d5dd!important}
+.modalBox{position:relative}
+
+/* Exclusão da conta. */
+.ed14DangerCard{border:1px solid rgba(217,45,32,.35)!important;background:rgba(217,45,32,.05)!important}
+.ed14DangerCard h3{color:#f97066!important}
+body.edLight .ed14DangerCard{background:#fff7f6!important;border-color:#fecdca!important}
+body.edLight .ed14DangerCard h3{color:#b42318!important}
+.ed14DeleteGrid{display:grid;grid-template-columns:1fr;gap:9px;margin-top:10px}
+.ed14DeleteStatus{padding:10px 12px;border-radius:10px;border:1px solid var(--line,#2a3037);font-size:12px;line-height:1.5}
+.ed14DeleteStatus.ok{border-color:rgba(18,183,106,.35);background:rgba(18,183,106,.08)}
+.ed14DeleteStatus.warn{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.08)}
+@media(max-width:680px){.ed14PageClose{width:36px!important;height:36px!important}.ed14FloatingClose{right:9px!important;top:9px!important}}
+</style>
+<script id="edifiq-etapa14-script">
+(function(){
+  'use strict';
+  const BUILD14='2026-10-11-etapa14-exclusao-publicacao';
+  const PAGE_IDS14=['resumoGeral','funcionarios','financeiro','obras','diario','checklist','documentos','diarias','faltas','materiais','analises'];
+
+  function closeDrawer14(){
+    try{
+      const menu=document.getElementById('menuPasta');
+      if(menu?.classList.contains('open')){
+        if(typeof toggleMenuPasta==='function')toggleMenuPasta();else menu.classList.remove('open');
+      }
+      document.getElementById('menuPastaBackdrop')?.classList.remove('open');
+    }catch(_){ }
+  }
+
+  window.edifiqClosePage14=function(){
+    closeDrawer14();
+    try{if(typeof go==='function')go('dashboard')}catch(_){ }
+  };
+
+  function ensurePageClose14(){
+    PAGE_IDS14.forEach(id=>{
+      const page=document.getElementById(id);if(!page)return;
+      let head=page.querySelector(':scope > .pageTitle');
+      if(!head)return;
+      if(head.querySelector('.ed14PageClose'))return;
+      const b=document.createElement('button');
+      b.type='button';b.className='btn ed14PageClose';b.title='Fechar';b.setAttribute('aria-label','Fechar');b.textContent='×';
+      b.onclick=window.edifiqClosePage14;
+      head.appendChild(b);
+    });
+  }
+
+  window.edifiqCloseModal14=function(id){
+    try{
+      if(typeof closeM==='function')closeM(id);
+      else document.getElementById(id)?.classList.remove('open');
+    }catch(_){document.getElementById(id)?.classList.remove('open')}
+  };
+
+  function hasCloseControl14(modal){
+    if(modal.querySelector('.x,.ed14FloatingClose'))return true;
+    return [...modal.querySelectorAll('button')].some(b=>/^(×|✕|fechar)$/i.test(String(b.textContent||'').trim()));
+  }
+  function ensureModalClose14(root=document){
+    root.querySelectorAll?.('.modal').forEach(modal=>{
+      if(!modal.id||hasCloseControl14(modal))return;
+      const box=modal.querySelector('.modalBox');if(!box)return;
+      const head=box.querySelector('.modalHead');
+      const b=document.createElement('button');
+      b.type='button';b.className=head?'x ed14AutoClose':'ed14FloatingClose';b.title='Fechar';b.setAttribute('aria-label','Fechar');b.textContent='×';
+      b.onclick=()=>window.edifiqCloseModal14(modal.id);
+      if(head)head.appendChild(b);else box.appendChild(b);
+    });
+  }
+
+  let closeScanQueued=false;
+  function queueCloseScan14(){
+    if(closeScanQueued)return;closeScanQueued=true;
+    requestAnimationFrame(()=>{closeScanQueued=false;ensurePageClose14();ensureModalClose14(document)});
+  }
+  const obs14=new MutationObserver(queueCloseScan14);
+  if(document.body)obs14.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',queueCloseScan14);else queueCloseScan14();
+  setTimeout(queueCloseScan14,350);setTimeout(queueCloseScan14,1000);
+
+  async function currentUser14(){
+    if(typeof sb==='undefined'||!sb)return (typeof user!=='undefined'?user:null);
+    try{const {data,error}=await sb.auth.getUser();if(error)throw error;return data?.user||(typeof user!=='undefined'?user:null)}catch(_){return (typeof user!=='undefined'?user:null)}
+  }
+  async function currentDeletionRequest14(){
+    if(typeof sb==='undefined'||!sb)return null;
+    const u=await currentUser14();if(!u)return null;
+    try{
+      const {data,error}=await sb.from('edifiq_exclusao_solicitacoes').select('id,status,motivo,solicitado_em,atualizado_em').eq('user_id',u.id).order('solicitado_em',{ascending:false}).limit(1).maybeSingle();
+      if(error)throw error;return data||null;
+    }catch(e){console.warn('EDIFIQ exclusão: consulta',e);return null}
+  }
+  function date14(v){try{return new Date(v).toLocaleString('pt-BR')}catch(_){return String(v||'—')}}
+
+  window.openExcluirConta14=async function(){
+    closeDrawer14();
+    const req=await currentDeletionRequest14();
+    let m=document.getElementById('edExcluirConta14M');
+    if(!m){m=document.createElement('div');m.id='edExcluirConta14M';m.className='modal';document.body.appendChild(m)}
+    const status=req?`<div class="ed14DeleteStatus ${req.status==='concluida'?'ok':'warn'}"><b>Solicitação existente:</b> ${String(req.status||'').replace('_',' ')}<br><small>Registrada em ${date14(req.solicitado_em)}.</small></div>`:'';
+    m.innerHTML=`<div class="modalBox" style="max-width:650px;max-height:92vh;overflow:auto"><div class="modalHead"><div><h2>🗑️ Excluir conta e dados</h2><p class="sub">Inicie a solicitação de exclusão da sua conta EDIFIQ.</p></div><button class="x" type="button" onclick="closeM('edExcluirConta14M')">×</button></div>
+      ${status}
+      <div class="card ed14DangerCard"><h3>Antes de solicitar</h3><p class="sub">Faça um backup completo. Esta solicitação é diferente de cancelar a assinatura. Ela serve para iniciar a exclusão da conta e dos dados associados, sujeita às retenções legais aplicáveis.</p><div class="edAccountActions"><button class="btn" type="button" onclick="closeM('edExcluirConta14M');openBackupConfigDirect()">💾 Fazer backup primeiro</button></div></div>
+      <div class="card"><h3>Confirmação de segurança</h3><div class="ed14DeleteGrid"><label>Motivo (opcional)<textarea id="edExcluirMotivo14" maxlength="500" placeholder="Se quiser, conte o motivo da exclusão."></textarea></label><label>Senha atual<input id="edExcluirSenha14" type="password" autocomplete="current-password" placeholder="Confirme sua senha"></label><label>Digite <b>EXCLUIR MINHA CONTA</b><input id="edExcluirFrase14" autocomplete="off" placeholder="EXCLUIR MINHA CONTA"></label><label style="display:flex;gap:8px;align-items:flex-start"><input id="edExcluirCiente14" type="checkbox" style="width:auto;margin-top:3px"><span>Entendo que esta ação inicia um pedido de exclusão e que devo manter meu backup se quiser conservar uma cópia independente dos dados.</span></label></div><div class="edAccountActions"><button class="btn danger" type="button" onclick="solicitarExclusaoConta14()">Solicitar exclusão</button></div></div>
+      <div class="note">A atualização desta etapa não apaga seus dados automaticamente. A exclusão só é iniciada quando o próprio titular confirma esta tela.</div></div>`;
+    m.classList.add('open');queueCloseScan14();
+  };
+
+  window.solicitarExclusaoConta14=async function(){
+    if(typeof sb==='undefined'||!sb){if(typeof toast==='function')toast('Conecte-se à internet para solicitar a exclusão.');return}
+    const frase=String(document.getElementById('edExcluirFrase14')?.value||'').trim().toUpperCase();
+    const senha=String(document.getElementById('edExcluirSenha14')?.value||'');
+    const motivo=String(document.getElementById('edExcluirMotivo14')?.value||'').trim().slice(0,500);
+    const ciente=!!document.getElementById('edExcluirCiente14')?.checked;
+    if(frase!=='EXCLUIR MINHA CONTA'){if(typeof toast==='function')toast('Digite a frase de confirmação exatamente como solicitado.');return}
+    if(!ciente){if(typeof toast==='function')toast('Confirme que você está ciente da solicitação.');return}
+    if(!senha){if(typeof toast==='function')toast('Informe sua senha atual.');return}
+    try{
+      const u=await currentUser14();if(!u?.email)throw new Error('Conta sem e-mail disponível.');
+      const {error:authErr}=await sb.auth.signInWithPassword({email:u.email,password:senha});if(authErr)throw new Error('Senha atual incorreta.');
+      let empresa=u.id;
+      try{const {data,error}=await sb.rpc('edifiq_empresa_atual');if(error)throw error;empresa=data||u.id}catch(_){empresa=u.id}
+      if(String(empresa)!==String(u.id))throw new Error('Somente o proprietário da conta pode solicitar a exclusão da empresa.');
+      const existing=await currentDeletionRequest14();
+      if(existing&&['solicitada','em_analise'].includes(String(existing.status||''))){if(typeof toast==='function')toast('Já existe uma solicitação de exclusão em andamento.');return}
+      const {error}=await sb.from('edifiq_exclusao_solicitacoes').insert({user_id:u.id,empresa_user_id:u.id,status:'solicitada',motivo:motivo||null});if(error)throw error;
+      if(typeof toast==='function')toast('Solicitação de exclusão registrada.');
+      await window.openExcluirConta14();
+    }catch(e){console.error('EDIFIQ solicitar exclusão',e);if(typeof toast==='function')toast(e?.message||'Não foi possível registrar a solicitação.')}
+    finally{const el=document.getElementById('edExcluirSenha14');if(el)el.value=''}
+  };
+
+  function injectDeleteCard14(){
+    const box=document.querySelector('#edConfiguracoesModal .modalBox');if(!box||box.querySelector('#edDeleteAccountCard14'))return;
+    const card=document.createElement('div');card.id='edDeleteAccountCard14';card.className='card ed14DangerCard';
+    card.innerHTML='<h3>🧾 Conta e privacidade</h3><p class="sub">Exporte seus dados ou inicie uma solicitação de exclusão da conta e dos dados associados.</p><div class="edAccountActions"><button class="btn" type="button" onclick="openPrivacidade13 && openPrivacidade13()">Política de Privacidade</button><button class="btn danger" type="button" onclick="openExcluirConta14()">Excluir conta e dados</button></div>';
+    const danger=box.querySelector('.dangerDataCard');if(danger)danger.insertAdjacentElement('beforebegin',card);else box.appendChild(card);
+  }
+  const oldConfig14=window.openConfiguracoes;
+  if(typeof oldConfig14==='function')window.openConfiguracoes=async function(){const r=await oldConfig14.apply(this,arguments);setTimeout(()=>{injectDeleteCard14();queueCloseScan14()},0);return r};
+
+  const oldPub14=window.openPublicacao13;
+  if(typeof oldPub14==='function')window.openPublicacao13=function(){
+    const r=oldPub14.apply(this,arguments);
+    setTimeout(()=>{
+      const m=document.getElementById('edPublicacao13M');if(!m)return;
+      [...m.querySelectorAll('.ed13Status')].forEach(row=>{
+        const txt=String(row.textContent||'');
+        if(/Fluxo de exclusão da conta/i.test(txt)){const tag=row.querySelector('.ed13Tag');if(tag){tag.className='ed13Tag ok';tag.textContent='PRONTO'}}
+      });
+      const note=m.querySelector('.note');if(note)note.insertAdjacentHTML('beforeend','<br><b>Etapa 14:</b> o fluxo de solicitação de exclusão dentro do app está pronto. Os arquivos públicos de Privacidade e Exclusão ainda precisam ser hospedados em um domínio público antes do envio às lojas.');
+      queueCloseScan14();
+    },0);return r;
+  };
+
+  const oldRender14=window.renderAll;
+  if(typeof oldRender14==='function')window.renderAll=function(){const r=oldRender14.apply(this,arguments);setTimeout(queueCloseScan14,0);return r};
+
+  window.EDIFIQ_BUILD=BUILD14;
+})();
+</script>
 </body>
 </html>
