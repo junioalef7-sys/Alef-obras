@@ -1581,7 +1581,7 @@ body{min-height:100vh;min-height:100dvh}
 <button class="btn primary" onclick="login()">Entrar</button>
 <button class="btn" onclick="signup()">Criar conta</button>
 <button class="btn" onclick="resetPassword()">Esqueci a senha</button>
-<button class="btn localMode" id="localModeBtn" onclick="enterLocalMode()">Entrar no modo local</button>
+<button class="btn localMode" id="localModeBtn" onclick="enterLocalMode()">Entrar offline</button>
 </div>
 <p class="sub" id="authMsg" style="text-align:center"></p>
 </div>
@@ -1958,14 +1958,101 @@ material_movimentos:[],
 servicosExtras:[],producoesEquipe:[],adiantamentos:[],servicos:[],terceirizados:[],pagamentos_terceirizados:[],orcamentos:[]
 };
 
-const LOCAL_KEY="edifiq_local_v3";
-const FUNC_OBRA_KEY="edifiq_func_obras_v2";
-const ADV_KEY="edifiq_adiantamentos_aplicados_v1";
-const PAID_DIARIAS_KEY="edifiq_diarias_baixadas_v2";
+const LOCAL_KEY_BASE="edifiq_local_v3";
+const FUNC_OBRA_KEY_BASE="edifiq_func_obras_v2";
+const ADV_KEY_BASE="edifiq_adiantamentos_aplicados_v1";
+const PAID_DIARIAS_KEY_BASE="edifiq_diarias_baixadas_v2";
+const SERVICE_KEY_BASE="edifiq_servicos_adicionais_v1";
+const PENDING_UPDATES_KEY_BASE="edifiq_pending_updates_v1";
+const DELETE_QUEUE_KEY_BASE="edifiq_delete_queue";
+const SYNC_CONFLICTS_KEY_BASE="edifiq_sync_conflicts_v1";
+const EDIFIQ_LEGACY_CLAIM_KEY="edifiq_legacy_claimed_v1";
+const EDIFIQ_EMPRESA_CACHE_PREFIX="edifiq_empresa_usuario_v1::";
+const EDIFIQ_OFFLINE_SESSION_KEY="edifiq_offline_session_v1";
+let LOCAL_KEY=LOCAL_KEY_BASE;
+let FUNC_OBRA_KEY=FUNC_OBRA_KEY_BASE;
+let ADV_KEY=ADV_KEY_BASE;
+let PAID_DIARIAS_KEY=PAID_DIARIAS_KEY_BASE;
+let SERVICE_KEY=SERVICE_KEY_BASE;
+let PENDING_UPDATES_KEY=PENDING_UPDATES_KEY_BASE;
+let DELETE_QUEUE_KEY=DELETE_QUEUE_KEY_BASE;
+let SYNC_CONFLICTS_KEY=SYNC_CONFLICTS_KEY_BASE;
+
+function edifiqSanitizeScope(v){return String(v||'').trim().replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,160)}
+function edifiqCachedEmpresaForUser(userId){
+ try{return localStorage.getItem(EDIFIQ_EMPRESA_CACHE_PREFIX+edifiqSanitizeScope(userId))||''}catch(_){return ''}
+}
+function edifiqRememberEmpresaForUser(userId,empresaId){
+ if(!userId||!empresaId)return;
+ try{localStorage.setItem(EDIFIQ_EMPRESA_CACHE_PREFIX+edifiqSanitizeScope(userId),String(empresaId))}catch(_){}
+}
+function edifiqStorageScope(){
+ const uid=edifiqSanitizeScope(user?.id||'');
+ if(!uid||uid==='local-user')return '';
+ const empresa=edifiqSanitizeScope(edifiqEmpresaAtivaId||edifiqCachedEmpresaForUser(uid)||uid);
+ return empresa?uid+'__'+empresa:'';
+}
+function edifiqScopedExternalKey(base){const scope=edifiqStorageScope();return scope?String(base)+'::'+scope:String(base)+'::__locked'}
+function edifiqLegacyOwnerScope(){try{return localStorage.getItem(EDIFIQ_LEGACY_CLAIM_KEY)||''}catch(_){return ''}}
+function edifiqResetInMemoryState(){
+ for(const k of Object.keys(D))D[k]=[];
+ editObraId=null;editFuncId=null;
+ try{window.__edifiqLastSyncComplete=false}catch(_){}
+}
+function edifiqApplyScopedKeys(){
+ const scope=edifiqStorageScope();
+ const suffix=scope?'::'+scope:'::__locked';
+ LOCAL_KEY=LOCAL_KEY_BASE+suffix;
+ FUNC_OBRA_KEY=FUNC_OBRA_KEY_BASE+suffix;
+ ADV_KEY=ADV_KEY_BASE+suffix;
+ PAID_DIARIAS_KEY=PAID_DIARIAS_KEY_BASE+suffix;
+ SERVICE_KEY=SERVICE_KEY_BASE+suffix;
+ PENDING_UPDATES_KEY=PENDING_UPDATES_KEY_BASE+suffix;
+ DELETE_QUEUE_KEY=DELETE_QUEUE_KEY_BASE+suffix;
+ SYNC_CONFLICTS_KEY=SYNC_CONFLICTS_KEY_BASE+suffix;
+ try{SAFE_SNAPSHOT_KEY=LOCAL_KEY+"__SAFE_SNAPSHOT_V2"}catch(_){}
+ try{DOC_META_KEY=DOC_META_KEY_BASE+suffix}catch(_){}
+ try{MATERIAL_META_KEY=MATERIAL_META_KEY_BASE+suffix}catch(_){}
+ return scope;
+}
+function edifiqRememberOfflineAccess(){
+ const scope=edifiqStorageScope();if(!scope||!user?.id)return;
+ try{localStorage.setItem(EDIFIQ_OFFLINE_SESSION_KEY,JSON.stringify({user_id:String(user.id),empresa_id:String(edifiqEmpresaAtivaId||edifiqCachedEmpresaForUser(user.id)||user.id),scope,at:Date.now()}))}catch(_){}
+}
+function edifiqForgetOfflineAccess(){try{localStorage.removeItem(EDIFIQ_OFFLINE_SESSION_KEY)}catch(_){}}
+function edifiqOfflineAccess(){try{const x=JSON.parse(localStorage.getItem(EDIFIQ_OFFLINE_SESSION_KEY)||'null');return x?.user_id&&x?.scope?x:null}catch(_){return null}}
+async function edifiqClaimLegacyStorage(){
+ const scope=edifiqApplyScopedKeys();if(!scope)return false;
+ const claimed=edifiqLegacyOwnerScope();if(claimed&&claimed!==scope)return false;
+ if(claimed===scope)return true;
+ const copy=(from,to)=>{try{if(localStorage.getItem(to)==null){const v=localStorage.getItem(from);if(v!=null)localStorage.setItem(to,v)}}catch(_){}};
+ const pairs=[
+  [LOCAL_KEY_BASE,LOCAL_KEY],[FUNC_OBRA_KEY_BASE,FUNC_OBRA_KEY],[ADV_KEY_BASE,ADV_KEY],
+  [PAID_DIARIAS_KEY_BASE,PAID_DIARIAS_KEY],[SERVICE_KEY_BASE,SERVICE_KEY],
+  [PENDING_UPDATES_KEY_BASE,PENDING_UPDATES_KEY],[DELETE_QUEUE_KEY_BASE,DELETE_QUEUE_KEY],
+  [LOCAL_KEY_BASE+'__SAFE_SNAPSHOT_V2',SAFE_SNAPSHOT_KEY],
+  [LOCAL_KEY_BASE+'__SAFE_SNAPSHOT_V2__PREV',SAFE_SNAPSHOT_KEY+'__PREV']
+ ];
+ try{pairs.push([DOC_META_KEY_BASE,DOC_META_KEY])}catch(_){}
+ try{pairs.push([MATERIAL_META_KEY_BASE,MATERIAL_META_KEY])}catch(_){}
+ for(const [a,b] of pairs)copy(a,b);
+ for(const table of Object.keys(D))copy(LOCAL_KEY_BASE+'__'+table,LOCAL_KEY+'__'+table);
+ copy('edifiq_producao_equipe_v1',edifiqScopedExternalKey('edifiq_producao_equipe_v1'));
+ try{localStorage.setItem(EDIFIQ_LEGACY_CLAIM_KEY,scope)}catch(_){}
+ return true;
+}
+async function edifiqLoadScopedLocalState(){
+ if(!edifiqStorageScope())return false;
+ edifiqApplyScopedKeys();edifiqResetInMemoryState();
+ const local=localData();Object.keys(D).forEach(k=>{D[k]=Array.isArray(local[k])?local[k]:[]});
+ await recoverEdifiqStateFromIDB();
+ try{loadDocumentoMeta()}catch(e){console.warn('Metadados de documentos:',e)}
+ try{await loadMaterialMeta()}catch(e){console.warn('Materiais locais:',e)}
+ return true;
+}
 function getPaidDiariasMap(){try{return JSON.parse(localStorage.getItem(PAID_DIARIAS_KEY)||"{}");}catch(_){return {};}}
 function markDiariasPaid(ids){const m=getPaidDiariasMap();(ids||[]).forEach(id=>{if(id!=null)m[String(id)]=true;});try{localStorage.setItem(PAID_DIARIAS_KEY,JSON.stringify(m));}catch(_){}return m;}
 function isDiariaMarkedPaid(id){return !!getPaidDiariasMap()[String(id)];}
-const SERVICE_KEY="edifiq_servicos_adicionais_v1";
 const DEFAULT_CHECKLIST=["Gabarito","Locação","Alvenaria","Chapisco","Reboco","Pintura","Limpeza","Final da obra"];
 
 function getServices(){try{return JSON.parse(localStorage.getItem(SERVICE_KEY)||"{}")}catch{return {}}}
@@ -2484,11 +2571,13 @@ t.classList.remove("show");
 
 }
 
-const SAFE_SNAPSHOT_KEY=LOCAL_KEY+"__SAFE_SNAPSHOT_V2";
+let SAFE_SNAPSHOT_KEY=LOCAL_KEY+"__SAFE_SNAPSHOT_V2";
 
 function cloneState(){return JSON.parse(JSON.stringify(D));}
 
 function saveSafeSnapshot(label="estado anterior"){
+  if(!edifiqStorageScope())return false;
+  edifiqApplyScopedKeys();
   try{
     const snap={version:3,label,at:new Date().toISOString(),data:cloneState()};
     if(snap.data){
@@ -2499,14 +2588,30 @@ function saveSafeSnapshot(label="estado anterior"){
   }catch(e){console.warn("Falha ao criar proteção de dados",e)}
 }
 function getEdifiqPendingUpdates(){
-  try{const q=JSON.parse(localStorage.getItem("edifiq_pending_updates_v1")||"[]");return Array.isArray(q)?q:[]}catch(e){return []}
+  try{const q=JSON.parse(localStorage.getItem(PENDING_UPDATES_KEY)||"[]");return Array.isArray(q)?q:[]}catch(e){return []}
 }
-function saveEdifiqPendingUpdates(q){try{localStorage.setItem("edifiq_pending_updates_v1",JSON.stringify(q||[]));}catch(e){console.warn("Fila de sincronização cheia",e)}}
-function addEdifiqPendingUpdate(table,id,row){
+function saveEdifiqPendingUpdates(q){try{localStorage.setItem(PENDING_UPDATES_KEY,JSON.stringify(q||[]));}catch(e){console.warn("Fila de sincronização cheia",e)}}
+function getEdifiqSyncConflicts(){
+  try{const q=JSON.parse(localStorage.getItem(SYNC_CONFLICTS_KEY)||"[]");return Array.isArray(q)?q:[]}catch(e){return []}
+}
+function saveEdifiqSyncConflicts(q){try{localStorage.setItem(SYNC_CONFLICTS_KEY,JSON.stringify((q||[]).slice(0,120)));}catch(e){console.warn("Histórico de conflitos cheio",e)}}
+function archiveEdifiqSyncConflict(kind,table,id,localData,remoteData,meta={}){
+  const q=getEdifiqSyncConflicts();
+  const signature=String(meta.revision||'')+'::'+String(kind)+'::'+String(table)+'::'+String(id);
+  if(signature!=='::::'+String(table)+'::'+String(id) && q.some(x=>x.signature===signature))return;
+  q.unshift({signature,kind,table,id:String(id),user_id:String(edifiqEmpresaUserId()||''),at:new Date().toISOString(),local:localData||null,remote:remoteData||null,meta});
+  saveEdifiqSyncConflicts(q);
+}
+function addEdifiqPendingUpdate(table,id,row,baseUpdatedAt=null){
   const q=getEdifiqPendingUpdates();
   const key=table+"::"+String(id);
   const previous=q.find(x=>x.key===key);
-  const item={key,table,id:String(id),user_id:edifiqEmpresaUserId(),row:{...(previous?.row||{}),...(row||{})},updated_at:new Date().toISOString(),revision:edifiqOperationId()};
+  const item={
+    key,table,id:String(id),user_id:edifiqEmpresaUserId(),
+    row:{...(previous?.row||{}),...(row||{})},
+    base_updated_at:previous?.base_updated_at??baseUpdatedAt??null,
+    updated_at:new Date().toISOString(),revision:edifiqOperationId()
+  };
   const i=q.findIndex(x=>x.key===key);
   if(i>=0) q[i]=item; else q.push(item);
   saveEdifiqPendingUpdates(q);
@@ -2516,6 +2621,7 @@ function removeEdifiqPendingUpdate(table,id){
   saveEdifiqPendingUpdates(getEdifiqPendingUpdates().filter(x=>x.key!==key));
 }
 function readSafeSnapshot(){
+  if(!edifiqStorageScope())return null;edifiqApplyScopedKeys();
   try{const x=JSON.parse(localStorage.getItem(SAFE_SNAPSHOT_KEY)||"null");return x?.data||null}catch(e){return null}
 }
 function stateCounts(){const out={};for(const k of Object.keys(D))out[k]=Array.isArray(D[k])?D[k].length:0;return out}
@@ -2540,6 +2646,8 @@ function protectAgainstUnexpectedLoss(before,expectedAdded={}){
 }
 
 function localData(){
+  if(!edifiqStorageScope())return {};
+  edifiqApplyScopedKeys();
   try{
     const base=JSON.parse(localStorage.getItem(LOCAL_KEY)||"{}");
     // Backup por tabela: se uma gravação grande falhar, os outros dados continuam protegidos.
@@ -2562,25 +2670,32 @@ function localData(){
 const EDIFIQ_STATE_DB="EDIFIQ_ESTADO_DB_V1";
 const EDIFIQ_STATE_STORE="estado";
 const EDIFIQ_STATE_ID="principal";
+function edifiqStateRecordId(){const scope=edifiqStorageScope();return scope?EDIFIQ_STATE_ID+"::"+scope:null}
 let edifiqStateSaveSeq=0;
 let edifiqStateSaveQueue=Promise.resolve();
 function edifiqStatePayload(){
  return JSON.parse(JSON.stringify({...D,_edifiqSavedAt:Date.now(),_edifiqStateVersion:2,
- _edifiqAux:{funcionarioObras:localFuncObras(),adiantamentosAplicados:getAdvanceApplied(),servicosAdicionais:getServices(),diariasBaixadas:getPaidDiariasMap(),pendingUpdates:getEdifiqPendingUpdates(),deleteQueue:getEdifiqDeleteQueue()}}));
+ _edifiqAux:{funcionarioObras:localFuncObras(),adiantamentosAplicados:getAdvanceApplied(),servicosAdicionais:getServices(),diariasBaixadas:getPaidDiariasMap(),pendingUpdates:getEdifiqPendingUpdates(),deleteQueue:getEdifiqDeleteQueue(),syncConflicts:getEdifiqSyncConflicts()}}));
 }
 
 function openEdifiqStateDB(){return new Promise((resolve,reject)=>{try{if(!window.indexedDB){reject(new Error("IndexedDB indisponível"));return;}const r=indexedDB.open(EDIFIQ_STATE_DB,1);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(EDIFIQ_STATE_STORE))db.createObjectStore(EDIFIQ_STATE_STORE,{keyPath:"id"})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error||new Error("Falha no banco de estado"));}catch(e){reject(e)}})}
 function writeEdifiqStateIDB(payload,seq){
+  const recordId=edifiqStateRecordId();if(!recordId)return;
   edifiqStateSaveQueue=edifiqStateSaveQueue.then(async()=>{
-    // Every queued payload is an immutable snapshot.
+    // Every queued payload is an immutable snapshot, isolated by account + company.
     const db=await openEdifiqStateDB();
-    try{await new Promise((resolve,reject)=>{const tx=db.transaction(EDIFIQ_STATE_STORE,"readwrite");tx.objectStore(EDIFIQ_STATE_STORE).put({id:EDIFIQ_STATE_ID,savedAt:payload._edifiqSavedAt,payload});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error("Falha ao gravar estado"));tx.onabort=()=>reject(tx.error||new Error("Gravação abortada"));});}finally{try{db.close()}catch(_){}}
+    try{await new Promise((resolve,reject)=>{const tx=db.transaction(EDIFIQ_STATE_STORE,"readwrite");tx.objectStore(EDIFIQ_STATE_STORE).put({id:recordId,savedAt:payload._edifiqSavedAt,payload});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error("Falha ao gravar estado"));tx.onabort=()=>reject(tx.error||new Error("Gravação abortada"));});}finally{try{db.close()}catch(_){}}
   }).catch(e=>{console.warn("EDIFIQ: backup durável não gravado",e);window.__edifiqStorageFailed=true;toast("Não foi possível gravar a cópia durável. Exporte um backup antes de fechar.");});
 }
 async function recoverEdifiqStateFromIDB(){
+  const recordId=edifiqStateRecordId();if(!recordId)return false;
   try{
     const db=await openEdifiqStateDB();
-    const rec=await new Promise((resolve,reject)=>{const q=db.transaction(EDIFIQ_STATE_STORE,"readonly").objectStore(EDIFIQ_STATE_STORE).get(EDIFIQ_STATE_ID);q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>reject(q.error)});
+    let rec=await new Promise((resolve,reject)=>{const q=db.transaction(EDIFIQ_STATE_STORE,"readonly").objectStore(EDIFIQ_STATE_STORE).get(recordId);q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>reject(q.error)});
+    // One-time compatibility: only the first authenticated scope may inherit the old unscoped durable state.
+    if(!rec && edifiqLegacyOwnerScope()===edifiqStorageScope()){
+      rec=await new Promise((resolve,reject)=>{const q=db.transaction(EDIFIQ_STATE_STORE,"readonly").objectStore(EDIFIQ_STATE_STORE).get(EDIFIQ_STATE_ID);q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>reject(q.error)});
+    }
     try{db.close()}catch(_){}
     let localRaw=null;try{localRaw=localStorage.getItem(LOCAL_KEY)}catch(_){}
     let localSavedAt=0;try{localSavedAt=Number(JSON.parse(localRaw||"{}")._edifiqSavedAt||0)}catch(_){}
@@ -2588,18 +2703,21 @@ async function recoverEdifiqStateFromIDB(){
     const payload=rec.payload;
     const aux=payload._edifiqAux;
     if(aux){
-      for(const [key,value] of [[FUNC_OBRA_KEY,aux.funcionarioObras],[ADV_KEY,aux.adiantamentosAplicados],[SERVICE_KEY,aux.servicosAdicionais],[PAID_DIARIAS_KEY,aux.diariasBaixadas],["edifiq_pending_updates_v1",aux.pendingUpdates],["edifiq_delete_queue",aux.deleteQueue]]){
+      for(const [key,value] of [[FUNC_OBRA_KEY,aux.funcionarioObras],[ADV_KEY,aux.adiantamentosAplicados],[SERVICE_KEY,aux.servicosAdicionais],[PAID_DIARIAS_KEY,aux.diariasBaixadas],[PENDING_UPDATES_KEY,aux.pendingUpdates],[DELETE_QUEUE_KEY,aux.deleteQueue],[SYNC_CONFLICTS_KEY,aux.syncConflicts]]){
         if(value!=null)try{localStorage.setItem(key,JSON.stringify(value))}catch(_){}
       }
     }
     for(const k of Object.keys(D)){if(Array.isArray(payload[k]))D[k]=payload[k];}
     try{localStorage.setItem(LOCAL_KEY,JSON.stringify(payload));}catch(_){}
     for(const [table,rows] of Object.entries(payload)){if(Array.isArray(rows)){try{localStorage.setItem(LOCAL_KEY+"__"+table,JSON.stringify(rows))}catch(_){} }}
+    if(rec.id===EDIFIQ_STATE_ID)writeEdifiqStateIDB(payload,++edifiqStateSaveSeq);
     saveSafeSnapshot("recuperação automática pelo IndexedDB");
     return true;
   }catch(e){console.warn("EDIFIQ: recuperação durável indisponível",e);return false;}
 }
 function saveLocalData(){
+  if(!edifiqStorageScope())return false;
+  edifiqApplyScopedKeys();
   const payload=edifiqStatePayload();
   let savedAny=false;
   try{ localStorage.setItem(LOCAL_KEY,JSON.stringify(payload)); savedAny=true; }catch(e){ console.warn("Cache principal cheio; backup durável será usado.",e); }
@@ -2615,7 +2733,7 @@ function saveLocalData(){
 // Documentos usam IndexedDB para o arquivo real. Assim PDFs/fotos não estouram o limite do localStorage.
 const DOC_DB="EDIFIQ_DOCUMENTOS_DB_V2";
 const DOC_STORE="arquivos";
-const DOC_META_KEY="EDIFIQ_DOCUMENTOS_META_V2";
+const DOC_META_KEY_BASE="EDIFIQ_DOCUMENTOS_META_V2";let DOC_META_KEY=DOC_META_KEY_BASE;
 function openDocumentoDB(){return new Promise((resolve,reject)=>{try{if(!window.indexedDB){reject(new Error("IndexedDB indisponível neste navegador."));return;}const r=indexedDB.open(DOC_DB,2);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(DOC_STORE))db.createObjectStore(DOC_STORE,{keyPath:"id"})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error||new Error("Não foi possível abrir o armazenamento de documentos."));}catch(e){reject(e)}})}
 async function putDocumentoArquivo(id,file){
   if(!file) throw new Error("Nenhum arquivo selecionado.");
@@ -2635,8 +2753,8 @@ async function putDocumentoArquivo(id,file){
 }
 async function getDocumentoArquivo(id){const db=await openDocumentoDB();return new Promise((resolve,reject)=>{const r=db.transaction(DOC_STORE,"readonly").objectStore(DOC_STORE).get(String(id));r.onsuccess=()=>{db.close();resolve(r.result?.blob||null)};r.onerror=()=>{db.close();reject(r.error)}})}
 async function removeDocumentoArquivo(id){try{const db=await openDocumentoDB();await new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,"readwrite");tx.objectStore(DOC_STORE).delete(String(id));tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close()}catch(e){console.warn("Documento arquivo",e)}}
-function saveDocumentoMeta(){try{const clean=(D.documentos||[]).map(d=>({...d}));localStorage.setItem(DOC_META_KEY,JSON.stringify(clean));return true}catch(e){console.warn("Metadados dos documentos não puderam ser salvos",e);return false}}
-function loadDocumentoMeta(){try{const x=JSON.parse(localStorage.getItem(DOC_META_KEY)||"[]");if(Array.isArray(x))D.documentos=x}catch(e){console.warn(e)}}
+function saveDocumentoMeta(){if(!edifiqStorageScope())return false;edifiqApplyScopedKeys();try{const clean=(D.documentos||[]).map(d=>({...d}));localStorage.setItem(DOC_META_KEY,JSON.stringify(clean));return true}catch(e){console.warn("Metadados dos documentos não puderam ser salvos",e);return false}}
+function loadDocumentoMeta(){if(!edifiqStorageScope())return false;edifiqApplyScopedKeys();try{const x=JSON.parse(localStorage.getItem(DOC_META_KEY)||"[]");if(Array.isArray(x))D.documentos=x}catch(e){console.warn(e)}}
 async function saveFileResiliente(id,file){
   // Tenta IndexedDB primeiro; se o navegador recusar Blob, usa DataURL para arquivos menores.
   try{await putDocumentoArquivo(id,file);return {modo:'idb'}}catch(e){
@@ -3001,7 +3119,7 @@ function renderDrawerAccount(){
     const meta=user?.user_metadata||{};
     const email=String(user?.email||'Conta EDIFIQ');
     const emailNome=email.includes('@')?email.split('@')[0].replace(/[._-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Minha conta';
-    const nome=String(meta.full_name||meta.name||meta.nome||localStorage.getItem('EDIFIQ_NOME_USUARIO')||emailNome||'Minha conta').trim()||'Minha conta';
+    const nome=String(meta.full_name||meta.name||meta.nome||emailNome||'Minha conta').trim()||'Minha conta';
     const nomeEl=$('drawerUserName'), emailEl=$('drawerUserEmail'), avatarEl=$('drawerUserAvatar');
     if(nomeEl)nomeEl.textContent=nome;
     if(emailEl)emailEl.textContent=email;
@@ -3204,67 +3322,45 @@ $("authMsg").textContent=msg;
 }
 
 function showBootError(message){const el=$("bootError");if(el){$("bootErrorText").textContent=message;el.classList.add("show")}}
-function enterLocalMode(){
+async function enterLocalMode(){
   const btn=$("localModeBtn");
-  if(btn){btn.disabled=true;btn.textContent="Abrindo aplicativo...";}
+  if(btn){btn.disabled=true;btn.textContent="Abrindo offline...";}
   try{
-    // Exibe a interface imediatamente; não espera o servidor.
-    user={id:"local-user",email:"modo-local"};
+    let session=null;
+    try{
+      if(await ensureSupabaseClient()){
+        const result=await Promise.race([sb.auth.getSession(),new Promise(resolve=>setTimeout(()=>resolve({data:{session:null}}),2500))]);
+        session=result?.data?.session||null;
+      }
+    }catch(e){console.warn('Sessão offline via Supabase indisponível:',e)}
+    const remembered=edifiqOfflineAccess();
+    if(session?.user){
+      user=session.user;
+      edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(user.id)||user.id;
+    }else if(remembered?.user_id){
+      user={id:String(remembered.user_id),email:'Conta EDIFIQ'};
+      edifiqEmpresaAtivaId=String(remembered.empresa_id||remembered.user_id);
+    }else{
+      authMsg("Para usar offline com segurança, entre no EDIFIQ conectado pelo menos uma vez neste aparelho e não encerre a sessão.");
+      return false;
+    }
+    edifiqApplyScopedKeys();
+    await edifiqClaimLegacyStorage();
+    await edifiqLoadScopedLocalState();
     $("auth")?.classList.add("hidden");
     $("app")?.classList.remove("hidden");
-
-    // Recupera os dados locais existentes sem apagar nem substituir o armazenamento.
-    const local=localData();
-    Object.keys(D).forEach(k=>{D[k]=Array.isArray(local[k])?local[k]:[]});
-    try{loadDocumentoMeta();}catch(e){console.warn("Metadados de documentos:",e);}
-
-    toast("Modo local aberto. Carregando as seções…");
-
-    // Renderiza uma seção por vez para que o navegador consiga atualizar a tela
-    // e para que uma seção com erro não impeça o restante do aplicativo de abrir.
-    const jobs=[
-      ["menu",()=>renderDrawerAccount()],
-      ["painel",()=>renderDashboard()],
-      ["resumo",()=>renderResumoGeral()],
-      ["análises",()=>renderAnalises()],
-      ["obras",()=>renderObras()],
-      ["equipe",()=>renderFuncs()],
-      ["folha",()=>renderPayroll()],
-      ["resumo da equipe",()=>renderEquipeOverview()],
-      ["financeiro",()=>renderFinance()],
-      ["checklist",()=>renderChecklist()],
-      ["diário",()=>renderDiario()],
-      ["faltas",()=>renderFaltas()],
-      ["documentos",()=>renderDocumentos()],
-      ["materiais",()=>renderMateriais()],
-      ["seletores",()=>fillSelectors()],
-      ["histórico",()=>fillHistoricoFuncionarioSelector()],
-      ["categorias financeiras",()=>atualizarCategoriaFinanceira()],
-      ["distribuição de receitas",()=>atualizarReceitaChecklistDistribuicao()],
-      ["distribuição de despesas",()=>atualizarDespesaChecklistDistribuicao()]
-    ];
-    let i=0;
-    const next=()=>{
-      if(i>=jobs.length){
-        try{auditEDIFIQ();}catch(e){console.warn("Auditoria local adiada:",e);}
-        try{saveSafeSnapshot("estado local carregado");}catch(e){console.warn("Snapshot local:",e);}
-        if(btn){btn.disabled=false;btn.textContent="Entrar no modo local";}
-        toast("Modo local ativado. Os dados ficam neste aparelho.");
-        return;
-      }
-      const [name,job]=jobs[i++];
-      try{job();}catch(e){console.error("Falha ao renderizar seção "+name,e);authMsg("O aplicativo abriu, mas houve um erro na seção "+name+". Os dados locais foram preservados.");}
-      setTimeout(next,0);
-    };
-    setTimeout(next,0);
+    toast("Modo offline seguro aberto. Dados desta conta carregados neste aparelho.");
+    try{renderAll();auditEDIFIQ();saveSafeSnapshot("estado offline carregado");}catch(e){console.warn('Renderização offline:',e)}
+    const el=$("edifiqSyncStatus");if(el){el.textContent='💾 Offline · dados desta conta';el.className='warn';}
     return true;
   }catch(err){
-    console.error("EDIFIQ modo local:",err);
-    $("auth")?.classList.remove("hidden");
-    $("app")?.classList.add("hidden");
-    authMsg("Não foi possível abrir o modo local. Os dados não foram apagados. Recarregue a página e tente novamente.");
-    if(btn){btn.disabled=false;btn.textContent="Entrar no modo local";}
+    console.error("EDIFIQ modo offline:",err);
+    edifiqResetInMemoryState();
+    $("auth")?.classList.remove("hidden");$("app")?.classList.add("hidden");
+    authMsg("Não foi possível abrir offline. Nenhum dado foi apagado.");
     return false;
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="Entrar offline";}
   }
 }
 async function waitForSupabase(timeout=7000){
@@ -3315,7 +3411,7 @@ async function edifiqCarregarEmpresaAtiva(){
   edifiqEmpresaAtivaCarregando=(async()=>{
     try{
       const {data,error}=await sb.rpc('edifiq_empresa_atual');
-      if(!error && data) edifiqEmpresaAtivaId=String(data);
+      if(!error && data){edifiqEmpresaAtivaId=String(data);edifiqRememberEmpresaForUser(user.id,edifiqEmpresaAtivaId);}
     }catch(e){ console.warn('EDIFIQ contexto da empresa:',e); }
     return edifiqEmpresaUserId();
   })();
@@ -3337,9 +3433,8 @@ function bindSupabaseAuth(){
 
       if(!nextUser){
         sb.__edifiqAuthProcessing=null;
-        user=null;
-        edifiqEmpresaAtivaId=null;
-        stopEdifiqRealtime();
+        stopEdifiqRealtime();edifiqResetInMemoryState();edifiqForgetOfflineAccess();
+        user=null;edifiqEmpresaAtivaId=null;edifiqApplyScopedKeys();
         $("auth")?.classList.remove("hidden"); $("app")?.classList.add("hidden");
         return;
       }
@@ -3355,8 +3450,9 @@ function bindSupabaseAuth(){
 
       const processing={userId:nextId};
       sb.__edifiqAuthProcessing=processing;
+      if(currentId!==nextId){stopEdifiqRealtime();edifiqResetInMemoryState();}
       user=nextUser;
-      if(currentId!==nextId) edifiqEmpresaAtivaId=null;
+      if(currentId!==nextId) edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(nextId)||null;
 
       // Nunca bloquear a entrada na interface aguardando a RPC de contexto.
       $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
@@ -3370,6 +3466,9 @@ function bindSupabaseAuth(){
       }catch(e){
         console.warn("Contexto da empresa temporariamente indisponível.",e);
       }
+      if(!edifiqEmpresaAtivaId)edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(nextId)||nextId;
+      edifiqRememberEmpresaForUser(nextId,edifiqEmpresaAtivaId);edifiqApplyScopedKeys();
+      await edifiqClaimLegacyStorage();await edifiqLoadScopedLocalState();edifiqRememberOfflineAccess();
 
       await Promise.race([
         loadCloud(),
@@ -3424,9 +3523,9 @@ function startEdifiqRealtime(){
   const channelName=`edifiq-sync-${String(edifiqEmpresaUserId()).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,32)}`;
   const ch=sb.channel(channelName);
   EDIFIQ_REALTIME_TABLES.forEach(table=>{
-    ch.on('postgres_changes',{event:'*',schema:'public',table,filter:`user_id=eq.${edifiqEmpresaUserId()}`},()=>edifiqScheduleSync());
+    ch.on('postgres_changes',{event:'*',schema:'public',table,filter:`user_id=eq.${edifiqEmpresaUserId()}`},()=>{edifiqRealtimeLastEvent=Date.now();edifiqScheduleSync(180);});
     ch.on('postgres_changes',{event:'DELETE',schema:'public',table},payload=>{
-      if((D[table]||[]).some(r=>String(r.id)===String(payload.old?.id)))edifiqScheduleSync();
+      if((D[table]||[]).some(r=>String(r.id)===String(payload.old?.id))){edifiqRealtimeLastEvent=Date.now();edifiqScheduleSync(180);}
     });
   });
 
@@ -3434,7 +3533,7 @@ function startEdifiqRealtime(){
   ch.subscribe(status=>{
     if(status==='SUBSCRIBED'){
       console.info('EDIFIQ: sincronização em tempo real ativa.');
-      const el=$('edifiqSyncStatus'); if(el){edifiqUpdateSyncStatus();}
+      const el=$('edifiqSyncStatus'); if(el){edifiqUpdateSyncStatus();} edifiqScheduleSync(300);
     }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
       console.warn('EDIFIQ Realtime:',status);
       const el=$('edifiqSyncStatus'); if(el){el.textContent='↻ Sincronizando';el.className='warn';}
@@ -3506,7 +3605,9 @@ async function login(){
       return false;
     }
 
-    user=session.user;
+    const previousUserId=String(user?.id||'');
+    if(previousUserId && previousUserId!==String(session.user.id)){stopEdifiqRealtime();edifiqResetInMemoryState();}
+    user=session.user;edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(user.id)||null;
 
     // Mostra o aplicativo assim que a autenticação é validada.
     // No celular, uma chamada RPC lenta não pode deixar a tela presa no login.
@@ -3522,6 +3623,9 @@ async function login(){
     }catch(e){
       console.warn("Contexto da empresa indisponível; seguindo com a sessão autenticada.",e);
     }
+    if(!edifiqEmpresaAtivaId)edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(user.id)||user.id;
+    edifiqRememberEmpresaForUser(user.id,edifiqEmpresaAtivaId);edifiqApplyScopedKeys();
+    await edifiqClaimLegacyStorage();await edifiqLoadScopedLocalState();edifiqRememberOfflineAccess();
 
     // Mantém a sessão no Supabase quando o cliente estiver disponível.
     try{
@@ -3700,7 +3804,6 @@ async function signup(){
         emailRedirectTo:location.origin
       }
     });
-    try{localStorage.setItem('EDIFIQ_NOME_USUARIO',nome)}catch(_){}
 
     const error=result?.error;
     const data=result?.data;
@@ -3800,13 +3903,12 @@ authMsg(
 
 async function logout(){
   stopEdifiqRealtime();
-
-if(sb)
-await sb.auth.signOut();
-
-user=null;
-  edifiqEmpresaAtivaId=null;
-
+  try{saveLocalData();await edifiqStateSaveQueue}catch(_){}
+  edifiqForgetOfflineAccess();
+  if(sb)try{await sb.auth.signOut()}catch(e){console.warn('Logout Supabase:',e)}
+  edifiqResetInMemoryState();user=null;edifiqEmpresaAtivaId=null;edifiqApplyScopedKeys();
+  $("auth")?.classList.remove("hidden");$("app")?.classList.add("hidden");
+  try{renderAll()}catch(_){}
 }
 
 
@@ -3852,9 +3954,18 @@ async function loadTable(table){
    }
    if(owner!==String(edifiqEmpresaUserId()))return false;
    const current=D[table]||[];
-   const pending=current.filter(r=>r._sync_pendente||String(r.id).startsWith('local_')||/^(diario_|falta_|pres_)/.test(String(r.id)));
-   const merged=new Map(data.map(r=>[String(r.id),r]));
-   for(const r of pending){if(!r.user_id||String(r.user_id)===owner)merged.set(String(r.id),r);}
+   const pendingQueue=new Map(getEdifiqPendingUpdates().filter(x=>x.table===table&&(!x.user_id||String(x.user_id)===owner)).map(x=>[String(x.id),x]));
+   const localPending=current.filter(r=>String(r.id).startsWith('local_')||/^(diario_|falta_|pres_)/.test(String(r.id)));
+   const merged=new Map(data.map(r=>{
+     const item=pendingQueue.get(String(r.id));
+     return [String(r.id),item?{...r,...(item.row||{}),_sync_pendente:true,_sync_updated_at:item.updated_at||r._sync_updated_at}:r];
+   }));
+   for(const r of localPending){if(!r.user_id||String(r.user_id)===owner)merged.set(String(r.id),r);}
+   // Compatibilidade com alterações pendentes criadas por versões anteriores.
+   for(const r of current){
+     if(String(r.id).startsWith('local_')||pendingQueue.has(String(r.id)))continue;
+     if(r._sync_pendente && (!r.user_id||String(r.user_id)===owner) && !merged.has(String(r.id)))merged.set(String(r.id),r);
+   }
    D[table]=[...merged.values()];aplicarExclusoesPendentes();
    if(table==='servicos_adicionais'){
     const legacy=getServices();
@@ -4044,8 +4155,9 @@ async function insertRow(table,row){
 async function updateRow(table,id,row){
  const target=(D[table]||[]).find(x=>String(x.id)===String(id));
  if(!target)return null;
+ const baseUpdatedAt=target.updated_at||null;
  Object.assign(target,row,{_sync_pendente:true,_sync_updated_at:new Date().toISOString()});
- if(!String(id).startsWith('local_'))addEdifiqPendingUpdate(table,id,row);
+ if(!String(id).startsWith('local_'))addEdifiqPendingUpdate(table,id,row,baseUpdatedAt);
  saveLocalData();await edifiqFlushWrites();edifiqRenderAfterSync();edifiqUpdateSyncStatus();if(edifiqCanSync())edifiqScheduleSync();
  return (D[table]||[]).find(x=>String(x.id)===String(id))||target;
 }
@@ -4053,22 +4165,30 @@ async function updateRow(table,id,row){
 
 function getEdifiqDeleteQueue(){
   try{
-    const q=JSON.parse(localStorage.getItem("edifiq_delete_queue")||"[]");
+    const q=JSON.parse(localStorage.getItem(DELETE_QUEUE_KEY)||"[]");
     return Array.isArray(q)?q:[];
   }catch(e){return [];}
 }
 
 function saveEdifiqDeleteQueue(q){
-  try{localStorage.setItem("edifiq_delete_queue",JSON.stringify(q||[]));}catch(e){}
+  try{localStorage.setItem(DELETE_QUEUE_KEY,JSON.stringify(q||[]));}catch(e){}
 }
 
-function addEdifiqDeleteQueue(table,id){
+function addEdifiqDeleteQueue(table,id,rowSnapshot=null){
   const q=getEdifiqDeleteQueue();
   const key=table+"::"+String(id);
-  if(!q.some(x=>x.key===key)){
-    q.push({key,table,id:String(id),user_id:edifiqEmpresaUserId(),created_at:new Date().toISOString()});
-    saveEdifiqDeleteQueue(q);
-  }
+  const previous=q.find(x=>x.key===key);
+  const current=rowSnapshot||(D[table]||[]).find(x=>String(x.id)===String(id))||previous?.row_snapshot||null;
+  const item={
+    key,table,id:String(id),user_id:edifiqEmpresaUserId(),
+    base_updated_at:previous?.base_updated_at??current?.updated_at??null,
+    row_snapshot:previous?.row_snapshot??(current?JSON.parse(JSON.stringify(current)):null),
+    created_at:previous?.created_at||new Date().toISOString(),
+    revision:previous?.revision||edifiqOperationId()
+  };
+  const i=q.findIndex(x=>x.key===key);
+  if(i>=0)q[i]=item;else q.push(item);
+  saveEdifiqDeleteQueue(q);
 }
 
 function removeEdifiqDeleteQueue(table,id){
@@ -4086,14 +4206,63 @@ function aplicarExclusoesPendentes(){
   }
 }
 
+async function edifiqRemoteRow(table,id,owner){
+  const {data,error}=await sb.from(table).select('*').eq('id',id).eq('user_id',owner).maybeSingle();
+  if(error)throw error;
+  return data||null;
+}
+
+async function edifiqDeleteOneSafely(item,owner){
+  if(item.table==='obras'){
+    const response=await sb.rpc('edifiq_delete_obra_safe',{
+      p_obra_id:Number(item.id),
+      p_expected_updated_at:item.base_updated_at||null
+    });
+    if(response.error)throw response.error;
+    const status=String(response.data||'');
+    if(status==='conflict'){
+      const remote=await edifiqRemoteRow('obras',item.id,owner);
+      return {conflict:true,remote};
+    }
+    return {deleted:status==='deleted'||status==='missing'};
+  }
+
+  let base=item.base_updated_at||null;
+  if(!base){
+    const remote=await edifiqRemoteRow(item.table,item.id,owner);
+    if(!remote)return {deleted:true,alreadyMissing:true};
+    base=remote.updated_at||null;
+  }
+  let query=sb.from(item.table).delete().eq('id',item.id).eq('user_id',owner);
+  if(base)query=query.eq('updated_at',base);
+  const result=await query.select('id,updated_at').maybeSingle();
+  if(result.error)throw result.error;
+  if(result.data)return {deleted:true};
+  const remote=await edifiqRemoteRow(item.table,item.id,owner);
+  if(!remote)return {deleted:true,alreadyMissing:true};
+  return {conflict:true,remote};
+}
+
 async function retryEdifiqDeleteQueue(){
  if(!edifiqCanSync())return;
- for(const item of getEdifiqDeleteQueue()){
-  if(item.user_id&&String(item.user_id)!==String(edifiqEmpresaUserId()))continue;
+ const owner=String(edifiqEmpresaUserId());
+ for(const item of [...getEdifiqDeleteQueue()]){
+  if(item.user_id&&String(item.user_id)!==owner)continue;
   try{
-   const {error}=await sb.from(item.table).delete().eq('id',item.id).eq('user_id',edifiqEmpresaUserId());
-   if(!error){removeEdifiqDeleteQueue(item.table,item.id);removeEdifiqPendingUpdate(item.table,item.id);}
-  }catch(e){console.warn('Exclusão pendente',e);}
+   const result=await edifiqDeleteOneSafely(item,owner);
+   if(result.deleted){
+     removeEdifiqDeleteQueue(item.table,item.id);removeEdifiqPendingUpdate(item.table,item.id);
+     continue;
+   }
+   if(result.conflict){
+     archiveEdifiqSyncConflict('delete_cancelled',item.table,item.id,item.row_snapshot,result.remote,{revision:item.revision,base_updated_at:item.base_updated_at});
+     removeEdifiqDeleteQueue(item.table,item.id);removeEdifiqPendingUpdate(item.table,item.id);
+     const rows=D[item.table]||[];const i=rows.findIndex(x=>String(x.id)===String(item.id));
+     if(i>=0)rows[i]={...result.remote,_sync_pendente:false};else if(result.remote)rows.unshift(result.remote);
+     saveLocalData();
+     toast('Exclusão cancelada: este registro foi alterado em outro aparelho. A versão mais nova foi preservada.');
+   }
+  }catch(e){console.warn('Exclusão pendente',item.table,e?.message||e);}
  }
 }
 
@@ -4117,200 +4286,53 @@ return;
   os registros dependentes conhecidos e só depois a obra.
 */
 if(table==="obras"){
-
   const obraId=String(id);
+  const obraSnapshot=(D.obras||[]).find(x=>String(x.id)===obraId)||null;
 
-  // Limpa o cache local dos registros vinculados à obra.
-  const dependentesLocal=[
-    "checklist",
-    "diarias",
-    "gastos",
-    "pagamentos",
-    "faltas",
-    "adiantamentos",
-    "servicos",
-    "servicos_adicionais",
-    "terceirizados",
-    "pagamentos_terceirizados",
-    "orcamentos",
-    "documentos"
-  ];
-
-  for(const t of dependentesLocal){
-    if(Array.isArray(D[t])){
-      D[t]=D[t].filter(x=>String(x.obra_id)!==obraId);
+  const removeLocalObra=()=>{
+    const vinculadas=["checklist","diarias","gastos","pagamentos","faltas","adiantamentos","servicos","servicos_adicionais","terceirizados","pagamentos_terceirizados","presencas","orcamentos","documentos"];
+    for(const t of vinculadas){if(Array.isArray(D[t]))D[t]=D[t].filter(x=>String(x.obra_id??'')!==obraId);}
+    // Funcionários não são apagados junto com a obra; ficam sem obra vinculada,
+    // seguindo a regra ON DELETE SET NULL já existente no banco.
+    if(Array.isArray(D.funcionarios))D.funcionarios=D.funcionarios.map(x=>String(x.obra_id??'')===obraId?{...x,obra_id:null}:x);
+    if(Array.isArray(D.materiais)){
+      const materialIds=new Set(D.materiais.filter(x=>String(x.obra_id)===obraId).map(x=>String(x.id)));
+      D.materiais=D.materiais.filter(x=>String(x.obra_id)!==obraId);
+      if(Array.isArray(D.material_movimentos))D.material_movimentos=D.material_movimentos.filter(x=>!materialIds.has(String(x.material_id)));
     }
-  }
-
-  // Materiais e movimentações são locais em algumas versões do app.
-  if(Array.isArray(D.materiais)){
-    const materialIds=new Set(
-      D.materiais
-        .filter(x=>String(x.obra_id)===obraId)
-        .map(x=>String(x.id))
-    );
-
-    D.materiais=D.materiais.filter(
-      x=>String(x.obra_id)!==obraId
-    );
-
-    if(Array.isArray(D.material_movimentos)){
-      D.material_movimentos=D.material_movimentos.filter(
-        x=>!materialIds.has(String(x.material_id))
-      );
-    }
-  }
+    D.obras=(D.obras||[]).filter(x=>String(x.id)!==obraId);
+  };
 
   if(String(id).startsWith("local_")){
-
-    D.obras=D.obras.filter(
-      x=>String(x.id)!==obraId
-    );
-
-    saveLocalData();
-    renderAll();
-
-    toast(
-      "Obra e registros vinculados excluídos com sucesso."
-    );
-
-    return;
+    removeEdifiqPendingUpdate("obras",id);removeLocalObra();saveLocalData();renderAll();toast("Obra e registros vinculados excluídos com sucesso.");return;
   }
 
-  if(!sb||!user){
-
-    D.obras=D.obras.filter(
-      x=>String(x.id)!==obraId
-    );
-
-    saveLocalData();
-    renderAll();
-
-    toast("Obra excluída neste aparelho.");
-
+  if(!sb||!user||!navigator.onLine){
+    toast("Para excluir uma obra com segurança, conecte-se à internet. Assim evitamos apagar alterações feitas em outro aparelho.");
     return;
   }
 
   try{
-
-    /*
-      Exclui primeiro as linhas que podem possuir FK para obras.
-      O RLS do Supabase continua determinando quais registros
-      pertencem ao usuário logado.
-    */
-    const tabelasDependentes=[
-      "checklist",
-      "diarias",
-      "gastos",
-      "pagamentos",
-      "faltas",
-      "servicos",
-      "servicos_adicionais",
-      "terceirizados",
-      "orcamentos",
-      "documentos"
-    ];
-
-    for(const t of tabelasDependentes){
-
-      try{
-
-        const{error}=await sb
-          .from(t)
-          .delete()
-          .eq("obra_id",id)
-          .eq("user_id",edifiqEmpresaUserId());
-
-        if(error){
-
-          console.warn(
-            "Não foi possível limpar dependência",
-            t,
-            error.message
-          );
-
-        }
-
-      }catch(e){
-
-        console.warn(
-          "Erro ao limpar dependência",
-          t,
-          e
-        );
-
-      }
-
-    }
-
-    // Pagamentos de terceirizados dependem do terceirizado, não diretamente da obra.
-    // Removemos primeiro os terceirizados da obra e seus pagamentos para não deixar resíduos.
-    try{
-      const {data:tercs}=await sb.from("terceirizados").select("id").eq("obra_id",id).eq("user_id",edifiqEmpresaUserId());
-      const tercIds=(tercs||[]).map(x=>x.id).filter(Boolean);
-      if(tercIds.length){
-        for(const tid of tercIds){
-          await sb.from("pagamentos_terceirizados").delete().eq("terceirizado_id",tid).eq("user_id",edifiqEmpresaUserId());
-        }
-        for(const tid of tercIds){
-          await sb.from("terceirizados").delete().eq("id",tid).eq("user_id",edifiqEmpresaUserId());
-        }
-      }
-    }catch(e){
-      console.warn("Não foi possível limpar pagamentos de terceirizados da obra",e);
-    }
-
-    // Agora exclui a obra depois de limpar os vínculos conhecidos.
-    const{error}=await sb
-      .from("obras")
-      .delete()
-      .eq("id",id)
-      .eq("user_id",edifiqEmpresaUserId());
-
-    if(error){
-
-      try{
-        await loadCloud();
-        renderAll();
-      }catch(_){}
-
-      toast(
-        "Erro ao excluir a obra: "+
-        error.message
-      );
-
+    const response=await sb.rpc('edifiq_delete_obra_safe',{
+      p_obra_id:Number(id),
+      p_expected_updated_at:obraSnapshot?.updated_at||null
+    });
+    if(response.error)throw response.error;
+    const status=String(response.data||'');
+    if(status==='conflict'){
+      const remote=await edifiqRemoteRow('obras',id,String(edifiqEmpresaUserId()));
+      archiveEdifiqSyncConflict('delete_cancelled','obras',id,obraSnapshot,remote,{base_updated_at:obraSnapshot?.updated_at||null,revision:edifiqOperationId()});
+      await loadCloud();
+      toast("Exclusão cancelada: a obra foi alterada em outro aparelho. A versão mais nova foi preservada.");
       return;
     }
-
-    D.obras=D.obras.filter(
-      x=>String(x.id)!==obraId
-    );
-
-    saveLocalData();
-    renderAll();
-
-    toast(
-      "Obra e registros vinculados excluídos com sucesso."
-    );
-
-    return;
-
+    removeEdifiqDeleteQueue('obras',id);removeEdifiqPendingUpdate('obras',id);removeLocalObra();saveLocalData();renderAll();
+    toast("Obra e registros vinculados excluídos com sucesso.");if(edifiqCanSync())edifiqScheduleSync(400);return;
   }catch(e){
-
-    console.error(
-      "Erro ao excluir obra",
-      e
-    );
-
-    try{
-      await loadCloud();
-      renderAll();
-    }catch(_){}
-
-    toast(
-      "Não foi possível excluir a obra."
-    );
-
+    console.error("Erro ao excluir obra",e);
+    // O RPC é transacional: em uma falha, nenhuma exclusão parcial fica gravada.
+    try{await loadCloud();}catch(_){}
+    toast("Não foi possível excluir a obra agora. Nenhum dado parcial foi apagado.");
     return;
   }
 }
@@ -4340,16 +4362,24 @@ try{
     return;
   }
 
-  const {error}=await sb.from(table).delete().eq("id",id).eq("user_id",edifiqEmpresaUserId());
-
-  if(error){
-    addEdifiqDeleteQueue(table,id);
+  const queued=getEdifiqDeleteQueue().find(x=>x.key===table+"::"+String(id));
+  const result=queued?await edifiqDeleteOneSafely(queued,String(edifiqEmpresaUserId())):{deleted:false};
+  if(result.conflict){
+    archiveEdifiqSyncConflict('delete_cancelled',table,id,queued?.row_snapshot||null,result.remote,{revision:queued?.revision,base_updated_at:queued?.base_updated_at});
+    removeEdifiqDeleteQueue(table,id);removeEdifiqPendingUpdate(table,id);
+    if(result.remote){D[table]=D[table]||[];D[table].unshift({...result.remote,_sync_pendente:false});}
+    saveLocalData();renderAll();
+    toast("Exclusão cancelada: o registro mudou em outro aparelho e a versão mais nova foi preservada.");
+    return;
+  }
+  if(!result.deleted){
+    addEdifiqDeleteQueue(table,id,queued?.row_snapshot||null);
     saveLocalData();
     toast("Excluído neste aparelho. A nuvem será atualizada na próxima sincronização.");
     return;
   }
 
-  removeEdifiqDeleteQueue(table,id);
+  removeEdifiqDeleteQueue(table,id);removeEdifiqPendingUpdate(table,id);
   saveLocalData();
   renderAll();
   toast("Lançamento excluído com sucesso.");
@@ -4621,6 +4651,9 @@ const margemLucro=contrato>0
 
 return{
 contrato,
+contratoOriginal:Math.max(0,Number((contrato-valorServicosAdicionais).toFixed(2))),
+valorServicosAdicionais:Number(valorServicosAdicionais.toFixed(2)),
+contratoAtualizado:contrato,
 receita,
 material,
 mao,
@@ -4779,7 +4812,7 @@ function obraTab(id,tab){
 
 function ajustarDiasObra(funcId, obraId, delta){
   if(delta>0){ openDiaFuncionario(funcId); return; }
-  const itens=(D.diarias||[]).filter(d=>String(d.funcionario_id)===String(funcId)&&String(d.obra_id)===String(obraId)&&!diariaEstaPaga(d)).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  const itens=edifiqDiariasCanonicas().filter(d=>String(d.funcionario_id)===String(funcId)&&String(d.obra_id)===String(obraId)&&!diariaEstaPaga(d)).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
   const alvo=itens[0];
   if(!alvo){toast('Não há diária pendente para diminuir.');return;}
   if(confirm('Excluir a última diária pendente deste funcionário nesta obra?')) removeRow('diarias',String(alvo.id));
@@ -4788,21 +4821,21 @@ function ajustarDiasObra(funcId, obraId, delta){
 function obraModeloData(o){
   const f=obraFinanceData(o.id)||{};
   const p=obraProgress(o);
-  const dias=(D.diarias||[]).filter(d=>String(d.obra_id)===String(o.id));
+  const dias=edifiqDiariasCanonicas().filter(d=>String(d.obra_id)===String(o.id));
   const gastos=(D.gastos||[]).filter(g=>String(g.obra_id)===String(o.id));
   const repasses=(D.pagamentos||[]).filter(g=>String(g.obra_id)===String(o.id));
   const extras=servicesForObra(o.id)||[];
   const checks=(D.checklist||[]).filter(c=>String(c.obra_id)===String(o.id));
   const pagamentosEquipe=gastos.filter(g=>gastoCategoria(g)==="Mão de obra");
   const audit=[
-    ...((D.diarias||[]).filter(d=>String(d.obra_id)===String(o.id)&&!D.funcionarios.some(f=>String(f.id)===String(d.funcionario_id)))),
+    ...(edifiqDiariasCanonicas().filter(d=>String(d.obra_id)===String(o.id)&&!D.funcionarios.some(f=>String(f.id)===String(d.funcionario_id)))),
     ...((D.gastos||[]).filter(g=>String(g.obra_id)===String(o.id)&&g.funcionario_id!=null&&!D.funcionarios.some(f=>String(f.id)===String(g.funcionario_id))))
   ];
   return {f,p,dias,gastos,repasses,extras,checks,pagamentosEquipe,audit};
 }
 
 function diasTrabalhadosPorObra(obraId){
-  const registros=(D.diarias||[]).filter(d=>String(d.obra_id)===String(obraId));
+  const registros=edifiqDiariasCanonicas().filter(d=>String(d.obra_id)===String(obraId));
   const porFunc={};
   const pares=new Set();
 
@@ -4887,7 +4920,10 @@ function renderObras(){
   const diasResumo=diasTrabalhadosPorObra(o.id), gc=obraGastosResumo(o.id);
   const funcoesObra=Object.values(diasResumo.porFunc||{}).sort((a,b)=>String(a.funcao||'').localeCompare(String(b.funcao||''),'pt-BR'));
   const totalDias=Number(diasResumo.totais?.geral||0);
-  const contrato=Number(f.contrato||o.valor||0);
+  const contratoInfo=(typeof obraValoresContrato==='function')?obraValoresContrato(o):{contratoOriginal:Number(o.valor||0),extras:0,totalAtualizado:Number(f.contrato||o.valor||0)};
+  const contratoOriginal=Number(contratoInfo.contratoOriginal||0);
+  const extrasContrato=Number(contratoInfo.extras||0);
+  const contrato=Number(contratoInfo.totalAtualizado||f.contrato||o.valor||0);
   const recebido=Number(f.receita||0);
   const aReceber=Math.max(0,contrato-recebido);
   const despesas=Number(f.despesas||0);
@@ -4958,9 +4994,9 @@ function renderObras(){
 
   const pagamentosHtml=`<div class="obraModelKpis three"><div><small>Recebimentos</small><b>${pagamentos.length}</b></div><div><small>Total recebido</small><b class="green">${money(recebido)}</b></div><div><small>A receber</small><b class="gold">${money(aReceber)}</b></div></div><div class="obraModeloList">${pagamentos.length?pagamentos.map(r=>`<div class="obraModeloRow"><span><b>${esc(r.descricao||'Pagamento recebido')}</b><br><small>${formatDateBR(r.data)} • ${esc(r.forma_pagamento||r.forma||'Recebimento')}</small></span><b class="green">${money(r.valor)}</b></div>`).join(''):'<div class="obraModeloEmpty">Nenhum pagamento recebido registrado.</div>'}</div><button class="btn gold" type="button" onclick="openFin()">＋ Registrar Pagamento</button>`;
 
-  const servicosAdicionaisResumoHtml=`<div class="obraSummaryBlock edServicosResumo"><h3>Serviços adicionados</h3><div class="obraResultRow"><span>Valor do contrato atual</span><strong class="blue">${money(contrato)}</strong></div>${x.extras.length?`<div class="edServicosResumoList">${x.extras.map(s=>`<div class="edServicosResumoItem"><span><b>${esc(s.nome||s.descricao||'Serviço adicional')}</b><small>${formatDateBR(s.data||today())}</small></span><strong class="blue">${money(s.valor||0)}</strong></div>`).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum serviço adicional cadastrado.</div>'}</div>`;
+  const servicosAdicionaisResumoHtml=`<div class="obraSummaryBlock edServicosResumo"><h3>Contrato e serviços extras</h3><div class="obraResultRow"><span>Contrato original</span><strong>${money(contratoOriginal)}</strong></div><div class="obraResultRow"><span>Serviços extras</span><strong class="blue">${money(extrasContrato)}</strong></div><div class="obraResultRow total"><span>Total atualizado</span><strong class="blue">${money(contrato)}</strong></div>${x.extras.length?`<div class="edServicosResumoList">${x.extras.map(s=>`<div class="edServicosResumoItem"><span><b>${esc(s.nome||s.descricao||'Serviço adicional')}</b><small>${formatDateBR(s.data||today())}</small></span><strong class="blue">${money(s.valor||0)}</strong></div>`).join('')}</div>`:'<div class="obraModeloEmpty">Nenhum serviço adicional cadastrado.</div>'}</div>`;
 
-  const resumoHtml=`<div class="obraSummaryBlock"><h3>Valores da Obra</h3><div class="obraBigMetric"><small>Valor Total da Obra</small><strong class="blue">${money(contrato)}</strong></div><div class="obraBigMetric"><small>Já Recebi</small><strong class="green">${money(recebido)}</strong></div><div class="obraBigMetric"><small>Falta Receber</small><strong class="green">${money(aReceber)}</strong></div><div class="obraProgressLine"><small>Progresso de Recebimento</small><b>${pctRecebido.toFixed(0)}%</b></div><div class="obraMiniProgress"><span style="width:${pctRecebido}%"></span></div></div>
+  const resumoHtml=`<div class="obraSummaryBlock"><h3>Valores da Obra</h3><div class="edContratoTrio"><div class="obraBigMetric"><small>Contrato original</small><strong>${money(contratoOriginal)}</strong></div><div class="obraBigMetric"><small>Serviços extras</small><strong class="blue">${money(extrasContrato)}</strong></div><div class="obraBigMetric"><small>Total atualizado</small><strong class="blue">${money(contrato)}</strong></div></div><div class="obraBigMetric"><small>Já Recebi</small><strong class="green">${money(recebido)}</strong></div><div class="obraBigMetric"><small>Falta Receber</small><strong class="green">${money(aReceber)}</strong></div><div class="obraProgressLine"><small>Progresso de Recebimento</small><b>${pctRecebido.toFixed(0)}%</b></div><div class="obraMiniProgress"><span style="width:${pctRecebido}%"></span></div></div>
     ${servicosAdicionaisResumoHtml}
     <div class="obraSummaryBlock result"><h3>Resultado</h3><div class="obraResultRow"><span>Lucro</span><strong class="green">${money(resultado)}</strong></div><div class="obraResultRow"><span>Margem</span><strong class="green">${margem.toFixed(1).replace('.',',')}%</strong></div></div>
     <div class="obraSummaryBlock"><h3>Detalhamento de Custos</h3><div class="obraResultRow"><span>Mão de Obra</span><strong>${money(custoMao)}</strong></div><div class="obraResultRow"><span>Gastos com Materiais</span><strong>${money(custoMaterial)}</strong></div><div class="obraResultRow"><span>Serviços adicionais no contrato</span><strong>${money(custoServicos)}</strong></div><div class="obraResultRow"><span>Terceirizados/Repasses</span><strong>${money(custoTerceiro)}</strong></div><hr><div class="obraResultRow total"><span>Total de Custos</span><strong>${money(despesas||totalCustos)}</strong></div></div>
@@ -4976,7 +5012,7 @@ function renderObras(){
     <div class="obraDetailHero"><div class="obraDetailCrumbs"><span class="homeIcon">⌂</span><span class="sep">›</span><span>Obras</span><span class="sep">›</span><strong>${esc(o.nome||'Obra sem nome')}</strong></div><div class="obraDetailMain"><div class="obraDetailTitleWrap"><div class="obraDetailTitle"><h2>${esc(o.nome||'Obra sem nome')}</h2><p>Cliente: ${esc(o.cliente||'Não informado')}</p></div></div><div class="obraDetailActions"><button class="edit" type="button" onclick="openObra('${esc(String(o.id))}')" title="Editar obra">✎</button><button class="delete" type="button" onclick="removeRow('obras','${esc(String(o.id))}')" title="Excluir obra">🗑️</button></div></div></div>
     <div class="obraModeloTabs">${tabs.map(([id,label])=>`<button type="button" class="obraModeloTab ${activeObraTab===id?'active':''}" data-tab="${id}" onclick="obraTab('${esc(String(o.id))}','${id}')">${label}</button>`).join('')}</div>
     <div class="obraModeloBody">
-      <div class="obraModeloPanel" data-panel="dados" style="display:${activeObraTab==='dados'?'block':'none'}"><div class="obraInfoCard"><h3>Informações da Obra</h3><div class="obraDataGrid"><div class="obraDataItem"><small>Tipo de Serviço</small><b>${esc(o.tipo_servico||'Não informado')}</b></div><div class="obraDataItem"><small>Status</small><b>${esc(status)}</b></div><div class="obraDataItem"><small>Valor Contratado</small><b class="blue">${money(o.valor)}</b></div><div class="obraDataItem"><small>Endereço</small><b>${esc(o.endereco||'Não informado')}</b></div><div class="obraDataItem"><small>Data de Início</small><b>${ini}</b></div><div class="obraDataItem"><small>Data de Término</small><b>${fim}</b></div></div><div class="obraProgressWrap"><div class="obraProgressLine"><small>Progresso da obra</small><b>${p}%</b></div><div class="progress"><i style="width:${p}%"></i></div></div>${o.observacoes?`<div class="note" style="margin-top:16px">${esc(o.observacoes)}</div>`:''}</div></div>
+      <div class="obraModeloPanel" data-panel="dados" style="display:${activeObraTab==='dados'?'block':'none'}"><div class="obraInfoCard"><h3>Informações da Obra</h3><div class="obraDataGrid"><div class="obraDataItem"><small>Tipo de Serviço</small><b>${esc(o.tipo_servico||'Não informado')}</b></div><div class="obraDataItem"><small>Status</small><b>${esc(status)}</b></div><div class="obraDataItem"><small>Contrato original</small><b>${money(contratoOriginal)}</b></div><div class="obraDataItem"><small>Serviços extras</small><b class="blue">${money(extrasContrato)}</b></div><div class="obraDataItem"><small>Total atualizado</small><b class="blue">${money(contrato)}</b></div><div class="obraDataItem"><small>Endereço</small><b>${esc(o.endereco||'Não informado')}</b></div><div class="obraDataItem"><small>Data de Início</small><b>${ini}</b></div><div class="obraDataItem"><small>Data de Término</small><b>${fim}</b></div></div><div class="obraProgressWrap"><div class="obraProgressLine"><small>Progresso da obra</small><b>${p}%</b></div><div class="progress"><i style="width:${p}%"></i></div></div>${o.observacoes?`<div class="note" style="margin-top:16px">${esc(o.observacoes)}</div>`:''}</div></div>
       <div class="obraModeloPanel" data-panel="dias" style="display:${activeObraTab==='dias'?'block':'none'}"><div class="obraInfoCard">${diasHtml}</div></div>
       <div class="obraModeloPanel" data-panel="gastos" style="display:${activeObraTab==='gastos'?'block':'none'}"><div class="obraInfoCard"><h3>Gastos e Custos</h3>${gastosHtml}</div></div>
       <div class="obraModeloPanel" data-panel="servicos" style="display:${activeObraTab==='servicos'?'block':'none'}"><div class="obraInfoCard"><h3>Extras</h3>${servicosHtml}<div style="margin-top:14px"><button class="btn gold" type="button" onclick="addServicoAdicional('${esc(String(o.id))}')">＋ Adicionar Extra</button></div></div></div>
@@ -5377,7 +5413,7 @@ if(period==="quinzena") inicio=new Date(now.getFullYear(),now.getMonth(),now.get
 if(period==="mes") inicio=new Date(now.getFullYear(),now.getMonth(),1);
 
 /* Somente diárias PENDENTES entram no total. */
-const items=D.diarias.filter(d=>{
+const items=edifiqDiariasCanonicas().filter(d=>{
 /* Pago/quitado/liquidado nunca entra no total pendente. */
 if(diariaEstaPaga(d)) return false;
 if(!inicio) return true;
@@ -5473,7 +5509,7 @@ type="checkbox"
 class="pag-check"
 data-id="${f.id}"
 onchange="updatePagTotal()"
-${f.ativo===false?"disabled":""}
+
 ${
 selectedId&&
 String(selectedId)===
@@ -6824,7 +6860,7 @@ function renderFechamentoFolha(){
     }
     funcionarios.sort((a,b)=>normalize(a.nome).localeCompare(normalize(b.nome),'pt-BR'));
 
-    const dias=(D.diarias||[]).filter(d=>{
+    const dias=edifiqDiariasCanonicas().filter(d=>{
       const data=String(d?.data||"");
       return data>=ini&&data<=fim&&(obra==="all"||String(d?.obra_id)===String(obra));
     });
@@ -7906,12 +7942,12 @@ f.observacao||""
   }
   function f3Data(){
     try{
-      const x=JSON.parse(localStorage.getItem(F3_KEY)||"[]");
+      const x=JSON.parse(localStorage.getItem(edifiqScopedExternalKey(F3_KEY))||"[]");
       return Array.isArray(x)?x:[];
     }catch(_){return []}
   }
   function f3SetData(rows){
-    try{localStorage.setItem(F3_KEY,JSON.stringify(rows));}catch(e){console.warn("EDIFIQ Produção:",e)}
+    try{localStorage.setItem(edifiqScopedExternalKey(F3_KEY),JSON.stringify(rows));}catch(e){console.warn("EDIFIQ Produção:",e)}
     try{if(typeof D!=="undefined")D.producoesEquipe=rows.slice()}catch(_){}
   }
   function f3SyncData(){
@@ -8874,6 +8910,7 @@ version:"6.0",
 diariasBaixadas:getPaidDiariasMap(),
 pendingUpdates:getEdifiqPendingUpdates(),
 deleteQueue:getEdifiqDeleteQueue(),
+syncConflicts:getEdifiqSyncConflicts(),
 warnings:backupWarnings,
 
 date:
@@ -9252,8 +9289,8 @@ function renderHistoricoDiariasPro(){
   fillEquipeHistorySelectors();
   const box=$('histDiaList'), resumoBox=$('histDiaResumo'); if(!box)return;
   const fid=$('histFunc2')?.value||'', ini=$('histInicio2')?.value||'', fim=$('histFim2')?.value||'';
-  const diarias=(D.diarias||[]).map(d=>({kind:'diaria',...d}));
-  const faltas=(D.faltas||[]).map(f=>({kind:'falta',...f,valor:0,observacao:f.observacao||''}));
+  const diarias=edifiqDiariasCanonicas().map(d=>({kind:'diaria',...d}));
+  const faltas=(D.faltas||[]).map(f=>({kind:'falta',...f,valor:0,observacao:f.observacao||f.justificativa||''}));
   let items=[...diarias,...faltas].sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
   if(fid)items=items.filter(d=>String(d.funcionario_id??d.funcId??d.funcionarioId)===String(fid));
   if(ini)items=items.filter(d=>String(d.data||'')>=ini);
@@ -9292,7 +9329,7 @@ function renderHistoricoDiarias(){
   }
   const ini=$('histInicio')?.value||'';
   const fim=$('histFim')?.value||'';
-  let items=D.diarias.filter(d=>{
+  let items=edifiqDiariasCanonicas().filter(d=>{
   const id=d.funcionario_id ?? d.funcId ?? d.funcionarioId ?? d.funcionario_id_fk;
   return String(id)===String(funcId);
 });
@@ -10182,13 +10219,14 @@ async function visualizarDocumento(id){const d=D.documentos.find(x=>String(x.id)
 async function baixarDocumento(id){const d=D.documentos.find(x=>String(x.id)===String(id));if(!d)return;try{let blob=d.conteudo?null:await getDocumentoArquivo(id);if(!blob&&d.conteudo){const res=await fetch(d.conteudo);blob=await res.blob()}if(!blob){toast('Arquivo não encontrado neste aparelho.');return}const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=d.nome_arquivo||('EDIFIQ_'+id);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}catch(e){console.error(e);toast('Não foi possível baixar o documento.')}}
 async function deleteDocumento(id){const d=D.documentos.find(x=>String(x.id)===String(id));if(!d)return;if(!confirm(`Excluir o documento "${d.titulo||d.nome_arquivo||'Documento'}"?`))return;await removeDocumentoArquivo(id);const cloudDeleted=await edifiqStorageDeleteDocumento(d);D.documentos=D.documentos.filter(x=>String(x.id)!==String(id));saveDocumentoMeta();saveLocalData();renderAll();toast(cloudDeleted||!d.storage_path?'Documento excluído.':'Documento excluído localmente; a cópia na nuvem ficou pendente.')}
 
-const MATERIAL_META_KEY="EDIFIQ_MATERIAIS_META_V2";
+const MATERIAL_META_KEY_BASE="EDIFIQ_MATERIAIS_META_V2";let MATERIAL_META_KEY=MATERIAL_META_KEY_BASE;
 const MAT_DB="EDIFIQ_MATERIAIS_DB_V2";const MAT_STORE="dados";
+function edifiqMaterialStateId(){const scope=edifiqStorageScope();return scope?'estado::'+scope:null}
 function openMaterialDB(){return new Promise((resolve,reject)=>{if(!window.indexedDB){reject(new Error('IndexedDB indisponível'));return}const r=indexedDB.open(MAT_DB,1);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(MAT_STORE))db.createObjectStore(MAT_STORE,{keyPath:'id'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error||new Error('Falha ao abrir banco de materiais'))})}
-async function saveMaterialDB(){const db=await openMaterialDB();return new Promise((resolve,reject)=>{const tx=db.transaction(MAT_STORE,'readwrite');tx.objectStore(MAT_STORE).put({id:'estado',materiais:D.materiais||[],material_movimentos:D.material_movimentos||[]});tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}})}
-async function loadMaterialDB(){const db=await openMaterialDB();return new Promise((resolve,reject)=>{const r=db.transaction(MAT_STORE,'readonly').objectStore(MAT_STORE).get('estado');r.onsuccess=()=>{const x=r.result;if(x&&Array.isArray(x.materiais)){D.materiais=x.materiais;D.material_movimentos=Array.isArray(x.material_movimentos)?x.material_movimentos:[]}db.close();resolve(!!x)};r.onerror=()=>{db.close();reject(r.error)}})}
-function saveMaterialMeta(){try{localStorage.setItem(MATERIAL_META_KEY,JSON.stringify({materiais:D.materiais||[],material_movimentos:D.material_movimentos||[]}));return true}catch(e){console.warn("Metadados de materiais não puderam ser salvos",e);return false}}
-async function loadMaterialMeta(){let loaded=false;try{const x=JSON.parse(localStorage.getItem(MATERIAL_META_KEY)||"null");if(x&&Array.isArray(x.materiais)){D.materiais=x.materiais;D.material_movimentos=Array.isArray(x.material_movimentos)?x.material_movimentos:[];loaded=true}}catch(e){console.warn("Materiais locais",e)}if(!loaded){try{await loadMaterialDB()}catch(e){console.warn('Banco de materiais indisponível',e)}}}
+async function saveMaterialDB(){const recordId=edifiqMaterialStateId();if(!recordId)return false;const db=await openMaterialDB();return new Promise((resolve,reject)=>{const tx=db.transaction(MAT_STORE,'readwrite');tx.objectStore(MAT_STORE).put({id:recordId,materiais:D.materiais||[],material_movimentos:D.material_movimentos||[]});tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}})}
+async function loadMaterialDB(){const recordId=edifiqMaterialStateId();if(!recordId)return false;const db=await openMaterialDB();return new Promise((resolve,reject)=>{const store=db.transaction(MAT_STORE,'readonly').objectStore(MAT_STORE);const read=id=>{const r=store.get(id);r.onsuccess=()=>{let x=r.result;if(!x&&id===recordId&&edifiqLegacyOwnerScope()===edifiqStorageScope()){const legacy=store.get('estado');legacy.onsuccess=()=>{x=legacy.result;if(x&&Array.isArray(x.materiais)){D.materiais=x.materiais;D.material_movimentos=Array.isArray(x.material_movimentos)?x.material_movimentos:[]}db.close();if(x)saveMaterialDB().catch(()=>{});resolve(!!x)};legacy.onerror=()=>{db.close();reject(legacy.error)}}else{if(x&&Array.isArray(x.materiais)){D.materiais=x.materiais;D.material_movimentos=Array.isArray(x.material_movimentos)?x.material_movimentos:[]}db.close();resolve(!!x)}};r.onerror=()=>{db.close();reject(r.error)}};read(recordId)})}
+function saveMaterialMeta(){if(!edifiqStorageScope())return false;edifiqApplyScopedKeys();try{localStorage.setItem(MATERIAL_META_KEY,JSON.stringify({materiais:D.materiais||[],material_movimentos:D.material_movimentos||[]}));return true}catch(e){console.warn("Metadados de materiais não puderam ser salvos",e);return false}}
+async function loadMaterialMeta(){if(!edifiqStorageScope())return false;edifiqApplyScopedKeys();let loaded=false;try{const x=JSON.parse(localStorage.getItem(MATERIAL_META_KEY)||"null");if(x&&Array.isArray(x.materiais)){D.materiais=x.materiais;D.material_movimentos=Array.isArray(x.material_movimentos)?x.material_movimentos:[];loaded=true}}catch(e){console.warn("Materiais locais",e)}if(!loaded){try{await loadMaterialDB()}catch(e){console.warn('Banco de materiais indisponível',e)}}}
 
 function materialObraNome(id){return D.obras.find(o=>String(o.id)===String(id))?.nome||"Sem obra"}
 function materialById(id){return D.materiais.find(m=>String(m.id)===String(id))}
@@ -10417,38 +10455,36 @@ window.addEventListener("unhandledrejection",e=>{console.error("EDIFIQ rejection
 
 document.addEventListener("DOMContentLoaded",async()=>{
   try{
+    edifiqResetInMemoryState();
     try{await openDocumentoDB();}catch(e){console.warn("Armazenamento de documentos indisponível",e)}
-    // 1) Recupera primeiro os dados salvos neste aparelho. O IndexedDB durável
-    // tem prioridade apenas quando sua versão é comprovadamente mais recente.
-    const local=localData(); Object.keys(D).forEach(k=>{D[k]=Array.isArray(local[k])?local[k]:[]});
-    await recoverEdifiqStateFromIDB();
-    auditEDIFIQ(); saveSafeSnapshot("estado inicial carregado");
-    loadDocumentoMeta();
-    await loadMaterialMeta();
-    /* Records without names are preserved for manual correction. */
-    renderAll();
     if("indexedDB" in window){try{await openPhotoDB();}catch(e){console.warn("IndexedDB indisponível",e);}}
+    $("auth")?.classList.remove("hidden");$("app")?.classList.add("hidden");
 
-    // 2) Em seguida tenta recuperar automaticamente a sessão e os dados da nuvem.
-    // Se o servidor estiver indisponível, os dados locais continuam preservados.
+    // Só recupera cache local depois de identificar a conta autenticada.
     try{
       if(await ensureSupabaseClient()){
         const result=await Promise.race([sb.auth.getSession(),new Promise(resolve=>setTimeout(()=>resolve({data:{session:null},timeout:true}),5000))]);
-        if(result?.data?.session){
+        if(result?.data?.session?.user){
           user=result.data.session.user;
-          $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
-          await loadCloud();
-          /* Records without names are preserved for manual correction. */
-          saveLocalData();
-          renderAll();
+          edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(user.id)||null;
+          try{await Promise.race([edifiqCarregarEmpresaAtiva(),new Promise(resolve=>setTimeout(resolve,3000))])}catch(e){console.warn('Contexto da empresa:',e)}
+          if(!edifiqEmpresaAtivaId)edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(user.id)||user.id;
+          edifiqRememberEmpresaForUser(user.id,edifiqEmpresaAtivaId);edifiqApplyScopedKeys();
+          await edifiqClaimLegacyStorage();await edifiqLoadScopedLocalState();edifiqRememberOfflineAccess();
+          $("auth")?.classList.add("hidden");$("app")?.classList.remove("hidden");
+          try{await Promise.race([loadCloud(),new Promise(resolve=>setTimeout(resolve,7000))])}catch(e){console.warn('Nuvem indisponível; cache desta conta mantido.',e)}
+          saveLocalData();renderAll();startEdifiqRealtime();
+        }else{
+          edifiqResetInMemoryState();renderAll();
         }
+      }else{
+        // Sem SDK/rede, mantém a tela de login; o botão Offline usa apenas a última conta autenticada deste aparelho.
+        edifiqResetInMemoryState();renderAll();
       }
-    }catch(cloudErr){console.warn("Recuperação da nuvem indisponível; mantendo dados locais.",cloudErr);}
-
-    renderAll();
+    }catch(cloudErr){console.warn("Inicialização autenticada indisponível.",cloudErr);edifiqResetInMemoryState();renderAll();}
   }catch(e){
-    console.error("Falha de inicialização",e);
-    try{authMsg("O sistema iniciou com os dados salvos neste aparelho.");renderAll();}catch(_){}
+    console.error("Falha de inicialização",e);edifiqResetInMemoryState();
+    try{authMsg("Não foi possível iniciar a sessão. Seus dados salvos não foram apagados.");renderAll();}catch(_){}
   }
 });
 
@@ -10832,7 +10868,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     const f=(D.funcionarios||[]).find(x=>String(x.id)===String(window.__rtFuncId));
     if(!f)return null;
     const r=rtRange();
-    const diarias=(D.diarias||[]).filter(d=>rtMatchEmployee(d,f)&&rtInRange(d.data,r));
+    const diarias=edifiqDiariasCanonicas().filter(d=>rtMatchEmployee(d,f)&&rtInRange(d.data,r));
     const faltas=(D.faltas||[]).filter(x=>rtMatchEmployee(x,f)&&rtInRange(x.data,r));
     const presencas=(D.presencas||[]).filter(x=>rtMatchEmployee(x,f)&&rtInRange(x.data,r));
     const adiantamentos=(D.gastos||[]).filter(g=>gastoCategoria(g)==='Adiantamento'&&rtMatchEmployee(g,f)&&rtInRange(g.data,r));
@@ -11403,12 +11439,12 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   }
   function f3Data(){
     try{
-      const x=JSON.parse(localStorage.getItem(F3_KEY)||"[]");
+      const x=JSON.parse(localStorage.getItem(edifiqScopedExternalKey(F3_KEY))||"[]");
       return Array.isArray(x)?x:[];
     }catch(_){return []}
   }
   function f3SetData(rows){
-    try{localStorage.setItem(F3_KEY,JSON.stringify(rows));}catch(e){console.warn("EDIFIQ Produção:",e)}
+    try{localStorage.setItem(edifiqScopedExternalKey(F3_KEY),JSON.stringify(rows));}catch(e){console.warn("EDIFIQ Produção:",e)}
     try{if(typeof D!=="undefined")D.producoesEquipe=rows.slice()}catch(_){}
   }
   function f3SyncData(){
@@ -11729,7 +11765,7 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   }
   function producoesP(id){
     let rows=[];
-    try{rows=Array.isArray(D.producoesEquipe)?D.producoesEquipe:JSON.parse(localStorage.getItem("edifiq_producao_equipe_v1")||"[]")}catch(_){rows=[]}
+    try{rows=Array.isArray(D.producoesEquipe)?D.producoesEquipe:JSON.parse(localStorage.getItem(edifiqScopedExternalKey("edifiq_producao_equipe_v1"))||"[]")}catch(_){rows=[]}
     return (rows||[]).filter(x=>String(x.obra_id)===String(id));
   }
   function servicesP(id){
@@ -12542,10 +12578,11 @@ async function runEdifiqDiagnostico(){
   out.push('SESSÃO: '+ok(!!user?.id)+(user?.id?' — usuário autenticado':' — sem sessão'));
   const tabelas=['obras','funcionarios','diarias','gastos','pagamentos','checklist','faltas','adiantamentos','servicos_adicionais','servicos','terceirizados','pagamentos_terceirizados','orcamentos','diario'];
   out.push('DADOS EM MEMÓRIA: '+tabelas.map(t=>t+':'+((D&&Array.isArray(D[t]))?D[t].length:0)).join(' · '));
-  const pend=(()=>{try{return JSON.parse(localStorage.getItem('edifiq_sync_queue')||'[]')}catch(_){return[]}})();
-  const del=(()=>{try{return JSON.parse(localStorage.getItem('edifiq_delete_queue')||'[]')}catch(_){return[]}})();
+  const pend=getEdifiqPendingUpdates();
+  const del=(()=>{try{return JSON.parse(localStorage.getItem(DELETE_QUEUE_KEY)||'[]')}catch(_){return[]}})();
   out.push('FILA DE SINCRONIZAÇÃO: '+pend.length+' pendência(s)');
   out.push('FILA DE EXCLUSÃO: '+del.length+' pendência(s)');
+  out.push('CONFLITOS PROTEGIDOS: '+getEdifiqSyncConflicts().length+' registro(s) arquivado(s)');
   out.push('REALTIME: '+ok(!!edifiqRealtimeChannel)+(edifiqRealtimeChannel?' — canal ativo':' — canal ainda não conectado'));
   out.push('INTERNET: '+(navigator.onLine?'ONLINE':'OFFLINE'));
   out.push('GERADO: '+new Date().toLocaleString('pt-BR'));
@@ -13024,7 +13061,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
     const q=qtyF(d),qp=numF(d?.qtd_paga),v=numF(diariaValor(d)),vb=numF(d?.valor_baixado??d?.valor_pago);
     return paidStatuses.has(status)||d?.pago===true||d?.paga===true||(q>0&&qp>=q)||(v>0&&vb>=v-0.01);
   };
-  window.getPendingDiarias=function(funcId){return (D.diarias||[]).filter(d=>sameF(d.funcionario_id,funcId)&&!diariaEstaPaga(d))};
+  window.getPendingDiarias=function(funcId){return edifiqDiariasCanonicas().filter(d=>sameF(d.funcionario_id,funcId)&&!diariaEstaPaga(d))};
   window.getPendingTotal=function(funcId){return getPendingDiarias(funcId).reduce((a,d)=>a+diariaValor(d),0)};
 
   function uniqueRows(rows){
@@ -13100,7 +13137,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
     return box;
   }
   function paidAccumulatedEmployee(id){
-    const paidDays=(D.diarias||[]).filter(d=>sameF(d.funcionario_id,id)&&isPaidF(d)).reduce((a,d)=>a+numF(d.valor_baixado??d.valor_pago??diariaValor(d)),0);
+    const paidDays=edifiqDiariasCanonicas().filter(d=>sameF(d.funcionario_id,id)&&isPaidF(d)).reduce((a,d)=>a+numF(d.valor_baixado??d.valor_pago??diariaValor(d)),0);
     const extras=getFuncionarioExtrasAll().filter(x=>sameF(x.funcionario_id??x.funcionarioId,id)&&paidStatuses.has(String(x.status||'').toLowerCase())).reduce((a,x)=>a+numF(x.valor),0);
     const applied=getAdvanceApplied();
     const vales=rowsG().filter(g=>gastoCategoria(g)==='Adiantamento'&&sameF(g.funcionario_id,id)).reduce((a,g)=>a+Math.max(0,numF(g.valor_baixado??applied[g.id]??0)),0);
@@ -13109,7 +13146,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
   function pendingValeEmployee(id){return typeof getEmployeeAdvances==='function'?getEmployeeAdvances(id).reduce((a,x)=>a+numF(x.disponivel),0):0}
   function employeePeriodStats(f,mode){
     const {ini,fim}=periodRange(mode);
-    const allEmployeeDays=(D.diarias||[]).filter(d=>sameF(d.funcionario_id,f.id));
+    const allEmployeeDays=edifiqDiariasCanonicas().filter(d=>sameF(d.funcionario_id,f.id));
     const ds=allEmployeeDays.filter(d=>String(d.data||'')>=ini&&String(d.data||'')<=fim);
     // O período filtra apenas os indicadores de período; o saldo em aberto considera
     // todas as diárias ainda não quitadas, mesmo as antigas.
@@ -13118,7 +13155,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
     const openExtra=extras.filter(x=>!paidStatuses.has(String(x.status||'').toLowerCase())),paidExtra=extras.filter(x=>paidStatuses.has(String(x.status||'').toLowerCase()));
     const abertoDiarias=open.reduce((a,d)=>a+diariaValor(d),0);
     const bruto=abertoDiarias;
-    const paidPeriodRows=(D.diarias||[]).filter(d=>sameF(d.funcionario_id,f.id)&&isPaidF(d)&&String(d.data_pagamento||d.pago_em||d.data||'')>=ini&&String(d.data_pagamento||d.pago_em||d.data||'')<=fim);
+    const paidPeriodRows=edifiqDiariasCanonicas().filter(d=>sameF(d.funcionario_id,f.id)&&isPaidF(d)&&String(d.data_pagamento||d.pago_em||d.data||'')>=ini&&String(d.data_pagamento||d.pago_em||d.data||'')<=fim);
     const pagoDiarias=paidPeriodRows.reduce((a,d)=>a+numF(d.valor_baixado??d.valor_pago??diariaValor(d)),0);
     const openExtraV=openExtra.reduce((a,x)=>a+numF(x.valor),0),paidExtraV=paidExtra.reduce((a,x)=>a+numF(x.valor),0);
     const extraTotal=openExtraV;
@@ -13137,14 +13174,15 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
     if(!funcs.length){box.innerHTML='<div class="empty">Nenhum funcionário encontrado.</div>';return;}
     box.innerHTML=funcs.map(f=>{
       const st=employeePeriodStats(f,equipePeriod);
-      const vale=st.vales||0;
-      const extrasPeriodo=st.extraTotal||0;
-      const brutoFolha=st.accrued||0;
-      const pagar=Math.max(0,st.aberto);
+      const folhaAtual=typeof calcFuncionarioPagamento==='function'?calcFuncionarioPagamento(f.id):{pending:0,advance:0,net:0,extrasTotal:0};
+      const vale=Number(folhaAtual.advance||0);
+      const extrasPeriodo=Number(folhaAtual.extrasTotal||0);
+      const brutoFolha=Number(folhaAtual.pending||0);
+      const pagar=Math.max(0,Number(folhaAtual.net||0));
       const rate=numF(f.valor_diaria);
       const weekStats=employeePeriodStats(f,'semana'),fortStats=employeePeriodStats(f,'quinzena'); const week=weekStats.aberto,fort=fortStats.aberto;
       const obra=getFuncObra(f.id); const obraNome=(D.obras||[]).find(o=>sameF(o.id,obra))?.nome||'Sem obra';
-      const daysAll=new Set((D.diarias||[]).filter(d=>sameF(d.funcionario_id,f.id)).map(d=>d.data).filter(Boolean)).size;
+      const daysAll=new Set(edifiqDiariasCanonicas().filter(d=>sameF(d.funcionario_id,f.id)).map(d=>d.data).filter(Boolean)).size;
       return `<article class="edEquipeCard">
         <div class="edEqHead"><div class="edEqIdentity"><h3 class="edEqName">${escF(f.nome||'Funcionário')}</h3><div class="edEqRole">${escF(f.funcao||f.função||'Função não informada')}</div></div><div class="edEqHeadRight"><span class="edEqBadge ${f.ativo===false?'off':''}">${f.ativo===false?'Inativo':'Diária'}</span><button class="edEqMini" type="button" onclick="openExtraFuncionario('${escF(f.id)}')">🏆 Bônus / Extras</button></div></div>
         <div class="edEqRate"><div><small>Forma de pagamento</small><strong>${escF(f.tipo_pagamento==='mensal'?'Mensal':'Por diária')}</strong><div class="sub" style="margin-top:3px">Obra: ${escF(obraNome)}</div></div><b>${rate?moneyF(rate)+'/dia':moneyF(f.salario_mensal||0)}</b></div>
@@ -13165,7 +13203,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
   window.renderEquipeOverview=function(){
     ensureEquipePeriodUI();
     const ativos=(D.funcionarios||[]).filter(f=>f.ativo!==false).length;
-    const ds=(D.diarias||[]),open=ds.filter(d=>!isPaidF(d)),paid=ds.filter(isPaidF);
+    const ds=edifiqDiariasCanonicas(),open=ds.filter(d=>!isPaidF(d)),paid=ds.filter(isPaidF);
     const extras=getFuncionarioExtrasAll();
     const openExtra=extras.filter(x=>!paidStatuses.has(String(x.status||'').toLowerCase())),paidExtra=extras.filter(x=>paidStatuses.has(String(x.status||'').toLowerCase()));
     const vale=(typeof getEmployeeAdvances==='function'?(D.funcionarios||[]).reduce((a,f)=>a+pendingValeEmployee(f.id),0):0);
@@ -13194,7 +13232,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
   function simplifyObraDias(){
     const article=document.querySelector('[data-obra-card]');if(!article)return;
     const obraId=article.getAttribute('data-obra-card'),host=article.querySelector('.obraDiasWorkers');if(!host)return;
-    const ds=(D.diarias||[]).filter(d=>sameF(d.obra_id,obraId));
+    const ds=edifiqDiariasCanonicas().filter(d=>sameF(d.obra_id,obraId));
     const ids=[...new Set(ds.map(d=>String(d.funcionario_id)))];
     const funcs=(D.funcionarios||[]).filter(f=>ids.includes(String(f.id)));
     if(!funcs.length){host.innerHTML='<div class="obraModeloEmpty">Nenhum funcionário trabalhou nesta obra.</div>';return;}
@@ -13253,8 +13291,18 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
     D[table]=Array.isArray(D[table])?D[table].filter(x=>!sameF(x.id,id)):[];
     saveLocalData();
     if(!String(id).startsWith('local_')&&sb&&user?.id&&navigator.onLine){
-      try{const {error}=await sb.from(table).delete().eq('id',id).eq('user_id',edifiqEmpresaUserId());if(error)addEdifiqDeleteQueue(table,id);else removeEdifiqDeleteQueue(table,id)}catch(_){addEdifiqDeleteQueue(table,id)}
-    }else if(!String(id).startsWith('local_')) addEdifiqDeleteQueue(table,id);
+      try{
+        const queued=getEdifiqDeleteQueue().find(x=>x.key===table+'::'+String(id));
+        const result=queued?await edifiqDeleteOneSafely(queued,String(edifiqEmpresaUserId())):{deleted:false};
+        if(result.conflict){
+          archiveEdifiqSyncConflict('delete_cancelled',table,id,queued?.row_snapshot||row,result.remote,{revision:queued?.revision,base_updated_at:queued?.base_updated_at});
+          removeEdifiqDeleteQueue(table,id);
+          if(result.remote){D[table]=D[table]||[];D[table].unshift({...result.remote,_sync_pendente:false});}
+          saveLocalData();toast('Exclusão vinculada cancelada porque o registro mudou em outro aparelho.');return null;
+        }
+        if(result.deleted)removeEdifiqDeleteQueue(table,id);else addEdifiqDeleteQueue(table,id,row);
+      }catch(_){addEdifiqDeleteQueue(table,id,row)}
+    }else if(!String(id).startsWith('local_')) addEdifiqDeleteQueue(table,id,row);
     return row;
   }
   function parseDailyIds(g){
@@ -13300,7 +13348,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
       const fallbackObra=$('pagObra')?.value||'',data=$('pagData')?.value||today(),descricao=$('pagDescricao')?.value?.trim()||'Pagamento de equipe',obs=$('pagObs')?.value?.trim()||'';
       let total=0,baixadas=0,processados=0;
       for(const ch of checks){
-        const id=ch.dataset.id,f=(D.funcionarios||[]).find(x=>sameF(x.id,id));if(!f||f.ativo===false)continue;
+        const id=ch.dataset.id,f=(D.funcionarios||[]).find(x=>sameF(x.id,id));if(!f)continue;
         const ds=getPendingDiarias(id),extras=getFuncionarioExtrasPendentes(id),vales=getAvailableValesByObraF(id);
         const bruto=ds.reduce((a,d)=>a+diariaValor(d),0),extraTotal=extras.reduce((a,x)=>a+numF(x.valor),0);if(bruto<=0&&extraTotal<=0)continue;
         const groups=new Map();for(const d of ds){const obra=String(d.obra_id||fallbackObra||'');if(!obra)continue;const chk=String(d.checklist_id||d.checklistId||'');const key=obra+'::'+chk;const g=groups.get(key)||{obraId:obra,checklistId:chk,diarias:[],valor:0};g.valor+=diariaValor(d);g.diarias.push(d);groups.set(key,g)}
@@ -13348,7 +13396,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
   }
   function reportData(id){
     const o=(D.obras||[]).find(x=>sameF(x.id,id));if(!o)return null;
-    const ds=(D.diarias||[]).filter(d=>sameF(d.obra_id,id)), gs=rowsG().filter(g=>sameF(recordObraId(g),id)), ps=rowsP().filter(g=>sameF(recordObraId(g),id)), cs=(D.checklist||[]).filter(c=>sameF(recordObraId(c),id)), di=(D.diario||[]).filter(r=>sameF(r.obra_id,id)).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+    const ds=edifiqDiariasCanonicas().filter(d=>sameF(d.obra_id,id)), gs=rowsG().filter(g=>sameF(recordObraId(g),id)), ps=rowsP().filter(g=>sameF(recordObraId(g),id)), cs=(D.checklist||[]).filter(c=>sameF(recordObraId(c),id)), di=(D.diario||[]).filter(r=>sameF(r.obra_id,id)).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
     const funcs=new Map();for(const d of ds){const f=(D.funcionarios||[]).find(x=>sameF(x.id,d.funcionario_id));if(f)funcs.set(String(f.id),f)};for(const r of di){for(const fid of (r.equipe||[])){const f=(D.funcionarios||[]).find(x=>sameF(x.id,fid));if(f)funcs.set(String(f.id),f)}}
     const fRows=[...funcs.values()].map(f=>{const rows=ds.filter(d=>sameF(d.funcionario_id,f.id)),days=new Set(rows.map(d=>d.data).filter(Boolean)).size,hours=di.filter(r=>(r.equipe||[]).map(String).includes(String(f.id))).reduce((a,r)=>a+numF(r.horas),0),paid=rows.filter(isPaidF).reduce((a,d)=>a+numF(d.valor_baixado??d.valor_pago??diariaValor(d)),0);return {f,days,hours,paid,rate:numF(f.valor_diaria)}});
     const finance=obraFinanceData(id);return {o,ds,gs,ps,cs,di,funcs:fRows,finance,services:(typeof servicesForObra==='function'?servicesForObra(id):[])||[]};
@@ -13727,6 +13775,32 @@ function edifiqCloudPayload(table,row){
  if(Array.isArray(out.equipe)&&out.equipe.some(id=>String(id).startsWith('local_')))throw new Error('Aguardando funcionários');
  return out;
 }
+async function edifiqApplyPendingUpdateSafely(item,owner){
+ const patch=edifiqCloudPayload(item.table,item.row);
+ let base=item.base_updated_at||null;
+ let rebasedRemote=null;
+ for(let attempt=0;attempt<3;attempt++){
+   if(!base){
+     const remote=await edifiqRemoteRow(item.table,item.id,owner);
+     if(!remote)return {deleted:true};
+     base=remote.updated_at||null;rebasedRemote=remote;
+   }
+   let query=sb.from(item.table).update(patch).eq('id',item.id).eq('user_id',owner);
+   if(base)query=query.eq('updated_at',base);
+   const result=await query.select().maybeSingle();
+   if(result.error)throw result.error;
+   if(result.data){
+     if(rebasedRemote)archiveEdifiqSyncConflict('update_rebased',item.table,item.id,item.row,rebasedRemote,{revision:item.revision,base_updated_at:item.base_updated_at});
+     return {data:result.data,rebased:!!rebasedRemote};
+   }
+   const remote=await edifiqRemoteRow(item.table,item.id,owner);
+   if(!remote)return {deleted:true};
+   if(!rebasedRemote)rebasedRemote=remote;
+   base=remote.updated_at||null;
+ }
+ return {conflict:true,remote:rebasedRemote};
+}
+
 async function edifiqFlushWrites(){
  if(!edifiqCanSync()||window.__edifiqImporting)return false;
  if(edifiqWriteFlight)return edifiqWriteFlight;
@@ -13756,13 +13830,13 @@ async function edifiqFlushWrites(){
      }
      if(!data?.id)throw new Error('Servidor não confirmou o registro');
      const current=(D[table]||[]).find(x=>String(x.id)===String(localId));
-     if(!current){addEdifiqDeleteQueue(table,data.id);continue;}
+     if(!current){addEdifiqDeleteQueue(table,data.id,data);continue;}
      const changed=JSON.stringify(current)!==revision;
      edifiqRemapIdentity(table,localId,data.id);
      const index=D[table].findIndex(x=>String(x.id)===String(localId));
      D[table][index]={...current,...data,_sync_pendente:false};
      // Keep the latest edit if it arrived while the insert was in flight.
-     if(changed){D[table][index]={...D[table][index],...edifiqRemapReferences(current,{[table]:{[localId]:data.id}}),id:data.id,_sync_pendente:true};addEdifiqPendingUpdate(table,data.id,edifiqCloudPayload(table,D[table][index]));}
+     if(changed){D[table][index]={...D[table][index],...edifiqRemapReferences(current,{[table]:{[localId]:data.id}}),id:data.id,_sync_pendente:true};addEdifiqPendingUpdate(table,data.id,edifiqCloudPayload(table,D[table][index]),data.updated_at||null);}
      D[table]=D[table].filter((r,i)=>String(r.id)!==String(data.id)||i===index);
      removeEdifiqPendingUpdate(table,localId);saveLocalData();
     }catch(e){console.warn('EDIFIQ: registro continua salvo e pendente',table,e.message);}
@@ -13773,15 +13847,22 @@ async function edifiqFlushWrites(){
    if(getEdifiqDeleteQueue().some(x=>x.key===item.key))continue;
    if(owner!==String(edifiqEmpresaUserId()))return false;
    try{
-    const row=edifiqCloudPayload(item.table,item.row);
-    const {data,error}=await sb.from(item.table).update(row).eq('id',item.id).eq('user_id',owner).select().single();
-    if(error||!data)throw error||new Error('Atualização não confirmada');
+    const outcome=await edifiqApplyPendingUpdateSafely(item,owner);
     const current=getEdifiqPendingUpdates().find(x=>x.key===item.key);
     if(JSON.stringify(current)!==JSON.stringify(item))continue;
+    if(outcome.deleted){
+      archiveEdifiqSyncConflict('update_after_remote_delete',item.table,item.id,item.row,null,{revision:item.revision,base_updated_at:item.base_updated_at});
+      D[item.table]=(D[item.table]||[]).filter(x=>String(x.id)!==String(item.id));
+      removeEdifiqPendingUpdate(item.table,item.id);saveLocalData();
+      toast('Um registro foi excluído em outro aparelho. A edição local foi guardada no histórico de conflitos.');
+      continue;
+    }
+    if(outcome.conflict){console.warn('EDIFIQ: conflito ainda ativo',item.table,item.id);continue;}
+    const data=outcome.data;
     const i=(D[item.table]||[]).findIndex(x=>String(x.id)===String(item.id));
     if(i>=0)D[item.table][i]={...D[item.table][i],...data,_sync_pendente:false};
     removeEdifiqPendingUpdate(item.table,item.id);saveLocalData();
-   }catch(e){console.warn('EDIFIQ: atualização pendente',item.table,e.message);}
+   }catch(e){console.warn('EDIFIQ: atualização pendente',item.table,e?.message||e);}
   }
   return true;
  })();
@@ -13798,9 +13879,9 @@ function edifiqRenderAfterSync(){
  if(document.querySelector('.modal.open')){edifiqNeedsRender=true;return;}
  edifiqNeedsRender=false;renderAll();
 }
-function edifiqScheduleSync(){
+function edifiqScheduleSync(delay=250){
  clearTimeout(edifiqSyncTimer);
- edifiqSyncTimer=setTimeout(()=>loadCloud().catch(e=>console.warn('Sincronização',e)),250);
+ edifiqSyncTimer=setTimeout(()=>loadCloud().catch(e=>console.warn('Sincronização',e)),Math.max(120,Number(delay)||250));
 }
 const edifiqOriginalClose=closeM;
 closeM=function(){const result=edifiqOriginalClose.apply(this,arguments);if(edifiqNeedsRender&&!document.querySelector('.modal.open'))edifiqRenderAfterSync();return result;};
@@ -13836,7 +13917,7 @@ async function edifiqImportComplete(backup){
  if(edifiqWriteFlight)await edifiqWriteFlight;
  window.__edifiqImporting=true;
  const before=cloneState(),maps={},staged=cloneState();
- const auxKeys=[FUNC_OBRA_KEY,ADV_KEY,SERVICE_KEY,PAID_DIARIAS_KEY];
+ const auxKeys=[FUNC_OBRA_KEY,ADV_KEY,SERVICE_KEY,PAID_DIARIAS_KEY,SYNC_CONFLICTS_KEY];
  const oldAux=auxKeys.map(k=>[k,localStorage.getItem(k)]);
  let committed=false;
  try{
@@ -13873,12 +13954,17 @@ async function edifiqImportComplete(backup){
   mergeMap(ADV_KEY,backup.adiantamentosAplicados,'gastos');
   mergeMap(PAID_DIARIAS_KEY,backup.diariasBaixadas,'diarias');
   mergeMap(SERVICE_KEY,backup.servicosAdicionais,'obras');
+  if(Array.isArray(backup.syncConflicts)){
+    const existing=getEdifiqSyncConflicts(),seen=new Set(existing.map(x=>x.signature||JSON.stringify([x.kind,x.table,x.id,x.at])));
+    for(const item of backup.syncConflicts){const sig=item?.signature||JSON.stringify([item?.kind,item?.table,item?.id,item?.at]);if(!seen.has(sig)){existing.push(item);seen.add(sig);}}
+    saveEdifiqSyncConflicts(existing);
+  }
   Object.assign(D,staged);
   const localOK=saveLocalData();await edifiqStateSaveQueue;
   // Confirm a durable full snapshot, not merely a successful per-table cache.
   const db=await openEdifiqStateDB();
   let durable=false;
-  try{durable=await new Promise((resolve,reject)=>{const q=db.transaction(EDIFIQ_STATE_STORE,'readonly').objectStore(EDIFIQ_STATE_STORE).get(EDIFIQ_STATE_ID);q.onsuccess=()=>resolve(JSON.stringify(q.result?.payload?.obras)===JSON.stringify(D.obras)&&Object.keys(staged).every(t=>JSON.stringify(q.result?.payload?.[t])===JSON.stringify(D[t])));q.onerror=()=>reject(q.error);});}finally{db.close();}
+  try{durable=await new Promise((resolve,reject)=>{const q=db.transaction(EDIFIQ_STATE_STORE,'readonly').objectStore(EDIFIQ_STATE_STORE).get(edifiqStateRecordId());q.onsuccess=()=>resolve(JSON.stringify(q.result?.payload?.obras)===JSON.stringify(D.obras)&&Object.keys(staged).every(t=>JSON.stringify(q.result?.payload?.[t])===JSON.stringify(D[t])));q.onerror=()=>reject(q.error);});}finally{db.close();}
   if(!durable){const raw=JSON.parse(localStorage.getItem(LOCAL_KEY)||'{}');if(!Object.keys(staged).every(t=>JSON.stringify(raw[t])===JSON.stringify(D[t])))throw new Error('Não foi possível salvar o backup completo');}
   committed=true;
   // Old backups may still contain photos even after the photo module was removed.
@@ -13999,6 +14085,379 @@ body.edLight :is(.btn.primary,.btn.gold,.edEqAction.primary,.edEqPeriodButtons b
   color:inherit!important;
   -webkit-text-fill-color:currentColor!important;
 }
+
+
+/* Financeiro — botão Lançamento no modo claro: fundo claro e texto preto forte. */
+body.edLight #financeiro > .pageTitle > .btn.gold,
+body.edLight #financeiro > .pageTitle > button:first-of-type{
+  background:#f3f4f6!important;
+  background-image:none!important;
+  color:#000!important;
+  -webkit-text-fill-color:#000!important;
+  border-color:#cbd2d9!important;
+  font-weight:900!important;
+  text-shadow:none!important;
+  box-shadow:0 1px 2px rgba(16,24,40,.06)!important;
+}
+body.edLight #financeiro > .pageTitle > .btn.gold:hover,
+body.edLight #financeiro > .pageTitle > button:first-of-type:hover{
+  background:#e9edf2!important;
+  background-image:none!important;
+  color:#000!important;
+  -webkit-text-fill-color:#000!important;
+}
+
 </style>
+
+<style id="edifiq-etapa3-obras-contrato-style">
+.edContratoTrio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.edContratoTrio .obraBigMetric{margin:0!important;min-width:0}
+@media(max-width:680px){.edContratoTrio{grid-template-columns:1fr}.edContratoTrio .obraBigMetric{padding:11px 12px!important}}
+</style>
+<script id="edifiq-etapa3-obras-contrato">
+(function(){
+  function n2(v){const n=Number(v||0);return Number.isFinite(n)?Math.round(n*100)/100:0;}
+  function extrasDaObra(obraId){
+    try{return (typeof servicesForObra==='function'?servicesForObra(obraId):[]).reduce((a,x)=>a+n2(x?.valor),0);}catch(_){return 0;}
+  }
+  window.obraValoresContrato=function(obraOuId){
+    const o=(obraOuId&&typeof obraOuId==='object')?obraOuId:(D.obras||[]).find(x=>String(x.id)===String(obraOuId));
+    if(!o)return {contratoOriginal:0,extras:0,totalAtualizado:0};
+    const extras=n2(extrasDaObra(o.id));
+    const totalAtual=n2(o.valor);
+    // Modelo legado do EDIFIQ: obras.valor já contém os extras. Portanto o original
+    // é reconstruído por diferença, sem migrar ou apagar nenhum dado existente.
+    const contratoOriginal=Math.max(0,n2(totalAtual-extras));
+    return {contratoOriginal,extras,totalAtualizado:n2(contratoOriginal+extras)};
+  };
+
+  const openObraBase=window.openObra;
+  window.openObra=function(id=null){
+    if(typeof openObraBase==='function')openObraBase(id);
+    if(id){
+      const o=(D.obras||[]).find(x=>String(x.id)===String(id));
+      const campo=document.getElementById('oVal');
+      if(o&&campo)campo.value=String(obraValoresContrato(o).contratoOriginal);
+    }
+  };
+
+  window.saveObra=async function(e){
+    e.preventDefault();
+    const nome=$('oNome').value.trim();
+    if(!nome){toast('Informe o nome da obra.');return;}
+    const originalDigitado=n2($('oVal').value||0);
+    if(originalDigitado<0){toast('Informe um valor de contrato válido.');return;}
+    const extrasAtuais=editObraId?obraValoresContrato(editObraId).extras:0;
+    const row={
+      nome,
+      cliente:$('oCli').value.trim(),
+      endereco:$('oLoc').value.trim(),
+      // Mantém compatibilidade: no banco continua salvo o TOTAL atualizado.
+      // O formulário passa a editar somente o contrato original.
+      valor:n2(originalDigitado+extrasAtuais),
+      status:$('oStatus').value,
+      data_inicio:$('oIni').value||null,
+      data_fim:$('oFim').value||null,
+      tipo_servico:$('oTipo').value.trim(),
+      observacoes:$('oObs').value.trim()
+    };
+    let result=null;
+    const estadoAntesObra=stateCounts();
+    if(!editObraId)saveSafeSnapshot('antes de cadastrar nova obra');
+    saveLocalData();
+    if(editObraId)result=await updateRow('obras',editObraId,row);else result=await insertRow('obras',row);
+    if(result){
+      if(!editObraId)await ensureDefaultChecklist(result.id);
+      if(!editObraId)protectAgainstUnexpectedLoss(estadoAntesObra,{obras:1});
+      saveLocalData();
+      closeM('obraM');
+      toast(editObraId?'Obra atualizada. Contrato original e extras preservados.':'Obra criada com sucesso.');
+      editObraId=null;
+      renderAll();
+    }
+  };
+
+  window.addServicoAdicional=async function(obraId){
+    try{
+      const o=(D.obras||[]).find(x=>String(x.id)===String(obraId));
+      if(!o){toast('Obra não encontrada.');return;}
+      const antes=obraValoresContrato(o);
+      const nome=prompt('Nome do serviço adicional:','');
+      if(nome===null||!String(nome).trim())return;
+      const raw=prompt('Valor do serviço adicional (R$):','0');
+      if(raw===null)return;
+      const valor=(typeof parseNumeroSeguro==='function'?parseNumeroSeguro(raw):Number(raw));
+      if(!Number.isFinite(valor)||valor<=0){toast('Informe um valor válido.');return;}
+      const data=today(),descricao=String(nome).trim();
+      const operation_id=edifiqStableOperationId('servico_adicional',String(obraId),descricao,n2(valor),data);
+      const servico=await insertRow('servicos_adicionais',{obra_id:String(obraId),descricao,valor:n2(valor),data,observacao:'Serviço adicional — valor incorporado ao contrato.',operation_id});
+      if(!servico)throw new Error('Serviço adicional não confirmado');
+      const extrasDepois=n2(extrasDaObra(obraId));
+      const novoTotal=n2(antes.contratoOriginal+extrasDepois);
+      const atualizado=await updateRow('obras',String(o.id),{valor:novoTotal});
+      if(!atualizado)throw new Error('Total atualizado da obra não confirmado');
+      try{
+        const all=getServices();if(!Array.isArray(all[obraId]))all[obraId]=[];
+        const sid=String(servico.id||operation_id);
+        if(!all[obraId].some(x=>String(x.id||x.operation_id||'')===sid||String(x.operation_id||'')===String(operation_id))){all[obraId].push({id:sid,operation_id,nome:descricao,descricao,valor:n2(valor),data});saveServices(all);}
+      }catch(err){console.warn('Cache legado de serviços',err);}
+      saveLocalData();renderAll();
+      toast(`Extra registrado: ${money(valor)}. Total atualizado: ${money(novoTotal)}.`);
+    }catch(err){console.error('EDIFIQ extra da obra:',err);saveLocalData();renderAll();toast('Não foi possível concluir o serviço extra. Seus dados existentes foram preservados.');}
+  };
+
+  window.excluirExtraObra=async function(id,obraId){
+    if(!id||!obraId)return;
+    if(!confirm('Excluir este serviço adicional da obra?'))return;
+    try{
+      const o=(D.obras||[]).find(x=>String(x.id)===String(obraId));
+      if(!o){toast('Obra não encontrada.');return;}
+      const antes=obraValoresContrato(o);
+      const all=getServices();
+      const listaD=Array.isArray(D.servicos_adicionais)?D.servicos_adicionais:[];
+      const itens=listaD.filter(x=>String(recordObraId(x))===String(obraId));
+      const item=itens.find(x=>String(x.id||x.operation_id||'')===String(id))||servicesForObra(obraId).find(x=>String(x.id||x.operation_id||'')===String(id));
+      if(!item){toast('Serviço extra não encontrado. Atualize a obra e tente novamente.');return;}
+      const same=x=>String(x?.id||'')===String(id)||String(x?.operation_id||'')===String(id)||String(x?.id||'')===String(item.id||'')||(item.operation_id&&String(x?.operation_id||'')===String(item.operation_id));
+
+      // Usa a fila de exclusão segura da Etapa 2 para registros sincronizados.
+      if(item.id&&!String(item.id).startsWith('local_'))addEdifiqDeleteQueue('servicos_adicionais',String(item.id),item);
+      else if(item.id)removeEdifiqPendingUpdate('servicos_adicionais',String(item.id));
+      D.servicos_adicionais=listaD.filter(x=>!(String(recordObraId(x))===String(obraId)&&same(x)));
+      if(Array.isArray(all?.[obraId]))all[obraId]=all[obraId].filter(x=>!same(x));
+      saveServices(all);
+
+      const extrasRestantes=n2(extrasDaObra(obraId));
+      const novoTotal=n2(antes.contratoOriginal+extrasRestantes);
+      await updateRow('obras',String(o.id),{valor:novoTotal});
+      saveLocalData();
+      if(typeof retryEdifiqDeleteQueue==='function'&&navigator.onLine){try{await retryEdifiqDeleteQueue();}catch(_){}}
+      if(typeof loadCloud==='function'&&navigator.onLine){try{await loadCloud();}catch(_){}}
+      renderAll();
+      toast(`Serviço extra excluído. Total atualizado: ${money(novoTotal)}.`);
+    }catch(err){console.error('Excluir extra da obra:',err);try{if(navigator.onLine)await loadCloud();}catch(_){}renderAll();toast('Não foi possível concluir a exclusão agora. Nenhum outro dado foi apagado.');}
+  };
+
+  // Garante que chamadas inline continuem apontando para as versões corrigidas.
+  window.openObra=window.openObra;
+  window.saveObra=window.saveObra;
+  window.addServicoAdicional=window.addServicoAdicional;
+  window.excluirExtraObra=window.excluirExtraObra;
+})();
+</script>
+
+<style id="edifiq-etapa4-ui-fixes">
+/* ETAPA 4 — somente os ajustes visuais solicitados. */
+body.edLight #financeiro > .pageTitle > button.btn.gold,
+body.edLight #financeiro > .pageTitle > button:first-of-type{
+  background:#f1f3f5!important;
+  background-color:#f1f3f5!important;
+  background-image:none!important;
+  color:#000!important;
+  -webkit-text-fill-color:#000!important;
+  border-color:#cbd2d9!important;
+  font-weight:900!important;
+  text-shadow:none!important;
+  box-shadow:0 1px 2px rgba(16,24,40,.06)!important;
+}
+body.edLight #financeiro > .pageTitle > button.btn.gold:hover,
+body.edLight #financeiro > .pageTitle > button.btn.gold:focus,
+body.edLight #financeiro > .pageTitle > button.btn.gold:active,
+body.edLight #financeiro > .pageTitle > button:first-of-type:hover,
+body.edLight #financeiro > .pageTitle > button:first-of-type:focus,
+body.edLight #financeiro > .pageTitle > button:first-of-type:active{
+  background:#e9ecef!important;
+  background-color:#e9ecef!important;
+  background-image:none!important;
+  color:#000!important;
+  -webkit-text-fill-color:#000!important;
+}
+@media(min-width:760px){
+  .nav button:hover,.nav button:focus,.nav button:active{
+    background:transparent!important;
+    background-color:transparent!important;
+    background-image:none!important;
+    color:inherit!important;
+    outline:none!important;
+  }
+  .nav button.active:hover,.nav button.active:focus,.nav button.active:active{
+    background:transparent!important;
+    background-color:transparent!important;
+  }
+  body.edLight .nav button:hover:not(.active),body.edLight .nav button:focus:not(.active),body.edLight .nav button:active:not(.active){
+    background:transparent!important;background-color:transparent!important;color:#344054!important;
+  }
+  body.edLight .nav button.active:hover,body.edLight .nav button.active:focus,body.edLight .nav button.active:active{
+    background:#eef4ff!important;background-color:#eef4ff!important;color:#1d4ed8!important;
+  }
+}
+</style>
+<script id="edifiq-etapa4-equipe">
+(function(){
+  const paidStates4=new Set(['pago','paid','quitado','liquidado']);
+  const n4=v=>{const n=Number(v||0);return Number.isFinite(n)?n:0};
+  const norm4=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+  const same4=(a,b)=>String(a??'')===String(b??'');
+  function turno4(d){
+    const t=norm4(d?.tipo_jornada||d?.tipo||'');if(t)return t;
+    const o=norm4(d?.observacao||'');
+    if(o.includes('manha'))return 'manha';if(o.includes('tarde'))return 'tarde';if(o.includes('completa'))return 'completa';
+    return '';
+  }
+  function paid4(d){try{return typeof diariaEstaPaga==='function'?diariaEstaPaga(d):paidStates4.has(norm4(d?.status));}catch(_){return paidStates4.has(norm4(d?.status));}}
+  window.edifiqDiariaLogicalKey=function(d){
+    return [String(d?.funcionario_id??''),String(d?.obra_id??''),String(d?.checklist_id??d?.checklistId??''),String(d?.data??''),n4(d?.qtd??d?.quantidade??1).toFixed(2),n4(d?.valor_diaria).toFixed(2),turno4(d)].join('|');
+  };
+  function score4(d){
+    const paid=paid4(d)?1:0,server=!String(d?.id||'').startsWith('local_')?1:0;
+    const time=Date.parse(d?.updated_at||d?.created_at||'')||0;
+    return [paid,server,time];
+  }
+  function better4(a,b){const A=score4(a),B=score4(b);for(let i=0;i<A.length;i++){if(B[i]>A[i])return b;if(B[i]<A[i])return a;}return n4(b?.id)>n4(a?.id)?b:a;}
+  window.edifiqDiariasCanonicas=function(rows){
+    const map=new Map();
+    for(const d of (rows||D.diarias||[])){if(!d)continue;const k=edifiqDiariaLogicalKey(d);map.set(k,map.has(k)?better4(map.get(k),d):d);}
+    return [...map.values()];
+  };
+  window.edifiqQtdDuplicadasEquipe=function(){return Math.max(0,(D.diarias||[]).length-edifiqDiariasCanonicas().length)};
+
+  window.getPendingDiarias=function(funcId){return edifiqDiariasCanonicas().filter(d=>same4(d.funcionario_id,funcId)&&!paid4(d));};
+  window.getPendingTotal=function(funcId){return getPendingDiarias(funcId).reduce((a,d)=>a+n4(diariaValor(d)),0);};
+  window.calcFuncionarioPagamento=function(funcId){
+    const ds=getPendingDiarias(funcId),extras=typeof getFuncionarioExtrasPendentes==='function'?getFuncionarioExtrasPendentes(funcId):[];
+    const pendingDiarias=ds.reduce((a,d)=>a+n4(diariaValor(d)),0),extrasTotal=extras.reduce((a,x)=>a+n4(x.valor),0);
+    const byObra=new Map();
+    for(const d of ds){const o=String(d.obra_id||'');byObra.set(o,(byObra.get(o)||0)+n4(diariaValor(d)));}
+    for(const x of extras){const o=String(x.obra_id??x.obraId??'');byObra.set(o,(byObra.get(o)||0)+n4(x.valor));}
+    const advances=typeof getEmployeeAdvances==='function'?getEmployeeAdvances(funcId):[],allocations=[];
+    let abatido=0;
+    for(const adv of advances){
+      const obra=String(adv.obra_id??adv.obraId??'');
+      if(!obra||!byObra.has(obra))continue;
+      const saldo=Math.max(0,n4(byObra.get(obra)));if(saldo<=0)continue;
+      const usar=Math.min(saldo,Math.max(0,n4(adv.disponivel)));if(usar<=0)continue;
+      byObra.set(obra,saldo-usar);abatido+=usar;allocations.push({id:adv.id,valor:usar,obra_id:obra});
+    }
+    const pending=pendingDiarias+extrasTotal;
+    return {pending,pendingDiarias,extrasPendentes:extras,extrasTotal,advance:abatido,net:Math.max(0,pending-abatido),allocations,advances};
+  };
+
+  let diaBusy4=false;
+  window.saveDia=async function(e){
+    e?.preventDefault?.();if(diaBusy4){toast('A diária já está sendo registrada.');return}diaBusy4=true;
+    try{
+      const funcionario_id=$('dFunc')?.value||'',obra_id=$('dObra')?.value||'',checklist_id=$('dChecklist')?.value||null,data=$('dData')?.value||today();
+      const f=(D.funcionarios||[]).find(x=>same4(x.id,funcionario_id));
+      if(!f){toast('Funcionário não encontrado.');return}if(f.ativo===false){toast('Funcionário inativo não pode registrar diária.');return}
+      if([false,'false','não','nao','Não','Nao','0'].includes(f.registrar_diaria)){toast('Este funcionário está configurado para não registrar diária.');return}
+      if(!obra_id){toast('Selecione a obra.');return}
+      const tipo=$('dTipo')?.value||'completa',meia=tipo==='manha'||tipo==='tarde',qtd=meia?.5:1,valorExibido=n4($('dVal')?.value),valorBase=meia?valorExibido*2:valorExibido;
+      if(valorExibido<=0){toast('Informe o valor da diária.');return}
+      const texto=tipo==='manha'?'Meia diária — manhã — 50%':tipo==='tarde'?'Meia diária — tarde — 50%':'Diária completa — 100%';
+      const obs=String($('dObs')?.value||'').trim(),observacao=obs?`${texto}. ${obs}`:texto;
+      const candidate={funcionario_id,obra_id,checklist_id,data,qtd,valor_diaria:valorBase,tipo_jornada:tipo,observacao};
+      const key=edifiqDiariaLogicalKey(candidate);
+      if(edifiqDiariasCanonicas().some(d=>edifiqDiariaLogicalKey(d)===key)){toast('Essa diária já está registrada para este funcionário, obra, data e turno.');return}
+      const operation_id=edifiqStableOperationId('diaria-v4',funcionario_id,obra_id,checklist_id||'',data,qtd,Number(valorBase).toFixed(2),tipo);
+      const result=await insertRow('diarias',{...candidate,status:$('dStatus')?.value||'pendente',operation_id});
+      if(result){closeM('diaM');toast(`Diária registrada: ${money(valorBase*qtd)}`);}
+    }catch(err){console.error('EDIFIQ diária etapa 4',err);toast('Não foi possível registrar a diária. Os dados existentes foram preservados.');}
+    finally{diaBusy4=false;}
+  };
+
+  let faltaBusy4=false;
+  window.saveFalta=async function(e){
+    e?.preventDefault?.();if(faltaBusy4){toast('A ocorrência já está sendo registrada.');return}faltaBusy4=true;
+    try{
+      const funcionario_id=$('faltaFunc')?.value||'',f=(D.funcionarios||[]).find(x=>same4(x.id,funcionario_id));
+      if(!f){toast('Selecione o funcionário.');return}if(f.ativo===false){toast('Funcionário inativo não pode receber nova falta/ocorrência.');return}
+      const obra_id=getFuncObra(funcionario_id)||null,data=$('faltaData')?.value||today(),tipo=$('faltaTipo')?.value||'falta',justificativa=String($('faltaObs')?.value||'').trim();
+      const dup=(D.faltas||[]).some(x=>same4(x.funcionario_id,funcionario_id)&&same4(x.data,data)&&norm4(x.tipo||'falta')===norm4(tipo));
+      if(dup){toast('Já existe uma falta/ocorrência desse tipo para este funcionário nesta data.');return}
+      const operation_id=edifiqStableOperationId('falta-v4',funcionario_id,obra_id||'',data,tipo,norm4(justificativa));
+      const saved=await insertRow('faltas',{funcionario_id,obra_id,data,tipo,justificativa,justificada:tipo==='justificada'||tipo==='atestado',operation_id});
+      if(saved){closeM('faltaM');renderAll();toast('Falta/ocorrência registrada sem duplicação.');}
+    }catch(err){console.error('EDIFIQ falta etapa 4',err);toast('Não foi possível registrar a falta/ocorrência.');}
+    finally{faltaBusy4=false;}
+  };
+
+  // Show only active workers when creating new attendance/absence records; history remains intact.
+  const openFalta4=window.openFalta;
+  window.openFalta=function(funcId=null){
+    if(typeof openFalta4==='function')openFalta4(funcId);
+    const el=$('faltaFunc');if(!el)return;
+    const current=String(funcId||el.value||'');
+    const ativos=(D.funcionarios||[]).filter(f=>f.ativo!==false);
+    el.innerHTML='<option value="">Selecione o funcionário</option>'+ativos.map(f=>`<option value="${esc(f.id)}">${esc(f.nome)}</option>`).join('');
+    if(current&&ativos.some(f=>same4(f.id,current)))el.value=current;
+  };
+
+  let extraBusy4=false;
+  window.saveExtraEquipeLista=async function(e){
+    e?.preventDefault?.();if(extraBusy4){toast('O bônus/extra já está sendo registrado.');return}extraBusy4=true;
+    try{
+      const funcionario_id=$('edExtraFunc')?.value||'',obra_id=$('edExtraObra')?.value||'',checklist_id=$('edExtraChecklist')?.value||'',tipo=$('edExtraTipo')?.value||'Bônus',descricao=String($('edExtraDesc')?.value||'').trim(),valor=n4($('edExtraValor')?.value),data=today();
+      const f=(D.funcionarios||[]).find(x=>same4(x.id,funcionario_id));
+      if(!f||f.ativo===false){toast('Selecione um funcionário ativo.');return}if(!obra_id){toast('Selecione a obra.');return}if(!descricao||valor<=0){toast('Informe descrição e valor válido.');return}
+      const operation_id=edifiqStableOperationId('extra-v4',funcionario_id,obra_id,checklist_id||'',norm4(tipo),norm4(descricao),Number(valor).toFixed(2),data);
+      const existing=(D.gastos||[]).find(g=>String(g.operation_id||'')===String(operation_id));
+      if(existing){toast('Esse bônus/extra já foi registrado.');return}
+      const sxid='sx_'+String(operation_id).replace(/[^a-zA-Z0-9_-]/g,'').slice(-28);
+      const saved=await insertRow('gastos',{obra_id,checklist_id:checklist_id||null,data,descricao:`[${tipo}] ${descricao} - ${f.nome}`,valor,fornecedor:f.nome,observacao:'Lançamento vinculado à gestão da equipe.',categoria:'Mão de obra',funcionario_id:f.id,servico_extra_id:sxid,status:'pendente',operation_id});
+      if(!saved)throw new Error('Bônus/extra não confirmado');
+      D.servicosExtras=Array.isArray(D.servicosExtras)?D.servicosExtras:[];
+      if(!D.servicosExtras.some(x=>same4(x.id,sxid)))D.servicosExtras.push({id:sxid,funcionario_id:f.id,funcionarioId:f.id,obra_id,obraId:obra_id,checklist_id:checklist_id||null,checklistId:checklist_id||'',descricao,tipo,valor,data,status:'pendente',financeiroAplicado:true,folhaAplicado:false,operation_id});
+      saveLocalData();closeM('edExtraM');renderAll();toast(`${tipo} lançado para ${f.nome} sem duplicação.`);
+    }catch(err){console.error('EDIFIQ extra etapa 4',err);toast('Não foi possível registrar o bônus/extra.');}
+    finally{extraBusy4=false;}
+  };
+
+  // Pending historical balances remain payable even after the worker is deactivated.
+  const pay4=window.savePagamentoEquipe;let payBusy4=false;
+  if(typeof pay4==='function')window.savePagamentoEquipe=async function(e){
+    e?.preventDefault?.();if(payBusy4){toast('O pagamento já está sendo processado.');return}payBusy4=true;
+    try{return await pay4.call(this,e);}finally{payBusy4=false;}
+  };
+  const vale4=window.saveAdiantamento;let valeBusy4=false;
+  if(typeof vale4==='function')window.saveAdiantamento=async function(e){
+    e?.preventDefault?.();if(valeBusy4){toast('O Vale já está sendo registrado.');return}valeBusy4=true;
+    try{return await vale4.call(this,e);}finally{valeBusy4=false;}
+  };
+
+  // Do not destroy payroll/financial history when deleting a worker with linked records.
+  window.excluirFuncionario=async function(id){
+    const f=(D.funcionarios||[]).find(x=>same4(x.id,id));if(!f){toast('Funcionário não encontrado.');return}
+    const linked=(D.diarias||[]).some(x=>same4(x.funcionario_id,id))||(D.faltas||[]).some(x=>same4(x.funcionario_id,id))||(D.presencas||[]).some(x=>same4(x.funcionario_id,id))||(D.gastos||[]).some(x=>same4(x.funcionario_id,id))||(D.pagamentos||[]).some(x=>same4(x.funcionario_id,id))||(D.adiantamentos||[]).some(x=>same4(x.funcionario_id,id))||(D.servicosExtras||[]).some(x=>same4(x.funcionario_id??x.funcionarioId,id));
+    if(linked){
+      if(f.ativo===false){toast('Este funcionário possui histórico e já está inativo. O cadastro foi preservado para não quebrar a folha e o financeiro.');return}
+      if(confirm(`${f.nome||'Este funcionário'} possui histórico de equipe/financeiro. Para preservar os dados, ele não será apagado. Deseja desativá-lo?`)){
+        const r=await updateRow('funcionarios',f.id,{ativo:false});if(r){renderAll();toast('Funcionário desativado. Todo o histórico foi preservado.');}
+      }
+      return;
+    }
+    if(!confirm(`Excluir definitivamente o funcionário ${f.nome||''}?`))return;
+    const antes=(D.funcionarios||[]).length;await removeRow('funcionarios',id);if((D.funcionarios||[]).length<antes){saveLocalData();renderAll();toast('Funcionário excluído com sucesso.');}
+  };
+
+  // Overview totals use canonical daily rows and Vale only where the same work has values to settle.
+  window.renderEquipeOverview=function(){
+    const funcs=D.funcionarios||[],ativos=funcs.filter(f=>f.ativo!==false).length,ds=edifiqDiariasCanonicas();
+    const open=ds.filter(d=>!paid4(d)),paid=ds.filter(paid4),extras=typeof getFuncionarioExtrasAll==='function'?getFuncionarioExtrasAll():[];
+    const openExtra=extras.filter(x=>!paidStates4.has(norm4(x.status))),paidExtra=extras.filter(x=>paidStates4.has(norm4(x.status)));
+    const resumos=funcs.map(f=>calcFuncionarioPagamento(f.id));
+    const bruto=resumos.reduce((a,r)=>a+n4(r.pending),0),vale=resumos.reduce((a,r)=>a+n4(r.advance),0),liquido=resumos.reduce((a,r)=>a+n4(r.net),0);
+    const pago=paid.reduce((a,d)=>a+n4(d.valor_baixado??d.valor_pago??diariaValor(d)),0)+paidExtra.reduce((a,x)=>a+n4(x.valor),0);
+    const q=open.reduce((a,d)=>a+Math.max(0,n4(d.qtd??d.quantidade??1)),0),extraPend=openExtra.reduce((a,x)=>a+n4(x.valor),0);
+    const set=(id,v)=>{const el=$(id);if(el)el.textContent=v};
+    set('eqAtivos',ativos);set('eqDiasPeriodo',q);set('eqPendentePeriodo',money(bruto));set('eqPagoPeriodo',money(pago));set('eqAdiantPeriodo',money(vale));set('eqExtrasPeriodo',money(extraPend));set('eqLiquidoPeriodo',money(liquido));
+    try{fillEquipeHistorySelectors();}catch(_){ }try{renderHistoricoPagamentos();}catch(_){ }
+  };
+
+  // Re-render immediately if the app is already open.
+  try{if(typeof renderAll==='function')renderAll();}catch(e){console.warn('EDIFIQ Etapa 4 render',e)}
+})();
+</script>
+<script id="edifiq-etapa4-marker">window.EDIFIQ_BUILD="2026-10-10-etapa4-equipe";</script>
+
 </body>
 </html>
