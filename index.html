@@ -1868,12 +1868,12 @@ body{min-height:100vh;min-height:100dvh}
 <div class="financeModernHead">
 <div class="financeModernCard"><span class="fmLabel">Entradas</span><strong class="fmValue green" id="finEnt">R$ 0,00</strong></div>
 <div class="financeModernCard"><span class="fmLabel">Despesas</span><strong class="fmValue red" id="finDesp">R$ 0,00</strong></div>
-<div class="financeModernCard"><span class="fmLabel">Resultado</span><strong class="fmValue gold" id="finRes">R$ 0,00</strong></div>
+<div class="financeModernCard"><span class="fmLabel">Resultado de caixa</span><strong class="fmValue gold" id="finRes">R$ 0,00</strong></div>
 <div class="financeModernCard"><span class="fmLabel">Saldo a receber</span><strong class="fmValue gold" id="finReceber">R$ 0,00</strong></div>
 </div>
 
 <div class="financeModernGrid">
-<div class="financeModernPanel"><h3>📊 Saúde financeira</h3><div class="financeRow"><span>Valor contratado</span><b id="anContrato">R$ 0,00</b></div><div class="financeRow"><span>Receita recebida</span><b class="green" id="anReceita">R$ 0,00</b></div><div class="financeRow"><span>Custos totais</span><b class="red" id="anCustos">R$ 0,00</b></div><div class="financeRow"><span>Resultado</span><b class="gold" id="anLucro">R$ 0,00</b></div><div class="financeRow"><span>Margem de lucro</span><b id="anMargem">0,0%</b></div><div class="financeRow"><span>Saldo a receber</span><b class="gold" id="anReceber">R$ 0,00</b></div><div class="financeProgress"><i id="anSaudeBar" style="width:0%"></i></div><div class="sub" id="anSaude">Sem dados</div></div>
+<div class="financeModernPanel"><h3>📊 Saúde financeira</h3><div class="financeRow"><span>Valor contratado</span><b id="anContrato">R$ 0,00</b></div><div class="financeRow"><span>Receita recebida</span><b class="green" id="anReceita">R$ 0,00</b></div><div class="financeRow"><span>Custos totais</span><b class="red" id="anCustos">R$ 0,00</b></div><div class="financeRow"><span>Lucro projetado</span><b class="gold" id="anLucro">R$ 0,00</b></div><div class="financeRow"><span>Margem projetada</span><b id="anMargem">0,0%</b></div><div class="financeRow"><span>Saldo a receber</span><b class="gold" id="anReceber">R$ 0,00</b></div><div class="financeProgress"><i id="anSaudeBar" style="width:0%"></i></div><div class="sub" id="anSaude">Sem dados</div></div>
 <div class="financeModernPanel"><h3>🧱 Custos por categoria</h3><div id="anCustosCats"></div></div>
 </div>
 <div class="financeModernGrid">
@@ -4773,7 +4773,7 @@ ${money(f.despesas)}
 </div>
 
 <div class="finance-line">
-<span>Resultado / lucro</span>
+<span>Resultado de caixa</span>
 
 <b class="${f.resultado>=0?"green":"red"}">
 ${money(f.resultado)}
@@ -4784,7 +4784,7 @@ ${money(f.resultado)}
 <div class="finance-line">
 
 <span>
-Saldo do contrato após despesas
+Lucro projetado
 </span>
 
 <b class="gold">
@@ -5734,7 +5734,8 @@ const processados=[];
 for(const check of checks){
   const id=check.dataset.id;
   const f=D.funcionarios.find(x=>String(x.id)===String(id));
-  if(!f||f.ativo===false)continue;
+  // Funcionário inativo não recebe novos lançamentos, mas valores antigos continuam pagáveis.
+  if(!f)continue;
 
   const pendingItems=getPendingDiarias(id);
   const pendingDiarias=pendingItems.reduce((a,d)=>a+diariaValor(d),0);
@@ -7257,8 +7258,8 @@ function renderChecklist(){
   const contrato=Number(o.valor||0);
   const recebidaObra=(D.pagamentos||[]).filter(x=>String(x.obra_id)===String(o.id)).reduce((a,x)=>a+Number(x.valor||0),0);
   const despesasObra=(D.gastos||[]).filter(x=>String(x.obra_id)===String(o.id)).reduce((a,x)=>a+Number(x.valor||0),0);
-  const lucroObra=recebidaObra-despesasObra;
-  const margemObra=recebidaObra>0?(lucroObra/recebidaObra)*100:0;
+  const lucroObra=contrato-despesasObra;
+  const margemObra=contrato>0?(lucroObra/contrato)*100:0;
   const rows=itens.map(item=>{
     const pct=normalizarChecklistPct(item.progresso??((item.concluida||item.concluido)?100:0));
     const r=checklistFinanceResumo(o.id,item.id);
@@ -8610,11 +8611,7 @@ function renderHomeObras(){
     return emAndamento&&okBusca;
   });
   const progressoOf=o=>{
-    const itens=(D.checklist||[]).filter(x=>String(x.obra_id||x.obraId)===String(o.id));
-    if(itens.length){
-      return Math.round(itens.reduce((a,x)=>a+Math.max(0,Math.min(100,Number(x.progresso??((x.concluida||x.concluido)?100:0)))),0)/itens.length);
-    }
-    return Number(o.progresso||o.progressoChecklist||0);
+    try{return typeof obraProgress==='function'?obraProgress(o):Number(o.progresso||o.progressoChecklist||0)}catch(_){return Number(o.progresso||o.progressoChecklist||0)}
   };
   if(ordem==="nome") obras.sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||""),"pt-BR"));
   else if(ordem==="progresso") obras.sort((a,b)=>progressoOf(b)-progressoOf(a));
@@ -8657,7 +8654,7 @@ function openHomeKpi(tipo){
   }else if(tipo==='ativas'){
     title='Obras ativas';
     const rows=D.obras.filter(o=>['em_andamento','planejada'].includes(String(o.status||'')) || (!o.status));
-    body=rows.length?rows.map(o=>{const p=(D.checklist||[]).filter(x=>String(x.obra_id||x.obraId)===String(o.id));const prog=p.length?Math.round(p.reduce((a,x)=>a+Number(x.progresso??((x.concluida||x.concluido)?100:0)),0)/p.length):Number(o.progresso||0);return `<button class="edKpiWork" type="button" onclick="edifiqCloseHomeModal();go('obras')"><div><b>${esc(o.nome||'Obra sem nome')}</b><small>${esc(statusLabel(o.status))}</small></div><span>${Math.max(0,Math.min(100,prog))}%</span></button>`}).join(''):`<div class="empty">Nenhuma obra ativa.</div>`;
+    body=rows.length?rows.map(o=>{const prog=typeof obraProgress==='function'?obraProgress(o):Number(o.progresso||0);return `<button class="edKpiWork" type="button" onclick="edifiqCloseHomeModal();go('obras')"><div><b>${esc(o.nome||'Obra sem nome')}</b><small>${esc(statusLabel(o.status))}</small></div><span>${Math.max(0,Math.min(100,prog))}%</span></button>`}).join(''):`<div class="empty">Nenhuma obra ativa.</div>`;
   }else{
     title='Funcionários cadastrados';
     body=D.funcionarios.length?D.funcionarios.map(f=>`<div class="edKpiFuncRow"><div><b>${esc(f.nome||'Sem nome')}</b><small>${esc(f.funcao||'Função não informada')} · ${f.ativo===false?'Inativo':'Ativo'}</small></div><div class="edKpiFuncActions"><button class="btn" type="button" onclick="edifiqCloseHomeModal();go('funcionarios');setTimeout(()=>openFunc('${String(f.id).replace(/'/g,"\\'")}'),80)">Editar</button><button class="btn danger" type="button" onclick="excluirFuncionario('${String(f.id).replace(/'/g,"\\'")}');setTimeout(()=>openHomeKpi('funcionarios'),250)">Excluir</button><button class="btn gold" type="button" onclick="edifiqCloseHomeModal();openExtraFuncionario('${String(f.id).replace(/'/g,"\\'")}')">＋</button></div></div>`).join(''):`<div class="empty">Nenhum funcionário cadastrado.</div>`;
@@ -13723,7 +13720,7 @@ body.edLight :is(.formActions,.wrActions,.folhaTodosHeader){background:#fff!impo
 
 <script id="edifiq-reliability-20261010">
 // EDIFIQ reliability revision: durable local-first writes, dependency remapping and serialized sync.
-const EDIFIQ_SYNC_COLUMNS={"adiantamentos": ["data", "created_at", "client_operation_id", "operation_id", "updated_at", "checklist_id", "observacao", "id", "user_id", "funcionario_id", "obra_id", "valor"], "auditoria_edifiq": ["user_id", "operation_id", "depois", "criado_em", "tabela", "registro_id", "acao", "id", "antes"], "checklist": ["created_at", "legacy_id", "user_id", "obra_id", "concluida", "progresso", "operation_id", "client_operation_id", "tarefa", "updated_at", "valor", "id"], "diarias": ["checklist_id", "valor_baixado", "pago_em", "qtd_paga", "observacao", "tipo_jornada", "user_id", "funcionario_id", "obra_id", "legacy_id", "valor_pago", "qtd", "valor_diaria", "created_at", "id", "client_operation_id", "operation_id", "horas", "data", "status", "updated_at"], "diario": ["clima", "atividades", "observacoes", "equipe", "user_id", "created_at", "updated_at", "backup_id", "operation_id", "obra_id", "id", "data", "horas"], "edifiq_arquivos": ["tipo", "id", "operation_id", "categoria", "caminho", "nome", "updated_at", "created_at", "obra_id", "tamanho", "empresa_user_id"], "edifiq_auditoria_arquivos": ["caminho", "arquivo_id", "empresa_user_id", "id", "operation_id", "tipo_inconsistencia", "status", "atualizado_em", "criado_em", "detalhes"], "edifiq_convites": ["criado_em", "id", "status", "atualizado_em", "papel", "email", "ativo", "user_id"], "edifiq_empresa_ativa": ["atualizado_em", "membro_user_id", "empresa_user_id"], "edifiq_empresa_config": ["telefone", "email", "endereco", "cor", "empresa_user_id", "logo_url", "atualizado_em", "nome", "documento"], "edifiq_fila_arquivos": ["ultimo_erro", "arquivo_id", "empresa_user_id", "id", "tamanho", "operation_id", "status", "tipo", "caminho", "nome", "atualizado_em", "criado_em", "tentativas"], "edifiq_fotos": ["obra_id", "storage_path", "id", "created_at", "tipo", "nome_arquivo", "observacao", "titulo", "data", "user_id", "updated_at", "tamanho", "operation_id"], "edifiq_historico_manutencao": ["id", "tipo", "empresa_user_id", "usuario_id", "detalhes", "criado_em", "acao", "status"], "edifiq_membros": ["id", "membro_user_id", "ativo", "criado_em", "atualizado_em", "papel", "user_id"], "edifiq_permissoes": ["membro_user_id", "modulo", "visualizar", "criar", "editar", "excluir", "atualizado_em", "id", "user_id"], "edifiq_recuperacao_arquivos": ["motivo", "id", "empresa_user_id", "arquivo_id", "tamanho", "criado_em", "atualizado_em", "caminho", "nome", "tipo", "status", "operation_id"], "edifiq_sync_central": ["pendencias", "status", "ultimo_processamento", "ultimo_diagnostico", "empresa_user_id", "recuperacoes", "conflitos", "erros", "atualizado_em"], "faltas": ["funcionario_id", "justificativa", "justificada", "client_operation_id", "tipo", "created_at", "updated_at", "obra_id", "operation_id", "backup_id", "data", "id", "user_id"], "funcionarios": ["operation_id", "tipo_pagamento", "funcao", "telefone", "nome", "created_at", "salario_mensal", "dia_pagamento", "percentual_vale", "legacy_id", "user_id", "ativo", "obra_id", "updated_at", "id", "valor_diaria", "client_operation_id", "registrar_diaria"], "gastos": ["funcionario_id", "updated_at", "checklist_id", "status", "fornecedor", "servico_extra_id", "created_at", "unidade", "data", "categoria", "id", "legacy_id", "user_id", "obra_id", "valor", "operation_id", "subcategoria", "quantidade", "observacao", "backup_id", "client_operation_id", "data_pagamento", "descricao", "valor_baixado", "aplicado"], "obras": ["tipo_servico", "status", "endereco", "nome", "data_fim", "legacy_id", "user_id", "progresso", "updated_at", "id", "valor", "created_at", "data_inicio", "operation_id", "client_operation_id", "telefone", "observacoes", "tipo_servico_personalizado", "cliente"], "orcamentos": ["cliente", "id", "valor", "created_at", "user_id", "updated_at", "servico", "pagamento", "status", "client_operation_id", "operation_id"], "pagamentos": ["backup_id", "operation_id", "client_operation_id", "id", "forma_pagamento", "legacy_id", "descricao", "user_id", "obra_id", "valor", "data", "created_at", "funcionario_id", "tipo", "observacao", "desconto", "checklist_rateio", "checklist_id", "updated_at", "fornecedor"], "pagamentos_terceirizados": ["client_operation_id", "descricao", "legacy_id", "operation_id", "id", "updated_at", "created_at", "data", "valor", "terceirizado_id", "user_id", "forma_pagamento"], "profiles": ["empresa_documento", "empresa_logo_url", "empresa_endereco", "empresa_nome", "created_at", "empresa_cor", "nome", "id", "empresa_email", "empresa_telefone"], "servicos": ["created_at", "updated_at", "descricao", "observacao", "status", "client_operation_id", "operation_id", "id", "legacy_id", "user_id", "obra_id", "data", "valor"], "servicos_adicionais": ["id", "created_at", "client_operation_id", "updated_at", "obra_id", "descricao", "valor", "user_id", "operation_id", "observacao", "data"], "terceirizados": ["obra_id", "operation_id", "id", "valor", "created_at", "data", "descricao", "terceiro_nome", "terceiro_contato", "status", "forma_pagamento", "observacao", "updated_at", "client_operation_id", "user_id", "legacy_id"], "presencas": ["id", "user_id", "funcionario_id", "obra_id", "data", "status", "observacao", "operation_id", "created_at", "updated_at"]};
+const EDIFIQ_SYNC_COLUMNS={"adiantamentos": ["data", "created_at", "client_operation_id", "operation_id", "updated_at", "checklist_id", "observacao", "id", "user_id", "funcionario_id", "obra_id", "valor"], "auditoria_edifiq": ["user_id", "operation_id", "depois", "criado_em", "tabela", "registro_id", "acao", "id", "antes"], "checklist": ["created_at", "legacy_id", "user_id", "obra_id", "concluida", "progresso", "operation_id", "client_operation_id", "tarefa", "updated_at", "valor", "id"], "diarias": ["checklist_id", "valor_baixado", "pago_em", "qtd_paga", "observacao", "tipo_jornada", "user_id", "funcionario_id", "obra_id", "legacy_id", "valor_pago", "qtd", "valor_diaria", "created_at", "id", "client_operation_id", "operation_id", "horas", "data", "status", "updated_at"], "diario": ["clima", "atividades", "observacoes", "equipe", "user_id", "created_at", "updated_at", "backup_id", "operation_id", "obra_id", "id", "data", "horas"], "edifiq_arquivos": ["tipo", "id", "operation_id", "categoria", "caminho", "nome", "updated_at", "created_at", "obra_id", "tamanho", "empresa_user_id"], "edifiq_auditoria_arquivos": ["caminho", "arquivo_id", "empresa_user_id", "id", "operation_id", "tipo_inconsistencia", "status", "atualizado_em", "criado_em", "detalhes"], "edifiq_convites": ["criado_em", "id", "status", "atualizado_em", "papel", "email", "ativo", "user_id"], "edifiq_empresa_ativa": ["atualizado_em", "membro_user_id", "empresa_user_id"], "edifiq_empresa_config": ["telefone", "email", "endereco", "cor", "empresa_user_id", "logo_url", "atualizado_em", "nome", "documento"], "edifiq_fila_arquivos": ["ultimo_erro", "arquivo_id", "empresa_user_id", "id", "tamanho", "operation_id", "status", "tipo", "caminho", "nome", "atualizado_em", "criado_em", "tentativas"], "edifiq_fotos": ["obra_id", "storage_path", "id", "created_at", "tipo", "nome_arquivo", "observacao", "titulo", "data", "user_id", "updated_at", "tamanho", "operation_id"], "edifiq_historico_manutencao": ["id", "tipo", "empresa_user_id", "usuario_id", "detalhes", "criado_em", "acao", "status"], "edifiq_membros": ["id", "membro_user_id", "ativo", "criado_em", "atualizado_em", "papel", "user_id"], "edifiq_permissoes": ["membro_user_id", "modulo", "visualizar", "criar", "editar", "excluir", "atualizado_em", "id", "user_id"], "edifiq_recuperacao_arquivos": ["motivo", "id", "empresa_user_id", "arquivo_id", "tamanho", "criado_em", "atualizado_em", "caminho", "nome", "tipo", "status", "operation_id"], "edifiq_sync_central": ["pendencias", "status", "ultimo_processamento", "ultimo_diagnostico", "empresa_user_id", "recuperacoes", "conflitos", "erros", "atualizado_em"], "faltas": ["funcionario_id", "justificativa", "justificada", "client_operation_id", "tipo", "created_at", "updated_at", "obra_id", "operation_id", "backup_id", "data", "id", "user_id"], "funcionarios": ["operation_id", "tipo_pagamento", "funcao", "telefone", "nome", "created_at", "salario_mensal", "dia_pagamento", "percentual_vale", "legacy_id", "user_id", "ativo", "obra_id", "updated_at", "id", "valor_diaria", "client_operation_id", "registrar_diaria"], "gastos": ["funcionario_id", "updated_at", "checklist_id", "status", "fornecedor", "servico_extra_id", "created_at", "unidade", "data", "categoria", "id", "legacy_id", "user_id", "obra_id", "valor", "operation_id", "subcategoria", "quantidade", "observacao", "backup_id", "client_operation_id", "data_pagamento", "descricao", "valor_baixado", "aplicado"], "obras": ["tipo_servico", "status", "endereco", "nome", "data_fim", "legacy_id", "user_id", "progresso", "updated_at", "id", "valor", "created_at", "data_inicio", "operation_id", "client_operation_id", "telefone", "observacoes", "tipo_servico_personalizado", "cliente"], "orcamentos": ["cliente", "id", "valor", "created_at", "user_id", "updated_at", "servico", "pagamento", "status", "client_operation_id", "operation_id"], "pagamentos": ["backup_id", "operation_id", "client_operation_id", "id", "forma_pagamento", "legacy_id", "descricao", "user_id", "obra_id", "valor", "data", "created_at", "funcionario_id", "tipo", "observacao", "desconto", "checklist_rateio", "checklist_id", "updated_at", "fornecedor"], "pagamentos_terceirizados": ["client_operation_id", "descricao", "legacy_id", "operation_id", "id", "updated_at", "created_at", "data", "valor", "terceirizado_id", "user_id", "forma_pagamento"], "profiles": ["empresa_documento", "empresa_logo_url", "empresa_endereco", "empresa_nome", "created_at", "empresa_cor", "nome", "id", "empresa_email", "empresa_telefone", "telefone", "endereco", "updated_at"], "servicos": ["created_at", "updated_at", "descricao", "observacao", "status", "client_operation_id", "operation_id", "id", "legacy_id", "user_id", "obra_id", "data", "valor"], "servicos_adicionais": ["id", "created_at", "client_operation_id", "updated_at", "obra_id", "descricao", "valor", "user_id", "operation_id", "observacao", "data"], "terceirizados": ["obra_id", "operation_id", "id", "valor", "created_at", "data", "descricao", "terceiro_nome", "terceiro_contato", "status", "forma_pagamento", "observacao", "updated_at", "client_operation_id", "user_id", "legacy_id"], "presencas": ["id", "user_id", "funcionario_id", "obra_id", "data", "status", "observacao", "operation_id", "created_at", "updated_at"]};
 const EDIFIQ_LINK_TABLES={obra_id:'obras',obraId:'obras',funcionario_id:'funcionarios',funcionarioId:'funcionarios',checklist_id:'checklist',checklistId:'checklist',diaria_id:'diarias',gasto_id:'gastos',pagamento_id:'pagamentos',material_id:'materiais',materialId:'materiais',movimento_id:'material_movimentos',terceirizado_id:'terceirizados',servico_extra_id:'servicos_adicionais'};
 let edifiqWriteFlight=null,edifiqSyncTimer=null,edifiqNeedsRender=false;
 function edifiqCanSync(){return !!(sb&&user?.id&&user.id!=='local-user'&&navigator.onLine);}
@@ -14458,6 +14455,523 @@ body.edLight #financeiro > .pageTitle > button:first-of-type:active{
 })();
 </script>
 <script id="edifiq-etapa4-marker">window.EDIFIQ_BUILD="2026-10-10-etapa4-equipe";</script>
+
+
+<style id="edifiq-etapa5-financeiro-style">
+/* ETAPA 5 — mantém as correções visuais solicitadas no modo claro. */
+body.edLight #financeiro > .pageTitle > button.btn.gold,
+body.edLight #financeiro > .pageTitle > button:first-of-type{
+  background:#eef0f2!important;
+  background-color:#eef0f2!important;
+  background-image:none!important;
+  color:#000!important;
+  -webkit-text-fill-color:#000!important;
+  font-weight:800!important;
+  border-color:#d9dde3!important;
+  text-shadow:none!important;
+}
+body.edLight #financeiro > .pageTitle > button.btn.gold:hover,
+body.edLight #financeiro > .pageTitle > button.btn.gold:focus,
+body.edLight #financeiro > .pageTitle > button.btn.gold:active{
+  background:#e9ecef!important;
+  background-color:#e9ecef!important;
+  color:#000!important;
+  -webkit-text-fill-color:#000!important;
+}
+@media(min-width:760px){
+  .nav button:hover,.nav button:focus,.nav button:active{background:transparent!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important;}
+  body.edLight .nav button:hover:not(.active),body.edLight .nav button:focus:not(.active),body.edLight .nav button:active:not(.active){background:transparent!important;background-color:transparent!important;color:#344054!important;}
+  body.edLight .nav button.active:hover,body.edLight .nav button.active:focus,body.edLight .nav button.active:active{background:#eef4ff!important;background-color:#eef4ff!important;color:#1d4ed8!important;}
+}
+.financeAuditNote{margin-top:8px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--muted)}
+</style>
+<script id="edifiq-etapa5-financeiro">
+(function(){
+  const n5=v=>{try{const x=typeof parseNumeroSeguro==='function'?parseNumeroSeguro(v):Number(v||0);return Number.isFinite(x)?x:0}catch(_){const x=Number(v||0);return Number.isFinite(x)?x:0}};
+  const r5=v=>Math.round((n5(v)+Number.EPSILON)*100)/100;
+  const same5=(a,b)=>String(a??'')===String(b??'');
+  const norm5=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+  function unique5(rows){
+    const map=new Map(), loose=[];
+    for(const row of (rows||[])){
+      if(!row)continue;
+      const op=String(row.operation_id||row.client_operation_id||'').trim();
+      const id=String(row.id||'').trim();
+      const key=op?('op:'+op):(id?('id:'+id):'');
+      if(!key){loose.push(row);continue}
+      const old=map.get(key);
+      if(!old){map.set(key,row);continue}
+      const a=Date.parse(old.updated_at||old.created_at||'')||0,b=Date.parse(row.updated_at||row.created_at||'')||0;
+      if(b>=a)map.set(key,row);
+    }
+    return [...map.values(),...loose];
+  }
+  window.edifiqFinanceUniqueRows=unique5;
+  function sum5(rows,field='valor'){return r5(unique5(rows).reduce((a,x)=>a+n5(x?.[field]),0))}
+  function financeRowsByObra5(rows,obraId){return unique5(rows).filter(x=>same5(typeof recordObraId==='function'?recordObraId(x):(x.obra_id??x.obraId),obraId))}
+
+  // Uma única fonte de verdade para os cálculos de cada obra.
+  window.obraFinanceData=function(obraId){
+    const obra=(D.obras||[]).find(o=>same5(o.id,obraId));
+    const extras=unique5(typeof servicesForObra==='function'?servicesForObra(obraId):[]);
+    const valorExtras=r5(extras.reduce((a,x)=>a+n5(x.valor),0));
+    const contratoAtualizado=r5(obra?.valor);
+    const contratoOriginal=Math.max(0,r5(contratoAtualizado-valorExtras));
+    const pagamentos=financeRowsByObra5(D.pagamentos||[],obraId);
+    const gastos=financeRowsByObra5(D.gastos||[],obraId);
+    const receita=sum5(pagamentos);
+    const despesas=sum5(gastos);
+    const porCat=nome=>r5(gastos.filter(g=>typeof categoriaFinanceira==='function'?categoriaFinanceira(g)===nome:false).reduce((a,g)=>a+n5(g.valor),0));
+    const material=porCat('Material'),mao=porCat('Mão de obra'),terceirizado=porCat('Serviço terceirizado');
+    const outros=porCat('Outros');
+    const combustivel=r5(gastos.filter(g=>gastoSubcategoria(g)==='Combustível').reduce((a,g)=>a+n5(g.valor),0));
+    const locacao=r5(gastos.filter(g=>gastoSubcategoria(g)==='Locação').reduce((a,g)=>a+n5(g.valor),0));
+    const ferramentasEquipamentos=r5(gastos.filter(g=>gastoSubcategoria(g)==='Ferramentas e equipamentos').reduce((a,g)=>a+n5(g.valor),0));
+    const transporte=r5(gastos.filter(g=>gastoSubcategoria(g)==='Transporte').reduce((a,g)=>a+n5(g.valor),0));
+    const resultadoCaixa=r5(receita-despesas);
+    const lucroProjetado=r5(contratoAtualizado-despesas);
+    const saldoReceber=Math.max(0,r5(contratoAtualizado-receita));
+    const margemLucro=contratoAtualizado>0?(lucroProjetado/contratoAtualizado)*100:0;
+    const margemCaixa=receita>0?(resultadoCaixa/receita)*100:0;
+    return {
+      contrato:contratoAtualizado,contratoOriginal,valorServicosAdicionais:valorExtras,contratoAtualizado,
+      receita,material,mao,terceirizado,outros,despesas,
+      resultado:resultadoCaixa,resultadoCaixa,lucroProjetado,margemLucro,margemCaixa,
+      saldoContrato:lucroProjetado,saldoReceber,combustivel,locacao,ferramentasEquipamentos,transporte,
+      extras:valorExtras,servicosAdicionais:extras
+    };
+  };
+
+  // Checklist: lucro e margem usam o valor contratado da etapa; recebido fica separado.
+  window.checklistFinanceResumo=function(obraId,checklistId){
+    const cid=String(checklistId||'');
+    const item=(D.checklist||[]).find(x=>same5(x.id,cid));
+    // Se o checklist não pertence à obra selecionada, ele não entra no cálculo.
+    if(!item || !same5(typeof recordObraId==='function'?recordObraId(item):item.obra_id,obraId)){
+      return {recebido:0,despesas:0,diarias:0,custosSemFolha:0,valorExecutado:0,saldoReceber:0,lucro:0,lucroProjetado:0,resultadoCaixa:0,margem:0};
+    }
+    const pagamentos=financeRowsByObra5(D.pagamentos||[],obraId);
+    let recebido=0;
+    for(const x of pagamentos){
+      const dist=typeof receitaChecklistDistribuicao==='function'?receitaChecklistDistribuicao(x):[];
+      if(dist.length)recebido+=dist.filter(d=>same5(d.checklist_id,cid)).reduce((a,d)=>a+n5(d.valor),0);
+      else if(same5(x.checklist_id,cid))recebido+=n5(x.valor);
+    }
+    recebido=r5(recebido);
+    const gastos=financeRowsByObra5(D.gastos||[],obraId).filter(x=>same5(x.checklist_id??x.checklistId,cid));
+    const despesas=sum5(gastos);
+    const dias=(typeof edifiqDiariasCanonicas==='function'?edifiqDiariasCanonicas():D.diarias||[]).filter(x=>same5(x.obra_id,obraId)&&same5(x.checklist_id??x.checklistId,cid));
+    const valorDiarias=r5(dias.reduce((a,x)=>a+n5(diariaValor(x)),0));
+    const valorServico=r5(typeof checklistValor==='function'?checklistValor(item):item.valor);
+    const pct=Math.max(0,Math.min(100,n5(item.progresso)));
+    const valorExecutado=r5(valorServico*pct/100);
+    const saldoReceber=Math.max(0,r5(valorServico-recebido));
+    const resultadoCaixa=r5(recebido-despesas);
+    const lucroProjetado=r5(valorServico-despesas);
+    const margem=valorServico>0?(lucroProjetado/valorServico)*100:0;
+    return {recebido,despesas,diarias:valorDiarias,custosSemFolha:Math.max(0,r5(despesas-valorDiarias)),valorExecutado,saldoReceber,lucro:lucroProjetado,lucroProjetado,resultadoCaixa,margem};
+  };
+
+  // Evita duplo clique em lançamentos financeiros sem bloquear lançamentos legítimos posteriores.
+  const openFin5=window.openFin;
+  window.openFin=function(){window.__edifiqFinSubmitToken=String(Date.now())+'_'+Math.random().toString(36).slice(2);return openFin5?.apply(this,arguments)};
+  const saveFin5=window.saveFin;let finBusy5=false;
+  if(typeof saveFin5==='function')window.saveFin=async function(e){
+    e?.preventDefault?.();
+    if(finBusy5){toast('Este lançamento já está sendo processado.');return}
+    const valor=n5($('vFin')?.value);
+    if(!Number.isFinite(valor)||valor<=0){toast('Informe um valor válido.');return}
+    finBusy5=true;
+    try{return await saveFin5.call(this,e)}
+    finally{finBusy5=false}
+  };
+
+  // Os filtros mudam a lista, mas não podem distorcer os cartões de totais da obra.
+  const renderFinance5=window.renderFinance;
+  if(typeof renderFinance5==='function')window.renderFinance=function(){
+    renderFinance5.apply(this,arguments);
+    const obraFilter=$('finObraFilter')?.value||'all';
+    const obras=obraFilter==='all'?(D.obras||[]):(D.obras||[]).filter(o=>same5(o.id,obraFilter));
+    const ent=r5(obras.reduce((a,o)=>a+obraFinanceData(o.id).receita,0));
+    const desp=r5(obras.reduce((a,o)=>a+obraFinanceData(o.id).despesas,0));
+    const receber=r5(obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0));
+    const contrato=r5(obras.reduce((a,o)=>a+obraFinanceData(o.id).contrato,0));
+    const nObras=Math.max(obras.length,1);
+    if($('finEnt'))$('finEnt').textContent=money(ent);
+    if($('finDesp'))$('finDesp').textContent=money(desp);
+    if($('finRes')){$('finRes').textContent=money(r5(ent-desp));$('finRes').className='fmValue '+(ent-desp>=0?'gold':'red')}
+    if($('finReceber'))$('finReceber').textContent=money(receber);
+    if($('finMediaObra'))$('finMediaObra').textContent=money(r5(ent/nObras));
+    if($('finMediaDespesa'))$('finMediaDespesa').textContent=money(r5(desp/nObras));
+    if($('finComprometimento'))$('finComprometimento').textContent=(contrato>0?(desp/contrato*100):0).toFixed(1).replace('.',',')+'%';
+  };
+
+  // Resumo por obra: separa resultado de caixa de lucro projetado.
+  window.renderObraFinance=function(obraFilter='all'){
+    const box=$('obraFinanceResumo');if(!box)return;
+    let obras=D.obras||[];if(obraFilter!=='all')obras=obras.filter(o=>same5(o.id,obraFilter));
+    if(!obras.length){box.innerHTML='<p class="sub">Nenhum dado financeiro para a obra selecionada.</p>';return}
+    box.innerHTML=obras.map(o=>{
+      const f=obraFinanceData(o.id);
+      return `<div class="item">
+        <div class="row"><div><b>${esc(o.nome)}</b><br><small>Contrato atualizado: ${money(f.contratoAtualizado)}</small></div><strong class="${f.lucroProjetado>=0?'green':'red'}">${money(f.lucroProjetado)}</strong></div>
+        <div class="finance-line"><span>Contrato original</span><b>${money(f.contratoOriginal)}</b></div>
+        <div class="finance-line"><span>Serviços extras</span><b>${money(f.valorServicosAdicionais)}</b></div>
+        <div class="finance-line"><span>Receita recebida</span><b class="green">${money(f.receita)}</b></div>
+        <div class="finance-line"><span>Saldo a receber</span><b class="gold">${money(f.saldoReceber)}</b></div>
+        ${financeCategoryRowsForObra(o.id,f.contrato)}
+        <div class="finance-line" style="margin-top:8px"><span>Total despesas</span><b class="red">${money(f.despesas)}</b></div>
+        <div class="finance-line"><span>Resultado de caixa (recebido − despesas)</span><b class="${f.resultadoCaixa>=0?'green':'red'}">${money(f.resultadoCaixa)}</b></div>
+        <div class="finance-line"><span>Lucro projetado (contrato − despesas)</span><b class="${f.lucroProjetado>=0?'green':'red'}">${money(f.lucroProjetado)}</b></div>
+        <div class="finance-line"><span>Margem projetada</span><b class="${f.margemLucro>=0?'green':'red'}">${Number(f.margemLucro||0).toFixed(2).replace('.',',')}%</b></div>
+      </div>`;
+    }).join('');
+  };
+
+  window.obraFinanceMini=function(o){
+    const f=obraFinanceData(o.id);
+    return `<div class="finance-mini">
+      <div class="finance-line"><span>Contrato atualizado</span><b class="gold">${money(f.contratoAtualizado)}</b></div>
+      <div class="finance-line"><span>Receita recebida</span><b class="green">${money(f.receita)}</b></div>
+      <div style="margin-top:8px">${financeCategoryRowsForObra(o.id,f.contrato)}</div>
+      <div class="finance-line" style="margin-top:8px"><span>Total de despesas</span><b class="red">${money(f.despesas)}</b></div>
+      <div class="finance-line"><span>Saldo a receber</span><b class="gold">${money(f.saldoReceber)}</b></div>
+      <div class="finance-line"><span>Resultado de caixa</span><b class="${f.resultadoCaixa>=0?'green':'red'}">${money(f.resultadoCaixa)}</b></div>
+      <div class="finance-line"><span>Lucro projetado</span><b class="${f.lucroProjetado>=0?'green':'red'}">${money(f.lucroProjetado)}</b></div>
+      <div class="finance-line"><span>Margem projetada</span><b>${Number(f.margemLucro||0).toFixed(1).replace('.',',')}%</b></div>
+    </div>`;
+  };
+
+  // Painel de análise usa a mesma definição de lucro do Resumo Geral.
+  const renderAnalises5=window.renderAnalises;
+  if(typeof renderAnalises5==='function')window.renderAnalises=function(){
+    renderAnalises5.apply(this,arguments);
+    const obraFilter=$('analiseObraFilter')?.value||'all';
+    let obras=(D.obras||[]).slice();if(obraFilter!=='all')obras=obras.filter(o=>same5(o.id,obraFilter));
+    const contrato=r5(obras.reduce((a,o)=>a+obraFinanceData(o.id).contrato,0));
+    const receita=r5(obras.reduce((a,o)=>a+obraFinanceData(o.id).receita,0));
+    const custos=r5(obras.reduce((a,o)=>a+obraFinanceData(o.id).despesas,0));
+    const lucro=r5(contrato-custos),margem=contrato>0?(lucro/contrato)*100:0;
+    if($('anContrato'))$('anContrato').textContent=money(contrato);
+    if($('anReceita'))$('anReceita').textContent=money(receita);
+    if($('anCustos'))$('anCustos').textContent=money(custos);
+    if($('anLucro')){$('anLucro').textContent=money(lucro);$('anLucro').className=lucro>=0?'gold':'red'}
+    if($('anMargem')){$('anMargem').textContent=margem.toFixed(1).replace('.',',')+'%';$('anMargem').className=margem>=0?'green':'red'}
+    if($('anReceber'))$('anReceber').textContent=money(r5(obras.reduce((a,o)=>a+obraFinanceData(o.id).saldoReceber,0)));
+    const saude=$('anSaude'),bar=$('anSaudeBar');
+    if(saude){saude.textContent=!obras.length?'Sem dados':lucro>0?'Lucro projetado positivo':lucro<0?'Lucro projetado negativo':'Lucro projetado zerado';saude.className='analysisBig '+(lucro>0?'green':lucro<0?'red':'')}
+    if(bar)bar.style.width=Math.max(0,Math.min(100,margem))+'%';
+    const ranking=obras.map(o=>({o,f:obraFinanceData(o.id)})).sort((a,b)=>b.f.lucroProjetado-a.f.lucroProjetado);
+    const rankHtml=arr=>!arr.length?'<div class="empty">Nenhuma obra cadastrada.</div>':arr.map((x,i)=>`<div class="item"><div class="row"><div><b>${i+1}. ${esc(x.o.nome)}</b><br><small>${esc(statusLabel(x.o.status))}</small></div><strong class="${x.f.lucroProjetado>=0?'green':'red'}">${money(x.f.lucroProjetado)}</strong></div><div class="analysisSub">Margem: ${Number(x.f.margemLucro||0).toFixed(1)}% · Recebido: ${money(x.f.receita)} · Caixa: ${money(x.f.resultadoCaixa)}</div></div>`).join('');
+    if($('anTopMais'))$('anTopMais').innerHTML=rankHtml(ranking.slice(0,5));
+    if($('anTopMenos'))$('anTopMenos').innerHTML=rankHtml(ranking.slice(-5).reverse());
+  };
+
+  // Diagnóstico não destrutivo de valores muito fora do padrão histórico.
+  window.edifiqFinanceAudit=function(){
+    const rows=unique5(D.gastos||[]), values=rows.map(x=>Math.abs(n5(x.valor))).filter(v=>v>0).sort((a,b)=>a-b);
+    const med=values.length?values[Math.floor(values.length/2)]:0;
+    return rows.filter(x=>{const v=Math.abs(n5(x.valor));return v>=10000 && med>0 && v>med*20}).map(x=>({id:x.id,obra_id:x.obra_id,descricao:x.descricao,valor:n5(x.valor)}));
+  };
+
+  try{if(typeof renderAll==='function')renderAll()}catch(e){console.warn('EDIFIQ Etapa 5 render',e)}
+})();
+</script>
+
+
+<style id="edifiq-etapa6-style">
+/* ETAPA 6 — correções visuais solicitadas na Equipe */
+.edEqAction.primary[onclick*="openDiaFuncionario"]{
+  background:#fff!important;background-color:#fff!important;background-image:none!important;
+  color:#1f2937!important;-webkit-text-fill-color:#1f2937!important;
+  border:1px solid #d0d5dd!important;box-shadow:none!important;
+}
+.edEqAction.primary[onclick*="openDiaFuncionario"] *{color:#1f2937!important;-webkit-text-fill-color:#1f2937!important}
+.edEqAction.primary[onclick*="openDiaFuncionario"]:hover,
+.edEqAction.primary[onclick*="openDiaFuncionario"]:focus,
+.edEqAction.primary[onclick*="openDiaFuncionario"]:active{
+  background:#f7f8fa!important;background-color:#f7f8fa!important;color:#111827!important;
+}
+/* O seletor que escolhe diária completa / meia diária permanece branco, sem azul. */
+#dTipo{background:#fff!important;background-color:#fff!important;background-image:none!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#d0d5dd!important;font-weight:700!important}
+#dTipo option{background:#fff!important;color:#111827!important}
+
+/* Configurações da conta */
+.edAccountGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.edAccountGrid .full{grid-column:1/-1}
+.edAccountCard h3{margin:0 0 10px}
+.edAccountCard .sub{margin-top:0}
+.edAccountStatus{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:13px}
+.edAccountActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+@media(max-width:680px){.edAccountGrid{grid-template-columns:1fr}.edAccountGrid .full{grid-column:auto}}
+</style>
+<script id="edifiq-etapa6-checklist-perfil">
+(function(){
+  'use strict';
+  const n6=v=>{const n=Number(v||0);return Number.isFinite(n)?n:0};
+  const clamp6=v=>Math.max(0,Math.min(100,n6(v)));
+  const same6=(a,b)=>String(a??'')===String(b??'');
+  const esc6=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  const money6=v=>typeof money==='function'?money(v):n6(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+  function items6(obraId){
+    return (D.checklist||[]).filter(x=>same6(x.obra_id??x.obraId,obraId));
+  }
+  function pctItem6(x){
+    const raw=x?.progresso??((x?.concluida||x?.concluido||x?.status==='concluido')?100:0);
+    return clamp6(raw);
+  }
+  /* Regra única: pondera pelo valor do serviço; se não houver valores, usa média simples. */
+  window.edifiqChecklistProgress=function(obraId){
+    const itens=items6(obraId);
+    if(!itens.length)return 0;
+    const totalValor=itens.reduce((a,x)=>a+Math.max(0,n6(x.valor)),0);
+    if(totalValor>0){
+      return Math.round(itens.reduce((a,x)=>a+Math.max(0,n6(x.valor))*pctItem6(x),0)/totalValor);
+    }
+    return Math.round(itens.reduce((a,x)=>a+pctItem6(x),0)/itens.length);
+  };
+  window.obraProgress=function(obra){
+    const itens=items6(obra?.id);
+    if(!itens.length){
+      if(String(obra?.status||'')==='concluida')return 100;
+      return clamp6(obra?.progresso??obra?.progressoChecklist??0);
+    }
+    return edifiqChecklistProgress(obra.id);
+  };
+
+  function checkResumo6(obraId,item){
+    try{
+      if(typeof checklistFinanceResumo==='function')return checklistFinanceResumo(obraId,item.id);
+    }catch(_){ }
+    const valor=Math.max(0,n6(item?.valor));
+    const recebido=(D.pagamentos||[]).filter(p=>same6(p.obra_id,obraId)&&same6(p.checklist_id,item.id)).reduce((a,p)=>a+n6(p.valor),0);
+    const despesas=(D.gastos||[]).filter(g=>same6(g.obra_id,obraId)&&same6(g.checklist_id,item.id)).reduce((a,g)=>a+n6(g.valor),0);
+    const pct=pctItem6(item), lucro=valor-despesas;
+    return {recebido,despesas,valorExecutado:valor*pct/100,saldoReceber:Math.max(0,valor-recebido),lucro,margem:valor>0?lucro/valor*100:0,resultadoCaixa:recebido-despesas};
+  }
+
+  /* Checklist final da etapa 6: financeiro + execução usam as mesmas fontes e a mesma porcentagem. */
+  window.renderChecklist=function(){
+    const box=$('checkList');if(!box)return;
+    const sel=$('checkObraFilter');
+    if(!(D.obras||[]).length){
+      if(sel)sel.innerHTML='<option value="">Nenhuma obra cadastrada</option>';
+      box.innerHTML='<div class="empty">Cadastre uma obra para utilizar o checklist.</div>';return;
+    }
+    const current=sel?.value||'';
+    if(sel){
+      sel.innerHTML='<option value="">Selecione uma obra</option>'+D.obras.map(o=>`<option value="${esc6(o.id)}">${esc6(o.nome||'Obra')}</option>`).join('');
+      sel.value=current&&D.obras.some(o=>same6(o.id,current))?current:String(D.obras[0].id);
+    }
+    const obraId=sel?.value||String(D.obras[0].id),o=D.obras.find(x=>same6(x.id,obraId));
+    if(!o){box.innerHTML='<div class="empty">Selecione uma obra.</div>';return}
+    const itens=items6(o.id),avg=obraProgress(o),total=itens.length;
+    const totalServicos=itens.reduce((a,x)=>a+Math.max(0,n6(x.valor)),0);
+    const resumos=itens.map(x=>({item:x,r:checkResumo6(o.id,x)}));
+    const recebido=resumos.reduce((a,x)=>a+n6(x.r.recebido),0);
+    const despesas=resumos.reduce((a,x)=>a+n6(x.r.despesas),0);
+    const executado=resumos.reduce((a,x)=>a+n6(x.r.valorExecutado),0);
+    const saldo=resumos.reduce((a,x)=>a+n6(x.r.saldoReceber),0);
+    const lucro=totalServicos-despesas,margem=totalServicos>0?lucro/totalServicos*100:0;
+    let contrato=0;try{contrato=n6(obraFinanceData(o.id)?.contratoAtualizado??obraFinanceData(o.id)?.contrato??o.valor)}catch(_){contrato=n6(o.valor)}
+    const naoDistribuido=Math.max(0,contrato-totalServicos);
+
+    const rows=resumos.map(({item,r})=>{
+      const pct=pctItem6(item);
+      return `<div class="check-item" style="display:block">
+        <div class="row"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0"><input type="checkbox" ${pct>=100?'checked':''} onchange="toggleChecklist('${esc6(item.id)}',this.checked)"><span><b>${esc6(item.tarefa||item.descricao||'Etapa')}</b></span></div><span class="checkPercent" id="cp_${esc6(item.id)}">${pct}%</span><button class="mini" onclick="editarChecklist('${esc6(item.id)}')">Editar</button><button class="mini" onclick="removeRow('checklist','${esc6(item.id)}')">Excluir</button></div>
+        <div class="checkProgressBox"><div class="progress"><i id="cbar_${esc6(item.id)}" style="width:${pct}%"></i></div></div>
+        <div class="checkProgressControls"><input id="cpr_${esc6(item.id)}" class="progressInput" type="range" min="0" max="100" step="1" value="${pct}" aria-label="Progresso da etapa" oninput="previewChecklistPct('${esc6(item.id)}',this.value)" onchange="setChecklistProgress('${esc6(item.id)}',this.value)"><input id="cpn_${esc6(item.id)}" class="progressNumber" type="number" min="0" max="100" step="1" value="${pct}" aria-label="Porcentagem da etapa" oninput="previewChecklistPct('${esc6(item.id)}',this.value)" onchange="setChecklistProgressFromNumber('${esc6(item.id)}',this.value)" onblur="setChecklistProgressFromNumber('${esc6(item.id)}',this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();setChecklistProgressFromNumber('${esc6(item.id)}',this.value);this.blur();}"></div>
+        <div class="checkTopVertical" style="margin-top:10px;display:flex;flex-direction:column;border-top:1px solid var(--line)">
+          <div class="financeRow"><span>Valor do serviço</span><b>${money6(item.valor)}</b></div>
+          <div class="financeRow"><span>Executado pelo progresso</span><b class="blue">${money6(r.valorExecutado)}</b></div>
+          <div class="financeRow"><span>Recebido</span><b class="green">${money6(r.recebido)}</b></div>
+          <div class="financeRow"><span>Saldo a receber</span><b class="gold">${money6(r.saldoReceber)}</b></div>
+          <div class="financeRow"><span>Despesas</span><b class="red">${money6(r.despesas)}</b></div>
+          <div class="financeRow"><span>Lucro projetado</span><b class="${n6(r.lucro)>=0?'green':'red'}">${money6(r.lucro)}</b></div>
+          <div class="financeRow"><span>Margem projetada</span><b>${n6(r.margem).toFixed(1).replace('.',',')}%</b></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    box.innerHTML=`<div class="card">
+      <div class="row"><div><h3>${esc6(o.nome||'Obra')}</h3><small>${total} etapa(s) · progresso ponderado pelos serviços</small></div><strong class="gold">${avg}%</strong></div>
+      <div class="progress"><i style="width:${avg}%"></i></div>
+      <div class="checkTopVertical" style="margin-top:12px;display:flex;flex-direction:column;border-top:1px solid var(--line)">
+        <div class="financeRow"><span>Contrato atualizado</span><b>${money6(contrato)}</b></div>
+        <div class="financeRow"><span>Valor distribuído nos checklists</span><b>${money6(totalServicos)}</b></div>
+        ${naoDistribuido>0.009?`<div class="financeRow"><span>Valor ainda não distribuído em checklist</span><b class="gold">${money6(naoDistribuido)}</b></div>`:''}
+        <div class="financeRow"><span>Executado pelo progresso</span><b class="blue">${money6(executado)}</b></div>
+        <div class="financeRow"><span>Recebido nos checklists</span><b class="green">${money6(recebido)}</b></div>
+        <div class="financeRow"><span>Saldo dos serviços</span><b class="gold">${money6(saldo)}</b></div>
+        <div class="financeRow"><span>Despesas nos checklists</span><b class="red">${money6(despesas)}</b></div>
+        <div class="financeRow"><span>Lucro projetado dos serviços</span><b class="${lucro>=0?'green':'red'}">${money6(lucro)}</b></div>
+        <div class="financeRow"><span>Margem projetada</span><b>${margem.toFixed(1).replace('.',',')}%</b></div>
+        <div class="financeRow"><span>Execução física</span><b>${avg}%</b></div>
+      </div>
+      ${rows||'<div class="empty">Nenhuma etapa cadastrada para esta obra.</div>'}
+      <div class="listActions"><button class="btn gold" onclick="openCheckForObra('${esc6(o.id)}')">＋ Adicionar etapa</button></div>
+    </div>`;
+  };
+
+  /* -------- Perfil e segurança da conta -------- */
+  window.__edifiqProfile=null;
+  async function currentUser6(){
+    if(!sb)return user||null;
+    try{const {data,error}=await sb.auth.getUser();if(error)throw error;if(data?.user){user=data.user;return data.user}}catch(e){console.warn('EDIFIQ perfil: não foi possível validar usuário',e)}
+    return user||null;
+  }
+  async function loadProfile6(){
+    const u=await currentUser6();if(!u||!sb)return null;
+    try{
+      const {data,error}=await sb.from('profiles').select('id,nome,telefone,endereco,updated_at').eq('id',u.id).maybeSingle();
+      if(error)throw error;window.__edifiqProfile=data||null;return data||null;
+    }catch(e){console.warn('EDIFIQ perfil: leitura',e);return window.__edifiqProfile}
+  }
+
+  const oldDrawer6=window.renderDrawerAccount;
+  window.renderDrawerAccount=function(){
+    try{oldDrawer6?.apply(this,arguments)}catch(_){ }
+    const p=window.__edifiqProfile,u=user;
+    const nome=String(p?.nome||u?.user_metadata?.full_name||u?.user_metadata?.name||u?.user_metadata?.nome||'').trim();
+    if(nome){const ne=$('drawerUserName'),av=$('drawerUserAvatar');if(ne)ne.textContent=nome;if(av)av.textContent=nome.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'ED'}
+    if($('drawerUserEmail'))$('drawerUserEmail').textContent=u?.email||'Conta EDIFIQ';
+  };
+
+  function configMarkup6(){
+    return `<div class="modalBox" style="max-width:780px;max-height:90vh;overflow:auto">
+      <div class="modalHead"><div><h2>⚙️ Configurações</h2><p class="sub">Perfil, segurança da conta e dados do aplicativo.</p></div><button class="x" onclick="closeM('edConfiguracoesModal')">×</button></div>
+
+      <div class="card edAccountCard"><h3>👤 Dados pessoais</h3><p class="sub">Estes dados ficam salvos no seu perfil e podem ser alterados quando quiser.</p>
+        <div class="edAccountGrid">
+          <label>Nome<input id="configPerfilNome" autocomplete="name" placeholder="Seu nome"></label>
+          <label>Telefone<input id="configPerfilTelefone" type="tel" autocomplete="tel" placeholder="(00) 00000-0000"></label>
+          <label class="full">Endereço<input id="configPerfilEndereco" autocomplete="street-address" placeholder="Rua, número, bairro, cidade"></label>
+        </div>
+        <div class="edAccountActions"><button class="btn primary" type="button" onclick="salvarPerfilPessoalEdifiq()">Salvar dados pessoais</button></div>
+        <div class="edAccountStatus" id="configPerfilStatus">Dados pessoais protegidos pela sua conta.</div>
+      </div>
+
+      <div class="card edAccountCard"><h3>✉️ Trocar e-mail</h3><p class="sub">E-mail atual: <b id="configEmailAtual">—</b>. Por segurança, confirme sua senha atual.</p>
+        <div class="edAccountGrid">
+          <label>Novo e-mail<input id="configNovoEmail" type="email" autocomplete="email" placeholder="novo@email.com"></label>
+          <label>Senha atual<input id="configEmailSenhaAtual" type="password" autocomplete="current-password" placeholder="Sua senha atual"></label>
+        </div>
+        <div class="edAccountActions"><button class="btn" type="button" onclick="trocarEmailEdifiq()">Solicitar troca de e-mail</button></div>
+        <div class="edAccountStatus">Dependendo da configuração de segurança, o novo endereço só entra em vigor depois da confirmação enviada por e-mail.</div>
+      </div>
+
+      <div class="card edAccountCard"><h3>🔐 Trocar senha</h3><p class="sub">A senha é gerenciada pelo sistema de autenticação e nunca é gravada nos seus dados pessoais.</p>
+        <div class="edAccountGrid">
+          <label>Senha atual<input id="configSenhaAtual" type="password" autocomplete="current-password"></label>
+          <label>Nova senha<input id="configSenhaNova" type="password" autocomplete="new-password" minlength="8"></label>
+          <label>Confirmar nova senha<input id="configSenhaConfirmar" type="password" autocomplete="new-password" minlength="8"></label>
+        </div>
+        <div class="edAccountActions"><button class="btn" type="button" onclick="trocarSenhaEdifiq()">Trocar senha</button></div>
+      </div>
+
+      <div class="card"><h3>📱 Dados do aplicativo</h3><div class="settingsList">
+        <div class="financeRow"><span>Conta</span><b id="configNomeUsuario">—</b></div>
+        <div class="financeRow"><span>E-mail</span><b id="configEmailUsuario">—</b></div>
+        <div class="financeRow"><span>Versão</span><b>EDIFIQ — Construção Civil</b></div>
+      </div></div>
+
+      <div class="card dangerDataCard"><h3>🗑️ Apagar dados</h3><p class="sub">As exclusões continuam protegidas por confirmação. Faça um backup antes de apagar.</p><div class="reportGrid dataDeleteGrid">
+        <button class="btn danger" type="button" onclick="apagarDadosSetor('equipe')"><b>👷 Apagar Equipe</b><small>Funcionários, diárias, faltas e registros.</small></button>
+        <button class="btn danger" type="button" onclick="apagarDadosSetor('obras')"><b>🏗️ Apagar Obras</b><small>Obras e registros vinculados.</small></button>
+        <button class="btn danger" type="button" onclick="apagarDadosSetor('financeiro')"><b>💰 Apagar Financeiro</b><small>Receitas, despesas e pagamentos.</small></button>
+        <button class="btn danger" type="button" onclick="apagarDadosSetor('geral')"><b>🗑️ Apagar Tudo</b><small>Apaga todos os dados do aplicativo.</small></button>
+      </div></div>
+      <div class="note">💾 Backup e importação de dados ficam no botão <b>Backup</b> do menu.</div>
+    </div>`;
+  }
+
+  window.openConfiguracoes=async function(){
+    let m=$('edConfiguracoesModal');
+    if(!m){m=document.createElement('div');m.id='edConfiguracoesModal';m.className='modal open';document.body.appendChild(m)}else m.classList.add('open');
+    m.innerHTML=configMarkup6();
+    const u=await currentUser6(),p=await loadProfile6();
+    const meta=u?.user_metadata||{};
+    const nome=String(p?.nome||meta.full_name||meta.name||meta.nome||'').trim();
+    if($('configPerfilNome'))$('configPerfilNome').value=nome;
+    if($('configPerfilTelefone'))$('configPerfilTelefone').value=p?.telefone||'';
+    if($('configPerfilEndereco'))$('configPerfilEndereco').value=p?.endereco||'';
+    if($('configEmailAtual'))$('configEmailAtual').textContent=u?.email||'—';
+    if($('configNomeUsuario'))$('configNomeUsuario').textContent=nome||$('drawerUserName')?.textContent||'—';
+    if($('configEmailUsuario'))$('configEmailUsuario').textContent=u?.email||'—';
+    renderDrawerAccount();
+  };
+
+  window.salvarPerfilPessoalEdifiq=async function(){
+    if(!sb){toast('Conecte-se à internet para salvar o perfil.');return}
+    const u=await currentUser6();if(!u){toast('Entre na sua conta para editar o perfil.');return}
+    const nome=String($('configPerfilNome')?.value||'').trim();
+    const telefone=String($('configPerfilTelefone')?.value||'').trim();
+    const endereco=String($('configPerfilEndereco')?.value||'').trim();
+    const btn=document.activeElement;try{if(btn?.tagName==='BUTTON')btn.disabled=true}catch(_){ }
+    try{
+      const payload={id:u.id,nome:nome||null,telefone:telefone||null,endereco:endereco||null};
+      const {data,error}=await sb.from('profiles').upsert(payload,{onConflict:'id'}).select('id,nome,telefone,endereco,updated_at').single();
+      if(error)throw error;
+      // Metadados servem apenas para apresentação do nome; autorização continua no banco/RLS.
+      const {data:authData,error:authError}=await sb.auth.updateUser({data:{nome:nome||null,name:nome||null,full_name:nome||null}});
+      if(authError)console.warn('Perfil salvo; metadata do Auth não atualizada',authError);
+      if(authData?.user)user=authData.user;
+      window.__edifiqProfile=data||payload;
+      renderDrawerAccount();
+      if($('configNomeUsuario'))$('configNomeUsuario').textContent=nome||'—';
+      if($('configPerfilStatus'))$('configPerfilStatus').textContent='✓ Dados pessoais salvos na sua conta.';
+      toast('Dados pessoais salvos.');
+    }catch(e){console.error('EDIFIQ perfil salvar',e);toast('Não foi possível salvar os dados pessoais. '+(e?.message||''))}
+    finally{try{if(btn?.tagName==='BUTTON')btn.disabled=false}catch(_){ }}
+  };
+
+  async function confirmarSenhaAtual6(senha){
+    const u=await currentUser6();if(!u?.email)throw new Error('Conta sem e-mail disponível.');
+    if(!senha)throw new Error('Informe sua senha atual.');
+    const {error}=await sb.auth.signInWithPassword({email:u.email,password:senha});
+    if(error)throw new Error('Senha atual incorreta.');
+    const fresh=await currentUser6();return fresh||u;
+  }
+
+  window.trocarEmailEdifiq=async function(){
+    if(!sb){toast('Conecte-se à internet para trocar o e-mail.');return}
+    const novo=String($('configNovoEmail')?.value||'').trim().toLowerCase();
+    const senha=String($('configEmailSenhaAtual')?.value||'');
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novo)){toast('Informe um e-mail válido.');return}
+    try{
+      const u=await confirmarSenhaAtual6(senha);
+      if(String(u.email||'').toLowerCase()===novo){toast('Esse já é o e-mail atual.');return}
+      const {data,error}=await sb.auth.updateUser({email:novo});if(error)throw error;
+      if(data?.user)user=data.user;
+      if($('configEmailSenhaAtual'))$('configEmailSenhaAtual').value='';
+      toast('Solicitação de troca enviada. Confira o e-mail para confirmar, se solicitado.');
+      await currentUser6();renderDrawerAccount();
+    }catch(e){console.error('EDIFIQ trocar email',e);toast(e?.message||'Não foi possível trocar o e-mail.')}
+  };
+
+  window.trocarSenhaEdifiq=async function(){
+    if(!sb){toast('Conecte-se à internet para trocar a senha.');return}
+    const atual=String($('configSenhaAtual')?.value||''),nova=String($('configSenhaNova')?.value||''),conf=String($('configSenhaConfirmar')?.value||'');
+    if(nova.length<8){toast('A nova senha deve ter pelo menos 8 caracteres.');return}
+    if(nova!==conf){toast('A confirmação da nova senha não confere.');return}
+    if(nova===atual){toast('A nova senha deve ser diferente da atual.');return}
+    try{
+      await confirmarSenhaAtual6(atual);
+      const {data,error}=await sb.auth.updateUser({password:nova});if(error)throw error;
+      if(data?.user)user=data.user;
+      ['configSenhaAtual','configSenhaNova','configSenhaConfirmar'].forEach(id=>{if($(id))$(id).value='' });
+      toast('Senha alterada com segurança.');
+    }catch(e){console.error('EDIFIQ trocar senha',e);toast(e?.message||'Não foi possível trocar a senha.')}
+  };
+
+  // Carrega o nome do perfil sem bloquear a abertura do app.
+  setTimeout(()=>{loadProfile6().then(()=>renderDrawerAccount()).catch(()=>{})},600);
+  try{if(typeof renderAll==='function')renderAll()}catch(e){console.warn('EDIFIQ Etapa 6 render',e)}
+})();
+</script>
+<script id="edifiq-etapa6-marker">window.EDIFIQ_BUILD="2026-10-11-etapa6-checklist-perfil";</script>
 
 </body>
 </html>
