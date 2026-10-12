@@ -15582,8 +15582,8 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
 <script id="edifiq-etapa10-commercial">
 (function(){
   const FALLBACK_PLANS=[
-    {codigo:'mensal',nome:'EDIFIQ Mensal',ciclo:'mensal',preco_centavos:3990,dias_trial:14,ordem:10},
-    {codigo:'anual',nome:'EDIFIQ Anual',ciclo:'anual',preco_centavos:39900,dias_trial:14,ordem:20}
+    {codigo:'mensal',nome:'EDIFIQ Mensal',ciclo:'mensal',preco_centavos:3990,dias_trial:7,ordem:10},
+    {codigo:'anual',nome:'EDIFIQ Anual',ciclo:'anual',preco_centavos:39900,dias_trial:7,ordem:20}
   ];
   const SUB_CACHE_PREFIX='edifiq_subscription_cache_v1::';
   window.__edifiqPlans=FALLBACK_PLANS.slice();
@@ -15657,7 +15657,7 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
     return `<div class="edPlanGrid">${(window.__edifiqPlans||FALLBACK_PLANS).map((p,i)=>{
       const annual=p.ciclo==='anual',sel=selected===p.codigo;
       const monthlyEquivalent=annual?brl10(Math.round(Number(p.preco_centavos||0)/12)):'';
-      return `<div class="edPlanCard ${sel?'selected':''}">${annual?'<span class="edPlanTag">Melhor valor</span>':''}<h3>${esc10(p.nome)}</h3><div class="edPlanPrice">${brl10(p.preco_centavos)} <small>/${annual?'ano':'mês'}</small></div>${annual?`<div class="edCommercialNote">Equivale a aproximadamente <b>${monthlyEquivalent}/mês</b>.</div>`:'<div class="edCommercialNote">Cobrança mensal, simples para começar.</div>'}<p class="edCommercialNote"><b>${Number(p.dias_trial||14)} dias grátis</b> para novos clientes.</p>${options.hideButtons?'':`<button class="btn ${sel?'primary':''}" type="button" onclick="escolherPlanoEdifiq10('${esc10(p.codigo)}')">${sel?'✓ Escolhido':'Escolher '+(annual?'Anual':'Mensal')}</button>`}</div>`
+      return `<div class="edPlanCard ${sel?'selected':''}">${annual?'<span class="edPlanTag">Melhor valor</span>':''}<h3>${esc10(p.nome)}</h3><div class="edPlanPrice">${brl10(p.preco_centavos)} <small>/${annual?'ano':'mês'}</small></div>${annual?`<div class="edCommercialNote">Equivale a aproximadamente <b>${monthlyEquivalent}/mês</b>.</div>`:'<div class="edCommercialNote">Cobrança mensal, simples para começar.</div>'}<p class="edCommercialNote"><b>${Number(p.dias_trial||7)} dias grátis</b> para novos clientes.</p>${options.hideButtons?'':`<button class="btn ${sel?'primary':''}" type="button" onclick="escolherPlanoEdifiq10('${esc10(p.codigo)}')">${sel?'✓ Escolhido':'Escolher '+(annual?'Anual':'Mensal')}</button>`}</div>`
     }).join('')}</div>`;
   }
 
@@ -15688,7 +15688,7 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
     const s=window.__edifiqSubscription,days=daysRemaining10(s),selected=selectedPlan10();
     const plan=(window.__edifiqPlans||[]).find(p=>p.codigo===selected);
     const card=document.createElement('div');card.id='edSubscriptionConfigCard';card.className='card edAccountCard';
-    card.innerHTML=`<h3>⭐ Plano e assinatura</h3><p class="sub">Controle comercial da conta da empresa atual.</p><div class="edSubConfigRows"><div><small>Status</small><b>${esc10(label10(s||{}))}</b></div><div><small>Plano escolhido</small><b>${esc10(plan?.nome||s?.plano||'Ainda não escolhido')}</b></div>${days!=null?`<div><small>Dias restantes</small><b>${days}</b></div>`:''}<div><small>Teste grátis</small><b>14 dias</b></div></div><div class="edAccountActions" style="margin-top:12px"><button class="btn primary" type="button" onclick="openPlanosEdifiq10()">Ver planos</button></div><div class="edAccountStatus">Mensal: R$ 39,90 • Anual: R$ 399,00. A cobrança real ainda não está conectada nesta versão.</div>`;
+    card.innerHTML=`<h3>⭐ Plano e assinatura</h3><p class="sub">Controle comercial da conta da empresa atual.</p><div class="edSubConfigRows"><div><small>Status</small><b>${esc10(label10(s||{}))}</b></div><div><small>Plano escolhido</small><b>${esc10(plan?.nome||s?.plano||'Ainda não escolhido')}</b></div>${days!=null?`<div><small>Dias restantes</small><b>${days}</b></div>`:''}<div><small>Teste grátis</small><b>7 dias</b></div></div><div class="edAccountActions" style="margin-top:12px"><button class="btn primary" type="button" onclick="openPlanosEdifiq10()">Ver planos</button></div><div class="edAccountStatus">Mensal: R$ 39,90 • Anual: R$ 399,00. A cobrança real ainda não está conectada nesta versão.</div>`;
     const head=modal.querySelector('.modalHead');if(head)head.insertAdjacentElement('afterend',card);else modal.querySelector('.modalBox')?.prepend(card);
   }
 
@@ -15724,7 +15724,7 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
     await loadPlans10();
     let m=$('edSignupModal');if(!m){m=document.createElement('div');m.id='edSignupModal';m.className='modal open';document.body.appendChild(m)}else m.classList.add('open');
     const email=String($('email')?.value||'').trim();
-    m.innerHTML=`<div class="modalBox" style="max-width:660px;max-height:92vh;overflow:auto"><div class="modalHead"><div><h2>Criar conta EDIFIQ</h2><p class="sub">14 dias grátis. Nenhuma cobrança agora.</p></div><button class="x" onclick="closeM('edSignupModal')">×</button></div><div class="edSignupGrid"><label class="full">Nome completo<input id="signup10Nome" autocomplete="name" placeholder="Seu nome"></label><label>Perfil<select id="signup10Tipo"><option value="autonomo">Autônomo</option><option value="empresa">Empresa</option></select></label><label>Plano pretendido<select id="signup10Plano"><option value="mensal">Mensal — R$ 39,90/mês</option><option value="anual">Anual — R$ 399,00/ano</option></select></label><label class="full">E-mail<input id="signup10Email" type="email" autocomplete="email" value="${esc10(email)}" placeholder="seu@email.com"></label><label>Senha<input id="signup10Senha" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo 8 caracteres"></label><label>Confirmar senha<input id="signup10Senha2" type="password" autocomplete="new-password" minlength="8"></label></div><div class="edAccountActions" style="margin-top:14px"><button class="btn primary" id="signup10Btn" type="button" onclick="criarContaEdifiq10()">Criar conta e iniciar teste grátis</button></div><p class="edCommercialNote">Ao criar a conta, o teste começa quando o primeiro acesso autenticado for concluído. Dependendo da configuração do Supabase, será necessário confirmar o e-mail.</p><div id="signup10Msg" class="edAccountStatus"></div></div>`;
+    m.innerHTML=`<div class="modalBox" style="max-width:660px;max-height:92vh;overflow:auto"><div class="modalHead"><div><h2>Criar conta EDIFIQ</h2><p class="sub">7 dias grátis. Nenhuma cobrança agora.</p></div><button class="x" onclick="closeM('edSignupModal')">×</button></div><div class="edSignupGrid"><label class="full">Nome completo<input id="signup10Nome" autocomplete="name" placeholder="Seu nome"></label><label>Perfil<select id="signup10Tipo"><option value="autonomo">Autônomo</option><option value="empresa">Empresa</option></select></label><label>Plano pretendido<select id="signup10Plano"><option value="mensal">Mensal — R$ 39,90/mês</option><option value="anual">Anual — R$ 399,00/ano</option></select></label><label class="full">E-mail<input id="signup10Email" type="email" autocomplete="email" value="${esc10(email)}" placeholder="seu@email.com"></label><label>Senha<input id="signup10Senha" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo 8 caracteres"></label><label>Confirmar senha<input id="signup10Senha2" type="password" autocomplete="new-password" minlength="8"></label></div><div class="edAccountActions" style="margin-top:14px"><button class="btn primary" id="signup10Btn" type="button" onclick="criarContaEdifiq10()">Criar conta e iniciar teste grátis</button></div><p class="edCommercialNote">Ao criar a conta, o teste começa quando o primeiro acesso autenticado for concluído. Dependendo da configuração do Supabase, será necessário confirmar o e-mail.</p><div id="signup10Msg" class="edAccountStatus"></div></div>`;
   };
 
   window.criarContaEdifiq10=async function(){
@@ -15755,7 +15755,7 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
   function patchAuth10(){
     const buttons=[...document.querySelectorAll('#auth .authBtns .btn')];
     const create=buttons.find(b=>/Criar conta/i.test(b.textContent||''));if(create){create.setAttribute('onclick','openSignup10()');create.textContent='Criar conta'}
-    const box=document.querySelector('#auth .authBox');if(box&&!box.querySelector('.authCommercialHint')){const p=document.createElement('div');p.className='authCommercialHint';p.innerHTML='<b>14 dias grátis</b> • Mensal R$ 39,90 • Anual R$ 399,00';box.appendChild(p)}
+    const box=document.querySelector('#auth .authBox');if(box&&!box.querySelector('.authCommercialHint')){const p=document.createElement('div');p.className='authCommercialHint';p.innerHTML='<b>7 dias grátis</b> • Mensal R$ 39,90 • Anual R$ 399,00';box.appendChild(p)}
   }
 
   patchAuth10();
@@ -15787,7 +15787,7 @@ body.edLight .edBillingPlan{background:#fff;color:#111827}
   function date11(v){if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR')}
   function time11(v){if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('pt-BR')}
   function owner11(){try{return !!user?.id&&String((typeof edifiqEmpresaUserId==='function'&&edifiqEmpresaUserId())||edifiqEmpresaAtivaId||user.id)===String(user.id)}catch(_){return !!user?.id}}
-  function plans11(){return Array.isArray(window.__edifiqPlans)&&window.__edifiqPlans.length?window.__edifiqPlans:[{codigo:'mensal',nome:'EDIFIQ Mensal',ciclo:'mensal',preco_centavos:3990,dias_trial:14},{codigo:'anual',nome:'EDIFIQ Anual',ciclo:'anual',preco_centavos:39900,dias_trial:14}]}
+  function plans11(){return Array.isArray(window.__edifiqPlans)&&window.__edifiqPlans.length?window.__edifiqPlans:[{codigo:'mensal',nome:'EDIFIQ Mensal',ciclo:'mensal',preco_centavos:3990,dias_trial:7},{codigo:'anual',nome:'EDIFIQ Anual',ciclo:'anual',preco_centavos:39900,dias_trial:7}]}
   function sub11(){return window.__edifiqSubscription||{}}
   function selected11(){return String(sub11().plano_preferido||sub11().plano||user?.user_metadata?.preferred_plan||'mensal')}
   function access11(s=sub11()){
@@ -16983,7 +16983,7 @@ body:not(.edLight) #edPilotTest18M .modalBox,body:not(.edLight) #edPilotTest18M 
   window.edifiqPilotManual18=saveManual18;
 
   const manualSteps18=[
-    ['conta','Criar uma conta nova de teste','Confirmar cadastro, confirmação de e-mail (se habilitada), login e 14 dias grátis.'],
+    ['conta','Criar uma conta nova de teste','Confirmar cadastro, confirmação de e-mail (se habilitada), login e 7 dias grátis.'],
     ['obra','Cadastrar a primeira obra','Criar, editar, fechar/reabrir e confirmar sincronização em outro dispositivo.'],
     ['checklist','Criar Checklist','Adicionar etapas, valores e progresso e conferir os resumos.'],
     ['equipe','Cadastrar funcionário e diária','Registrar diária inteira e meia diária; confirmar que não duplica.'],
