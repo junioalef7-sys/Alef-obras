@@ -1,4 +1,4 @@
-const CACHE='edifiq-shell-v42';
+const CACHE='edifiq-shell-v44';
 const SHELL=['./','./manifest.webmanifest','./edifiq-icon-192.png','./edifiq-icon-512.png'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(async cache=>{

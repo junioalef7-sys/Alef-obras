@@ -31,22 +31,35 @@ jobs:
             test -f "$f" || { echo "::error::Arquivo público obrigatório ausente: $f"; exit 1; }
             cp "$f" ".pages/$f"
           done
+          # A identidade instalada deve ser Edific, sem alterar a base funcional validada.
+          python3 - <<'PY'
+          from pathlib import Path
+          page = Path('.pages/index.html')
+          html = page.read_text(encoding='utf-8')
+          html = html.replace('<meta content="EDIFIQ" name="apple-mobile-web-app-title"/>','<meta content="Edific" name="apple-mobile-web-app-title"/>',1)
+          html = html.replace('<meta name="application-name" content="EDIFIQ"/>','<meta name="application-name" content="Edific"/>',1)
+          html = html.replace('var APP_NAME="EDIFIQ", SHORT_NAME="EDIFIQ", installEvent=null;','var APP_NAME="Edific", SHORT_NAME="Edific", installEvent=null;',1)
+          html = html.replace('Instalar o EDIFIQ','Instalar o Edific').replace('instalar o EDIFIQ','instalar o Edific')
+          page.write_text(html,encoding='utf-8')
+          PY
           touch .pages/.nojekyll
           python3 - <<'PY'
           import hashlib, json, os
           from pathlib import Path
-          data = Path('index.html').read_bytes()
+          data = Path('.pages/index.html').read_bytes()
           public_files = [
               'index.html','edifiq-sw.js','manifest.webmanifest',
               'edifiq-icon-192.png','edifiq-icon-512.png',
               'privacidade.html','exclusao-conta.html'
           ]
-          hashes = {name: hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in public_files}
+          hashes = {name: hashlib.sha256(Path('.pages',name).read_bytes()).hexdigest() for name in public_files}
           Path('.pages/release.json').write_text(json.dumps({
               'commit': os.environ['GITHUB_SHA'],
               'sha256': hashlib.sha256(data).hexdigest(),
               'validated': True,
-              'public_files': hashes
+              'public_files': hashes,
+              'pwa_label': 'Edific',
+              'cache': 'edifiq-shell-v44'
           }, ensure_ascii=False))
           PY
       - uses: actions/upload-pages-artifact@v3
