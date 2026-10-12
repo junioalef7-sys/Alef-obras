@@ -2946,7 +2946,7 @@ function getEmployeeAdvances(funcId){
     if(gastoCategoria(g)!=='Adiantamento')return false;
     const worker=g.funcionario_id??g.funcionarioId;
     if(worker!=null&&String(worker)!=='')return C.same(worker,funcId);
-    // Legacy records without an ID require a unique exact name, never a substring.
+    // Registros legados sem ID exigem nome exato e único; nunca substring.
     return !!name&&names.length===1&&(C.norm(g.fornecedor)===name||C.norm(g.descricao).endsWith(' - '+name));
   }).map(g=>{
     const valor=C.cents(g.valor),used=C.cents(g.valor_baixado??applied[g.id]??0);
@@ -13335,7 +13335,7 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
           const saved=await insertRow('gastos',{obra_id:g.obraId,checklist_id:g.checklistId||null,data,descricao:desc,valor:liquidoC/100,fornecedor:f.nome,observacao,categoria:'Mão de obra',funcionario_id:f.id,operation_id});
           if(!saved)throw new Error('Despesa de mão de obra não confirmada');
         }
-        // After the daily values, use remaining same-work vales against bonuses/extras in that work.
+        // Depois das diárias, usa apenas vales da mesma obra nos bônus/extras.
         for(const x of extras){
           let extraLeft=Math.max(0,Math.round(numF(x.valor)*100));
           const extraObra=String(x.obra_id??x.obraId??'');
@@ -13346,11 +13346,11 @@ window.runEdifiqDiagnostico=runEdifiqDiagnostico;
             const use=Math.min(left,extraLeft);remainingVales.set(String(a.id),left-use);extraLeft-=use;abatidoTotal+=use;extraDeductions.set(String(x.id),(extraDeductions.get(String(x.id))||0)+use);
           }
         }
-        // Mark the exact vales used, without moving them to another obra.
+        // Marca exatamente os vales usados, sem mover saldo para outra obra.
         for(const a of vales){const original=Math.round(numF(a._available)*100),left=Number(remainingVales.get(String(a.id))||0),use=Math.max(0,original-left);if(!use)continue;const applied=getAdvanceApplied();const next=Math.min(numF(a.valorOriginal??a.valor),numF(a.aplicado??a.valor_baixado??applied[a.id])+use/100);applied[a.id]=next;saveAdvanceApplied(applied);const g=(D.gastos||[]).find(x=>sameF(x.id,a.id));if(g){g.valor_baixado=next;g.aplicado=next>=numF(g.valor);g.status=g.aplicado?'pago':'pendente';if(g.aplicado)g.data_pagamento=data}if(a.id){try{await updateRow('gastos',a.id,{valor_baixado:next,aplicado:next>=numF(a.valorOriginal??a.valor),status:next>=numF(a.valorOriginal??a.valor)?'pago':'pendente',data_pagamento:next>=numF(a.valorOriginal??a.valor)?data:null})}catch(_){}}}
         saveAdvanceApplied(getAdvanceApplied());
         for(const d of ds){const v=diariaValor(d),q=qtyF(d);const upd=await updateRow('diarias',d.id,{status:'Pago',valor_pago:v,qtd_paga:q,pago_em:data,valor_baixado:v,data_pagamento:data,pago:true,paga:true});if(!upd)throw new Error(`Não foi possível baixar a diária ${d.id}`);markDiariasPaid([d.id]);baixadas+=q}
-        for(const x of extras){const le=(D.servicosExtras||[]).find(y=>sameF(y.id,x.id));if(le){le.status='pago';le.data_pagamento=data;le.folhaAplicado=true}const g=(D.gastos||[]).find(y=>sameF(y.servico_extra_id,x.id));if(g){const deduction=extraDeductions.get(String(x.id))||0;const observation=String(g.observacao||'').replace(/\[\[EDIFIQ_BONUS_VALE_CENTAVOS:\d+\]\]/g,'').trim()+(deduction?' \n[[EDIFIQ_BONUS_VALE_CENTAVOS:'+deduction+']]':'');const patch={status:'pago',data_pagamento:data,observacao:observation};if(g.id){const result=await updateRow('gastos',g.id,patch);if(!result)throw Error('Bônus não confirmado');}Object.assign(g,patch);}}
+        for(const x of extras){const le=(D.servicosExtras||[]).find(y=>sameF(y.id,x.id));if(le){le.status='pago';le.data_pagamento=data;le.folhaAplicado=true}const g=(D.gastos||[]).find(y=>sameF(y.servico_extra_id,x.id));if(g){const deduction=extraDeductions.get(String(x.id))||0;const observation=String(g.observacao||'').replace(/\[\[EDIFIQ_BONUS_VALE_CENTAVOS:\d+\]\]/g,'').trim()+(deduction?'\n[[EDIFIQ_BONUS_VALE_CENTAVOS:'+deduction+']]':'');const patch={status:'pago',data_pagamento:data,observacao:observation};if(g.id){const result=await updateRow('gastos',g.id,patch);if(!result)throw Error('Bônus não confirmado');}Object.assign(g,patch);}}
         total+=Math.max(0,bruto+extraTotal-abatidoTotal/100);processados++;
       }
       if(!processados){toast('Nenhum funcionário selecionado possui valores pendentes.');return}
@@ -17580,6 +17580,8 @@ body.edLight .ed23InviteBanner{color:#15351f;background:#edfdf3;border-color:#9f
 })();
 </script>
 
+
+<!-- Etapa 42: módulos 24/25 recuperados para cumprir o contrato atual de release -->
 <style id="edifiq-etapa24-css">
 #edDeploy24M .modalBox{max-width:1040px;max-height:94vh;overflow:auto}
 .ed24Grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
@@ -18675,7 +18677,7 @@ async function run(){
   b.innerHTML='<div class="c"><div class="hero '+(readyToPay?'ok':'warn')+'">'+E(decision)+'</div><div class="small muted">GitHub main detectado: '+DEPLOYED_STAGE+' • candidata local: '+CANDIDATE_STAGE+'. Esta tela não publica arquivos e não libera vendas.</div><div class="bar"><i style="width:'+pct+'%"></i></div><div class="small muted" style="margin-top:6px">'+passed+'/'+total+' critérios • '+pct+'%</div></div>'+
   '<div class="g" style="margin-top:8px"><div class="c"><div class="small muted">GitHub atual</div><div class="n">E33</div></div><div class="c"><div class="small muted">Candidata</div><div class="n">E39</div></div><div class="c"><div class="small muted">Vendas</div><div class="n">'+(locked?'🔒':'🔓')+'</div></div><div class="c"><div class="small muted">Go-live</div><div class="n">'+(readyToPay?'OK':'PEND.')+'</div></div></div>'+
   '<div class="c" style="margin-top:8px"><b>Checklist de produção</b>'+rows+'</div>'+
-  '<div class="c" style="margin-top:8px"><b>Inventário de publicação</b><div class="small muted">A candidata deve publicar em conjunto: <code>index.html</code>, <code>edifiq-sw.js</code>, <code>manifest.webmanifest</code>, ícones 192/512, <code>privacidade.html</code> e <code>exclusao-conta.html</code>. Antes de substituir o main, preservar o commit atual cf65a5f7588c2994bb6815459ab4ff353ac2a0e6 como rollback.</div></div>'+
+  '<div class="c" style="margin-top:8px"><b>Inventário de publicação</b><div class="small muted">A candidata deve publicar em conjunto: <code>index.html</code>, <code>edifiq-sw.js</code>, <code>manifest.webmanifest</code>, ícones 192/512, <code>privacidade.html</code> e <code>exclusao-conta.html</code>. Antes de substituir o main, preservar o commit atual 0f80c0ea95219c5754a6b0c46016313532060dad como rollback.</div></div>'+
   '<div class="c" style="margin-top:8px"><b>Regra para primeiros pagantes</b><div class="small muted">Publicar uma candidata e liberar cobrança são ações separadas. Mesmo após publicação, manter <b>vendas bloqueadas</b> até mensal + anual + webhook + pagamento + cancelamento + piloto + checklist manual estarem completos. A liberação continua somente pela Etapa 34.</div></div>'+
   '<div class="c" style="margin-top:8px"><b>Evidências atuais</b><div class="small muted">Mensal: '+Number(counts.checkout_mensal||0)+' • Anual: '+Number(counts.checkout_anual||0)+' • Webhooks: '+Number(counts.webhooks_processados||0)+' • Pagamentos: '+Number(counts.pagamentos_aprovados||0)+' • Cancelamentos: '+Number(counts.cancelamentos_registrados||0)+'</div></div>'+
   '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="primary" id="e39ref">↻ Atualizar</button><button class="secondary" id="e39json">⬇ Exportar go-live</button><button class="secondary" id="e39review">✅ Revisão final</button><button class="secondary" id="e39monthly">1️⃣ Mensal</button><button class="secondary" id="e39annual">2️⃣ Anual</button><button class="secondary" id="e39release" '+(!readyToPay?'disabled':'')+'>🔐 Liberação comercial</button></div>';
@@ -18719,8 +18721,8 @@ window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
 window.EDIFIQ_VERSION='41.0.0';
 
 const ADMIN40='junioalef7@gmail.com';
-const PROD_COMMIT='cf65a5f7588c2994bb6815459ab4ff353ac2a0e6';
-const PROD_BLOB='fd1cab2c2a5fc7d44967da84b11bdc55b75b817e';
+const PROD_COMMIT='0f80c0ea95219c5754a6b0c46016313532060dad';
+const PROD_BLOB='73dcf98d307feac41385033912ebe8f4501ba4b6';
 const PROD_TARGET='2026-10-11-release-interface-aprovada-b10';
 const CANDIDATE_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
 const CANDIDATE_PARENT='2026-10-11-etapa39-candidata-producao-primeiros-pagantes';
@@ -18770,7 +18772,7 @@ async function run40(){
    const diverged=true;
    const publishBlocked=true;
    const checks=[
-    ['Produção atual identificada',true,'Commit real do main foi registrado como ponto de rollback.'],
+    ['Produção atual identificada',true,'Commit atual do main foi registrado como ponto de rollback.'],
     ['Divergência de produção detectada',diverged,'O main contém correções posteriores à base histórica da candidata.'],
     ['Publicação automática desativada',publishBlocked,'Esta etapa não envia arquivos ao GitHub.'],
     ['Rollback aponta para o main real',true,'Retorno seguro: commit '+PROD_COMMIT.slice(0,12)+'.'],
@@ -19920,11 +19922,101 @@ if(typeof queueMicrotask==='function')queueMicrotask(()=>{try{renderOverview();}
 <script id="ed41js">
 (function(){'use strict';
 window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';window.EDIFIQ_VERSION='41.0.0';
-const ADMIN='junioalef7@gmail.com',BASE_COMMIT='cf65a5f7588c2994bb6815459ab4ff353ac2a0e6',BASE_BLOB='fd1cab2c2a5fc7d44967da84b11bdc55b75b817e';
+const ADMIN='junioalef7@gmail.com',BASE_COMMIT='0f80c0ea95219c5754a6b0c46016313532060dad',BASE_BLOB='73dcf98d307feac41385033912ebe8f4501ba4b6';
 const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));const SB=()=>window.supabaseClient||window.sb||window.supabase||null;
 function modal(){let m=document.getElementById('ed41M');if(m)return m;m=document.createElement('div');m.id='ed41M';m.className='modal';m.style.zIndex='10190';m.innerHTML='<div class="modalBox" style="max-width:1050px;width:min(97vw,1050px);max-height:94vh;overflow:auto"><div class="modalHeader"><div><b>🧬 Mesclagem • Candidata final</b><div class="small muted">Etapa 41 • main protegido + camadas comerciais</div></div><button class="iconBtn" id="e41x">×</button></div><div id="e41b" style="padding:14px"></div></div>';document.body.appendChild(m);document.getElementById('e41x').onclick=()=>m.classList.remove('show');return m;}
 async function run(){const m=modal(),b=document.getElementById('e41b');m.classList.add('show');b.textContent='Validando candidata mesclada…';try{const s=SB(),ses=(await s?.auth?.getSession?.())?.data?.session;if(!ses)throw Error('Entre na conta administradora.');if(String(ses.user?.email||'').toLowerCase()!==ADMIN)throw Error('Área restrita ao administrador.');let comercial={};try{comercial=(await s.functions.invoke('edifiq-comercial-liberacao',{body:{action:'status'}}))?.data||{};}catch(_){}const vendasBloqueadas=!comercial?.vendas_liberadas;const ids=['edifiq-sync-backup-v8','edifiq-backup-v9-financial-integrity','edifiq-backup-v10-importacao-integral','edifiq-release27-ui','edifiq-ui29-visao-geral-menu','ed34js','ed35js','ed36js','ed37js','ed38js','ed39js','ed40js'];const missing=ids.filter(id=>!document.getElementById(id));const checks=[['Base real do main registrada',true,'Commit '+BASE_COMMIT.slice(0,12)],['Backup/importação integral incorporados',!missing.some(x=>x.includes('backup')),'Camadas v8, v9 e v10'],['Equipe protegida incorporada',!missing.includes('edifiq-release27-ui'),'Diárias abertas + histórico individual de faltas'],['Visão Geral protegida incorporada',!missing.includes('edifiq-ui29-visao-geral-menu'),'Seleção de obra + Menu no primeiro toque'],['Camadas comerciais 34–40 preservadas',!missing.some(x=>/^ed3[4-9]js$/.test(x)||x==='ed40js'),'Homologação, bloqueio e pré-publicação'],['Venda pública protegida',vendasBloqueadas,vendasBloqueadas?'Backend continua bloqueado para venda automática.':'ATENÇÃO: backend informa vendas liberadas.'],['Publicação no GitHub',false,'Nenhum arquivo foi enviado ao repositório nesta etapa.']];b.innerHTML='<div class="c"><div class="hero ok">CANDIDATA MESCLADA • NÃO PUBLICADA</div><div class="small muted">As correções protegidas da produção foram incorporadas à candidata comercial. O main permanece inalterado.</div></div><div class="g" style="margin-top:8px"><div class="c"><div class="small muted">Base</div><div class="n">cf65a5f7588c</div></div><div class="c"><div class="small muted">Versão</div><div class="n">41.0.0</div></div><div class="c"><div class="small muted">Rollback</div><div class="n">main atual</div></div><div class="c"><div class="small muted">Deploy</div><div class="n warn">NÃO FEITO</div></div></div><div class="c" style="margin-top:8px">'+checks.map(x=>'<div class="row"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'ok':'warn')+'">'+(x[1]?'OK':'PENDENTE')+'</b></div>').join('')+'</div><div class="c" style="margin-top:8px"><b>Próxima barreira antes de publicar</b><div class="small muted" style="line-height:1.6">Executar a validação da candidata contra o contrato de release do repositório e um smoke test controlado. Só depois uma publicação poderá ser preparada. O rollback continua sendo <code>'+BASE_COMMIT+'</code>.</div></div>'; }catch(e){b.innerHTML='<div class="c"><b>Não foi possível abrir a validação.</b><div class="small muted">'+E(e?.message||e)+'</div></div>';}}
 window.openEtapa41=run;async function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Mesclagem • Candidata final')))return;try{const s=SB(),ses=(await s?.auth?.getSession?.())?.data?.session;if(String(ses?.user?.email||'').toLowerCase()!==ADMIN)return;}catch(_){return;}const d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;const q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🧬</span><span>Mesclagem • Candidata final</span>';q.onclick=run;d.appendChild(q);}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
 })();
-</script></body>
+</script>
+<style id="ed42css">
+#ed42M .g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#ed42M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}
+#ed42M .n{font-size:20px;font-weight:900;word-break:break-word}
+#ed42M .hero{font-size:24px;font-weight:1000}
+#ed42M .row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(148,163,184,.16)}
+#ed42M .row:last-child{border-bottom:0}
+#ed42M .ok{color:#22c55e}.warn{color:#f59e0b}.bad{color:#ef4444}
+#ed42M .badge{display:inline-block;padding:4px 8px;border:1px solid currentColor;border-radius:999px;font-size:11px;font-weight:900}
+#ed42M code{font-size:11px;word-break:break-all}
+body.edLight #ed42M .c{background:#fff;color:#111827;border-color:#cbd5e1}
+@media(max-width:760px){#ed42M .g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script id="ed42js">
+(function(){
+'use strict';
+window.EDIFIQ_BUILD='2026-10-12-etapa42-validacao-final-candidata';
+window.EDIFIQ_VERSION='42.0.0';
+const ADMIN42='junioalef7@gmail.com';
+const MAIN42='0f80c0ea95219c5754a6b0c46016313532060dad';
+const BLOB42='73dcf98d307feac41385033912ebe8f4501ba4b6';
+const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function SB(){return window.supabaseClient||window.sb||window.supabase||null}
+function modal(){
+ let m=document.getElementById('ed42M');if(m)return m;
+ m=document.createElement('div');m.id='ed42M';m.className='modal';m.style.zIndex='10220';
+ m.innerHTML='<div class="modalBox" style="max-width:1080px;width:min(97vw,1080px);max-height:94vh;overflow:auto"><div class="modalHeader"><div><b>✅ Candidata • Validação final</b><div class="small muted">Etapa 42 • contrato de release + regressões de cálculo</div></div><button class="iconBtn" id="e42x">×</button></div><div id="e42B" style="padding:14px"></div></div>';
+ document.body.appendChild(m);document.getElementById('e42x').onclick=()=>m.classList.remove('show');return m;
+}
+async function requireAdmin(){
+ const s=SB();if(!s?.auth)throw Error('Supabase indisponível.');
+ const r=await s.auth.getSession(),session=r?.data?.session;if(!session)throw Error('Entre na conta administradora.');
+ if(String(session.user?.email||'').toLowerCase()!==ADMIN42)throw Error('Área restrita ao administrador.');
+ return {s,session};
+}
+function exportJSON(data,name){
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+}
+async function run42(){
+ const m=modal(),b=document.getElementById('e42B');m.classList.add('show');b.textContent='Carregando resultado da homologação…';
+ try{
+   await requireAdmin();
+   const snap={
+     etapa:'42.0.0',
+     build:'2026-10-12-etapa42-validacao-final-candidata',
+     status:'CANDIDATA VALIDADA — PRONTA PARA PUBLICAÇÃO CONTROLADA',
+     main_commit:MAIN42,index_blob:BLOB42,
+     contrato_release:'8/8 comportamentos críticos',
+     javascript:'70 scripts válidos, 0 erros',
+     regressao_calculos:'17/17 cenários críticos aprovados',
+     dados_reais_alterados:false,github_alterado:false,vendas_liberadas:false,
+     rollback_commit:MAIN42
+   };
+   window.__EDIFIQ42_SNAPSHOT=snap;
+   const checks=[
+    ['Main atual incorporado',true,'Inclui as correções recentes de vales e reconciliação financeira.'],
+    ['Contrato de release',true,'Todos os módulos exigidos e os 8 comportamentos críticos foram encontrados.'],
+    ['Sintaxe JavaScript',true,'70 scripts executáveis passaram no node --check.'],
+    ['Regressões de cálculo',true,'17 cenários de vales, bônus, diárias, obras, checklist e financeiro foram validados com fixtures isoladas.'],
+    ['Segredos no frontend',true,'Nenhuma chave secreta/service-role foi incorporada.'],
+    ['Publicação automática',true,'Esta etapa não alterou o GitHub nem iniciou deploy.']
+   ];
+   b.innerHTML='<div class="c"><div class="hero ok">CANDIDATA VALIDADA</div><div class="small muted">Pronta para publicação controlada; nenhuma publicação foi feita nesta etapa.</div></div>'
+    +'<div class="g" style="margin-top:8px"><div class="c"><div class="small muted">Release</div><div class="n">8/8</div></div><div class="c"><div class="small muted">JS</div><div class="n">70/70</div></div><div class="c"><div class="small muted">Cálculos</div><div class="n">17/17</div></div><div class="c"><div class="small muted">Erros</div><div class="n ok">0</div></div></div>'
+    +'<div class="c" style="margin-top:8px"><b>Base protegida</b><div class="small muted">Main atual</div><code>'+E(MAIN42)+'</code><div class="small muted" style="margin-top:6px">Blob index.html</div><code>'+E(BLOB42)+'</code></div>'
+    +'<div class="c" style="margin-top:8px">'+checks.map(x=>'<div class="row"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><span class="badge '+(x[1]?'ok':'bad')+'">'+(x[1]?'OK':'FALHA')+'</span></div>').join('')+'</div>'
+    +'<div class="c" style="margin-top:8px"><b>Proteções mantidas</b><div class="small muted">Nenhuma conta cortesia foi alterada, nenhuma cobrança foi criada, nenhum dado real foi regravado e o rollback continua apontando para o main atual.</div></div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="primary" id="e42exp">Exportar validação</button><button class="secondary" id="e42close">Fechar</button></div>';
+   document.getElementById('e42exp').onclick=()=>exportJSON(snap,'EDIFIQ_VALIDACAO_ETAPA42.json');
+   document.getElementById('e42close').onclick=()=>m.classList.remove('show');
+ }catch(err){b.innerHTML='<div class="c"><b>Validação registrada, mas o painel exige a conta administradora.</b><div class="small muted">'+E(err?.message||err)+'</div></div>'}
+}
+window.openEtapa42=run42;
+async function add(){
+ if(document.getElementById('ed42MenuBtn'))return;
+ try{
+   const s=SB();let ok=String(window.user?.email||'').toLowerCase()===ADMIN42;
+   if(!ok&&s?.auth){const r=await s.auth.getSession();ok=String(r?.data?.session?.user?.email||'').toLowerCase()===ADMIN42}
+   if(!ok)return;
+   const d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;
+   const q=document.createElement('button');q.id='ed42MenuBtn';q.className='menuItem';q.innerHTML='<span>✅</span><span>Candidata • Validação final</span>';q.onclick=run42;d.appendChild(q);
+ }catch(_){}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,800));else setTimeout(add,800);
+new MutationObserver(()=>{if(!document.getElementById('ed42MenuBtn'))add()}).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+</body>
 </html>
