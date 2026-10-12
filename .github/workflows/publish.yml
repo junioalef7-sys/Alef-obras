@@ -23,20 +23,31 @@ jobs:
           node-version: '22'
       - name: Impedir perda das correções aprovadas
         run: python3 scripts/check-release.py
-      - name: Preparar somente arquivos públicos do aplicativo
+      - name: Preparar arquivos públicos do aplicativo
         run: |
           mkdir -p .pages
           cp index.html .pages/index.html
+          for f in edifiq-sw.js manifest.webmanifest edifiq-icon-192.png edifiq-icon-512.png privacidade.html exclusao-conta.html; do
+            test -f "$f" || { echo "::error::Arquivo público obrigatório ausente: $f"; exit 1; }
+            cp "$f" ".pages/$f"
+          done
           touch .pages/.nojekyll
           python3 - <<'PY'
           import hashlib, json, os
           from pathlib import Path
           data = Path('index.html').read_bytes()
+          public_files = [
+              'index.html','edifiq-sw.js','manifest.webmanifest',
+              'edifiq-icon-192.png','edifiq-icon-512.png',
+              'privacidade.html','exclusao-conta.html'
+          ]
+          hashes = {name: hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in public_files}
           Path('.pages/release.json').write_text(json.dumps({
               'commit': os.environ['GITHUB_SHA'],
               'sha256': hashlib.sha256(data).hexdigest(),
-              'validated': True
-          }))
+              'validated': True,
+              'public_files': hashes
+          }, ensure_ascii=False))
           PY
       - uses: actions/upload-pages-artifact@v3
         with:
