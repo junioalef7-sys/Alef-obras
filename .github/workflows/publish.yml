@@ -27,19 +27,20 @@ jobs:
         run: |
           mkdir -p .pages
           cp index.html .pages/index.html
-          for f in edifiq-sw.js manifest.webmanifest edifiq-icon-192.png edifiq-icon-512.png privacidade.html exclusao-conta.html; do
+          for f in edifiq-sw.js manifest.webmanifest edifiq-icon-192.png edific-icon.svg privacidade.html exclusao-conta.html; do
             test -f "$f" || { echo "::error::Arquivo público obrigatório ausente: $f"; exit 1; }
             cp "$f" ".pages/$f"
           done
-          # A identidade instalada deve ser Edific, sem alterar a base funcional validada.
           python3 - <<'PY'
           from pathlib import Path
+          import re
           page = Path('.pages/index.html')
           html = page.read_text(encoding='utf-8')
           html = html.replace('<meta content="EDIFIQ" name="apple-mobile-web-app-title"/>','<meta content="Edific" name="apple-mobile-web-app-title"/>',1)
           html = html.replace('<meta name="application-name" content="EDIFIQ"/>','<meta name="application-name" content="Edific"/>',1)
           html = html.replace('var APP_NAME="EDIFIQ", SHORT_NAME="EDIFIQ", installEvent=null;','var APP_NAME="Edific", SHORT_NAME="Edific", installEvent=null;',1)
           html = html.replace('Instalar o EDIFIQ','Instalar o Edific').replace('instalar o EDIFIQ','instalar o Edific')
+          html = re.sub(r'(<link[^>]+rel="apple-touch-icon"[^>]+href=")[^"]+("[^>]*>)', r'\1./edifiq-icon-192.png\2', html, count=1, flags=re.I)
           page.write_text(html,encoding='utf-8')
           PY
           touch .pages/.nojekyll
@@ -49,7 +50,7 @@ jobs:
           data = Path('.pages/index.html').read_bytes()
           public_files = [
               'index.html','edifiq-sw.js','manifest.webmanifest',
-              'edifiq-icon-192.png','edifiq-icon-512.png',
+              'edifiq-icon-192.png','edific-icon.svg',
               'privacidade.html','exclusao-conta.html'
           ]
           hashes = {name: hashlib.sha256(Path('.pages',name).read_bytes()).hexdigest() for name in public_files}
@@ -59,7 +60,7 @@ jobs:
               'validated': True,
               'public_files': hashes,
               'pwa_label': 'Edific',
-              'cache': 'edifiq-shell-v44'
+              'cache': 'edifiq-shell-v44b'
           }, ensure_ascii=False))
           PY
       - uses: actions/upload-pages-artifact@v3
