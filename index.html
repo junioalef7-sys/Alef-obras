@@ -3393,6 +3393,16 @@ function bindSupabaseAuth(){
       const nextId=String(nextUser?.id||'');
       const currentId=String(user?.id||'');
 
+      // O link de recuperação do Supabase cria uma sessão temporária e dispara
+      // PASSWORD_RECOVERY. Nesse momento mostramos a tela para definir a nova senha.
+      if(event==='PASSWORD_RECOVERY' && nextUser){
+        user=nextUser;
+        $("auth")?.classList.remove("hidden");
+        $("app")?.classList.add("hidden");
+        setTimeout(()=>edifiqOpenPasswordRecovery(),50);
+        return;
+      }
+
       if(!nextUser){
         sb.__edifiqAuthProcessing=null;
         stopEdifiqRealtime();edifiqResetInMemoryState();edifiqForgetOfflineAccess();
@@ -3829,6 +3839,84 @@ async function finishSignupLogin(session){
   window.scrollTo({top:0,behavior:'instant'});
 }
 
+function edifiqAuthRedirectUrl(){
+  try{
+    // Mantém a pasta real do GitHub Pages (ex.: /Alef-obras/)
+    // em vez de enviar o usuário somente para https://usuario.github.io/
+    const u=new URL('./',window.location.href);
+    u.hash='';
+    u.search='';
+    return u.toString();
+  }catch(_){
+    return 'https://junioalef7-sys.github.io/Alef-obras/';
+  }
+}
+
+function edifiqOpenPasswordRecovery(){
+  let modal=document.getElementById('edifiqPasswordRecoveryModal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='edifiqPasswordRecoveryModal';
+    modal.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:18px';
+    modal.innerHTML=`
+      <div style="width:min(94vw,430px);background:#111827;color:#fff;border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.45)">
+        <h2 style="margin:0 0 8px">Criar nova senha</h2>
+        <p style="margin:0 0 16px;opacity:.8;font-size:14px">Digite e confirme sua nova senha para concluir a recuperação da conta.</p>
+        <label style="display:block;margin:10px 0 6px;font-size:13px">Nova senha</label>
+        <input id="edifiqRecoveryPassword1" type="password" autocomplete="new-password" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:#fff">
+        <label style="display:block;margin:12px 0 6px;font-size:13px">Confirmar nova senha</label>
+        <input id="edifiqRecoveryPassword2" type="password" autocomplete="new-password" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:#fff">
+        <div id="edifiqRecoveryMsg" style="min-height:20px;margin-top:10px;font-size:13px"></div>
+        <button id="edifiqRecoverySave" type="button" style="width:100%;margin-top:10px;padding:12px;border:0;border-radius:10px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Salvar nova senha</button>
+      </div>`;
+    document.body.appendChild(modal);
+
+    document.getElementById('edifiqRecoverySave').onclick=async()=>{
+      const p1=document.getElementById('edifiqRecoveryPassword1')?.value||'';
+      const p2=document.getElementById('edifiqRecoveryPassword2')?.value||'';
+      const msg=document.getElementById('edifiqRecoveryMsg');
+      const btn=document.getElementById('edifiqRecoverySave');
+
+      if(p1.length<8){
+        if(msg)msg.textContent='A nova senha deve ter pelo menos 8 caracteres.';
+        return;
+      }
+      if(p1!==p2){
+        if(msg)msg.textContent='As senhas não conferem.';
+        return;
+      }
+
+      try{
+        if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+        if(msg)msg.textContent='';
+        if(!(await ensureSupabaseClient()))throw new Error('Não foi possível conectar ao servidor.');
+        const {error}=await sb.auth.updateUser({password:p1});
+        if(error)throw error;
+
+        if(msg)msg.textContent='Senha alterada com sucesso. Você já pode entrar com a nova senha.';
+        setTimeout(async()=>{
+          try{await sb.auth.signOut();}catch(_){}
+          modal.remove();
+          try{
+            const clean=new URL(edifiqAuthRedirectUrl());
+            history.replaceState(null,'',clean.pathname);
+          }catch(_){}
+          $("auth")?.classList.remove("hidden");
+          $("app")?.classList.add("hidden");
+          if($("password"))$("password").value='';
+          authMsg('Senha alterada com sucesso. Entre com sua nova senha.');
+        },900);
+      }catch(e){
+        if(msg)msg.textContent=e?.message||'Não foi possível alterar a senha.';
+      }finally{
+        if(btn){btn.disabled=false;btn.textContent='Salvar nova senha';}
+      }
+    };
+  }
+  modal.style.display='flex';
+  setTimeout(()=>document.getElementById('edifiqRecoveryPassword1')?.focus(),50);
+}
+
 async function resetPassword(){
 
 if(!(await ensureSupabaseClient())){authMsg("Não foi possível carregar o servidor. Use o modo local.");return;}
@@ -3850,7 +3938,7 @@ const{error}=
 await sb.auth.resetPasswordForEmail(
 email,
 {
-redirectTo:location.origin
+redirectTo:edifiqAuthRedirectUrl()
 }
 );
 
@@ -3858,7 +3946,7 @@ if(error)
 authMsg(error.message);
 else
 authMsg(
-"Link de redefinição enviado."
+"Link de redefinição enviado. Confira sua caixa de entrada e o Spam."
 );
 
 }
