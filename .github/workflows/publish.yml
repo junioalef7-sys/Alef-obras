@@ -1,0 +1,73 @@
+name: Publicar EDIFIQ validado
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: edific-pages
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validar versão e fluxos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Impedir perda das correções aprovadas
+        run: python3 scripts/check-release.py
+      - name: Preparar somente arquivos públicos do aplicativo
+        run: |
+          mkdir -p .pages
+          cp index.html .pages/index.html
+          touch .pages/.nojekyll
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          data = Path('index.html').read_bytes()
+          Path('.pages/release.json').write_text(json.dumps({
+              'commit': os.environ['GITHUB_SHA'],
+              'sha256': hashlib.sha256(data).hexdigest(),
+              'validated': True
+          }))
+          PY
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .pages
+
+  deploy:
+    name: Publicar versão estável
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Confirmar publicação protegida e versão atual
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mode=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.build_type')
+          if [ "$mode" != workflow ]; then
+            echo '::error::Ative Settings > Pages > Source > GitHub Actions. A publicação direta da branch ignora a validação.'
+            exit 1
+          fi
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo '::error::Existe uma alteração mais recente. Esta execução antiga não será publicada.'
+            exit 1
+          fi
+      - name: Publicar após todas as verificações
+        id: deployment
+        uses: actions/deploy-pages@v4
