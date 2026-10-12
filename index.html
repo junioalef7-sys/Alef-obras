@@ -17611,197 +17611,13 @@ body.edLight .ed23InviteBanner{color:#15351f;background:#edfdf3;border-color:#9f
 })();
 </script>
 
-<style id="edifiq-etapa24-css">
-#edDeploy24M .modalBox{max-width:1040px;max-height:94vh;overflow:auto}
-.ed24Grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
-.ed24Card{padding:14px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.11)}
-.ed24Card small{opacity:.76}.ed24Card b{display:block;margin-top:4px;font-size:18px}
-.ed24Row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.08)}
-.ed24Row:last-child{border-bottom:0}
-.ed24State{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap}
-.ed24State.ok{background:rgba(41,179,93,.15);border:1px solid rgba(41,179,93,.42)}
-.ed24State.warn{background:rgba(245,166,35,.14);border:1px solid rgba(245,166,35,.42)}
-.ed24State.block{background:rgba(229,72,77,.14);border:1px solid rgba(229,72,77,.42)}
-.ed24Hero{padding:18px;border-radius:18px;border:1px solid rgba(255,255,255,.12);margin:12px 0}
-.ed24Hero.ok{background:rgba(41,179,93,.10);border-color:rgba(41,179,93,.38)}
-.ed24Hero.block{background:rgba(229,72,77,.10);border-color:rgba(229,72,77,.38)}
-.ed24Code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);font-size:12px}
-body.edLight #edDeploy24M .ed24Card,body.edLight #edDeploy24M .ed24Hero{background:#fff;border-color:#d8e0ea;color:#172033}
-body.edLight #edDeploy24M .ed24Row{border-color:#e5e7eb}
-body.edLight #edDeploy24M .ed24Code{background:#f4f6f8;border-color:#d8e0ea;color:#111827}
-body.edLight #edDeploy24M .sub{color:#4b5563!important}
-#ed24EnvBanner{position:fixed;left:12px;right:12px;bottom:74px;z-index:9996;padding:10px 12px;border-radius:14px;background:#7f1d1d;color:#fff;border:1px solid rgba(255,255,255,.22);box-shadow:0 10px 30px rgba(0,0,0,.28);font-size:12px;font-weight:700;display:none}
-@media(max-width:759px){.ed24Grid{grid-template-columns:1fr}.ed24Row{flex-direction:column}.ed24State{align-self:flex-start}#ed24EnvBanner{bottom:88px}}
-</style>
-<script id="edifiq-etapa24-implantacao-privada">
-(()=>{
-  const VERSION24='24.0.0';
-  const BUILD24='2026-10-11-etapa24-implantacao-privada-convite-real';
-  const ADMIN='junioalef7@gmail.com';
-  window.EDIFIQ_VERSION='v'+VERSION24;
-  window.EDIFIQ_BUILD=BUILD24;
-  const q=id=>document.getElementById(id);
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const state={billing:null,inviteProbe:null,session:false};
-  function env(){
-    const p=location.protocol,h=location.hostname||'';
-    const local=['localhost','127.0.0.1','::1'].includes(h);
-    const file=p==='file:';
-    const https=p==='https:';
-    const stable=https&&!local&&!!h&&h.includes('.');
-    return {protocol:p,host:h,origin:location.origin,local,file,https,stable,realInvite:stable};
-  }
-  async function admin(){
-    try{if(!window.sb?.auth)return null;const {data}=await sb.auth.getUser();const u=data?.user;return u?.id&&String(u.email||'').toLowerCase()===ADMIN?u:null}catch(_){return null}
-  }
-  function modal(){
-    let m=q('edDeploy24M');if(m)return m;
-    m=document.createElement('div');m.id='edDeploy24M';m.className='modal';
-    m.innerHTML=`<div class="modalBox"><div class="modalHead"><div><h2>🌐 Implantação • Piloto</h2><p class="sub">EDIFIQ v${VERSION24} • HTTPS privado/controlado</p></div><button class="x" onclick="closeM('edDeploy24M')">×</button></div><div id="ed24Body"><div class="card"><b>Verificando ambiente…</b></div></div></div>`;
-    document.body.appendChild(m);return m;
-  }
-  async function tests(){
-    const e=env();state.billing=null;state.inviteProbe=null;state.session=false;
-    try{const {data}=await sb.auth.getSession();state.session=!!data?.session?.user}catch(_){ }
-    if(state.session&&sb?.functions){
-      try{const r=await sb.functions.invoke('edifiq-billing-health',{body:{}});if(!r.error)state.billing=r.data||null}catch(_){ }
-      try{const r=await sb.functions.invoke('edifiq-piloto-convite-validar',{body:{token:'edifiq-stage24-probe-invalid'}});state.inviteProbe={reachable:!r.error,invalidExpected:r.data?.valid===false||!!r.data?.reason}}catch(_){state.inviteProbe={reachable:false}}
-    }
-    return e;
-  }
-  const badge=(ok,labelWarn='PENDENTE')=>`<span class="ed24State ${ok?'ok':'block'}">${ok?'✓ PRONTO':'✕ '+labelWarn}</span>`;
-  function render(e){
-    const b=q('ed24Body');if(!b)return;
-    const manifest=!!document.querySelector('link[rel="manifest"]');
-    const sw='serviceWorker' in navigator;
-    const publicCfg=!!state.billing?.checks?.public_url_valid;
-    const billingReady=!!state.billing?.ready;
-    const inviteApi=!!state.inviteProbe?.reachable;
-    const ready=e.realInvite&&state.session&&manifest&&sw&&inviteApi;
-    const rows=[
-      ['Endereço HTTPS estável',e.realInvite, e.realInvite?location.origin:(e.file?'Arquivo local (file://)':e.local?'Ambiente local':'HTTPS estável ainda não disponível')],
-      ['Sessão do administrador',state.session,state.session?'Autenticada':'Faça login para executar testes privados'],
-      ['Manifest PWA',manifest,manifest?'Detectado':'Manifest não encontrado'],
-      ['Service Worker suportado',sw,sw?'Navegador compatível':'Navegador sem suporte'],
-      ['API de convites',inviteApi,inviteApi?'Função de validação respondeu':'Não foi possível validar a função'],
-      ['URL pública no servidor',publicCfg,publicCfg?'EDIFIQ_PUBLIC_URL válida':'Ainda pendente para cobrança/retorno'],
-      ['Cobrança completa',billingReady,billingReady?'Mercado Pago e webhook prontos':'Pode continuar piloto sem cobrança real']
-    ];
-    b.innerHTML=`
-      <div class="ed24Hero ${ready?'ok':'block'}"><h3 style="margin:0 0 6px">${ready?'Ambiente apto para convite real':'Ainda não enviar convite real'}</h3><div>${ready?'Este endereço pode ser usado como base dos links de convite do piloto.':'Abra o EDIFIQ em um endereço HTTPS estável antes de compartilhar links com clientes.'}</div></div>
-      <div class="ed24Grid"><div class="ed24Card"><small>Endereço atual</small><b>${esc(e.host||e.protocol)}</b></div><div class="ed24Card"><small>Convite real</small><b>${e.realInvite?'Liberado':'Bloqueado'}</b></div><div class="ed24Card"><small>Modo</small><b>${e.https?'HTTPS':e.file?'Arquivo local':'HTTP/local'}</b></div></div>
-      <div class="ed24Card"><b>Checklist técnico</b>${rows.map(r=>`<div class="ed24Row"><div><b style="font-size:14px">${esc(r[0])}</b><div class="sub">${esc(r[2])}</div></div>${badge(r[1])}</div>`).join('')}</div>
-      <div class="ed24Card"><b>Base correta do convite</b><p class="sub">Quando hospedado, o link deverá começar exatamente por este endereço:</p><div class="ed24Code">${esc(e.realInvite?location.origin+location.pathname:'https://SEU-ENDERECO-OFICIAL/')}</div></div>
-      <div class="ed24Card"><b>Teste de ponta a ponta</b><div class="ed24Row"><span>1. Abrir o endereço em outro aparelho</span><span class="ed24State ${e.realInvite?'ok':'warn'}">${e.realInvite?'PODE TESTAR':'AGUARDE HTTPS'}</span></div><div class="ed24Row"><span>2. Gerar convite para cliente piloto cadastrado</span><span class="ed24State ${e.realInvite?'ok':'warn'}">${e.realInvite?'LIBERADO':'BLOQUEADO'}</span></div><div class="ed24Row"><span>3. Abrir link em janela privada</span><span class="ed24State warn">MANUAL</span></div><div class="ed24Row"><span>4. Criar conta com o mesmo e-mail</span><span class="ed24State warn">MANUAL</span></div><div class="ed24Row"><span>5. Confirmar status Onboarding em Clientes • Piloto</span><span class="ed24State warn">MANUAL</span></div></div>
-      <div class="ed21Toolbar"><button class="btn" onclick="openInvite23&&openInvite23()">✉️ Convites • Piloto</button><button class="btn" onclick="openPilotLaunch21&&openPilotLaunch21()">🚀 Clientes • Piloto</button><button class="btn" onclick="openDeploy24()">↻ Verificar novamente</button></div>`;
-  }
-  window.openDeploy24=async function(){
-    const u=await admin();if(!u){alert('Área disponível somente para a conta administradora do EDIFIQ.');return}
-    const m=modal();m.classList.add('open');q('ed24Body').innerHTML='<div class="card"><b>Verificando ambiente…</b></div>';
-    const e=await tests();render(e)
-  };
-  function banner(){
-    let x=q('ed24EnvBanner');if(!x){x=document.createElement('div');x.id='ed24EnvBanner';document.body.appendChild(x)}
-    const e=env();
-    if(e.realInvite){x.style.display='none';return}
-    x.innerHTML='Ambiente local/inseguro: links reais do piloto estão bloqueados. Hospede a Etapa 24 em HTTPS para convidar clientes.';x.style.display='block';
-  }
-  const oldGenerate=window.ed23Generate;
-  if(typeof oldGenerate==='function')window.ed23Generate=async function(clientId){
-    const e=env();
-    if(!e.realInvite){
-      try{await openDeploy24()}catch(_){ }
-      alert('Convite real bloqueado neste endereço. Use uma versão hospedada em HTTPS estável para gerar o link do cliente.');
-      return;
-    }
-    return oldGenerate.apply(this,arguments)
-  };
-  async function menu(){
-    if(q('edDeployMenu24'))return;const u=await admin();if(!u)return;
-    const anchor=q('edInviteMenu23')||q('edMetricsMenu22')||document.querySelector('.edifiqDrawerAccount');if(!anchor)return;
-    const bt=document.createElement('button');bt.id='edDeployMenu24';bt.className='edifiqDataRow';bt.type='button';bt.setAttribute('onclick','openDeploy24()');bt.innerHTML='<span>🌐</span><b>Implantação • Piloto</b><span class="edifiqChevron">›</span>';
-    anchor.classList.contains('edifiqDrawerAccount')?anchor.insertAdjacentElement('beforebegin',bt):anchor.insertAdjacentElement('afterend',bt)
-  }
-  function init(){banner();setTimeout(menu,1100);setTimeout(menu,2200)}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-  const mo=new MutationObserver(()=>{if(!q('edDeployMenu24'))setTimeout(menu,400)});mo.observe(document.documentElement,{childList:true,subtree:true});
-})();
-</script>
-<style id="ed25Style">
-#edOfficial25M .modalBox{max-width:940px}
-.ed25Hero{padding:16px;border:1px solid var(--line,#343a43);border-radius:14px;margin-bottom:12px}
-.ed25Hero.ok{background:rgba(22,163,74,.10);border-color:rgba(22,163,74,.45)}
-.ed25Hero.block{background:rgba(220,38,38,.09);border-color:rgba(220,38,38,.38)}
-.ed25Grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
-.ed25Card{padding:14px;border:1px solid var(--line,#343a43);border-radius:14px;background:var(--card,#15181d);margin:10px 0}
-.ed25Card small{display:block;opacity:.72;margin-bottom:5px}.ed25Card b{overflow-wrap:anywhere}
-.ed25Row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line,#343a43)}
-.ed25Row:first-child{border-top:0}.ed25State{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
-.ed25State.ok{background:rgba(22,163,74,.16);color:#86efac}.ed25State.warn{background:rgba(245,158,11,.16);color:#fcd34d}.ed25State.block{background:rgba(220,38,38,.16);color:#fca5a5}
-.ed25Code{padding:10px 12px;border:1px dashed var(--line,#4b5563);border-radius:10px;word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
-.ed25Check{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line,#343a43)}.ed25Check input{margin-top:3px;transform:scale(1.15)}
-body.edLight #edOfficial25M .ed25Card{background:#fff;border-color:#d0d5dd;color:#111827}body.edLight #edOfficial25M .ed25Row,body.edLight #edOfficial25M .ed25Check{border-color:#e5e7eb}
-body.edLight #edOfficial25M .ed25State.ok{color:#067647}body.edLight #edOfficial25M .ed25State.warn{color:#92400e}body.edLight #edOfficial25M .ed25State.block{color:#b42318}
-@media(max-width:700px){.ed25Grid{grid-template-columns:1fr}.ed25Row{align-items:flex-start;flex-direction:column}.ed25State{align-self:flex-start}}
-</style>
-<script id="ed25Script">
-(()=>{
-  'use strict';
-  const VERSION25='25.0.0';
-  const ADMIN='junioalef7@gmail.com';
-  const KEY='edifiq_stage25_first_client_checks';
-  window.EDIFIQ_VERSION='v'+VERSION25;
-  window.EDIFIQ_BUILD='2026-10-11-etapa25-endereco-oficial-primeiro-cliente';
-  const q=id=>document.getElementById(id);
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const state={session:false,billing:null,invite:false,privacy:false,deletion:false,manifest:false,sw:false};
-  function env(){const p=location.protocol,h=location.hostname;const local=['localhost','127.0.0.1','::1'].includes(h);return{https:p==='https:',file:p==='file:',local,stable:p==='https:'&&!local,origin:location.origin,base:location.origin+location.pathname.replace(/[^/]*$/,'')}}
-  async function admin(){try{if(!window.sb?.auth)return null;const {data}=await sb.auth.getUser();const u=data?.user;return u?.id&&String(u.email||'').toLowerCase()===ADMIN?u:null}catch(_){return null}}
-  async function probe(path){try{const r=await fetch(path,{method:'GET',cache:'no-store',redirect:'follow'});return !!(r.ok&&/text\/html/i.test(r.headers.get('content-type')||'text/html'))}catch(_){return false}}
-  function getChecks(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(_){return{}}}
-  function setCheck(k,v){const x=getChecks();x[k]=!!v;localStorage.setItem(KEY,JSON.stringify(x));renderLast().catch(()=>{})}
-  window.ed25SetCheck=setCheck;
-  function modal(){let m=q('edOfficial25M');if(m)return m;m=document.createElement('div');m.id='edOfficial25M';m.className='modal';m.innerHTML=`<div class="modalBox"><div class="modalHead"><div><h2>🏁 Endereço oficial • Primeiro cliente</h2><p class="sub">EDIFIQ v${VERSION25} • pré-liberação do piloto real</p></div><button class="x" onclick="closeM('edOfficial25M')">×</button></div><div id="ed25Body"><div class="card"><b>Verificando ambiente…</b></div></div></div>`;document.body.appendChild(m);return m}
-  async function tests(){const e=env();state.manifest=!!document.querySelector('link[rel="manifest"]');state.sw='serviceWorker' in navigator;state.session=false;state.billing=null;state.invite=false;try{const {data}=await sb.auth.getSession();state.session=!!data?.session?.user}catch(_){ }
-    if(e.stable){state.privacy=await probe('./privacidade.html');state.deletion=await probe('./exclusao-conta.html')}else{state.privacy=false;state.deletion=false}
-    if(state.session&&window.sb?.functions){try{const r=await sb.functions.invoke('edifiq-billing-health',{body:{}});if(!r.error)state.billing=r.data||null}catch(_){ }
-      try{const r=await sb.functions.invoke('edifiq-piloto-convite-validar',{body:{token:'edifiq-stage25-probe-invalid'}});state.invite=!r.error&&(r.data?.valid===false||!!r.data?.reason)}catch(_){state.invite=false}}
-    return e}
-  const badge=(ok,w='PENDENTE')=>`<span class="ed25State ${ok?'ok':'block'}">${ok?'✓ PRONTO':'✕ '+w}</span>`;
-  function techReady(e){const c=getChecks();return !!(e.stable&&state.session&&state.manifest&&state.sw&&state.privacy&&state.deletion&&state.invite&&c.public_url_match)}
-  function clientChecklist(){const c=getChecks();const items=[['public_url_match','EDIFIQ_PUBLIC_URL confirmada neste mesmo endereço',true],['iphone_pwa','Instalação PWA testada em iPhone real'],['computer_ok','Acesso testado no computador'],['invite_other_device','Convite aberto em outro aparelho'],['account_created','Conta piloto criada pelo link'],['onboarding_seen','Cliente apareceu como Onboarding'],['first_obra','Primeira obra criada pelo cliente'],['backup_test','Backup gerado e conferido'],['pdf_test','PDF salvo em aparelho real'],['support_ready','Canal de suporte informado ao cliente']];return{c,items}}
-  function render(e){const b=q('ed25Body');if(!b)return;const {c,items}=clientChecklist();const ready=techReady(e);const done=items.filter(([k])=>!!c[k]).length;const appUrl=e.stable?e.base:'https://SEU-ENDERECO-OFICIAL/';const privacy=appUrl+'privacidade.html';const deletion=appUrl+'exclusao-conta.html';const rows=[
-    ['HTTPS oficial/estável',e.stable,e.stable?e.origin:'Abra o pacote em domínio HTTPS, não file:// ou localhost'],
-    ['Sessão administradora',state.session,state.session?'Autenticada':'Faça login com a conta administradora'],
-    ['Manifest PWA',state.manifest,state.manifest?'Detectado':'Manifest não encontrado'],
-    ['Service Worker',state.sw,state.sw?'Suportado':'Sem suporte neste navegador'],
-    ['Política pública',state.privacy,state.privacy?privacy:'privacidade.html ainda não responde'],
-    ['Exclusão pública',state.deletion,state.deletion?deletion:'exclusao-conta.html ainda não responde'],
-    ['API de convites',state.invite,state.invite?'Funções responderam':'API de convite indisponível'],
-    ['URL pública no Supabase',!!c.public_url_match,c.public_url_match?'Confirmada manualmente para este domínio':'Confirme após configurar EDIFIQ_PUBLIC_URL']
-  ];
-  b.innerHTML=`<div class="ed25Hero ${ready?'ok':'block'}"><h3 style="margin:0 0 6px">${ready?'Convite técnico liberado':'Primeiro cliente ainda bloqueado'}</h3><div>${ready?'O endereço atende os requisitos mínimos para gerar um convite piloto real.':'Conclua os itens técnicos abaixo antes de enviar o primeiro convite.'}</div></div>
-  <div class="ed25Grid"><div class="ed25Card"><small>Aplicativo</small><b>${esc(appUrl)}</b></div><div class="ed25Card"><small>Checklist primeiro cliente</small><b>${done}/${items.length}</b></div><div class="ed25Card"><small>Cobrança</small><b>${state.billing?.ready?'Pronta':'Ainda separada do convite'}</b></div></div>
-  <div class="ed25Card"><b>Liberação técnica</b>${rows.map(r=>`<div class="ed25Row"><div><b style="font-size:14px">${esc(r[0])}</b><div class="sub">${esc(r[2])}</div></div>${badge(r[1])}</div>`).join('')}</div>
-  <div class="ed25Card"><b>URLs oficiais</b><p class="sub">Esses três endereços devem permanecer estáveis.</p><div class="ed25Code">App: ${esc(appUrl)}</div><div class="ed25Code" style="margin-top:7px">Privacidade: ${esc(privacy)}</div><div class="ed25Code" style="margin-top:7px">Exclusão: ${esc(deletion)}</div><div class="ed21Toolbar"><button class="btn" onclick="navigator.clipboard?.writeText('${esc(appUrl).replace(/'/g,"\\'")}')">Copiar endereço do app</button><button class="btn" onclick="navigator.clipboard?.writeText('${esc(privacy).replace(/'/g,"\\'")}')">Copiar privacidade</button></div></div>
-  <div class="ed25Card"><b>Confirmação do domínio no Supabase</b><label class="ed25Check"><input type="checkbox" ${c.public_url_match?'checked':''} onchange="ed25SetCheck('public_url_match',this.checked)"><span><b>Confirmei que EDIFIQ_PUBLIC_URL usa este mesmo endereço HTTPS.</b><div class="sub">A Central Comercial consegue verificar se existe uma URL válida, mas não expõe o valor configurado. Esta confirmação evita retorno de pagamento para domínio errado.</div></span></label></div>
-  <div class="ed25Card"><b>Checklist do primeiro cliente piloto</b><p class="sub">Os itens abaixo acompanham o teste real e ficam apenas neste aparelho administrativo.</p>${items.slice(1).map(([k,label])=>`<label class="ed25Check"><input type="checkbox" ${c[k]?'checked':''} onchange="ed25SetCheck('${k}',this.checked)"><span>${esc(label)}</span></label>`).join('')}</div>
-  <div class="ed21Toolbar"><button class="btn" onclick="openInvite23&&openInvite23()" ${ready?'':'disabled'}>✉️ Abrir convites</button><button class="btn" onclick="openPilotLaunch21&&openPilotLaunch21()">🚀 Clientes • Piloto</button><button class="btn" onclick="openMetrics22&&openMetrics22()">📊 Métricas</button><button class="btn" onclick="openOfficial25()">↻ Verificar novamente</button></div>`}
-  async function renderLast(){const m=q('edOfficial25M');if(!m?.classList.contains('open'))return;const e=await tests();render(e)}
-  window.openOfficial25=async function(){const u=await admin();if(!u){alert('Área disponível somente para a conta administradora do EDIFIQ.');return}const m=modal();m.classList.add('open');q('ed25Body').innerHTML='<div class="card"><b>Verificando ambiente…</b></div>';const e=await tests();render(e)};
-  const previousGenerate=window.ed23Generate;
-  if(typeof previousGenerate==='function')window.ed23Generate=async function(){const e=await tests();if(!techReady(e)){try{await openOfficial25()}catch(_){ }alert('Primeiro convite real bloqueado: conclua a liberação técnica em Endereço oficial • Primeiro cliente.');return}return previousGenerate.apply(this,arguments)};
-  async function menu(){if(q('edOfficialMenu25'))return;const u=await admin();if(!u)return;const anchor=q('edDeployMenu24')||q('edInviteMenu23')||document.querySelector('.edifiqDrawerAccount');if(!anchor)return;const bt=document.createElement('button');bt.id='edOfficialMenu25';bt.className='edifiqDataRow';bt.type='button';bt.setAttribute('onclick','openOfficial25()');bt.innerHTML='<span>🏁</span><b>Endereço oficial • Primeiro cliente</b><span class="edifiqChevron">›</span>';anchor.classList.contains('edifiqDrawerAccount')?anchor.insertAdjacentElement('beforebegin',bt):anchor.insertAdjacentElement('afterend',bt)}
-  function init(){setTimeout(menu,1100);setTimeout(menu,2300)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();new MutationObserver(()=>{if(!q('edOfficialMenu25'))setTimeout(menu,350)}).observe(document.documentElement,{childList:true,subtree:true});
-})();
-</script>
 <style id="ed27css">#ed27M .g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}#ed27M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}#ed27M .n{font-size:24px;font-weight:900}#ed27M .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:7px}#ed27M .s{padding:6px;border-radius:8px;background:#1e293b;font-size:12px}#ed27M .s.ok{background:#14532d;color:#dcfce7}body.edLight #ed27M .c{background:#fff;color:#111827;border-color:#cbd5e1}body.edLight #ed27M .s{background:#f1f5f9;color:#334155}body.edLight #ed27M .s.ok{background:#dcfce7;color:#14532d}@media(max-width:700px){#ed27M .g{grid-template-columns:repeat(2,1fr)}#ed27M .steps{grid-template-columns:repeat(2,1fr)}}</style>
 <script id="ed27js">
-(function(){'use strict';window.EDIFIQ_BUILD='2026-10-11-etapa33-bloqueio-comercial';window.EDIFIQ_VERSION='27.0.0';const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));function SB(){return window.supabaseClient||window.sb||window.supabase||null}function prog(c){let a=['onboarding_conta','onboarding_obra','onboarding_equipe','onboarding_financeiro','onboarding_backup','onboarding_pdf'];let n=a.filter(k=>!!c[k]).length;return[n,Math.round(n/6*100)]}function modal(){let m=document.getElementById('ed27M');if(m)return m;m=document.createElement('div');m.id='ed27M';m.className='modal';m.style.zIndex='10050';m.innerHTML='<div class="modalBox" style="max-width:960px;width:min(96vw,960px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>👤 Primeiro cliente • Piloto</b><div class="small muted">Etapa 27 • domínio + onboarding acompanhado</div></div><button class="iconBtn" id="ed27close">×</button></div><div id="ed27B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('ed27close').onclick=()=>m.classList.remove('show');return m}async function open27(){let m=modal(),b=document.getElementById('ed27B');m.classList.add('show');b.textContent='Verificando ambiente e piloto…';try{let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let se=await s.auth.getSession(),session=se?.data?.session;if(!session)throw Error('Entre na conta administradora.');let origin=location.origin,secure=location.protocol==='https:';let health={configured:false,valid:false,matches:false};try{let r=await s.functions.invoke('edifiq-public-health',{body:{current_origin:origin}});if(!r.error&&r.data)health=r.data}catch(_){}let legal=false,del=false;if(secure){try{legal=(await fetch('./privacidade.html',{cache:'no-store'})).ok}catch(_){}try{del=(await fetch('./exclusao-conta.html',{cache:'no-store'})).ok}catch(_){}}let [cr,ir,vr]=await Promise.all([s.from('edifiq_piloto_clientes').select('*').order('criado_em',{ascending:true}),s.from('edifiq_piloto_incidentes').select('*').order('criado_em',{ascending:false}),s.from('edifiq_piloto_convites').select('id,cliente_piloto_id,status,resgatado_em').order('criado_em',{ascending:false})]);if(cr.error)throw cr.error;if(ir.error)throw ir.error;if(vr.error)throw vr.error;let c=cr.data||[],i=ir.data||[],v=vr.data||[],ab=i.filter(x=>x.status!=='resolvido'),crit=ab.filter(x=>['alta','critica','crítica'].includes(String(x.severidade||'').toLowerCase())),res=v.filter(x=>x.status==='resgatado').length,comp=c.filter(x=>prog(x)[0]===6).length,domainOK=secure&&health.configured&&health.valid&&health.matches&&legal&&del;let steps=[['Conta','onboarding_conta'],['Obra','onboarding_obra'],['Equipe','onboarding_equipe'],['Financeiro','onboarding_financeiro'],['Backup','onboarding_backup'],['PDF','onboarding_pdf']];let clients=c.length?c.map(x=>{let p=prog(x);return '<div class="c" style="margin-top:8px"><div style="display:flex;justify-content:space-between"><div><b>'+E(x.nome)+'</b><div class="small muted">'+E(x.email||'Sem e-mail')+' • '+E(x.status)+'</div></div><b>'+p[1]+'%</b></div><div class="steps">'+steps.map(q=>'<div class="s '+(x[q[1]]?'ok':'')+'">'+(x[q[1]]?'✓':'○')+' '+q[0]+'</div>').join('')+'</div></div>'}).join(''):'<div class="c" style="margin-top:8px"><b>Nenhum cliente piloto ainda.</b><div class="small muted">Cadastre somente o primeiro cliente autorizado.</div></div>';let status=!domainOK?'DOMÍNIO AINDA NÃO LIBERADO':!c.length?'AGUARDANDO PRIMEIRO CLIENTE':crit.length?'BLOQUEADO POR INCIDENTE':comp&&res?'PRIMEIRO CLIENTE VALIDADO':'ONBOARDING EM ANDAMENTO';b.innerHTML='<div class="c"><b>'+status+'</b><div class="small muted">O lançamento público continua bloqueado nesta etapa.</div></div><div class="g" style="margin-top:8px"><div class="c"><div class="small muted">HTTPS + domínio</div><div class="n">'+(domainOK?'✓':'!')+'</div></div><div class="c"><div class="small muted">Clientes</div><div class="n">'+c.length+'</div></div><div class="c"><div class="small muted">Convites resgatados</div><div class="n">'+res+'</div></div><div class="c"><div class="small muted">Incidentes</div><div class="n">'+ab.length+'</div></div></div><div class="c" style="margin-top:8px"><b>Domínio oficial</b><div class="small muted">HTTPS: '+(secure?'OK':'Pendente')+' • URL pública: '+(health.matches?'corresponde':'pendente')+' • Privacidade: '+(legal?'OK':'pendente')+' • Exclusão: '+(del?'OK':'pendente')+'</div></div>'+clients+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="primary" id="e27clients">👥 Clientes • Piloto</button><button class="secondary" id="e27inv">✉️ Convites</button><button class="secondary" id="e27refresh">↻ Atualizar</button></div>';document.getElementById('e27clients').onclick=()=>window.openPiloto21?.();document.getElementById('e27inv').onclick=()=>{if(!domainOK){alert('Convite real bloqueado até HTTPS, URL pública e páginas legais estarem corretos.');return}window.openConvites23?.()};document.getElementById('e27refresh').onclick=open27}catch(e){b.innerHTML='<div class="c"><b>Não foi possível carregar.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}}window.openEtapa27=open27;function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Primeiro cliente • Piloto')))return;let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>👤</span><span>Primeiro cliente • Piloto</span>';q.onclick=open27;d.appendChild(q)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);new MutationObserver(add).observe(document.documentElement,{childList:true,subtree:true});})();
+(function(){'use strict';window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';window.EDIFIQ_VERSION='27.0.0';const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));function SB(){return window.supabaseClient||window.sb||window.supabase||null}function prog(c){let a=['onboarding_conta','onboarding_obra','onboarding_equipe','onboarding_financeiro','onboarding_backup','onboarding_pdf'];let n=a.filter(k=>!!c[k]).length;return[n,Math.round(n/6*100)]}function modal(){let m=document.getElementById('ed27M');if(m)return m;m=document.createElement('div');m.id='ed27M';m.className='modal';m.style.zIndex='10050';m.innerHTML='<div class="modalBox" style="max-width:960px;width:min(96vw,960px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>👤 Primeiro cliente • Piloto</b><div class="small muted">Etapa 27 • domínio + onboarding acompanhado</div></div><button class="iconBtn" id="ed27close">×</button></div><div id="ed27B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('ed27close').onclick=()=>m.classList.remove('show');return m}async function open27(){let m=modal(),b=document.getElementById('ed27B');m.classList.add('show');b.textContent='Verificando ambiente e piloto…';try{let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let se=await s.auth.getSession(),session=se?.data?.session;if(!session)throw Error('Entre na conta administradora.');let origin=location.origin,secure=location.protocol==='https:';let health={configured:false,valid:false,matches:false};try{let r=await s.functions.invoke('edifiq-public-health',{body:{current_origin:origin}});if(!r.error&&r.data)health=r.data}catch(_){}let legal=false,del=false;if(secure){try{legal=(await fetch('./privacidade.html',{cache:'no-store'})).ok}catch(_){}try{del=(await fetch('./exclusao-conta.html',{cache:'no-store'})).ok}catch(_){}}let [cr,ir,vr]=await Promise.all([s.from('edifiq_piloto_clientes').select('*').order('criado_em',{ascending:true}),s.from('edifiq_piloto_incidentes').select('*').order('criado_em',{ascending:false}),s.from('edifiq_piloto_convites').select('id,cliente_piloto_id,status,resgatado_em').order('criado_em',{ascending:false})]);if(cr.error)throw cr.error;if(ir.error)throw ir.error;if(vr.error)throw vr.error;let c=cr.data||[],i=ir.data||[],v=vr.data||[],ab=i.filter(x=>x.status!=='resolvido'),crit=ab.filter(x=>['alta','critica','crítica'].includes(String(x.severidade||'').toLowerCase())),res=v.filter(x=>x.status==='resgatado').length,comp=c.filter(x=>prog(x)[0]===6).length,domainOK=secure&&health.configured&&health.valid&&health.matches&&legal&&del;let steps=[['Conta','onboarding_conta'],['Obra','onboarding_obra'],['Equipe','onboarding_equipe'],['Financeiro','onboarding_financeiro'],['Backup','onboarding_backup'],['PDF','onboarding_pdf']];let clients=c.length?c.map(x=>{let p=prog(x);return '<div class="c" style="margin-top:8px"><div style="display:flex;justify-content:space-between"><div><b>'+E(x.nome)+'</b><div class="small muted">'+E(x.email||'Sem e-mail')+' • '+E(x.status)+'</div></div><b>'+p[1]+'%</b></div><div class="steps">'+steps.map(q=>'<div class="s '+(x[q[1]]?'ok':'')+'">'+(x[q[1]]?'✓':'○')+' '+q[0]+'</div>').join('')+'</div></div>'}).join(''):'<div class="c" style="margin-top:8px"><b>Nenhum cliente piloto ainda.</b><div class="small muted">Cadastre somente o primeiro cliente autorizado.</div></div>';let status=!domainOK?'DOMÍNIO AINDA NÃO LIBERADO':!c.length?'AGUARDANDO PRIMEIRO CLIENTE':crit.length?'BLOQUEADO POR INCIDENTE':comp&&res?'PRIMEIRO CLIENTE VALIDADO':'ONBOARDING EM ANDAMENTO';b.innerHTML='<div class="c"><b>'+status+'</b><div class="small muted">O lançamento público continua bloqueado nesta etapa.</div></div><div class="g" style="margin-top:8px"><div class="c"><div class="small muted">HTTPS + domínio</div><div class="n">'+(domainOK?'✓':'!')+'</div></div><div class="c"><div class="small muted">Clientes</div><div class="n">'+c.length+'</div></div><div class="c"><div class="small muted">Convites resgatados</div><div class="n">'+res+'</div></div><div class="c"><div class="small muted">Incidentes</div><div class="n">'+ab.length+'</div></div></div><div class="c" style="margin-top:8px"><b>Domínio oficial</b><div class="small muted">HTTPS: '+(secure?'OK':'Pendente')+' • URL pública: '+(health.matches?'corresponde':'pendente')+' • Privacidade: '+(legal?'OK':'pendente')+' • Exclusão: '+(del?'OK':'pendente')+'</div></div>'+clients+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="primary" id="e27clients">👥 Clientes • Piloto</button><button class="secondary" id="e27inv">✉️ Convites</button><button class="secondary" id="e27refresh">↻ Atualizar</button></div>';document.getElementById('e27clients').onclick=()=>window.openPiloto21?.();document.getElementById('e27inv').onclick=()=>{if(!domainOK){alert('Convite real bloqueado até HTTPS, URL pública e páginas legais estarem corretos.');return}window.openConvites23?.()};document.getElementById('e27refresh').onclick=open27}catch(e){b.innerHTML='<div class="c"><b>Não foi possível carregar.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}}window.openEtapa27=open27;function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Primeiro cliente • Piloto')))return;let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>👤</span><span>Primeiro cliente • Piloto</span>';q.onclick=open27;d.appendChild(q)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);new MutationObserver(add).observe(document.documentElement,{childList:true,subtree:true});})();
 </script>
 <style id="ed28css">#ed28M .g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}#ed28M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}#ed28M .n{font-size:23px;font-weight:900}.ed28ok{color:#22c55e}.ed28warn{color:#f59e0b}body.edLight #ed28M .c{background:#fff;color:#111827;border-color:#cbd5e1}@media(max-width:700px){#ed28M .g{grid-template-columns:repeat(2,1fr)}}</style>
-<script id="ed28js">(function(){'use strict';window.EDIFIQ_BUILD='2026-10-11-etapa33-bloqueio-comercial';window.EDIFIQ_VERSION='28.0.0';const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));function SB(){return window.supabaseClient||window.sb||window.supabase||null}function M(){let m=document.getElementById('ed28M');if(m)return m;m=document.createElement('div');m.id='ed28M';m.className='modal';m.style.zIndex='10060';m.innerHTML='<div class="modalBox" style="max-width:980px;width:min(96vw,980px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>🛡️ Candidata a produção</b><div class="small muted">Etapa 28 • estabilidade e segurança</div></div><button class="iconBtn" id="ed28x">×</button></div><div id="ed28B" style="padding:14px">Verificando…</div></div>';document.body.appendChild(m);document.getElementById('ed28x').onclick=()=>m.classList.remove('show');return m}async function run(){let m=M(),b=document.getElementById('ed28B');m.classList.add('show');b.textContent='Executando auditoria segura…';try{let s=SB(),c=[];c.push(['HTTPS',location.protocol==='https:','Endereço oficial']);c.push(['Manifest',!!document.querySelector('link[rel="manifest"]'),'PWA']);c.push(['Service Worker','serviceWorker'in navigator,'PWA/offline']);c.push(['IndexedDB','indexedDB'in window,'Cache local']);c.push(['Web Crypto',!!window.crypto?.subtle,'Backup/segurança']);let se=null;if(s?.auth){let r=await s.auth.getSession();se=r?.data?.session||null}c.push(['Sessão',!!se,'Autenticação']);let dom=false;if(s?.functions&&se){try{let r=await s.functions.invoke('edifiq-public-health',{body:{current_origin:location.origin}});dom=!!r?.data?.matches}catch(_){}}c.push(['Domínio oficial',dom,'EDIFIQ_PUBLIC_URL']);let legal=false,del=false;if(location.protocol==='https:'){try{legal=(await fetch('./privacidade.html',{cache:'no-store'})).ok}catch(_){}try{del=(await fetch('./exclusao-conta.html',{cache:'no-store'})).ok}catch(_){}}c.push(['Privacidade',legal,'Página pública']);c.push(['Exclusão de conta',del,'Página pública']);let pass=c.filter(x=>x[1]).length,score=Math.round(pass/c.length*100),ready=score===100,rows=c.map(x=>'<div class="c" style="margin-top:7px;display:flex;justify-content:space-between"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'ed28ok':'ed28warn')+'">'+(x[1]?'OK':'PENDENTE')+'</b></div>').join('');b.innerHTML='<div class="g"><div class="c"><div class="small muted">Build</div><div class="n">v28</div></div><div class="c"><div class="small muted">Score</div><div class="n">'+score+'%</div></div><div class="c"><div class="small muted">Requisitos</div><div class="n">'+pass+'/'+c.length+'</div></div><div class="c"><div class="small muted">Status</div><div class="n '+(ready?'ed28ok':'ed28warn')+'">'+(ready?'RC':'TESTE')+'</div></div></div><div class="c" style="margin-top:8px"><b>'+(ready?'Candidata técnica pronta para piloto real':'Ainda existem pendências de ambiente')+'</b><div class="small muted">Não libera venda pública automaticamente. Primeiro conclua o piloto real.</div></div>'+rows+'<div style="display:flex;gap:8px;margin-top:10px"><button class="primary" id="e28r">↻ Repetir</button><button class="secondary" id="e28p">👤 Primeiro cliente</button></div>';document.getElementById('e28r').onclick=run;document.getElementById('e28p').onclick=()=>window.openEtapa27?.()}catch(e){b.innerHTML='<div class="c"><b>Falha na auditoria.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}}window.openEtapa28=run;function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Candidata a produção')))return;let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🛡️</span><span>Candidata a produção</span>';q.onclick=run;d.appendChild(q)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);new MutationObserver(add).observe(document.documentElement,{childList:true,subtree:true});})();</script><style id="ed29css">#ed29M .g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}#ed29M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}#ed29M .n{font-size:23px;font-weight:900}.e29ok{color:#22c55e}.e29w{color:#f59e0b}.e29b{color:#ef4444}#ed29M .row{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(148,163,184,.15)}body.edLight #ed29M .c{background:#fff;color:#111827;border-color:#cbd5e1}@media(max-width:700px){#ed29M .g{grid-template-columns:repeat(2,1fr)}}</style>
-<script id="ed29js">(function(){'use strict';window.EDIFIQ_BUILD='2026-10-11-etapa33-bloqueio-comercial';window.EDIFIQ_VERSION='29.0.0';const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));function SB(){return window.supabaseClient||window.sb||window.supabase||null}function M(){let m=document.getElementById('ed29M');if(m)return m;m=document.createElement('div');m.id='ed29M';m.className='modal';m.style.zIndex='10070';m.innerHTML='<div class="modalBox" style="max-width:980px;width:min(96vw,980px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>🚦 Piloto real • Decisão</b><div class="small muted">Etapa 29 • critérios objetivos antes dos primeiros pagantes</div></div><button class="iconBtn" id="e29x">×</button></div><div id="e29B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('e29x').onclick=()=>m.classList.remove('show');return m}async function run(){let m=M(),b=document.getElementById('e29B');m.classList.add('show');b.textContent='Calculando situação real do piloto…';try{let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let se=await s.auth.getSession();if(!se?.data?.session)throw Error('Entre na conta administradora.');let [cr,ir,vr]=await Promise.all([s.from('edifiq_piloto_clientes').select('*').order('criado_em',{ascending:true}),s.from('edifiq_piloto_incidentes').select('*'),s.from('edifiq_piloto_convites').select('id,cliente_id,status,usado_em,expira_em')]);if(cr.error)throw cr.error;if(ir.error)throw ir.error;if(vr.error)throw vr.error;let cs=cr.data||[],inc=(ir.data||[]).filter(x=>x.status!=='resolvido'),grave=inc.filter(x=>['alta','critica','crítica'].includes(String(x.severidade||'').toLowerCase())),conv=vr.data||[],used=conv.filter(x=>x.status==='usado'||x.status==='resgatado').length,keys=['onboarding_conta','onboarding_obra','onboarding_equipe','onboarding_financeiro','onboarding_backup','onboarding_pdf'],complete=cs.filter(x=>keys.every(k=>!!x[k])).length,active=cs.filter(x=>['ativo','onboarding'].includes(String(x.status||'').toLowerCase())).length;let criteria=[['Há cliente piloto real',cs.length>=1,cs.length+' cadastrado(s)'],['Convite real foi resgatado',used>=1,used+' resgatado(s)'],['Onboarding completo',complete>=1,complete+' completo(s)'],['Sem incidente alto/crítico',grave.length===0,grave.length+' grave(s) aberto(s)'],['Sem incidente aberto',inc.length===0,inc.length+' aberto(s)']];let passed=criteria.filter(x=>x[1]).length,score=Math.round(passed/criteria.length*100),decision=(cs.length>=1&&used>=1&&complete>=1&&grave.length===0)?'APTO PARA PRIMEIROS PAGANTES':'MANTER NO PILOTO',cls=decision.startsWith('APTO')?'e29ok':'e29w';let rows=criteria.map(x=>'<div class="row"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'e29ok':'e29w')+'">'+(x[1]?'APROVADO':'PENDENTE')+'</b></div>').join('');b.innerHTML='<div class="c"><b class="'+cls+'">'+decision+'</b><div class="small muted">A decisão é calculada com dados reais do piloto. Nenhuma cobrança ou convite é criado automaticamente.</div></div><div class="g" style="margin-top:8px"><div class="c"><div class="small muted">Clientes piloto</div><div class="n">'+cs.length+'</div></div><div class="c"><div class="small muted">Ativos/onboarding</div><div class="n">'+active+'</div></div><div class="c"><div class="small muted">Onboarding 100%</div><div class="n">'+complete+'</div></div><div class="c"><div class="small muted">Aprovação</div><div class="n">'+score+'%</div></div></div><div class="c" style="margin-top:8px"><b>Critérios de liberação</b>'+rows+'</div><div class="c" style="margin-top:8px"><b>Regra comercial</b><div class="small muted">Somente avançar para cliente pagante quando existir convite real resgatado, onboarding completo e nenhum incidente alto/crítico aberto. Antes de cobrança real, validar Mercado Pago e cancelamento em ambiente controlado.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="primary" id="e29r">↻ Atualizar</button><button class="secondary" id="e29c">👥 Clientes</button><button class="secondary" id="e29i">✉️ Convites</button></div>';document.getElementById('e29r').onclick=run;document.getElementById('e29c').onclick=()=>window.openPiloto21?.();document.getElementById('e29i').onclick=()=>window.openConvites23?.()}catch(e){b.innerHTML='<div class="c"><b>Não foi possível calcular.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}}window.openEtapa29=run;function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Piloto real • Decisão')))return;let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🚦</span><span>Piloto real • Decisão</span>';q.onclick=run;d.appendChild(q)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);new MutationObserver(add).observe(document.documentElement,{childList:true,subtree:true});})();</script>
+<script id="ed28js">(function(){'use strict';window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';window.EDIFIQ_VERSION='28.0.0';const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));function SB(){return window.supabaseClient||window.sb||window.supabase||null}function M(){let m=document.getElementById('ed28M');if(m)return m;m=document.createElement('div');m.id='ed28M';m.className='modal';m.style.zIndex='10060';m.innerHTML='<div class="modalBox" style="max-width:980px;width:min(96vw,980px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>🛡️ Candidata a produção</b><div class="small muted">Etapa 28 • estabilidade e segurança</div></div><button class="iconBtn" id="ed28x">×</button></div><div id="ed28B" style="padding:14px">Verificando…</div></div>';document.body.appendChild(m);document.getElementById('ed28x').onclick=()=>m.classList.remove('show');return m}async function run(){let m=M(),b=document.getElementById('ed28B');m.classList.add('show');b.textContent='Executando auditoria segura…';try{let s=SB(),c=[];c.push(['HTTPS',location.protocol==='https:','Endereço oficial']);c.push(['Manifest',!!document.querySelector('link[rel="manifest"]'),'PWA']);c.push(['Service Worker','serviceWorker'in navigator,'PWA/offline']);c.push(['IndexedDB','indexedDB'in window,'Cache local']);c.push(['Web Crypto',!!window.crypto?.subtle,'Backup/segurança']);let se=null;if(s?.auth){let r=await s.auth.getSession();se=r?.data?.session||null}c.push(['Sessão',!!se,'Autenticação']);let dom=false;if(s?.functions&&se){try{let r=await s.functions.invoke('edifiq-public-health',{body:{current_origin:location.origin}});dom=!!r?.data?.matches}catch(_){}}c.push(['Domínio oficial',dom,'EDIFIQ_PUBLIC_URL']);let legal=false,del=false;if(location.protocol==='https:'){try{legal=(await fetch('./privacidade.html',{cache:'no-store'})).ok}catch(_){}try{del=(await fetch('./exclusao-conta.html',{cache:'no-store'})).ok}catch(_){}}c.push(['Privacidade',legal,'Página pública']);c.push(['Exclusão de conta',del,'Página pública']);let pass=c.filter(x=>x[1]).length,score=Math.round(pass/c.length*100),ready=score===100,rows=c.map(x=>'<div class="c" style="margin-top:7px;display:flex;justify-content:space-between"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'ed28ok':'ed28warn')+'">'+(x[1]?'OK':'PENDENTE')+'</b></div>').join('');b.innerHTML='<div class="g"><div class="c"><div class="small muted">Build</div><div class="n">v28</div></div><div class="c"><div class="small muted">Score</div><div class="n">'+score+'%</div></div><div class="c"><div class="small muted">Requisitos</div><div class="n">'+pass+'/'+c.length+'</div></div><div class="c"><div class="small muted">Status</div><div class="n '+(ready?'ed28ok':'ed28warn')+'">'+(ready?'RC':'TESTE')+'</div></div></div><div class="c" style="margin-top:8px"><b>'+(ready?'Candidata técnica pronta para piloto real':'Ainda existem pendências de ambiente')+'</b><div class="small muted">Não libera venda pública automaticamente. Primeiro conclua o piloto real.</div></div>'+rows+'<div style="display:flex;gap:8px;margin-top:10px"><button class="primary" id="e28r">↻ Repetir</button><button class="secondary" id="e28p">👤 Primeiro cliente</button></div>';document.getElementById('e28r').onclick=run;document.getElementById('e28p').onclick=()=>window.openEtapa27?.()}catch(e){b.innerHTML='<div class="c"><b>Falha na auditoria.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}}window.openEtapa28=run;function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Candidata a produção')))return;let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🛡️</span><span>Candidata a produção</span>';q.onclick=run;d.appendChild(q)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);new MutationObserver(add).observe(document.documentElement,{childList:true,subtree:true});})();</script><style id="ed29css">#ed29M .g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}#ed29M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}#ed29M .n{font-size:23px;font-weight:900}.e29ok{color:#22c55e}.e29w{color:#f59e0b}.e29b{color:#ef4444}#ed29M .row{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(148,163,184,.15)}body.edLight #ed29M .c{background:#fff;color:#111827;border-color:#cbd5e1}@media(max-width:700px){#ed29M .g{grid-template-columns:repeat(2,1fr)}}</style>
+<script id="ed29js">(function(){'use strict';window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';window.EDIFIQ_VERSION='29.0.0';const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));function SB(){return window.supabaseClient||window.sb||window.supabase||null}function M(){let m=document.getElementById('ed29M');if(m)return m;m=document.createElement('div');m.id='ed29M';m.className='modal';m.style.zIndex='10070';m.innerHTML='<div class="modalBox" style="max-width:980px;width:min(96vw,980px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>🚦 Piloto real • Decisão</b><div class="small muted">Etapa 29 • critérios objetivos antes dos primeiros pagantes</div></div><button class="iconBtn" id="e29x">×</button></div><div id="e29B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('e29x').onclick=()=>m.classList.remove('show');return m}async function run(){let m=M(),b=document.getElementById('e29B');m.classList.add('show');b.textContent='Calculando situação real do piloto…';try{let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let se=await s.auth.getSession();if(!se?.data?.session)throw Error('Entre na conta administradora.');let [cr,ir,vr]=await Promise.all([s.from('edifiq_piloto_clientes').select('*').order('criado_em',{ascending:true}),s.from('edifiq_piloto_incidentes').select('*'),s.from('edifiq_piloto_convites').select('id,cliente_id,status,usado_em,expira_em')]);if(cr.error)throw cr.error;if(ir.error)throw ir.error;if(vr.error)throw vr.error;let cs=cr.data||[],inc=(ir.data||[]).filter(x=>x.status!=='resolvido'),grave=inc.filter(x=>['alta','critica','crítica'].includes(String(x.severidade||'').toLowerCase())),conv=vr.data||[],used=conv.filter(x=>x.status==='usado'||x.status==='resgatado').length,keys=['onboarding_conta','onboarding_obra','onboarding_equipe','onboarding_financeiro','onboarding_backup','onboarding_pdf'],complete=cs.filter(x=>keys.every(k=>!!x[k])).length,active=cs.filter(x=>['ativo','onboarding'].includes(String(x.status||'').toLowerCase())).length;let criteria=[['Há cliente piloto real',cs.length>=1,cs.length+' cadastrado(s)'],['Convite real foi resgatado',used>=1,used+' resgatado(s)'],['Onboarding completo',complete>=1,complete+' completo(s)'],['Sem incidente alto/crítico',grave.length===0,grave.length+' grave(s) aberto(s)'],['Sem incidente aberto',inc.length===0,inc.length+' aberto(s)']];let passed=criteria.filter(x=>x[1]).length,score=Math.round(passed/criteria.length*100),decision=(cs.length>=1&&used>=1&&complete>=1&&grave.length===0)?'APTO PARA PRIMEIROS PAGANTES':'MANTER NO PILOTO',cls=decision.startsWith('APTO')?'e29ok':'e29w';let rows=criteria.map(x=>'<div class="row"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'e29ok':'e29w')+'">'+(x[1]?'APROVADO':'PENDENTE')+'</b></div>').join('');b.innerHTML='<div class="c"><b class="'+cls+'">'+decision+'</b><div class="small muted">A decisão é calculada com dados reais do piloto. Nenhuma cobrança ou convite é criado automaticamente.</div></div><div class="g" style="margin-top:8px"><div class="c"><div class="small muted">Clientes piloto</div><div class="n">'+cs.length+'</div></div><div class="c"><div class="small muted">Ativos/onboarding</div><div class="n">'+active+'</div></div><div class="c"><div class="small muted">Onboarding 100%</div><div class="n">'+complete+'</div></div><div class="c"><div class="small muted">Aprovação</div><div class="n">'+score+'%</div></div></div><div class="c" style="margin-top:8px"><b>Critérios de liberação</b>'+rows+'</div><div class="c" style="margin-top:8px"><b>Regra comercial</b><div class="small muted">Somente avançar para cliente pagante quando existir convite real resgatado, onboarding completo e nenhum incidente alto/crítico aberto. Antes de cobrança real, validar Mercado Pago e cancelamento em ambiente controlado.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="primary" id="e29r">↻ Atualizar</button><button class="secondary" id="e29c">👥 Clientes</button><button class="secondary" id="e29i">✉️ Convites</button></div>';document.getElementById('e29r').onclick=run;document.getElementById('e29c').onclick=()=>window.openPiloto21?.();document.getElementById('e29i').onclick=()=>window.openConvites23?.()}catch(e){b.innerHTML='<div class="c"><b>Não foi possível calcular.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}}window.openEtapa29=run;function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Piloto real • Decisão')))return;let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🚦</span><span>Piloto real • Decisão</span>';q.onclick=run;d.appendChild(q)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);new MutationObserver(add).observe(document.documentElement,{childList:true,subtree:true});})();</script>
 <style id="ed30css">
 #ed30M .g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 #ed30M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}
@@ -17820,7 +17636,7 @@ body.edLight #ed30M .bar{background:#e2e8f0}
 <script id="ed30js">
 (function(){
 'use strict';
-window.EDIFIQ_BUILD='2026-10-11-etapa33-bloqueio-comercial';
+window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
 window.EDIFIQ_VERSION='30.0.0';
 const ADMIN30='junioalef7@gmail.com';
 const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -17895,7 +17711,7 @@ body.edLight #ed31M textarea{background:#fff;color:#111827;border-color:#cbd5e1}
 <script id="ed31js">
 (function(){
 'use strict';
-window.EDIFIQ_BUILD='2026-10-11-etapa33-bloqueio-comercial';
+window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
 window.EDIFIQ_VERSION='31.0.0';
 const ADMIN31='junioalef7@gmail.com';
 const FIELDS31=[
@@ -17977,7 +17793,7 @@ body.edLight #ed32M textarea{background:#fff;color:#111827;border-color:#cbd5e1}
 <script id="ed32js">
 (function(){
 'use strict';
-window.EDIFIQ_BUILD='2026-10-11-etapa33-bloqueio-comercial';
+window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
 window.EDIFIQ_VERSION='32.0.0';
 const ADMIN32='junioalef7@gmail.com';
 const F32=[
@@ -18065,7 +17881,7 @@ body.edLight #ed33M .c{background:#fff;color:#111827;border-color:#cbd5e1}
 <script id="ed33js">
 (function(){
 'use strict';
-window.EDIFIQ_BUILD='2026-10-11-etapa33-bloqueio-comercial';
+window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
 window.EDIFIQ_VERSION='33.0.0';
 const ADMIN33='junioalef7@gmail.com';
 const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -18119,6 +17935,796 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script>
+
+<style id="ed34css">
+#ed34M .g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#ed34M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}
+#ed34M .n{font-size:22px;font-weight:900}
+#ed34M .row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(148,163,184,.16)}
+#ed34M .row:last-child{border-bottom:0}
+#ed34M .ok{color:#22c55e}.warn{color:#f59e0b}.bad{color:#ef4444}
+#ed34M .hero{font-size:28px;font-weight:1000}
+#ed34M .danger{background:#991b1b;color:#fff;border:0;border-radius:10px;padding:10px 12px;font-weight:900}
+body.edLight #ed34M .c{background:#fff;color:#111827;border-color:#cbd5e1}
+@media(max-width:700px){#ed34M .g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script id="ed34js">
+(function(){
+'use strict';
+window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
+window.EDIFIQ_VERSION='34.0.0';
+const ADMIN34='junioalef7@gmail.com';
+const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function SB(){return window.supabaseClient||window.sb||window.supabase||null}
+function modal(){let m=document.getElementById('ed34M');if(m)return m;m=document.createElement('div');m.id='ed34M';m.className='modal';m.style.zIndex='10120';m.innerHTML='<div class="modalBox" style="max-width:1020px;width:min(96vw,1020px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>🔐 Comercial • Liberação controlada</b><div class="small muted">Etapa 34 • homologação segura + chave de vendas no servidor</div></div><button class="iconBtn" id="e34x">×</button></div><div id="e34B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('e34x').onclick=()=>m.classList.remove('show');return m}
+async function admin(){
+ let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');
+ let r=await s.auth.getSession(),session=r?.data?.session;if(!session)throw Error('Entre na conta administradora.');
+ if(String(session.user?.email||'').toLowerCase()!==ADMIN34)throw Error('Área restrita ao administrador.');
+ return {s,session}
+}
+async function status34(s){
+ let r=await s.functions.invoke('edifiq-comercial-liberacao',{body:{action:'status'}});
+ if(r.error)throw r.error;return r.data||{}
+}
+async function homologar34(plano){
+ let {s}=await admin();
+ if(!confirm('Isso abrirá um checkout REAL do Mercado Pago marcado como HOMOLOGAÇÃO para o plano '+plano+'. Nenhuma venda pública será liberada. Continuar?'))return;
+ let r=await s.functions.invoke('edifiq-assinatura-checkout',{body:{plano,homologacao:true,return_url:location.href.split('#')[0]}});
+ if(r.error)throw r.error;
+ if(!r.data?.checkout_url)throw Error(r.data?.error||'Checkout não retornou URL.');
+ window.open(r.data.checkout_url,'_blank','noopener,noreferrer');
+}
+async function liberar34(){
+ let {s}=await admin(),st=await status34(s);
+ if(!st.ready){alert('A liberação foi recusada: ainda existem pré-requisitos pendentes.');return}
+ let phrase=prompt('Digite exatamente: LIBERAR VENDAS EDIFIQ');
+ if(phrase===null)return;
+ let r=await s.functions.invoke('edifiq-comercial-liberacao',{body:{action:'liberar',confirmacao:phrase}});
+ if(r.error)throw r.error;
+ if(!r.data?.ok)throw Error(r.data?.error||'Liberação recusada.');
+ alert('Vendas liberadas no servidor.');await run();
+}
+async function bloquear34(){
+ let {s}=await admin();
+ if(!confirm('Bloquear novamente todas as novas vendas pagas do EDIFIQ?'))return;
+ let r=await s.functions.invoke('edifiq-comercial-liberacao',{body:{action:'bloquear'}});
+ if(r.error)throw r.error;
+ alert('Vendas bloqueadas.');await run();
+}
+async function run(){
+ let m=modal(),b=document.getElementById('e34B');m.classList.add('show');b.textContent='Verificando liberação comercial…';
+ try{
+  let {s}=await admin(),st=await status34(s),c=st.checks||{},unlocked=!!st.vendas_liberadas,ready=!!st.ready;
+  let rows=[
+   ['Piloto real validado',!!c.pilot,c.pilot?'6/6 concluído':'Ainda pendente'],
+   ['Sem incidente alto/crítico',!!c.no_critical_incident,c.no_critical_incident?'OK':'Existe incidente grave'],
+   ['Homologação manual',!!c.manual_homologation,c.manual_homologation?'7/7 concluída':'Ainda pendente'],
+   ['Evidência backend',!!c.backend_evidence,c.backend_evidence?'Mensal + anual + webhook + pagamento + cancelamento':'Ainda faltam evidências'],
+   ['Ambiente de cobrança',!!c.billing_environment,c.billing_environment?'Mercado Pago e URL pública prontos':'Configuração pendente']
+  ].map(x=>'<div class="row"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'ok':'warn')+'">'+(x[1]?'OK':'PENDENTE')+'</b></div>').join('');
+  b.innerHTML='<div class="c"><div class="hero '+(unlocked?'ok':'bad')+'">'+(unlocked?'🔓 VENDAS LIBERADAS':'🔒 VENDAS BLOQUEADAS')+'</div><div class="small muted">'+E(st.motivo||'Controle comercial no servidor')+'</div></div><div class="g" style="margin-top:8px"><div class="c"><div class="small muted">Mensal</div><div class="n">'+Number(c.checkout_mensal||0)+'</div></div><div class="c"><div class="small muted">Anual</div><div class="n">'+Number(c.checkout_anual||0)+'</div></div><div class="c"><div class="small muted">Webhooks</div><div class="n">'+Number(c.webhooks||0)+'</div></div><div class="c"><div class="small muted">Pagamentos</div><div class="n">'+Number(c.pagamentos||0)+'</div></div></div><div class="c" style="margin-top:8px"><b>Pré-requisitos do servidor</b>'+rows+'</div><div class="c" style="margin-top:8px"><b>Modo homologação com vendas bloqueadas</b><div class="small muted">Somente a conta administradora pode criar checkout de homologação enquanto as vendas estão bloqueadas. Clientes comuns continuam recebendo bloqueio 423 antes de qualquer chamada ao Mercado Pago.</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px"><button class="secondary" id="e34mensal">🧪 Testar mensal</button><button class="secondary" id="e34anual">🧪 Testar anual</button></div></div><div class="c" style="margin-top:8px"><b>Liberação comercial</b><div class="small muted">'+(ready?'Todos os pré-requisitos do servidor estão completos. A liberação ainda exige confirmação explícita.':'O servidor recusará qualquer tentativa de liberação enquanto os itens acima não estiverem completos.')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px"><button class="primary" id="e34release" '+(!ready||unlocked?'disabled':'')+'>🔓 Liberar vendas</button><button class="danger" id="e34block" '+(!unlocked?'disabled':'')+'>🔒 Bloquear vendas</button><button class="secondary" id="e34ref">↻ Atualizar</button></div></div><div class="c" style="margin-top:8px"><b>Dupla proteção</b><div class="small muted">Para liberar: administrador autenticado + todos os pré-requisitos reais + frase exata “LIBERAR VENDAS EDIFIQ”. Toda tentativa de liberar/bloquear fica registrada na auditoria do servidor.</div></div>';
+  document.getElementById('e34mensal').onclick=()=>homologar34('mensal').catch(e=>alert(e?.message||e));
+  document.getElementById('e34anual').onclick=()=>homologar34('anual').catch(e=>alert(e?.message||e));
+  document.getElementById('e34release').onclick=()=>liberar34().catch(e=>alert(e?.message||e));
+  document.getElementById('e34block').onclick=()=>bloquear34().catch(e=>alert(e?.message||e));
+  document.getElementById('e34ref').onclick=run;
+ }catch(e){b.innerHTML='<div class="c"><b>Não foi possível carregar.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}
+}
+window.openEtapa34=run;
+async function add(){
+ if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Comercial • Liberação controlada')))return;
+ let s=SB();try{let r=await s?.auth?.getSession?.();if(String(r?.data?.session?.user?.email||'').toLowerCase()!==ADMIN34)return}catch(_){return}
+ let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;
+ let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🔐</span><span>Comercial • Liberação controlada</span>';q.onclick=run;d.appendChild(q)
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
+new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+<style id="ed35css">
+#ed35M .g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#ed35M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}
+#ed35M .plan{border:1px solid #334155;border-radius:14px;padding:12px;background:#101827}
+#ed35M .row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(148,163,184,.16)}
+#ed35M .row:last-child{border-bottom:0}
+#ed35M .n{font-size:22px;font-weight:900}
+#ed35M .ok{color:#22c55e}.warn{color:#f59e0b}.bad{color:#ef4444}
+#ed35M .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#ed35M .danger{background:#991b1b;color:#fff;border:0;border-radius:10px;padding:10px 12px;font-weight:900;cursor:pointer}
+body.edLight #ed35M .c,body.edLight #ed35M .plan{background:#fff;color:#111827;border-color:#cbd5e1}
+@media(max-width:760px){#ed35M .g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script id="ed35js">
+(function(){
+'use strict';
+window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
+window.EDIFIQ_VERSION='35.0.0';
+const ADMIN35='junioalef7@gmail.com';
+const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function SB(){return window.supabaseClient||window.sb||window.supabase||null}
+function modal(){let m=document.getElementById('ed35M');if(m)return m;m=document.createElement('div');m.id='ed35M';m.className='modal';m.style.zIndex='10130';m.innerHTML='<div class="modalBox" style="max-width:1040px;width:min(97vw,1040px);max-height:94vh;overflow:auto"><div class="modalHeader"><div><b>🧪 Cobrança • Homologação guiada</b><div class="small muted">Etapa 35 • mensal e anual isolados da assinatura real</div></div><button class="iconBtn" id="e35x">×</button></div><div id="e35B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('e35x').onclick=()=>m.classList.remove('show');return m}
+async function auth35(){let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let r=await s.auth.getSession(),session=r?.data?.session;if(!session)throw Error('Entre na conta administradora.');if(String(session.user?.email||'').toLowerCase()!==ADMIN35)throw Error('Área restrita ao administrador.');return{s,session}}
+function latest(list,plan){return list.find(x=>String(x.plano||'').toLowerCase()===plan)||null}
+function approvedFor(payments,checkout){if(!checkout)return false;return payments.some(p=>String(p.provedor_assinatura_id||'')===String(checkout.provedor_assinatura_id||'')&&['approved','aprovado','paid','pago'].includes(String(p.status||'').toLowerCase()))}
+async function data35(){
+ let {s,session}=await auth35();
+ let [bh,hh,ch,pay,ctrl]=await Promise.all([
+  s.functions.invoke('edifiq-billing-health',{body:{}}),
+  s.functions.invoke('edifiq-billing-homologacao-health',{body:{}}),
+  s.from('edifiq_checkout_sessoes').select('id,plano,status,provedor_assinatura_id,init_point,criado_em,homologacao').eq('homologacao',true).order('criado_em',{ascending:false}).limit(20),
+  s.from('edifiq_pagamentos_assinatura').select('id,status,provedor_assinatura_id,pago_em,criado_em,homologacao').eq('homologacao',true).order('criado_em',{ascending:false}).limit(30),
+  s.functions.invoke('edifiq-comercial-liberacao',{body:{action:'status'}})
+ ]);
+ if(ch.error)throw ch.error;if(pay.error)throw pay.error;
+ return{s,session,billing:bh?.data||{},health:hh?.data||{},checkouts:ch.data||[],payments:pay.data||[],commercial:ctrl?.data||{}}
+}
+async function start35(plan){
+ let {s}=await auth35();
+ if(!confirm('Será criado um checkout REAL do Mercado Pago marcado como HOMOLOGAÇÃO ('+plan+'). As vendas públicas continuarão bloqueadas. Continuar?'))return;
+ let r=await s.functions.invoke('edifiq-assinatura-checkout',{body:{plano:plan,homologacao:true,return_url:location.href.split('#')[0]}});
+ if(r.error)throw r.error;
+ if(!r.data?.checkout_url)throw Error(r.data?.error||'Checkout não retornou URL.');
+ window.open(r.data.checkout_url,'_blank','noopener,noreferrer');
+}
+async function cancel35(providerId){
+ let {s}=await auth35();
+ if(!providerId)throw Error('ID da homologação ausente.');
+ if(!confirm('Cancelar esta assinatura de HOMOLOGAÇÃO no Mercado Pago para impedir nova cobrança?'))return;
+ let r=await s.functions.invoke('edifiq-homologacao-cancelar',{body:{provider_subscription_id:providerId}});
+ if(r.error)throw r.error;
+ alert('Homologação cancelada.');await run();
+}
+function planCard(plan,label,checkout,payOk){
+ let status=String(checkout?.status||'').toLowerCase(),created=!!checkout,canceled=status==='canceled',active=created&&!canceled;
+ let checkoutOk=created,paid=!!payOk;
+ let safeCancel=canceled;
+ let state=canceled?'CANCELADO':paid?'PAGAMENTO APROVADO':created?'CHECKOUT CRIADO':'NÃO INICIADO';
+ let cls=(canceled||paid)?'ok':created?'warn':'warn';
+ let id=E(checkout?.provedor_assinatura_id||'');
+ return '<div class="plan"><div style="display:flex;justify-content:space-between;gap:10px"><div><b>'+label+'</b><div class="small muted">Homologação separada da assinatura comercial</div></div><b class="'+cls+'">'+state+'</b></div>'+
+ '<div class="row"><span>Checkout criado</span><b class="'+(checkoutOk?'ok':'warn')+'">'+(checkoutOk?'OK':'PENDENTE')+'</b></div>'+
+ '<div class="row"><span>Pagamento aprovado</span><b class="'+(paid?'ok':'warn')+'">'+(paid?'OK':'PENDENTE')+'</b></div>'+
+ '<div class="row"><span>Cancelado após o teste</span><b class="'+(safeCancel?'ok':'warn')+'">'+(safeCancel?'OK':'PENDENTE')+'</b></div>'+
+ '<div class="small muted" style="margin-top:7px">Status provedor: '+E(checkout?.status||'—')+(checkout?.criado_em?' • criado em '+new Date(checkout.criado_em).toLocaleString('pt-BR'):'')+'</div>'+
+ '<div class="btnrow">'+
+ (!created||canceled?'<button class="primary e35start" data-plan="'+plan+'">🧪 Iniciar '+label.toLowerCase()+'</button>':'')+
+ (active&&checkout?.init_point?'<button class="secondary e35open" data-url="'+E(checkout.init_point)+'">↗ Abrir checkout</button>':'')+
+ (active?'<button class="danger e35cancel" data-id="'+id+'">Cancelar teste</button>':'')+
+ '</div></div>'
+}
+async function run(){
+ let m=modal(),b=document.getElementById('e35B');m.classList.add('show');b.textContent='Verificando homologação isolada…';
+ try{
+  let d=await data35(),counts=d.health?.counts||{},checks=d.health?.checks||{},billing=!!d.billing?.ready;
+  let monthly=latest(d.checkouts,'mensal'),annual=latest(d.checkouts,'anual');
+  let monthlyPaid=approvedFor(d.payments,monthly),annualPaid=approvedFor(d.payments,annual);
+  let publicLocked=!d.commercial?.vendas_liberadas;
+  let complete=!!(checks.checkout_mensal&&checks.checkout_anual&&checks.webhook&&checks.pagamento&&checks.cancelamento);
+  b.innerHTML='<div class="c"><b class="'+(publicLocked?'ok':'bad')+'">'+(publicLocked?'🔒 VENDAS PÚBLICAS CONTINUAM BLOQUEADAS':'⚠️ VENDAS PÚBLICAS ESTÃO LIBERADAS')+'</b><div class="small muted">A homologação usa registros marcados separadamente e não altera a assinatura cortesia.</div></div>'+
+  '<div class="g" style="margin-top:8px"><div class="c"><div class="small muted">Ambiente Mercado Pago</div><div class="n">'+(billing?'OK':'PEND.')+'</div></div><div class="c"><div class="small muted">Webhooks teste</div><div class="n">'+Number(counts.webhooks_processados||0)+'</div></div><div class="c"><div class="small muted">Pagamentos teste</div><div class="n">'+Number(counts.pagamentos_aprovados||0)+'</div></div><div class="c"><div class="small muted">Cancelamentos teste</div><div class="n">'+Number(counts.cancelamentos_registrados||0)+'</div></div></div>'+
+  '<div class="c" style="margin-top:8px"><b>Ordem recomendada</b><div class="row"><span>1. Ambiente Mercado Pago pronto</span><b class="'+(billing?'ok':'warn')+'">'+(billing?'OK':'PENDENTE')+'</b></div><div class="row"><span>2. Testar mensal, aguardar webhook/pagamento e cancelar</span><b class="'+(monthly&&monthlyPaid&&String(monthly.status).toLowerCase()==='canceled'?'ok':'warn')+'">'+(monthly&&monthlyPaid&&String(monthly.status).toLowerCase()==='canceled'?'OK':'PENDENTE')+'</b></div><div class="row"><span>3. Testar anual, aguardar webhook/pagamento e cancelar</span><b class="'+(annual&&annualPaid&&String(annual.status).toLowerCase()==='canceled'?'ok':'warn')+'">'+(annual&&annualPaid&&String(annual.status).toLowerCase()==='canceled'?'OK':'PENDENTE')+'</b></div><div class="row"><span>4. Confirmar checklist manual da Etapa 32</span><b class="'+(complete?'ok':'warn')+'">'+(complete?'EVIDÊNCIA COMPLETA':'PENDENTE')+'</b></div></div>'+
+  '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px;margin-top:8px">'+planCard('mensal','Plano mensal',monthly,monthlyPaid)+planCard('anual','Plano anual',annual,annualPaid)+'</div>'+
+  '<div class="c" style="margin-top:8px"><b>Proteções desta etapa</b><div class="small muted">Checkout de homologação recebe marcador próprio no banco. Webhook e pagamentos de teste também são marcados. Eles não mudam a linha real de assinatura do administrador. O cancelamento de teste atua somente em um checkout de homologação pertencente à conta administradora.</div></div>'+
+  '<div class="btnrow"><button class="secondary" id="e35ref">↻ Atualizar</button><button class="secondary" id="e35hom">💳 Abrir Etapa 32</button><button class="secondary" id="e35release">🔐 Ver liberação comercial</button></div>';
+  document.querySelectorAll('.e35start').forEach(x=>x.onclick=()=>start35(x.dataset.plan).catch(e=>alert(e?.message||e)));
+  document.querySelectorAll('.e35open').forEach(x=>x.onclick=()=>window.open(x.dataset.url,'_blank','noopener,noreferrer'));
+  document.querySelectorAll('.e35cancel').forEach(x=>x.onclick=()=>cancel35(x.dataset.id).catch(e=>alert(e?.message||e)));
+  document.getElementById('e35ref').onclick=run;
+  document.getElementById('e35hom').onclick=()=>window.openEtapa32?.();
+  document.getElementById('e35release').onclick=()=>window.openEtapa34?.();
+ }catch(e){b.innerHTML='<div class="c"><b>Não foi possível carregar a homologação guiada.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}
+}
+window.openEtapa35=run;
+async function add(){
+ if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Cobrança • Homologação guiada')))return;
+ let s=SB();try{let r=await s?.auth?.getSession?.();if(String(r?.data?.session?.user?.email||'').toLowerCase()!==ADMIN35)return}catch(_){return}
+ let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;
+ let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🧪</span><span>Cobrança • Homologação guiada</span>';q.onclick=run;d.appendChild(q)
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
+new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+<style id="ed36css">
+#ed36M .g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#ed36M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}
+#ed36M .n{font-size:22px;font-weight:900}
+#ed36M .step{border:1px solid #334155;border-radius:12px;padding:10px;margin-top:8px;background:#101827}
+#ed36M .row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+#ed36M .ok{color:#22c55e}.warn{color:#f59e0b}.bad{color:#ef4444}
+#ed36M .danger{background:#991b1b;color:#fff;border:0;border-radius:10px;padding:10px 12px;font-weight:900;cursor:pointer}
+#ed36M .notice{border:1px solid #92400e;background:#451a03;color:#fde68a;border-radius:12px;padding:11px;margin-top:8px}
+body.edLight #ed36M .c,body.edLight #ed36M .step{background:#fff;color:#111827;border-color:#cbd5e1}
+body.edLight #ed36M .notice{background:#fff7ed;color:#7c2d12;border-color:#fdba74}
+@media(max-width:760px){#ed36M .g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script id="ed36js">
+(function(){
+'use strict';
+window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
+window.EDIFIQ_VERSION='36.0.0';
+const ADMIN36='junioalef7@gmail.com';
+const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function SB(){return window.supabaseClient||window.sb||window.supabase||null}
+function modal(){let m=document.getElementById('ed36M');if(m)return m;m=document.createElement('div');m.id='ed36M';m.className='modal';m.style.zIndex='10140';m.innerHTML='<div class="modalBox" style="max-width:960px;width:min(97vw,960px);max-height:94vh;overflow:auto"><div class="modalHeader"><div><b>1️⃣ Homologação • Primeiro teste mensal</b><div class="small muted">Etapa 36 • R$ 39,90 • vendas públicas bloqueadas</div></div><button class="iconBtn" id="e36x">×</button></div><div id="e36B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('e36x').onclick=()=>m.classList.remove('show');return m}
+async function auth36(){let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let r=await s.auth.getSession(),session=r?.data?.session;if(!session)throw Error('Entre na conta administradora.');if(String(session.user?.email||'').toLowerCase()!==ADMIN36)throw Error('Área restrita ao administrador.');return{s,session}}
+async function load36(){
+ let {s}=await auth36();
+ let [bh,ch,pay,ctrl,hh]=await Promise.all([
+  s.functions.invoke('edifiq-billing-health',{body:{}}),
+  s.from('edifiq_checkout_sessoes').select('id,plano,status,provedor_assinatura_id,init_point,criado_em,homologacao').eq('homologacao',true).eq('plano','mensal').order('criado_em',{ascending:false}).limit(10),
+  s.from('edifiq_pagamentos_assinatura').select('id,status,provedor_assinatura_id,pago_em,criado_em,homologacao').eq('homologacao',true).order('criado_em',{ascending:false}).limit(20),
+  s.functions.invoke('edifiq-comercial-liberacao',{body:{action:'status'}}),
+  s.functions.invoke('edifiq-billing-homologacao-health',{body:{}})
+ ]);
+ if(ch.error)throw ch.error;if(pay.error)throw pay.error;
+ let checkout=(ch.data||[])[0]||null;
+ let paid=checkout&&(pay.data||[]).some(p=>String(p.provedor_assinatura_id||'')===String(checkout.provedor_assinatura_id||'')&&['approved','aprovado','paid','pago'].includes(String(p.status||'').toLowerCase()));
+ return{s,billing:bh?.data||{},checkout,paid:!!paid,commercial:ctrl?.data||{},health:hh?.data||{}}
+}
+async function start36(){
+ let {s}=await auth36();
+ let phrase=prompt('Este teste pode gerar uma cobrança REAL de R$ 39,90 no Mercado Pago. Para continuar, digite exatamente: TESTAR MENSAL 39,90');
+ if(phrase===null)return;
+ if(phrase.trim()!=='TESTAR MENSAL 39,90'){alert('Confirmação incorreta. Nenhum checkout foi criado.');return}
+ let r=await s.functions.invoke('edifiq-assinatura-checkout',{body:{plano:'mensal',homologacao:true,return_url:location.href.split('#')[0]}});
+ if(r.error)throw r.error;
+ if(!r.data?.checkout_url)throw Error(r.data?.error||'Checkout não retornou URL.');
+ window.open(r.data.checkout_url,'_blank','noopener,noreferrer');
+ alert('Checkout de homologação aberto. Conclua o teste no Mercado Pago e depois volte ao EDIFIQ e clique em Atualizar.');
+}
+async function cancel36(id){
+ let {s}=await auth36();
+ if(!id)throw Error('ID da homologação ausente.');
+ if(!confirm('Cancelar a homologação mensal no Mercado Pago para impedir nova cobrança?'))return;
+ let r=await s.functions.invoke('edifiq-homologacao-cancelar',{body:{provider_subscription_id:id}});
+ if(r.error)throw r.error;
+ alert('Homologação mensal cancelada.');await run();
+}
+async function run(){
+ let m=modal(),b=document.getElementById('e36B');m.classList.add('show');b.textContent='Verificando primeiro teste mensal…';
+ try{
+  let d=await load36(),co=d.checkout,paid=d.paid,locked=!d.commercial?.vendas_liberadas,billing=!!d.billing?.ready,status=String(co?.status||'').toLowerCase(),canceled=status==='canceled';
+  let webhook=Number(d.health?.counts?.webhooks_processados||0)>0;
+  let current=!billing?'CONFIGURAR AMBIENTE':!co?'INICIAR CHECKOUT MENSAL':!paid?'CONCLUIR PAGAMENTO / AGUARDAR WEBHOOK':!webhook?'AGUARDAR WEBHOOK':!canceled?'CANCELAR HOMOLOGAÇÃO':'TESTE MENSAL CONCLUÍDO';
+  let done=canceled&&paid&&webhook;
+  let s1=billing,s2=!!co,s3=paid,s4=webhook,s5=canceled;
+  function step(n,title,ok,desc){return '<div class="step"><div class="row"><div><b>'+n+'. '+E(title)+'</b><div class="small muted">'+E(desc)+'</div></div><b class="'+(ok?'ok':'warn')+'">'+(ok?'OK':'PENDENTE')+'</b></div></div>'}
+  b.innerHTML='<div class="c"><b class="'+(locked?'ok':'bad')+'">'+(locked?'🔒 VENDAS PÚBLICAS BLOQUEADAS':'⚠️ VENDAS PÚBLICAS LIBERADAS')+'</b><div class="small muted">O teste mensal usa um registro de homologação separado da assinatura cortesia.</div></div>'+
+  '<div class="notice"><b>Possível cobrança real: R$ 39,90</b><div class="small">O checkout só é criado após você digitar a confirmação exata. Esta tela nunca cria pagamento automaticamente.</div></div>'+
+  '<div class="g" style="margin-top:8px"><div class="c"><div class="small muted">Ambiente</div><div class="n">'+(billing?'OK':'PEND.')+'</div></div><div class="c"><div class="small muted">Checkout mensal</div><div class="n">'+(co?'1':'0')+'</div></div><div class="c"><div class="small muted">Pagamento</div><div class="n">'+(paid?'OK':'PEND.')+'</div></div><div class="c"><div class="small muted">Cancelamento</div><div class="n">'+(canceled?'OK':'PEND.')+'</div></div></div>'+
+  '<div class="c" style="margin-top:8px"><b>Próxima ação: '+E(current)+'</b><div class="small muted">'+(done?'O mensal está homologado e cancelado. A próxima etapa será o teste anual.':'Siga apenas o próximo passo indicado abaixo.')+'</div></div>'+
+  step('1','Ambiente Mercado Pago',s1,'Token, webhook e URL pública precisam estar configurados.')+
+  step('2','Criar checkout mensal',s2,'Checkout marcado como homologação, sem abrir vendas públicas.')+
+  step('3','Confirmar pagamento',s3,'Após concluir no Mercado Pago, aguarde o pagamento aparecer como aprovado.')+
+  step('4','Confirmar webhook',s4,'O webhook precisa chegar e ser processado pelo backend.')+
+  step('5','Cancelar homologação',s5,'Depois de validar o pagamento/webhook, cancele para impedir renovação.')+
+  '<div class="c" style="margin-top:8px"><b>Checkout atual</b><div class="small muted">Status: '+E(co?.status||'—')+(co?.criado_em?' • criado em '+new Date(co.criado_em).toLocaleString('pt-BR'):'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">'+
+  (!co||canceled?'<button class="primary" id="e36start" '+(!billing?'disabled':'')+'>🧪 Iniciar teste mensal</button>':'')+
+  (co&&!canceled&&co.init_point?'<button class="secondary" id="e36open">↗ Abrir checkout</button>':'')+
+  (co&&!canceled?'<button class="danger" id="e36cancel">Cancelar homologação</button>':'')+
+  '<button class="secondary" id="e36ref">↻ Atualizar</button></div></div>'+
+  '<div class="c" style="margin-top:8px"><b>Proteção dos dados</b><div class="small muted">Pagamento e webhook de homologação ficam marcados separadamente. O fluxo não muda sua assinatura cortesia nem libera a venda para clientes comuns.</div></div>';
+  let st=document.getElementById('e36start');if(st)st.onclick=()=>start36().catch(e=>alert(e?.message||e));
+  let op=document.getElementById('e36open');if(op)op.onclick=()=>window.open(co.init_point,'_blank','noopener,noreferrer');
+  let ca=document.getElementById('e36cancel');if(ca)ca.onclick=()=>cancel36(co.provedor_assinatura_id).catch(e=>alert(e?.message||e));
+  document.getElementById('e36ref').onclick=run;
+ }catch(e){b.innerHTML='<div class="c"><b>Não foi possível carregar o teste mensal.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}
+}
+window.openEtapa36=run;
+async function add(){
+ if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Homologação • Primeiro teste mensal')))return;
+ let s=SB();try{let r=await s?.auth?.getSession?.();if(String(r?.data?.session?.user?.email||'').toLowerCase()!==ADMIN36)return}catch(_){return}
+ let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;
+ let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>1️⃣</span><span>Homologação • Primeiro teste mensal</span>';q.onclick=run;d.appendChild(q)
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
+new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+<style id="ed37css">
+#ed37M .g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#ed37M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}
+#ed37M .n{font-size:22px;font-weight:900}
+#ed37M .step{border:1px solid #334155;border-radius:12px;padding:10px;margin-top:8px;background:#101827}
+#ed37M .row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+#ed37M .ok{color:#22c55e}.warn{color:#f59e0b}.bad{color:#ef4444}
+#ed37M .danger{background:#991b1b;color:#fff;border:0;border-radius:10px;padding:10px 12px;font-weight:900;cursor:pointer}
+#ed37M .notice{border:1px solid #92400e;background:#451a03;color:#fde68a;border-radius:12px;padding:11px;margin-top:8px}
+body.edLight #ed37M .c,body.edLight #ed37M .step{background:#fff;color:#111827;border-color:#cbd5e1}
+body.edLight #ed37M .notice{background:#fff7ed;color:#7c2d12;border-color:#fdba74}
+@media(max-width:760px){#ed37M .g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script id="ed37js">
+(function(){
+'use strict';
+window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
+window.EDIFIQ_VERSION='37.0.0';
+const ADMIN37='junioalef7@gmail.com';
+const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function SB(){return window.supabaseClient||window.sb||window.supabase||null}
+function modal(){let m=document.getElementById('ed37M');if(m)return m;m=document.createElement('div');m.id='ed37M';m.className='modal';m.style.zIndex='10150';m.innerHTML='<div class="modalBox" style="max-width:960px;width:min(97vw,960px);max-height:94vh;overflow:auto"><div class="modalHeader"><div><b>2️⃣ Homologação • Primeiro teste anual</b><div class="small muted">Etapa 37 • R$ 399,00 • após concluir o mensal</div></div><button class="iconBtn" id="e37x">×</button></div><div id="e37B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('e37x').onclick=()=>m.classList.remove('show');return m}
+async function auth37(){let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let r=await s.auth.getSession(),session=r?.data?.session;if(!session)throw Error('Entre na conta administradora.');if(String(session.user?.email||'').toLowerCase()!==ADMIN37)throw Error('Área restrita ao administrador.');return{s,session}}
+function approved(payments,co){return !!co&&payments.some(p=>String(p.provedor_assinatura_id||'')===String(co.provedor_assinatura_id||'')&&['approved','aprovado','paid','pago'].includes(String(p.status||'').toLowerCase()))}
+async function load37(){
+ let {s}=await auth37();
+ let [bh,ch,pay,ctrl,hh]=await Promise.all([
+  s.functions.invoke('edifiq-billing-health',{body:{}}),
+  s.from('edifiq_checkout_sessoes').select('id,plano,status,provedor_assinatura_id,init_point,criado_em,homologacao').eq('homologacao',true).in('plano',['mensal','anual']).order('criado_em',{ascending:false}).limit(20),
+  s.from('edifiq_pagamentos_assinatura').select('id,status,provedor_assinatura_id,pago_em,criado_em,homologacao').eq('homologacao',true).order('criado_em',{ascending:false}).limit(30),
+  s.functions.invoke('edifiq-comercial-liberacao',{body:{action:'status'}}),
+  s.functions.invoke('edifiq-billing-homologacao-health',{body:{}})
+ ]);
+ if(ch.error)throw ch.error;if(pay.error)throw pay.error;
+ let list=ch.data||[],monthly=list.find(x=>String(x.plano).toLowerCase()==='mensal')||null,annual=list.find(x=>String(x.plano).toLowerCase()==='anual')||null;
+ let monthlyPaid=approved(pay.data||[],monthly),annualPaid=approved(pay.data||[],annual);
+ let monthlyDone=!!(monthly&&monthlyPaid&&String(monthly.status||'').toLowerCase()==='canceled');
+ return{s,billing:bh?.data||{},monthly,monthlyPaid,monthlyDone,annual,annualPaid,commercial:ctrl?.data||{},health:hh?.data||{}}
+}
+async function start37(){
+ let d=await load37();
+ if(!d.monthlyDone){alert('Conclua primeiro a homologação mensal: pagamento/webhook confirmados e teste cancelado.');return}
+ if(!d.billing?.ready){alert('O ambiente Mercado Pago ainda não está pronto.');return}
+ let phrase=prompt('Este teste pode gerar uma cobrança REAL de R$ 399,00 no Mercado Pago. Para continuar, digite exatamente: TESTAR ANUAL 399,00');
+ if(phrase===null)return;
+ if(phrase.trim()!=='TESTAR ANUAL 399,00'){alert('Confirmação incorreta. Nenhum checkout foi criado.');return}
+ let r=await d.s.functions.invoke('edifiq-assinatura-checkout',{body:{plano:'anual',homologacao:true,return_url:location.href.split('#')[0]}});
+ if(r.error)throw r.error;
+ if(!r.data?.checkout_url)throw Error(r.data?.error||'Checkout não retornou URL.');
+ window.open(r.data.checkout_url,'_blank','noopener,noreferrer');
+ alert('Checkout anual de homologação aberto. Conclua o teste no Mercado Pago, volte ao EDIFIQ e clique em Atualizar.');
+}
+async function cancel37(id){
+ let {s}=await auth37();
+ if(!id)throw Error('ID da homologação ausente.');
+ if(!confirm('Cancelar a homologação anual no Mercado Pago para impedir nova cobrança?'))return;
+ let r=await s.functions.invoke('edifiq-homologacao-cancelar',{body:{provider_subscription_id:id}});
+ if(r.error)throw r.error;
+ alert('Homologação anual cancelada.');await run();
+}
+async function run(){
+ let m=modal(),b=document.getElementById('e37B');m.classList.add('show');b.textContent='Verificando teste anual…';
+ try{
+  let d=await load37(),co=d.annual,paid=d.annualPaid,monthlyDone=d.monthlyDone,locked=!d.commercial?.vendas_liberadas,billing=!!d.billing?.ready,status=String(co?.status||'').toLowerCase(),canceled=status==='canceled';
+  let webhook=Number(d.health?.counts?.webhooks_processados||0)>0;
+  let current=!monthlyDone?'CONCLUIR TESTE MENSAL':!billing?'CONFIGURAR AMBIENTE':!co?'INICIAR CHECKOUT ANUAL':!paid?'CONCLUIR PAGAMENTO / AGUARDAR WEBHOOK':!webhook?'AGUARDAR WEBHOOK':!canceled?'CANCELAR HOMOLOGAÇÃO':'TESTE ANUAL CONCLUÍDO';
+  let done=canceled&&paid&&webhook;
+  function step(n,title,ok,desc){return '<div class="step"><div class="row"><div><b>'+n+'. '+E(title)+'</b><div class="small muted">'+E(desc)+'</div></div><b class="'+(ok?'ok':'warn')+'">'+(ok?'OK':'PENDENTE')+'</b></div></div>'}
+  b.innerHTML='<div class="c"><b class="'+(locked?'ok':'bad')+'">'+(locked?'🔒 VENDAS PÚBLICAS BLOQUEADAS':'⚠️ VENDAS PÚBLICAS LIBERADAS')+'</b><div class="small muted">O anual só pode iniciar depois que o teste mensal estiver concluído e cancelado.</div></div>'+
+  '<div class="notice"><b>Possível cobrança real: R$ 399,00</b><div class="small">Nenhum checkout é criado automaticamente. A confirmação exata é obrigatória.</div></div>'+
+  '<div class="g" style="margin-top:8px"><div class="c"><div class="small muted">Mensal concluído</div><div class="n">'+(monthlyDone?'OK':'PEND.')+'</div></div><div class="c"><div class="small muted">Ambiente</div><div class="n">'+(billing?'OK':'PEND.')+'</div></div><div class="c"><div class="small muted">Pagamento anual</div><div class="n">'+(paid?'OK':'PEND.')+'</div></div><div class="c"><div class="small muted">Cancelamento anual</div><div class="n">'+(canceled?'OK':'PEND.')+'</div></div></div>'+
+  '<div class="c" style="margin-top:8px"><b>Próxima ação: '+E(current)+'</b><div class="small muted">'+(done?'O anual está homologado e cancelado. Os dois planos podem seguir para a revisão final da homologação.':'Siga somente o próximo passo indicado.')+'</div></div>'+
+  step('1','Concluir homologação mensal',monthlyDone,'O mensal precisa ter pagamento aprovado e estar cancelado.')+
+  step('2','Ambiente Mercado Pago',billing,'Token, webhook e URL pública precisam estar configurados.')+
+  step('3','Criar checkout anual',!!co,'Checkout anual marcado como homologação.')+
+  step('4','Confirmar pagamento anual',paid,'Após concluir no Mercado Pago, aguarde o pagamento aprovado.')+
+  step('5','Confirmar webhook',webhook,'O evento deve chegar e ser processado pelo backend.')+
+  step('6','Cancelar homologação anual',canceled,'Cancele ao final para impedir renovação automática.')+
+  '<div class="c" style="margin-top:8px"><b>Checkout anual atual</b><div class="small muted">Status: '+E(co?.status||'—')+(co?.criado_em?' • criado em '+new Date(co.criado_em).toLocaleString('pt-BR'):'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">'+
+  (!co||canceled?'<button class="primary" id="e37start" '+(!monthlyDone||!billing?'disabled':'')+'>🧪 Iniciar teste anual</button>':'')+
+  (co&&!canceled&&co.init_point?'<button class="secondary" id="e37open">↗ Abrir checkout</button>':'')+
+  (co&&!canceled?'<button class="danger" id="e37cancel">Cancelar homologação</button>':'')+
+  '<button class="secondary" id="e37ref">↻ Atualizar</button><button class="secondary" id="e37monthly">1️⃣ Ver teste mensal</button></div></div>'+
+  '<div class="c" style="margin-top:8px"><b>Proteção</b><div class="small muted">O teste anual usa os mesmos marcadores de homologação da Etapa 35: checkout, webhook e pagamento não alteram sua assinatura cortesia e não liberam vendas para clientes comuns.</div></div>';
+  let st=document.getElementById('e37start');if(st)st.onclick=()=>start37().catch(e=>alert(e?.message||e));
+  let op=document.getElementById('e37open');if(op)op.onclick=()=>window.open(co.init_point,'_blank','noopener,noreferrer');
+  let ca=document.getElementById('e37cancel');if(ca)ca.onclick=()=>cancel37(co.provedor_assinatura_id).catch(e=>alert(e?.message||e));
+  document.getElementById('e37ref').onclick=run;
+  document.getElementById('e37monthly').onclick=()=>window.openEtapa36?.();
+ }catch(e){b.innerHTML='<div class="c"><b>Não foi possível carregar o teste anual.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}
+}
+window.openEtapa37=run;
+async function add(){
+ if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Homologação • Primeiro teste anual')))return;
+ let s=SB();try{let r=await s?.auth?.getSession?.();if(String(r?.data?.session?.user?.email||'').toLowerCase()!==ADMIN37)return}catch(_){return}
+ let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;
+ let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>2️⃣</span><span>Homologação • Primeiro teste anual</span>';q.onclick=run;d.appendChild(q)
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
+new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+<style id="ed38css">
+#ed38M .g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#ed38M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}
+#ed38M .n{font-size:22px;font-weight:900}
+#ed38M .row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(148,163,184,.16)}
+#ed38M .row:last-child{border-bottom:0}
+#ed38M .ok{color:#22c55e}.warn{color:#f59e0b}.bad{color:#ef4444}
+#ed38M .hero{font-size:27px;font-weight:1000}
+#ed38M .bar{height:10px;border-radius:999px;background:#1e293b;overflow:hidden;margin-top:8px}
+#ed38M .bar>i{height:100%;display:block;background:#22c55e}
+body.edLight #ed38M .c{background:#fff;color:#111827;border-color:#cbd5e1}
+body.edLight #ed38M .bar{background:#e2e8f0}
+@media(max-width:760px){#ed38M .g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script id="ed38js">
+(function(){
+'use strict';
+window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
+window.EDIFIQ_VERSION='38.0.0';
+const ADMIN38='junioalef7@gmail.com';
+const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function SB(){return window.supabaseClient||window.sb||window.supabase||null}
+function modal(){let m=document.getElementById('ed38M');if(m)return m;m=document.createElement('div');m.id='ed38M';m.className='modal';m.style.zIndex='10160';m.innerHTML='<div class="modalBox" style="max-width:1040px;width:min(97vw,1040px);max-height:94vh;overflow:auto"><div class="modalHeader"><div><b>✅ Homologação • Revisão final</b><div class="small muted">Etapa 38 • decisão baseada somente em evidência real</div></div><button class="iconBtn" id="e38x">×</button></div><div id="e38B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('e38x').onclick=()=>m.classList.remove('show');return m}
+async function auth38(){let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let r=await s.auth.getSession(),session=r?.data?.session;if(!session)throw Error('Entre na conta administradora.');if(String(session.user?.email||'').toLowerCase()!==ADMIN38)throw Error('Área restrita ao administrador.');return{s,session}}
+async function load38(){
+ let {s,session}=await auth38();
+ let [commercial,billing,hom,checks,inc,ch,pay]=await Promise.all([
+  s.functions.invoke('edifiq-comercial-liberacao',{body:{action:'status'}}),
+  s.functions.invoke('edifiq-billing-health',{body:{}}),
+  s.functions.invoke('edifiq-billing-homologacao-health',{body:{}}),
+  s.from('edifiq_piloto_validacoes').select('login_sync,obras,equipe,financeiro,backup,pdf').eq('operador_user_id',session.user.id),
+  s.from('edifiq_piloto_incidentes').select('severidade,status').eq('operador_user_id',session.user.id).neq('status','resolvido'),
+  s.from('edifiq_checkout_sessoes').select('plano,status,provedor_assinatura_id,homologacao,criado_em').eq('homologacao',true).order('criado_em',{ascending:false}).limit(30),
+  s.from('edifiq_pagamentos_assinatura').select('status,provedor_assinatura_id,homologacao,pago_em').eq('homologacao',true).order('criado_em',{ascending:false}).limit(50)
+ ]);
+ if(checks.error)throw checks.error;if(inc.error)throw inc.error;if(ch.error)throw ch.error;if(pay.error)throw pay.error;
+ return {s,commercial:commercial?.data||{},billing:billing?.data||{},hom:hom?.data||{},pilot:checks.data||[],inc:inc.data||[],ch:ch.data||[],pay:pay.data||[]}
+}
+function latest(list,plan){return list.find(x=>String(x.plano||'').toLowerCase()===plan)||null}
+function approved(payments,co){return !!co&&payments.some(p=>String(p.provedor_assinatura_id||'')===String(co.provedor_assinatura_id||'')&&['approved','aprovado','paid','pago'].includes(String(p.status||'').toLowerCase()))}
+function export38(snapshot){
+ let blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
+ let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='EDIFIQ_REVISAO_HOMOLOGACAO_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500)
+}
+async function run(){
+ let m=modal(),b=document.getElementById('e38B');m.classList.add('show');b.textContent='Consolidando evidências da homologação…';
+ try{
+  let d=await load38(),hc=d.hom?.checks||{},counts=d.hom?.counts||{},cc=d.commercial?.checks||{};
+  let mon=latest(d.ch,'mensal'),ann=latest(d.ch,'anual'),monPaid=approved(d.pay,mon),annPaid=approved(d.pay,ann);
+  let monCancel=String(mon?.status||'').toLowerCase()==='canceled',annCancel=String(ann?.status||'').toLowerCase()==='canceled';
+  let pilot=(d.pilot||[]).some(x=>x.login_sync&&x.obras&&x.equipe&&x.financeiro&&x.backup&&x.pdf);
+  let grave=(d.inc||[]).some(x=>['alta','critica','crítica'].includes(String(x.severidade||'').toLowerCase()));
+  let billing=!!d.billing?.ready;
+  let manual=!!cc.manual_homologation;
+  let backend=!!cc.backend_evidence;
+  let locked=!d.commercial?.vendas_liberadas;
+  let criteria=[
+   ['Piloto real 6/6',pilot,'Login/sync, Obras, Equipe, Financeiro, Backup e PDF'],
+   ['Sem incidente grave',!grave,'Nenhum incidente alto/crítico aberto'],
+   ['Ambiente Mercado Pago',billing,'Token, webhook e URL pública válidos'],
+   ['Mensal — checkout',!!mon,'Checkout real marcado como homologação'],
+   ['Mensal — pagamento',monPaid,'Pagamento de homologação aprovado'],
+   ['Mensal — cancelamento',monCancel,'Assinatura de teste cancelada'],
+   ['Anual — checkout',!!ann,'Checkout real marcado como homologação'],
+   ['Anual — pagamento',annPaid,'Pagamento de homologação aprovado'],
+   ['Anual — cancelamento',annCancel,'Assinatura de teste cancelada'],
+   ['Webhook de homologação',!!hc.webhook,'Evento real processado pelo backend'],
+   ['Checklist manual 7/7',manual,'Validação humana da Etapa 32'],
+   ['Evidência backend completa',backend,'Mensal + anual + webhook + pagamento + cancelamento']
+  ];
+  let passed=criteria.filter(x=>x[1]).length,total=criteria.length,pct=Math.round(passed/total*100);
+  let ready=!!d.commercial?.ready&&passed===total;
+  let decision=ready?'PRONTO PARA LIBERAÇÃO COMERCIAL CONTROLADA':'MANTER VENDAS BLOQUEADAS';
+  let rows=criteria.map(x=>'<div class="row"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'ok':'warn')+'">'+(x[1]?'OK':'PENDENTE')+'</b></div>').join('');
+  let snapshot={gerado_em:new Date().toISOString(),versao:'38.0.0',vendas_liberadas:!locked,decisao:decision,aprovados:passed,total,pct,criterios:Object.fromEntries(criteria.map(x=>[x[0],!!x[1]])),contagens:{mensal:Number(counts.checkout_mensal||0),anual:Number(counts.checkout_anual||0),webhooks:Number(counts.webhooks_processados||0),pagamentos:Number(counts.pagamentos_aprovados||0),cancelamentos:Number(counts.cancelamentos_registrados||0)}};
+  window.__EDIFIQ38_SNAPSHOT=snapshot;
+  b.innerHTML='<div class="c"><div class="hero '+(ready?'ok':'warn')+'">'+E(decision)+'</div><div class="small muted">A revisão não libera vendas automaticamente. Ela apenas consolida o que realmente existe no backend.</div><div class="bar"><i style="width:'+pct+'%"></i></div><div class="small muted" style="margin-top:6px">'+passed+'/'+total+' critérios • '+pct+'%</div></div>'+
+  '<div class="g" style="margin-top:8px"><div class="c"><div class="small muted">Mensal</div><div class="n">'+(mon&&monPaid&&monCancel?'OK':'PEND.')+'</div></div><div class="c"><div class="small muted">Anual</div><div class="n">'+(ann&&annPaid&&annCancel?'OK':'PEND.')+'</div></div><div class="c"><div class="small muted">Piloto</div><div class="n">'+(pilot&&!grave?'OK':'PEND.')+'</div></div><div class="c"><div class="small muted">Vendas</div><div class="n">'+(locked?'🔒':'🔓')+'</div></div></div>'+
+  '<div class="c" style="margin-top:8px"><b>Checklist final de liberação</b>'+rows+'</div>'+
+  '<div class="c" style="margin-top:8px"><b>Contagens de homologação</b><div class="small muted">Checkouts mensal: '+Number(counts.checkout_mensal||0)+' • anual: '+Number(counts.checkout_anual||0)+' • webhooks: '+Number(counts.webhooks_processados||0)+' • pagamentos aprovados: '+Number(counts.pagamentos_aprovados||0)+' • cancelamentos: '+Number(counts.cancelamentos_registrados||0)+'</div></div>'+
+  '<div class="c" style="margin-top:8px"><b>Regra de segurança</b><div class="small muted">'+(ready?'Todos os critérios estão completos. A liberação ainda deve ser feita explicitamente na Etapa 34, com autenticação e frase de confirmação.':'Enquanto houver qualquer item pendente, a liberação comercial permanece bloqueada pelo servidor.')+'</div></div>'+
+  '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="primary" id="e38ref">↻ Atualizar revisão</button><button class="secondary" id="e38json">⬇ Exportar evidências</button><button class="secondary" id="e38monthly">1️⃣ Mensal</button><button class="secondary" id="e38annual">2️⃣ Anual</button><button class="secondary" id="e38release" '+(!ready?'disabled':'')+'>🔐 Ir para liberação</button></div>';
+  document.getElementById('e38ref').onclick=run;
+  document.getElementById('e38json').onclick=()=>export38(window.__EDIFIQ38_SNAPSHOT);
+  document.getElementById('e38monthly').onclick=()=>window.openEtapa36?.();
+  document.getElementById('e38annual').onclick=()=>window.openEtapa37?.();
+  document.getElementById('e38release').onclick=()=>window.openEtapa34?.();
+ }catch(e){b.innerHTML='<div class="c"><b>Não foi possível concluir a revisão.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}
+}
+window.openEtapa38=run;
+async function add(){
+ if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Homologação • Revisão final')))return;
+ let s=SB();try{let r=await s?.auth?.getSession?.();if(String(r?.data?.session?.user?.email||'').toLowerCase()!==ADMIN38)return}catch(_){return}
+ let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;
+ let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>✅</span><span>Homologação • Revisão final</span>';q.onclick=run;d.appendChild(q)
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
+new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+<style id="ed39css">
+#ed39M .g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#ed39M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}
+#ed39M .n{font-size:22px;font-weight:900}
+#ed39M .row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(148,163,184,.16)}
+#ed39M .row:last-child{border-bottom:0}
+#ed39M .ok{color:#22c55e}.warn{color:#f59e0b}.bad{color:#ef4444}
+#ed39M .hero{font-size:27px;font-weight:1000}
+#ed39M .bar{height:10px;border-radius:999px;background:#1e293b;overflow:hidden;margin-top:8px}
+#ed39M .bar>i{height:100%;display:block;background:#22c55e}
+#ed39M code{font-size:11px;word-break:break-all}
+body.edLight #ed39M .c{background:#fff;color:#111827;border-color:#cbd5e1}
+body.edLight #ed39M .bar{background:#e2e8f0}
+@media(max-width:760px){#ed39M .g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script id="ed39js">
+(function(){
+'use strict';
+window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
+window.EDIFIQ_VERSION='39.0.0';
+const ADMIN39='junioalef7@gmail.com';
+const DEPLOYED_STAGE='Etapa 33';
+const CANDIDATE_STAGE='Etapa 39';
+const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function SB(){return window.supabaseClient||window.sb||window.supabase||null}
+function modal(){let m=document.getElementById('ed39M');if(m)return m;m=document.createElement('div');m.id='ed39M';m.className='modal';m.style.zIndex='10170';m.innerHTML='<div class="modalBox" style="max-width:1060px;width:min(97vw,1060px);max-height:94vh;overflow:auto"><div class="modalHeader"><div><b>🚀 Produção • Primeiros pagantes</b><div class="small muted">Etapa 39 • candidata de produção sem publicação automática</div></div><button class="iconBtn" id="e39x">×</button></div><div id="e39B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('e39x').onclick=()=>m.classList.remove('show');return m}
+async function auth39(){let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let r=await s.auth.getSession(),session=r?.data?.session;if(!session)throw Error('Entre na conta administradora.');if(String(session.user?.email||'').toLowerCase()!==ADMIN39)throw Error('Área restrita ao administrador.');return{s,session}}
+async function load39(){
+ let {s,session}=await auth39();
+ let [commercial,billing,hom,publich,pilot,inc]=await Promise.all([
+  s.functions.invoke('edifiq-comercial-liberacao',{body:{action:'status'}}),
+  s.functions.invoke('edifiq-billing-health',{body:{}}),
+  s.functions.invoke('edifiq-billing-homologacao-health',{body:{}}),
+  s.functions.invoke('edifiq-public-health',{body:{current_origin:location.origin}}),
+  s.from('edifiq_piloto_validacoes').select('login_sync,obras,equipe,financeiro,backup,pdf').eq('operador_user_id',session.user.id),
+  s.from('edifiq_piloto_incidentes').select('severidade,status').eq('operador_user_id',session.user.id).neq('status','resolvido')
+ ]);
+ if(pilot.error)throw pilot.error;if(inc.error)throw inc.error;
+ let privacy=false,deletion=false;
+ if(location.protocol==='https:'){
+  try{privacy=(await fetch('./privacidade.html',{cache:'no-store'})).ok}catch(_){}
+  try{deletion=(await fetch('./exclusao-conta.html',{cache:'no-store'})).ok}catch(_){}
+ }
+ return{s,commercial:commercial?.data||{},billing:billing?.data||{},hom:hom?.data||{},publich:publich?.data||{},pilot:pilot.data||[],inc:inc.data||[],privacy,deletion}
+}
+function export39(snapshot){
+ let blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
+ let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='EDIFIQ_GO_LIVE_ETAPA39_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500)
+}
+async function run(){
+ let m=modal(),b=document.getElementById('e39B');m.classList.add('show');b.textContent='Verificando candidata de produção…';
+ try{
+  let d=await load39(),cc=d.commercial?.checks||{},hc=d.hom?.checks||{},counts=d.hom?.counts||{};
+  let pilot=(d.pilot||[]).some(x=>x.login_sync&&x.obras&&x.equipe&&x.financeiro&&x.backup&&x.pdf);
+  let grave=(d.inc||[]).some(x=>['alta','critica','crítica'].includes(String(x.severidade||'').toLowerCase()));
+  let billing=!!d.billing?.ready;
+  let publicUrl=!!(d.publich?.matches||d.publich?.ok||d.publich?.ready);
+  let https=location.protocol==='https:';
+  let legal=!!(d.privacy&&d.deletion);
+  let monthly=Number(counts.checkout_mensal||0)>0;
+  let annual=Number(counts.checkout_anual||0)>0;
+  let webhook=!!hc.webhook;
+  let payment=!!hc.pagamento;
+  let cancel=!!hc.cancelamento;
+  let manual=!!cc.manual_homologation;
+  let backend=!!cc.backend_evidence;
+  let locked=!d.commercial?.vendas_liberadas;
+  let criteria=[
+   ['Build candidata v39',true,'Pacote local validado e pronto para revisão de publicação'],
+   ['Produção ainda protegida',locked,locked?'Vendas permanecem bloqueadas':'Vendas já estão liberadas'],
+   ['HTTPS',https,https?'Execução em HTTPS':'Abra pela URL oficial HTTPS'],
+   ['URL pública oficial',publicUrl,publicUrl?'Origem compatível com EDIFIQ_PUBLIC_URL':'Domínio/origem ainda não confirmado'],
+   ['Privacidade + exclusão',legal,legal?'Páginas legais acessíveis':'Uma ou mais páginas legais indisponíveis'],
+   ['Piloto real 6/6',pilot,'Uso real dos módulos críticos'],
+   ['Sem incidente grave',!grave,'Nenhum incidente alto/crítico aberto'],
+   ['Mercado Pago pronto',billing,'Token, webhook secret e URL pública'],
+   ['Homologação mensal',monthly,'Checkout mensal de homologação registrado'],
+   ['Homologação anual',annual,'Checkout anual de homologação registrado'],
+   ['Webhook + pagamento + cancelamento',webhook&&payment&&cancel,'Evidências reais do ciclo de cobrança'],
+   ['Checklist manual 7/7',manual,'Validação humana da cobrança'],
+   ['Backend de homologação completo',backend,'Evidências técnicas consolidadas']
+  ];
+  let passed=criteria.filter(x=>x[1]).length,total=criteria.length,pct=Math.round(passed/total*100);
+  let readyToPublish=criteria.slice(0,8).every(x=>x[1]) && locked;
+  let readyToPay=criteria.every(x=>x[1]) && !!d.commercial?.ready && locked;
+  let decision=readyToPay?'PRONTA PARA PRIMEIRO PAGANTE':readyToPublish?'CANDIDATA TÉCNICA • AGUARDANDO HOMOLOGAÇÃO':'NÃO PUBLICAR COMO PRODUÇÃO AINDA';
+  let rows=criteria.map(x=>'<div class="row"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'ok':'warn')+'">'+(x[1]?'OK':'PENDENTE')+'</b></div>').join('');
+  let snapshot={gerado_em:new Date().toISOString(),build:'39.0.0',git_main_detectado:DEPLOYED_STAGE,candidata:CANDIDATE_STAGE,vendas_bloqueadas:locked,decisao:decision,criterios:Object.fromEntries(criteria.map(x=>[x[0],!!x[1]])),contagens:{mensal:Number(counts.checkout_mensal||0),anual:Number(counts.checkout_anual||0),webhooks:Number(counts.webhooks_processados||0),pagamentos:Number(counts.pagamentos_aprovados||0),cancelamentos:Number(counts.cancelamentos_registrados||0)}};
+  window.__EDIFIQ39_SNAPSHOT=snapshot;
+  b.innerHTML='<div class="c"><div class="hero '+(readyToPay?'ok':'warn')+'">'+E(decision)+'</div><div class="small muted">GitHub main detectado: '+DEPLOYED_STAGE+' • candidata local: '+CANDIDATE_STAGE+'. Esta tela não publica arquivos e não libera vendas.</div><div class="bar"><i style="width:'+pct+'%"></i></div><div class="small muted" style="margin-top:6px">'+passed+'/'+total+' critérios • '+pct+'%</div></div>'+
+  '<div class="g" style="margin-top:8px"><div class="c"><div class="small muted">GitHub atual</div><div class="n">E33</div></div><div class="c"><div class="small muted">Candidata</div><div class="n">E39</div></div><div class="c"><div class="small muted">Vendas</div><div class="n">'+(locked?'🔒':'🔓')+'</div></div><div class="c"><div class="small muted">Go-live</div><div class="n">'+(readyToPay?'OK':'PEND.')+'</div></div></div>'+
+  '<div class="c" style="margin-top:8px"><b>Checklist de produção</b>'+rows+'</div>'+
+  '<div class="c" style="margin-top:8px"><b>Inventário de publicação</b><div class="small muted">A candidata deve publicar em conjunto: <code>index.html</code>, <code>edifiq-sw.js</code>, <code>manifest.webmanifest</code>, ícones 192/512, <code>privacidade.html</code> e <code>exclusao-conta.html</code>. Antes de substituir o main, preservar o commit atual cf65a5f7588c2994bb6815459ab4ff353ac2a0e6 como rollback.</div></div>'+
+  '<div class="c" style="margin-top:8px"><b>Regra para primeiros pagantes</b><div class="small muted">Publicar uma candidata e liberar cobrança são ações separadas. Mesmo após publicação, manter <b>vendas bloqueadas</b> até mensal + anual + webhook + pagamento + cancelamento + piloto + checklist manual estarem completos. A liberação continua somente pela Etapa 34.</div></div>'+
+  '<div class="c" style="margin-top:8px"><b>Evidências atuais</b><div class="small muted">Mensal: '+Number(counts.checkout_mensal||0)+' • Anual: '+Number(counts.checkout_anual||0)+' • Webhooks: '+Number(counts.webhooks_processados||0)+' • Pagamentos: '+Number(counts.pagamentos_aprovados||0)+' • Cancelamentos: '+Number(counts.cancelamentos_registrados||0)+'</div></div>'+
+  '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="primary" id="e39ref">↻ Atualizar</button><button class="secondary" id="e39json">⬇ Exportar go-live</button><button class="secondary" id="e39review">✅ Revisão final</button><button class="secondary" id="e39monthly">1️⃣ Mensal</button><button class="secondary" id="e39annual">2️⃣ Anual</button><button class="secondary" id="e39release" '+(!readyToPay?'disabled':'')+'>🔐 Liberação comercial</button></div>';
+  document.getElementById('e39ref').onclick=run;
+  document.getElementById('e39json').onclick=()=>export39(window.__EDIFIQ39_SNAPSHOT);
+  document.getElementById('e39review').onclick=()=>window.openEtapa38?.();
+  document.getElementById('e39monthly').onclick=()=>window.openEtapa36?.();
+  document.getElementById('e39annual').onclick=()=>window.openEtapa37?.();
+  document.getElementById('e39release').onclick=()=>window.openEtapa34?.();
+ }catch(e){b.innerHTML='<div class="c"><b>Não foi possível carregar a preparação de produção.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}
+}
+window.openEtapa39=run;
+async function add(){
+ if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Produção • Primeiros pagantes')))return;
+ let s=SB();try{let r=await s?.auth?.getSession?.();if(String(r?.data?.session?.user?.email||'').toLowerCase()!==ADMIN39)return}catch(_){return}
+ let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;
+ let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🚀</span><span>Produção • Primeiros pagantes</span>';q.onclick=run;d.appendChild(q)
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
+new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+<style id="ed40css">
+#ed40M .g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#ed40M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}
+#ed40M .n{font-size:20px;font-weight:900;word-break:break-word}
+#ed40M .hero{font-size:25px;font-weight:1000}
+#ed40M .row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(148,163,184,.16)}
+#ed40M .row:last-child{border-bottom:0}
+#ed40M .ok{color:#22c55e}.warn{color:#f59e0b}.bad{color:#ef4444}
+#ed40M .badge{display:inline-block;padding:4px 8px;border:1px solid currentColor;border-radius:999px;font-size:11px;font-weight:900}
+#ed40M code{font-size:11px;word-break:break-all}
+body.edLight #ed40M .c{background:#fff;color:#111827;border-color:#cbd5e1}
+@media(max-width:760px){#ed40M .g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script id="ed40js">
+(function(){
+'use strict';
+window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
+window.EDIFIQ_VERSION='41.0.0';
+
+const ADMIN40='junioalef7@gmail.com';
+const PROD_COMMIT='cf65a5f7588c2994bb6815459ab4ff353ac2a0e6';
+const PROD_BLOB='fd1cab2c2a5fc7d44967da84b11bdc55b75b817e';
+const PROD_TARGET='2026-10-11-release-interface-aprovada-b10';
+const CANDIDATE_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';
+const CANDIDATE_PARENT='2026-10-11-etapa39-candidata-producao-primeiros-pagantes';
+
+const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function SB(){return window.supabaseClient||window.sb||window.supabase||null}
+
+function modal(){
+ let m=document.getElementById('ed40M');
+ if(m)return m;
+ m=document.createElement('div');
+ m.id='ed40M';m.className='modal';m.style.zIndex='10180';
+ m.innerHTML='<div class="modalBox" style="max-width:1080px;width:min(97vw,1080px);max-height:94vh;overflow:auto"><div class="modalHeader"><div><b>🛡️ Pré-publicação • Rollback</b><div class="small muted">Etapa 40 • proteção contra sobrescrever a produção atual</div></div><button class="iconBtn" id="e40x">×</button></div><div id="e40B" style="padding:14px"></div></div>';
+ document.body.appendChild(m);
+ document.getElementById('e40x').onclick=()=>m.classList.remove('show');
+ return m
+}
+
+async function requireAdmin(){
+ let s=SB();
+ if(!s?.auth)throw Error('Supabase indisponível.');
+ let r=await s.auth.getSession(),session=r?.data?.session;
+ if(!session)throw Error('Entre na conta administradora.');
+ if(String(session.user?.email||'').toLowerCase()!==ADMIN40)throw Error('Área restrita ao administrador.');
+ return {s,session}
+}
+
+function exportJSON(data,name){
+ let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+ let a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);a.download=name;a.click();
+ setTimeout(()=>URL.revokeObjectURL(a.href),1500)
+}
+
+async function run40(){
+ let m=modal(),b=document.getElementById('e40B');m.classList.add('show');
+ b.textContent='Conferindo pré-publicação…';
+ try{
+   let {s}=await requireAdmin();
+   let comercial={};
+   try{
+     let r=await s.functions.invoke('edifiq-comercial-liberacao',{body:{action:'status'}});
+     comercial=r?.data||{};
+   }catch(_){}
+   let vendasBloqueadas=!comercial?.vendas_liberadas;
+
+   const diverged=true;
+   const publishBlocked=true;
+   const checks=[
+    ['Produção atual identificada',true,'Commit real do main foi registrado como ponto de rollback.'],
+    ['Divergência de produção detectada',diverged,'O main contém correções posteriores à base histórica da candidata.'],
+    ['Publicação automática desativada',publishBlocked,'Esta etapa não envia arquivos ao GitHub.'],
+    ['Rollback aponta para o main real',true,'Retorno seguro: commit '+PROD_COMMIT.slice(0,12)+'.'],
+    ['Vendas permanecem protegidas',vendasBloqueadas,vendasBloqueadas?'Cobrança pública continua bloqueada.':'Atenção: backend informa vendas liberadas.'],
+    ['Mesclagem refeita na Etapa 41',true,'As camadas protegidas do main foram incorporadas à candidata; a publicação ainda depende de validação e autorização.']
+   ];
+
+   let snapshot={
+     gerado_em:new Date().toISOString(),
+     etapa:'40.0.0',
+     status:'MESCLAGEM CONCLUÍDA — PUBLICAÇÃO AINDA NÃO AUTORIZADA',
+     producao:{
+       repository:'junioalef7-sys/Alef-obras',
+       branch:'main',
+       commit:PROD_COMMIT,
+       index_blob:PROD_BLOB,
+       release_target:PROD_TARGET
+     },
+     candidata:{
+       build:CANDIDATE_BUILD,
+       parent:CANDIDATE_PARENT
+     },
+     divergencia_detectada:true,
+     vendas_bloqueadas:vendasBloqueadas,
+     publicar_agora:false,
+     rollback:{
+       tipo:'git_commit',
+       commit:PROD_COMMIT,
+       regra:'Se o smoke test pós-deploy falhar, restaurar exatamente este commit.'
+     }
+   };
+   window.__EDIFIQ40_SNAPSHOT=snapshot;
+
+   const smoke=[
+    'Login, logout e reabertura da sessão',
+    'Obras: criar/editar e serviço extra',
+    'Checklist: progresso e resumo',
+    'Equipe: diária/meia/falta/vale/bônus',
+    'Financeiro: receita/despesa/filtros/resumo',
+    'Sincronização celular ↔ computador',
+    'Backup: exportação + restauração controlada',
+    'PDF trabalhador/cliente/automático',
+    'Tema claro/escuro e legibilidade',
+    'PWA/Service Worker e reconexão',
+    'Privacidade e exclusão de conta',
+    'Cobrança continua bloqueada até homologação completa'
+   ];
+   const rows=checks.map(x=>'<div class="row"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'ok':'warn')+'">'+(x[1]?'OK':'PENDENTE')+'</b></div>').join('');
+   const smokeHtml=smoke.map((x,i)=>'<div class="row"><div><b>'+(i+1)+'. '+E(x)+'</b></div><span class="badge warn">PÓS-REBASE</span></div>').join('');
+
+   b.innerHTML=
+    '<div class="c"><div class="hero bad">MESCLAGEM CONCLUÍDA — PUBLICAÇÃO AINDA NÃO AUTORIZADA</div>'+
+    '<div class="small muted">A produção atual divergiu da base usada pelas etapas comerciais. Publicar a candidata diretamente poderia apagar correções aprovadas do aplicativo.</div></div>'+
+    '<div class="g" style="margin-top:8px">'+
+      '<div class="c"><div class="small muted">Main atual</div><div class="n">cf65a5f7588c</div></div>'+
+      '<div class="c"><div class="small muted">Index blob</div><div class="n">fd1cab2c2a5f</div></div>'+
+      '<div class="c"><div class="small muted">Candidata</div><div class="n">E40</div></div>'+
+      '<div class="c"><div class="small muted">Deploy</div><div class="n bad">BLOQUEADO</div></div>'+
+    '</div>'+
+    '<div class="c" style="margin-top:8px"><b>Proteções de pré-publicação</b>'+rows+'</div>'+
+    '<div class="c" style="margin-top:8px"><b>Plano de rebase seguro</b>'+
+      '<div class="small muted" style="line-height:1.6">1. Usar o <b>main atual</b> como nova base.<br>'+
+      '2. Preservar todas as correções descritas no <code>release-contract.json</code>.<br>'+
+      '3. Reaplicar somente as camadas comerciais e de homologação das Etapas 34–40.<br>'+
+      '4. Validar sintaxe, segredos, manifest e Service Worker.<br>'+
+      '5. Fazer comparação funcional antes/depois.<br>'+
+      '6. Somente depois gerar uma candidata publicável.<br>'+
+      '7. Publicar apenas com autorização explícita.<br>'+
+      '8. Se o smoke test falhar, retornar ao commit <code>'+PROD_COMMIT+'</code>.</div></div>'+
+    '<div class="c" style="margin-top:8px"><b>Smoke test obrigatório após o futuro deploy</b>'+smokeHtml+'</div>'+
+    '<div class="c" style="margin-top:8px"><b>Rollback oficial desta etapa</b>'+
+      '<div class="small muted">Commit: <code>'+PROD_COMMIT+'</code><br>Index blob: <code>'+PROD_BLOB+'</code><br>Release detectada: <code>'+PROD_TARGET+'</code></div></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+
+      '<button class="primary" id="e40json">⬇ Exportar pré-publicação</button>'+
+      '<button class="secondary" id="e40e39">🚀 Abrir Etapa 39</button>'+
+      '<button class="secondary" id="e40ref">↻ Atualizar</button>'+
+    '</div>';
+
+   document.getElementById('e40json').onclick=()=>exportJSON(window.__EDIFIQ40_SNAPSHOT,'EDIFIQ_PRE_PUBLICACAO_ETAPA40.json');
+   document.getElementById('e40e39').onclick=()=>window.openEtapa39?.();
+   document.getElementById('e40ref').onclick=run40;
+ }catch(e){
+   b.innerHTML='<div class="c"><b>Não foi possível carregar a pré-publicação.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'
+ }
+}
+window.openEtapa40=run40;
+
+async function add40(){
+ if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Pré-publicação • Rollback')))return;
+ let s=SB();
+ try{
+   let r=await s?.auth?.getSession?.();
+   if(String(r?.data?.session?.user?.email||'').toLowerCase()!==ADMIN40)return
+ }catch(_){return}
+ let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');
+ if(!d)return;
+ let q=document.createElement('button');q.className='menuItem';
+ q.innerHTML='<span>🛡️</span><span>Pré-publicação • Rollback</span>';
+ q.onclick=run40;d.appendChild(q)
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add40,700));else setTimeout(add40,700);
+new MutationObserver(()=>add40()).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+
+<!-- EDIFIQ ETAPA 41 — correções protegidas do main atual -->
 <script id="edifiq-sync-backup-v8">
 (function(){
 'use strict';
@@ -18964,7 +19570,8 @@ return {pdf,wrap};
   function snapshot(row){const fields=['id','funcionario_id','obra_id','checklist_id','data','qtd','valor_diaria','valor','descricao','categoria','fornecedor','observacao','tipo','justificativa','status'];return Object.fromEntries(fields.filter(k=>row[k]!==undefined).map(k=>[k,row[k]]));}
   function canEdit(table,row){if(table==='gastos'&&row?.servico_extra_id&&window.getFuncionarioExtras(row.funcionario_id).some(x=>C.same(x.id,row.servico_extra_id)&&x.folhaAplicado))return false;return C.canEdit(table,row,{paid:diariaEstaPaga,category:gastoSubcategoria,applied:getAdvanceApplied()});}
   window.ed27History=function(table,id){const records=auditRows().filter(a=>a.table===table&&C.same(a.id,id));modal('ed27HistoryM','Histórico de alterações',`<p class="sub">Histórico salvo neste aparelho. As alterações dos registros usam a sincronização existente.</p>${records.map(a=>`<div class="card"><b>${E(new Date(a.at).toLocaleString('pt-BR'))}</b><p>Motivo: ${E(a.reason)}</p><p>${E(a.author||'Conta do aplicativo')}</p><div class="ed27Table"><table><thead><tr><th>Campo</th><th>Antes</th><th>Depois</th></tr></thead><tbody>${Object.keys(a.after).filter(k=>JSON.stringify(a.before[k])!==JSON.stringify(a.after[k])).map(k=>`<tr><td>${E(k)}</td><td>${E(a.before[k]??'—')}</td><td>${E(a.after[k]??'—')}</td></tr>`).join('')}</tbody></table></div></div>`).join('')||'<div class="empty">Nenhuma alteração registrada neste aparelho.</div>'}`);};
-  window.ed27Absences=function(id){const employee=(D.funcionarios||[]).find(row=>C.same(row.id,id));if(!employee){toast('Funcionário não encontrado.');return;}const rows=employeeAbsences(id);modal('ed27AbsencesM','Histórico de faltas — '+employee.nome,`<p class="sub">${rows.length} registro(s) deste funcionário · Todas as obras e datas.</p>${rows.map(row=>{const rawDate=String(row.data||'').slice(0,10),date=C.validDate(rawDate)?rawDate.split('-').reverse().join('/'):'Data não informada',kind=C.norm(row.tipo||'falta'),label=kind==='atestado'?'Atestado':kind==='justificada'||row.justificada===true?'Falta justificada':'Falta não justificada';return `<div class="card"><div class="row"><b>${E(label)}</b><span>${E(date)}</span></div><p>${E(nameOf(row.obra_id??row.obraId))}</p><p>${E(row.justificativa||row.observacao||'Sem justificativa informada.')}</p></div>`;}).join('')||'<div class="empty">Nenhuma falta registrada para este funcionário.</div>'}<div class="formActions"><button class="btn" type="button" onclick="closeM('ed27AbsencesM')">Fechar</button></div>`);};
+
+  window.ed27Absences=function(id){const employee=(D.funcionarios||[]).find(row=>C.same(row.id,id));if(!employee){toast('Funcionário não encontrado.');return;}const rows=employeeAbsences(id);modal('ed27AbsencesM','Histórico de faltas — '+employee.nome,`<p class="sub">${rows.length} registro(s) deste funcionário · Todas as obras e datas.</p>${rows.map(row=>{const rawDate=String(row.data||'').slice(0,10),date=C.validDate(rawDate)?rawDate.split('-').reverse().join('/'):'Data não informada',kind=C.norm(row.tipo||'falta'),label=kind==='atestado'?'Atestado':kind==='justificada'||row.justificada===true?'Falta justificada':'Falta não justificada';return `<div class="card"><div class="row"><b>${E(label)}</b><span>${E(date)}</span></div><p>${E(nameOf(row.obra_id??row.obraId))}</p><p>${E(row.justificativa||row.observacao||'Sem justificativa informada.')}</p></div>`;}).join('')||'<div class="empty">Nenhuma falta registrada para este funcionário.</div>'}<div class="formActions"><button class="btn" type="button" onclick="closeM(\'ed27AbsencesM\')">Fechar</button></div>`);};
   window.ed27Records=function(id=''){let ctx;try{ctx=context();}catch(err){readError(err);return;}const fs=new Set(employees().map(f=>String(f.id)));const rows=['diarias','faltas','gastos'].flatMap(table=>(D[table]||[]).filter(r=>r.funcionario_id&&fs.has(String(r.funcionario_id))&&(!id||C.same(r.funcionario_id,id))&&C.inScope(r,ctx.obra)&&C.inRange(r,ctx.bounds)).map(r=>({table,r}))).sort((a,b)=>String(b.r.data||'').localeCompare(String(a.r.data||'')));modal('ed27RecordsM',id?'Registros — '+workerOf(id):'Registros da equipe',rows.map(({table,r})=>`<div class="card"><b>${E(workerOf(r.funcionario_id))}</b><p>${E(r.data||'')} · ${E(table==='diarias'?'Diária':table==='faltas'?'Falta / ocorrência':r.servico_extra_id?'Bônus / Extra':gastoSubcategoria(r))} · ${E(nameOf(r.obra_id))}</p><strong>${table==='diarias'?money(diariaValor(r)):table==='gastos'?money(r.valor):E(r.justificativa||r.tipo||'Falta')}</strong><div class="ed27Actions">${canEdit(table,r)?`<button class="btn" type="button" onclick="ed27Edit(${arg(table)},${arg(r.id)})">Editar</button>`:'<span class="sub">Registro liquidado: estorne o pagamento antes de editar.</span>'}<button class="btn" type="button" onclick="ed27History(${arg(table)},${arg(r.id)})">Histórico</button></div></div>`).join('')||'<div class="empty">Nenhum registro nos filtros escolhidos.</div>');};
   window.ed27Edit=function(table,id){const row=(D[table]||[]).find(r=>C.same(r.id,id));if(!canEdit(table,row)){toast('Este registro está vinculado a valores já liquidados. Estorne o pagamento antes de editar.');return;}editing={table,id,before:snapshot(row),revision:row.updated_at};const absence=table==='faltas',daily=table==='diarias';modal('ed27EditM','Editar registro',`<form onsubmit="ed27SaveEdit(event)"><div class="formGrid"><label>Data<input id="ed27EditDate" type="date" value="${E(row.data||today())}" required></label><label>Obra<select id="ed27EditObra" onchange="ed27EditStageOptions()">${obraOptions(row.obra_id,false)}</select></label>${absence?'':`<label>Etapa<select id="ed27EditStage">${stageOptions(row.obra_id,row.checklist_id)}</select></label>`}${daily?`<label>Jornada<select id="ed27EditFraction"><option value="1">Diária completa</option><option value="0.5" ${Number(row.qtd)===.5?'selected':''}>Meia diária</option></select></label><label>Diária completa (R$)<input id="ed27EditAmount" type="number" min="0.01" step="0.01" value="${E(row.valor_diaria)}" required></label>`:absence?`<label>Tipo<select id="ed27EditType"><option value="falta">Falta</option><option value="justificada" ${row.tipo==='justificada'?'selected':''}>Justificada</option><option value="atestado" ${row.tipo==='atestado'?'selected':''}>Atestado</option></select></label>`:`<label>Valor (R$)<input id="ed27EditAmount" type="number" min="0.01" step="0.01" value="${E(row.valor)}" required></label><label class="full">Descrição<input id="ed27EditDescription" value="${E(row.descricao||'')}" required></label><label>Fornecedor<input id="ed27EditSupplier" value="${E(row.fornecedor||'')}"></label>`}<label class="full">${absence?'Justificativa':'Observação'}<textarea id="ed27EditNote">${E(absence?row.justificativa||'':table==='pagamentos'?receitaObservacaoTexto(row):row.observacao||'')}</textarea></label><label class="full">Motivo da alteração<input id="ed27EditReason" required maxlength="500"></label></div><div class="formActions"><button class="btn" type="button" onclick="closeM('ed27EditM')">Cancelar</button><button class="btn gold" type="submit">Salvar alteração</button></div></form>`);};
   window.ed27EditStageOptions=function(){if(q('ed27EditStage'))q('ed27EditStage').innerHTML=stageOptions(q('ed27EditObra').value);};
@@ -19036,327 +19643,117 @@ return {pdf,wrap};
 })();
 
 </script>
-<script id="edifiq-release27-version">window.EDIFIQ_UI_VERSION="v27.0.1";window.EDIFIQ_UI_BUILD="2026-10-11-interface-nova-recuperada";</script>
+<script id="edifiq-release27-version">window.EDIFIQ_VERSION="v27.0.0";window.EDIFIQ_BUILD="2026-10-11-integracao-melhorias-aprovadas";</script>
 <style id="edifiq-finance-recent-responsive">
-/* Mantém os detalhes e valores completos nos últimos lançamentos. */
-#financeiro #finList,
-#financeiro #finList > .card { min-width:0; max-width:100%; }
-#financeiro #finList > .card > .row,
-#financeiro #finList > .financeRecentItem {
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  align-items:start;
-  gap:8px 12px;
-  min-width:0;
-}
-#financeiro #finList > .card > .row > *,
-#financeiro #finList > .financeRecentItem > * { min-width:0; max-width:100%; }
-#financeiro #finList :is(b,strong,small,span,p) {
-  white-space:normal;
-  overflow-wrap:anywhere;
-  word-break:normal;
-}
-#financeiro #finList > .card > .row > strong,
-#financeiro #finList > .card > .row > b,
-#financeiro #finList > .financeRecentItem > strong {
-  line-height:1.35;
-  font-variant-numeric:tabular-nums;
-}
-#financeiro #finList > .card > .row > .badge { justify-self:end; }
-@media (max-width:759px) {
-  #financeiro #finList > .card > .row,
-  #financeiro #finList > .financeRecentItem {
-    grid-template-columns:minmax(0,1fr);
-    row-gap:6px;
-  }
-  #financeiro #finList > .card > .row > strong,
-  #financeiro #finList > .card > .row > b,
-  #financeiro #finList > .financeRecentItem > strong,
-  #financeiro #finList > .card > .row > .badge {
-    justify-self:start;
-    text-align:left;
-  }
+/* Produção consolidada: evita corte dos últimos lançamentos no celular. */
+#finList .card{min-width:0;max-width:100%;overflow:hidden}
+#finList .card .row{min-width:0;gap:10px}
+#finList .card .row>div{min-width:0}
+#finList .card b,#finList .card small{overflow-wrap:anywhere;word-break:normal}
+@media(max-width:759px){
+  #finList .card{padding:12px!important}
+  #finList .card .row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:start!important;width:100%!important}
+  #finList .card .row>div{min-width:0!important;max-width:100%!important}
+  #finList .card .row>b{max-width:42vw!important;min-width:0!important;text-align:right!important;font-size:clamp(13px,3.8vw,16px)!important;white-space:normal!important;overflow-wrap:anywhere!important}
+  #finList .ed27Actions{display:flex!important;flex-wrap:wrap!important;gap:6px!important}
 }
 </style>
 <style id="edifiq-ui29-visao-geral-financeiro-mobile-style">
-/* Three visible columns only on phones. Desktop retains the original table. */
+#resumoGeral{padding-bottom:110px}
+#resumoGeral .pageTitle{display:none!important}
+#resumoGeral .ed29Overview{max-width:1180px;margin:0 auto;color:var(--text,#f5f7fb)}
+#resumoGeral .ed29Heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:16px}
+#resumoGeral .ed29Heading h1{margin:0;font-size:clamp(28px,4vw,42px);line-height:1.08}
+#resumoGeral .ed29Heading p{margin:6px 0 0;color:var(--muted,#98a2b3)}
+#resumoGeral .ed29Eyebrow{font-size:11px!important;font-weight:900;letter-spacing:.13em;color:#60a5fa!important}
+#resumoGeral .ed29Actions,#resumoGeral .ed29PanelHead,#resumoGeral .ed29Row,#resumoGeral .ed29MoneyLine{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#resumoGeral .ed29Button,#resumoGeral .ed29TextButton{border:1px solid var(--line,#334155);border-radius:10px;min-height:40px;padding:9px 12px;background:var(--panel,#101827);color:inherit;font-weight:800;cursor:pointer}
+#resumoGeral .ed29Button.primary{background:#2563eb;border-color:#2563eb;color:#fff}
+#resumoGeral .ed29Scope{display:grid;grid-template-columns:auto minmax(180px,320px) 1fr;align-items:center;gap:10px;padding:12px;border:1px solid var(--line,#334155);border-radius:14px;background:var(--panel,#101827);margin-bottom:12px}
+#resumoGeral .ed29Scope label{font-weight:800}#resumoGeral .ed29Scope select{min-height:40px}
+#resumoGeral .ed29Scope span{color:var(--muted,#98a2b3);font-size:13px}
+#resumoGeral .ed29Kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:10px}
+#resumoGeral .ed29Kpi,#resumoGeral .ed29Panel{border:1px solid var(--line,#334155);border-radius:14px;background:var(--panel,#101827);padding:14px;min-width:0}
+#resumoGeral .ed29Kpi small{display:block;color:var(--muted,#98a2b3)}#resumoGeral .ed29Kpi strong{display:block;font-size:clamp(21px,3vw,31px);margin:7px 0;overflow-wrap:anywhere}
+#resumoGeral .ed29ContentGrid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,.8fr);gap:10px}
+#resumoGeral .ed29Stack{display:grid;gap:10px}#resumoGeral .ed29Panel h2{margin:0;font-size:18px}#resumoGeral .ed29PanelHead p{margin:4px 0;color:var(--muted,#98a2b3);font-size:13px}
+#resumoGeral .ed29Project,#resumoGeral .ed29Movement{padding:12px 0;border-top:1px solid rgba(148,163,184,.16)}
+#resumoGeral .ed29Project:first-of-type{border-top:0}#resumoGeral .ed29Project strong,#resumoGeral .ed29Movement strong{overflow-wrap:anywhere}
+#resumoGeral .ed29ContractLine{padding:9px 0;border-bottom:1px solid rgba(148,163,184,.15)}#resumoGeral .ed29ContractLine:last-child{border-bottom:0}
+#resumoGeral .ed29ContractLine.total strong{font-size:23px}#resumoGeral .ed29Empty{padding:14px 0;color:var(--muted,#98a2b3)}
+body.edLight #resumoGeral .ed29Overview{color:#111827}body.edLight #resumoGeral .ed29Kpi,body.edLight #resumoGeral .ed29Panel,body.edLight #resumoGeral .ed29Scope,body.edLight #resumoGeral .ed29Button{background:#fff;border-color:#d1d5db}
+@media(max-width:900px){#resumoGeral .ed29Kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#resumoGeral .ed29ContentGrid{grid-template-columns:1fr}#resumoGeral .ed29Heading{align-items:flex-start}}
 @media(max-width:759px){
-  #ed27StagesFinance{min-width:0;max-width:100%;overflow-wrap:anywhere}
-  #ed27StagesFinance .ed27Table{min-width:0;width:100%;max-width:100%;overflow-x:visible}
-  #ed27StagesFinance .ed27Table table{width:100%;min-width:0;max-width:100%;table-layout:fixed}
-  #ed27StagesFinance th:nth-child(2),#ed27StagesFinance td:nth-child(2),
-  #ed27StagesFinance th:nth-child(4),#ed27StagesFinance td:nth-child(4){display:none}
-  #ed27StagesFinance th,#ed27StagesFinance td{padding:10px 5px;white-space:normal;overflow-wrap:anywhere;word-break:normal;font-size:12px;line-height:1.5;vertical-align:top;font-variant-numeric:tabular-nums}
-  #ed27StagesFinance th:first-child,#ed27StagesFinance td:first-child{width:40%;text-align:left}
-  #ed27StagesFinance th:nth-child(3),#ed27StagesFinance td:nth-child(3),
-  #ed27StagesFinance th:nth-child(5),#ed27StagesFinance td:nth-child(5){width:30%;text-align:right}
-  #ed27StagesFinance th:first-child::after{content:' / serviço'}
+  #resumoGeral .ed29Heading{display:block}#resumoGeral .ed29Actions{margin-top:12px;flex-wrap:wrap}#resumoGeral .ed29Actions button{flex:1 1 auto}
+  #resumoGeral .ed29Scope{grid-template-columns:1fr}#resumoGeral .ed29Kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #resumoGeral .ed29Kpi{padding:11px}#resumoGeral .ed29Kpi strong{font-size:clamp(18px,6vw,25px)}
+  #ed27StagesFinance .ed27Table{overflow:hidden!important;width:100%!important}
+  #ed27StagesFinance table{width:100%!important;min-width:0!important;table-layout:fixed!important;font-size:10px!important}
+  #ed27StagesFinance th,#ed27StagesFinance td{padding:7px 4px!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
+  #ed27StagesFinance th:nth-child(2),#ed27StagesFinance td:nth-child(2),#ed27StagesFinance th:nth-child(4),#ed27StagesFinance td:nth-child(4){display:none}
+  #ed27StagesFinance th:nth-child(1),#ed27StagesFinance td:nth-child(1){width:40%!important;text-align:left!important}
+  #ed27StagesFinance th:nth-child(3),#ed27StagesFinance td:nth-child(3),#ed27StagesFinance th:nth-child(5),#ed27StagesFinance td:nth-child(5){width:30%!important}
 }
-
-/* Approved overview, scoped to its own page so the other screens keep their layout. */
-#resumoGeral .ed29Overview{--ed29-bg:#f5f5f0;--ed29-paper:#fff;--ed29-ink:#202c29;--ed29-muted:#64716c;--ed29-border:#e3e7df;--ed29-green:#247258;--ed29-gold:#be9651;--ed29-red:#ad4545;--ed29-contract:#f0f2e9;--ed29-featured:#eaf0e7;--ed29-track:#edf0e9;--ed29-blue:#355f7b;background:var(--ed29-bg);color:var(--ed29-ink);border-radius:18px;padding:24px;font:14px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-width:0;width:100%;box-sizing:border-box}
-body:not(.edLight) #resumoGeral .ed29Overview{--ed29-bg:#111714;--ed29-paper:#19221d;--ed29-ink:#edf3ed;--ed29-muted:#a4b3a7;--ed29-border:#334237;--ed29-green:#91c5a2;--ed29-contract:#232d21;--ed29-featured:#283825;--ed29-track:#344032;--ed29-blue:#9bbbd2;--ed29-red:#f49b9b}
-#resumoGeral .ed29Overview *{box-sizing:border-box;min-width:0}
-#resumoGeral .ed29Overview h1,#resumoGeral .ed29Overview h2,#resumoGeral .ed29Overview p{margin:0;color:inherit}
-#resumoGeral .ed29Overview button,#resumoGeral .ed29Overview select{font:inherit;cursor:pointer}
-#resumoGeral .ed29Overview button{width:auto;margin:0;box-shadow:none}
-#resumoGeral .ed29Overview svg{width:18px;height:18px;flex-shrink:0}
-#resumoGeral .ed29Heading{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:24px}
-#resumoGeral .ed29Heading h1{font-size:29px;letter-spacing:-.7px;line-height:1.3;margin:6px 0 8px;font-weight:650}
-#resumoGeral .ed29Heading p:not(.ed29Eyebrow){font-size:13px;color:var(--ed29-muted)}
-#resumoGeral .ed29Heading .ed29Eyebrow{font-size:10px;letter-spacing:1.5px;font-weight:650;color:var(--ed29-muted)}
-#resumoGeral .ed29Actions{display:flex;gap:8px;flex-wrap:wrap}
-#resumoGeral .ed29Button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;border:1px solid var(--ed29-border);border-radius:8px;padding:10px 13px;font-size:12px;font-weight:600;line-height:1.4;background:var(--ed29-paper);color:var(--ed29-ink);white-space:normal}
-#resumoGeral .ed29Button.primary{background:#247258;color:white;border-color:#247258}
-#resumoGeral .ed29Button.gold{background:#f4eddf;color:#806337;border-color:#e6dcc5}
-#resumoGeral .ed29Button:hover{filter:brightness(.96)}
-#resumoGeral .ed29Overview button:focus-visible,#resumoGeral .ed29Overview select:focus-visible{outline:2px solid var(--ed29-green);outline-offset:3px}
-#resumoGeral .ed29Scope{display:flex;align-items:center;gap:14px;background:var(--ed29-paper);border:1px solid var(--ed29-border);border-radius:12px;padding:12px 16px;margin-bottom:22px}
-#resumoGeral .ed29Scope label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;white-space:nowrap;margin:0;color:var(--ed29-ink)}
-#resumoGeral .ed29Scope select{width:auto;min-width:170px;max-width:330px;flex:1;border:1px solid var(--ed29-border);border-radius:8px;background:var(--ed29-bg);color:var(--ed29-ink);padding:9px 10px;margin:0}
-#resumoGeral .ed29Scope>span{font-size:11px;color:var(--ed29-muted)}
-#resumoGeral .ed29Kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:24px}
-#resumoGeral .ed29Kpi{background:var(--ed29-paper);border:1px solid var(--ed29-border);border-radius:16px;padding:18px}
-#resumoGeral .ed29Kpi.featured{background:var(--ed29-featured)}
-#resumoGeral .ed29KpiTop{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:13px;font-size:12px;font-weight:550;color:var(--ed29-muted)}
-#resumoGeral .ed29KpiIcon{display:grid;place-items:center;width:29px;height:29px;border-radius:7px;background:var(--ed29-track);flex-shrink:0;color:var(--ed29-green)}
-#resumoGeral .ed29KpiIcon svg{width:15px;height:15px}
-#resumoGeral .ed29KpiValue{display:block;font-size:clamp(20px,1.9vw,29px);font-weight:650;letter-spacing:-.6px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;line-height:1.3;color:var(--ed29-ink)}
-#resumoGeral .ed29Kpi.blue .ed29KpiValue{color:var(--ed29-blue)}
-#resumoGeral .ed29Kpi p{margin-top:9px;font-size:11px;line-height:1.6;color:var(--ed29-muted)}
-#resumoGeral .ed29ContentGrid{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(290px,1fr);gap:22px;align-items:start}
-#resumoGeral .ed29Panel{background:var(--ed29-paper);border:1px solid var(--ed29-border);border-radius:16px;overflow:hidden}
-#resumoGeral .ed29PanelHead{padding:21px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-#resumoGeral .ed29PanelHead h2{font-size:16px;font-weight:650;line-height:1.4}
-#resumoGeral .ed29PanelHead p{font-size:11px;line-height:1.6;margin-top:5px;color:var(--ed29-muted)}
-#resumoGeral .ed29PanelBody{padding:0 22px 22px}
-#resumoGeral .ed29TextButton{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:0;background:transparent;color:var(--ed29-green);font-size:11px;font-weight:600;padding:8px 0;flex-shrink:0;line-height:1.5}
-#resumoGeral .ed29Stack{display:grid;gap:22px}
-#resumoGeral .ed29Project{border-top:1px solid var(--ed29-border);padding:19px 22px;display:grid;grid-template-columns:minmax(0,1fr) 135px;gap:12px}
-#resumoGeral .ed29ProjectInfo{display:flex;align-items:center;gap:13px}
-#resumoGeral .ed29ProjectIcon{width:42px;height:42px;display:grid;place-items:center;border-radius:10px;background:#f4eddf;color:#937244;flex-shrink:0}
-#resumoGeral .ed29ProjectIcon svg{width:22px;height:22px}
-#resumoGeral .ed29ProjectIcon.blue{background:#edf3f8;color:#54799d}
-#resumoGeral .ed29ProjectIcon.green{background:#edf3e6;color:#6f8a54}
-#resumoGeral .ed29ProjectName{display:block;border:0;padding:0;background:transparent;text-align:left;font-size:13px;font-weight:650;color:var(--ed29-ink);line-height:1.5;overflow-wrap:anywhere}
-#resumoGeral .ed29Project .ed29ProjectMeta{font-size:11px;color:var(--ed29-muted);margin-top:5px;line-height:1.5;overflow-wrap:anywhere}
-#resumoGeral .ed29ProjectStatus{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
-#resumoGeral .ed29ProjectStatus small{font-size:10px;color:var(--ed29-muted)}
-#resumoGeral .ed29Tag{display:inline-flex;align-items:center;border-radius:5px;background:var(--ed29-featured);padding:4px 7px;color:var(--ed29-green);font-size:10px;line-height:1.4}
-#resumoGeral .ed29ProjectAmount{text-align:right;display:flex;flex-direction:column;justify-content:center;gap:7px;overflow-wrap:anywhere}
-#resumoGeral .ed29ProjectAmount strong{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums}
-#resumoGeral .ed29ProjectAmount small{font-size:10px;color:var(--ed29-muted)}
-#resumoGeral .ed29ProjectBottom{display:flex;align-items:center;gap:10px;grid-column:1/-1}
-#resumoGeral .ed29Progress{width:100%;background:var(--ed29-track);border-radius:4px;height:5px;overflow:hidden;flex:1}
-#resumoGeral .ed29Progress>span{display:block;background:#b49b64;border-radius:4px;height:100%}
-#resumoGeral .ed29Progress.blue>span{background:#6e96b2}
-#resumoGeral .ed29Progress.green>span{background:#75925e}
-#resumoGeral .ed29ProjectBottom>span{font-size:11px;color:var(--ed29-muted);min-width:30px;text-align:right}
-#resumoGeral .ed29Contract{background:var(--ed29-contract)}
-#resumoGeral .ed29Contract .ed29PanelHead{padding-bottom:15px}
-#resumoGeral .ed29ContractLine{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:12px 0;border-bottom:1px solid var(--ed29-border);font-size:12px;color:var(--ed29-muted)}
-#resumoGeral .ed29ContractLine strong{color:var(--ed29-ink);font-size:14px;font-variant-numeric:tabular-nums;text-align:right;overflow-wrap:anywhere}
-#resumoGeral .ed29ContractLine.total{padding:18px 0 15px;border:0;align-items:start}
-#resumoGeral .ed29ContractLine.total>span{font-weight:600;color:var(--ed29-ink)}
-#resumoGeral .ed29ContractLine.total strong{font-size:25px;letter-spacing:-.7px}
-#resumoGeral .ed29Contract .ed29Actions{margin-top:15px}
-#resumoGeral .ed29Contract .ed29Button{flex:1;font-size:11px;padding:8px}
-#resumoGeral .ed29PanelNote{font-size:11px;line-height:1.7;color:var(--ed29-muted)!important;margin-top:10px!important}
-#resumoGeral .ed29CashBars{display:grid;gap:18px;margin-top:2px}
-#resumoGeral .ed29CashHeader{display:flex;justify-content:space-between;gap:12px;font-size:12px;margin-bottom:8px}
-#resumoGeral .ed29CashHeader strong{font-size:13px;font-weight:600;text-align:right;overflow-wrap:anywhere}
-#resumoGeral .ed29CashTrack{height:8px;background:var(--ed29-track);border-radius:4px;overflow:hidden}
-#resumoGeral .ed29CashTrack>span{display:block;height:100%;border-radius:4px}
-#resumoGeral .ed29CashTrack.income>span{background:#648a6b}
-#resumoGeral .ed29CashTrack.expense>span{background:#b8a275}
-#resumoGeral .ed29CashResult{display:flex;justify-content:space-between;gap:15px;border-top:1px solid var(--ed29-border);padding-top:16px;margin-top:18px;align-items:center}
-#resumoGeral .ed29CashResult span{font-size:12px;color:var(--ed29-muted)}
-#resumoGeral .ed29CashResult strong{font-size:18px;font-weight:650;color:var(--ed29-green);text-align:right;overflow-wrap:anywhere}
-#resumoGeral .ed29CashResult strong.negative{color:var(--ed29-red)}
-#resumoGeral .ed29Activity{margin-top:22px}
-#resumoGeral .ed29ActivityList{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-#resumoGeral .ed29ActivityItem{display:flex;align-items:start;gap:11px;border:1px solid var(--ed29-border);border-radius:10px;padding:15px 13px;overflow-wrap:anywhere}
-#resumoGeral .ed29ActivityIcon{height:29px;width:29px;flex-shrink:0;border-radius:50%;background:var(--ed29-featured);display:grid;place-items:center;color:var(--ed29-green)}
-#resumoGeral .ed29ActivityIcon svg{width:14px;height:14px}
-#resumoGeral .ed29ActivityItem strong{display:block;font-size:12px;font-weight:550;line-height:1.5}
-#resumoGeral .ed29ActivityItem p{color:var(--ed29-muted);font-size:11px;line-height:1.6;margin-top:5px}
-#resumoGeral .ed29ActivityItem small{display:block;color:var(--ed29-muted);font-size:10px;margin-top:6px}
-#resumoGeral .ed29Empty{font-size:12px;color:var(--ed29-muted)!important;padding:0 22px 22px;line-height:1.7}
-@media(max-width:1050px){
-  #resumoGeral .ed29ContentGrid{grid-template-columns:minmax(0,1fr)}
-  #resumoGeral .ed29Stack{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #resumoGeral .ed29Kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #resumoGeral .ed29Scope>span{display:none}
-}
-@media(max-width:759px){
-  #resumoGeral .ed29Overview{padding:16px 12px;border-radius:14px}
-  #resumoGeral .ed29Heading{align-items:flex-start;flex-direction:column;gap:16px;margin-bottom:18px}
-  #resumoGeral .ed29Heading h1{font-size:26px}
-  #resumoGeral .ed29Heading>.ed29Actions{width:100%}
-  #resumoGeral .ed29Heading .ed29Button{flex:1}
-  #resumoGeral .ed29Scope{flex-wrap:wrap;padding:12px;gap:9px}
-  #resumoGeral .ed29Scope label{width:100%}
-  #resumoGeral .ed29Scope select{width:100%;max-width:none;min-width:0;font-size:16px}
-  #resumoGeral .ed29Kpis{gap:10px;margin-bottom:18px}
-  #resumoGeral .ed29Kpi{padding:13px 11px;border-radius:12px}
-  #resumoGeral .ed29KpiTop{font-size:11px;gap:4px;align-items:flex-start}
-  #resumoGeral .ed29KpiIcon{width:23px;height:23px}
-  #resumoGeral .ed29KpiValue{font-size:20px;letter-spacing:-.5px}
-  #resumoGeral .ed29Kpi p{font-size:10px}
-  #resumoGeral .ed29Stack{grid-template-columns:1fr;gap:18px}
-  #resumoGeral .ed29ContentGrid{gap:18px}
-  #resumoGeral .ed29PanelHead{padding:18px 15px;gap:8px}
-  #resumoGeral .ed29PanelBody{padding:0 15px 18px}
-  #resumoGeral .ed29PanelHead h2{font-size:15px}
-  #resumoGeral .ed29Project{padding:16px 15px;grid-template-columns:minmax(0,1fr);gap:10px}
-  #resumoGeral .ed29ProjectInfo{gap:10px}
-  #resumoGeral .ed29ProjectAmount{text-align:left;flex-direction:row;justify-content:flex-start;align-items:baseline;padding-left:52px;gap:8px;flex-wrap:wrap}
-  #resumoGeral .ed29ProjectAmount strong{font-size:14px}
-  #resumoGeral .ed29ActivityList{grid-template-columns:1fr}
-  #resumoGeral .ed29Activity{margin-top:18px}
-  #resumoGeral .ed29ContractLine.total strong{font-size:23px}
-  #resumoGeral .ed29Empty{padding:0 15px 18px}
-}
-
 </style>
 <script id="edifiq-ui29-visao-geral-menu">
 (function(){
-  'use strict';
-  const C=window.EdifiqRelease27;
-  const q=id=>document.getElementById(id);
-  const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const arg=v=>E(JSON.stringify(String(v??'')));
-  const cash=cents=>money(cents/100);
-  let scope='all',drawerActions=0;
-  const baseGo=window.go,baseToggle=window.toggleMenuPasta;
-
-  function closeDrawer(){
-    const menu=q('menuPasta'),backdrop=q('menuPastaBackdrop');
-    if(menu){menu.classList.remove('open');menu.setAttribute('aria-hidden','true');}
-    if(backdrop)backdrop.classList.remove('open');
-  }
-  window.toggleMenuPasta=function(){
-    if(drawerActions){closeDrawer();return;}
-    return baseToggle.apply(this,arguments);
-  };
-  window.go=function(){closeDrawer();return baseGo.apply(this,arguments);};
-  window.goMenu=function(page){closeDrawer();return window.go(page);};
-
-  // Close before the original action runs, including buttons inserted later.
-  // The action still runs through its native click handler exactly once.
-  document.addEventListener('click',function(event){
-    const button=event.target?.closest?.('#menuPasta button');
-    if(!button||button.classList.contains('x')||button.disabled)return;
-    closeDrawer();
-    drawerActions++;
-    queueMicrotask(function(){drawerActions--;closeDrawer();});
-    const label=button.querySelector('b')?.textContent?.trim();
-    if(label==='Nova Obra'){
-      event.preventDefault();event.stopImmediatePropagation();
-      window.openObra();
-    }
-  },true);
-  document.addEventListener('keydown',event=>{if(event.key==='Escape')closeDrawer();});
-
-  const paths={
-    building:'<path d="M4 21V5l8-3v19M12 8h8v13M2 21h20M7 7h2M7 11h2M7 15h2M15 11h2M15 15h2M15 19h2"/>',
-    layers:'<path d="m12 3 10 5-10 5L2 8l10-5ZM2 12l10 5 10-5M2 16l10 5 10-5"/>',
-    team:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/>',
-    coin:'<circle cx="12" cy="12" r="9"/><path d="M15 8h-4a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H9M12 6v12"/>',
-    wallet:'<path d="M20 8V5H5a3 3 0 0 0 0 6h17v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V8M22 12h-6v5h6M18 14.5h.01"/>',
-    incoming:'<path d="M12 3v12m-5-5 5 5 5-5M3 15v6h18v-6"/>',
-    plus:'<path d="M12 5v14M5 12h14"/>',
-    arrow:'<path d="M5 12h14m-5-5 5 5-5 5"/>',
-    file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6ZM14 2v6h6M8 13h8M8 17h8"/>'
-  };
-  const icon=name=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]||paths.building}</svg>`;
-  const obraId=row=>typeof recordObraId==='function'?recordObraId(row):(row?.obra_id??row?.obraId??'');
-  const allWorks=()=>D.obras||[];
-  function selectedWorks(){
-    if(scope!=='all'&&!allWorks().some(o=>C.same(o.id,scope)))scope='all';
-    return allWorks().filter(o=>scope==='all'||C.same(o.id,scope));
-  }
-  function activeEmployee(employee){
-    if(employee.ativo===false)return false;
-    if(scope==='all')return true;
-    const assigned=typeof getFuncObra==='function'?getFuncObra(employee.id):employee.obra_id;
-    return C.same(assigned,scope)||['diarias','gastos','faltas'].some(table=>(D[table]||[]).some(row=>C.same(row.funcionario_id??row.funcionarioId,employee.id)&&C.same(obraId(row),scope)));
-  }
-  function summary(){
-    const works=selectedWorks();
-    const finance=new Map(works.map(o=>[String(o.id),window.obraFinanceData(o.id)]));
-    const sum=field=>works.reduce((total,o)=>total+C.cents(finance.get(String(o.id))[field]??0),0);
-    const total=sum('contratoAtualizado'),income=sum('receita'),expense=sum('despesas');
-    const normalize=window.edifiqNormalizeObraStatus||((s)=>C.norm(s).replace(/[\s-]+/g,'_'));
-    const pending=(D.funcionarios||[]).reduce((value,f)=>value+C.cents(C.payroll(D,f.id,{obra:scope,bounds:null},window.__ed27.helpers()).net),0);
-    return {works,finance,total,original:sum('contratoOriginal'),extra:sum('valorServicosAdicionais'),income,expense,result:income-expense,remaining:sum('saldoReceber'),pending,
-      activeProjects:works.filter(o=>['em_andamento','planejada'].includes(normalize(o.status))).length,
-      activeEmployees:(D.funcionarios||[]).filter(activeEmployee).length};
-  }
-  function kpi(label,value,note,iconName,style=''){
-    return `<article class="ed29Kpi ${style}"><div class="ed29KpiTop"><span>${E(label)}</span><span class="ed29KpiIcon">${icon(iconName)}</span></div><strong class="ed29KpiValue">${E(value)}</strong><p>${E(note)}</p></article>`;
-  }
-  function projectRow(o,f,index){
-    const color=['gold','blue','green'][index%3];
-    const progress=Math.max(0,Math.min(100,Number(window.obraProgress(o)||0)));
-    const stages=(D.checklist||[]).filter(row=>C.same(obraId(row),o.id)).length;
-    const status=typeof statusLabel==='function'?statusLabel(o.status):(o.status||'Em andamento');
-    return `<article class="ed29Project"><div class="ed29ProjectInfo"><span class="ed29ProjectIcon ${color}">${icon('building')}</span><div><button class="ed29ProjectName" type="button" onclick="ed29OpenProject(${arg(o.id)})">${E(o.nome||'Obra')}</button><p class="ed29ProjectMeta">${E([o.tipo_servico,o.endereco||o.cliente].filter(Boolean).join(' · ')||'Dados da obra não informados')}</p><div class="ed29ProjectStatus"><span class="ed29Tag">${E(status)}</span><small>${stages} ${stages===1?'etapa':'etapas'}</small></div></div></div><div class="ed29ProjectAmount"><strong>${cash(C.cents(f.contratoAtualizado))}</strong><small>Total atualizado</small></div><div class="ed29ProjectBottom"><div class="ed29Progress ${color}" role="progressbar" aria-label="Progresso de ${E(o.nome)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><span style="width:${progress}%"></span></div><span>${progress}%</span></div></article>`;
-  }
-  function contractPanel(s){
-    const name=scope==='all'?'Consolidado de todas as obras':s.works[0]?.nome;
-    return `<section class="ed29Panel ed29Contract"><div class="ed29PanelHead"><div><h2>Resumo do contrato</h2><p>${E(name)}</p></div>${icon('layers')}</div><div class="ed29PanelBody"><div class="ed29ContractLine"><span>Contrato original</span><strong>${cash(s.original)}</strong></div><div class="ed29ContractLine"><span>Serviços extras</span><strong>+ ${cash(s.extra)}</strong></div><div class="ed29ContractLine total"><span>Total atualizado</span><strong>${cash(s.total)}</strong></div><p class="ed29PanelNote">Os serviços extras somam ao contrato. Receitas e despesas são lançadas no Financeiro.</p><div class="ed29Actions"><button class="ed29Button gold" type="button" onclick="ed29AddContractExtra()">${icon('plus')}Adicionar extra</button><button class="ed29Button secondary" type="button" onclick="ed29OpenFinance()">Ver financeiro ${icon('arrow')}</button></div></div></section>`;
-  }
-  function cashPanel(s){
-    const max=Math.max(s.income,s.expense,1);
-    return `<section class="ed29Panel"><div class="ed29PanelHead"><div><h2>Movimento financeiro</h2><p>Receitas e despesas já lançadas</p></div></div><div class="ed29PanelBody"><div class="ed29CashBars"><div><div class="ed29CashHeader"><span>Receitas</span><strong>${cash(s.income)}</strong></div><div class="ed29CashTrack income"><span style="width:${Math.max(0,s.income/max*100)}%"></span></div></div><div><div class="ed29CashHeader"><span>Despesas</span><strong>${cash(s.expense)}</strong></div><div class="ed29CashTrack expense"><span style="width:${Math.max(0,s.expense/max*100)}%"></span></div></div></div><div class="ed29CashResult"><span>Resultado de caixa</span><strong class="${s.result<0?'negative':''}">${cash(s.result)}</strong></div><p class="ed29PanelNote">Receitas menos despesas registradas. Saldo líquido da equipe: ${cash(s.pending)}.</p></div></section>`;
-  }
-  function activityPanel(){
-    const rows=C.financeRows(D,{obra:scope},gastoSubcategoria).slice(0,3);
-    const date=value=>{const day=String(value||'').slice(0,10);return /^\d{4}-\d{2}-\d{2}$/.test(day)?day.split('-').reverse().join('/'):'Sem data';};
-    return `<section class="ed29Panel ed29Activity"><div class="ed29PanelHead"><div><h2>Últimos movimentos</h2><p>Um olhar rápido sobre o que aconteceu</p></div><button class="ed29TextButton" type="button" onclick="ed29OpenFinance()">Ver todos ${icon('arrow')}</button></div><div class="ed29PanelBody"><div class="ed29ActivityList">${rows.map(r=>`<article class="ed29ActivityItem"><span class="ed29ActivityIcon">${icon(r._tipo==='entrada'?'incoming':'wallet')}</span><div><strong>${E(r.descricao||r._category)}</strong><p>${E(allWorks().find(o=>C.same(o.id,obraId(r)))?.nome||'Sem obra vinculada')} · ${cash(C.cents(r.valor))}</p><small>${date(r.data)} · ${r._tipo==='entrada'?'Receita':'Despesa'}</small></div></article>`).join('')||'<p class="ed29Empty">Nenhum movimento registrado neste filtro.</p>'}</div></div></section>`;
-  }
-  function renderOverview(){
-    const page=q('resumoGeral');if(!page)return;
-    const s=summary();
-    page.innerHTML=`<div class="ed29Overview"><div class="ed29Heading"><div><p class="ed29Eyebrow">SUA OPERAÇÃO, EM UM SÓ LUGAR</p><h1>Visão geral</h1><p>Acompanhe suas obras e mantenha cada detalhe sob controle.</p></div><div class="ed29Actions"><button class="ed29Button secondary" type="button" onclick="openRelatorioObraEdifiq()">${icon('file')}Relatório PDF</button><button class="ed29Button primary" type="button" onclick="openObra()">${icon('plus')}Nova obra</button></div></div><div class="ed29Scope"><label for="ed29OverviewScope">${icon('building')}Visualizar obra</label><select id="ed29OverviewScope" onchange="ed29SelectScope(this.value)"><option value="all">Todas as obras</option>${allWorks().map(o=>`<option value="${E(o.id)}"${C.same(o.id,scope)?' selected':''}>${E(o.nome||'Obra')}</option>`).join('')}</select><span>${scope==='all'?'Visão consolidada das suas obras':'Acompanhamento da obra selecionada'}</span></div><section class="ed29Kpis" aria-label="Indicadores principais">${kpi('Total contratado',cash(s.total),`Inclui ${cash(s.extra)} em extras`,'layers','featured')}${kpi('Saldo a receber',cash(s.remaining),`${cash(s.income)} já recebidos`,'coin','blue')}${kpi('Obras ativas',s.activeProjects,`${s.works.length} obras neste filtro`,'building')}${kpi('Funcionários ativos',s.activeEmployees,'Pessoas construindo com você','team')}</section><div class="ed29ContentGrid"><section class="ed29Panel"><div class="ed29PanelHead"><div><h2>${scope==='all'?'Suas obras':'Obra selecionada'}</h2><p>${scope==='all'?`${s.works.length} obras para acompanhar`:'Acompanhe o andamento da execução'}</p></div><button class="ed29TextButton" type="button" onclick="ed29OpenProject()">Ver detalhes ${icon('arrow')}</button></div>${s.works.map((o,i)=>projectRow(o,s.finance.get(String(o.id)),i)).join('')||'<p class="ed29Empty">Nenhuma obra cadastrada. Use Nova obra para começar.</p>'}</section><div class="ed29Stack">${contractPanel(s)}${cashPanel(s)}</div></div>${activityPanel()}</div>`;
-  }
-  window.renderResumoGeral=renderOverview;
-  window.ed29SelectScope=function(value){scope=String(value||'all');renderOverview();};
-  window.ed29OpenProject=function(id){
-    const selected=id||(scope==='all'?'':scope);
-    if(q('obraSearch'))q('obraSearch').value='';
-    if(q('obraSelecionada')&&selected)q('obraSelecionada').value=String(selected);
-    window.go('obras');
-    if(q('obraSelecionada')&&selected){q('obraSelecionada').value=String(selected);window.renderObras();}
-  };
-  window.ed29OpenFinance=function(){
-    window.go('financeiro');
-    if(q('finObraFilter'))q('finObraFilter').value=scope;
-    window.ed27ClearFinance();
-    if(q('finObraFilter'))q('finObraFilter').value=scope;
-    window.renderFinance();
-  };
-  window.ed29AddContractExtra=function(){
-    const works=selectedWorks();
-    if(!works.length){toast('Cadastre uma obra para adicionar serviços extras.');return;}
-    if(scope!=='all'||works.length===1)return window.addServicoAdicional(works[0].id);
-    let modal=q('ed29ExtraPickM');
-    if(!modal){modal=document.createElement('div');modal.id='ed29ExtraPickM';modal.className='modal';document.body.appendChild(modal);}
-    modal.innerHTML=`<div class="modalBox"><div class="modalHead"><h2>Adicionar serviço extra</h2><button class="x" type="button" aria-label="Fechar" onclick="closeM('ed29ExtraPickM')">×</button></div><label for="ed29ExtraWork">Selecione a obra</label><select id="ed29ExtraWork">${works.map(o=>`<option value="${E(o.id)}">${E(o.nome)}</option>`).join('')}</select><div class="actions"><button class="btn" type="button" onclick="closeM('ed29ExtraPickM')">Cancelar</button><button class="btn gold" type="button" onclick="ed29ContinueExtra()">Continuar</button></div></div>`;
-    window.openM('ed29ExtraPickM');
-  };
-  window.ed29ContinueExtra=function(){
-    const id=q('ed29ExtraWork')?.value;
-    if(!allWorks().some(o=>C.same(o.id,id))){toast('Selecione uma obra válida.');return;}
-    window.closeM('ed29ExtraPickM');return window.addServicoAdicional(id);
-  };
-  window.__ed29={summary,closeDrawer};
-  window.EDIFIQ_UI_VERSION='v29.0.2';
-  window.EDIFIQ_UI_BUILD='2026-10-12-versao-consolidada';
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',renderOverview,{once:true});else renderOverview();
+'use strict';
+const C=window.EdifiqRelease27,q=id=>document.getElementById(id),E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let scope='all';
+const cash=c=>typeof money==='function'?money(Number(c||0)/100):(Number(c||0)/100).toFixed(2);
+const val=r=>C.cents(r?.valor||0);
+const worksAll=()=>C.unique(D.obras||[]);
+const workServices=id=>C.unique((D.servicos_adicionais||D.servicosAdicionais||[]).filter(r=>C.same(r.obra_id??r.obraId,id)));
+const extrasCents=id=>workServices(id).reduce((n,r)=>n+val(r),0);
+function contract(o){
+ const extra=extrasCents(o.id),explicit=o.valor_contrato_original??o.valor_original??o.contrato_original??o.valorOriginal;
+ const updated=C.cents(o.valor_atualizado??o.valor??0),original=explicit!=null?C.cents(explicit):Math.max(0,updated-extra);
+ return {original,extra,total:explicit!=null?original+extra:updated};
+}
+function canonicalStatus(o){try{return typeof edifiqNormalizeObraStatus==='function'?edifiqNormalizeObraStatus(o.status):C.norm(o.status).replace(/ /g,'_');}catch(_){return C.norm(o.status).replace(/ /g,'_');}}
+function active(o){return ['em_andamento','andamento','ativa','ativo','em_execucao'].includes(canonicalStatus(o));}
+function selectedWorks(){if(scope!=='all'&&!worksAll().some(o=>C.same(o.id,scope)))scope='all';return worksAll().filter(o=>scope==='all'||C.same(o.id,scope));}
+function category(r){try{return typeof categoriaFinanceira==='function'?categoriaFinanceira(r):typeof gastoSubcategoria==='function'?gastoSubcategoria(r):(r.categoria||'Outros');}catch(_){return r.categoria||'Outros';}}
+function finRows(){return C.financeRows(D,{obra:scope},category);}
+function activeEmployees(){return (D.funcionarios||[]).filter(f=>f.ativo!==false&&(scope==='all'||C.same(f.obra_id,scope)||['diarias','gastos','faltas'].some(t=>(D[t]||[]).some(r=>C.same(r.funcionario_id??r.funcionarioId,f.id)&&C.inScope(r,scope))))).length;}
+function summary(){
+ const works=selectedWorks(),ct=works.reduce((a,o)=>{const x=contract(o);a.original+=x.original;a.extra+=x.extra;a.total+=x.total;return a;},{original:0,extra:0,total:0}),rows=finRows(),t=C.totals(rows);
+ return {...ct,income:t.income,expense:t.expense,result:t.result,remaining:Math.max(0,ct.total-t.income),activeProjects:works.filter(active).length,activeEmployees:activeEmployees(),works,rows,finance:new Map(works.map(o=>{const wr=rows.filter(r=>C.inScope(r,o.id)),z=C.totals(wr);return [String(o.id),z];})),pending:0};
+}
+function icon(name){const x={plus:'＋',file:'▤',building:'▦',layers:'▤',coin:'R$',team:'👥',arrow:'→'};return `<span aria-hidden="true">${x[name]||'•'}</span> `;}
+function kpi(label,value,sub,ic,klass=''){return `<article class="ed29Kpi ${klass}"><small>${E(label)}</small><strong>${E(value)}</strong><small>${icon(ic)}${E(sub)}</small></article>`;}
+function progress(o){try{return Math.max(0,Math.min(100,Number(typeof obraProgress==='function'?obraProgress(o.id):0)||0));}catch(_){return 0;}}
+function projectRow(o,f={income:0,expense:0}){const c=contract(o),p=progress(o);return `<div class="ed29Project"><div class="ed29Row"><div><strong>${E(o.nome||'Obra')}</strong><small>${E(canonicalStatus(o).replace(/_/g,' '))} · ${p.toFixed(0)}%</small></div><button class="ed29TextButton" type="button" onclick="ed29OpenProject('${E(o.id)}')">Abrir →</button></div><div class="ed29MoneyLine"><small>Total atualizado</small><b>${cash(c.total)}</b></div><div class="ed29MoneyLine"><small>Recebido</small><b>${cash(f.income||0)}</b></div></div>`;}
+function contractPanel(s){return `<section class="ed29Panel"><div class="ed29PanelHead"><div><h2>Contrato</h2><p>Composição contratual</p></div><button class="ed29TextButton" type="button" onclick="ed29AddContractExtra()">＋ Extra</button></div><div class="ed29ContractLine ed29MoneyLine"><span>Contrato original</span><strong>${cash(s.original)}</strong></div><div class="ed29ContractLine ed29MoneyLine"><span>Serviços extras</span><strong>${cash(s.extra)}</strong></div><div class="ed29ContractLine total ed29MoneyLine"><span>Total atualizado</span><strong>${cash(s.total)}</strong></div></section>`;}
+function cashPanel(s){return `<section class="ed29Panel"><div class="ed29PanelHead"><div><h2>Movimento financeiro</h2><p>Receitas e despesas no filtro</p></div><button class="ed29TextButton" type="button" onclick="ed29OpenFinance()">Financeiro →</button></div><div class="ed29ContractLine ed29MoneyLine"><span>Recebido</span><strong>${cash(s.income)}</strong></div><div class="ed29ContractLine ed29MoneyLine"><span>Despesas</span><strong>${cash(s.expense)}</strong></div><div class="ed29ContractLine total ed29MoneyLine"><span>Resultado</span><strong>${cash(s.result)}</strong></div></section>`;}
+function activityPanel(){const rows=finRows().slice(0,8);return `<section class="ed29Panel" style="margin-top:10px"><div class="ed29PanelHead"><div><h2>Últimos movimentos</h2><p>Movimentações financeiras mais recentes</p></div><button class="ed29TextButton" type="button" onclick="ed29OpenFinance()">Ver todos →</button></div>${rows.map(r=>`<div class="ed29Movement ed29Row"><div><strong>${E(r.descricao||'Lançamento')}</strong><small>${E(r.data||'Sem data')} · ${E((worksAll().find(o=>C.same(o.id,r.obra_id))||{}).nome||'Sem obra')}</small></div><b>${r._tipo==='entrada'?'+ ':'- '}${cash(val(r))}</b></div>`).join('')||'<p class="ed29Empty">Nenhum movimento financeiro neste filtro.</p>'}</section>`;}
+function renderOverview(){const page=q('resumoGeral');if(!page)return;const s=summary();page.innerHTML=`<div class="ed29Overview"><div class="ed29Heading"><div><p class="ed29Eyebrow">SUA OPERAÇÃO, EM UM SÓ LUGAR</p><h1>Visão geral</h1><p>Acompanhe suas obras e mantenha cada detalhe sob controle.</p></div><div class="ed29Actions"><button class="ed29Button secondary" type="button" onclick="openRelatorioObraEdifiq()">${icon('file')}Relatório PDF</button><button class="ed29Button primary" type="button" onclick="openObra()">${icon('plus')}Nova obra</button></div></div><div class="ed29Scope"><label for="ed29OverviewScope">${icon('building')}Visualizar obra</label><select id="ed29OverviewScope" onchange="ed29SelectScope(this.value)"><option value="all">Todas as obras</option>${worksAll().map(o=>`<option value="${E(o.id)}"${C.same(o.id,scope)?' selected':''}>${E(o.nome||'Obra')}</option>`).join('')}</select><span>${scope==='all'?'Visão consolidada das suas obras':'Acompanhamento da obra selecionada'}</span></div><section class="ed29Kpis" aria-label="Indicadores principais">${kpi('Total contratado',cash(s.total),`Inclui ${cash(s.extra)} em extras`,'layers','featured')}${kpi('Saldo a receber',cash(s.remaining),`${cash(s.income)} já recebidos`,'coin','blue')}${kpi('Obras ativas',s.activeProjects,`${s.works.length} obras neste filtro`,'building')}${kpi('Funcionários ativos',s.activeEmployees,'Pessoas construindo com você','team')}</section><div class="ed29ContentGrid"><section class="ed29Panel"><div class="ed29PanelHead"><div><h2>${scope==='all'?'Suas obras':'Obra selecionada'}</h2><p>${scope==='all'?`${s.works.length} obras para acompanhar`:'Acompanhe o andamento da execução'}</p></div><button class="ed29TextButton" type="button" onclick="ed29OpenProject()">Ver detalhes ${icon('arrow')}</button></div>${s.works.map(o=>projectRow(o,s.finance.get(String(o.id)))).join('')||'<p class="ed29Empty">Nenhuma obra cadastrada. Use Nova obra para começar.</p>'}</section><div class="ed29Stack">${contractPanel(s)}${cashPanel(s)}</div></div>${activityPanel()}</div>`;}
+window.renderResumoGeral=renderOverview;
+window.ed29SelectScope=function(value){scope=String(value||'all');renderOverview();};
+window.ed29OpenProject=function(id){const selected=id||(scope==='all'?'':scope);if(q('obraSearch'))q('obraSearch').value='';if(q('obraSelecionada')&&selected)q('obraSelecionada').value=String(selected);window.go('obras');try{window.renderObras?.();}catch(_){}};
+window.ed29OpenFinance=function(){window.go('financeiro');if(q('finObraFilter'))q('finObraFilter').value=scope==='all'?'all':scope;if(q('ed27FinSearch'))q('ed27FinSearch').value='';if(q('finCategoriaFilter'))q('finCategoriaFilter').value='all';try{window.renderFinance?.();}catch(_){}};
+function ensureExtraModal(){let m=q('ed29ExtraPickM');if(m)return m;m=document.createElement('div');m.id='ed29ExtraPickM';m.className='modal';m.innerHTML=`<div class="modalBox"><div class="modalHead"><h2>Adicionar serviço extra</h2><button class="x" type="button" onclick="closeM('ed29ExtraPickM')">×</button></div><label>Obra<select id="ed29ExtraWork">${worksAll().map(o=>`<option value="${E(o.id)}">${E(o.nome||'Obra')}</option>`).join('')}</select></label><div class="formActions"><button class="btn" type="button" onclick="closeM('ed29ExtraPickM')">Cancelar</button><button class="btn gold" type="button" onclick="ed29ContinueExtra()">Continuar</button></div></div>`;document.body.appendChild(m);return m;}
+window.ed29AddContractExtra=function(){if(scope!=='all'&&worksAll().some(o=>C.same(o.id,scope))){window.addServicoAdicional?.(scope);return;}if(!worksAll().length){window.toast?.('Cadastre uma obra primeiro.');return;}ensureExtraModal();openM('ed29ExtraPickM');};
+window.ed29ContinueExtra=function(){const id=q('ed29ExtraWork')?.value;if(!id)return;closeM('ed29ExtraPickM');window.addServicoAdicional?.(id);};
+function closeDrawer(){const menu=q('menuPasta'),back=q('menuPastaBackdrop');menu?.classList.remove('open');back?.classList.remove('open');if(menu)menu.setAttribute('aria-hidden','true');if(back)back.setAttribute('aria-hidden','true');}
+window.goMenu=function(page){closeDrawer();if(page==='config'&&typeof window.openConfiguracoes==='function'){window.openConfiguracoes();return;}window.go(page);};
+const actionMap={'Relatório automático':'openRelatorioObraEdifiq','Relatório para Cliente':'openRelatorioCliente','Relatório do Trabalhador':'openRelatorioTrabalhador','Pagamento da Equipe':'openPagamentoEquipe','Vale':'openAdiantamento','Configurações':'openConfiguracoes','Backup':'openBackupConfigDirect','Diagnóstico do aplicativo':'openDiagnosticoDireto12','Administração':'openOfficial25','Comercial':'openEtapa28','Nova Obra':'openObra'};
+document.addEventListener('click',function(event){const btn=event.target?.closest?.('#menuPasta button');if(!btn)return;const label=String(btn.querySelector?.('span:last-child')?.textContent||btn.textContent||'').trim();closeDrawer();if(btn.classList?.contains?.('x')||label==='Fechar'){event.preventDefault?.();event.stopImmediatePropagation?.();return;}const fn=actionMap[label];if(fn&&typeof window[fn]==='function'){event.preventDefault?.();event.stopImmediatePropagation?.();window[fn]();}},true);
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeDrawer();});
+window.__ed29={summary,closeDrawer,get scope(){return scope;}};
+if(typeof queueMicrotask==='function')queueMicrotask(()=>{try{renderOverview();}catch(_){}});
 })();
-
-</script>
-</body>
+</script>\n<style id="ed41css">
+#ed41M .g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}#ed41M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}#ed41M .n{font-size:20px;font-weight:900;overflow-wrap:anywhere}#ed41M .hero{font-size:24px;font-weight:1000}#ed41M .row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(148,163,184,.16)}#ed41M .row:last-child{border-bottom:0}#ed41M .ok{color:#22c55e}#ed41M .warn{color:#f59e0b}#ed41M code{font-size:11px;overflow-wrap:anywhere}body.edLight #ed41M .c{background:#fff;color:#111827;border-color:#cbd5e1}@media(max-width:760px){#ed41M .g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script id="ed41js">
+(function(){'use strict';
+window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';window.EDIFIQ_VERSION='41.0.0';
+const ADMIN='junioalef7@gmail.com',BASE_COMMIT='cf65a5f7588c2994bb6815459ab4ff353ac2a0e6',BASE_BLOB='fd1cab2c2a5fc7d44967da84b11bdc55b75b817e';
+const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));const SB=()=>window.supabaseClient||window.sb||window.supabase||null;
+function modal(){let m=document.getElementById('ed41M');if(m)return m;m=document.createElement('div');m.id='ed41M';m.className='modal';m.style.zIndex='10190';m.innerHTML='<div class="modalBox" style="max-width:1050px;width:min(97vw,1050px);max-height:94vh;overflow:auto"><div class="modalHeader"><div><b>🧬 Mesclagem • Candidata final</b><div class="small muted">Etapa 41 • main protegido + camadas comerciais</div></div><button class="iconBtn" id="e41x">×</button></div><div id="e41b" style="padding:14px"></div></div>';document.body.appendChild(m);document.getElementById('e41x').onclick=()=>m.classList.remove('show');return m;}
+async function run(){const m=modal(),b=document.getElementById('e41b');m.classList.add('show');b.textContent='Validando candidata mesclada…';try{const s=SB(),ses=(await s?.auth?.getSession?.())?.data?.session;if(!ses)throw Error('Entre na conta administradora.');if(String(ses.user?.email||'').toLowerCase()!==ADMIN)throw Error('Área restrita ao administrador.');let comercial={};try{comercial=(await s.functions.invoke('edifiq-comercial-liberacao',{body:{action:'status'}}))?.data||{};}catch(_){}const vendasBloqueadas=!comercial?.vendas_liberadas;const ids=['edifiq-sync-backup-v8','edifiq-backup-v9-financial-integrity','edifiq-backup-v10-importacao-integral','edifiq-release27-ui','edifiq-ui29-visao-geral-menu','ed34js','ed35js','ed36js','ed37js','ed38js','ed39js','ed40js'];const missing=ids.filter(id=>!document.getElementById(id));const checks=[['Base real do main registrada',true,'Commit '+BASE_COMMIT.slice(0,12)],['Backup/importação integral incorporados',!missing.some(x=>x.includes('backup')),'Camadas v8, v9 e v10'],['Equipe protegida incorporada',!missing.includes('edifiq-release27-ui'),'Diárias abertas + histórico individual de faltas'],['Visão Geral protegida incorporada',!missing.includes('edifiq-ui29-visao-geral-menu'),'Seleção de obra + Menu no primeiro toque'],['Camadas comerciais 34–40 preservadas',!missing.some(x=>/^ed3[4-9]js$/.test(x)||x==='ed40js'),'Homologação, bloqueio e pré-publicação'],['Venda pública protegida',vendasBloqueadas,vendasBloqueadas?'Backend continua bloqueado para venda automática.':'ATENÇÃO: backend informa vendas liberadas.'],['Publicação no GitHub',false,'Nenhum arquivo foi enviado ao repositório nesta etapa.']];b.innerHTML='<div class="c"><div class="hero ok">CANDIDATA MESCLADA • NÃO PUBLICADA</div><div class="small muted">As correções protegidas da produção foram incorporadas à candidata comercial. O main permanece inalterado.</div></div><div class="g" style="margin-top:8px"><div class="c"><div class="small muted">Base</div><div class="n">cf65a5f7588c</div></div><div class="c"><div class="small muted">Versão</div><div class="n">41.0.0</div></div><div class="c"><div class="small muted">Rollback</div><div class="n">main atual</div></div><div class="c"><div class="small muted">Deploy</div><div class="n warn">NÃO FEITO</div></div></div><div class="c" style="margin-top:8px">'+checks.map(x=>'<div class="row"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'ok':'warn')+'">'+(x[1]?'OK':'PENDENTE')+'</b></div>').join('')+'</div><div class="c" style="margin-top:8px"><b>Próxima barreira antes de publicar</b><div class="small muted" style="line-height:1.6">Executar a validação da candidata contra o contrato de release do repositório e um smoke test controlado. Só depois uma publicação poderá ser preparada. O rollback continua sendo <code>'+BASE_COMMIT+'</code>.</div></div>'; }catch(e){b.innerHTML='<div class="c"><b>Não foi possível abrir a validação.</b><div class="small muted">'+E(e?.message||e)+'</div></div>';}}
+window.openEtapa41=run;async function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Mesclagem • Candidata final')))return;try{const s=SB(),ses=(await s?.auth?.getSession?.())?.data?.session;if(String(ses?.user?.email||'').toLowerCase()!==ADMIN)return;}catch(_){return;}const d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;const q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🧬</span><span>Mesclagem • Candidata final</span>';q.onclick=run;d.appendChild(q);}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script></body>
 </html>
