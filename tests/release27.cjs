@@ -40,6 +40,9 @@ function harness(){
  const original=fs.readFileSync(path.join(dir,'.release-base.html'),'utf8'),start=original.indexOf('  function getAvailableValesByObraF(funcId)'),end=original.indexOf('  /* 11) Comprehensive automatic report',start);assert.ok(start>0&&end>start);
  vm.runInContext("const sameF=(a,b)=>String(a??'')===String(b??'');const numF=v=>Number(v||0);const moneyF=money;const qtyF=d=>Number(d.qtd??1);"+original.slice(start,end),ctx);
  const goStart=original.indexOf('function go(page){'),goEnd=original.indexOf('/* =========================================================\n   MODAIS',goStart);vm.runInContext(original.slice(goStart,goEnd),ctx);
+ ctx.normalize=C.norm;
+ vm.runInContext(original.slice(original.indexOf('function gastoSubcategoria(g){'),original.indexOf('function diariaValor(d){')),ctx);
+ vm.runInContext(original.slice(original.indexOf('function getEmployeeAdvances(funcId){'),original.indexOf('function getFuncionarioExtras(funcId){')),ctx);
  vm.runInContext(fs.readFileSync(path.join(dir,'release27-ui.js'),'utf8'),ctx);vm.runInContext(fs.readFileSync(path.join(dir,'release27-reports.js'),'utf8'),ctx);
  return {ctx,D,els,messages,writes,storage,advanceApplied};
 }

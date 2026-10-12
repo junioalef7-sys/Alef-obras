@@ -130,4 +130,8 @@ test('Tabela por etapa mantém 5 colunas no computador e tem 3 somente até 759p
   assert.ok(!rest.includes('#ed27StagesFinance'));
   for(const width of [320,375,390,430,759,760,1024,1440])assert.equal([1,2,3,4,5].filter(c=>!(width<=759&&[2,4].includes(c))).length,width<=759?3:5);
 });
+test('Recebimento excedente em uma obra não apaga dívida de outra na Visão geral',()=>{
+  const h=fixture();h.D.pagamentos=[{id:'over',obra_id:'o1',valor:3000}];h.ctx.ed29SelectScope('all');
+  assert.equal(h.ctx.__ed29.summary().remaining,50000);
+});
 console.log(count+' novas verificações aprovadas. Dados usados: somente fixtures locais.');
