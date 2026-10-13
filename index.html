@@ -1615,15 +1615,15 @@ body{min-height:100vh;min-height:100dvh}
     <button class="edifiqMenuItem" onclick="goMenu('diario')"><span>▤</span><b>Diário de Obras</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('checklist')"><span>☑</span><b>Checklist</b></button>
     <button class="edifiqMenuItem" onclick="openDocumentosDireto12()"><span>▤</span><b>Documentos</b></button>
-    <button class="edifiqMenuItem" type="button" onclick="openRelatorioObraEdifiq();toggleMenuPasta()"><span>📄</span><b>Relatório automático</b></button>
-    <button class="edifiqMenuItem" onclick="openRelatorioCliente();toggleMenuPasta()"><span>▧</span><b>Relatório para Cliente</b></button>
-     <button class="edifiqMenuItem" onclick="openRelatorioTrabalhador();toggleMenuPasta()"><span>♙</span><b>Relatório do Trabalhador</b></button>
-    <button class="edifiqMenuItem" onclick="openPagamentoEquipe();toggleMenuPasta()"><span>＄</span><b>Pagamento da Equipe</b></button>
-    <button class="edifiqMenuItem" onclick="openAdiantamento();toggleMenuPasta()"><span>💳</span><b>Vale</b></button>
+    <button class="edifiqMenuItem" type="button" onclick="openRelatorioObraEdifiq()"><span>📄</span><b>Relatório automático</b></button>
+    <button class="edifiqMenuItem" onclick="openRelatorioCliente()"><span>▧</span><b>Relatório para Cliente</b></button>
+     <button class="edifiqMenuItem" onclick="openRelatorioTrabalhador()"><span>♙</span><b>Relatório do Trabalhador</b></button>
+    <button class="edifiqMenuItem" onclick="openPagamentoEquipe()"><span>＄</span><b>Pagamento da Equipe</b></button>
+    <button class="edifiqMenuItem" onclick="openAdiantamento()"><span>💳</span><b>Vale</b></button>
     <button class="edifiqMenuItem" onclick="goMenu('diarias')"><span>📅</span><b>Histórico de Diárias</b></button>
   </div>
   <div class="edifiqMenuTitle edifiqSectionTitle">DADOS</div>
-  <button class="edifiqDataRow" onclick="openConfiguracoes();toggleMenuPasta()"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
+  <button class="edifiqDataRow" onclick="openConfiguracoes()"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>
   <button class="edifiqDataRow" onclick="openBackupConfigDirect()"><span>💾</span><b>Backup</b><span class="edifiqChevron">›</span></button>
   <button class="edifiqDataRow" type="button" onclick="openDiagnosticoDireto12()"><span>🩺</span><b>Diagnóstico do aplicativo</b><span class="edifiqChevron">›</span></button>
   <div class="edifiqDrawerAccount">
@@ -15906,7 +15906,10 @@ body.edLight .edBillingPlan{background:#fff;color:#111827}
     const s=sub11(),plan=plans11().find(p=>p.codigo===selected11());
     card=document.createElement('div');card.id='edBillingConfig11';card.className='card edAccountCard';
     const canCancel=owner11()&&['authorized','pending','paused'].includes(String(s.provedor_status||''));
-    card.innerHTML=`<h3>💳 Plano e assinatura</h3><p class="sub">Cobrança do EDIFIQ. Não interfere no Financeiro das obras.</p><div class="edBillingRows"><div><small>Status EDIFIQ</small><b>${esc11((typeof label10==='function'?label10(s):s.status)||'Assinatura')}</b></div><div><small>Plano</small><b>${esc11(plan?.nome||s.plano||'Não escolhido')}</b></div><div><small>Provedor</small><b>${esc11(s.provedor?BILLING_PROVIDER:'Ainda não iniciado')}</b></div><div><small>Status da cobrança</small><b>${esc11(labelProvider11(s.provedor_status))}</b></div><div><small>Próxima cobrança</small><b>${date11(s.proxima_cobranca_em||s.periodo_fim)}</b></div><div><small>Último pagamento</small><b>${esc11(paymentLabel11(s.ultimo_pagamento_status))}</b></div></div><div class="edBillingActions"><button class="btn primary" type="button" onclick="openPlanosEdifiq11()">${s.provedor_status==='authorized'?'Alterar / ver plano':'Assinar plano'}</button>${s.provedor_assinatura_id||s.provedor?'<button class="btn" type="button" onclick="sincronizarAssinaturaEdifiq11()">↻ Sincronizar</button>':''}${canCancel?'<button class="btn danger" type="button" onclick="cancelarAssinaturaEdifiq11()">Cancelar renovação</button>':''}</div>${window.__edifiqBillingNotConfigured?'<div class="edBillingSetup"><b>Configuração pendente:</b> adicione as credenciais privadas do Mercado Pago às Edge Functions para liberar checkout e webhooks.</div>':''}<h4 style="margin:15px 0 0">Histórico de cobranças</h4>${historyHtml11()}`;
+    const trialAtivo=String(s.status)==='trial'&&s.trial_fim&&new Date(s.trial_fim).getTime()>Date.now();
+    const diasTeste=trialAtivo?Math.max(1,Math.ceil((new Date(s.trial_fim).getTime()-Date.now())/86400000)):0;
+    const trialResumo=trialAtivo?`<div class="edTrialSummaryFinal"><strong>🎁 Teste grátis ativo</strong><span>${diasTeste} ${diasTeste===1?'dia restante':'dias restantes'}</span><small>Mensal: R$ 39,90/mês • Anual: R$ 399,00/ano</small></div>`:`<div class="edTrialSummaryFinal"><strong>Planos EDIFIQ</strong><small>Mensal: R$ 39,90/mês • Anual: R$ 399,00/ano</small></div>`;
+    card.innerHTML=`<h3>💳 Plano e assinatura</h3><p class="sub">Cobrança do EDIFIQ. Não interfere no Financeiro das obras.</p>${trialResumo}<div class="edBillingRows"><div><small>Status EDIFIQ</small><b>${esc11((typeof label10==='function'?label10(s):s.status)||'Assinatura')}</b></div><div><small>Plano pretendido</small><b>${esc11(plan?.nome||s.plano||'Não escolhido')}</b></div><div><small>Próxima cobrança</small><b>${trialAtivo?'Após o teste grátis':date11(s.proxima_cobranca_em||s.periodo_fim)}</b></div><div><small>Último pagamento</small><b>${esc11(paymentLabel11(s.ultimo_pagamento_status))}</b></div></div><div class="edBillingActions"><button class="btn primary" type="button" onclick="openPlanosEdifiq11()">${s.provedor_status==='authorized'?'Alterar / ver plano':'Ver planos / assinar'}</button>${s.provedor_assinatura_id||s.provedor?'<button class="btn" type="button" onclick="sincronizarAssinaturaEdifiq11()">↻ Sincronizar</button>':''}${canCancel?'<button class="btn danger" type="button" onclick="cancelarAssinaturaEdifiq11()">Cancelar renovação</button>':''}</div><h4 style="margin:15px 0 0">Histórico de cobranças</h4>${historyHtml11()}`;
     const head=modal.querySelector('.modalHead');if(head)head.insertAdjacentElement('afterend',card);else modal.querySelector('.modalBox')?.prepend(card);
   }
 
@@ -17664,7 +17667,7 @@ body.edLight .ed23InviteBanner{color:#15351f;background:#edfdf3;border-color:#9f
     setTimeout(menu,900);setTimeout(menu,1900);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-  const mo=new MutationObserver(()=>{if(!q('edInviteMenu23'))setTimeout(menu,350)});mo.observe(document.documentElement,{childList:true,subtree:true});
+  /* performance: observer contínuo de convites removido */
 })();
 </script>
 
@@ -17783,7 +17786,7 @@ body.edLight #edDeploy24M .sub{color:#4b5563!important}
   }
   function init(){banner();setTimeout(menu,1100);setTimeout(menu,2200)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-  const mo=new MutationObserver(()=>{if(!q('edDeployMenu24'))setTimeout(menu,400)});mo.observe(document.documentElement,{childList:true,subtree:true});
+  /* performance: observer contínuo de deploy removido */
 })();
 </script>
 <style id="ed25Style">
@@ -17851,16 +17854,16 @@ body.edLight #edOfficial25M .ed25State.ok{color:#067647}body.edLight #edOfficial
   const previousGenerate=window.ed23Generate;
   if(typeof previousGenerate==='function')window.ed23Generate=async function(){const e=await tests();if(!techReady(e)){try{await openOfficial25()}catch(_){ }alert('Primeiro convite real bloqueado: conclua a liberação técnica em Endereço oficial • Primeiro cliente.');return}return previousGenerate.apply(this,arguments)};
   async function menu(){if(q('edOfficialMenu25'))return;const u=await admin();if(!u)return;const anchor=q('edDeployMenu24')||q('edInviteMenu23')||document.querySelector('.edifiqDrawerAccount');if(!anchor)return;const bt=document.createElement('button');bt.id='edOfficialMenu25';bt.className='edifiqDataRow';bt.type='button';bt.setAttribute('onclick','openOfficial25()');bt.innerHTML='<span>🏁</span><b>Endereço oficial • Primeiro cliente</b><span class="edifiqChevron">›</span>';anchor.classList.contains('edifiqDrawerAccount')?anchor.insertAdjacentElement('beforebegin',bt):anchor.insertAdjacentElement('afterend',bt)}
-  function init(){setTimeout(menu,1100);setTimeout(menu,2300)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();new MutationObserver(()=>{if(!q('edOfficialMenu25'))setTimeout(menu,350)}).observe(document.documentElement,{childList:true,subtree:true});
+  function init(){setTimeout(menu,1100);setTimeout(menu,2300)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */
 })();
 </script>
 <style id="ed27css">#ed27M .g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}#ed27M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}#ed27M .n{font-size:24px;font-weight:900}#ed27M .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:7px}#ed27M .s{padding:6px;border-radius:8px;background:#1e293b;font-size:12px}#ed27M .s.ok{background:#14532d;color:#dcfce7}body.edLight #ed27M .c{background:#fff;color:#111827;border-color:#cbd5e1}body.edLight #ed27M .s{background:#f1f5f9;color:#334155}body.edLight #ed27M .s.ok{background:#dcfce7;color:#14532d}@media(max-width:700px){#ed27M .g{grid-template-columns:repeat(2,1fr)}#ed27M .steps{grid-template-columns:repeat(2,1fr)}}</style>
 <script id="ed27js">
-(function(){'use strict';window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';window.EDIFIQ_VERSION='27.0.0';const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));function SB(){return window.supabaseClient||window.sb||window.supabase||null}function prog(c){let a=['onboarding_conta','onboarding_obra','onboarding_equipe','onboarding_financeiro','onboarding_backup','onboarding_pdf'];let n=a.filter(k=>!!c[k]).length;return[n,Math.round(n/6*100)]}function modal(){let m=document.getElementById('ed27M');if(m)return m;m=document.createElement('div');m.id='ed27M';m.className='modal';m.style.zIndex='10050';m.innerHTML='<div class="modalBox" style="max-width:960px;width:min(96vw,960px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>👤 Primeiro cliente • Piloto</b><div class="small muted">Etapa 27 • domínio + onboarding acompanhado</div></div><button class="iconBtn" id="ed27close">×</button></div><div id="ed27B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('ed27close').onclick=()=>m.classList.remove('show');return m}async function open27(){let m=modal(),b=document.getElementById('ed27B');m.classList.add('show');b.textContent='Verificando ambiente e piloto…';try{let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let se=await s.auth.getSession(),session=se?.data?.session;if(!session)throw Error('Entre na conta administradora.');let origin=location.origin,secure=location.protocol==='https:';let health={configured:false,valid:false,matches:false};try{let r=await s.functions.invoke('edifiq-public-health',{body:{current_origin:origin}});if(!r.error&&r.data)health=r.data}catch(_){}let legal=false,del=false;if(secure){try{legal=(await fetch('./privacidade.html',{cache:'no-store'})).ok}catch(_){}try{del=(await fetch('./exclusao-conta.html',{cache:'no-store'})).ok}catch(_){}}let [cr,ir,vr]=await Promise.all([s.from('edifiq_piloto_clientes').select('*').order('criado_em',{ascending:true}),s.from('edifiq_piloto_incidentes').select('*').order('criado_em',{ascending:false}),s.from('edifiq_piloto_convites').select('id,cliente_piloto_id,status,resgatado_em').order('criado_em',{ascending:false})]);if(cr.error)throw cr.error;if(ir.error)throw ir.error;if(vr.error)throw vr.error;let c=cr.data||[],i=ir.data||[],v=vr.data||[],ab=i.filter(x=>x.status!=='resolvido'),crit=ab.filter(x=>['alta','critica','crítica'].includes(String(x.severidade||'').toLowerCase())),res=v.filter(x=>x.status==='resgatado').length,comp=c.filter(x=>prog(x)[0]===6).length,domainOK=secure&&health.configured&&health.valid&&health.matches&&legal&&del;let steps=[['Conta','onboarding_conta'],['Obra','onboarding_obra'],['Equipe','onboarding_equipe'],['Financeiro','onboarding_financeiro'],['Backup','onboarding_backup'],['PDF','onboarding_pdf']];let clients=c.length?c.map(x=>{let p=prog(x);return '<div class="c" style="margin-top:8px"><div style="display:flex;justify-content:space-between"><div><b>'+E(x.nome)+'</b><div class="small muted">'+E(x.email||'Sem e-mail')+' • '+E(x.status)+'</div></div><b>'+p[1]+'%</b></div><div class="steps">'+steps.map(q=>'<div class="s '+(x[q[1]]?'ok':'')+'">'+(x[q[1]]?'✓':'○')+' '+q[0]+'</div>').join('')+'</div></div>'}).join(''):'<div class="c" style="margin-top:8px"><b>Nenhum cliente piloto ainda.</b><div class="small muted">Cadastre somente o primeiro cliente autorizado.</div></div>';let status=!domainOK?'DOMÍNIO AINDA NÃO LIBERADO':!c.length?'AGUARDANDO PRIMEIRO CLIENTE':crit.length?'BLOQUEADO POR INCIDENTE':comp&&res?'PRIMEIRO CLIENTE VALIDADO':'ONBOARDING EM ANDAMENTO';b.innerHTML='<div class="c"><b>'+status+'</b><div class="small muted">O lançamento público continua bloqueado nesta etapa.</div></div><div class="g" style="margin-top:8px"><div class="c"><div class="small muted">HTTPS + domínio</div><div class="n">'+(domainOK?'✓':'!')+'</div></div><div class="c"><div class="small muted">Clientes</div><div class="n">'+c.length+'</div></div><div class="c"><div class="small muted">Convites resgatados</div><div class="n">'+res+'</div></div><div class="c"><div class="small muted">Incidentes</div><div class="n">'+ab.length+'</div></div></div><div class="c" style="margin-top:8px"><b>Domínio oficial</b><div class="small muted">HTTPS: '+(secure?'OK':'Pendente')+' • URL pública: '+(health.matches?'corresponde':'pendente')+' • Privacidade: '+(legal?'OK':'pendente')+' • Exclusão: '+(del?'OK':'pendente')+'</div></div>'+clients+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="primary" id="e27clients">👥 Clientes • Piloto</button><button class="secondary" id="e27inv">✉️ Convites</button><button class="secondary" id="e27refresh">↻ Atualizar</button></div>';document.getElementById('e27clients').onclick=()=>window.openPiloto21?.();document.getElementById('e27inv').onclick=()=>{if(!domainOK){alert('Convite real bloqueado até HTTPS, URL pública e páginas legais estarem corretos.');return}window.openConvites23?.()};document.getElementById('e27refresh').onclick=open27}catch(e){b.innerHTML='<div class="c"><b>Não foi possível carregar.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}}window.openEtapa27=open27;function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Primeiro cliente • Piloto')))return;let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>👤</span><span>Primeiro cliente • Piloto</span>';q.onclick=open27;d.appendChild(q)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);new MutationObserver(add).observe(document.documentElement,{childList:true,subtree:true});})();
+(function(){'use strict';window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';window.EDIFIQ_VERSION='27.0.0';const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));function SB(){return window.supabaseClient||window.sb||window.supabase||null}function prog(c){let a=['onboarding_conta','onboarding_obra','onboarding_equipe','onboarding_financeiro','onboarding_backup','onboarding_pdf'];let n=a.filter(k=>!!c[k]).length;return[n,Math.round(n/6*100)]}function modal(){let m=document.getElementById('ed27M');if(m)return m;m=document.createElement('div');m.id='ed27M';m.className='modal';m.style.zIndex='10050';m.innerHTML='<div class="modalBox" style="max-width:960px;width:min(96vw,960px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>👤 Primeiro cliente • Piloto</b><div class="small muted">Etapa 27 • domínio + onboarding acompanhado</div></div><button class="iconBtn" id="ed27close">×</button></div><div id="ed27B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('ed27close').onclick=()=>m.classList.remove('show');return m}async function open27(){let m=modal(),b=document.getElementById('ed27B');m.classList.add('show');b.textContent='Verificando ambiente e piloto…';try{let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let se=await s.auth.getSession(),session=se?.data?.session;if(!session)throw Error('Entre na conta administradora.');let origin=location.origin,secure=location.protocol==='https:';let health={configured:false,valid:false,matches:false};try{let r=await s.functions.invoke('edifiq-public-health',{body:{current_origin:origin}});if(!r.error&&r.data)health=r.data}catch(_){}let legal=false,del=false;if(secure){try{legal=(await fetch('./privacidade.html',{cache:'no-store'})).ok}catch(_){}try{del=(await fetch('./exclusao-conta.html',{cache:'no-store'})).ok}catch(_){}}let [cr,ir,vr]=await Promise.all([s.from('edifiq_piloto_clientes').select('*').order('criado_em',{ascending:true}),s.from('edifiq_piloto_incidentes').select('*').order('criado_em',{ascending:false}),s.from('edifiq_piloto_convites').select('id,cliente_piloto_id,status,resgatado_em').order('criado_em',{ascending:false})]);if(cr.error)throw cr.error;if(ir.error)throw ir.error;if(vr.error)throw vr.error;let c=cr.data||[],i=ir.data||[],v=vr.data||[],ab=i.filter(x=>x.status!=='resolvido'),crit=ab.filter(x=>['alta','critica','crítica'].includes(String(x.severidade||'').toLowerCase())),res=v.filter(x=>x.status==='resgatado').length,comp=c.filter(x=>prog(x)[0]===6).length,domainOK=secure&&health.configured&&health.valid&&health.matches&&legal&&del;let steps=[['Conta','onboarding_conta'],['Obra','onboarding_obra'],['Equipe','onboarding_equipe'],['Financeiro','onboarding_financeiro'],['Backup','onboarding_backup'],['PDF','onboarding_pdf']];let clients=c.length?c.map(x=>{let p=prog(x);return '<div class="c" style="margin-top:8px"><div style="display:flex;justify-content:space-between"><div><b>'+E(x.nome)+'</b><div class="small muted">'+E(x.email||'Sem e-mail')+' • '+E(x.status)+'</div></div><b>'+p[1]+'%</b></div><div class="steps">'+steps.map(q=>'<div class="s '+(x[q[1]]?'ok':'')+'">'+(x[q[1]]?'✓':'○')+' '+q[0]+'</div>').join('')+'</div></div>'}).join(''):'<div class="c" style="margin-top:8px"><b>Nenhum cliente piloto ainda.</b><div class="small muted">Cadastre somente o primeiro cliente autorizado.</div></div>';let status=!domainOK?'DOMÍNIO AINDA NÃO LIBERADO':!c.length?'AGUARDANDO PRIMEIRO CLIENTE':crit.length?'BLOQUEADO POR INCIDENTE':comp&&res?'PRIMEIRO CLIENTE VALIDADO':'ONBOARDING EM ANDAMENTO';b.innerHTML='<div class="c"><b>'+status+'</b><div class="small muted">O lançamento público continua bloqueado nesta etapa.</div></div><div class="g" style="margin-top:8px"><div class="c"><div class="small muted">HTTPS + domínio</div><div class="n">'+(domainOK?'✓':'!')+'</div></div><div class="c"><div class="small muted">Clientes</div><div class="n">'+c.length+'</div></div><div class="c"><div class="small muted">Convites resgatados</div><div class="n">'+res+'</div></div><div class="c"><div class="small muted">Incidentes</div><div class="n">'+ab.length+'</div></div></div><div class="c" style="margin-top:8px"><b>Domínio oficial</b><div class="small muted">HTTPS: '+(secure?'OK':'Pendente')+' • URL pública: '+(health.matches?'corresponde':'pendente')+' • Privacidade: '+(legal?'OK':'pendente')+' • Exclusão: '+(del?'OK':'pendente')+'</div></div>'+clients+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="primary" id="e27clients">👥 Clientes • Piloto</button><button class="secondary" id="e27inv">✉️ Convites</button><button class="secondary" id="e27refresh">↻ Atualizar</button></div>';document.getElementById('e27clients').onclick=()=>window.openPiloto21?.();document.getElementById('e27inv').onclick=()=>{if(!domainOK){alert('Convite real bloqueado até HTTPS, URL pública e páginas legais estarem corretos.');return}window.openConvites23?.()};document.getElementById('e27refresh').onclick=open27}catch(e){b.innerHTML='<div class="c"><b>Não foi possível carregar.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}}window.openEtapa27=open27;function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Primeiro cliente • Piloto')))return;let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>👤</span><span>Primeiro cliente • Piloto</span>';q.onclick=open27;d.appendChild(q)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */})();
 </script>
 <style id="ed28css">#ed28M .g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}#ed28M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}#ed28M .n{font-size:23px;font-weight:900}.ed28ok{color:#22c55e}.ed28warn{color:#f59e0b}body.edLight #ed28M .c{background:#fff;color:#111827;border-color:#cbd5e1}@media(max-width:700px){#ed28M .g{grid-template-columns:repeat(2,1fr)}}</style>
-<script id="ed28js">(function(){'use strict';window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';window.EDIFIQ_VERSION='28.0.0';const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));function SB(){return window.supabaseClient||window.sb||window.supabase||null}function M(){let m=document.getElementById('ed28M');if(m)return m;m=document.createElement('div');m.id='ed28M';m.className='modal';m.style.zIndex='10060';m.innerHTML='<div class="modalBox" style="max-width:980px;width:min(96vw,980px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>🛡️ Candidata a produção</b><div class="small muted">Etapa 28 • estabilidade e segurança</div></div><button class="iconBtn" id="ed28x">×</button></div><div id="ed28B" style="padding:14px">Verificando…</div></div>';document.body.appendChild(m);document.getElementById('ed28x').onclick=()=>m.classList.remove('show');return m}async function run(){let m=M(),b=document.getElementById('ed28B');m.classList.add('show');b.textContent='Executando auditoria segura…';try{let s=SB(),c=[];c.push(['HTTPS',location.protocol==='https:','Endereço oficial']);c.push(['Manifest',!!document.querySelector('link[rel="manifest"]'),'PWA']);c.push(['Service Worker','serviceWorker'in navigator,'PWA/offline']);c.push(['IndexedDB','indexedDB'in window,'Cache local']);c.push(['Web Crypto',!!window.crypto?.subtle,'Backup/segurança']);let se=null;if(s?.auth){let r=await s.auth.getSession();se=r?.data?.session||null}c.push(['Sessão',!!se,'Autenticação']);let dom=false;if(s?.functions&&se){try{let r=await s.functions.invoke('edifiq-public-health',{body:{current_origin:location.origin}});dom=!!r?.data?.matches}catch(_){}}c.push(['Domínio oficial',dom,'EDIFIQ_PUBLIC_URL']);let legal=false,del=false;if(location.protocol==='https:'){try{legal=(await fetch('./privacidade.html',{cache:'no-store'})).ok}catch(_){}try{del=(await fetch('./exclusao-conta.html',{cache:'no-store'})).ok}catch(_){}}c.push(['Privacidade',legal,'Página pública']);c.push(['Exclusão de conta',del,'Página pública']);let pass=c.filter(x=>x[1]).length,score=Math.round(pass/c.length*100),ready=score===100,rows=c.map(x=>'<div class="c" style="margin-top:7px;display:flex;justify-content:space-between"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'ed28ok':'ed28warn')+'">'+(x[1]?'OK':'PENDENTE')+'</b></div>').join('');b.innerHTML='<div class="g"><div class="c"><div class="small muted">Build</div><div class="n">v28</div></div><div class="c"><div class="small muted">Score</div><div class="n">'+score+'%</div></div><div class="c"><div class="small muted">Requisitos</div><div class="n">'+pass+'/'+c.length+'</div></div><div class="c"><div class="small muted">Status</div><div class="n '+(ready?'ed28ok':'ed28warn')+'">'+(ready?'RC':'TESTE')+'</div></div></div><div class="c" style="margin-top:8px"><b>'+(ready?'Candidata técnica pronta para piloto real':'Ainda existem pendências de ambiente')+'</b><div class="small muted">Não libera venda pública automaticamente. Primeiro conclua o piloto real.</div></div>'+rows+'<div style="display:flex;gap:8px;margin-top:10px"><button class="primary" id="e28r">↻ Repetir</button><button class="secondary" id="e28p">👤 Primeiro cliente</button></div>';document.getElementById('e28r').onclick=run;document.getElementById('e28p').onclick=()=>window.openEtapa27?.()}catch(e){b.innerHTML='<div class="c"><b>Falha na auditoria.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}}window.openEtapa28=run;function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Candidata a produção')))return;let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🛡️</span><span>Candidata a produção</span>';q.onclick=run;d.appendChild(q)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);new MutationObserver(add).observe(document.documentElement,{childList:true,subtree:true});})();</script><style id="ed29css">#ed29M .g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}#ed29M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}#ed29M .n{font-size:23px;font-weight:900}.e29ok{color:#22c55e}.e29w{color:#f59e0b}.e29b{color:#ef4444}#ed29M .row{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(148,163,184,.15)}body.edLight #ed29M .c{background:#fff;color:#111827;border-color:#cbd5e1}@media(max-width:700px){#ed29M .g{grid-template-columns:repeat(2,1fr)}}</style>
-<script id="ed29js">(function(){'use strict';window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';window.EDIFIQ_VERSION='29.0.0';const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));function SB(){return window.supabaseClient||window.sb||window.supabase||null}function M(){let m=document.getElementById('ed29M');if(m)return m;m=document.createElement('div');m.id='ed29M';m.className='modal';m.style.zIndex='10070';m.innerHTML='<div class="modalBox" style="max-width:980px;width:min(96vw,980px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>🚦 Piloto real • Decisão</b><div class="small muted">Etapa 29 • critérios objetivos antes dos primeiros pagantes</div></div><button class="iconBtn" id="e29x">×</button></div><div id="e29B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('e29x').onclick=()=>m.classList.remove('show');return m}async function run(){let m=M(),b=document.getElementById('e29B');m.classList.add('show');b.textContent='Calculando situação real do piloto…';try{let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let se=await s.auth.getSession();if(!se?.data?.session)throw Error('Entre na conta administradora.');let [cr,ir,vr]=await Promise.all([s.from('edifiq_piloto_clientes').select('*').order('criado_em',{ascending:true}),s.from('edifiq_piloto_incidentes').select('*'),s.from('edifiq_piloto_convites').select('id,cliente_id,status,usado_em,expira_em')]);if(cr.error)throw cr.error;if(ir.error)throw ir.error;if(vr.error)throw vr.error;let cs=cr.data||[],inc=(ir.data||[]).filter(x=>x.status!=='resolvido'),grave=inc.filter(x=>['alta','critica','crítica'].includes(String(x.severidade||'').toLowerCase())),conv=vr.data||[],used=conv.filter(x=>x.status==='usado'||x.status==='resgatado').length,keys=['onboarding_conta','onboarding_obra','onboarding_equipe','onboarding_financeiro','onboarding_backup','onboarding_pdf'],complete=cs.filter(x=>keys.every(k=>!!x[k])).length,active=cs.filter(x=>['ativo','onboarding'].includes(String(x.status||'').toLowerCase())).length;let criteria=[['Há cliente piloto real',cs.length>=1,cs.length+' cadastrado(s)'],['Convite real foi resgatado',used>=1,used+' resgatado(s)'],['Onboarding completo',complete>=1,complete+' completo(s)'],['Sem incidente alto/crítico',grave.length===0,grave.length+' grave(s) aberto(s)'],['Sem incidente aberto',inc.length===0,inc.length+' aberto(s)']];let passed=criteria.filter(x=>x[1]).length,score=Math.round(passed/criteria.length*100),decision=(cs.length>=1&&used>=1&&complete>=1&&grave.length===0)?'APTO PARA PRIMEIROS PAGANTES':'MANTER NO PILOTO',cls=decision.startsWith('APTO')?'e29ok':'e29w';let rows=criteria.map(x=>'<div class="row"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'e29ok':'e29w')+'">'+(x[1]?'APROVADO':'PENDENTE')+'</b></div>').join('');b.innerHTML='<div class="c"><b class="'+cls+'">'+decision+'</b><div class="small muted">A decisão é calculada com dados reais do piloto. Nenhuma cobrança ou convite é criado automaticamente.</div></div><div class="g" style="margin-top:8px"><div class="c"><div class="small muted">Clientes piloto</div><div class="n">'+cs.length+'</div></div><div class="c"><div class="small muted">Ativos/onboarding</div><div class="n">'+active+'</div></div><div class="c"><div class="small muted">Onboarding 100%</div><div class="n">'+complete+'</div></div><div class="c"><div class="small muted">Aprovação</div><div class="n">'+score+'%</div></div></div><div class="c" style="margin-top:8px"><b>Critérios de liberação</b>'+rows+'</div><div class="c" style="margin-top:8px"><b>Regra comercial</b><div class="small muted">Somente avançar para cliente pagante quando existir convite real resgatado, onboarding completo e nenhum incidente alto/crítico aberto. Antes de cobrança real, validar Mercado Pago e cancelamento em ambiente controlado.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="primary" id="e29r">↻ Atualizar</button><button class="secondary" id="e29c">👥 Clientes</button><button class="secondary" id="e29i">✉️ Convites</button></div>';document.getElementById('e29r').onclick=run;document.getElementById('e29c').onclick=()=>window.openPiloto21?.();document.getElementById('e29i').onclick=()=>window.openConvites23?.()}catch(e){b.innerHTML='<div class="c"><b>Não foi possível calcular.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}}window.openEtapa29=run;function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Piloto real • Decisão')))return;let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🚦</span><span>Piloto real • Decisão</span>';q.onclick=run;d.appendChild(q)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);new MutationObserver(add).observe(document.documentElement,{childList:true,subtree:true});})();</script>
+<script id="ed28js">(function(){'use strict';window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';window.EDIFIQ_VERSION='28.0.0';const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));function SB(){return window.supabaseClient||window.sb||window.supabase||null}function M(){let m=document.getElementById('ed28M');if(m)return m;m=document.createElement('div');m.id='ed28M';m.className='modal';m.style.zIndex='10060';m.innerHTML='<div class="modalBox" style="max-width:980px;width:min(96vw,980px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>🛡️ Candidata a produção</b><div class="small muted">Etapa 28 • estabilidade e segurança</div></div><button class="iconBtn" id="ed28x">×</button></div><div id="ed28B" style="padding:14px">Verificando…</div></div>';document.body.appendChild(m);document.getElementById('ed28x').onclick=()=>m.classList.remove('show');return m}async function run(){let m=M(),b=document.getElementById('ed28B');m.classList.add('show');b.textContent='Executando auditoria segura…';try{let s=SB(),c=[];c.push(['HTTPS',location.protocol==='https:','Endereço oficial']);c.push(['Manifest',!!document.querySelector('link[rel="manifest"]'),'PWA']);c.push(['Service Worker','serviceWorker'in navigator,'PWA/offline']);c.push(['IndexedDB','indexedDB'in window,'Cache local']);c.push(['Web Crypto',!!window.crypto?.subtle,'Backup/segurança']);let se=null;if(s?.auth){let r=await s.auth.getSession();se=r?.data?.session||null}c.push(['Sessão',!!se,'Autenticação']);let dom=false;if(s?.functions&&se){try{let r=await s.functions.invoke('edifiq-public-health',{body:{current_origin:location.origin}});dom=!!r?.data?.matches}catch(_){}}c.push(['Domínio oficial',dom,'EDIFIQ_PUBLIC_URL']);let legal=false,del=false;if(location.protocol==='https:'){try{legal=(await fetch('./privacidade.html',{cache:'no-store'})).ok}catch(_){}try{del=(await fetch('./exclusao-conta.html',{cache:'no-store'})).ok}catch(_){}}c.push(['Privacidade',legal,'Página pública']);c.push(['Exclusão de conta',del,'Página pública']);let pass=c.filter(x=>x[1]).length,score=Math.round(pass/c.length*100),ready=score===100,rows=c.map(x=>'<div class="c" style="margin-top:7px;display:flex;justify-content:space-between"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'ed28ok':'ed28warn')+'">'+(x[1]?'OK':'PENDENTE')+'</b></div>').join('');b.innerHTML='<div class="g"><div class="c"><div class="small muted">Build</div><div class="n">v28</div></div><div class="c"><div class="small muted">Score</div><div class="n">'+score+'%</div></div><div class="c"><div class="small muted">Requisitos</div><div class="n">'+pass+'/'+c.length+'</div></div><div class="c"><div class="small muted">Status</div><div class="n '+(ready?'ed28ok':'ed28warn')+'">'+(ready?'RC':'TESTE')+'</div></div></div><div class="c" style="margin-top:8px"><b>'+(ready?'Candidata técnica pronta para piloto real':'Ainda existem pendências de ambiente')+'</b><div class="small muted">Não libera venda pública automaticamente. Primeiro conclua o piloto real.</div></div>'+rows+'<div style="display:flex;gap:8px;margin-top:10px"><button class="primary" id="e28r">↻ Repetir</button><button class="secondary" id="e28p">👤 Primeiro cliente</button></div>';document.getElementById('e28r').onclick=run;document.getElementById('e28p').onclick=()=>window.openEtapa27?.()}catch(e){b.innerHTML='<div class="c"><b>Falha na auditoria.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}}window.openEtapa28=run;function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Candidata a produção')))return;let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🛡️</span><span>Candidata a produção</span>';q.onclick=run;d.appendChild(q)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */})();</script><style id="ed29css">#ed29M .g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}#ed29M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}#ed29M .n{font-size:23px;font-weight:900}.e29ok{color:#22c55e}.e29w{color:#f59e0b}.e29b{color:#ef4444}#ed29M .row{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(148,163,184,.15)}body.edLight #ed29M .c{background:#fff;color:#111827;border-color:#cbd5e1}@media(max-width:700px){#ed29M .g{grid-template-columns:repeat(2,1fr)}}</style>
+<script id="ed29js">(function(){'use strict';window.EDIFIQ_BUILD='2026-10-11-etapa41-mesclagem-segura-candidata-final';window.EDIFIQ_VERSION='29.0.0';const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));function SB(){return window.supabaseClient||window.sb||window.supabase||null}function M(){let m=document.getElementById('ed29M');if(m)return m;m=document.createElement('div');m.id='ed29M';m.className='modal';m.style.zIndex='10070';m.innerHTML='<div class="modalBox" style="max-width:980px;width:min(96vw,980px);max-height:92vh;overflow:auto"><div class="modalHeader"><div><b>🚦 Piloto real • Decisão</b><div class="small muted">Etapa 29 • critérios objetivos antes dos primeiros pagantes</div></div><button class="iconBtn" id="e29x">×</button></div><div id="e29B" style="padding:14px">Carregando…</div></div>';document.body.appendChild(m);document.getElementById('e29x').onclick=()=>m.classList.remove('show');return m}async function run(){let m=M(),b=document.getElementById('e29B');m.classList.add('show');b.textContent='Calculando situação real do piloto…';try{let s=SB();if(!s?.auth)throw Error('Supabase indisponível.');let se=await s.auth.getSession();if(!se?.data?.session)throw Error('Entre na conta administradora.');let [cr,ir,vr]=await Promise.all([s.from('edifiq_piloto_clientes').select('*').order('criado_em',{ascending:true}),s.from('edifiq_piloto_incidentes').select('*'),s.from('edifiq_piloto_convites').select('id,cliente_id,status,usado_em,expira_em')]);if(cr.error)throw cr.error;if(ir.error)throw ir.error;if(vr.error)throw vr.error;let cs=cr.data||[],inc=(ir.data||[]).filter(x=>x.status!=='resolvido'),grave=inc.filter(x=>['alta','critica','crítica'].includes(String(x.severidade||'').toLowerCase())),conv=vr.data||[],used=conv.filter(x=>x.status==='usado'||x.status==='resgatado').length,keys=['onboarding_conta','onboarding_obra','onboarding_equipe','onboarding_financeiro','onboarding_backup','onboarding_pdf'],complete=cs.filter(x=>keys.every(k=>!!x[k])).length,active=cs.filter(x=>['ativo','onboarding'].includes(String(x.status||'').toLowerCase())).length;let criteria=[['Há cliente piloto real',cs.length>=1,cs.length+' cadastrado(s)'],['Convite real foi resgatado',used>=1,used+' resgatado(s)'],['Onboarding completo',complete>=1,complete+' completo(s)'],['Sem incidente alto/crítico',grave.length===0,grave.length+' grave(s) aberto(s)'],['Sem incidente aberto',inc.length===0,inc.length+' aberto(s)']];let passed=criteria.filter(x=>x[1]).length,score=Math.round(passed/criteria.length*100),decision=(cs.length>=1&&used>=1&&complete>=1&&grave.length===0)?'APTO PARA PRIMEIROS PAGANTES':'MANTER NO PILOTO',cls=decision.startsWith('APTO')?'e29ok':'e29w';let rows=criteria.map(x=>'<div class="row"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'e29ok':'e29w')+'">'+(x[1]?'APROVADO':'PENDENTE')+'</b></div>').join('');b.innerHTML='<div class="c"><b class="'+cls+'">'+decision+'</b><div class="small muted">A decisão é calculada com dados reais do piloto. Nenhuma cobrança ou convite é criado automaticamente.</div></div><div class="g" style="margin-top:8px"><div class="c"><div class="small muted">Clientes piloto</div><div class="n">'+cs.length+'</div></div><div class="c"><div class="small muted">Ativos/onboarding</div><div class="n">'+active+'</div></div><div class="c"><div class="small muted">Onboarding 100%</div><div class="n">'+complete+'</div></div><div class="c"><div class="small muted">Aprovação</div><div class="n">'+score+'%</div></div></div><div class="c" style="margin-top:8px"><b>Critérios de liberação</b>'+rows+'</div><div class="c" style="margin-top:8px"><b>Regra comercial</b><div class="small muted">Somente avançar para cliente pagante quando existir convite real resgatado, onboarding completo e nenhum incidente alto/crítico aberto. Antes de cobrança real, validar Mercado Pago e cancelamento em ambiente controlado.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="primary" id="e29r">↻ Atualizar</button><button class="secondary" id="e29c">👥 Clientes</button><button class="secondary" id="e29i">✉️ Convites</button></div>';document.getElementById('e29r').onclick=run;document.getElementById('e29c').onclick=()=>window.openPiloto21?.();document.getElementById('e29i').onclick=()=>window.openConvites23?.()}catch(e){b.innerHTML='<div class="c"><b>Não foi possível calcular.</b><div class="small muted">'+E(e?.message||e)+'</div></div>'}}window.openEtapa29=run;function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Piloto real • Decisão')))return;let d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🚦</span><span>Piloto real • Decisão</span>';q.onclick=run;d.appendChild(q)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */})();</script>
 <style id="ed30css">
 #ed30M .g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 #ed30M .c{border:1px solid #334155;border-radius:12px;padding:11px;background:#101827}
@@ -17934,7 +17937,7 @@ async function add(){
  let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>✉️</span><span>Ativação • Primeiro cliente</span>';q.onclick=run;d.appendChild(q)
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
-new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */
 })();
 </script>
 
@@ -18016,7 +18019,7 @@ async function add(){
  let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🧪</span><span>Uso real • Validação</span>';q.onclick=run;d.appendChild(q)
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
-new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */
 })();
 </script>
 
@@ -18106,7 +18109,7 @@ async function add(){
  let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>💳</span><span>Cobrança • Homologação</span>';q.onclick=run;d.appendChild(q)
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
-new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */
 })();
 </script>
 
@@ -18175,7 +18178,7 @@ async function add(){
  let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🛑</span><span>Comercial • Bloqueio</span>';q.onclick=run;d.appendChild(q)
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
-new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */
 })();
 </script>
 
@@ -18262,7 +18265,7 @@ async function add(){
  let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🔐</span><span>Comercial • Liberação controlada</span>';q.onclick=run;d.appendChild(q)
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
-new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */
 })();
 </script>
 
@@ -18367,7 +18370,7 @@ async function add(){
  let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🧪</span><span>Cobrança • Homologação guiada</span>';q.onclick=run;d.appendChild(q)
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
-new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */
 })();
 </script>
 
@@ -18465,7 +18468,7 @@ async function add(){
  let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>1️⃣</span><span>Homologação • Primeiro teste mensal</span>';q.onclick=run;d.appendChild(q)
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
-new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */
 })();
 </script>
 
@@ -18568,7 +18571,7 @@ async function add(){
  let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>2️⃣</span><span>Homologação • Primeiro teste anual</span>';q.onclick=run;d.appendChild(q)
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
-new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */
 })();
 </script>
 
@@ -18669,7 +18672,7 @@ async function add(){
  let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>✅</span><span>Homologação • Revisão final</span>';q.onclick=run;d.appendChild(q)
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
-new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */
 })();
 </script>
 
@@ -18785,7 +18788,7 @@ async function add(){
  let q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🚀</span><span>Produção • Primeiros pagantes</span>';q.onclick=run;d.appendChild(q)
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);
-new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */
 })();
 </script>
 
@@ -18962,7 +18965,7 @@ async function add40(){
  q.onclick=run40;d.appendChild(q)
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add40,700));else setTimeout(add40,700);
-new MutationObserver(()=>add40()).observe(document.documentElement,{childList:true,subtree:true});
+/* performance: observer contínuo etapa 40 removido */
 })();
 </script>
 
@@ -19183,7 +19186,7 @@ edifiqUpdateSyncStatus=function(){
 };
 startEdifiqRealtime=function(){
   const r=baseStartRealtimeV8.apply(this,arguments);
-  clearInterval(v8VerifyTimer);v8VerifyTimer=setInterval(()=>{if(!document.hidden&&navigator.onLine)v8fullSync().catch(()=>{})},15000);
+  clearInterval(v8VerifyTimer);v8VerifyTimer=setInterval(()=>{if(!document.hidden&&navigator.onLine)v8fullSync().catch(()=>{})},45000);
   setTimeout(()=>v8fullSync().catch(()=>{}),300);
   return r;
 };
@@ -20014,7 +20017,7 @@ const ADMIN='junioalef7@gmail.com',BASE_COMMIT='0f80c0ea95219c5754a6b0c460163135
 const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));const SB=()=>window.supabaseClient||window.sb||window.supabase||null;
 function modal(){let m=document.getElementById('ed41M');if(m)return m;m=document.createElement('div');m.id='ed41M';m.className='modal';m.style.zIndex='10190';m.innerHTML='<div class="modalBox" style="max-width:1050px;width:min(97vw,1050px);max-height:94vh;overflow:auto"><div class="modalHeader"><div><b>🧬 Mesclagem • Candidata final</b><div class="small muted">Etapa 41 • main protegido + camadas comerciais</div></div><button class="iconBtn" id="e41x">×</button></div><div id="e41b" style="padding:14px"></div></div>';document.body.appendChild(m);document.getElementById('e41x').onclick=()=>m.classList.remove('show');return m;}
 async function run(){const m=modal(),b=document.getElementById('e41b');m.classList.add('show');b.textContent='Validando candidata mesclada…';try{const s=SB(),ses=(await s?.auth?.getSession?.())?.data?.session;if(!ses)throw Error('Entre na conta administradora.');if(String(ses.user?.email||'').toLowerCase()!==ADMIN)throw Error('Área restrita ao administrador.');let comercial={};try{comercial=(await s.functions.invoke('edifiq-comercial-liberacao',{body:{action:'status'}}))?.data||{};}catch(_){}const vendasBloqueadas=!comercial?.vendas_liberadas;const ids=['edifiq-sync-backup-v8','edifiq-backup-v9-financial-integrity','edifiq-backup-v10-importacao-integral','edifiq-release27-ui','edifiq-ui29-visao-geral-menu','ed34js','ed35js','ed36js','ed37js','ed38js','ed39js','ed40js'];const missing=ids.filter(id=>!document.getElementById(id));const checks=[['Base real do main registrada',true,'Commit '+BASE_COMMIT.slice(0,12)],['Backup/importação integral incorporados',!missing.some(x=>x.includes('backup')),'Camadas v8, v9 e v10'],['Equipe protegida incorporada',!missing.includes('edifiq-release27-ui'),'Diárias abertas + histórico individual de faltas'],['Visão Geral protegida incorporada',!missing.includes('edifiq-ui29-visao-geral-menu'),'Seleção de obra + Menu no primeiro toque'],['Camadas comerciais 34–40 preservadas',!missing.some(x=>/^ed3[4-9]js$/.test(x)||x==='ed40js'),'Homologação, bloqueio e pré-publicação'],['Venda pública protegida',vendasBloqueadas,vendasBloqueadas?'Backend continua bloqueado para venda automática.':'ATENÇÃO: backend informa vendas liberadas.'],['Publicação no GitHub',false,'Nenhum arquivo foi enviado ao repositório nesta etapa.']];b.innerHTML='<div class="c"><div class="hero ok">CANDIDATA MESCLADA • NÃO PUBLICADA</div><div class="small muted">As correções protegidas da produção foram incorporadas à candidata comercial. O main permanece inalterado.</div></div><div class="g" style="margin-top:8px"><div class="c"><div class="small muted">Base</div><div class="n">cf65a5f7588c</div></div><div class="c"><div class="small muted">Versão</div><div class="n">41.0.0</div></div><div class="c"><div class="small muted">Rollback</div><div class="n">main atual</div></div><div class="c"><div class="small muted">Deploy</div><div class="n warn">NÃO FEITO</div></div></div><div class="c" style="margin-top:8px">'+checks.map(x=>'<div class="row"><div><b>'+E(x[0])+'</b><div class="small muted">'+E(x[2])+'</div></div><b class="'+(x[1]?'ok':'warn')+'">'+(x[1]?'OK':'PENDENTE')+'</b></div>').join('')+'</div><div class="c" style="margin-top:8px"><b>Próxima barreira antes de publicar</b><div class="small muted" style="line-height:1.6">Executar a validação da candidata contra o contrato de release do repositório e um smoke test controlado. Só depois uma publicação poderá ser preparada. O rollback continua sendo <code>'+BASE_COMMIT+'</code>.</div></div>'; }catch(e){b.innerHTML='<div class="c"><b>Não foi possível abrir a validação.</b><div class="small muted">'+E(e?.message||e)+'</div></div>';}}
-window.openEtapa41=run;async function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Mesclagem • Candidata final')))return;try{const s=SB(),ses=(await s?.auth?.getSession?.())?.data?.session;if(String(ses?.user?.email||'').toLowerCase()!==ADMIN)return;}catch(_){return;}const d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;const q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🧬</span><span>Mesclagem • Candidata final</span>';q.onclick=run;d.appendChild(q);}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);new MutationObserver(()=>add()).observe(document.documentElement,{childList:true,subtree:true});
+window.openEtapa41=run;async function add(){if([...document.querySelectorAll('button,a')].some(x=>(x.textContent||'').includes('Mesclagem • Candidata final')))return;try{const s=SB(),ses=(await s?.auth?.getSession?.())?.data?.session;if(String(ses?.user?.email||'').toLowerCase()!==ADMIN)return;}catch(_){return;}const d=document.querySelector('#drawer .drawerBody,#drawer .menuBody,#menuDrawer .drawerBody,.drawer .drawerBody,.drawer-content');if(!d)return;const q=document.createElement('button');q.className='menuItem';q.innerHTML='<span>🧬</span><span>Mesclagem • Candidata final</span>';q.onclick=run;d.appendChild(q);}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,700));else setTimeout(add,700);/* EDIFIQ performance: observer administrativo removido; inicialização única já executada. */
 })();
 </script>
 <style id="ed42css">
@@ -20102,9 +20105,158 @@ async function add(){
  }catch(_){}
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(add,800));else setTimeout(add,800);
-new MutationObserver(()=>{if(!document.getElementById('ed42MenuBtn'))add()}).observe(document.documentElement,{childList:true,subtree:true});
+/* performance: observer contínuo etapa 42 removido */
 })();
 </script>
 
+
+<style id="edifiq-final-customer-performance-style">
+.edifiqMenuItem,.edifiqDataRow,.nav button,.edHomeMenuBtn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.edTrialSummaryFinal{margin:12px 0 14px;padding:14px 16px;border:1px solid rgba(59,130,246,.45);border-radius:14px;background:rgba(37,99,235,.10);display:grid;gap:5px}
+.edTrialSummaryFinal strong{font-size:17px}.edTrialSummaryFinal span{font-size:22px;font-weight:900;color:#3b82f6}.edTrialSummaryFinal small{font-size:14px;opacity:.9}
+body.edLight .edTrialSummaryFinal{background:#eff6ff;border-color:#93c5fd;color:#111827}
+</style>
+<script id="edifiq-final-customer-performance">
+(function(){
+  'use strict';
+  const ADMIN_EMAIL='junioalef7@gmail.com';
+  const internalIds=[
+    'edPublicacaoMenu13','edProducaoMenu16','edPilotTestMenu18','edCommercialMenu19','edOpsMenu20',
+    'edPilotMenu21','edMetricsMenu22','edInviteMenu23','edDeployMenu24','edOfficialMenu25','ed42MenuBtn'
+  ];
+  const internalLabels=[
+    'Publicação e suporte','Produção • Piloto','Teste final • Piloto','Teste final do piloto','Comercial • Teste',
+    'Operação • Pré-lançamento','Clientes • Piloto','Métricas • Piloto','Convites • Piloto','Implantação • Piloto',
+    'Endereço oficial • Primeiro cliente','Primeiro cliente • Piloto','Candidata a produção','Piloto real • Decisão',
+    'Mesclagem • Candidata final','Liberação comercial','Homologação','Publicação final','Operação comercial'
+  ];
+  let isAdmin=false, cleanupQueued=false;
+  function textOf(el){return String(el?.textContent||'').replace(/\s+/g,' ').trim()}
+  function cleanupCustomerUI(){
+    cleanupQueued=false;
+    if(isAdmin)return;
+    internalIds.forEach(id=>document.getElementById(id)?.remove());
+    document.querySelectorAll('#menuPasta button,.drawer button,.drawer-content button').forEach(btn=>{
+      const t=textOf(btn);
+      if(internalLabels.some(x=>t.includes(x)))btn.remove();
+    });
+    document.querySelectorAll('.edBillingSetup').forEach(el=>{
+      const t=textOf(el);
+      if(/credenciais privadas|Edge Functions|Access Token|webhook|configuração pendente/i.test(t))el.remove();
+    });
+  }
+  function queueCleanup(){if(cleanupQueued)return;cleanupQueued=true;requestAnimationFrame(cleanupCustomerUI)}
+  async function resolveRole(){
+    try{
+      const client=window.sb||window.supabaseClient;
+      const ses=await client?.auth?.getSession?.();
+      isAdmin=String(ses?.data?.session?.user?.email||window.user?.email||'').toLowerCase()===ADMIN_EMAIL;
+    }catch(_){isAdmin=String(window.user?.email||'').toLowerCase()===ADMIN_EMAIL}
+    cleanupCustomerUI();
+  }
+  // Fecha o menu logo após qualquer ação: o modal/página abre no primeiro toque, sem ficar atrás do drawer.
+  document.addEventListener('click',function(ev){
+    const btn=ev.target.closest?.('#menuPasta .edifiqMenuItem,#menuPasta .edifiqDataRow');
+    if(!btn)return;
+    setTimeout(()=>{
+      const m=document.getElementById('menuPasta');
+      if(m?.classList.contains('open')){
+        m.classList.remove('open');
+        m.setAttribute('aria-hidden','true');
+        document.getElementById('menuPastaBackdrop')?.classList.remove('open');
+      }
+    },0);
+  },false);
+  // Um único observador leve substitui dezenas de observadores administrativos.
+  const obs=new MutationObserver(queueCleanup);
+  const start=()=>{resolveRole();cleanupCustomerUI();obs.observe(document.getElementById('menuPasta')||document.body,{childList:true,subtree:true});};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+  window.addEventListener('pageshow',()=>{resolveRole();cleanupCustomerUI()});
+})();
+</script>
+
+<style id="edifiq-etapa43-visual-menu-performance-mp4">
+/* INÍCIO — teste grátis e planos sempre legíveis, sem película clara por cima. */
+body:not(.edLight) #edSubscriptionBanner{
+  background:#101827!important;background-image:none!important;color:#f8fafc!important;
+  border:1px solid #2f5f9f!important;box-shadow:0 10px 28px rgba(0,0,0,.26)!important;
+  opacity:1!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  position:relative!important;z-index:4!important;
+}
+body:not(.edLight) #edSubscriptionBanner strong{color:#fff!important;opacity:1!important;font-weight:900!important}
+body:not(.edLight) #edSubscriptionBanner small{color:#cbd5e1!important;opacity:1!important}
+body:not(.edLight) #edSubscriptionBanner .edSubBadge.trial{background:#123a6b!important;color:#93c5fd!important;border:1px solid #2563eb!important}
+body:not(.edLight) #edSubscriptionBanner .btn{background:#17202c!important;color:#fff!important;border:1px solid #64748b!important;box-shadow:none!important;opacity:1!important}
+body:not(.edLight) #edSubscriptionBanner .btn:active{transform:scale(.98)}
+
+/* CONFIGURAÇÕES — modo escuro integral, sem cartões/campos brancos misturados. */
+body:not(.edLight) #edConfiguracoesModal,
+body:not(.edLight) #edConfiguracoesModal .modalBox{background:#0b111b!important;color:#f8fafc!important}
+body:not(.edLight) #edConfiguracoesModal .modalHead{background:#0b111b!important;color:#fff!important;border-color:#263244!important}
+body:not(.edLight) #edConfiguracoesModal :is(.card,.edAccountCard,.edBillingPlan,.edSubConfigRows>div,.edBillingRows>div,.edAccountStatus,.note){
+  background:#101827!important;background-image:none!important;color:#f8fafc!important;border-color:#2b3b52!important;box-shadow:none!important
+}
+body:not(.edLight) #edConfiguracoesModal :is(input,select,textarea){background:#0c131e!important;color:#fff!important;border-color:#34445b!important;box-shadow:none!important}
+body:not(.edLight) #edConfiguracoesModal :is(input,textarea)::placeholder{color:#8090a6!important;opacity:1!important}
+body:not(.edLight) #edConfiguracoesModal :is(.sub,small,.muted){color:#aeb9c9!important;opacity:1!important}
+body:not(.edLight) #edConfiguracoesModal .edTrialSummaryFinal{background:#0d2a4d!important;color:#fff!important;border-color:#2563eb!important}
+body:not(.edLight) #edConfiguracoesModal .edTrialSummaryFinal span{color:#60a5fa!important}
+body:not(.edLight) #edConfiguracoesModal .edBillingSetup{background:#2a1d08!important;color:#fde68a!important;border-color:#a16207!important}
+
+/* PLANOS — contraste consistente também no escuro. */
+body:not(.edLight) #edPlanosModal .modalBox{background:#0b111b!important;color:#f8fafc!important}
+body:not(.edLight) #edPlanosModal :is(.card,.edBillingPlan,.note){background:#101827!important;color:#f8fafc!important;border-color:#2b3b52!important}
+body:not(.edLight) #edPlanosModal .edBillingMeta{color:#cbd5e1!important;opacity:1!important}
+
+/* MENU — resposta de toque mais direta e renderização mais leve. */
+#menuPasta{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;will-change:auto!important}
+#menuPastaBackdrop{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transition:opacity .12s ease!important}
+#menuPasta button{touch-action:manipulation!important;cursor:pointer!important;user-select:none!important;-webkit-user-select:none!important}
+#menuPasta button:active{transform:scale(.995)}
+@media(max-width:760px){
+  #menuPasta,.modalBox{animation:none!important}
+  #menuPasta *,#edConfiguracoesModal *,#edPlanosModal *{transition-duration:.12s!important}
+}
+</style>
+<script id="edifiq-etapa43-menu-performance-mp4">
+(function(){
+'use strict';
+window.EDIFIQ_BUILD='2026-10-13-etapa43-visual-menu-performance-mp4';
+window.EDIFIQ_VERSION='43.0.0';
+function closeDrawer43(){
+  const m=document.getElementById('menuPasta'),b=document.getElementById('menuPastaBackdrop');
+  if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true')}
+  if(b){b.classList.remove('open');b.setAttribute('aria-hidden','true')}
+}
+function normalizeMenu43(){
+  const fixes=[
+    ['Relatório automático','openRelatorioObraEdifiq'],['Relatório para Cliente','openRelatorioCliente'],
+    ['Relatório do Trabalhador','openRelatorioTrabalhador'],['Pagamento da Equipe','openPagamentoEquipe'],
+    ['Vale','openAdiantamento'],['Configurações','openConfiguracoes']
+  ];
+  document.querySelectorAll('#menuPasta button').forEach(btn=>{
+    const txt=String(btn.textContent||'').replace(/\s+/g,' ').trim();
+    for(const [label,fn] of fixes){
+      if(txt.includes(label)){
+        btn.onclick=function(ev){
+          ev?.preventDefault?.(); closeDrawer43();
+          requestAnimationFrame(()=>{ try{ if(typeof window[fn]==='function') window[fn](); }catch(e){console.error('EDIFIQ menu',fn,e)} });
+        };
+        break;
+      }
+    }
+  });
+}
+// Evita toque duplo acidental enquanto um modal pesado está sendo aberto.
+let lastTap=0;
+document.addEventListener('pointerup',ev=>{
+  const btn=ev.target?.closest?.('#menuPasta button'); if(!btn)return;
+  const now=performance.now(); if(now-lastTap<180){ev.preventDefault();ev.stopPropagation();return} lastTap=now;
+},{capture:true,passive:false});
+const start=()=>{normalizeMenu43();setTimeout(normalizeMenu43,500);};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+window.addEventListener('pageshow',normalizeMenu43);
+})();
+</script>
 </body>
 </html>
