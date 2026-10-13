@@ -46,7 +46,7 @@ def validate(path):
             (folder / filename).write_text(modules[name], encoding='utf-8')
         (folder / '.release-base.html').write_text(html, encoding='utf-8')
         shutil.copytree(ROOT / 'tests', folder / 'tests')
-        for name in ['release27.cjs', 'release29.cjs', 'calculations.cjs', 'account.cjs']:
+        for name in ['release27.cjs', 'release29.cjs', 'calculations.cjs', 'account.cjs', 'menu.cjs']:
             result = subprocess.run(['node', str(folder / 'tests' / name)], capture_output=True, text=True)
             if result.returncode:
                 raise ValueError('Falha nos testes demonstrativos: ' + result.stdout + result.stderr)

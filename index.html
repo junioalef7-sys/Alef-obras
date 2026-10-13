@@ -3076,18 +3076,23 @@ function toggleMenuPasta(){
  if(b) b.classList.toggle('open',open);
 }
 
-function renderDrawerAccount(){
-  try{
-    const meta=user?.user_metadata||{};
-    const email=String(user?.email||'Conta EDIFIQ');
-    const emailNome=email.includes('@')?email.split('@')[0].replace(/[._-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Minha conta';
-    const nome=String(meta.full_name||meta.name||meta.nome||emailNome||'Minha conta').trim()||'Minha conta';
-    const nomeEl=$('drawerUserName'), emailEl=$('drawerUserEmail'), avatarEl=$('drawerUserAvatar');
-    if(nomeEl)nomeEl.textContent=nome;
-    if(emailEl)emailEl.textContent=email;
-    if(avatarEl)avatarEl.textContent=nome.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'ED';
-  }catch(_){}
+function edifiqAccountIdentity(u,profile=window.__edifiqProfile){
+  const owns=!!u?.id&&!!profile?.id&&String(profile.id)===String(u.id);
+  const meta=u?.user_metadata||{};
+  const name=owns?String(profile.nome??'').trim():[meta.full_name,meta.name,meta.nome].map(v=>String(v??'').trim()).find(Boolean)||'';
+  return {name,email:String(u?.email||'').trim(),profile:owns?profile:null};
 }
+function edifiqRenderAccountForUser(u){
+  window.edifiqSetMenuUser45?.(u);
+  const identity=edifiqAccountIdentity(u);
+  if(!identity.profile)window.__edifiqProfile=null;
+  const label=identity.name||identity.email||'Minha conta';
+  const ne=$('drawerUserName'),ee=$('drawerUserEmail'),av=$('drawerUserAvatar');
+  if(ne)ne.textContent=label;
+  if(ee){ee.textContent=identity.name?identity.email:'';ee.hidden=!identity.name;}
+  if(av)av.textContent=identity.name?identity.name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase():identity.email?identity.email[0].toUpperCase():'ED';
+}
+function renderDrawerAccount(){edifiqRenderAccountForUser(user);}
 
 function openConfiguracoes(){
   let m=document.getElementById('edConfiguracoesModal');
@@ -3387,7 +3392,10 @@ function bindSupabaseAuth(){
   if(!sb || sb.__edifiqAuthBound) return;
   sb.__edifiqAuthBound=true;
   sb.__edifiqAuthProcessing=null;
-  sb.auth.onAuthStateChange((event,session)=>{ setTimeout(async()=>{
+  sb.auth.onAuthStateChange((event,session)=>{
+    if(String(window.__edifiqProfile?.id||'')!==String(session?.user?.id||''))window.__edifiqProfile=null;
+    edifiqRenderAccountForUser(session?.user||null);
+    setTimeout(async()=>{
     try{
       const nextUser=session?.user||null;
       const nextId=String(nextUser?.id||'');
@@ -3424,6 +3432,7 @@ function bindSupabaseAuth(){
       sb.__edifiqAuthProcessing=processing;
       if(currentId!==nextId){stopEdifiqRealtime();edifiqResetInMemoryState();}
       user=nextUser;
+      setTimeout(()=>{if(String(user?.id||'')===nextId)window.edifiqRefreshAccountProfile?.();},0);
       if(currentId!==nextId) edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(nextId)||null;
 
       // Nunca bloquear a entrada na interface aguardando a RPC de contexto.
@@ -14885,32 +14894,32 @@ body.edLight #financeiro > .pageTitle > button.btn.gold:active{
   window.__edifiqProfile=null;
   async function currentUser6(){
     if(!sb)return user||null;
+    const requestUser=user;
     try{
       const {data:sessionData,error:sessionError}=await sb.auth.getSession();
       if(sessionError)throw sessionError;
       const sessionUser=sessionData?.session?.user||null;
-      if(!sessionUser)return null;
+      if(user!==requestUser&&String(user?.id||'')!==String(sessionUser?.id||''))return user||null;
+      if(!sessionUser){window.__edifiqProfile=null;return null;}
       user=sessionUser;
       return sessionUser;
     }catch(e){console.warn('EDIFIQ perfil: sessão ainda não confirmada',e)}
     return null;
   }
   async function loadProfile6(){
-    const u=await currentUser6();if(!u||!sb)return null;
+    const u=await currentUser6();
+    if(!u?.id||!sb){window.__edifiqProfile=null;return null;}
+    if(String(window.__edifiqProfile?.id||'')!==String(u.id))window.__edifiqProfile=null;
     try{
       const {data,error}=await sb.from('profiles').select('id,nome,telefone,endereco,updated_at').eq('id',u.id).maybeSingle();
-      if(error)throw error;window.__edifiqProfile=data||null;return data||null;
-    }catch(e){console.warn('EDIFIQ perfil: leitura',e);return window.__edifiqProfile}
+      if(String(user?.id||'')!==String(u.id))return null;
+      if(error)throw error;
+      window.__edifiqProfile=data&&String(data.id)===String(u.id)?data:null;
+      renderDrawerAccount();return window.__edifiqProfile;
+    }catch(e){console.warn('EDIFIQ perfil: leitura',e);return edifiqAccountIdentity(user).profile;}
   }
-
-  const oldDrawer6=window.renderDrawerAccount;
-  window.renderDrawerAccount=function(){
-    try{oldDrawer6?.apply(this,arguments)}catch(_){ }
-    const p=window.__edifiqProfile,u=user;
-    const nome=String(p?.nome||u?.user_metadata?.full_name||u?.user_metadata?.name||u?.user_metadata?.nome||'').trim();
-    if(nome){const ne=$('drawerUserName'),av=$('drawerUserAvatar');if(ne)ne.textContent=nome;if(av)av.textContent=nome.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'ED'}
-    if($('drawerUserEmail'))$('drawerUserEmail').textContent=u?.email||'Conta EDIFIQ';
-  };
+  window.edifiqRefreshAccountProfile=loadProfile6;
+  window.renderDrawerAccount=function(){edifiqRenderAccountForUser(user);};
 
   function configMarkup6(){
     return `<div class="modalBox" style="max-width:780px;max-height:90vh;overflow:auto">
@@ -14965,8 +14974,9 @@ body.edLight #financeiro > .pageTitle > button.btn.gold:active{
     if(!m){m=document.createElement('div');m.id='edConfiguracoesModal';m.className='modal open';document.body.appendChild(m)}else m.classList.add('open');
     m.innerHTML=configMarkup6();
     const u=await currentUser6(),p=await loadProfile6();
-    const meta=u?.user_metadata||{};
-    const nome=String(p?.nome||meta.full_name||meta.name||meta.nome||'').trim();
+    if(String(user?.id||'')!==String(u?.id||''))return;
+    const identity=edifiqAccountIdentity(u,p);
+    const nome=identity.name;
     if($('configPerfilNome'))$('configPerfilNome').value=nome;
     if($('configPerfilTelefone'))$('configPerfilTelefone').value=p?.telefone||'';
     if($('configPerfilEndereco'))$('configPerfilEndereco').value=p?.endereco||'';
@@ -14987,10 +14997,12 @@ body.edLight #financeiro > .pageTitle > button.btn.gold:active{
       const payload={id:u.id,nome:nome||null,telefone:telefone||null,endereco:endereco||null};
       const {data,error}=await sb.from('profiles').upsert(payload,{onConflict:'id'}).select('id,nome,telefone,endereco,updated_at').single();
       if(error)throw error;
+      if(String(user?.id||'')!==String(u.id))return;
       // Metadados servem apenas para apresentação do nome; autorização continua no banco/RLS.
       const {data:authData,error:authError}=await sb.auth.updateUser({data:{nome:nome||null,name:nome||null,full_name:nome||null}});
       if(authError)console.warn('Perfil salvo; metadata do Auth não atualizada',authError);
-      if(authData?.user)user=authData.user;
+      if(String(user?.id||'')!==String(u.id))return;
+      if(authData?.user&&String(authData.user.id)===String(u.id))user=authData.user;
       window.__edifiqProfile=data||payload;
       renderDrawerAccount();
       if($('configNomeUsuario'))$('configNomeUsuario').textContent=nome||'—';
@@ -15699,12 +15711,12 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
     const days=daysRemaining10(s),access=computeAccess10(s);
     b=document.createElement('div');b.id='edSubscriptionBanner';b.className='edSubBanner';
     b.innerHTML=`<div><strong>${esc10(label10(s))}${days!=null?` • ${days} dia${days===1?'':'s'} restante${days===1?'':'s'}`:''}</strong><small>${access?'Seu EDIFIQ está liberado.':'Escolha um plano para continuar usando o EDIFIQ.'}</small></div><div style="display:flex;align-items:center;gap:8px"><span class="edSubBadge ${badgeClass10(s)}">${esc10(label10(s))}</span><button class="btn" type="button" onclick="openPlanosEdifiq10()">Planos</button></div>`;
-    const anchor=dash.querySelector('.pageTitle,.pageHead,.titleRow');if(anchor)anchor.insertAdjacentElement('afterend',b);else dash.prepend(b);
+    const anchor=dash.querySelector('.edHomeHeader,.pageTitle,.pageHead,.titleRow');if(anchor)anchor.insertAdjacentElement('afterend',b);else dash.prepend(b);
   }
 
   function renderGate10(){
     let gate=$('edSubscriptionGate');const s=window.__edifiqSubscription,access=computeAccess10(s);
-    if(!s||access!==false){if(gate)gate.classList.add('hidden');return}
+    if(!user?.id||!s||access!==false){if(gate)gate.classList.add('hidden');return}
     if(!gate){gate=document.createElement('div');gate.id='edSubscriptionGate';gate.className='edSubscriptionGate';document.body.appendChild(gate)}
     gate.classList.remove('hidden');
     gate.innerHTML=`<div class="edSubscriptionGateBox"><h2>Seu acesso precisa de uma assinatura</h2><p class="sub">${esc10(label10(s))}. Seus dados continuam preservados; nenhuma obra, funcionário ou lançamento foi apagado.</p>${planCards10()}<div class="note" style="margin-top:12px">Nesta etapa a cobrança ainda não é processada. A integração com o pagamento será conectada na próxima etapa antes da venda pública.</div><div class="edAccountActions" style="margin-top:14px"><button class="btn" type="button" onclick="logout()">Sair da conta</button></div></div>`;
@@ -15724,7 +15736,7 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
     await loadPlans10();
     let m=$('edSignupModal');if(!m){m=document.createElement('div');m.id='edSignupModal';m.className='modal open';document.body.appendChild(m)}else m.classList.add('open');
     const email=String($('email')?.value||'').trim();
-    m.innerHTML=`<div class="modalBox" style="max-width:660px;max-height:92vh;overflow:auto"><div class="modalHead"><div><h2>Criar conta EDIFIQ</h2><p class="sub">7 dias grátis. Nenhuma cobrança agora.</p></div><button class="x" onclick="closeM('edSignupModal')">×</button></div><div class="edSignupGrid"><label class="full">Nome completo<input id="signup10Nome" autocomplete="name" placeholder="Seu nome"></label><label>Perfil<select id="signup10Tipo"><option value="autonomo">Autônomo</option><option value="empresa">Empresa</option></select></label><label>Plano pretendido<select id="signup10Plano"><option value="mensal">Mensal — R$ 39,90/mês</option><option value="anual">Anual — R$ 399,00/ano</option></select><div class="edCommercialNote" style="margin-top:8px;font-size:14px;line-height:1.45"><b>Mensal:</b> R$ 39,90/mês &nbsp;•&nbsp; <b>Anual:</b> R$ 399,00/ano</div></label><label class="full">E-mail<input id="signup10Email" type="email" autocomplete="email" value="${esc10(email)}" placeholder="seu@email.com"></label><label>Senha<input id="signup10Senha" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo 8 caracteres"></label><label>Confirmar senha<input id="signup10Senha2" type="password" autocomplete="new-password" minlength="8"></label></div><div class="edAccountActions" style="margin-top:14px"><button class="btn primary" id="signup10Btn" type="button" onclick="criarContaEdifiq10()">Criar conta e iniciar teste grátis</button></div><p class="edCommercialNote">Ao criar a conta, o teste começa quando o primeiro acesso autenticado for concluído. Dependendo da configuração do Supabase, será necessário confirmar o e-mail.</p><div id="signup10Msg" class="edAccountStatus"></div></div>`;
+    m.innerHTML=`<div class="modalBox" style="max-width:660px;max-height:92vh;overflow:auto"><div class="modalHead"><div><h2>Criar conta EDIFIQ</h2><p class="sub">7 dias grátis. Nenhuma cobrança agora.</p></div><button class="x" onclick="closeM('edSignupModal')">×</button></div><div class="edSignupGrid"><label class="full">Nome completo<input id="signup10Nome" autocomplete="name" placeholder="Seu nome"></label><label>Perfil<select id="signup10Tipo"><option value="autonomo">Autônomo</option><option value="empresa">Empresa</option></select></label><label>Plano pretendido<select id="signup10Plano"><option value="mensal">Mensal</option><option value="anual">Anual</option></select></label><label class="full">E-mail<input id="signup10Email" type="email" autocomplete="email" value="${esc10(email)}" placeholder="seu@email.com"></label><label>Senha<input id="signup10Senha" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo 8 caracteres"></label><label>Confirmar senha<input id="signup10Senha2" type="password" autocomplete="new-password" minlength="8"></label></div><div class="edAccountActions" style="margin-top:14px"><button class="btn primary" id="signup10Btn" type="button" onclick="criarContaEdifiq10()">Criar conta e iniciar teste grátis</button></div><p class="edCommercialNote">Ao criar a conta, o teste começa quando o primeiro acesso autenticado for concluído. Dependendo da configuração do Supabase, será necessário confirmar o e-mail.</p><div id="signup10Msg" class="edAccountStatus"></div></div>`;
   };
 
   window.criarContaEdifiq10=async function(){
@@ -15755,7 +15767,7 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
   function patchAuth10(){
     const buttons=[...document.querySelectorAll('#auth .authBtns .btn')];
     const create=buttons.find(b=>/Criar conta/i.test(b.textContent||''));if(create){create.setAttribute('onclick','openSignup10()');create.textContent='Criar conta'}
-    const box=document.querySelector('#auth .authBox');if(box&&!box.querySelector('.authCommercialHint')){const p=document.createElement('div');p.className='authCommercialHint';p.innerHTML='<b>7 dias grátis</b> • Mensal R$ 39,90 • Anual R$ 399,00';box.appendChild(p)}
+    const box=document.querySelector('#auth .authBox');if(box){let hint=box.querySelector('.authCommercialHint');if(!hint){hint=document.createElement('div');hint.className='authCommercialHint';box.appendChild(hint);}hint.textContent='7 dias de teste grátis';}
   }
 
   patchAuth10();
@@ -20002,7 +20014,16 @@ window.ed29ContinueExtra=function(){const id=q('ed29ExtraWork')?.value;if(!id)re
 function closeDrawer(){const menu=q('menuPasta'),back=q('menuPastaBackdrop');menu?.classList.remove('open');back?.classList.remove('open');if(menu)menu.setAttribute('aria-hidden','true');if(back)back.setAttribute('aria-hidden','true');}
 window.goMenu=function(page){closeDrawer();if(page==='config'&&typeof window.openConfiguracoes==='function'){window.openConfiguracoes();return;}window.go(page);};
 const actionMap={'Relatório automático':'openRelatorioObraEdifiq','Relatório para Cliente':'openRelatorioCliente','Relatório do Trabalhador':'openRelatorioTrabalhador','Pagamento da Equipe':'openPagamentoEquipe','Vale':'openAdiantamento','Configurações':'openConfiguracoes','Backup':'openBackupConfigDirect','Diagnóstico do aplicativo':'openDiagnosticoDireto12','Administração':'openOfficial25','Comercial':'openEtapa28','Nova Obra':'openObra'};
-document.addEventListener('click',function(event){const btn=event.target?.closest?.('#menuPasta button');if(!btn)return;const label=String(btn.querySelector?.('span:last-child')?.textContent||btn.textContent||'').trim();closeDrawer();if(btn.classList?.contains?.('x')||label==='Fechar'){event.preventDefault?.();event.stopImmediatePropagation?.();return;}const fn=actionMap[label];if(fn&&typeof window[fn]==='function'){event.preventDefault?.();event.stopImmediatePropagation?.();window[fn]();}},true);
+document.addEventListener('click',function(event){
+ const btn=event.target?.closest?.('#menuPasta button');if(!btn)return;
+ if(window.edifiqMenuAllowed&&!window.edifiqMenuAllowed(btn)){event.preventDefault();event.stopImmediatePropagation();return;}
+ const label=String(btn.querySelector?.('b')?.textContent||btn.textContent||'').trim();
+ closeDrawer();
+ if(btn.classList.contains('x')||label==='Fechar'){event.preventDefault();event.stopImmediatePropagation();return;}
+ const fn=actionMap[label];
+ if(fn&&typeof window[fn]==='function'){event.preventDefault();event.stopImmediatePropagation();window[fn]();}
+ // Other entries keep their original handler; the drawer is already closed.
+},true);
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeDrawer();});
 window.__ed29={summary,closeDrawer,get scope(){return scope;}};
 if(typeof queueMicrotask==='function')queueMicrotask(()=>{try{renderOverview();}catch(_){}});
@@ -20118,60 +20139,38 @@ body.edLight .edTrialSummaryFinal{background:#eff6ff;border-color:#93c5fd;color:
 </style>
 <script id="edifiq-final-customer-performance">
 (function(){
-  'use strict';
-  const ADMIN_EMAIL='junioalef7@gmail.com';
-  const internalIds=[
-    'edPublicacaoMenu13','edProducaoMenu16','edPilotTestMenu18','edCommercialMenu19','edOpsMenu20',
-    'edPilotMenu21','edMetricsMenu22','edInviteMenu23','edDeployMenu24','edOfficialMenu25','ed42MenuBtn'
-  ];
-  const internalLabels=[
-    'Publicação e suporte','Produção • Piloto','Teste final • Piloto','Teste final do piloto','Comercial • Teste',
-    'Operação • Pré-lançamento','Clientes • Piloto','Métricas • Piloto','Convites • Piloto','Implantação • Piloto',
-    'Endereço oficial • Primeiro cliente','Primeiro cliente • Piloto','Candidata a produção','Piloto real • Decisão',
-    'Mesclagem • Candidata final','Liberação comercial','Homologação','Publicação final','Operação comercial'
-  ];
-  let isAdmin=false, cleanupQueued=false;
-  function textOf(el){return String(el?.textContent||'').replace(/\s+/g,' ').trim()}
-  function cleanupCustomerUI(){
-    cleanupQueued=false;
-    if(isAdmin)return;
-    internalIds.forEach(id=>document.getElementById(id)?.remove());
-    document.querySelectorAll('#menuPasta button,.drawer button,.drawer-content button').forEach(btn=>{
-      const t=textOf(btn);
-      if(internalLabels.some(x=>t.includes(x)))btn.remove();
-    });
-    document.querySelectorAll('.edBillingSetup').forEach(el=>{
-      const t=textOf(el);
-      if(/credenciais privadas|Edge Functions|Access Token|webhook|configuração pendente/i.test(t))el.remove();
-    });
-  }
-  function queueCleanup(){if(cleanupQueued)return;cleanupQueued=true;requestAnimationFrame(cleanupCustomerUI)}
-  async function resolveRole(){
-    try{
-      const client=window.sb||window.supabaseClient;
-      const ses=await client?.auth?.getSession?.();
-      isAdmin=String(ses?.data?.session?.user?.email||window.user?.email||'').toLowerCase()===ADMIN_EMAIL;
-    }catch(_){isAdmin=String(window.user?.email||'').toLowerCase()===ADMIN_EMAIL}
-    cleanupCustomerUI();
-  }
-  // Fecha o menu logo após qualquer ação: o modal/página abre no primeiro toque, sem ficar atrás do drawer.
-  document.addEventListener('click',function(ev){
-    const btn=ev.target.closest?.('#menuPasta .edifiqMenuItem,#menuPasta .edifiqDataRow');
-    if(!btn)return;
-    setTimeout(()=>{
-      const m=document.getElementById('menuPasta');
-      if(m?.classList.contains('open')){
-        m.classList.remove('open');
-        m.setAttribute('aria-hidden','true');
-        document.getElementById('menuPastaBackdrop')?.classList.remove('open');
-      }
-    },0);
-  },false);
-  // Um único observador leve substitui dezenas de observadores administrativos.
-  const obs=new MutationObserver(queueCleanup);
-  const start=()=>{resolveRole();cleanupCustomerUI();obs.observe(document.getElementById('menuPasta')||document.body,{childList:true,subtree:true});};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
-  window.addEventListener('pageshow',()=>{resolveRole();cleanupCustomerUI()});
+'use strict';
+// This controls presentation only. Server/RLS authorization remains authoritative.
+const ADMIN_EMAIL='junioalef7@gmail.com';
+let owner=false;
+const internalLabels=/Diagnóstico do aplicativo|Primeiros passos|Publicação e suporte|Produção.*Piloto|Teste final|Comercial|Produção|Operação.*Pré|Clientes.*Piloto|Métricas.*Piloto|Convites.*Piloto|Implantação.*Piloto|Endereço oficial|Primeiro cliente|Candidata|Piloto real|Mesclagem|Liberação comercial|Homologação|Publicação final|Operação comercial|Administração/i;
+const internalAction=/open(?:Etapa\d+|Onboarding12|DiagnosticoDireto12|Publicacao13|Producao16|PilotTest18|Commercial19|Ops20|Piloto21|Metrics22|Convites23|Deploy24|Official25)\b/;
+function label(btn){return String(btn.querySelector('b')?.textContent||btn.textContent||'').replace(/\s+/g,' ').replace(/^[^\p{L}]+/u,'').replace(/[›»]\s*$/,'').trim();}
+function internal(btn){return internalLabels.test(label(btn))||internalAction.test(btn.getAttribute('onclick')||'');}
+window.edifiqMenuAllowed=function(btn){return owner||!internal(btn);};
+function refresh(){
+ const menu=document.getElementById('menuPasta');
+ const seen=new Set();
+ menu?.querySelectorAll('button').forEach(btn=>{
+   const name=label(btn),restricted=internal(btn),duplicate=restricted&&seen.has(name);
+   if(restricted)seen.add(name);
+   btn.classList.toggle('edOwnerOnly',restricted);
+   btn.classList.toggle('edMenuDuplicate',duplicate);
+ });
+ document.getElementById('edOnboardingBanner12')?.classList.add('edOwnerOnly');
+ document.querySelectorAll('.edBillingSetup').forEach(el=>el.classList.add('edOwnerOnly'));
+}
+window.edifiqSetMenuUser45=function(u){
+ owner=!!u?.id&&String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL;
+ document.body.classList.toggle('edAppOwner',owner);
+ refresh();
+};
+const start=()=>{
+ window.edifiqSetMenuUser45(typeof user==='undefined'?null:user);
+ // Only child insertion is observed; class updates do not retrigger the observer.
+ new MutationObserver(refresh).observe(document.body,{childList:true,subtree:true});
+};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
 </script>
 
@@ -20219,44 +20218,42 @@ body:not(.edLight) #edPlanosModal .edBillingMeta{color:#cbd5e1!important;opacity
 }
 </style>
 <script id="edifiq-etapa43-menu-performance-mp4">
-(function(){
-'use strict';
-window.EDIFIQ_BUILD='2026-10-13-etapa43-visual-menu-performance-mp4';
-window.EDIFIQ_VERSION='43.0.0';
-function closeDrawer43(){
-  const m=document.getElementById('menuPasta'),b=document.getElementById('menuPastaBackdrop');
-  if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true')}
-  if(b){b.classList.remove('open');b.setAttribute('aria-hidden','true')}
-}
-function normalizeMenu43(){
-  const fixes=[
-    ['Relatório automático','openRelatorioObraEdifiq'],['Relatório para Cliente','openRelatorioCliente'],
-    ['Relatório do Trabalhador','openRelatorioTrabalhador'],['Pagamento da Equipe','openPagamentoEquipe'],
-    ['Vale','openAdiantamento'],['Configurações','openConfiguracoes']
-  ];
-  document.querySelectorAll('#menuPasta button').forEach(btn=>{
-    const txt=String(btn.textContent||'').replace(/\s+/g,' ').trim();
-    for(const [label,fn] of fixes){
-      if(txt.includes(label)){
-        btn.onclick=function(ev){
-          ev?.preventDefault?.(); closeDrawer43();
-          requestAnimationFrame(()=>{ try{ if(typeof window[fn]==='function') window[fn](); }catch(e){console.error('EDIFIQ menu',fn,e)} });
-        };
-        break;
-      }
-    }
-  });
-}
-// Evita toque duplo acidental enquanto um modal pesado está sendo aberto.
-let lastTap=0;
-document.addEventListener('pointerup',ev=>{
-  const btn=ev.target?.closest?.('#menuPasta button'); if(!btn)return;
-  const now=performance.now(); if(now-lastTap<180){ev.preventDefault();ev.stopPropagation();return} lastTap=now;
-},{capture:true,passive:false});
-const start=()=>{normalizeMenu43();setTimeout(normalizeMenu43,500);};
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
-window.addEventListener('pageshow',normalizeMenu43);
-})();
+// Menu actions are dispatched once by edifiq-ui29-visao-geral-menu.
+window.EDIFIQ_BUILD='2026-10-13-menu-assinantes-temas';
+window.EDIFIQ_VERSION='43.0.1';
 </script>
+
+<style id="edifiq-menu-theme45">
+body:not(.edAppOwner) .edOwnerOnly,.edMenuDuplicate{display:none!important}
+body{--edSurface45:#101827;--edText45:#f8fafc;--edMuted45:#cbd5e1;--edBorder45:#34445b}
+body.edLight{--edSurface45:#fff;--edText45:#111827;--edMuted45:#475569;--edBorder45:#cbd5e1}
+body #edPlanosModal .modalBox,body #edConfiguracoesModal .modalBox,
+body #edPlanosModal .edBillingPlan,body #edPlanosModal .card,body #edPlanosModal .note,
+body .edBillingPlan,body .edPlanCard,body .edSubscriptionGateBox,
+body #edSubscriptionBanner{
+ background:var(--edSurface45)!important;background-image:none!important;color:var(--edText45)!important;
+ border-color:var(--edBorder45)!important;opacity:1!important;filter:none!important;backdrop-filter:none!important;
+ -webkit-backdrop-filter:none!important;-webkit-text-fill-color:currentColor!important;
+}
+body #edPlanosModal :is(h2,h3,b,strong,.edBillingPrice),body #edSubscriptionBanner strong{
+ color:var(--edText45)!important;-webkit-text-fill-color:currentColor!important;opacity:1!important;
+}
+body #edPlanosModal :is(.sub,.edBillingMeta,small,.financeRow span),body #edSubscriptionBanner small{
+ color:var(--edMuted45)!important;-webkit-text-fill-color:currentColor!important;opacity:1!important;
+}
+body #edPlanosModal .edBillingPlan .btn{background:#1e293b!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#64748b!important;min-height:44px;white-space:normal}
+body #edPlanosModal .edBillingPlan .btn.primary{background:#d9ad55!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#b9892e!important}
+body #edPlanosModal .edPlanTag{position:static!important;display:table;margin:0 0 10px auto;background:#dcfce7!important;color:#166534!important;-webkit-text-fill-color:#166534!important}
+body #edPlanosModal .modalHead{display:flex!important;align-items:flex-start!important;gap:12px}
+body #edPlanosModal .modalHead>div{min-width:0;flex:1}
+body #edPlanosModal .modalHead .x{flex:0 0 44px;min-height:44px}
+body #edPlanosModal .edBillingPrice{font-size:clamp(26px,7vw,36px);overflow-wrap:anywhere}
+body #edPlanosModal .edBillingGrid{min-width:0}
+body #edPlanosModal .edBillingPlan{min-width:0;box-sizing:border-box}
+body #edSubscriptionBanner{position:static!important;z-index:auto!important;margin:12px 0!important}
+body #dashboard .edHomeHeader{position:static!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body #edSubscriptionBanner :is(strong,small){overflow-wrap:anywhere}
+@media(max-width:680px){body #edPlanosModal .modalBox{width:100%!important;max-width:100%!important;padding:16px!important}body #edPlanosModal .edBillingGrid{grid-template-columns:minmax(0,1fr)}}
+</style>
 </body>
 </html>
