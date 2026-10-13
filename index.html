@@ -3076,22 +3076,18 @@ function toggleMenuPasta(){
  if(b) b.classList.toggle('open',open);
 }
 
-function edifiqAccountIdentity(u,profile=window.__edifiqProfile){
-  const owns=!!u?.id&&!!profile?.id&&String(profile.id)===String(u.id);
-  const meta=u?.user_metadata||{};
-  const name=owns?String(profile.nome??'').trim():[meta.full_name,meta.name,meta.nome].map(v=>String(v??'').trim()).find(Boolean)||'';
-  return {name,email:String(u?.email||'').trim(),profile:owns?profile:null};
+function renderDrawerAccount(){
+  try{
+    const meta=user?.user_metadata||{};
+    const email=String(user?.email||'Conta EDIFIQ');
+    const emailNome=email.includes('@')?email.split('@')[0].replace(/[._-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Minha conta';
+    const nome=String(meta.full_name||meta.name||meta.nome||emailNome||'Minha conta').trim()||'Minha conta';
+    const nomeEl=$('drawerUserName'), emailEl=$('drawerUserEmail'), avatarEl=$('drawerUserAvatar');
+    if(nomeEl)nomeEl.textContent=nome;
+    if(emailEl)emailEl.textContent=email;
+    if(avatarEl)avatarEl.textContent=nome.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'ED';
+  }catch(_){}
 }
-function edifiqRenderAccountForUser(u){
-  const identity=edifiqAccountIdentity(u);
-  if(!identity.profile)window.__edifiqProfile=null;
-  const label=identity.name||identity.email||'Minha conta';
-  const ne=$('drawerUserName'),ee=$('drawerUserEmail'),av=$('drawerUserAvatar');
-  if(ne)ne.textContent=label;
-  if(ee){ee.textContent=identity.name?identity.email:'';ee.hidden=!identity.name;}
-  if(av)av.textContent=identity.name?identity.name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase():identity.email?identity.email[0].toUpperCase():'ED';
-}
-function renderDrawerAccount(){edifiqRenderAccountForUser(user);}
 
 function openConfiguracoes(){
   let m=document.getElementById('edConfiguracoesModal');
@@ -3391,10 +3387,7 @@ function bindSupabaseAuth(){
   if(!sb || sb.__edifiqAuthBound) return;
   sb.__edifiqAuthBound=true;
   sb.__edifiqAuthProcessing=null;
-  sb.auth.onAuthStateChange((event,session)=>{
-    if(String(window.__edifiqProfile?.id||'')!==String(session?.user?.id||''))window.__edifiqProfile=null;
-    edifiqRenderAccountForUser(session?.user||null);
-    setTimeout(async()=>{
+  sb.auth.onAuthStateChange((event,session)=>{ setTimeout(async()=>{
     try{
       const nextUser=session?.user||null;
       const nextId=String(nextUser?.id||'');
@@ -3431,7 +3424,6 @@ function bindSupabaseAuth(){
       sb.__edifiqAuthProcessing=processing;
       if(currentId!==nextId){stopEdifiqRealtime();edifiqResetInMemoryState();}
       user=nextUser;
-      setTimeout(()=>{if(String(user?.id||'')===nextId)window.edifiqRefreshAccountProfile?.();},0);
       if(currentId!==nextId) edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(nextId)||null;
 
       // Nunca bloquear a entrada na interface aguardando a RPC de contexto.
@@ -14893,32 +14885,32 @@ body.edLight #financeiro > .pageTitle > button.btn.gold:active{
   window.__edifiqProfile=null;
   async function currentUser6(){
     if(!sb)return user||null;
-    const requestUser=user;
     try{
       const {data:sessionData,error:sessionError}=await sb.auth.getSession();
       if(sessionError)throw sessionError;
       const sessionUser=sessionData?.session?.user||null;
-      if(user!==requestUser&&String(user?.id||'')!==String(sessionUser?.id||''))return user||null;
-      if(!sessionUser){window.__edifiqProfile=null;return null;}
+      if(!sessionUser)return null;
       user=sessionUser;
       return sessionUser;
     }catch(e){console.warn('EDIFIQ perfil: sessão ainda não confirmada',e)}
     return null;
   }
   async function loadProfile6(){
-    const u=await currentUser6();
-    if(!u?.id||!sb){window.__edifiqProfile=null;return null;}
-    if(String(window.__edifiqProfile?.id||'')!==String(u.id))window.__edifiqProfile=null;
+    const u=await currentUser6();if(!u||!sb)return null;
     try{
       const {data,error}=await sb.from('profiles').select('id,nome,telefone,endereco,updated_at').eq('id',u.id).maybeSingle();
-      if(String(user?.id||'')!==String(u.id))return null;
-      if(error)throw error;
-      window.__edifiqProfile=data&&String(data.id)===String(u.id)?data:null;
-      renderDrawerAccount();return window.__edifiqProfile;
-    }catch(e){console.warn('EDIFIQ perfil: leitura',e);return edifiqAccountIdentity(user).profile;}
+      if(error)throw error;window.__edifiqProfile=data||null;return data||null;
+    }catch(e){console.warn('EDIFIQ perfil: leitura',e);return window.__edifiqProfile}
   }
-  window.edifiqRefreshAccountProfile=loadProfile6;
-  window.renderDrawerAccount=function(){edifiqRenderAccountForUser(user);};
+
+  const oldDrawer6=window.renderDrawerAccount;
+  window.renderDrawerAccount=function(){
+    try{oldDrawer6?.apply(this,arguments)}catch(_){ }
+    const p=window.__edifiqProfile,u=user;
+    const nome=String(p?.nome||u?.user_metadata?.full_name||u?.user_metadata?.name||u?.user_metadata?.nome||'').trim();
+    if(nome){const ne=$('drawerUserName'),av=$('drawerUserAvatar');if(ne)ne.textContent=nome;if(av)av.textContent=nome.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'ED'}
+    if($('drawerUserEmail'))$('drawerUserEmail').textContent=u?.email||'Conta EDIFIQ';
+  };
 
   function configMarkup6(){
     return `<div class="modalBox" style="max-width:780px;max-height:90vh;overflow:auto">
@@ -14973,9 +14965,8 @@ body.edLight #financeiro > .pageTitle > button.btn.gold:active{
     if(!m){m=document.createElement('div');m.id='edConfiguracoesModal';m.className='modal open';document.body.appendChild(m)}else m.classList.add('open');
     m.innerHTML=configMarkup6();
     const u=await currentUser6(),p=await loadProfile6();
-    if(String(user?.id||'')!==String(u?.id||''))return;
-    const identity=edifiqAccountIdentity(u,p);
-    const nome=identity.name;
+    const meta=u?.user_metadata||{};
+    const nome=String(p?.nome||meta.full_name||meta.name||meta.nome||'').trim();
     if($('configPerfilNome'))$('configPerfilNome').value=nome;
     if($('configPerfilTelefone'))$('configPerfilTelefone').value=p?.telefone||'';
     if($('configPerfilEndereco'))$('configPerfilEndereco').value=p?.endereco||'';
@@ -14996,12 +14987,10 @@ body.edLight #financeiro > .pageTitle > button.btn.gold:active{
       const payload={id:u.id,nome:nome||null,telefone:telefone||null,endereco:endereco||null};
       const {data,error}=await sb.from('profiles').upsert(payload,{onConflict:'id'}).select('id,nome,telefone,endereco,updated_at').single();
       if(error)throw error;
-      if(String(user?.id||'')!==String(u.id))return;
       // Metadados servem apenas para apresentação do nome; autorização continua no banco/RLS.
       const {data:authData,error:authError}=await sb.auth.updateUser({data:{nome:nome||null,name:nome||null,full_name:nome||null}});
       if(authError)console.warn('Perfil salvo; metadata do Auth não atualizada',authError);
-      if(String(user?.id||'')!==String(u.id))return;
-      if(authData?.user&&String(authData.user.id)===String(u.id))user=authData.user;
+      if(authData?.user)user=authData.user;
       window.__edifiqProfile=data||payload;
       renderDrawerAccount();
       if($('configNomeUsuario'))$('configNomeUsuario').textContent=nome||'—';
@@ -15715,7 +15704,7 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
 
   function renderGate10(){
     let gate=$('edSubscriptionGate');const s=window.__edifiqSubscription,access=computeAccess10(s);
-    if(!user?.id||!s||access!==false){if(gate)gate.classList.add('hidden');return}
+    if(!s||access!==false){if(gate)gate.classList.add('hidden');return}
     if(!gate){gate=document.createElement('div');gate.id='edSubscriptionGate';gate.className='edSubscriptionGate';document.body.appendChild(gate)}
     gate.classList.remove('hidden');
     gate.innerHTML=`<div class="edSubscriptionGateBox"><h2>Seu acesso precisa de uma assinatura</h2><p class="sub">${esc10(label10(s))}. Seus dados continuam preservados; nenhuma obra, funcionário ou lançamento foi apagado.</p>${planCards10()}<div class="note" style="margin-top:12px">Nesta etapa a cobrança ainda não é processada. A integração com o pagamento será conectada na próxima etapa antes da venda pública.</div><div class="edAccountActions" style="margin-top:14px"><button class="btn" type="button" onclick="logout()">Sair da conta</button></div></div>`;
@@ -15735,7 +15724,7 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
     await loadPlans10();
     let m=$('edSignupModal');if(!m){m=document.createElement('div');m.id='edSignupModal';m.className='modal open';document.body.appendChild(m)}else m.classList.add('open');
     const email=String($('email')?.value||'').trim();
-    m.innerHTML=`<div class="modalBox" style="max-width:660px;max-height:92vh;overflow:auto"><div class="modalHead"><div><h2>Criar conta EDIFIQ</h2><p class="sub">7 dias grátis. Nenhuma cobrança agora.</p></div><button class="x" onclick="closeM('edSignupModal')">×</button></div><div class="edSignupGrid"><label class="full">Nome completo<input id="signup10Nome" autocomplete="name" placeholder="Seu nome"></label><label>Perfil<select id="signup10Tipo"><option value="autonomo">Autônomo</option><option value="empresa">Empresa</option></select></label><label>Plano pretendido<select id="signup10Plano"><option value="mensal">Mensal</option><option value="anual">Anual</option></select></label><label class="full">E-mail<input id="signup10Email" type="email" autocomplete="email" value="${esc10(email)}" placeholder="seu@email.com"></label><label>Senha<input id="signup10Senha" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo 8 caracteres"></label><label>Confirmar senha<input id="signup10Senha2" type="password" autocomplete="new-password" minlength="8"></label></div><div class="edAccountActions" style="margin-top:14px"><button class="btn primary" id="signup10Btn" type="button" onclick="criarContaEdifiq10()">Criar conta e iniciar teste grátis</button></div><p class="edCommercialNote">Ao criar a conta, o teste começa quando o primeiro acesso autenticado for concluído. Dependendo da configuração do Supabase, será necessário confirmar o e-mail.</p><div id="signup10Msg" class="edAccountStatus"></div></div>`;
+    m.innerHTML=`<div class="modalBox" style="max-width:660px;max-height:92vh;overflow:auto"><div class="modalHead"><div><h2>Criar conta EDIFIQ</h2><p class="sub">7 dias grátis. Nenhuma cobrança agora.</p></div><button class="x" onclick="closeM('edSignupModal')">×</button></div><div class="edSignupGrid"><label class="full">Nome completo<input id="signup10Nome" autocomplete="name" placeholder="Seu nome"></label><label>Perfil<select id="signup10Tipo"><option value="autonomo">Autônomo</option><option value="empresa">Empresa</option></select></label><label>Plano pretendido<select id="signup10Plano"><option value="mensal">Mensal — R$ 39,90/mês</option><option value="anual">Anual — R$ 399,00/ano</option></select><div class="edCommercialNote" style="margin-top:8px;font-size:14px;line-height:1.45"><b>Mensal:</b> R$ 39,90/mês &nbsp;•&nbsp; <b>Anual:</b> R$ 399,00/ano</div></label><label class="full">E-mail<input id="signup10Email" type="email" autocomplete="email" value="${esc10(email)}" placeholder="seu@email.com"></label><label>Senha<input id="signup10Senha" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo 8 caracteres"></label><label>Confirmar senha<input id="signup10Senha2" type="password" autocomplete="new-password" minlength="8"></label></div><div class="edAccountActions" style="margin-top:14px"><button class="btn primary" id="signup10Btn" type="button" onclick="criarContaEdifiq10()">Criar conta e iniciar teste grátis</button></div><p class="edCommercialNote">Ao criar a conta, o teste começa quando o primeiro acesso autenticado for concluído. Dependendo da configuração do Supabase, será necessário confirmar o e-mail.</p><div id="signup10Msg" class="edAccountStatus"></div></div>`;
   };
 
   window.criarContaEdifiq10=async function(){
@@ -15766,7 +15755,7 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
   function patchAuth10(){
     const buttons=[...document.querySelectorAll('#auth .authBtns .btn')];
     const create=buttons.find(b=>/Criar conta/i.test(b.textContent||''));if(create){create.setAttribute('onclick','openSignup10()');create.textContent='Criar conta'}
-    const box=document.querySelector('#auth .authBox');if(box){let hint=box.querySelector('.authCommercialHint');if(!hint){hint=document.createElement('div');hint.className='authCommercialHint';box.appendChild(hint);}hint.textContent='7 dias de teste grátis';}
+    const box=document.querySelector('#auth .authBox');if(box&&!box.querySelector('.authCommercialHint')){const p=document.createElement('div');p.className='authCommercialHint';p.innerHTML='<b>7 dias grátis</b> • Mensal R$ 39,90 • Anual R$ 399,00';box.appendChild(p)}
   }
 
   patchAuth10();
