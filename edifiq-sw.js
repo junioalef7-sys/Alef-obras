@@ -1,4 +1,4 @@
-const CACHE='edifiq-shell-v46-menu-temas';
+const CACHE='edifiq-shell-v48-logo-dourada';
 const SHELL=['./','./manifest.webmanifest','./edifiq-icon-192.png','./edific-icon.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(async cache=>{await Promise.allSettled(SHELL.map(url=>cache.add(url)));}).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('edifiq-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
