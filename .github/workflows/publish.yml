@@ -50,7 +50,10 @@ jobs:
               html = html.replace(menu_marker, menu_marker + '\n  ' + menu_entry, 1)
 
           if 'id="edifiqBillingMenuOnly"' not in html:
-              html = html.replace('</head>', '<style id="edifiqBillingMenuOnly">#edSubConfig10,#edSubscriptionConfigCard,#edBillingConfig11{display:none!important}</style>\n</head>', 1)
+              head_pos = html.lower().rfind('</head>')
+              if head_pos < 0:
+                  raise SystemExit('Fechamento </head> não encontrado.')
+              html = html[:head_pos] + '<style id="edifiqBillingMenuOnly">#edSubConfig10,#edSubscriptionConfigCard,#edBillingConfig11{display:none!important}</style>\n' + html[head_pos:]
 
           checkout_patch = r'''
           <style id="edifiqCheckoutMethods47">
@@ -89,7 +92,10 @@ jobs:
           </script>
           '''
           if 'id="edifiqCheckoutMethods47Script"' not in html:
-              html = html.replace('</body>', checkout_patch + '\n</body>', 1)
+              body_pos = html.lower().rfind('</body>')
+              if body_pos < 0:
+                  raise SystemExit('Fechamento </body> não encontrado.')
+              html = html[:body_pos] + checkout_patch + '\n' + html[body_pos:]
 
           page.write_text(html,encoding='utf-8')
           PY
