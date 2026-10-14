@@ -25,6 +25,7 @@ jobs:
         run: |
           python3 scripts/check-release.py
           node tests/checkout52.cjs
+          node tests/exclusion56.cjs
       - name: Preparar arquivos públicos do aplicativo
         run: |
           mkdir -p .pages
@@ -75,40 +76,14 @@ jobs:
             function hideConfigBilling(){
               ['edSubConfig10','edSubscriptionConfigCard','edBillingConfig11'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.setProperty('display','none','important');el.hidden=true}});
             }
-            async function start(plano){
-              plano=String(plano||'').toLowerCase();
-              if(!['mensal','anual'].includes(plano)){if(typeof toast==='function')toast('Plano inválido.');return false}
-              if(window.__edifiqBillingBusy)return false;
-              window.__edifiqBillingBusy=true;
-              document.querySelectorAll('[data-ed-billing-plan]').forEach(b=>{b.dataset.checkoutLabel=b.textContent;b.disabled=true;b.textContent='Preparando pagamento…'});
-              try{
-                if((typeof sb==='undefined'||!sb)&&typeof ensureSupabaseClient==='function')await ensureSupabaseClient();
-                if(typeof sb==='undefined'||!sb)throw new Error('Sem conexão com o servidor.');
-                if(typeof user==='undefined'||!user?.id)throw new Error('Sua sessão expirou. Entre novamente no aplicativo.');
-                if(typeof toast==='function')toast('Abrindo pagamento seguro no Mercado Pago...');
-                const {data,error}=await sb.functions.invoke('edifiq-assinatura-checkout',{body:{plano,forma:'mercado_pago',return_url:location.href.split('#')[0]}});
-                if(error){
-                  let msg=error.message||'Não foi possível iniciar o pagamento.';
-                  try{if(error.context&&typeof error.context.clone==='function'){const j=await error.context.clone().json();msg=j?.error||j?.detail||msg}}catch(_){ }
-                  throw new Error(msg)
-                }
-                if(data?.error)throw new Error(data.error);
-                if(!data?.checkout_url)throw new Error('O servidor não retornou o endereço de pagamento.');
-                try{localStorage.setItem('edifiq_billing_return_v1',JSON.stringify({at:new Date().toISOString(),plano,forma:'mercado_pago',checkout_type:data?.checkout_type||'checkout_pro'}))}catch(_){ }
-                const checkout=new URL(String(data.checkout_url));
-                if(checkout.protocol!=='https:'||!(checkout.hostname==='mercadopago.com.br'||checkout.hostname.endsWith('.mercadopago.com.br')))throw new Error('Endereço de pagamento inválido. Tente novamente.');
-                window.location.assign(checkout.href);
-                return false;
-              }catch(e){
-                console.error('EDIFIQ checkout direto 51',e);
-                resetBilling();
-                if(typeof toast==='function')toast(String(e?.message||'Não foi possível iniciar o pagamento.'));
-                return false;
-              }
+            // The current provider module owns checkout; deployment must not replace it.
+            function start(plano){
+              if(typeof window.edifiqAsaasEscolher!=='function'){if(typeof toast==='function')toast('Pagamento indisponível. Atualize o aplicativo.');return false}
+              return window.edifiqAsaasEscolher(plano);
             }
             window.assinarPlanoEdifiq11=start;
-            window.edifiqPagar47=function(plano){return start(plano)};
-            window.edifiqEscolherPagamento47=function(plano){return start(plano)};
+            window.edifiqPagar47=start;
+            window.edifiqEscolherPagamento47=start;
             window.edifiqAbrirPlanosMenu51=function(ev){try{ev?.preventDefault?.();ev?.stopPropagation?.()}catch(_){ }if(window.__edifiqBillingBusy)return false;resetBilling();if(typeof openPlanosEdifiq11==='function')openPlanosEdifiq11();else if(typeof toast==='function')toast('Não foi possível abrir Planos e assinaturas.');return false};
             window.addEventListener('pageshow',ev=>{if(ev.persisted)resetBilling()});
             const init=()=>{resetBilling();hideConfigBilling()};
@@ -129,7 +104,7 @@ jobs:
           </style>
           <script id="edifiqTrialLimited54Script">
           (function(){
-            const ALLOWED_PAGES=new Set(['dashboard','inicio','home','obras','funcionarios','equipe']);
+            const ALLOWED_PAGES=new Set(['dashboard','inicio','home','obras','funcionarios','equipe','configuracoes']);
             let originalGo=null,goPatched=false;
             function access(s){
               if(!s)return true;
@@ -158,7 +133,7 @@ jobs:
               document.querySelectorAll('#menuPasta button').forEach(btn=>{
                 if(!limited()){btn.disabled=false;return}
                 const label=String(btn.querySelector('b')?.textContent||btn.textContent||'').trim().toLowerCase();
-                const ok=/planos|assinaturas|obra|equipe|funcion|início|inicio|sair/.test(label);
+                const ok=/planos|assinaturas|obra|equipe|funcion|início|inicio|sair|configura|privacidade|excluir conta/.test(label);
                 btn.disabled=!ok;btn.style.opacity=ok?'':'0.42';
               });
             }
@@ -185,7 +160,7 @@ jobs:
               if(!limited())return;
               const btn=ev.target?.closest?.('#menuPasta button');if(!btn)return;
               const label=String(btn.querySelector('b')?.textContent||btn.textContent||'').trim().toLowerCase();
-              if(!/planos|assinaturas|obra|equipe|funcion|início|inicio|sair/.test(label)){ev.preventDefault();ev.stopImmediatePropagation();showBlocked()}
+              if(!/planos|assinaturas|obra|equipe|funcion|início|inicio|sair|configura|privacidade|excluir conta/.test(label)){ev.preventDefault();ev.stopImmediatePropagation();showBlocked()}
             },true);
             const init=()=>{apply();refresh();setInterval(apply,1200);setInterval(refresh,60000)};
             if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
