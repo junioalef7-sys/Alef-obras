@@ -43,7 +43,7 @@ jobs:
           html = re.sub(r'(<link[^>]+rel="apple-touch-icon"[^>]+href=")[^"]+("[^>]*>)', r'\1./edifiq-icon-192.png\2', html, count=1, flags=re.I)
 
           menu_marker = '<button class="edifiqDataRow" onclick="openConfiguracoes()"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>'
-          menu_entry = '<button class="edifiqDataRow" id="menuPlanosAssinaturas" type="button" onclick="return edifiqAbrirPlanosMenu49(event)"><span>💳</span><b>Planos e assinaturas</b><span class="edifiqChevron">›</span></button>'
+          menu_entry = '<button class="edifiqDataRow" id="menuPlanosAssinaturas" type="button" onclick="return edifiqAbrirPlanosMenu50(event)"><span>💳</span><b>Planos e assinaturas</b><span class="edifiqChevron">›</span></button>'
           html = re.sub(r'<button class="edifiqDataRow" id="menuPlanosAssinaturas"[\s\S]*?</button>', menu_entry, html, count=1)
           if 'id="menuPlanosAssinaturas"' not in html:
               if menu_marker not in html:
@@ -56,47 +56,55 @@ jobs:
           if 'id="edifiqBillingMenuOnly"' not in html:
               html = html[:head_pos] + '<style id="edifiqBillingMenuOnly">#edSubConfig10,#edSubscriptionConfigCard,#edBillingConfig11{display:none!important}</style>\n' + html[head_pos:]
 
-          html = re.sub(r'<style id="edifiqCheckoutMethods48">[\s\S]*?<script id="edifiqCheckoutMethods48Script">[\s\S]*?</script>\s*', '', html, count=1, flags=re.I)
+          for n in ('47','48','49','50'):
+              html = re.sub(r'<style id="edifiqCheckoutMethods'+n+r'">[\s\S]*?</style>\s*', '', html, flags=re.I)
+              html = re.sub(r'<script id="edifiqCheckoutMethods'+n+r'Script">[\s\S]*?</script>\s*', '', html, flags=re.I)
+          html = re.sub(r'<script id="edifiqCheckoutDirect50Script">[\s\S]*?</script>\s*', '', html, flags=re.I)
+
           checkout_patch = r'''
-          <style id="edifiqCheckoutMethods49">
-          #edPaymentMethod47{background:rgba(2,6,23,.72)!important;backdrop-filter:blur(4px)}
-          #edPaymentMethod47 .modalBox{background:#0f172a!important;color:#f8fafc!important;border:1px solid #334155!important;box-shadow:0 24px 70px rgba(0,0,0,.45)!important}
-          #edPaymentMethod47 .modalHead{border-color:#334155!important}#edPaymentMethod47 .modalHead h2{color:#f8fafc!important}#edPaymentMethod47 .sub{color:#cbd5e1!important;opacity:1!important}#edPaymentMethod47 .x{background:#1e293b!important;color:#f8fafc!important;border-color:#334155!important}
-          .edPayMethods47{display:grid;gap:10px;margin-top:14px}.edPayMethod47{width:100%;display:flex;align-items:center;gap:12px;text-align:left;border:1px solid #334155;background:#111827;color:#f8fafc;border-radius:14px;padding:14px 16px;font:inherit;cursor:pointer}.edPayMethod47 strong{display:block;color:#f8fafc!important}.edPayMethod47 small{display:block;color:#cbd5e1!important;opacity:1!important;margin-top:2px}.edPayMethod47 span:first-child{font-size:24px;width:32px;text-align:center}.edPayMethod47:disabled{opacity:.55;cursor:wait}
-          body.edLight #edPaymentMethod47{background:rgba(15,23,42,.28)!important}body.edLight #edPaymentMethod47 .modalBox{background:#fff!important;color:#111827!important;border-color:#d8dee9!important;box-shadow:0 24px 70px rgba(15,23,42,.18)!important}body.edLight #edPaymentMethod47 .modalHead{border-color:#e5e7eb!important}body.edLight #edPaymentMethod47 .modalHead h2{color:#111827!important}body.edLight #edPaymentMethod47 .sub{color:#667085!important}body.edLight #edPaymentMethod47 .x{background:#eef2f6!important;color:#111827!important;border-color:#d8dee9!important}body.edLight .edPayMethod47{background:#fff!important;color:#111827!important;border-color:#d8dee9!important}body.edLight .edPayMethod47 strong{color:#111827!important}body.edLight .edPayMethod47 small{color:#667085!important}
-          </style>
-          <script id="edifiqCheckoutMethods49Script">
+          <script id="edifiqCheckoutDirect50Script">
           (function(){
-            function esc(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]))}
-            function closePay(){document.getElementById('edPaymentMethod47')?.remove()}
+            function resetBilling(){
+              window.__edifiqBillingBusy=false;
+              document.getElementById('edPaymentMethod47')?.remove();
+              document.querySelectorAll('[data-edifiq-assinar]').forEach(b=>{try{b.disabled=false}catch(_){}});
+            }
             function hideConfigBilling(){
               ['edSubConfig10','edSubscriptionConfigCard','edBillingConfig11'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.setProperty('display','none','important');el.hidden=true}});
-              document.querySelectorAll('.modal').forEach(m=>{const t=(m.textContent||'').toLowerCase();if(t.includes('planos e pagamento')){const p=m.querySelector('.sub');if(p&&/assinatura recorrente/i.test(p.textContent||''))p.textContent='Pagamento seguro processado pelo Mercado Pago.'}})
             }
-            async function start(plano,forma){
-              if(window.__edifiqBillingBusy)return;window.__edifiqBillingBusy=true;
-              const buttons=[...document.querySelectorAll('#edPaymentMethod47 button')];buttons.forEach(b=>b.disabled=true);
+            async function start(plano){
+              plano=String(plano||'').toLowerCase();
+              if(!['mensal','anual'].includes(plano)){if(typeof toast==='function')toast('Plano inválido.');return false}
+              if(window.__edifiqBillingBusy)return false;
+              window.__edifiqBillingBusy=true;
               try{
                 if((typeof sb==='undefined'||!sb)&&typeof ensureSupabaseClient==='function')await ensureSupabaseClient();
                 if(typeof sb==='undefined'||!sb)throw new Error('Sem conexão com o servidor.');
                 if(typeof user==='undefined'||!user?.id)throw new Error('Sua sessão expirou. Entre novamente no aplicativo.');
-                const {data,error}=await sb.functions.invoke('edifiq-assinatura-checkout',{body:{plano,forma,return_url:location.href.split('#')[0]}});
+                if(typeof toast==='function')toast('Abrindo pagamento seguro no Mercado Pago...');
+                const {data,error}=await sb.functions.invoke('edifiq-assinatura-checkout',{body:{plano,forma:'mercado_pago',return_url:location.href.split('#')[0]}});
                 if(error){let msg=error.message||'Não foi possível iniciar o pagamento.';try{if(error.context&&typeof error.context.clone==='function'){const j=await error.context.clone().json();msg=j?.error||j?.detail||msg}}catch(_){ }throw new Error(msg)}
-                if(data?.error)throw new Error(data.error);if(!data?.checkout_url)throw new Error('O servidor não retornou o endereço de pagamento.');
-                try{localStorage.setItem('edifiq_billing_return_v1',JSON.stringify({at:new Date().toISOString(),plano,forma,checkout_type:data?.checkout_type||'checkout_pro'}))}catch(_){ }
-                if(typeof toast==='function')toast(forma==='pix'?'Abrindo pagamento por Pix...':forma==='boleto'?'Abrindo pagamento por boleto...':'Abrindo pagamento por cartão...');
-                location.assign(String(data.checkout_url));
-              }catch(e){console.error('EDIFIQ checkout 49',e);if(typeof toast==='function')toast(String(e?.message||'Não foi possível iniciar o pagamento.'));buttons.forEach(b=>b.disabled=false);window.__edifiqBillingBusy=false}
+                if(data?.error)throw new Error(data.error);
+                if(!data?.checkout_url)throw new Error('O servidor não retornou o endereço de pagamento.');
+                try{localStorage.setItem('edifiq_billing_return_v1',JSON.stringify({at:new Date().toISOString(),plano,forma:'mercado_pago',checkout_type:data?.checkout_type||'checkout_pro'}))}catch(_){ }
+                window.location.href=String(data.checkout_url);
+                return false;
+              }catch(e){
+                console.error('EDIFIQ checkout direto 50',e);
+                resetBilling();
+                if(typeof toast==='function')toast(String(e?.message||'Não foi possível iniciar o pagamento.'));
+                return false;
+              }
             }
-            window.edifiqEscolherPagamento47=function(plano){
-              plano=String(plano||'').toLowerCase();if(!['mensal','anual'].includes(plano)){if(typeof toast==='function')toast('Plano inválido.');return}
-              closePay();const m=document.createElement('div');m.id='edPaymentMethod47';m.className='modal open';
-              m.innerHTML=`<div class="modalBox" style="max-width:520px"><div class="modalHead"><div><h2>Forma de pagamento</h2><p class="sub">Escolha como pagar o plano ${esc(plano==='anual'?'Anual':'Mensal')}.</p></div><button class="x" type="button" onclick="document.getElementById('edPaymentMethod47')?.remove()">×</button></div><div class="edPayMethods47"><button class="edPayMethod47" type="button" onclick="edifiqPagar47('${esc(plano)}','cartao')"><span>💳</span><span><strong>Cartão de crédito</strong><small>Pagamento do período atual; renove no próximo vencimento.</small></span></button><button class="edPayMethod47" type="button" onclick="edifiqPagar47('${esc(plano)}','pix')"><span>⚡</span><span><strong>Pix</strong><small>Pagamento do período atual; renove no próximo vencimento.</small></span></button><button class="edPayMethod47" type="button" onclick="edifiqPagar47('${esc(plano)}','boleto')"><span>🧾</span><span><strong>Boleto</strong><small>Pagamento do período atual; liberação após confirmação.</small></span></button></div></div>`;
-              document.body.appendChild(m)
-            };
-            window.edifiqPagar47=start;window.assinarPlanoEdifiq11=function(codigo){window.edifiqEscolherPagamento47(codigo)};
-            window.edifiqAbrirPlanosMenu49=function(ev){try{ev?.preventDefault?.();ev?.stopPropagation?.()}catch(_){ }if(typeof openPlanosEdifiq11==='function')openPlanosEdifiq11();else if(typeof toast==='function')toast('Não foi possível abrir Planos e assinaturas.');return false};
-            const init=()=>hideConfigBilling();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();new MutationObserver(hideConfigBilling).observe(document.documentElement,{childList:true,subtree:true})
+            window.assinarPlanoEdifiq11=start;
+            window.edifiqPagar47=function(plano){return start(plano)};
+            window.edifiqEscolherPagamento47=function(plano){return start(plano)};
+            window.edifiqAbrirPlanosMenu50=function(ev){try{ev?.preventDefault?.();ev?.stopPropagation?.()}catch(_){ }resetBilling();if(typeof openPlanosEdifiq11==='function')openPlanosEdifiq11();else if(typeof toast==='function')toast('Não foi possível abrir Planos e assinaturas.');return false};
+            window.addEventListener('pageshow',resetBilling);
+            document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')resetBilling()});
+            const init=()=>{resetBilling();hideConfigBilling()};
+            if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+            new MutationObserver(hideConfigBilling).observe(document.documentElement,{childList:true,subtree:true});
           })();
           </script>
           '''
@@ -114,7 +122,7 @@ jobs:
           data = Path('.pages/index.html').read_bytes()
           public_files = ['index.html','edifiq-sw.js','manifest.webmanifest','edifiq-icon-192.png','edific-icon.svg','privacidade.html','exclusao-conta.html']
           hashes = {name: hashlib.sha256(Path('.pages',name).read_bytes()).hexdigest() for name in public_files}
-          Path('.pages/release.json').write_text(json.dumps({'commit': os.environ['GITHUB_SHA'],'sha256': hashlib.sha256(data).hexdigest(),'validated': True,'public_files': hashes,'pwa_label': 'Edific','cache': 'edifiq-shell-v49-checkout-pro'}, ensure_ascii=False))
+          Path('.pages/release.json').write_text(json.dumps({'commit': os.environ['GITHUB_SHA'],'sha256': hashlib.sha256(data).hexdigest(),'validated': True,'public_files': hashes,'pwa_label': 'Edific','cache': 'edifiq-shell-v50-checkout-direto'}, ensure_ascii=False))
           PY
       - uses: actions/upload-pages-artifact@v3
         with:
