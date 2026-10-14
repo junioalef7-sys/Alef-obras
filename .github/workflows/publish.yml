@@ -50,9 +50,49 @@ jobs:
                   raise SystemExit('Botão Configurações não encontrado para inserir Planos e assinaturas.')
               html = html.replace(menu_marker, menu_marker + '\n  ' + menu_entry, 1)
 
-          # Retira visualmente os cartões de plano de dentro de Configurações.
+          # Retira qualquer bloco de plano/assinatura de dentro de Configurações.
           if 'id="edifiqBillingMenuOnly"' not in html:
-              html = html.replace('</head>', '<style id="edifiqBillingMenuOnly">#edSubscriptionConfigCard,#edBillingConfig11{display:none!important}</style>\n</head>', 1)
+              html = html.replace('</head>', '<style id="edifiqBillingMenuOnly">#edSubConfig10,#edSubscriptionConfigCard,#edBillingConfig11{display:none!important}</style>\n</head>', 1)
+
+          # Checkout EDIFIQ: escolha explícita entre cartão recorrente, Pix e boleto.
+          checkout_patch = r'''
+<style id="edifiqCheckoutMethods47">
+.edPayMethods47{display:grid;gap:10px;margin-top:14px}.edPayMethod47{width:100%;display:flex;align-items:center;gap:12px;text-align:left;border:1px solid var(--line,#d0d5dd);background:var(--card,#fff);color:inherit;border-radius:14px;padding:14px 16px;font:inherit;cursor:pointer}.edPayMethod47 strong{display:block}.edPayMethod47 small{display:block;opacity:.72;margin-top:2px}.edPayMethod47 span:first-child{font-size:24px;width:32px;text-align:center}.edPayMethod47:disabled{opacity:.55;cursor:wait}body.edLight .edPayMethod47{background:#fff;color:#111827}
+</style>
+<script id="edifiqCheckoutMethods47Script">
+(function(){
+  function ed47Esc(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]))}
+  function ed47Close(){const m=document.getElementById('edPaymentMethod47');if(m)m.remove()}
+  async function ed47Start(plano,forma){
+    if(window.__edifiqBillingBusy)return;
+    window.__edifiqBillingBusy=true;
+    const buttons=[...document.querySelectorAll('#edPaymentMethod47 button')];buttons.forEach(b=>b.disabled=true);
+    try{
+      if(!window.sb&&typeof ensureSupabaseClient==='function')await ensureSupabaseClient();
+      if(!window.sb)throw new Error('Sem conexão com o servidor.');
+      try{await sb.from('edifiq_assinaturas').update({plano_preferido:plano}).eq('empresa_user_id',user.id)}catch(_){ }
+      const {data,error}=await sb.functions.invoke('edifiq-assinatura-checkout',{body:{plano,forma,return_url:location.href.split('#')[0]}});
+      if(error){let msg=error.message||'Não foi possível iniciar o pagamento.';try{if(error.context&&typeof error.context.clone==='function'){const j=await error.context.clone().json();msg=j?.error||j?.detail||msg}}catch(_){ }throw new Error(msg)}
+      if(data?.error)throw new Error(data.error);
+      if(!data?.checkout_url)throw new Error('O servidor não retornou o endereço de pagamento.');
+      try{localStorage.setItem('edifiq_billing_return_v1',JSON.stringify({at:new Date().toISOString(),plano,forma}))}catch(_){ }
+      if(typeof toast==='function')toast(forma==='pix'?'Abrindo pagamento por Pix...':forma==='boleto'?'Abrindo pagamento por boleto...':'Abrindo pagamento por cartão...');
+      location.assign(String(data.checkout_url));
+    }catch(e){console.error('EDIFIQ checkout 47',e);if(typeof toast==='function')toast(String(e?.message||'Não foi possível iniciar o pagamento.'));buttons.forEach(b=>b.disabled=false);window.__edifiqBillingBusy=false}
+  }
+  window.edifiqEscolherPagamento47=function(plano){
+    plano=String(plano||'').toLowerCase();if(!['mensal','anual'].includes(plano)){if(typeof toast==='function')toast('Plano inválido.');return}
+    ed47Close();const m=document.createElement('div');m.id='edPaymentMethod47';m.className='modal open';
+    m.innerHTML=`<div class="modalBox" style="max-width:520px"><div class="modalHead"><div><h2>Forma de pagamento</h2><p class="sub">Escolha como pagar o plano ${ed47Esc(plano==='anual'?'Anual':'Mensal')}.</p></div><button class="x" type="button" onclick="document.getElementById('edPaymentMethod47')?.remove()">×</button></div><div class="edPayMethods47"><button class="edPayMethod47" type="button" onclick="edifiqPagar47('${ed47Esc(plano)}','cartao')"><span>💳</span><span><strong>Cartão de crédito</strong><small>Assinatura com renovação automática.</small></span></button><button class="edPayMethod47" type="button" onclick="edifiqPagar47('${ed47Esc(plano)}','pix')"><span>⚡</span><span><strong>Pix</strong><small>Pagamento do período atual; renove no próximo vencimento.</small></span></button><button class="edPayMethod47" type="button" onclick="edifiqPagar47('${ed47Esc(plano)}','boleto')"><span>🧾</span><span><strong>Boleto</strong><small>Pagamento do período atual; liberação após confirmação.</small></span></button></div></div>`;
+    document.body.appendChild(m);
+  };
+  window.edifiqPagar47=ed47Start;
+  window.assinarPlanoEdifiq11=function(codigo){window.edifiqEscolherPagamento47(codigo)};
+})();
+</script>
+'''
+          if 'id="edifiqCheckoutMethods47Script"' not in html:
+              html = html.replace('</body>', checkout_patch + '\n</body>', 1)
 
           page.write_text(html,encoding='utf-8')
           PY
@@ -74,7 +114,7 @@ jobs:
               'validated': True,
               'public_files': hashes,
               'pwa_label': 'Edific',
-              'cache': 'edifiq-shell-v46-menu-temas'
+              'cache': 'edifiq-shell-v47-checkout-metodos'
           }, ensure_ascii=False))
           PY
       - uses: actions/upload-pages-artifact@v3
