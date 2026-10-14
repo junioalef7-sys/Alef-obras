@@ -41,8 +41,20 @@ jobs:
           html = html.replace('var APP_NAME="EDIFIQ", SHORT_NAME="EDIFIQ", installEvent=null;','var APP_NAME="Edific", SHORT_NAME="Edific", installEvent=null;',1)
           html = html.replace('Instalar o EDIFIQ','Instalar o Edific').replace('instalar o EDIFIQ','instalar o Edific')
           html = re.sub(r'(<link[^>]+rel="apple-touch-icon"[^>]+href=")[^"]+("[^>]*>)', r'\1./edifiq-icon-192.png\2', html, count=1, flags=re.I)
+
+          # Planos e assinaturas: mostrar no menu principal, não dentro de Configurações.
+          menu_marker = '<button onclick="nav(\'config\')">⚙️ Configurações</button>'
+          menu_entry = '<button id="menuPlanosAssinaturas" onclick="openPlanosEdifiq11&&openPlanosEdifiq11()">💳 Planos e assinaturas</button>'
+          if menu_entry not in html:
+              if menu_marker not in html:
+                  raise SystemExit('Botão Configurações não encontrado para inserir Planos e assinaturas.')
+              html = html.replace(menu_marker, menu_marker + '\n' + menu_entry, 1)
+          if 'id="edifiqBillingMenuOnly"' not in html:
+              html = html.replace('</head>', '<style id="edifiqBillingMenuOnly">#edSubConfig10{display:none!important}</style>\n</head>', 1)
+
           page.write_text(html,encoding='utf-8')
           PY
+          python3 scripts/check-release.py --html .pages/index.html
           touch .pages/.nojekyll
           python3 - <<'PY'
           import hashlib, json, os
