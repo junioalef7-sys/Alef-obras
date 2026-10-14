@@ -1,5 +1,5 @@
-const CACHE='edifiq-shell-v48-logo-dourada';
-const SHELL=['./','./manifest.webmanifest','./edifiq-icon-192.png','./edific-icon.svg'];
+const CACHE='edifiq-shell-v52-logo-relatorios';
+const SHELL=['./','./manifest.webmanifest','./edifiq-icon-192.png','./edifiq-menu-logo.jpg','./edific-icon.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(async cache=>{await Promise.allSettled(SHELL.map(url=>cache.add(url)));}).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('edifiq-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 function isDynamic(url){return url.hostname.endsWith('supabase.co')||url.hostname.includes('mercadopago')||url.pathname.includes('/functions/v1/');}
