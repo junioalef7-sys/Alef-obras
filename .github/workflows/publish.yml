@@ -43,7 +43,7 @@ jobs:
           html = re.sub(r'(<link[^>]+rel="apple-touch-icon"[^>]+href=")[^"]+("[^>]*>)', r'\1./edifiq-icon-192.png\2', html, count=1, flags=re.I)
 
           menu_marker = '<button class="edifiqDataRow" onclick="openConfiguracoes()"><span>⚙</span><b>Configurações</b><span class="edifiqChevron">›</span></button>'
-          menu_entry = '<button class="edifiqDataRow" id="menuPlanosAssinaturas" type="button" onclick="return edifiqAbrirPlanosMenu50(event)"><span>💳</span><b>Planos e assinaturas</b><span class="edifiqChevron">›</span></button>'
+          menu_entry = '<button class="edifiqDataRow" id="menuPlanosAssinaturas" type="button" onclick="return edifiqAbrirPlanosMenu51(event)"><span>💳</span><b>Planos e assinaturas</b><span class="edifiqChevron">›</span></button>'
           html = re.sub(r'<button class="edifiqDataRow" id="menuPlanosAssinaturas"[\s\S]*?</button>', menu_entry, html, count=1)
           if 'id="menuPlanosAssinaturas"' not in html:
               if menu_marker not in html:
@@ -56,13 +56,14 @@ jobs:
           if 'id="edifiqBillingMenuOnly"' not in html:
               html = html[:head_pos] + '<style id="edifiqBillingMenuOnly">#edSubConfig10,#edSubscriptionConfigCard,#edBillingConfig11{display:none!important}</style>\n' + html[head_pos:]
 
-          for n in ('47','48','49','50'):
+          for n in ('47','48','49','50','51'):
               html = re.sub(r'<style id="edifiqCheckoutMethods'+n+r'">[\s\S]*?</style>\s*', '', html, flags=re.I)
               html = re.sub(r'<script id="edifiqCheckoutMethods'+n+r'Script">[\s\S]*?</script>\s*', '', html, flags=re.I)
           html = re.sub(r'<script id="edifiqCheckoutDirect50Script">[\s\S]*?</script>\s*', '', html, flags=re.I)
+          html = re.sub(r'<script id="edifiqCheckoutDirect51Script">[\s\S]*?</script>\s*', '', html, flags=re.I)
 
           checkout_patch = r'''
-          <script id="edifiqCheckoutDirect50Script">
+          <script id="edifiqCheckoutDirect51Script">
           (function(){
             function resetBilling(){
               window.__edifiqBillingBusy=false;
@@ -77,29 +78,51 @@ jobs:
               if(!['mensal','anual'].includes(plano)){if(typeof toast==='function')toast('Plano inválido.');return false}
               if(window.__edifiqBillingBusy)return false;
               window.__edifiqBillingBusy=true;
+
+              // Abre uma aba/janela web limpa imediatamente pelo clique do usuário.
+              // Isso evita que o checkout fique preso dentro do PWA ou volte para uma etapa intermediária antiga.
+              let payWindow=null;
+              try{payWindow=window.open('about:blank','_blank')}catch(_){payWindow=null}
+
               try{
                 if((typeof sb==='undefined'||!sb)&&typeof ensureSupabaseClient==='function')await ensureSupabaseClient();
                 if(typeof sb==='undefined'||!sb)throw new Error('Sem conexão com o servidor.');
                 if(typeof user==='undefined'||!user?.id)throw new Error('Sua sessão expirou. Entre novamente no aplicativo.');
                 if(typeof toast==='function')toast('Abrindo pagamento seguro no Mercado Pago...');
+
                 const {data,error}=await sb.functions.invoke('edifiq-assinatura-checkout',{body:{plano,forma:'mercado_pago',return_url:location.href.split('#')[0]}});
-                if(error){let msg=error.message||'Não foi possível iniciar o pagamento.';try{if(error.context&&typeof error.context.clone==='function'){const j=await error.context.clone().json();msg=j?.error||j?.detail||msg}}catch(_){ }throw new Error(msg)}
+                if(error){
+                  let msg=error.message||'Não foi possível iniciar o pagamento.';
+                  try{if(error.context&&typeof error.context.clone==='function'){const j=await error.context.clone().json();msg=j?.error||j?.detail||msg}}catch(_){ }
+                  throw new Error(msg)
+                }
                 if(data?.error)throw new Error(data.error);
                 if(!data?.checkout_url)throw new Error('O servidor não retornou o endereço de pagamento.');
+
                 try{localStorage.setItem('edifiq_billing_return_v1',JSON.stringify({at:new Date().toISOString(),plano,forma:'mercado_pago',checkout_type:data?.checkout_type||'checkout_pro'}))}catch(_){ }
-                window.location.href=String(data.checkout_url);
+
+                const checkout=String(data.checkout_url);
+                if(payWindow&&!payWindow.closed){
+                  try{payWindow.location.replace(checkout)}catch(_){payWindow.location.href=checkout}
+                  try{payWindow.focus()}catch(_){ }
+                }else{
+                  window.location.assign(checkout);
+                }
+                setTimeout(resetBilling,1200);
                 return false;
               }catch(e){
-                console.error('EDIFIQ checkout direto 50',e);
+                try{if(payWindow&&!payWindow.closed)payWindow.close()}catch(_){ }
+                console.error('EDIFIQ checkout direto 51',e);
                 resetBilling();
                 if(typeof toast==='function')toast(String(e?.message||'Não foi possível iniciar o pagamento.'));
                 return false;
               }
             }
+
             window.assinarPlanoEdifiq11=start;
             window.edifiqPagar47=function(plano){return start(plano)};
             window.edifiqEscolherPagamento47=function(plano){return start(plano)};
-            window.edifiqAbrirPlanosMenu50=function(ev){try{ev?.preventDefault?.();ev?.stopPropagation?.()}catch(_){ }resetBilling();if(typeof openPlanosEdifiq11==='function')openPlanosEdifiq11();else if(typeof toast==='function')toast('Não foi possível abrir Planos e assinaturas.');return false};
+            window.edifiqAbrirPlanosMenu51=function(ev){try{ev?.preventDefault?.();ev?.stopPropagation?.()}catch(_){ }resetBilling();if(typeof openPlanosEdifiq11==='function')openPlanosEdifiq11();else if(typeof toast==='function')toast('Não foi possível abrir Planos e assinaturas.');return false};
             window.addEventListener('pageshow',resetBilling);
             document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')resetBilling()});
             const init=()=>{resetBilling();hideConfigBilling()};
@@ -122,7 +145,7 @@ jobs:
           data = Path('.pages/index.html').read_bytes()
           public_files = ['index.html','edifiq-sw.js','manifest.webmanifest','edifiq-icon-192.png','edific-icon.svg','privacidade.html','exclusao-conta.html']
           hashes = {name: hashlib.sha256(Path('.pages',name).read_bytes()).hexdigest() for name in public_files}
-          Path('.pages/release.json').write_text(json.dumps({'commit': os.environ['GITHUB_SHA'],'sha256': hashlib.sha256(data).hexdigest(),'validated': True,'public_files': hashes,'pwa_label': 'Edific','cache': 'edifiq-shell-v50-checkout-direto'}, ensure_ascii=False))
+          Path('.pages/release.json').write_text(json.dumps({'commit': os.environ['GITHUB_SHA'],'sha256': hashlib.sha256(data).hexdigest(),'validated': True,'public_files': hashes,'pwa_label': 'Edific','cache': 'edifiq-shell-v51-checkout-web-limpo'}, ensure_ascii=False))
           PY
       - uses: actions/upload-pages-artifact@v3
         with:
