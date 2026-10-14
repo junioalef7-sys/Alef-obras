@@ -1,15 +1,15 @@
-const CACHE='edifiq-shell-v54-exclusao-definitiva';
+const CACHE='edifiq-shell-v55-exclusao-real';
 const SHELL=['./','./manifest.webmanifest','./edifiq-icon-192.png','./edifiq-menu-logo.jpg','./edific-icon.svg','./exclusao-conta.html'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(async cache=>{await Promise.allSettled(SHELL.map(url=>cache.add(url)));}).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('edifiq-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 function isDynamic(url){return url.hostname.endsWith('supabase.co')||url.hostname.includes('mercadopago')||url.pathname.includes('/functions/v1/');}
 
-const ACCOUNT_DELETE_PATCH=`<script id="edifiq-delete-account-route-v54">(function(){
+const ACCOUNT_DELETE_PATCH=`<script id="edifiq-delete-account-route-v55">(function(){
   if(/exclusao-conta\\.html$/i.test(location.pathname))return;
   function isDeleteAccountControl(el){
     if(!el)return false;
     var text=String(el.textContent||'').replace(/\\s+/g,' ').trim().toLowerCase();
-    return text==='excluir conta'||text==='exclusão de conta'||text==='exclusao de conta'||text.includes('excluir minha conta');
+    return text==='excluir conta'||text==='exclusão de conta'||text==='exclusao de conta'||text.includes('excluir minha conta')||text==='solicitar exclusão'||text==='solicitar exclusao';
   }
   document.addEventListener('click',function(ev){
     var el=ev.target&&ev.target.closest?ev.target.closest('button,a,[role="button"]'):null;
@@ -27,7 +27,7 @@ async function patchNavigationResponse(res,url){
     const type=(res.headers.get('content-type')||'').toLowerCase();
     if(!type.includes('text/html'))return res;
     const html=await res.text();
-    if(html.includes('edifiq-delete-account-route-v54'))return new Response(html,{status:res.status,statusText:res.statusText,headers:res.headers});
+    if(html.includes('edifiq-delete-account-route-v55'))return new Response(html,{status:res.status,statusText:res.statusText,headers:res.headers});
     const lower=html.toLowerCase();
     const pos=lower.lastIndexOf('</body>');
     const patched=pos>=0?html.slice(0,pos)+ACCOUNT_DELETE_PATCH+html.slice(pos):html+ACCOUNT_DELETE_PATCH;
