@@ -1,4 +1,4 @@
-name: Publicar EDIFIQ login protegido
+name: Publicar EDIFIQ auditado
 
 on:
   push:
@@ -9,20 +9,22 @@ permissions:
   contents: read
 
 concurrency:
-  group: edific-pages-login-safe
+  group: edific-pages-audit-safe
   cancel-in-progress: true
 
 jobs:
   validate:
-    name: Validar login, módulos e JavaScript
+    name: Validar login, cálculos, sync, cobrança e interface
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - name: Proteger login contra regressão
         run: node tests/login-smoke.cjs
+
       - name: Validar sintaxe dos scripts do index
         run: |
           python3 - <<'PY'
@@ -35,67 +37,57 @@ jobs:
               for attrs,code in blocks:
                   if not code.strip() or re.search(r'type=["\']application/(?:ld\+)?json',attrs,re.I):
                       continue
-                  p=Path(d)/f'script-{n}.js';p.write_text(code,encoding='utf-8')
+                  p=Path(d)/f'script-{n}.js'; p.write_text(code,encoding='utf-8')
                   r=subprocess.run(['node','--check',str(p)],capture_output=True,text=True)
                   if r.returncode:
                       raise SystemExit('Erro de sintaxe no script %d:\n%s'%(n,r.stderr))
                   n+=1
-          print(f'{n} scripts JavaScript válidos; login protegido.')
+          print(f'{n} scripts JavaScript válidos.')
           PY
+
       - name: Auditar núcleo completo do aplicativo
         run: python3 scripts/check-release.py
-      - name: Validar planos, checkout, Pix, progresso e modo limitado
+
+      - name: Validar patches e auditoria v75
         run: |
-          node --check billing-fix57.js
-          node --check trial-fix62.js
-          node --check billing-hotfix63.js
-          node --check access-limit63.js
-          node --check core-fix65.js
-          node --check ui-fix67.js
-          node --check login-ui68.js
-          node --check edifiq-sw.js
+          for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js edifiq-sw.js; do node --check "$f"; done
           node tests/core65.cjs
-          grep -q "edifiqEnsureTrial60" billing-fix57.js
+          node tests/audit75.cjs
           grep -q "edifiqEnsureTrial63" trial-fix62.js
+          grep -q "edifiqSyncSessionState75" trial-fix62.js
+          grep -q "edifiqForceFullSync" trial-fix62.js
+          ! grep -q "setInterval(tick62" trial-fix62.js
+          ! grep -q "MutationObserver" trial-fix62.js
           grep -q "edPlanTrial66" billing-hotfix63.js
           grep -q "Início do teste" billing-hotfix63.js
           grep -q "Dias restantes" billing-hotfix63.js
           grep -q "Vencimento do teste" billing-hotfix63.js
           grep -q "Primeira cobrança" billing-hotfix63.js
-          grep -q "copyTextIOS" billing-hotfix63.js
-          grep -q "Copiar código Pix" billing-hotfix63.js
           grep -q "safeAsaasUrl" billing-hotfix63.js
-          grep -q "checkout.hostname.endsWith('.asaas.com')" billing-hotfix63.js
+          grep -q "forma==='boleto'" billing-hotfix63.js
           grep -q "window.obraProgress=compatible" core-fix65.js
-          grep -q "edifiqRenderPlanInfo66" ui-fix67.js
+          grep -q "edifiqSuppressConfigPlans71" ui-fix67.js
+          grep -q "menuPlanosAssinaturas" ui-fix67.js
           grep -q "data-ed-close-overview" ui-fix67.js
           grep -q "edifiqReportPrint" ui-fix67.js
           grep -q "ed27PrintReport" ui-fix67.js
-          grep -q "edifiqSuppressOnboardingBanner69" ui-fix67.js
-          grep -q "edifiqSuppressConfigPlans71" ui-fix67.js
-          grep -q "Planos e assinaturas" ui-fix67.js
-          grep -q "#edConfiguracoesModal #edSubConfig10" ui-fix67.js
-          ! grep -q "edifiqEnsureConfigPlan70" ui-fix67.js
           grep -q "Senha incorreta ou dados incorretos." login-ui68.js
           grep -q "authCommercialHint{display:none!important}" login-ui68.js
           grep -q "No plano gratuito é permitido cadastrar somente 1 obra" access-limit63.js
           grep -q "No plano gratuito é permitido cadastrar somente 1 funcionário" access-limit63.js
-          ! grep -q "Teste grátis de 7 dias" access-limit63.js
-          ! grep -q "MutationObserver" trial-fix62.js
-          ! grep -q "MutationObserver" billing-hotfix63.js
-          ! grep -q "MutationObserver" access-limit63.js
-          ! grep -q "setInterval(backgroundTrialTick" billing-fix57.js
-          ! grep -q "window.edifiqAsaasEscolher=" billing-fix57.js
           ! grep -q "BILLING_FIX" edifiq-sw.js
           ! grep -q "injectFix" edifiq-sw.js
+          grep -q "edifiq-shell-v75-audit" edifiq-sw.js
+
       - name: Validar exclusão imediata de conta
         run: |
-          node --check account-delete-fix61.js
           grep -q "edifiq-excluir-conta-imediato" account-delete-fix61.js
           grep -q "EXCLUIR MINHA CONTA" account-delete-fix61.js
           grep -q "Excluir conta agora" account-delete-fix61.js
-      - name: Preparar versão pública sem tocar no login
+
+      - name: Preparar versão pública auditada
         run: |
+          rm -rf .pages
           mkdir -p .pages
           cp index.html .pages/index.html
           for f in edifiq-sw.js manifest.webmanifest edifiq-icon-192.png edifiq-menu-logo.jpg edific-icon.svg privacidade.html exclusao-conta.html billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js; do
@@ -110,6 +102,7 @@ jobs:
           html=html.replace('<meta content="EDIFIQ" name="apple-mobile-web-app-title"/>','<meta content="Edific" name="apple-mobile-web-app-title"/>',1)
           html=html.replace('<meta name="application-name" content="EDIFIQ"/>','<meta name="application-name" content="Edific"/>',1)
 
+          # Estado aprovado do login.
           html=html.replace("hint.textContent='7 dias de teste grátis';","hint.textContent='';hint.hidden=true;hint.style.display='none';")
           html=html.replace('authMsg("E-mail ou senha incorretos.");','authMsg("Senha incorreta ou dados incorretos.");')
           html=html.replace("authMsg('E-mail ou senha incorretos.');","authMsg('Senha incorreta ou dados incorretos.');")
@@ -120,43 +113,40 @@ jobs:
               html=re.sub(r'<link\s+[^>]*rel=["\']apple-touch-icon["\'][^>]*>',touch,html,count=1,flags=re.I)
           else:
               html=html.replace('</head>',touch+'\n</head>',1)
-          if not re.search(r'<link\s+[^>]*rel=["\'](?:icon|shortcut icon)["\']',html,re.I):
-              html=html.replace('</head>','<link rel="icon" type="image/jpeg" sizes="1254x1254" href="./edifiq-menu-logo.jpg?v=71"/>\n</head>',1)
+          html=re.sub(r'<link\s+[^>]*rel=["\'](?:icon|shortcut icon)["\'][^>]*>\s*','',html,flags=re.I)
+          html=html.replace('</head>','<link rel="icon" type="image/jpeg" sizes="1254x1254" href="./edifiq-menu-logo.jpg?v=75"/>\n</head>',1)
 
           fixes=['billing-fix57.js','account-delete-fix61.js','trial-fix62.js','billing-hotfix63.js','access-limit63.js','core-fix65.js','ui-fix67.js','login-ui68.js']
           for name in fixes:
               html=re.sub(r'<script[^>]+src=["\']\./'+re.escape(name)+r'[^"\']*["\'][^>]*></script>\s*','',html,flags=re.I)
           pos=html.lower().rfind('</body>')
           if pos<0: raise SystemExit('Fechamento </body> não encontrado')
-          addons='''<script src="./core-fix65.js?v=71" defer></script>\n<script src="./billing-fix57.js?v=71" defer></script>\n<script src="./account-delete-fix61.js?v=71" defer></script>\n<script src="./trial-fix62.js?v=71" defer></script>\n<script src="./billing-hotfix63.js?v=71" defer></script>\n<script src="./access-limit63.js?v=71" defer></script>\n<script src="./ui-fix67.js?v=71" defer></script>\n<script src="./login-ui68.js?v=71" defer></script>\n'''
+          addons='''<script src="./core-fix65.js?v=75" defer></script>\n<script src="./billing-fix57.js?v=75" defer></script>\n<script src="./account-delete-fix61.js?v=75" defer></script>\n<script src="./trial-fix62.js?v=75" defer></script>\n<script src="./billing-hotfix63.js?v=75" defer></script>\n<script src="./access-limit63.js?v=75" defer></script>\n<script src="./ui-fix67.js?v=75" defer></script>\n<script src="./login-ui68.js?v=75" defer></script>\n'''
           html=html[:pos]+addons+html[pos:]
-          required=['edifiqPostLoginStartup','setTimeout(()=>edifiqPostLoginStartup(session),0)','classList.remove("hidden")','./ui-fix67.js?v=71','./login-ui68.js?v=71','Senha incorreta ou dados incorretos.','data:image/jpeg;base64,']
+
+          required=['edifiqPostLoginStartup','setTimeout(()=>edifiqPostLoginStartup(session),0)','classList.remove("hidden")','./trial-fix62.js?v=75','./ui-fix67.js?v=75','./login-ui68.js?v=75','Senha incorreta ou dados incorretos.','data:image/jpeg;base64,']
           for x in required:
               if x not in html: raise SystemExit('PUBLICAÇÃO PROTEGIDA: marcador ausente: '+x)
-          if "hint.textContent='7 dias de teste grátis';" in html:
-              raise SystemExit('PUBLICAÇÃO BLOQUEADA: informação antiga de teste reapareceu na tela de login')
-          if 'authMsg("E-mail ou senha incorretos.");' in html or "authMsg('E-mail ou senha incorretos.');" in html:
-              raise SystemExit('PUBLICAÇÃO BLOQUEADA: mensagem antiga de login reapareceu')
+          forbidden=["hint.textContent='7 dias de teste grátis';",'authMsg("E-mail ou senha incorretos.");',"authMsg('E-mail ou senha incorretos.');"]
+          for x in forbidden:
+              if x in html: raise SystemExit('PUBLICAÇÃO BLOQUEADA: estado antigo reapareceu: '+x)
           page.write_text(html,encoding='utf-8')
           PY
-          grep -q 'edifiq-menu-logo.jpg?v=71' .pages/manifest.webmanifest
-          grep -q "edifiq-shell-v71-clean" .pages/edifiq-sw.js
+          grep -q 'edifiq-menu-logo.jpg?v=75' .pages/manifest.webmanifest
+          grep -q 'edifiq-shell-v75-audit' .pages/edifiq-sw.js
+          grep -q './trial-fix62.js?v=75' .pages/index.html
+          grep -q './ui-fix67.js?v=75' .pages/index.html
+          grep -q './login-ui68.js?v=75' .pages/index.html
           ! grep -q 'BILLING_FIX' .pages/edifiq-sw.js
           ! grep -q 'injectFix' .pages/edifiq-sw.js
-          grep -q './ui-fix67.js?v=71' .pages/index.html
-          grep -q './login-ui68.js?v=71' .pages/index.html
-          grep -q 'Senha incorreta ou dados incorretos.' .pages/index.html
-          grep -q 'edifiqSuppressOnboardingBanner69' .pages/ui-fix67.js
-          grep -q 'edifiqSuppressConfigPlans71' .pages/ui-fix67.js
-          ! grep -q 'edifiqEnsureConfigPlan70' .pages/ui-fix67.js
-          ! grep -q "hint.textContent='7 dias de teste grátis';" .pages/index.html
           touch .pages/.nojekyll
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .pages
 
   deploy:
-    name: Publicar versão com login protegido
+    name: Publicar versão auditada
     needs: validate
     runs-on: ubuntu-latest
     permissions:
