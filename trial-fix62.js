@@ -1,12 +1,13 @@
 (function(){
   'use strict';
   const VERSION='63';
-  let authHooked=false,trialBusy=false,trialUid='';
+  let authHooked=false,trialBusy=false,trialUid='',observerQueued=false;
 
   const normalize=s=>String(s||'').replace(/\s+/g,' ').trim();
   const fmtDate=v=>{if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR')};
   const daysLeft=s=>{const end=s?.trial_fim||s?.periodo_fim;if(!end)return null;return Math.max(0,Math.ceil((new Date(end).getTime()-Date.now())/86400000))};
   const trialActive=s=>!!(s&&String(s.status||'').toLowerCase()==='trial'&&s.trial_fim&&new Date(s.trial_fim).getTime()>Date.now());
+  const setHtml=(el,html)=>{if(el&&el.innerHTML!==html)el.innerHTML=html};
 
   function removeTrialPromoFromLogin62(){
     const auth=document.getElementById('auth');
@@ -127,12 +128,13 @@
       box=document.createElement('div');box.id='edTrial62Summary';box.className='card';
       const head=modal.querySelector('.modalHead');if(head)head.insertAdjacentElement('afterend',box);else modal.querySelector('.modalBox')?.prepend(box);
     }
-    const days=daysLeft(sub);
+    const days=daysLeft(sub);let html='';
     if(trialActive(sub)){
-      box.innerHTML=`<div class="financeRow"><span>🎁 Teste grátis</span><b>${days} dia${days===1?'':'s'} restante${days===1?'':'s'}</b></div><div class="financeRow"><span>Início do teste</span><b>${fmtDate(sub.trial_inicio)}</b></div><div class="financeRow"><span>Fim do teste</span><b>${fmtDate(sub.trial_fim)}</b></div><div class="financeRow"><span>Primeira cobrança</span><b>${fmtDate(sub.trial_fim)}</b></div><div class="note" style="margin-top:10px">A cobrança começa somente depois dos 7 dias grátis. Se o plano for escolhido durante o teste, a primeira cobrança continua programada para o fim do período gratuito.</div>`;
+      html=`<div class="financeRow"><span>🎁 Teste grátis</span><b>${days} dia${days===1?'':'s'} restante${days===1?'':'s'}</b></div><div class="financeRow"><span>Início do teste</span><b>${fmtDate(sub.trial_inicio)}</b></div><div class="financeRow"><span>Fim do teste</span><b>${fmtDate(sub.trial_fim)}</b></div><div class="financeRow"><span>Primeira cobrança</span><b>${fmtDate(sub.trial_fim)}</b></div><div class="note" style="margin-top:10px">A cobrança começa somente depois dos 7 dias grátis. Se o plano for escolhido durante o teste, a primeira cobrança continua programada para o fim do período gratuito.</div>`;
     }else if(String(sub.status||'').toLowerCase()==='trial'){
-      box.innerHTML='<div class="financeRow"><span>Teste grátis</span><b>Encerrado</b></div><div class="note" style="margin-top:10px">O período gratuito terminou. O modo gratuito limitado permanece disponível até o pagamento.</div>';
+      html='<div class="financeRow"><span>Teste grátis</span><b>Encerrado</b></div><div class="note" style="margin-top:10px">O período gratuito terminou. O modo gratuito limitado permanece disponível até o pagamento.</div>';
     }
+    if(html)setHtml(box,html);
   }
 
   function tick62(){
@@ -144,9 +146,14 @@
     if(typeof user!=='undefined'&&user?.id&&trialUid!==String(user.id))ensureTrialForSession62(null).catch(()=>{});
   }
 
+  function queueTick62(){
+    if(observerQueued)return;observerQueued=true;
+    setTimeout(()=>{observerQueued=false;tick62()},80);
+  }
+
   function init62(){
     tick62();
-    new MutationObserver(()=>{removeTrialPromoFromLogin62();hideBillingInsideSettings62();ensurePlansMenu62();patchPlanSummary62();attachTrialAuthHook62()}).observe(document.documentElement,{childList:true,subtree:true});
+    new MutationObserver(queueTick62).observe(document.documentElement,{childList:true,subtree:true});
     setInterval(tick62,1800);
   }
 
