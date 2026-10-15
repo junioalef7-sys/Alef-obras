@@ -48,11 +48,17 @@ jobs:
           grep -q "edifiqEnsureTrial60" billing-fix57.js
           grep -q "Planos e assinaturas" billing-fix57.js
           grep -q "Primeira cobrança" billing-fix57.js
+      - name: Validar exclusão imediata de conta
+        run: |
+          node --check account-delete-fix61.js
+          grep -q "edifiq-excluir-conta-imediato" account-delete-fix61.js
+          grep -q "EXCLUIR MINHA CONTA" account-delete-fix61.js
+          grep -q "Excluir conta agora" account-delete-fix61.js
       - name: Preparar versão pública sem tocar no login
         run: |
           mkdir -p .pages
           cp index.html .pages/index.html
-          for f in edifiq-sw.js manifest.webmanifest edifiq-icon-192.png edifiq-menu-logo.jpg edific-icon.svg privacidade.html exclusao-conta.html billing-fix57.js; do
+          for f in edifiq-sw.js manifest.webmanifest edifiq-icon-192.png edifiq-menu-logo.jpg edific-icon.svg privacidade.html exclusao-conta.html billing-fix57.js account-delete-fix61.js; do
             test -f "$f" || { echo "::error::Arquivo obrigatório ausente: $f"; exit 1; }
             cp "$f" ".pages/$f"
           done
@@ -64,9 +70,10 @@ jobs:
           html=html.replace('<meta content="EDIFIQ" name="apple-mobile-web-app-title"/>','<meta content="Edific" name="apple-mobile-web-app-title"/>',1)
           html=html.replace('<meta name="application-name" content="EDIFIQ"/>','<meta name="application-name" content="Edific"/>',1)
           html=re.sub(r'<script[^>]+src=["\']\./billing-fix57\.js[^"\']*["\'][^>]*></script>\s*','',html,flags=re.I)
+          html=re.sub(r'<script[^>]+src=["\']\./account-delete-fix61\.js[^"\']*["\'][^>]*></script>\s*','',html,flags=re.I)
           pos=html.lower().rfind('</body>')
           if pos<0: raise SystemExit('Fechamento </body> não encontrado')
-          html=html[:pos]+'<script src="./billing-fix57.js?v=60" defer></script>\n'+html[pos:]
+          html=html[:pos]+'<script src="./billing-fix57.js?v=61" defer></script>\n<script src="./account-delete-fix61.js?v=61" defer></script>\n'+html[pos:]
           required=['edifiqPostLoginStartup','setTimeout(()=>edifiqPostLoginStartup(session),0)','classList.remove("hidden")']
           for x in required:
               if x not in html: raise SystemExit('LOGIN PROTEGIDO: marcador ausente: '+x)
@@ -74,8 +81,8 @@ jobs:
 
           sw=Path('.pages/edifiq-sw.js')
           s=sw.read_text(encoding='utf-8')
-          s=re.sub(r"const CACHE='[^']+';","const CACHE='edifiq-shell-v60-trial-planos';",s,count=1)
-          s=s.replace('billing-fix57.js?v=57','billing-fix57.js?v=60').replace('billing-fix57.js?v=58','billing-fix57.js?v=60').replace('billing-fix57.js?v=59','billing-fix57.js?v=60')
+          s=re.sub(r"const CACHE='[^']+';","const CACHE='edifiq-shell-v61-delete-account';",s,count=1)
+          s=s.replace('billing-fix57.js?v=57','billing-fix57.js?v=61').replace('billing-fix57.js?v=58','billing-fix57.js?v=61').replace('billing-fix57.js?v=59','billing-fix57.js?v=61').replace('billing-fix57.js?v=60','billing-fix57.js?v=61')
           s=re.sub(r"if\(url\.pathname\.endsWith\('/billing-fix57\\.js'\)\)\{event\.respondWith\(new Response\(BILLING_FIX,[\s\S]*?\);return;\}","",s,count=1)
           sw.write_text(s,encoding='utf-8')
           PY
