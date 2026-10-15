@@ -3415,6 +3415,8 @@ function bindSupabaseAuth(){
         return;
       }
 
+      // INITIAL_SESSION pode chegar atrasado enquanto o login novo é concluído.
+      if(event==='INITIAL_SESSION' && !nextUser && (window.__edifiqLoginBusy||user?.id))return;
       if(!nextUser){
         sb.__edifiqAuthProcessing=null;
         stopEdifiqRealtime();edifiqResetInMemoryState();edifiqForgetOfflineAccess();
@@ -3560,7 +3562,9 @@ async function initSupabase(){
     const result=await Promise.race([sb.auth.getSession(),new Promise(resolve=>setTimeout(()=>resolve({data:{session:null},timeout:true}),8000))]);
     if(result?.data?.session){
       user=result.data.session.user; $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
-      await loadCloud(); renderAll(); startEdifiqRealtime();
+      try{await Promise.race([loadCloud(),new Promise(resolve=>setTimeout(resolve,5000))])}catch(e){console.warn("Nuvem indisponível; abrindo com dados locais.",e)}
+      try{renderAll();}catch(e){console.warn("Renderização inicial:",e)}
+      try{startEdifiqRealtime();}catch(e){console.warn("Realtime inicial:",e)}
     }
     return true;
   }catch(err){
@@ -3570,7 +3574,12 @@ async function initSupabase(){
   }
 }
 
+function edifiqAuthDeadline(promise,ms=12000){
+  let timer;
+  return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('A conexão demorou demais. Tente entrar novamente.')),ms)})]).finally(()=>clearTimeout(timer));
+}
 async function login(){
+  if(window.__edifiqLoginBusy)return;
   const emailInput=$("email");
   const email=(emailInput?.value||"").trim().toLowerCase();
   const password=$("password")?.value||"";
@@ -3580,6 +3589,7 @@ async function login(){
     return;
   }
 
+  window.__edifiqLoginBusy=true;
   const btn=document.querySelector('#auth .authBtns .primary');
   if(btn){btn.disabled=true;btn.textContent="Entrando...";}
   authMsg("Conectando ao EDIFIQ...");
@@ -3590,15 +3600,29 @@ async function login(){
       return false;
     }
 
+    // A autenticação REST já validou e-mail/senha. Abra o app PRIMEIRO.
+    // O SDK, a persistência da sessão e a nuvem não podem travar a entrada no iPhone/PWA.
     const previousUserId=String(user?.id||'');
     if(previousUserId && previousUserId!==String(session.user.id)){stopEdifiqRealtime();edifiqResetInMemoryState();}
     user=session.user;edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(user.id)||null;
 
-    // Mostra o aplicativo assim que a autenticação é validada.
-    // No celular, uma chamada RPC lenta não pode deixar a tela presa no login.
     $("auth")?.classList.add("hidden");
     $("app")?.classList.remove("hidden");
     authMsg("");
+    try{ window.scrollTo({top:0,behavior:"instant"}); }catch(_){ window.scrollTo(0,0); }
+
+    // Tenta persistir a sessão sem bloquear a abertura do aplicativo.
+    try{
+      if(sb?.auth?.setSession && session.access_token && session.refresh_token){
+        const persisted=await edifiqAuthDeadline(
+          sb.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token}),
+          4000
+        );
+        if(persisted?.error)console.warn("Sessão Supabase não persistida:",persisted.error);
+      }
+    }catch(e){
+      console.warn("Persistência da sessão indisponível; app já liberado.",e);
+    }
 
     try{
       await Promise.race([
@@ -3611,18 +3635,6 @@ async function login(){
     if(!edifiqEmpresaAtivaId)edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(user.id)||user.id;
     edifiqRememberEmpresaForUser(user.id,edifiqEmpresaAtivaId);edifiqApplyScopedKeys();
     await edifiqClaimLegacyStorage();await edifiqLoadScopedLocalState();edifiqRememberOfflineAccess();
-
-    // Mantém a sessão no Supabase quando o cliente estiver disponível.
-    try{
-      if(sb?.auth?.setSession && session.access_token && session.refresh_token){
-        await sb.auth.setSession({
-          access_token:session.access_token,
-          refresh_token:session.refresh_token
-        });
-      }
-    }catch(e){
-      console.warn("Não foi possível persistir a sessão do Supabase:",e);
-    }
 
     // A sincronização não pode impedir a entrada no aplicativo.
     try{
@@ -3660,8 +3672,7 @@ async function login(){
           method:"POST",
           headers:{
             "Content-Type":"application/json",
-            "apikey":SUPA_KEY,
-            "Authorization":"Bearer "+SUPA_KEY
+            "apikey":SUPA_KEY
           },
           body:JSON.stringify({email,password}),
           signal:controller.signal
@@ -3669,7 +3680,7 @@ async function login(){
       );
 
       clearTimeout(timer);
-      data=await response.json().catch(()=>({}));
+      data=await edifiqAuthDeadline(response.json()).catch(()=>({}));
     }catch(restErr){
       console.warn("Login REST indisponível:",restErr);
     }
@@ -3718,7 +3729,7 @@ async function login(){
 
     try{
       if(await ensureSupabaseClient()){
-        const result=await sb.auth.signInWithPassword({email,password});
+        const result=await edifiqAuthDeadline(sb.auth.signInWithPassword({email,password}));
 
         if(result?.error){
           const msg=String(result.error.message||"");
@@ -3744,8 +3755,9 @@ async function login(){
     authMsg("Não foi possível conectar ao servidor. Confira a internet ou use 'Entrar no modo local'.");
   }catch(err){
     console.error("EDIFIQ login:",err);
-    authMsg("Não foi possível entrar agora. Verifique sua conexão e tente novamente.");
+    authMsg(err?.message||"Não foi possível entrar agora. Verifique sua conexão e tente novamente.");
   }finally{
+    window.__edifiqLoginBusy=false;
     if(btn){btn.disabled=false;btn.textContent="Entrar";}
   }
 }
@@ -10176,15 +10188,7 @@ openAdiantamento;
 
 window.openAdiantamentoFuncionario=
 openAdiantamentoFuncionario;
-window.enterLocalMode=function(){
-  try{
-    return enterLocalMode();
-  }catch(err){
-    console.error("EDIFIQ modo local:",err);
-    try{ authMsg("Não foi possível abrir o modo local."); }catch(_){}
-    return false;
-  }
-};
+window.enterLocalMode=enterLocalMode;
 window.addServicoAdicional=addServicoAdicional;
 window.excluirExtraObra=excluirExtraObra;
 window.setChecklistProgress=setChecklistProgress;
