@@ -28,14 +28,20 @@ assert.match(ui,/edifiqSuppressOnboardingBanner69/,'Primeiros passos deve contin
 assert.match(ui,/data-ed-close-overview/,'Visão geral precisa manter botão Fechar');
 assert.match(ui,/edifiqReportPrint/,'impressão principal precisa estar protegida');
 assert.match(ui,/ed27PrintReport/,'impressão de relatório deve estar protegida');
+assert.match(ui,/edifiqVisual76Style/,'correção visual v76 precisa estar presente');
+assert.match(ui,/#menuPasta \.menuPastaHead\.edifiqDrawerHead>\.x\{display:none!important/,'X do cabeçalho do menu deve permanecer oculto');
+assert.match(ui,/#app \.top\{backdrop-filter:none!important/,'cabeçalho das telas não pode usar blur');
+assert.match(ui,/body:not\(\.edLight\) #app \.top\{background:#090b0e!important\}/,'cabeçalho escuro deve ser sólido');
+assert.match(ui,/body\.edLight #app \.top\{background:#f4f7fb!important\}/,'cabeçalho claro deve ser sólido');
 
 assert.match(login,/Senha incorreta ou dados incorretos\./,'erro de login padronizado ausente');
 assert.match(login,/authCommercialHint\{display:none!important\}/,'propaganda de teste não pode voltar ao login');
 
-assert.match(sw,/edifiq-shell-v75-audit/,'cache PWA deve estar na versão auditada');
+assert.match(sw,/edifiq-shell-v76-visual/,'cache PWA deve estar na versão visual atual');
 assert.doesNotMatch(sw,/BILLING_FIX/,'Service Worker não pode injetar cobrança antiga');
 assert.doesNotMatch(sw,/injectFix/,'Service Worker não pode reescrever HTML com correções antigas');
 assert.match(sw,/cache:'no-store'/,'navegação e assets devem priorizar versão atual');
-assert.match(manifest,/edifiq-menu-logo\.jpg\?v=75/,'manifest deve apontar para a logo nova versionada');
+assert.match(sw,/ui-fix67\.js\?v=76/,'Service Worker deve carregar somente o patch visual v76 atualizado');
+assert.match(manifest,/edifiq-menu-logo\.jpg\?v=75/,'manifest deve preservar a logo aprovada sem mudança desnecessária');
 
-console.log('AUDIT75 OK: sessão/sync, trial, pagamentos, UI, login, impressão e PWA protegidos contra regressão.');
+console.log('AUDIT76 OK: visual isolado corrigido sem regressão de sessão/sync, pagamentos, login, impressão ou PWA.');
