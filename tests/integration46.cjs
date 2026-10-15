@@ -1,5 +1,12 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const C=require('../release27-core.js'),{harness}=require('./release27.cjs');const html=fs.readFileSync(path.join(__dirname,'../.release-base.html'),'utf8');let count=0;
+// A aplicação publicada carrega core-fix65.js depois do núcleo inline. O teste de
+// integração reproduz a mesma composição final em vez de testar apenas a camada antiga.
+{
+  const compat=fs.readFileSync(path.join(__dirname,'../core-fix65.js'),'utf8');
+  const compatCtx={console,Number,setTimeout:fn=>fn(),document:{readyState:'complete',addEventListener(){}},D:{obras:[]},EdifiqRelease27:C,obraProgress:o=>0};
+  compatCtx.window=compatCtx;vm.createContext(compatCtx);vm.runInContext(compat,compatCtx,{filename:'core-fix65.js'});
+}
 function test(name,fn){fn();count++;console.log('OK',name)}
 test('Centavos e valores brasileiros não multiplicam valores e arredondam simetricamente',()=>{assert.equal(C.cents('280'),28000);assert.equal(C.cents('1.234,56'),123456);assert.equal(C.cents(1.005),101);assert.equal(C.cents(-1.005),-101);assert.equal(C.cents(0.1+0.2),30)});
 test('Etapas legadas e sincronizadas não duplicam totais',()=>{const D={obras:[{id:'o'},{id:'o'}],checklist:[{id:'s',obra_id:'o'},{id:'s',obraId:'o',updated_at:'2026-10-13'}],gastos:[{id:'g',obraId:'o',checklistId:'s',valor:80}],pagamentos:[{id:'p',obraId:'o',checklistId:'s',valor:100}]};const rows=C.financeRows(D),st=C.stageFinance(D,rows);assert.equal(st.length,1);assert.equal(st[0].stages.length,2);assert.equal(st[0].stages[0].income,10000);assert.equal(st[0].stages[0].expense,8000);assert.equal(st[0].stages[0].result,2000)});
