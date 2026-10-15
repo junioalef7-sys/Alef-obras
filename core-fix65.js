@@ -146,6 +146,7 @@
             d.pendDiarias=balance.pendingDiarias;
             d.totalExtras=balance.extrasTotal;
             d.totalAdiant=balance.advance;
+            d.diasTrabalhados=(Array.isArray(balance.days)?balance.days:[]).reduce((sum,row)=>sum+Number(row?.qtd??row?.quantidade??1),0);
           }
         }catch(e){console.warn('EDIFIQ relatório saldo 65:',e)}
         return d;
