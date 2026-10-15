@@ -3415,6 +3415,8 @@ function bindSupabaseAuth(){
         return;
       }
 
+      // INITIAL_SESSION pode chegar atrasado enquanto o login novo é concluído.
+      if(event==='INITIAL_SESSION' && !nextUser && (window.__edifiqLoginBusy||user?.id))return;
       if(!nextUser){
         sb.__edifiqAuthProcessing=null;
         stopEdifiqRealtime();edifiqResetInMemoryState();edifiqForgetOfflineAccess();
@@ -3560,7 +3562,9 @@ async function initSupabase(){
     const result=await Promise.race([sb.auth.getSession(),new Promise(resolve=>setTimeout(()=>resolve({data:{session:null},timeout:true}),8000))]);
     if(result?.data?.session){
       user=result.data.session.user; $("auth")?.classList.add("hidden"); $("app")?.classList.remove("hidden");
-      await loadCloud(); renderAll(); startEdifiqRealtime();
+      try{await Promise.race([loadCloud(),new Promise(resolve=>setTimeout(resolve,5000))])}catch(e){console.warn("Nuvem indisponível; abrindo com dados locais.",e)}
+      try{renderAll();}catch(e){console.warn("Renderização inicial:",e)}
+      try{startEdifiqRealtime();}catch(e){console.warn("Realtime inicial:",e)}
     }
     return true;
   }catch(err){
@@ -3570,7 +3574,12 @@ async function initSupabase(){
   }
 }
 
+function edifiqAuthDeadline(promise,ms=12000){
+  let timer;
+  return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('A conexão demorou demais. Tente entrar novamente.')),ms)})]).finally(()=>clearTimeout(timer));
+}
 async function login(){
+  if(window.__edifiqLoginBusy)return;
   const emailInput=$("email");
   const email=(emailInput?.value||"").trim().toLowerCase();
   const password=$("password")?.value||"";
@@ -3580,6 +3589,7 @@ async function login(){
     return;
   }
 
+  window.__edifiqLoginBusy=true;
   const btn=document.querySelector('#auth .authBtns .primary');
   if(btn){btn.disabled=true;btn.textContent="Entrando...";}
   authMsg("Conectando ao EDIFIQ...");
@@ -3590,15 +3600,29 @@ async function login(){
       return false;
     }
 
+    // A autenticação REST já validou e-mail/senha. Abra o app PRIMEIRO.
+    // O SDK, a persistência da sessão e a nuvem não podem travar a entrada no iPhone/PWA.
     const previousUserId=String(user?.id||'');
     if(previousUserId && previousUserId!==String(session.user.id)){stopEdifiqRealtime();edifiqResetInMemoryState();}
     user=session.user;edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(user.id)||null;
 
-    // Mostra o aplicativo assim que a autenticação é validada.
-    // No celular, uma chamada RPC lenta não pode deixar a tela presa no login.
     $("auth")?.classList.add("hidden");
     $("app")?.classList.remove("hidden");
     authMsg("");
+    try{ window.scrollTo({top:0,behavior:"instant"}); }catch(_){ window.scrollTo(0,0); }
+
+    // Tenta persistir a sessão sem bloquear a abertura do aplicativo.
+    try{
+      if(sb?.auth?.setSession && session.access_token && session.refresh_token){
+        const persisted=await edifiqAuthDeadline(
+          sb.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token}),
+          4000
+        );
+        if(persisted?.error)console.warn("Sessão Supabase não persistida:",persisted.error);
+      }
+    }catch(e){
+      console.warn("Persistência da sessão indisponível; app já liberado.",e);
+    }
 
     try{
       await Promise.race([
@@ -3611,18 +3635,6 @@ async function login(){
     if(!edifiqEmpresaAtivaId)edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(user.id)||user.id;
     edifiqRememberEmpresaForUser(user.id,edifiqEmpresaAtivaId);edifiqApplyScopedKeys();
     await edifiqClaimLegacyStorage();await edifiqLoadScopedLocalState();edifiqRememberOfflineAccess();
-
-    // Mantém a sessão no Supabase quando o cliente estiver disponível.
-    try{
-      if(sb?.auth?.setSession && session.access_token && session.refresh_token){
-        await sb.auth.setSession({
-          access_token:session.access_token,
-          refresh_token:session.refresh_token
-        });
-      }
-    }catch(e){
-      console.warn("Não foi possível persistir a sessão do Supabase:",e);
-    }
 
     // A sincronização não pode impedir a entrada no aplicativo.
     try{
@@ -3660,8 +3672,7 @@ async function login(){
           method:"POST",
           headers:{
             "Content-Type":"application/json",
-            "apikey":SUPA_KEY,
-            "Authorization":"Bearer "+SUPA_KEY
+            "apikey":SUPA_KEY
           },
           body:JSON.stringify({email,password}),
           signal:controller.signal
@@ -3669,7 +3680,7 @@ async function login(){
       );
 
       clearTimeout(timer);
-      data=await response.json().catch(()=>({}));
+      data=await edifiqAuthDeadline(response.json()).catch(()=>({}));
     }catch(restErr){
       console.warn("Login REST indisponível:",restErr);
     }
@@ -3718,7 +3729,7 @@ async function login(){
 
     try{
       if(await ensureSupabaseClient()){
-        const result=await sb.auth.signInWithPassword({email,password});
+        const result=await edifiqAuthDeadline(sb.auth.signInWithPassword({email,password}));
 
         if(result?.error){
           const msg=String(result.error.message||"");
@@ -3744,8 +3755,9 @@ async function login(){
     authMsg("Não foi possível conectar ao servidor. Confira a internet ou use 'Entrar no modo local'.");
   }catch(err){
     console.error("EDIFIQ login:",err);
-    authMsg("Não foi possível entrar agora. Verifique sua conexão e tente novamente.");
+    authMsg(err?.message||"Não foi possível entrar agora. Verifique sua conexão e tente novamente.");
   }finally{
+    window.__edifiqLoginBusy=false;
     if(btn){btn.disabled=false;btn.textContent="Entrar";}
   }
 }
@@ -7870,605 +7882,47 @@ ${esc(f.observacao)}
 }
 
 async function openFotoVisual(id){
+  try{
+    const fotos=await getAllPhotosDB();
+    const f=fotos.find(x=>String(x.id)===String(id));
+    if(!f)return;
 
-const fotos=
-await getAllPhotosDB();
-
-const f=
-fotos.find(
-x=>String(x.id)===
-String(id)
-);
-
-if(!f)return;
-
-const win=
-window.open(
-"",
-"_blank"
-);
-
-if(!win){
-
-toast(
-"Permita a abertura de nova janela para visualizar a foto."
-);
-
-return;
-
-}
-
-win.document.write(`
-<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport"
-content="width=device-width,initial-scale=1">
-<title>EDIFIQ — Foto</title>
-<style>
-body{
-margin:0;
-background:#090b0e;
-color:#fff;
-font-family:system-ui,sans-serif;
-padding:15px;
-}
-img{
-display:block;
-width:100%;
-max-width:1000px;
-margin:auto;
-border-radius:14px;
-}
-h3{
-max-width:1000px;
-margin:10px auto;
-}
-p{
-max-width:1000px;
-margin:10px auto;
-color:#aaa;
-}
-
-.bootError{display:none;position:fixed;inset:0;z-index:9999;background:#090b0e;color:#fff;padding:24px;font-family:system-ui,-apple-system,sans-serif;align-items:center;justify-content:center;text-align:center}.bootError.show{display:flex}.bootErrorBox{max-width:520px;background:#11151a;border:1px solid #252b33;border-radius:20px;padding:24px;box-shadow:0 12px 30px rgba(0,0,0,.35)}.bootErrorBox h2{margin:0 0 8px;color:#d9ad55}.bootErrorBox p{color:#9ba3ad;line-height:1.5}.bootErrorBox button{border:1px solid #e4c16f;background:linear-gradient(180deg,#d9ad55,#a77a2d);color:#090b0e;border-radius:10px;padding:11px 15px;font-weight:800}.localMode{margin-top:8px}.progressInput{width:100%;accent-color:#d9ad55}.checkPercent{font-size:12px;color:#d9ad55;min-width:45px;text-align:right}.serviceLine{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid #252b33}.serviceLine small{color:#9ba3ad}.pay-person{padding:10px 0;border-top:1px solid var(--line)}.pay-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.pay-summary>div{background:#0d1115;border:1px solid var(--line);border-radius:10px;padding:9px}.pay-value{margin-top:8px}.mini{border:1px solid var(--line);background:#171c22;color:#fff;border-radius:8px;padding:6px 9px}.lockNote{color:#ffb0b5;font-size:12px;margin-top:7px}@media(max-width:600px){.pay-summary{grid-template-columns:1fr 1fr}.pay-summary>div:last-child{grid-column:1/-1}}
-
-/* EDIFIQ — ajustes finais solicitados */
-.authLogoSimple{margin-bottom:14px;}
-.authLogoSimple h1{font-size:30px;margin:0;letter-spacing:5px;}
-.checkProgressControls{display:grid;grid-template-columns:minmax(0,1fr) 68px;gap:8px;align-items:center;margin-top:6px;}
-.progressNumber{width:68px!important;min-width:68px;padding:7px 6px!important;text-align:center;}
-@media(max-width:759px){.authLogoSimple h1{font-size:26px}.checkProgressControls{grid-template-columns:minmax(0,1fr) 62px}.progressNumber{width:62px!important;min-width:62px}}
-</style>
-</head>
-<body>
-<img src="${esc(f.src)}">
-<h3>${esc(
-f.titulo||
-"Registro fotográfico"
-)}</h3>
-<p>${esc(
-f.data||""
-)}</p>
-<p>${esc(
-f.observacao||""
-)}</p>
-
-
-<style id="edifiq-fase3-producao-style">
-.edf3-wrap{margin-top:16px}
-.edf3-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.edf3-head h2{margin:0 0 4px}.edf3-head p{margin:0;color:var(--muted)}
-.edf3-actions{display:flex;gap:8px;flex-wrap:wrap}
-.edf3-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
-.edf3-kpi{padding:13px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.025)}
-.edf3-kpi small{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.edf3-kpi b{font-size:18px}
-.edf3-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}
-.edf3-filters input,.edf3-filters select{width:100%}
-.edf3-table{margin-top:14px;overflow:auto;border:1px solid rgba(255,255,255,.07);border-radius:12px}
-.edf3-table table{width:100%;border-collapse:collapse;min-width:760px}
-.edf3-table th,.edf3-table td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;font-size:12px}
-.edf3-table th{color:var(--muted);font-weight:600}
-.edf3-table tr:last-child td{border-bottom:0}
-.edf3-empty{padding:18px;text-align:center;color:var(--muted)}
-.edf3-tag{display:inline-flex;padding:3px 7px;border-radius:999px;background:rgba(212,175,55,.12);color:#e8c65a;font-size:11px}
-.edf3-modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
-.edf3-box{width:min(720px,100%);max-height:92vh;overflow:auto;background:#0d1014;border:1px solid rgba(255,255,255,.1);border-radius:16px;box-shadow:0 20px 70px rgba(0,0,0,.45)}
-.edf3-modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid rgba(255,255,255,.07)}
-.edf3-modal-head h2{margin:0}.edf3-form{padding:16px}
-.edf3-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.edf3-field{display:flex;flex-direction:column;gap:5px}.edf3-field.full{grid-column:1/-1}
-.edf3-field label{font-size:12px;color:var(--muted)}
-.edf3-field input,.edf3-field select,.edf3-field textarea{width:100%;box-sizing:border-box}
-.edf3-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
-.edf3-worker{padding:10px;border:1px solid rgba(255,255,255,.07);border-radius:10px;margin-top:10px;background:rgba(255,255,255,.02)}
-.edf3-worker-head{display:flex;justify-content:space-between;gap:10px}
-.edf3-bar{height:7px;border-radius:99px;background:#20252c;overflow:hidden;margin-top:7px}
-.edf3-bar i{display:block;height:100%;width:0;background:#d4af37}
-@media(max-width:850px){.edf3-kpis,.edf3-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){.edf3-kpis,.edf3-filters,.edf3-grid{grid-template-columns:1fr}.edf3-field.full{grid-column:auto}}
-</style>
-
-<script id="edifiq-fase3-producao">
-(function(){
-  "use strict";
-
-  const F3_KEY="edifiq_producao_equipe_v1";
-
-  function f3N(v){const n=Number(v);return Number.isFinite(n)?n:0}
-  function f3Esc(v){
-    if(typeof esc==="function")return esc(String(v??""));
-    return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-  }
-  function f3Money(v){
-    try{if(typeof money==="function")return money(f3N(v));}catch(_){}
-    return f3N(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-  }
-  function f3Today(){try{return typeof today==="function"?today():new Date().toISOString().slice(0,10)}catch(_){return new Date().toISOString().slice(0,10)}}
-  function f3Date(v){
-    if(!v)return "—";
-    const s=String(v).slice(0,10),p=s.split("-");
-    return p.length===3?\`\${p[2]}/\${p[1]}/\${p[0]}\`:String(v);
-  }
-  function f3Data(){
-    try{
-      const x=JSON.parse(localStorage.getItem(edifiqScopedExternalKey(F3_KEY))||"[]");
-      return Array.isArray(x)?x:[];
-    }catch(_){return []}
-  }
-  function f3SetData(rows){
-    try{localStorage.setItem(edifiqScopedExternalKey(F3_KEY),JSON.stringify(rows));}catch(e){console.warn("EDIFIQ Produção:",e)}
-    try{if(typeof D!=="undefined")D.producoesEquipe=rows.slice()}catch(_){}
-  }
-  function f3SyncData(){
-    try{
-      const rows=f3Data();
-      if(typeof D!=="undefined")D.producoesEquipe=rows.slice();
-      return rows;
-    }catch(_){return []}
-  }
-  function f3Obra(id){return (typeof D!=="undefined"&&D.obras||[]).find(o=>String(o.id)===String(id))}
-  function f3Func(id){return (typeof D!=="undefined"&&D.funcionarios||[]).find(f=>String(f.id)===String(id))}
-  function f3Check(id){return (typeof D!=="undefined"&&D.checklist||[]).find(c=>String(c.id)===String(id))}
-  function f3ObraIdForFunc(f){
-    try{
-      if(typeof getFuncObra==="function")return getFuncObra(f?.id)||f?.obra_id||f?.obraId||"";
-    }catch(_){}
-    return f?.obra_id??f?.obraId??"";
-  }
-
-  function f3Open(){
-    f3SyncData();
-    if(!document.getElementById("edf3Modal")){
-      const m=document.createElement("div");
-      m.id="edf3Modal";m.className="edf3-modal";m.style.display="none";
-      m.innerHTML=\`
-        <div class="edf3-box">
-          <div class="edf3-modal-head">
-            <div><h2>🏗️ Registrar produção</h2><p class="sub">Registre a produção realizada por funcionário, obra e checklist.</p></div>
-            <button class="x" type="button" onclick="window.edifiqF3Close()">×</button>
-          </div>
-          <form class="edf3-form" id="edf3Form" onsubmit="return window.edifiqF3Save(event)">
-            <div class="edf3-grid">
-              <div class="edf3-field"><label>Funcionário *</label><select id="edf3Func" required></select></div>
-              <div class="edf3-field"><label>Data *</label><input id="edf3Data" type="date" required></div>
-              <div class="edf3-field"><label>Obra *</label><select id="edf3Obra" required></select></div>
-              <div class="edf3-field"><label>Checklist / serviço *</label><select id="edf3Check" required></select></div>
-              <div class="edf3-field"><label>Quantidade produzida</label><input id="edf3Qtd" type="number" min="0" step="0.01" placeholder="Ex.: 25"></div>
-              <div class="edf3-field"><label>Unidade</label><select id="edf3Un"><option value="m²">m²</option><option value="m">m</option><option value="un">un</option><option value="kg">kg</option><option value="h">h</option><option value="serviço">serviço</option><option value="outro">outro</option></select></div>
-              <div class="edf3-field"><label>Valor produzido (R$)</label><input id="edf3Valor" type="number" min="0" step="0.01" placeholder="Ex.: 1.250,00"></div>
-              <div class="edf3-field"><label>Observação</label><input id="edf3Obs" type="text" maxlength="300" placeholder="Ex.: execução de reboco da frente"></div>
-            </div>
-            <div class="note" style="margin-top:12px">O valor produzido é um indicador de produção da equipe. Ele <b>não lança despesa nem receita</b> e não altera a folha.</div>
-            <div class="edf3-modal-actions"><button class="btn" type="button" onclick="window.edifiqF3Close()">Cancelar</button><button class="btn gold" type="submit">Salvar produção</button></div>
-          </form>
-        </div>\`;
-      document.body.appendChild(m);
-    }
-    const m=document.getElementById("edf3Modal");
-    m.style.display="flex";
-    const fs=document.getElementById("edf3Func"), os=document.getElementById("edf3Obra"), cs=document.getElementById("edf3Check");
-    const funcs=(typeof D!=="undefined"?D.funcionarios:[]).filter(f=>f.ativo!==false);
-    fs.innerHTML='<option value="">Selecione</option>'+funcs.map(f=>\`<option value="\${f3Esc(f.id)}">\${f3Esc(f.nome||"Funcionário")}</option>\`).join("");
-    os.innerHTML='<option value="">Selecione</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>\`<option value="\${f3Esc(o.id)}">\${f3Esc(o.nome||"Obra")}</option>\`).join("");
-    cs.innerHTML='<option value="">Selecione a obra primeiro</option>';
-    document.getElementById("edf3Data").value=f3Today();
-    document.getElementById("edf3Qtd").value="";
-    document.getElementById("edf3Valor").value="";
-    document.getElementById("edf3Obs").value="";
-    document.getElementById("edf3Un").value="m²";
-    fs.onchange=function(){
-      const f=f3Func(this.value); if(!f)return;
-      const oid=f3ObraIdForFunc(f); if(oid){os.value=oid;f3FillChecks(oid)}
-    };
-    os.onchange=function(){f3FillChecks(this.value)};
-  }
-  function f3FillChecks(obraId){
-    const cs=document.getElementById("edf3Check");if(!cs)return;
-    const arr=(typeof D!=="undefined"?D.checklist:[]).filter(c=>{
-      const oid=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
-      return String(oid)===String(obraId);
-    });
-    cs.innerHTML='<option value="">Selecione</option>'+arr.map(c=>\`<option value="\${f3Esc(c.id)}">\${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>\`).join("");
-    if(!arr.length)cs.innerHTML='<option value="">Nenhum checklist cadastrado nesta obra</option>';
-  }
-  function f3Close(){const m=document.getElementById("edf3Modal");if(m)m.style.display="none"}
-  async function f3Save(e){
-    e.preventDefault();
-    const funcionario_id=document.getElementById("edf3Func")?.value||"";
-    const obra_id=document.getElementById("edf3Obra")?.value||"";
-    const checklist_id=document.getElementById("edf3Check")?.value||"";
-    const data=document.getElementById("edf3Data")?.value||f3Today();
-    const quantidade=f3N(document.getElementById("edf3Qtd")?.value);
-    const valor=f3N(document.getElementById("edf3Valor")?.value);
-    const unidade=document.getElementById("edf3Un")?.value||"";
-    const observacao=document.getElementById("edf3Obs")?.value?.trim()||"";
-    if(!funcionario_id||!obra_id||!checklist_id){toast("Selecione funcionário, obra e checklist.");return false}
-    if(quantidade<=0&&valor<=0){toast("Informe a quantidade produzida ou o valor produzido.");return false}
-    const f=f3Func(funcionario_id),o=f3Obra(obra_id),c=f3Check(checklist_id);
-    const row={id:"prod_"+Date.now()+"_"+Math.random().toString(36).slice(2,8),funcionario_id,obra_id,checklist_id,data,quantidade,unidade,valor,observacao};
-    const rows=f3Data();rows.push(row);f3SetData(rows);f3Close();f3Render();toast(\`Produção de \${f?.nome||"funcionário"} registrada.\`);
-    return false;
-  }
-  function f3Delete(id){
-    if(!confirm("Excluir este registro de produção?"))return;
-    f3SetData(f3Data().filter(x=>String(x.id)!==String(id)));f3Render();toast("Registro de produção excluído.");
-  }
-
-  function f3RowsFiltered(){
-    const box=document.getElementById("edf3Card");if(!box)return [];
-    const ini=box.querySelector("#edf3Ini")?.value||"";
-    const fim=box.querySelector("#edf3Fim")?.value||"";
-    const fid=box.querySelector("#edf3FiltroFunc")?.value||"all";
-    const oid=box.querySelector("#edf3FiltroObra")?.value||"all";
-    const cid=box.querySelector("#edf3FiltroCheck")?.value||"all";
-    return f3Data().filter(x=>
-      (!ini||String(x.data)>=ini)&&(!fim||String(x.data)<=fim)&&
-      (fid==="all"||String(x.funcionario_id)===String(fid))&&
-      (oid==="all"||String(x.obra_id)===String(oid))&&
-      (cid==="all"||String(x.checklist_id)===String(cid))
-    );
-  }
-
-  function f3Render(){
-    const card=document.getElementById("edf3Card");if(!card)return;
-    f3SyncData();
-    const rows=f3RowsFiltered();
-    const total=f3N(rows.reduce((a,x)=>a+f3N(x.valor),0));
-    const qtd=rows.reduce((a,x)=>a+f3N(x.quantidade),0);
-    const funcs=new Set(rows.map(x=>String(x.funcionario_id))).size;
-    const dias=new Set(rows.map(x=>String(x.data)).filter(Boolean)).size;
-    card.querySelector("#edf3Total").textContent=f3Money(total);
-    card.querySelector("#edf3QtdTotal").textContent=qtd.toLocaleString("pt-BR",{maximumFractionDigits:2});
-    card.querySelector("#edf3FuncTotal").textContent=funcs;
-    card.querySelector("#edf3DiasTotal").textContent=dias;
-
-    const tbody=card.querySelector("#edf3Body");
-    if(!rows.length){tbody.innerHTML='<tr><td colspan="7" class="edf3-empty">Nenhuma produção registrada no período.</td></tr>'}
-    else{
-      tbody.innerHTML=rows.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).map(x=>{
-        const f=f3Func(x.funcionario_id),o=f3Obra(x.obra_id),c=f3Check(x.checklist_id);
-        return \`<tr><td>\${f3Date(x.data)}</td><td><b>\${f3Esc(f?.nome||"—")}</b></td><td>\${f3Esc(o?.nome||"—")}</td><td>\${f3Esc(c?.tarefa||c?.descricao||"—")}</td><td>\${x.quantidade?f3N(x.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:2})+" "+f3Esc(x.unidade||""):"—"}</td><td><b>\${f3Money(x.valor)}</b></td><td><button class="btn danger" type="button" onclick="window.edifiqF3Delete('\${f3Esc(x.id)}')">Excluir</button></td></tr>\`;
-      }).join("");
+    const win=window.open('', '_blank');
+    if(!win){
+      toast('Permita a abertura de nova janela para visualizar a foto.');
+      return;
     }
 
-    const sumByFunc=new Map();
-    rows.forEach(x=>{const k=String(x.funcionario_id);const cur=sumByFunc.get(k)||{valor:0,qtd:0};cur.valor+=f3N(x.valor);cur.qtd+=f3N(x.quantidade);sumByFunc.set(k,cur)});
-    const rank=[...sumByFunc.entries()].sort((a,b)=>b[1].valor-a[1].valor).slice(0,8);
-    const max=rank[0]?.[1].valor||0;
-    card.querySelector("#edf3Ranking").innerHTML=rank.length?rank.map(([id,v])=>{
-      const f=f3Func(id),pct=max?Math.round(v.valor/max*100):0;
-      return \`<div class="edf3-worker"><div class="edf3-worker-head"><span><b>\${f3Esc(f?.nome||"Funcionário")}</b><small style="display:block;color:var(--muted)">\${v.qtd.toLocaleString("pt-BR",{maximumFractionDigits:2})} unidades registradas</small></span><b>\${f3Money(v.valor)}</b></div><div class="edf3-bar"><i style="width:\${pct}%"></i></div></div>\`;
-    }).join(""):'<div class="edf3-empty">Registre produções para acompanhar a equipe.</div>';
+    const titulo=String(f.titulo||'Registro fotográfico');
+    const data=String(f.data||'');
+    const observacao=String(f.observacao||'');
+    const src=String(f.src||'');
+    const doc=win.document;
 
-    const cost=rows.reduce((a,x)=>{
-      return a+f3N((typeof D!=="undefined"?D.diarias:[]).filter(d=>String(d.funcionario_id)===String(x.funcionario_id)&&String(d.data)===String(x.data)).reduce((s,d)=>{
-        try{return s+(typeof diariaValor==="function"?diariaValor(d):f3N(d.valor_diaria)*(f3N(d.qtd??d.quantidade)||1))}catch(_){return s}
-      },0));
-    },0);
-    const prodPerCost=cost>0?total/cost:0;
-    const eff=card.querySelector("#edf3Ef");if(eff)eff.textContent=cost>0?f3Money(prodPerCost)+" produzidos / R$ 1,00 de diária":"—";
+    doc.open();
+    doc.write('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EDIFIQ — Foto</title><main id="edFotoView"></main>');
+    doc.close();
+    doc.documentElement.lang='pt-BR';
+
+    const style=doc.createElement('style');
+    style.textContent='html,body{margin:0;background:#090b0e;color:#f8fafc;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{padding:16px;box-sizing:border-box;min-height:100vh}main{width:min(1000px,100%);margin:0 auto}img{display:block;width:100%;height:auto;border-radius:14px;background:#11151a}h3{margin:14px 0 6px;font-size:20px}p{margin:6px 0;color:#cbd5e1;line-height:1.45;white-space:pre-wrap}';
+    doc.head.appendChild(style);
+
+    const main=doc.getElementById('edFotoView');
+    const img=doc.createElement('img');
+    img.src=src;
+    img.alt=titulo;
+    const h3=doc.createElement('h3');
+    h3.textContent=titulo;
+    const pData=doc.createElement('p');
+    pData.textContent=data;
+    const pObs=doc.createElement('p');
+    pObs.textContent=observacao;
+    main.append(img,h3,pData,pObs);
+  }catch(err){
+    console.error('EDIFIQ visualizar foto:',err);
+    toast('Não foi possível abrir a foto.');
   }
-
-  function f3BuildCard(){
-    if(document.getElementById("edf3Card"))return;
-    const page=document.getElementById("funcionarios");if(!page)return;
-    const host=page.querySelector(".equipeOverview");
-    if(!host)return;
-    const card=document.createElement("div");
-    card.id="edf3Card";card.className="card edf3-wrap";
-    card.innerHTML=\`
-      <div class="edf3-head">
-        <div><h2>🏗️ Produção da Equipe</h2><p>Controle da produção realizada por funcionário, obra e checklist.</p></div>
-        <div class="edf3-actions"><button class="btn gold" type="button" onclick="window.edifiqF3Open()">＋ Registrar produção</button><button class="btn" type="button" onclick="window.edifiqF3Refresh()">↻ Atualizar</button></div>
-      </div>
-      <div class="edf3-kpis">
-        <div class="edf3-kpi"><small>VALOR PRODUZIDO</small><b id="edf3Total">R$ 0,00</b></div>
-        <div class="edf3-kpi"><small>QUANTIDADE</small><b id="edf3QtdTotal">0</b></div>
-        <div class="edf3-kpi"><small>FUNCIONÁRIOS COM PRODUÇÃO</small><b id="edf3FuncTotal">0</b></div>
-        <div class="edf3-kpi"><small>DIAS DE PRODUÇÃO</small><b id="edf3DiasTotal">0</b></div>
-      </div>
-      <div class="edf3-filters">
-        <input id="edf3Ini" type="date" title="Data inicial">
-        <input id="edf3Fim" type="date" title="Data final">
-        <select id="edf3FiltroFunc"><option value="all">Todos os funcionários</option></select>
-        <select id="edf3FiltroObra"><option value="all">Todas as obras</option></select>
-      </div>
-      <div class="edf3-filters" style="grid-template-columns:1fr">
-        <select id="edf3FiltroCheck"><option value="all">Todos os checklists</option></select>
-      </div>
-      <div class="note" style="margin-top:12px">Produtividade financeira no filtro atual: <b id="edf3Ef">—</b>. Este indicador compara produção registrada com o custo das diárias registradas nas mesmas datas.</div>
-      <div class="edf3-table">
-        <table><thead><tr><th>Data</th><th>Funcionário</th><th>Obra</th><th>Checklist</th><th>Quantidade</th><th>Valor produzido</th><th></th></tr></thead><tbody id="edf3Body"></tbody></table>
-      </div>
-      <div style="margin-top:14px"><h3>🏆 Produção por funcionário</h3><div id="edf3Ranking"></div></div>\`;
-    host.after(card);
-
-    ["edf3Ini","edf3Fim","edf3FiltroFunc","edf3FiltroObra","edf3FiltroCheck"].forEach(id=>{
-      document.getElementById(id)?.addEventListener("change",()=>{
-        if(id==="edf3FiltroObra")f3FillFilterChecks();
-        f3Render();
-      });
-    });
-    const now=f3Today();
-    document.getElementById("edf3Ini").value=now.slice(0,8)+"01";
-    document.getElementById("edf3Fim").value=now;
-    f3FillFilters();
-  }
-  function f3FillFilters(){
-    const fs=document.getElementById("edf3FiltroFunc"),os=document.getElementById("edf3FiltroObra");
-    if(!fs||!os)return;
-    const fcur=fs.value, ocur=os.value;
-    fs.innerHTML='<option value="all">Todos os funcionários</option>'+(typeof D!=="undefined"?D.funcionarios:[]).map(f=>\`<option value="\${f3Esc(f.id)}">\${f3Esc(f.nome||"Funcionário")}</option>\`).join("");
-    os.innerHTML='<option value="all">Todas as obras</option>'+(typeof D!=="undefined"?D.obras:[]).map(o=>\`<option value="\${f3Esc(o.id)}">\${f3Esc(o.nome||"Obra")}</option>\`).join("");
-    if(fcur)fs.value=fcur;if(ocur)os.value=ocur;f3FillFilterChecks();
-  }
-  function f3FillFilterChecks(){
-    const el=document.getElementById("edf3FiltroCheck");if(!el)return;
-    const oid=document.getElementById("edf3FiltroObra")?.value||"all",cur=el.value;
-    const arr=(typeof D!=="undefined"?D.checklist:[]).filter(c=>{
-      const id=typeof recordObraId==="function"?recordObraId(c):(c.obra_id??c.obraId??"");
-      return oid==="all"||String(id)===String(oid);
-    });
-    el.innerHTML='<option value="all">Todos os checklists</option>'+arr.map(c=>\`<option value="\${f3Esc(c.id)}">\${f3Esc(c.tarefa||c.descricao||"Serviço")}</option>\`).join("");
-    if(cur&&[...el.options].some(o=>o.value===cur))el.value=cur;
-  }
-
-  window.edifiqF3Open=f3Open;
-  window.edifiqF3Close=f3Close;
-  window.edifiqF3Save=f3Save;
-  window.edifiqF3Delete=f3Delete;
-  window.edifiqF3Render=f3Render;
-  window.edifiqF3Refresh=async function(){
-    const btn=document.querySelector('#edf3Card button[onclick*="edifiqF3Refresh"]');
-    if(btn){btn.disabled=true;btn.textContent='↻ Sincronizando...';}
-    try{
-      if(typeof sb!=="undefined"&&sb&&typeof user!=="undefined"&&user?.id&&navigator.onLine){await retryEdifiqPendingUpdates();await retryLocalCloudRows();await loadCloud();await sincronizarBaixasLocaisEquipe();await retryEdifiqPendingUpdates();await loadCloud();}
-      f3SyncData();f3FillFilters();f3Render();
-      toast(typeof sb!=="undefined"&&sb&&typeof user!=="undefined"&&user?.id&&navigator.onLine?'Produção atualizada e sincronizada.':'Produção atualizada neste aparelho.');
-    }catch(err){console.error('Atualizar produção da equipe:',err);f3SyncData();f3Render();toast('Não foi possível sincronizar a produção agora.');}
-    finally{if(btn){btn.disabled=false;btn.textContent='↻ Atualizar';}}
-  };
-
-  function f3Hook(){
-    f3SyncData();f3BuildCard();f3FillFilters();f3Render();
-  }
-  const oldGo=window.go;
-  if(typeof oldGo==="function"&&!oldGo.__edifiqF3){
-    const wrappedGo=function(page){
-      const r=oldGo.apply(this,arguments);
-      setTimeout(()=>{if(String(page)==="funcionarios")f3Hook()},80);
-      return r;
-    };
-    wrappedGo.__edifiqF3=true;window.go=wrappedGo;
-  }
-  const oldRenderFuncs=window.renderFuncs;
-  if(typeof oldRenderFuncs==="function"&&!oldRenderFuncs.__edifiqF3){
-    const wrappedRF=function(){const r=oldRenderFuncs.apply(this,arguments);setTimeout(f3Hook,0);return r};
-    wrappedRF.__edifiqF3=true;window.renderFuncs=wrappedRF;
-  }
-  document.addEventListener("DOMContentLoaded",()=>setTimeout(f3Hook,500));
-})();
-<\/script>
-
-
-<style id="edifiq-kpi-fit-final">
-/* Ajuste exclusivo dos números: ligeiramente maiores, sem sair dos cartões. */
-.edHomeKpi strong{font-size:clamp(15px,1.45vw,19px)!important;line-height:1.08!important;max-width:100%;font-variant-numeric:tabular-nums;}
-#funcionarios .equipeKpis .kpi strong,
-#funcionarios .folhaKpis .kpi strong,
-.equipeOverview .kpi strong,.folhaKpis .kpi strong{font-size:clamp(16px,1.35vw,19px)!important;line-height:1.12!important;max-width:100%;font-variant-numeric:tabular-nums;}
-.edHomeKpi>div:last-child,.equipeKpis .kpi,.folhaKpis .kpi{min-width:0;}
-.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{overflow:hidden;text-overflow:clip;white-space:nowrap;}
-@media(max-width:430px){.edHomeKpi strong{font-size:15px!important}#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong{font-size:16px!important}}
-</style>
-<script id="edifiq-fit-all-kpi-values-final">
-(function(){
- function fit(){
-  document.querySelectorAll('.edHomeKpi strong,#funcionarios .equipeKpis .kpi strong,#funcionarios .folhaKpis .kpi strong,.equipeOverview .kpi strong,.folhaKpis .kpi strong').forEach(function(el){
-   var parent=el.parentElement;if(!parent)return;
-   el.style.fontSize='';
-   var available=Math.max(24,parent.clientWidth-2);
-   var css=parseFloat(getComputedStyle(el).fontSize)||16;
-   var size=Math.min(css,19);
-   el.style.fontSize=size+'px';
-   while(el.scrollWidth>available&&size>11){size-=0.5;el.style.fontSize=size+'px';}
-  });
- }
- window.edifiqFitAllKpiValues=fit;
- window.addEventListener('resize',fit,{passive:true});
- document.addEventListener('DOMContentLoaded',fit);
- if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit).catch(function(){});
- var timer=null;var mo=new MutationObserver(function(){if(timer)cancelAnimationFrame(timer);timer=requestAnimationFrame(fit)});
- if(document.body)mo.observe(document.body,{subtree:true,childList:true,characterData:true});
- setTimeout(fit,100);setTimeout(fit,500);setTimeout(fit,1200);
-})();
-<\/script>
-
-
-<style id="edifiq-light-contrast-final-v3">
-/* EDIFIQ — modo claro com alto contraste e leitura nítida.
-   Mantém a estrutura e a lógica do aplicativo; altera apenas aparência no tema claro. */
-body.edLight{
-  --bg:#eef2f6;
-  --panel:#ffffff;
-  --panel2:#f5f7fa;
-  --text:#0b0f14;
-  --muted:#344054;
-  --line:#cfd8e3;
-  background:#eef2f6!important;
-  color:#0b0f14!important;
-}
-body.edLight #app,
-body.edLight .wrap,
-body.edLight .page,
-body.edLight main,
-body.edLight section,
-body.edLight #dashboard{background:#eef2f6!important;color:#0b0f14!important}
-
-/* Fundos claros consistentes, sem blocos pretos remanescentes. */
-body.edLight :is(.top,.card,.item,.kpi,.three>div,.note,.empty,.summaryTotal,.summaryMetric,.summaryCard,
-.finance-mini,.financeModernCard,.financeModernPanel,.analysisCard,.dashMini,.diarioBlock,.diarioTeamItem,
-.docMetaItem,.docUploadBox,.homeWelcome,.homeProTitle,.homeProKpi,.homeProContract,.homeTool,.homeAction,
-.homeQuick,.homeProMainBtn,.homeProStatus,.pay-summary>div,.pastaInterna,.historyCard,.historyDataGrid>div,
-.folhaEquipeCard,.folhaFuncionarioCard,.folhaFuncionarioGrid>div,.obraModeloCard,.obraModeloPanel,.obraInfoCard,
-.obraModeloRow,.obraModeloEmpty,.obraSummaryWrap,.obraSummaryBlock,.obraBigMetric,.obraModelKpis>div,
-.obraModelMetricRow,.obraPaymentHistory,.obraDiasWorkerCard,.obraDiasStats>div,.auditHero>div,.auditFunctionRow,
-.obraAuditChecks span,.rgStatusCard,.rgHealth,.rgMoneyCard,.rgCostCard,.rgTotalCost,.rgChartCard,.rgRankCard,
-.edf3-box,.edf3-kpi,.edf3-worker,.edci-panel,.edci-kpi,.rcSection,.rcMetric,.edEquipeCard,.edEqRate,.edEqPeriod,
-.edEqPeriodCard,.edEqMetric,.edEqPill,.edEqOccurrenceHistory,.wrPanel,.wrCard,.wrBox,.wrItem,.wrKpi,.wrSection,
-.edHomeHeader,.edHomeSearch,.edHomeSelect,.edHomeKpi,.edHomeWorkCard,.edHomeEmpty,.edKpiDetailRow,.edKpiFuncRow){
-  background:#ffffff!important;
-  background-image:none!important;
-  color:#0b0f14!important;
-  border-color:#cfd8e3!important;
-}
-
-/* Componentes dinâmicos que usam nomes genéricos de cartão/painel. */
-body.edLight :is([class*="Card"],[class*="card"],[class*="Panel"],[class*="panel"],[class*="Box"],[class*="box"]):not(.modal):not(.bootError){
-  background-color:#ffffff!important;
-  border-color:#cfd8e3!important;
-}
-
-/* Corrige fundos escuros escritos diretamente no HTML. */
-body.edLight [style*="background:#0"],
-body.edLight [style*="background: #0"],
-body.edLight [style*="background:#10"],
-body.edLight [style*="background: #10"],
-body.edLight [style*="background:#11"],
-body.edLight [style*="background: #11"],
-body.edLight [style*="background:#12"],
-body.edLight [style*="background: #12"],
-body.edLight [style*="background:#13"],
-body.edLight [style*="background: #13"],
-body.edLight [style*="background:#14"],
-body.edLight [style*="background: #14"],
-body.edLight [style*="background:#15"],
-body.edLight [style*="background: #15"],
-body.edLight [style*="background:#16"],
-body.edLight [style*="background: #16"],
-body.edLight [style*="background:#17"],
-body.edLight [style*="background: #17"]{
-  background:#ffffff!important;
-  background-image:none!important;
-}
-
-/* Textos comuns: preto/cinza-escuro, nunca apagados. */
-body.edLight :is(p,label,li,td,th,.sub,.muted,small,.fmLabel,.financeRow span,.financeCategoryTop span,
-.finance-percent,.financeRecentItem small,.homeProKpi small,.homeProKpi em,.homeTool small,.obraModelKpis small,
-.obraResultRow,.obraPaymentMain small,.obraPaymentMain span,.obraPaymentMain em,.edHomeWorkType,.edHomeWorkMeta,
-.edHomeProgressHead,.edEqRate small,.edEqMetric small,.edEqPeriodCard small,.edf3-head p,.edf3-kpi small,
-.edf3-empty,.edf3-field label,.wrInfo small,.wrKpi small){
-  color:#263244!important;
-  opacity:1!important;
-  -webkit-text-fill-color:currentColor!important;
-  text-shadow:none!important;
-}
-body.edLight :is(h1,h2,h3,h4,h5,h6,b,strong,.fmValue,.edHomeKpiValue,.edHomeWorkName,.edEqName,
-.homeObraTitle,.homeObraStat b,.summaryMetric b,.summaryTotal b,.kpi strong,.financeModernCard .fmValue,
-.financeRow b,.finance-line b,.finance-cat b,.wrInfo b,.wrKpi b){
-  color:#0b0f14!important;
-  font-weight:800!important;
-  opacity:1!important;
-  -webkit-text-fill-color:currentColor!important;
-  text-shadow:none!important;
-}
-body.edLight :is(.fmValue,.edHomeKpiValue,.kpi strong,.summaryMetric b,.summaryTotal b,.homeObraStat b,
-.financeModernCard .fmValue,.financeRow b,.finance-line b,.finance-cat b){font-weight:900!important}
-
-/* Financeiro / Visão Geral: rótulos escuros e números muito nítidos. */
-body.edLight .financeModernCard .fmLabel{color:#263244!important;font-weight:700!important}
-body.edLight .financeModernCard .fmValue{color:#0b0f14!important;font-weight:900!important}
-body.edLight .financeModernPanel h3{color:#0b0f14!important;font-weight:900!important}
-body.edLight .financeRow span,
-body.edLight .financeCategoryTop span,
-body.edLight .finance-line>span:first-child,
-body.edLight .finance-cat>span:first-child{color:#1f2937!important;font-weight:600!important}
-body.edLight .financeRecentItem small{color:#344054!important}
-
-/* Dourado em texto vira azul escuro no modo claro para ganhar contraste. */
-body.edLight .gold,
-body.edLight :is(.homeObraStatus,.homeObraProgressLine b,.homeObraFoot .openLink,.homePrimary b,.homeAction b,
-.homeEyebrow,.analysisCard h3,.analysisFolderBtn b,.pastaInternaHead,.homeBrandSub){
-  color:#1d4ed8!important;
-  -webkit-text-fill-color:#1d4ed8!important;
-  opacity:1!important;
-}
-body.edLight [style*="color:var(--gold"],
-body.edLight [style*="color: var(--gold"]{color:#1d4ed8!important;-webkit-text-fill-color:#1d4ed8!important}
-
-/* Verde/vermelho ficam mais escuros para contraste sem perder significado. */
-body.edLight .green{color:#08783e!important;-webkit-text-fill-color:#08783e!important}
-body.edLight .red{color:#b42332!important;-webkit-text-fill-color:#b42332!important}
-body.edLight .blue{color:#1d4ed8!important;-webkit-text-fill-color:#1d4ed8!important}
-
-/* Campos e menus. */
-body.edLight :is(input,select,textarea,.wrDates input,.wrSelect,.rcPreviewText,.rgFilters select,.rgFilters input){
-  background:#ffffff!important;color:#0b0f14!important;border-color:#bfcbd9!important;
-}
-body.edLight :is(input,textarea)::placeholder{color:#667085!important;opacity:1!important}
-body.edLight option{background:#fff!important;color:#0b0f14!important}
-body.edLight :is(.edifiqDrawer,.edifiqMenuDrawer,.drawer,.sidebar,.menuPasta,.modalBox,.modalContent,.reportClientModal .modalB){
-  background:#ffffff!important;background-image:none!important;color:#0b0f14!important;border-color:#cfd8e3!important;
-}
-body.edLight :is(.edifiqMenuItem,.edifiqDataRow){color:#111827!important}
-body.edLight :is(.edifiqBrandDrawer strong,.edHomeBrandName){color:#000!important;font-weight:900!important;opacity:1!important;-webkit-text-fill-color:#000!important}
-body.edLight .edHomeBrandText small{color:#263244!important;opacity:1!important}
-
-/* Navegação clara. */
-body.edLight :is(.nav,.bottomNav,nav.nav){background:#ffffff!important;background-image:none!important;border-color:#cfd8e3!important}
-body.edLight :is(.nav,.bottomNav,nav.nav) button{color:#344054!important;font-weight:700!important}
-body.edLight :is(.nav,.bottomNav,nav.nav) button.active{color:#1d4ed8!important;background:#eef4ff!important}
-
-/* Botões neutros continuam claros. Botões de ação preservam contraste. */
-body.edLight :is(.btn,.mini,.x,.iconBtn,.menuPastaGrid button,.homeProTools button,.obraDiasQuick button,.obraDiasPay,.obraDiasHistory,.rgClose){
-  background:#f3f6fa!important;background-image:none!important;color:#111827!important;border-color:#c7d2df!important;
-}
-body.edLight :is(.btn.primary,.btn.gold){background:linear-gradient(180deg,#e2b85f,#c49338)!important;color:#111!important;border-color:#c99d48!important;font-weight:800!important}
-body.edLight :is(.btn.primary,.btn.gold) *{color:inherit!important;-webkit-text-fill-color:currentColor!important}
-body.edLight .btn.danger{background:#fff1f2!important;color:#a71d2a!important;border-color:#efb8be!important}
-body.edLight :is(.edEqAction.primary,.edEqPeriodButtons button.active,.edEqPill.blue){background:#2563eb!important;color:#fff!important;border-color:#2563eb!important}
-body.edLight :is(.edEqAction.primary,.edEqPeriodButtons button.active,.edEqPill.blue) *{color:#fff!important;-webkit-text-fill-color:#fff!important}
-
-/* Login no modo claro. */
-body.edLight .auth{background:#eef2f6!important;background-image:none!important}
-body.edLight .authBox{background:#fff!important;color:#0b0f14!important;border-color:#cfd8e3!important}
-body.edLight .authBox label{color:#263244!important;font-weight:700!important}
-body.edLight .authLogo h1{color:#000!important;font-weight:900!important;-webkit-text-fill-color:#000!important}
-
-/* Evita transparência em textos no tema claro. */
-body.edLight :is(.page,.card,.item,.kpi,.financeModernCard,.financeModernPanel,.edHomeWorkCard,.edEquipeCard) *{text-shadow:none}
-</style>
-
-
-
-
-</body></html>`);
-
-win.document.close();
-
-win.document.close();
-
 }
 
 async function deleteFoto(id){
@@ -8545,9 +7999,6 @@ ${esc(o.nome)}
 </option>
 `).join("")
 }
-  
-}
-
 
 `;
 
@@ -10737,15 +10188,7 @@ openAdiantamento;
 
 window.openAdiantamentoFuncionario=
 openAdiantamentoFuncionario;
-window.enterLocalMode=function(){
-  try{
-    return enterLocalMode();
-  }catch(err){
-    console.error("EDIFIQ modo local:",err);
-    try{ authMsg("Não foi possível abrir o modo local."); }catch(_){}
-    return false;
-  }
-};
+window.enterLocalMode=enterLocalMode;
 window.addServicoAdicional=addServicoAdicional;
 window.excluirExtraObra=excluirExtraObra;
 window.setChecklistProgress=setChecklistProgress;
@@ -10923,11 +10366,10 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   function rtFmt(v){return v?formatDateBR(v):'—';}
   function rtMoney(v){return money(Number(v||0));}
   function rtMatchEmployee(x,f){
-    const id=String(f?.id||''),xid=String(x?.funcionario_id??x?.funcionarioId??x?.funcId??'');
-    if(xid)return xid===id;
-    const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
-    const name=norm(f?.nome);if(!name||(D.funcionarios||[]).filter(v=>norm(v.nome)===name).length!==1)return false;
-    return norm(x.fornecedor)===name||norm(String(x.descricao||'').split(' - ').pop())===name;
+    const id=String(f?.id||'');
+    const xid=String(x?.funcionario_id??x?.funcionarioId??x?.funcId??'');
+    const nome=normalize(f?.nome||'');
+    return xid===id || (nome && (normalize(x?.fornecedor||'')===nome || normalize(x?.descricao||'').includes(nome)));
   }
   function rtRange(){
     const mode=window.__rtPeriod||'mes';
@@ -10944,22 +10386,28 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
   }
   function rtInRange(v,r){const d=String(v||'');return (!d||d>=r.ini&&d<=r.fim);}
   function rtData(){
-    const f=(D.funcionarios||[]).find(x=>String(x.id)===String(window.__rtFuncId));if(!f)return null;
-    const C=EdifiqRelease27,r=rtRange(),bounds={start:r.ini,end:r.fim};
-    if(!C.validDate(r.ini)||!C.validDate(r.fim)||r.ini>r.fim)throw Error('Informe um período válido para o relatório.');
-    const balance=C.payroll(D,f.id,{obra:'all',bounds},window.__ed27.helpers());
-    const diarias=balance.days,extras=balance.extras;
-    const faltas=C.unique(D.faltas||[]).filter(x=>rtMatchEmployee(x,f)&&C.inRange(x,bounds));
-    const presencas=C.unique(D.presencas||[]).filter(x=>rtMatchEmployee(x,f)&&C.inRange(x,bounds));
-    const adiantamentos=balance.advances;
-    const pagamentos=C.financeRows(D,{type:'despesa',start:r.ini,end:r.fim},categoriaFinanceira).filter(g=>rtMatchEmployee(g,f)&&gastoSubcategoria(g)==='Mão de obra'&&(!g.servico_extra_id||['pago','paid','quitado','liquidado'].includes(C.norm(g.status))));
-    const obraIds=new Set([...diarias,...faltas,...presencas,...adiantamentos,...pagamentos,...extras].map(x=>String(x.obra_id??x.obraId??'')));
-    const current=getFuncObra(f.id);if(current)obraIds.add(String(current));
-    const obras=C.unique(D.obras||[]).filter(o=>obraIds.has(String(o.id)));
-    const sum=(rows,value)=>rows.reduce((n,x)=>n+C.cents(value(x)),0)/100;
-    const diasTrabalhados=diarias.reduce((n,d)=>n+Number(d.qtd??d.quantidade??1),0);
-    const brutoDiarias=sum(diarias,diariaValor),pagDiarias=sum(diarias.filter(diariaEstaPaga),d=>d.valor_baixado??d.valor_pago??diariaValor(d));
-    return {f,r,diarias,faltas,presencas,adiantamentos,pagamentos,extras,obras,diasTrabalhados,brutoDiarias,pagDiarias,pendDiarias:balance.pendingDiarias,totalAdiant:balance.advanceBalance,totalPagamentos:sum(pagamentos,g=>g.valor),totalExtras:sum(extras,x=>x.valor),balance};
+    const f=(D.funcionarios||[]).find(x=>String(x.id)===String(window.__rtFuncId));
+    if(!f)return null;
+    const r=rtRange();
+    const diarias=edifiqDiariasCanonicas().filter(d=>rtMatchEmployee(d,f)&&rtInRange(d.data,r));
+    const faltas=(D.faltas||[]).filter(x=>rtMatchEmployee(x,f)&&rtInRange(x.data,r));
+    const presencas=(D.presencas||[]).filter(x=>rtMatchEmployee(x,f)&&rtInRange(x.data,r));
+    const adiantamentos=(D.gastos||[]).filter(g=>gastoCategoria(g)==='Adiantamento'&&rtMatchEmployee(g,f)&&rtInRange(g.data,r));
+    const pagamentos=(D.gastos||[]).filter(g=>gastoCategoria(g)==='Mão de obra'&&rtMatchEmployee(g,f)&&rtInRange(g.data,r));
+    const extras=(D.servicosExtras||[]).filter(x=>String(x.funcionario_id??x.funcionarioId??'')===String(f.id)&&rtInRange(x.data,r));
+    const obraIds=new Set();
+    [diarias,faltas,presencas,adiantamentos,pagamentos].forEach(arr=>arr.forEach(x=>{if(x.obra_id!=null)obraIds.add(String(x.obra_id));}));
+    extras.forEach(x=>{if(x.obra_id!=null||x.obraId!=null)obraIds.add(String(x.obra_id??x.obraId));});
+    const current=getFuncObra(f.id); if(current)obraIds.add(String(current));
+    const obras=[...(D.obras||[])].filter(o=>obraIds.has(String(o.id)));
+    const diasTrabalhados=new Set(diarias.map(d=>String(d.data||''))).size;
+    const brutoDiarias=diarias.reduce((a,d)=>a+diariaValor(d),0);
+    const pagDiarias=diarias.filter(diariaEstaPaga).reduce((a,d)=>a+diariaValor(d),0);
+    const pendDiarias=diarias.filter(d=>!diariaEstaPaga(d)).reduce((a,d)=>a+diariaValor(d),0);
+    const totalAdiant=adiantamentos.filter(g=>{const st=String(g.status||'').toLowerCase(); return st!=='pago'&&st!=='quitado'&&st!=='liquidado'&&Number(getAdvanceApplied()[g.id]||0)<Number(g.valor||0);}).reduce((a,g)=>a+Math.max(0,Number(g.valor||0)-Number(getAdvanceApplied()[g.id]||0)),0);
+    const totalPagamentos=pagamentos.reduce((a,g)=>a+Number(g.valor||0),0);
+    const totalExtras=extras.reduce((a,x)=>a+Number(x.valor||0),0);
+    return {f,r,diarias,faltas,presencas,adiantamentos,pagamentos,extras,obras,diasTrabalhados,brutoDiarias,pagDiarias,pendDiarias,totalAdiant,totalPagamentos,totalExtras};
   }
   function rtEnsureModal(){
     let m=$('relatorioTrabalhadorM');
@@ -11047,8 +10495,8 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
     if(s.extras)sections.push(`<h2>🏆 Produção / Extras</h2>${extraRows?`<table><thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Status</th></tr></thead><tbody>${extraRows}</tbody></table>`:'<p>Nenhum serviço extra registrado no período.</p>'}`);
     if(s.resumo){
       const totalPrevisto=d.brutoDiarias+d.totalExtras;
-      const saldoPendente=d.balance.net;
-      sections.push(`<h2>📊 Resumo financeiro do período</h2><div class="wrKpis"><div class="wrKpi"><small>DIÁRIAS</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrKpi"><small>EXTRAS</small><b>${rtMoney(d.totalExtras)}</b></div><div class="wrKpi"><small>ADIANTAMENTOS</small><b>${rtMoney(d.totalAdiant)}</b></div><div class="wrKpi"><small>PAGAMENTOS</small><b>${rtMoney(d.totalPagamentos)}</b></div></div><div class="wrGrid"><div class="wrInfo"><small>Total de valores gerados</small><b>${rtMoney(totalPrevisto)}</b></div><div class="wrInfo"><small>Líquido em aberto no período</small><b>${rtMoney(saldoPendente)}</b></div></div>`);
+      const saldoPendente=Math.max(0,totalPrevisto-d.pagDiarias-d.totalPagamentos);
+      sections.push(`<h2>📊 Resumo financeiro do período</h2><div class="wrKpis"><div class="wrKpi"><small>DIÁRIAS</small><b>${rtMoney(d.brutoDiarias)}</b></div><div class="wrKpi"><small>EXTRAS</small><b>${rtMoney(d.totalExtras)}</b></div><div class="wrKpi"><small>ADIANTAMENTOS</small><b>${rtMoney(d.totalAdiant)}</b></div><div class="wrKpi"><small>PAGAMENTOS</small><b>${rtMoney(d.totalPagamentos+d.pagDiarias)}</b></div></div><div class="wrGrid"><div class="wrInfo"><small>Total de valores gerados</small><b>${rtMoney(totalPrevisto)}</b></div><div class="wrInfo"><small>Saldo estimado pendente</small><b>${rtMoney(saldoPendente)}</b></div></div>`);
     }
     return `<h1>Relatório do Trabalhador — ${esc(f.nome||'Funcionário')}</h1><div class="wrMeta">Período: ${rtFmt(r.ini)} a ${rtFmt(r.fim)} · Gerado em ${new Date().toLocaleString('pt-BR')}</div>${sections.join('')}`;
   }
@@ -11096,13 +10544,16 @@ document.addEventListener("DOMContentLoaded",restoreTheme);
 })();
 <\/script>
 
+
+
+
 </body></html>`);
 
     w.document.close();
   };
   window.rtWhatsApp=function(){
     if(!window.__rtFuncId){toast('Selecione um trabalhador.');return;}
-    const d=rtData();const txt=`RELATÓRIO DO TRABALHADOR — ${d.f.nome}\nPeríodo: ${rtFmt(d.r.ini)} a ${rtFmt(d.r.fim)}\nFunção: ${d.f.funcao||'Não informada'}\nDias trabalhados: ${d.diasTrabalhados}\nDiárias: ${rtMoney(d.brutoDiarias)}\nAdiantamentos: ${rtMoney(d.totalAdiant)}\nPagamentos: ${rtMoney(d.totalPagamentos)}\nExtras: ${rtMoney(d.totalExtras)}\nFaltas/afastamentos: ${d.faltas.length}`;
+    const d=rtData();const txt=`RELATÓRIO DO TRABALHADOR — ${d.f.nome}\nPeríodo: ${rtFmt(d.r.ini)} a ${rtFmt(d.r.fim)}\nFunção: ${d.f.funcao||'Não informada'}\nDias trabalhados: ${d.diasTrabalhados}\nDiárias: ${rtMoney(d.brutoDiarias)}\nAdiantamentos: ${rtMoney(d.totalAdiant)}\nPagamentos: ${rtMoney(d.totalPagamentos+d.pagDiarias)}\nExtras: ${rtMoney(d.totalExtras)}\nFaltas/afastamentos: ${d.faltas.length}`;
     window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
   };
   window.openRelatorioTrabalhador=function(){
@@ -15418,9 +14869,9 @@ body.edLight .edEqDaysUniform .edEqPill.blue{
     frame.srcdoc=cleaned;await waitFrame(frame);status('Relatório pronto. Você pode salvar em PDF ou imprimir.',false);return true;
   };
   window.edifiqReportClose=function(){const m=document.getElementById('edifiqReportHub');if(m)m.classList.remove('open')};
-  window.edifiqReportPrint=function(){
-    if(!current.html){toast('Abra um relatório primeiro.');return;}
-    return window.edifiqPrintHTML46(current.html,current.title);
+  window.edifiqReportPrint=async function(){
+    const frame=document.getElementById('edifiqReportFrame');if(!frame?.contentWindow){if(typeof toast==='function')toast('Abra um relatório primeiro.');return}
+    try{await waitImages(frame.contentDocument);frame.contentWindow.focus();frame.contentWindow.print()}catch(e){console.error('EDIFIQ impressão',e);if(typeof toast==='function')toast('Não foi possível abrir a impressão neste dispositivo.')}
   };
   async function loadPdfLib(){
     if(typeof window.html2pdf==='function')return true;
@@ -15881,7 +15332,16 @@ body.edLight .edBillingPlan{background:#fff;color:#111827}
       if(sb){const r=await sb.from('edifiq_assinaturas').update({plano_preferido:codigo}).eq('empresa_user_id',user.id);if(r.error)throw r.error}
       const data=await invoke11('edifiq-assinatura-checkout',{plano:codigo,return_url:location.href.split('#')[0]});
       if(data.already_active){toast('Sua assinatura já está ativa.');await refreshBilling11();return}
-      if(!data.checkout_url)throw new Error('O servidor não retornou o endereço de pagamento.');
+      if(forma==='pix'&&data.pix?.payload){
+        const box=qs('#edAsaasFormaModal .modalBox');
+        if(box){box.innerHTML=`<div class="modalHead"><h2>Pix copia e cola</h2><button class="x" onclick="closeM('edAsaasFormaModal')">×</button></div>`;}
+        const title=document.createElement('p');title.textContent='Pagamento pendente. A emissão do Pix não libera a assinatura.';box.appendChild(title);
+        if(data.pix.encodedImage&&/^[A-Za-z0-9+/=]+$/.test(data.pix.encodedImage)){const img=document.createElement('img');img.src='data:image/png;base64,'+data.pix.encodedImage;img.alt='QR Code Pix';img.style.cssText='display:block;width:220px;max-width:100%;margin:16px auto;background:white';box.appendChild(img)}
+        const field=document.createElement('textarea');field.readOnly=true;field.value=data.pix.payload;field.setAttribute('aria-label','Código Pix copia e cola');box.appendChild(field);
+        const copy=document.createElement('button');copy.className='btn primary';copy.textContent='Copiar código Pix';copy.onclick=async()=>{try{await navigator.clipboard.writeText(field.value);toastA('Pix copiado.')}catch(_){field.focus();field.select();toastA('Selecione e copie o código Pix.')}};box.appendChild(copy);
+        const check=document.createElement('button');check.className='btn';check.textContent='Já paguei — verificar';check.onclick=()=>window.sincronizarAssinaturaEdifiq11?.();box.appendChild(check);return;
+      }
+      if(!data.checkout_url)throw new Error('A cobrança ainda não está disponível. Tente novamente em instantes.');
       try{localStorage.setItem('edifiq_billing_return_v1',JSON.stringify({at:new Date().toISOString(),plano:codigo}))}catch(_){}
       toast(data.reused?'Continuando pagamento pendente...':'Abrindo pagamento seguro...');
       location.assign(String(data.checkout_url));
@@ -16404,11 +15864,43 @@ body.edLight .ed14DangerCard h3{color:#b42318!important}
   }
   function date14(v){try{return new Date(v).toLocaleString('pt-BR')}catch(_){return String(v||'—')}}
 
-  window.openExcluirConta14=function(){
+  window.openExcluirConta14=async function(){
     closeDrawer14();
-    location.assign(new URL('./exclusao-conta.html',location.href).href);
+    const req=await currentDeletionRequest14();
+    let m=document.getElementById('edExcluirConta14M');
+    if(!m){m=document.createElement('div');m.id='edExcluirConta14M';m.className='modal';document.body.appendChild(m)}
+    const status=req?`<div class="ed14DeleteStatus ${req.status==='concluida'?'ok':'warn'}"><b>Solicitação existente:</b> ${String(req.status||'').replace('_',' ')}<br><small>Registrada em ${date14(req.solicitado_em)}.</small></div>`:'';
+    m.innerHTML=`<div class="modalBox" style="max-width:650px;max-height:92vh;overflow:auto"><div class="modalHead"><div><h2>🗑️ Excluir conta e dados</h2><p class="sub">Inicie a solicitação de exclusão da sua conta EDIFIQ.</p></div><button class="x" type="button" onclick="closeM('edExcluirConta14M')">×</button></div>
+      ${status}
+      <div class="card ed14DangerCard"><h3>Antes de solicitar</h3><p class="sub">Faça um backup completo. Esta solicitação é diferente de cancelar a assinatura. Ela serve para iniciar a exclusão da conta e dos dados associados, sujeita às retenções legais aplicáveis.</p><div class="edAccountActions"><button class="btn" type="button" onclick="closeM('edExcluirConta14M');openBackupConfigDirect()">💾 Fazer backup primeiro</button></div></div>
+      <div class="card"><h3>Confirmação de segurança</h3><div class="ed14DeleteGrid"><label>Motivo (opcional)<textarea id="edExcluirMotivo14" maxlength="500" placeholder="Se quiser, conte o motivo da exclusão."></textarea></label><label>Senha atual<input id="edExcluirSenha14" type="password" autocomplete="current-password" placeholder="Confirme sua senha"></label><label>Digite <b>EXCLUIR MINHA CONTA</b><input id="edExcluirFrase14" autocomplete="off" placeholder="EXCLUIR MINHA CONTA"></label><label style="display:flex;gap:8px;align-items:flex-start"><input id="edExcluirCiente14" type="checkbox" style="width:auto;margin-top:3px"><span>Entendo que esta ação inicia um pedido de exclusão e que devo manter meu backup se quiser conservar uma cópia independente dos dados.</span></label></div><div class="edAccountActions"><button class="btn danger" type="button" onclick="solicitarExclusaoConta14()">Solicitar exclusão</button></div></div>
+      <div class="note">A atualização desta etapa não apaga seus dados automaticamente. A exclusão só é iniciada quando o próprio titular confirma esta tela.</div></div>`;
+    m.classList.add('open');queueCloseScan14();
   };
-  window.solicitarExclusaoConta14=window.openExcluirConta14;
+
+  window.solicitarExclusaoConta14=async function(){
+    if(typeof sb==='undefined'||!sb){if(typeof toast==='function')toast('Conecte-se à internet para solicitar a exclusão.');return}
+    const frase=String(document.getElementById('edExcluirFrase14')?.value||'').trim().toUpperCase();
+    const senha=String(document.getElementById('edExcluirSenha14')?.value||'');
+    const motivo=String(document.getElementById('edExcluirMotivo14')?.value||'').trim().slice(0,500);
+    const ciente=!!document.getElementById('edExcluirCiente14')?.checked;
+    if(frase!=='EXCLUIR MINHA CONTA'){if(typeof toast==='function')toast('Digite a frase de confirmação exatamente como solicitado.');return}
+    if(!ciente){if(typeof toast==='function')toast('Confirme que você está ciente da solicitação.');return}
+    if(!senha){if(typeof toast==='function')toast('Informe sua senha atual.');return}
+    try{
+      const u=await currentUser14();if(!u?.email)throw new Error('Conta sem e-mail disponível.');
+      const {error:authErr}=await sb.auth.signInWithPassword({email:u.email,password:senha});if(authErr)throw new Error('Senha atual incorreta.');
+      let empresa=u.id;
+      try{const {data,error}=await sb.rpc('edifiq_empresa_atual');if(error)throw error;empresa=data||u.id}catch(_){empresa=u.id}
+      if(String(empresa)!==String(u.id))throw new Error('Somente o proprietário da conta pode solicitar a exclusão da empresa.');
+      const existing=await currentDeletionRequest14();
+      if(existing&&['solicitada','em_analise'].includes(String(existing.status||''))){if(typeof toast==='function')toast('Já existe uma solicitação de exclusão em andamento.');return}
+      const {error}=await sb.from('edifiq_exclusao_solicitacoes').insert({user_id:u.id,empresa_user_id:u.id,status:'solicitada',motivo:motivo||null});if(error)throw error;
+      if(typeof toast==='function')toast('Solicitação de exclusão registrada.');
+      await window.openExcluirConta14();
+    }catch(e){console.error('EDIFIQ solicitar exclusão',e);if(typeof toast==='function')toast(e?.message||'Não foi possível registrar a solicitação.')}
+    finally{const el=document.getElementById('edExcluirSenha14');if(el)el.value=''}
+  };
 
   function injectDeleteCard14(){
     const box=document.querySelector('#edConfiguracoesModal .modalBox');if(!box||box.querySelector('#edDeleteAccountCard14'))return;
@@ -19640,7 +19132,7 @@ window.exportFull=exportV10;window.importBackupData=importV10Data;window.importB
   'use strict';
   const same=(a,b)=>String(a??'')===String(b??'');
   const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/\s+/g,' ');
-  const cents=v=>{let s=typeof v==='string'?v.trim().replace(/R\$|\s/g,''):v;if(typeof s==='string'&&s.includes(','))s=s.replace(/\./g,'').replace(',','.');const n=Number(s||0);if(!Number.isFinite(n))throw Error('Informe um valor válido.');return Math.sign(n)*Math.round((Math.abs(n)+Number.EPSILON*Math.max(1,Math.abs(n)))*100);};
+  const cents=v=>{let s=typeof v==='string'?v.trim().replace(/R\$|\s/g,''):v;if(typeof s==='string'&&s.includes(','))s=s.replace(/\./g,'').replace(',','.');const n=Number(s||0);if(!Number.isFinite(n))throw Error('Informe um valor válido.');return Math.round(n*100);};
   const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   function validDate(v){if(!/^\d{4}-\d{2}-\d{2}$/.test(v||''))return false;const d=new Date(v+'T12:00:00');return !isNaN(d)&&iso(d)===v;}
   function range(mode='all',anchor=iso(new Date()),start='',end=''){
@@ -19685,14 +19177,14 @@ window.exportFull=exportV10;window.importBackupData=importV10Data;window.importB
   }
   function totals(rows){let income=0,expense=0;for(const r of rows){if(r._tipo==='entrada')income+=cents(r.valor);else expense+=cents(r.valor);}return {income,expense,result:income-expense,count:rows.length};}
   function stageFinance(D,rows,obra='all',distribution=()=>[]){
-    return unique(D.obras||[]).filter(o=>obra==='all'||same(o.id,obra)).map(o=>{
-      const stages=unique(D.checklist||[]).filter(c=>same(c.obra_id??c.obraId,o.id)).map(c=>({id:String(c.id),name:c.tarefa||c.descricao||'Etapa',income:0,expense:0,labor:0}));
+    return (D.obras||[]).filter(o=>obra==='all'||same(o.id,obra)).map(o=>{
+      const stages=(D.checklist||[]).filter(c=>same(c.obra_id,o.id)).map(c=>({id:String(c.id),name:c.tarefa||c.descricao||'Etapa',income:0,expense:0,labor:0}));
       const unassigned={id:'',name:'Sem etapa vinculada',income:0,expense:0,labor:0};const map=new Map(stages.map(s=>[s.id,s]));map.set('',unassigned);
       for(const r of rows.filter(x=>inScope(x,o.id))){
         const amount=cents(r.valor);let allocations=r._tipo==='entrada'?distribution(r)||[]:[];
         allocations=allocations.map(a=>({id:map.has(String(a.checklist_id))?String(a.checklist_id):'',amount:Math.max(0,cents(a.valor))}));
         const allocated=allocations.reduce((n,a)=>n+a.amount,0);
-        if(!allocations.length||allocated>amount){allocations=[{id:map.has(String(r.checklist_id??r.checklistId))?String(r.checklist_id??r.checklistId):'',amount}];}
+        if(!allocations.length||allocated>amount){allocations=[{id:map.has(String(r.checklist_id))?String(r.checklist_id):'',amount}];}
         else if(allocated<amount)allocations.push({id:'',amount:amount-allocated});
         for(const a of allocations){const s=map.get(a.id)||unassigned;if(r._tipo==='entrada')s.income+=a.amount;else {s.expense+=a.amount;if(['mao de obra','adiantamento'].includes(norm(r._category)))s.labor+=a.amount;}}
       }
@@ -19901,7 +19393,7 @@ return {pdf,wrap};
   function html(report){return `<article class="ed27ReportDocument"><header><strong>EDIFIQ</strong><h1>${E(report.title)}</h1><p>Gerado em ${E(new Date(report.generatedAt).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'}))} · Horário de Brasília</p></header>${report.filters.map(f=>`<p>${E(f)}</p>`).join('')}${report.sections.map(s=>`<section><h2>${E(s.title)}</h2>${s.note?`<p>${E(s.note)}</p>`:''}<div class="ed27Table"><table><thead><tr>${s.columns.map(c=>`<th>${E(c.label)}</th>`).join('')}</tr></thead><tbody>${s.rows.length?s.rows.map(row=>`<tr>${row.map(cell=>`<td>${E(cell).replace(/\n/g,'<br>')}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${s.columns.length}">Nenhum registro neste filtro.</td></tr>`}</tbody></table></div></section>`).join('')}<footer>Relatório de gestão — EDIFIQ. Não é comprovante de pagamento.</footer></article>`;}
   function generate(kind,scope,employee='all'){const report=build(kind,scope,employee),bytes=EdifiqReleasePDF.pdf(report),body=html(report);if(activeURL)URL.revokeObjectURL(activeURL);activeURL=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));let m=q('ed27ReportM');if(!m){m=document.createElement('div');m.id='ed27ReportM';m.className='modal ed27Modal';document.body.appendChild(m);}m.innerHTML=`<div class="modalBox ed27ReportBox"><div class="modalHead"><h2>${E(report.title)}</h2><button class="x" type="button" onclick="closeM('ed27ReportM')" aria-label="Fechar">×</button></div><div class="ed27Actions"><a class="btn gold" href="${E(activeURL)}" download="${E(report.filename)}">Baixar PDF</a><a class="btn" href="${E(activeURL)}" target="_blank" rel="noopener">Abrir PDF</a><button class="btn" type="button" onclick="ed27PrintReport()">Imprimir</button><button class="btn" type="button" onclick="closeM('ed27ReportM')">Voltar ao aplicativo</button></div>${body}</div>`;let print=q('ed27Print');if(!print){print=document.createElement('div');print.id='ed27Print';document.body.appendChild(print);}print.innerHTML=body;openM('ed27ReportM');}
   window.ed27Report=function(kind,scope='all'){try{if(kind==='finance'){generate(kind,scope);return;}let m=q('ed27ReportChooseM');if(!m){m=document.createElement('div');m.id='ed27ReportChooseM';m.className='modal ed27Modal';document.body.appendChild(m);}const options=kind==='project'?'<option value="all">Todas as obras</option>'+(D.obras||[]).map(o=>`<option value="${E(o.id)}" ${C.same(scope,o.id)?'selected':''}>${E(o.nome)}</option>`).join(''):'<option value="all">Todos os funcionários do filtro</option>'+__ed27.employees().map(f=>`<option value="${E(f.id)}">${E(f.nome)}</option>`).join('');m.innerHTML=`<div class="modalBox"><div class="modalHead"><h2>Relatório PDF</h2><button class="x" onclick="closeM('ed27ReportChooseM')" type="button" aria-label="Fechar">×</button></div><label>${kind==='project'?'Obra':'Funcionário'}<select id="ed27ReportSelect">${options}</select></label><p class="sub">${kind==='project'?'Resumo completo do contrato, serviços extras e etapas.':'Usa a obra, o período e o filtro de funcionários da gestão da equipe.'}</p><div class="formActions"><button class="btn gold" id="ed27ReportGenerate" type="button">Gerar relatório</button></div></div>`;q('ed27ReportGenerate').onclick=()=>{try{const selected=q('ed27ReportSelect').value;generate(kind,kind==='project'?selected:'all',kind==='team'?selected:'all');closeM('ed27ReportChooseM');}catch(err){toast(err.message);}};openM('ed27ReportChooseM');}catch(err){toast(err.message);}};
-  window.ed27PrintReport=function(){const source=q('ed27Print');if(source?.innerHTML)return window.edifiqPrintHTML46(source.innerHTML,q('ed27ReportM')?.querySelector('h2')?.textContent||'Relatório Edific');};
+  window.ed27PrintReport=function(){if(q('ed27Print')?.innerHTML)window.print();};
   window.addEventListener('beforeunload',()=>{if(activeURL)URL.revokeObjectURL(activeURL);});
   window.__ed27BuildReport=build;
 })();
@@ -19986,7 +19478,7 @@ function summary(){
 }
 function icon(name){const x={plus:'＋',file:'▤',building:'▦',layers:'▤',coin:'R$',team:'👥',arrow:'→'};return `<span aria-hidden="true">${x[name]||'•'}</span> `;}
 function kpi(label,value,sub,ic,klass=''){return `<article class="ed29Kpi ${klass}"><small>${E(label)}</small><strong>${E(value)}</strong><small>${icon(ic)}${E(sub)}</small></article>`;}
-function progress(o){try{return Math.max(0,Math.min(100,Number(typeof obraProgress==='function'?obraProgress(o):0)||0));}catch(_){return 0;}}
+function progress(o){try{return Math.max(0,Math.min(100,Number(typeof obraProgress==='function'?obraProgress(o.id):0)||0));}catch(_){return 0;}}
 function projectRow(o,f={income:0,expense:0}){const c=contract(o),p=progress(o);return `<div class="ed29Project"><div class="ed29Row"><div><strong>${E(o.nome||'Obra')}</strong><small>${E(canonicalStatus(o).replace(/_/g,' '))} · ${p.toFixed(0)}%</small></div><button class="ed29TextButton" type="button" onclick="ed29OpenProject('${E(o.id)}')">Abrir →</button></div><div class="ed29MoneyLine"><small>Total atualizado</small><b>${cash(c.total)}</b></div><div class="ed29MoneyLine"><small>Recebido</small><b>${cash(f.income||0)}</b></div></div>`;}
 function contractPanel(s){return `<section class="ed29Panel"><div class="ed29PanelHead"><div><h2>Contrato</h2><p>Composição contratual</p></div><button class="ed29TextButton" type="button" onclick="ed29AddContractExtra()">＋ Extra</button></div><div class="ed29ContractLine ed29MoneyLine"><span>Contrato original</span><strong>${cash(s.original)}</strong></div><div class="ed29ContractLine ed29MoneyLine"><span>Serviços extras</span><strong>${cash(s.extra)}</strong></div><div class="ed29ContractLine total ed29MoneyLine"><span>Total atualizado</span><strong>${cash(s.total)}</strong></div></section>`;}
 function cashPanel(s){return `<section class="ed29Panel"><div class="ed29PanelHead"><div><h2>Movimento financeiro</h2><p>Receitas e despesas no filtro</p></div><button class="ed29TextButton" type="button" onclick="ed29OpenFinance()">Financeiro →</button></div><div class="ed29ContractLine ed29MoneyLine"><span>Recebido</span><strong>${cash(s.income)}</strong></div><div class="ed29ContractLine ed29MoneyLine"><span>Despesas</span><strong>${cash(s.expense)}</strong></div><div class="ed29ContractLine total ed29MoneyLine"><span>Resultado</span><strong>${cash(s.result)}</strong></div></section>`;}
@@ -20253,9 +19745,8 @@ body #edSubscriptionBanner :is(strong,small){overflow-wrap:anywhere}
   const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   function toastA(msg){try{if(typeof toast==='function')return toast(msg)}catch(_){} alert(msg)}
   async function invokeA(body){
-    let client=(typeof sb!=='undefined'&&sb)||window.sb;
-    if(!client&&typeof ensureSupabaseClient==='function'){await ensureSupabaseClient();client=(typeof sb!=='undefined'&&sb)||window.sb}
-    if(!client?.functions)throw new Error('Conexão com o servidor indisponível.');
+    if(!window.sb && typeof sb==='undefined')throw new Error('Conexão com o servidor indisponível.');
+    const client=(typeof sb!=='undefined'?sb:window.sb);
     const {data,error}=await client.functions.invoke('edifiq-assinatura-checkout',{body});
     if(error){let detail='';try{if(error.context?.clone){const j=await error.context.clone().json();detail=j?.error||j?.detail||''}}catch(_){}throw new Error(detail||error.message||'Falha ao iniciar pagamento.')}if(data?.error){const e=new Error(data.error);e.code=data.code||'';throw e}return data||{};
   }
@@ -20263,28 +19754,32 @@ body #edSubscriptionBanner :is(strong,small){overflow-wrap:anywhere}
     codigo=String(codigo||'').toLowerCase();
     if(!['mensal','anual'].includes(codigo)){toastA('Plano inválido.');return}
     let m=qs('#edAsaasFormaModal');if(!m){m=document.createElement('div');m.id='edAsaasFormaModal';m.className='modal';document.body.appendChild(m)}
-    m.innerHTML=`<div class="modalBox" style="max-width:620px"><div class="modalHead"><div><h2>💳 Forma de pagamento</h2><p class="sub">Pagamento seguro processado pelo Asaas.</p></div><button class="x" onclick="closeM('edAsaasFormaModal')">×</button></div><div class="edAsaasMethods"><button class="edAsaasMethod" type="button" onclick="edifiqAsaasContinuar('${esc(codigo)}','cartao')"><b>💳 Cartão de crédito</b><small>Cadastre o cartão no ambiente seguro do Asaas.</small></button><button class="edAsaasMethod" type="button" onclick="edifiqAsaasContinuar('${esc(codigo)}','pix')"><b>◆ Pix</b><small>Pagamento e recorrência pelo ambiente do Asaas.</small></button><button class="edAsaasMethod" type="button" onclick="edifiqAsaasMostrarBoleto()"><b>▤ Boleto</b><small>Boleto com vencimento da primeira cobrança após o teste.</small></button></div><div id="edAsaasBoleto" class="edAsaasBoleto"><b>Dados necessários para o boleto</b><input id="edAsaasNome" class="input" autocomplete="name" placeholder="Nome completo"><input id="edAsaasCpf" class="input" inputmode="numeric" placeholder="CPF ou CNPJ"><button class="btn primary" style="margin-top:10px;width:100%" type="button" onclick="edifiqAsaasContinuar('${esc(codigo)}','boleto')">Continuar com boleto</button></div><div class="edAsaasNote">Se o teste grátis ainda estiver ativo, a primeira cobrança será programada para depois do fim do teste.</div></div>`;
+    m.innerHTML=`<div class="modalBox" style="max-width:620px"><div class="modalHead"><div><h2>💳 Forma de pagamento</h2><p class="sub">Pagamento seguro processado pelo Asaas.</p></div><button class="x" onclick="closeM('edAsaasFormaModal')">×</button></div><div class="edAsaasMethods"><button class="edAsaasMethod" type="button" onclick="edifiqAsaasContinuar('${esc(codigo)}','cartao')"><b>💳 Cartão de crédito</b><small>Cadastre o cartão no ambiente seguro do Asaas.</small></button><button class="edAsaasMethod" type="button" onclick="edifiqAsaasContinuar('${esc(codigo)}','pix')"><b>◆ Pix</b><small>Abrir QR Code e código Pix copia e cola.</small></button><button class="edAsaasMethod" type="button" onclick="edifiqAsaasMostrarDados('${esc(codigo)}','boleto')"><b>▤ Boleto</b><small>Boleto com vencimento da primeira cobrança após o teste.</small></button></div><div id="edAsaasBoleto" class="edAsaasBoleto"><b id="edAsaasDadosTitulo">Dados necessários para pagamento</b><input id="edAsaasNome" class="input" autocomplete="name" placeholder="Nome completo"><input id="edAsaasCpf" class="input" inputmode="numeric" placeholder="CPF ou CNPJ"><button id="edAsaasDadosBtn" class="btn primary" style="margin-top:10px;width:100%" type="button">Continuar</button></div><div class="edAsaasNote">7 dias de teste grátis a partir do primeiro acesso. A primeira cobrança fica para depois do teste. Emitir boleto ou Pix não confirma pagamento nem libera a assinatura.</div></div>`;
     if(typeof openM==='function')openM('edAsaasFormaModal');else m.classList.add('open');
   };
-  window.edifiqAsaasMostrarBoleto=function(){qs('#edAsaasBoleto')?.classList.add('open');setTimeout(()=>qs('#edAsaasNome')?.focus(),50)};
+  window.edifiqAsaasMostrarDados=function(codigo,forma){const box=qs('#edAsaasBoleto'),t=qs('#edAsaasDadosTitulo'),b=qs('#edAsaasDadosBtn');if(t)t.textContent=forma==='pix'?'Dados necessários para gerar o Pix':'Dados necessários para gerar o boleto';if(b){b.textContent=forma==='pix'?'Continuar com Pix':'Continuar com boleto';b.onclick=()=>window.edifiqAsaasContinuar(codigo,forma)}box?.classList.add('open');setTimeout(()=>qs('#edAsaasNome')?.focus(),50)};
   window.edifiqAsaasContinuar=async function(codigo,forma){
-    if(!['mensal','anual'].includes(codigo)||!['cartao','pix','boleto'].includes(forma)){toastA('Plano ou forma de pagamento inválida.');return}
-    if(window.__edifiqBillingBusy)return;window.__edifiqBillingBusy=true;let navigating=false;
-    document.querySelectorAll('#edAsaasFormaModal button').forEach(b=>b.disabled=true);
+    if(window.__edifiqBillingBusy)return;window.__edifiqBillingBusy=true;
     try{
       const body={plano:codigo,forma,return_url:location.href.split('#')[0]};
-      if(forma==='boleto'){body.nome=String(qs('#edAsaasNome')?.value||'').trim();body.cpf_cnpj=String(qs('#edAsaasCpf')?.value||'').replace(/\D/g,'');if(!body.nome||body.cpf_cnpj.length<11){toastA('Informe nome completo e CPF/CNPJ para gerar o boleto.');return}}
-      const data=await invokeA(body);if(data.already_active){toastA('Sua assinatura já está ativa.');return}if(!data.checkout_url)throw new Error('O servidor não retornou o endereço de pagamento.');
+      if(forma==='boleto'){body.nome=String(qs('#edAsaasNome')?.value||'').trim();body.cpf_cnpj=String(qs('#edAsaasCpf')?.value||'').replace(/\D/g,'');if(!body.nome||body.cpf_cnpj.length<11){toastA('Informe nome completo e CPF/CNPJ para gerar '+(forma==='pix'?'o Pix':'o boleto')+'.');return}}
+      const data=await invokeA(body);if(data.already_active){toastA('Sua assinatura já está ativa.');return}if(forma==='pix'&&data.pix?.payload){
+        const box=qs('#edAsaasFormaModal .modalBox');
+        if(box){box.innerHTML=`<div class="modalHead"><h2>Pix copia e cola</h2><button class="x" onclick="closeM('edAsaasFormaModal')">×</button></div>`;}
+        const title=document.createElement('p');title.textContent='Pagamento pendente. A emissão do Pix não libera a assinatura.';box.appendChild(title);
+        if(data.pix.encodedImage&&/^[A-Za-z0-9+/=]+$/.test(data.pix.encodedImage)){const img=document.createElement('img');img.src='data:image/png;base64,'+data.pix.encodedImage;img.alt='QR Code Pix';img.style.cssText='display:block;width:220px;max-width:100%;margin:16px auto;background:white';box.appendChild(img)}
+        const field=document.createElement('textarea');field.readOnly=true;field.value=data.pix.payload;field.setAttribute('aria-label','Código Pix copia e cola');box.appendChild(field);
+        const copy=document.createElement('button');copy.className='btn primary';copy.textContent='Copiar código Pix';copy.onclick=async()=>{try{await navigator.clipboard.writeText(field.value);toastA('Pix copiado.')}catch(_){field.focus();field.select();toastA('Selecione e copie o código Pix.')}};box.appendChild(copy);
+        const check=document.createElement('button');check.className='btn';check.textContent='Já paguei — verificar';check.onclick=()=>window.sincronizarAssinaturaEdifiq11?.();box.appendChild(check);return;
+      }
+      if(!data.checkout_url)throw new Error('A cobrança ainda não está disponível. Tente novamente em instantes.');
       try{localStorage.setItem('edifiq_billing_return_v1',JSON.stringify({at:new Date().toISOString(),plano:codigo,forma,provedor:'asaas'}))}catch(_){}
-      const checkout=new URL(String(data.checkout_url));
-      if(checkout.protocol!=='https:'||checkout.username||checkout.password||!(checkout.hostname==='asaas.com'||checkout.hostname.endsWith('.asaas.com')))throw new Error('Endereço de pagamento inválido. Tente novamente.');
-      if(typeof closeM==='function')closeM('edAsaasFormaModal');toastA('Abrindo pagamento seguro no Asaas...');navigating=true;location.assign(checkout.href);
-    }catch(e){console.error('EDIFIQ Asaas checkout',e);toastA(String(e?.message||'Não foi possível iniciar o pagamento.'))}finally{if(!navigating){window.__edifiqBillingBusy=false;document.querySelectorAll('#edAsaasFormaModal button').forEach(b=>b.disabled=false)}}
+      if(typeof closeM==='function')closeM('edAsaasFormaModal');toastA('Abrindo pagamento seguro no Asaas...');location.assign(String(data.checkout_url));
+    }catch(e){console.error('EDIFIQ Asaas checkout',e);toastA(String(e?.message||'Não foi possível iniciar o pagamento.'))}finally{window.__edifiqBillingBusy=false}
   };
-  window.addEventListener('pageshow',()=>{window.__edifiqBillingBusy=false;document.querySelectorAll('#edAsaasFormaModal button').forEach(b=>b.disabled=false)});
   window.assinarPlanoEdifiq11=function(codigo){return window.edifiqAsaasEscolher(codigo)};
   function patchText(root=document){
-    const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(!n.parentElement?.closest('script,style,noscript')&&/Mercado Pago/i.test(n.nodeValue||''))n.nodeValue=(n.nodeValue||'').replace(/Mercado Pago/gi,'Asaas').replace(/credenciais do Asaas ainda precisam ser configuradas no servidor/gi,'integração do Asaas ainda precisa ser configurada no servidor')}
+    const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(n.parentElement?.closest('script,style,textarea,input,noscript'))continue;if(/Mercado Pago/i.test(n.nodeValue||''))n.nodeValue=(n.nodeValue||'').replace(/Mercado Pago/gi,'Asaas').replace(/credenciais do Asaas ainda precisam ser configuradas no servidor/gi,'integração do Asaas ainda precisa ser configurada no servidor')}
   }
   const oldOpen=window.openPlanosEdifiq11;if(typeof oldOpen==='function')window.openPlanosEdifiq11=async function(){const r=await oldOpen.apply(this,arguments);setTimeout(()=>patchText(qs('#edPlanosModal')||document),0);return r};
   const obs=new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1)patchText(n)});try{obs.observe(document.body,{childList:true,subtree:true})}catch(_){}
@@ -20298,7 +19793,7 @@ body #edSubscriptionBanner :is(strong,small){overflow-wrap:anywhere}
 (function(){
   function patchText(){
     document.querySelectorAll('body *').forEach(function(el){
-      if(el.children.length||el.matches('script,style,noscript')) return;
+      if(el.children.length || /^(SCRIPT|STYLE|TEXTAREA|INPUT|NOSCRIPT)$/.test(el.tagName)) return;
       const t=(el.textContent||'').trim();
       if(!t) return;
       if(t==='Mercado Pago') el.textContent='Asaas';
@@ -20315,32 +19810,121 @@ body #edSubscriptionBanner :is(strong,small){overflow-wrap:anywhere}
 })();
 </script>
 
-<script id="edifiq-print46">
+
+<style id="edifiq-theme-payment-fix">
+body{--edPayBg:#101827;--edPayCard:#1e293b;--edPayText:#f8fafc;--edPayMuted:#cbd5e1;--edPayBorder:#64748b}
+body.edLight{--edPayBg:#ffffff;--edPayCard:#f1f5f9;--edPayText:#111827;--edPayMuted:#334155;--edPayBorder:#94a3b8}
+body :is(#edAsaasFormaModal,#edPlanosModal,#edConfiguracoesModal) .modalBox{background:var(--edPayBg)!important;background-image:none!important;color:var(--edPayText)!important;opacity:1!important;filter:none!important}
+body :is(#edAsaasFormaModal,#edPlanosModal,#edConfiguracoesModal) :is(h2,h3,h4,b,strong,label){color:var(--edPayText)!important;-webkit-text-fill-color:currentColor!important;opacity:1!important}
+body :is(#edAsaasFormaModal,#edPlanosModal,#edConfiguracoesModal) :is(p,small,.sub,.edBillingMeta,.edAsaasNote){color:var(--edPayMuted)!important;-webkit-text-fill-color:currentColor!important;opacity:1!important}
+body #edAsaasFormaModal .edAsaasMethod{background:var(--edPayCard)!important;color:var(--edPayText)!important;border:1px solid var(--edPayBorder)!important;min-height:100px;opacity:1!important}
+body #edAsaasFormaModal :is(input,textarea,.x,.btn:not(.primary)){background:var(--edPayCard)!important;color:var(--edPayText)!important;-webkit-text-fill-color:currentColor!important;border-color:var(--edPayBorder)!important}
+body #edAsaasFormaModal textarea{width:100%;min-height:100px;margin:12px 0;overflow-wrap:anywhere}
+body #edAsaasFormaModal .btn{margin:6px 8px 6px 0}
+body #edAsaasFormaModal .btn.primary{background:#d9ad55!important;color:#111827!important;-webkit-text-fill-color:#111827!important}
+body:not(.edLight) :is(.authLogo h1,.edInstallTitle){color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important}
+body.edLight :is(.authLogo h1,.edInstallTitle){color:#111827!important;-webkit-text-fill-color:#111827!important}
+body .edifiqDrawerLogo img{object-fit:contain!important}
+</style>
+
+<style id="edifiq-auth-contrast-fix-v4">
+/* Login: contraste consistente em claro/escuro e correção do autofill do Safari/Chrome. */
+body:not(.edLight) #auth{background:#090b0e!important;color:#f8fafc!important}
+body:not(.edLight) #auth .authBox{background:#11151a!important;background-image:none!important;color:#f8fafc!important;border-color:#303844!important;opacity:1!important;filter:none!important}
+body:not(.edLight) #auth .authLogoSimple h1,
+body:not(.edLight) #auth .authLogo h1{color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;opacity:1!important;text-shadow:none!important}
+body:not(.edLight) #auth label{color:#cbd5e1!important;-webkit-text-fill-color:#cbd5e1!important;opacity:1!important;font-weight:650!important}
+body:not(.edLight) #auth input{background:#0c1014!important;background-image:none!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;border:1px solid #46505d!important;caret-color:#f8fafc!important;box-shadow:none!important}
+body:not(.edLight) #auth input:focus{border-color:#d9ad55!important;box-shadow:0 0 0 2px rgba(217,173,85,.18)!important}
+body:not(.edLight) #auth input:-webkit-autofill,
+body:not(.edLight) #auth input:-webkit-autofill:hover,
+body:not(.edLight) #auth input:-webkit-autofill:focus{
+  -webkit-text-fill-color:#f8fafc!important;
+  caret-color:#f8fafc!important;
+  -webkit-box-shadow:0 0 0 1000px #0c1014 inset!important;
+  box-shadow:0 0 0 1000px #0c1014 inset!important;
+  transition:background-color 9999s ease-out 0s!important;
+}
+body:not(.edLight) #auth .passwordToggle{color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important}
+body:not(.edLight) #auth .authBtns .btn{background:#171c22!important;background-image:none!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;border-color:#303844!important;opacity:1!important;font-weight:800!important}
+body:not(.edLight) #auth .authBtns .btn.primary{background:linear-gradient(180deg,#e3bb66,#c4953d)!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#e4c16f!important}
+body:not(.edLight) #auth .authBtns .btn:disabled{opacity:.72!important;cursor:wait!important}
+
+body.edLight #auth{background:#eef2f6!important;color:#111827!important}
+body.edLight #auth .authBox{background:#fff!important;background-image:none!important;color:#111827!important;border-color:#cbd5e1!important;opacity:1!important;filter:none!important}
+body.edLight #auth .authLogoSimple h1,
+body.edLight #auth .authLogo h1{color:#111827!important;-webkit-text-fill-color:#111827!important;opacity:1!important;text-shadow:none!important}
+body.edLight #auth label{color:#334155!important;-webkit-text-fill-color:#334155!important;opacity:1!important;font-weight:650!important}
+body.edLight #auth input{background:#fff!important;background-image:none!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border:1px solid #94a3b8!important;caret-color:#111827!important;box-shadow:none!important}
+body.edLight #auth input:-webkit-autofill,
+body.edLight #auth input:-webkit-autofill:hover,
+body.edLight #auth input:-webkit-autofill:focus{
+  -webkit-text-fill-color:#111827!important;
+  caret-color:#111827!important;
+  -webkit-box-shadow:0 0 0 1000px #fff inset!important;
+  box-shadow:0 0 0 1000px #fff inset!important;
+  transition:background-color 9999s ease-out 0s!important;
+}
+body.edLight #auth .authBtns .btn{background:#f8fafc!important;background-image:none!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#cbd5e1!important;opacity:1!important;font-weight:800!important}
+body.edLight #auth .authBtns .btn.primary{background:linear-gradient(180deg,#e3bb66,#c4953d)!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#c99d48!important}
+#auth .authBtns .btn{min-height:50px!important;font-size:16px!important}
+#auth #authMsg{color:#cbd5e1!important;opacity:1!important}
+body.edLight #auth #authMsg{color:#475569!important}
+</style>
+
+
+<!-- EDIFIQ — correção final login/PWA iPhone 2026-10-14 -->
+<style id="edifiq-login-pwa-visual-fix-v5">
+/* O tema escuro é o padrão; o claro só entra quando body.edLight estiver ativo. */
+html body #auth{background:#090b0e!important;color:#f8fafc!important}
+html body #auth .authBox{background:#11151a!important;background-image:none!important;color:#f8fafc!important;border:1px solid #303844!important;opacity:1!important;filter:none!important}
+html body #auth .authLogoSimple h1,
+html body #auth .authLogo h1{color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;background:none!important;background-image:none!important;opacity:1!important;filter:none!important;text-shadow:none!important}
+html body #auth label{color:#cbd5e1!important;-webkit-text-fill-color:#cbd5e1!important;opacity:1!important}
+html body #auth input{background:#0c1014!important;background-image:none!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;border-color:#46505d!important;caret-color:#f8fafc!important;opacity:1!important}
+html body #auth input::placeholder{color:#9ca3af!important;-webkit-text-fill-color:#9ca3af!important;opacity:1!important}
+html body #auth .authBtns .btn{background:#171c22!important;background-image:none!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;border-color:#303844!important;opacity:1!important}
+html body #auth .authBtns .btn.primary{background:linear-gradient(180deg,#e3bb66,#c4953d)!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#e4c16f!important}
+
+html body.edLight #auth{background:#eef2f6!important;color:#111827!important}
+html body.edLight #auth .authBox{background:#fff!important;background-image:none!important;color:#111827!important;border-color:#cbd5e1!important}
+html body.edLight #auth .authLogoSimple h1,
+html body.edLight #auth .authLogo h1{color:#111827!important;-webkit-text-fill-color:#111827!important;background:none!important;background-image:none!important;opacity:1!important}
+html body.edLight #auth label{color:#334155!important;-webkit-text-fill-color:#334155!important}
+html body.edLight #auth input{background:#fff!important;background-image:none!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#94a3b8!important;caret-color:#111827!important}
+html body.edLight #auth input::placeholder{color:#64748b!important;-webkit-text-fill-color:#64748b!important;opacity:1!important}
+html body.edLight #auth .authBtns .btn{background:#f8fafc!important;background-image:none!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#cbd5e1!important}
+html body.edLight #auth .authBtns .btn.primary{background:linear-gradient(180deg,#e3bb66,#c4953d)!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#c99d48!important}
+
+/* Banner de instalação: o título estava herdando uma cor escura no modo escuro. */
+html body .edifiq-pwa-install{background:#11151a!important;color:#f8fafc!important;border-color:#715827!important;opacity:1!important}
+html body .edifiq-pwa-install .pwaText b{color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;opacity:1!important}
+html body .edifiq-pwa-install .pwaText small{color:#cbd5e1!important;-webkit-text-fill-color:#cbd5e1!important;opacity:1!important}
+html body .edifiq-pwa-install .pwaClose{color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;background:#171c22!important;border-color:#303844!important}
+html body.edLight .edifiq-pwa-install{background:#fff!important;color:#111827!important;border-color:#c99d48!important}
+html body.edLight .edifiq-pwa-install .pwaText b{color:#111827!important;-webkit-text-fill-color:#111827!important}
+html body.edLight .edifiq-pwa-install .pwaText small{color:#475569!important;-webkit-text-fill-color:#475569!important}
+html body.edLight .edifiq-pwa-install .pwaClose{color:#111827!important;-webkit-text-fill-color:#111827!important;background:#f8fafc!important;border-color:#cbd5e1!important}
+</style>
+<script id="edifiq-source-spill-guard-v1">
 (function(){
-'use strict';
-const nativeOpen=window.open.bind(window);
-const printStyle=`@page{size:A4;margin:14mm}*{box-sizing:border-box}html,body{background:#fff!important;color:#172033!important;color-scheme:light}body{font:12px/1.5 Arial,sans-serif;margin:0;padding:20px;max-width:1100px;margin:auto}h1{font-size:23px}h2{font-size:17px;break-after:avoid}table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px solid #cbd5e1;padding:7px;text-align:left;white-space:normal;overflow-wrap:anywhere}thead{display:table-header-group}tr{break-inside:avoid}img{max-width:100%;height:auto}.ed27Table{overflow:visible}.edPrintTools46{display:flex;gap:10px;flex-wrap:wrap;position:sticky;top:0;padding:12px;background:#eef2f6}.edPrintTools46 button{min-height:44px;padding:10px 16px;border:1px solid #64748b;border-radius:8px;background:#172033;color:white;font-size:14px}.edPrintTools46 p{flex-basis:100%;margin:0;color:#334155}@media print{.edPrintTools46{display:none!important}html,body{padding:0!important;max-width:none!important;height:auto!important;overflow:visible!important}a{color:inherit}.pageBreak{break-before:page}}`;
-window.edifiqPrintDocument46=function(raw,title){
- const doc=new DOMParser().parseFromString(String(raw),'text/html');
- doc.querySelectorAll('script,iframe,object,embed,base,.edReportToolbar,.edPrintTools46,.noPrint,#edifiqBuildBadge').forEach(x=>x.remove());
- doc.querySelectorAll('*').forEach(el=>{for(const a of [...el.attributes])if(/^on/i.test(a.name))el.removeAttribute(a.name);});
- doc.title=title||'Relatório Edific';
- const meta=doc.createElement('meta');meta.name='viewport';meta.content='width=device-width,initial-scale=1';doc.head.appendChild(meta);
- const css=doc.createElement('style');css.textContent=printStyle;doc.head.appendChild(css);
- const bar=doc.createElement('div');bar.className='edPrintTools46';
- bar.innerHTML='<button type="button" onclick="window.focus();window.print()">Imprimir / Salvar PDF</button><button type="button" onclick="window.close()">Fechar relatório</button><p>Se a impressão não abrir automaticamente, toque em Imprimir / Salvar PDF. No iPhone, você também pode usar Compartilhar → Imprimir.</p>';
- doc.body.prepend(bar);return '<!doctype html>'+doc.documentElement.outerHTML;
-};
-window.edifiqPrintHTML46=function(raw,title){
- if(!String(raw||'').trim()){window.toast?.('Abra um relatório primeiro.');return false;}
- const html=window.edifiqPrintDocument46(raw,title);
- // No await, image wait, timer or iframe print: preserve the user's click.
- const tab=nativeOpen('','_blank');
- if(!tab){window.toast?.('O navegador bloqueou a janela de impressão. Permita pop-ups para este aplicativo e toque em Imprimir novamente.');return false;}
- try{tab.opener=null;tab.document.open();tab.document.write(html);tab.document.close();tab.focus();tab.print();return true;}
- catch(err){console.error('EDIFIC impressão',err);window.toast?.('O relatório está em outra aba. Use o botão Imprimir / Salvar PDF dessa aba.');return false;}
-};
-window.EDIFIQ_VERSION='43.0.4';window.EDIFIQ_BUILD='2026-10-14-planos-exclusao';
+  'use strict';
+  function limparCodigoExposto(){
+    if(!document.body)return;
+    const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+    const remove=[];
+    let n;
+    while((n=walker.nextNode())){
+      const p=n.parentElement;
+      if(!p||p.closest('script,style,textarea,pre,code'))continue;
+      const t=String(n.nodeValue||'');
+      if(t.length>120 && /win\.document\.close\(\)|async function\s+deleteFoto|getAllPhotosDB\(\)\.find/.test(t))remove.push(n);
+    }
+    remove.forEach(n=>n.remove());
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',limparCodigoExposto,{once:true});
+  else limparCodigoExposto();
+  setTimeout(limparCodigoExposto,1200);
 })();
 </script>
 </body>
