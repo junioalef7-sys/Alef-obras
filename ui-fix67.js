@@ -3,7 +3,7 @@
   if(window.__EDIFIQ_UI_FIX67)return;
   window.__EDIFIQ_UI_FIX67=true;
 
-  const VERSION='69';
+  const VERSION='70';
   const byId=id=>document.getElementById(id);
 
   function toast67(msg){try{if(typeof window.toast==='function')window.toast(msg);else console.warn(msg)}catch(_){}}
@@ -28,6 +28,70 @@
   }
   window.edifiqSuppressOnboardingBanner69=suppressOnboardingBanner69;
 
+  /* ---------- Configurações: Plano e assinatura não pode piscar/sumir. ---------- */
+  function installConfigStyle70(){
+    if(byId('edifiqConfig70Style'))return;
+    const style=document.createElement('style');
+    style.id='edifiqConfig70Style';
+    style.textContent='#edConfiguracoesModal #edSubscriptionConfigCard{display:none!important}';
+    document.head.appendChild(style);
+  }
+
+  function ensureConfigPlan70(){
+    try{
+      const modal=byId('edConfiguracoesModal');
+      if(!modal||!modal.classList.contains('open'))return;
+      installConfigStyle70();
+      byId('edSubscriptionConfigCard')?.remove();
+
+      if(!byId('edBillingConfig11')&&typeof window.renderBilling11==='function'){
+        window.renderBilling11();
+      }
+
+      if(!byId('edBillingConfig11')){
+        const box=modal.querySelector('.modalBox');
+        if(!box)return;
+        const card=document.createElement('div');
+        card.id='edBillingConfig11';
+        card.className='card edAccountCard';
+        card.setAttribute('data-edifiq-stable','70');
+        card.innerHTML='<h3>💳 Plano e assinatura</h3><p class="sub">Gerencie seu plano, período de teste e pagamentos.</p><div class="edAccountActions"><button class="btn primary" type="button" onclick="(window.openPlanosEdifiq11||window.openPlanosEdifiq10)?.()">Ver planos / assinatura</button></div>';
+        const head=modal.querySelector('.modalHead');
+        if(head)head.insertAdjacentElement('afterend',card);else box.prepend(card);
+      }
+    }catch(e){console.warn('EDIFIQ configurações UI70:',e)}
+  }
+  window.edifiqEnsureConfigPlan70=ensureConfigPlan70;
+
+  function wrapConfig70(){
+    const original=window.openConfiguracoes;
+    if(typeof original!=='function'||original.__edifiqUi70)return;
+    const wrapped=async function(){
+      const result=await original.apply(this,arguments);
+      ensureConfigPlan70();
+      requestAnimationFrame(ensureConfigPlan70);
+      setTimeout(ensureConfigPlan70,120);
+      setTimeout(ensureConfigPlan70,650);
+      return result;
+    };
+    wrapped.__edifiqUi70=true;
+    wrapped.__edifiqOriginal70=original;
+    window.openConfiguracoes=wrapped;
+  }
+
+  function wrapCommercial70(){
+    const original=window.renderCommercial10;
+    if(typeof original!=='function'||original.__edifiqUi70)return;
+    const wrapped=function(){
+      const result=original.apply(this,arguments);
+      ensureConfigPlan70();
+      return result;
+    };
+    wrapped.__edifiqUi70=true;
+    wrapped.__edifiqOriginal70=original;
+    window.renderCommercial10=wrapped;
+  }
+
   /* ---------- Planos: garante o resumo do teste depois que o modal assíncrono terminou de renderizar. ---------- */
   function refreshPlan67(){
     try{
@@ -38,12 +102,12 @@
       }
       const info=byId('edPlanTrial66');
       if(info){
-        info.setAttribute('data-edifiq-ui','69');
+        info.setAttribute('data-edifiq-ui','70');
         const box=modal.querySelector('.modalBox');
         const head=modal.querySelector('.modalHead');
         if(box&&head&&info.parentElement!==box)head.insertAdjacentElement('afterend',info);
       }
-    }catch(e){console.warn('EDIFIQ planos UI69:',e)}
+    }catch(e){console.warn('EDIFIQ planos UI70:',e)}
   }
 
   function wrapPlan67(name){
@@ -134,7 +198,7 @@
       return true;
     }catch(e){
       cleanup();
-      console.error('EDIFIQ impressão UI69:',e);
+      console.error('EDIFIQ impressão UI70:',e);
       toast67('Não foi possível abrir a impressão. Tente novamente pelo botão Imprimir.');
       return false;
     }
@@ -167,6 +231,9 @@
 
   function install67(){
     suppressOnboardingBanner69();
+    installConfigStyle70();
+    wrapConfig70();
+    wrapCommercial70();
     wrapPlan67('openPlanosEdifiq11');
     wrapPlan67('openPlanosEdifiq10');
     wrapOverview67('renderResumoGeral');
@@ -178,6 +245,7 @@
     ensureOverviewClose67();
     installReportPrint67();
     refreshPlan67();
+    ensureConfigPlan70();
   }
 
   window.edifiqInstallUiFix67=install67;
