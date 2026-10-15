@@ -37,6 +37,18 @@ def compatibility_behavior_ok(check):
             "const url=safeAsaasUrl(data.checkout_url)"
         ]
         return all(marker in source for marker in required)
+    if name == 'exclusão usa fluxo definitivo':
+        patch = ROOT / 'account-delete-fix61.js'
+        if not patch.exists():
+            return False
+        source = patch.read_text(encoding='utf-8')
+        required = [
+            "edifiq-excluir-conta-imediato",
+            "EXCLUIR MINHA CONTA",
+            "Excluir conta agora",
+            "window.solicitarExclusaoConta14 = window.excluirContaAgora61"
+        ]
+        return all(marker in source for marker in required)
     return False
 
 
