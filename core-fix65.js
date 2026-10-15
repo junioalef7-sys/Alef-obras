@@ -14,11 +14,29 @@
   function installMoney(){
     const C=window.EdifiqRelease27;
     if(!C||typeof C.cents!=='function')return false;
-    if(C.cents.__edifiqMoney65)return true;
-    const patched=function(v){return centsSafe(v)};
-    patched.__edifiqMoney65=true;
-    patched.__edifiqOriginal65=C.cents;
-    C.cents=patched;
+    if(!C.cents.__edifiqMoney65){
+      const originalCents=C.cents;
+      const patched=function(v){return centsSafe(v)};
+      patched.__edifiqMoney65=true;
+      patched.__edifiqOriginal65=originalCents;
+      C.cents=patched;
+    }
+    if(typeof C.stageFinance==='function'&&!C.stageFinance.__edifiqStage65){
+      const originalStage=C.stageFinance;
+      const stagePatched=function(data,rows,obra,distribution){
+        const source=data&&typeof data==='object'?data:{};
+        const seen=new Set();
+        const obras=(Array.isArray(source.obras)?source.obras:[]).filter(o=>{
+          const id=String(o?.id??'');
+          if(seen.has(id))return false;
+          seen.add(id);return true;
+        });
+        return originalStage.call(this,{...source,obras},rows,obra,distribution);
+      };
+      stagePatched.__edifiqStage65=true;
+      stagePatched.__edifiqOriginal65=originalStage;
+      C.stageFinance=stagePatched;
+    }
     return true;
   }
 
