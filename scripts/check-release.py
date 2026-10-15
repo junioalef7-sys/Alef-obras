@@ -92,6 +92,7 @@ def validate(path):
         for name, filename in contract['fixture_modules'].items():
             (folder / filename).write_text(modules[name], encoding='utf-8')
         (folder / '.release-base.html').write_text(html, encoding='utf-8')
+        shutil.copy2(ROOT / 'core-fix65.js', folder / 'core-fix65.js')
         shutil.copytree(ROOT / 'tests', folder / 'tests')
         for name in ['release27.cjs', 'release29.cjs', 'calculations.cjs', 'account.cjs', 'menu.cjs', 'integration46.cjs', 'core65.cjs']:
             result = subprocess.run(['node', str(folder / 'tests' / name)], capture_output=True, text=True)
