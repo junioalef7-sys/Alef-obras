@@ -54,11 +54,15 @@ jobs:
           node tests/core65.cjs
           grep -q "edifiqEnsureTrial60" billing-fix57.js
           grep -q "edifiqEnsureTrial63" trial-fix62.js
-          grep -q "edPlanTrial65" billing-hotfix63.js
+          grep -q "edPlanTrial66" billing-hotfix63.js
+          grep -q "Início do teste" billing-hotfix63.js
           grep -q "Dias restantes" billing-hotfix63.js
+          grep -q "Vencimento do teste" billing-hotfix63.js
           grep -q "Primeira cobrança" billing-hotfix63.js
           grep -q "copyTextIOS" billing-hotfix63.js
           grep -q "Copiar código Pix" billing-hotfix63.js
+          grep -q "safeAsaasUrl" billing-hotfix63.js
+          grep -q "checkout.hostname.endsWith('.asaas.com')" billing-hotfix63.js
           grep -q "window.obraProgress=compatible" core-fix65.js
           grep -q "No plano gratuito é permitido cadastrar somente 1 obra" access-limit63.js
           grep -q "No plano gratuito é permitido cadastrar somente 1 funcionário" access-limit63.js
@@ -93,7 +97,7 @@ jobs:
               html=re.sub(r'<script[^>]+src=["\']\./'+re.escape(name)+r'[^"\']*["\'][^>]*></script>\s*','',html,flags=re.I)
           pos=html.lower().rfind('</body>')
           if pos<0: raise SystemExit('Fechamento </body> não encontrado')
-          addons='''<script src="./core-fix65.js?v=65" defer></script>\n<script src="./billing-fix57.js?v=65" defer></script>\n<script src="./account-delete-fix61.js?v=65" defer></script>\n<script src="./trial-fix62.js?v=65" defer></script>\n<script src="./billing-hotfix63.js?v=65" defer></script>\n<script src="./access-limit63.js?v=65" defer></script>\n'''
+          addons='''<script src="./core-fix65.js?v=66" defer></script>\n<script src="./billing-fix57.js?v=66" defer></script>\n<script src="./account-delete-fix61.js?v=66" defer></script>\n<script src="./trial-fix62.js?v=66" defer></script>\n<script src="./billing-hotfix63.js?v=66" defer></script>\n<script src="./access-limit63.js?v=66" defer></script>\n'''
           html=html[:pos]+addons+html[pos:]
           required=['edifiqPostLoginStartup','setTimeout(()=>edifiqPostLoginStartup(session),0)','classList.remove("hidden")']
           for x in required:
@@ -102,9 +106,9 @@ jobs:
 
           sw=Path('.pages/edifiq-sw.js')
           s=sw.read_text(encoding='utf-8')
-          s=re.sub(r"const CACHE='[^']+';","const CACHE='edifiq-shell-v65-plans-stable';",s,count=1)
-          for old in ['57','58','59','60','61','62','63','64']:
-              s=s.replace(f'billing-fix57.js?v={old}','billing-fix57.js?v=65')
+          s=re.sub(r"const CACHE='[^']+';","const CACHE='edifiq-shell-v66-billing-stable';",s,count=1)
+          for old in ['57','58','59','60','61','62','63','64','65']:
+              s=s.replace(f'billing-fix57.js?v={old}','billing-fix57.js?v=66')
           s=re.sub(r"if\(url\.pathname\.endsWith\('/billing-fix57\\.js'\)\)\{event\.respondWith\(new Response\(BILLING_FIX,[\s\S]*?\);return;\}","",s,count=1)
           sw.write_text(s,encoding='utf-8')
           PY
