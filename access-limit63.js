@@ -2,13 +2,14 @@
   'use strict';
   const VERSION='63';
   const ALLOWED_PAGES=new Set(['dashboard','financeiro','funcionarios','obras']);
-  let wrapped=false,lastLimited=null,refreshBusy=false;
+  let wrapped=false,lastLimited=null,refreshBusy=false,observerQueued=false;
 
   const q=id=>document.getElementById(id);
   const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
   const fmt=v=>{if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR')};
   const daysLeft=s=>{if(!s?.trial_fim)return 0;return Math.max(0,Math.ceil((new Date(s.trial_fim).getTime()-Date.now())/86400000))};
   const trialActive=s=>!!(s&&String(s.status||'').toLowerCase()==='trial'&&s.trial_fim&&new Date(s.trial_fim).getTime()>Date.now());
+  const setHtml=(el,html)=>{if(el&&el.innerHTML!==html)el.innerHTML=html};
 
   function verified(){return window.__edifiqSubscriptionVerifiedOnline===true}
   function fullAccess(s){
@@ -28,9 +29,7 @@
   }
   window.edifiqLimitedMode63=limited;
 
-  function toastSafe(msg){
-    try{if(typeof window.toast==='function')window.toast(msg);else alert(msg)}catch(_){ }
-  }
+  function toastSafe(msg){try{if(typeof window.toast==='function')window.toast(msg);else alert(msg)}catch(_){}}
   function blockedMessage(){return 'Seu teste grátis terminou. No modo gratuito ficam liberados: Financeiro, 1 obra e 1 funcionário. Assine um plano para liberar os demais recursos.'}
   function blockFeature(){toastSafe(blockedMessage());return false}
 
@@ -60,23 +59,27 @@
     let box=q('edTrialHome63');
     if(!sub||(!trialActive(sub)&&!limited())){box?.remove();return}
     if(!box){box=document.createElement('div');box.id='edTrialHome63';const anchor=dash.querySelector('.edHomeHeader,.pageTitle,.pageHead,.titleRow');if(anchor)anchor.insertAdjacentElement('afterend',box);else dash.prepend(box)}
+    let html='';
     if(trialActive(sub)){
       const d=daysLeft(sub);
-      box.innerHTML=`<div class="edTrial63Head"><strong>🎁 Teste grátis de 7 dias</strong><span class="edTrial63Badge">${d} dia${d===1?'':'s'} restante${d===1?'':'s'}</span></div><div class="edTrial63Grid"><div><small>Começou em</small><b>${fmt(sub.trial_inicio)}</b></div><div><small>Dias restantes</small><b>${d}</b></div><div><small>Vence em</small><b>${fmt(sub.trial_fim)}</b></div></div><div class="edTrial63Note">Até o vencimento, todos os recursos ficam liberados. A primeira cobrança de um plano escolhido durante o teste fica para depois do fim dos 7 dias.</div>`;
+      html=`<div class="edTrial63Head"><strong>🎁 Teste grátis de 7 dias</strong><span class="edTrial63Badge">${d} dia${d===1?'':'s'} restante${d===1?'':'s'}</span></div><div class="edTrial63Grid"><div><small>Começou em</small><b>${fmt(sub.trial_inicio)}</b></div><div><small>Dias restantes</small><b>${d}</b></div><div><small>Vence em</small><b>${fmt(sub.trial_fim)}</b></div></div><div class="edTrial63Note">Até o vencimento, todos os recursos ficam liberados. A primeira cobrança de um plano escolhido durante o teste fica para depois do fim dos 7 dias.</div>`;
     }else{
-      box.innerHTML=`<div class="edTrial63Head"><strong>Plano gratuito limitado</strong><span class="edTrial63Badge">Teste encerrado</span></div><div class="edTrial63Grid"><div><small>Teste começou em</small><b>${fmt(sub.trial_inicio)}</b></div><div><small>Teste venceu em</small><b>${fmt(sub.trial_fim)}</b></div><div><small>Acesso gratuito</small><b>Limitado</b></div></div><div class="edTrial63Note">Liberados: Financeiro, 1 obra e 1 funcionário. Relatórios e os demais recursos ficam bloqueados até a confirmação do pagamento.</div>`;
+      html=`<div class="edTrial63Head"><strong>Plano gratuito limitado</strong><span class="edTrial63Badge">Teste encerrado</span></div><div class="edTrial63Grid"><div><small>Teste começou em</small><b>${fmt(sub.trial_inicio)}</b></div><div><small>Teste venceu em</small><b>${fmt(sub.trial_fim)}</b></div><div><small>Acesso gratuito</small><b>Limitado</b></div></div><div class="edTrial63Note">Liberados: Financeiro, 1 obra e 1 funcionário. Relatórios e os demais recursos ficam bloqueados até a confirmação do pagamento.</div>`;
     }
+    setHtml(box,html);
   }
 
   function planSummary(){
     const modal=q('edPlanosModal'),sub=window.__edifiqSubscription;if(!modal||!sub)return;
     const box=q('edTrial60Summary')||q('edTrial62Summary');if(!box)return;
+    let html='';
     if(trialActive(sub)){
       const d=daysLeft(sub);
-      box.innerHTML=`<div class="financeRow"><span>🎁 Teste grátis</span><b>${d} dia${d===1?'':'s'} restante${d===1?'':'s'}</b></div><div class="financeRow"><span>Início do teste</span><b>${fmt(sub.trial_inicio)}</b></div><div class="financeRow"><span>Vencimento do teste</span><b>${fmt(sub.trial_fim)}</b></div><div class="financeRow"><span>Primeira cobrança</span><b>${fmt(sub.trial_fim)}</b></div><div class="note" style="margin-top:10px">A cobrança começa somente depois dos 7 dias grátis.</div>`;
+      html=`<div class="financeRow"><span>🎁 Teste grátis</span><b>${d} dia${d===1?'':'s'} restante${d===1?'':'s'}</b></div><div class="financeRow"><span>Início do teste</span><b>${fmt(sub.trial_inicio)}</b></div><div class="financeRow"><span>Vencimento do teste</span><b>${fmt(sub.trial_fim)}</b></div><div class="financeRow"><span>Primeira cobrança</span><b>${fmt(sub.trial_fim)}</b></div><div class="note" style="margin-top:10px">A cobrança começa somente depois dos 7 dias grátis.</div>`;
     }else if(limited()){
-      box.innerHTML=`<div class="financeRow"><span>Teste grátis</span><b>Encerrado</b></div><div class="financeRow"><span>Início</span><b>${fmt(sub.trial_inicio)}</b></div><div class="financeRow"><span>Venceu em</span><b>${fmt(sub.trial_fim)}</b></div><div class="note" style="margin-top:10px">Modo gratuito: Financeiro + 1 obra + 1 funcionário. Os demais recursos são liberados após a confirmação do pagamento.</div>`;
+      html=`<div class="financeRow"><span>Teste grátis</span><b>Encerrado</b></div><div class="financeRow"><span>Início</span><b>${fmt(sub.trial_inicio)}</b></div><div class="financeRow"><span>Venceu em</span><b>${fmt(sub.trial_fim)}</b></div><div class="note" style="margin-top:10px">Modo gratuito: Financeiro + 1 obra + 1 funcionário. Os demais recursos são liberados após a confirmação do pagamento.</div>`;
     }
+    if(html)setHtml(box,html);
   }
 
   function markMenu(){
@@ -91,6 +94,21 @@
     });
   }
 
+  function limitEmployeeSelects(isLimited,funcs){
+    const allowed=funcs[0]?.id==null?'':String(funcs[0].id);
+    const ids=new Set(funcs.map(f=>String(f.id)));
+    document.querySelectorAll('select').forEach(sel=>{
+      let hasEmployee=false;
+      [...sel.options].forEach(opt=>{if(ids.has(String(opt.value)))hasEmployee=true});
+      if(!hasEmployee)return;
+      [...sel.options].forEach(opt=>{
+        if(!ids.has(String(opt.value)))return;
+        opt.disabled=!!(isLimited&&allowed&&String(opt.value)!==allowed);
+      });
+      if(isLimited&&allowed&&ids.has(String(sel.value))&&String(sel.value)!==allowed){sel.value=allowed;try{sel.dispatchEvent(new Event('change',{bubbles:true}))}catch(_){}}
+    });
+  }
+
   function limitVisibleRecords(){
     const isLimited=limited();
     const obras=typeof D!=='undefined'&&Array.isArray(D?.obras)?D.obras:[];
@@ -101,11 +119,20 @@
       [...sel.options].forEach(opt=>{if(!opt.value){opt.disabled=false;return}opt.disabled=isLimited&&obraAllowed&&String(opt.value)!==obraAllowed});
       if(isLimited&&obraAllowed&&sel.value&&String(sel.value)!==obraAllowed){sel.value=obraAllowed;try{window.renderObras?.()}catch(_){}}
     }
+    limitEmployeeSelects(isLimited,funcs);
     const home=q('homeObrasList');if(home){[...home.children].forEach((el,i)=>el.classList.toggle('ed63ExtraHidden',isLimited&&i>0))}
     const fl=q('funcList');if(fl){[...fl.children].forEach((el,i)=>el.classList.toggle('ed63ExtraHidden',isLimited&&i>0))}
     const obrasPage=q('obras'),funcPage=q('funcionarios');
-    let on=q('ed63ObrasNote');if(isLimited&&obrasPage){if(!on){on=document.createElement('div');on.id='ed63ObrasNote';on.className='ed63LimitNote';obrasPage.querySelector('.pageTitle')?.insertAdjacentElement('afterend',on)}on.textContent='Plano gratuito: somente 1 obra fica disponível. As demais permanecem salvas e voltam a ser liberadas após o pagamento.'}else on?.remove();
-    let fn=q('ed63FuncNote');if(isLimited&&funcPage){if(!fn){fn=document.createElement('div');fn.id='ed63FuncNote';fn.className='ed63LimitNote';funcPage.querySelector('.pageTitle')?.insertAdjacentElement('afterend',fn)}fn.textContent='Plano gratuito: somente 1 funcionário fica disponível. Os demais permanecem salvos e voltam a ser liberados após o pagamento.'}else fn?.remove();
+    let on=q('ed63ObrasNote');
+    if(isLimited&&obrasPage){
+      if(!on){on=document.createElement('div');on.id='ed63ObrasNote';on.className='ed63LimitNote';obrasPage.querySelector('.pageTitle')?.insertAdjacentElement('afterend',on)}
+      const t='Plano gratuito: somente 1 obra fica disponível. As demais permanecem salvas e voltam a ser liberadas após o pagamento.';if(on.textContent!==t)on.textContent=t;
+    }else on?.remove();
+    let fn=q('ed63FuncNote');
+    if(isLimited&&funcPage){
+      if(!fn){fn=document.createElement('div');fn.id='ed63FuncNote';fn.className='ed63LimitNote';funcPage.querySelector('.pageTitle')?.insertAdjacentElement('afterend',fn)}
+      const t='Plano gratuito: somente 1 funcionário fica disponível. Os demais permanecem salvos e voltam a ser liberados após o pagamento.';if(fn.textContent!==t)fn.textContent=t;
+    }else fn?.remove();
   }
 
   function wrapCore(){
@@ -141,22 +168,28 @@
     css63();wrapCore();
     const isLimited=limited();
     document.body?.classList.toggle('edLimitedFree63',isLimited);
-    if(isLimited){q('edSubscriptionGate')?.classList.add('hidden')}
+    if(isLimited)q('edSubscriptionGate')?.classList.add('hidden');
     renderHomeTrial();planSummary();markMenu();limitVisibleRecords();
     if(lastLimited!==isLimited){lastLimited=isLimited;try{window.renderAll?.()}catch(_){}}
+  }
+
+  function queueApply(){
+    if(observerQueued)return;observerQueued=true;
+    setTimeout(()=>{observerQueued=false;applyMode()},60);
   }
 
   async function refresh(){
     if(refreshBusy||typeof user==='undefined'||!user?.id)return;refreshBusy=true;
     try{
-      if(typeof window.edifiqEnsureTrial62==='function')await window.edifiqEnsureTrial62(null,true);
+      if(typeof window.edifiqEnsureTrial63==='function')await window.edifiqEnsureTrial63(null,true);
+      else if(typeof window.edifiqEnsureTrial62==='function')await window.edifiqEnsureTrial62(null,true);
       else if(typeof window.loadSubscription10==='function')await window.loadSubscription10(false);
     }catch(_){ }finally{refreshBusy=false;applyMode()}
   }
 
   function init(){
     css63();wrapCore();document.addEventListener('click',clickGuard,true);applyMode();
-    new MutationObserver(()=>applyMode()).observe(document.documentElement,{childList:true,subtree:true});
+    new MutationObserver(queueApply).observe(document.documentElement,{childList:true,subtree:true});
     setInterval(applyMode,2200);setInterval(refresh,60000);setTimeout(refresh,1800);
     window.addEventListener('edifiq:subscription-updated',applyMode);
   }
