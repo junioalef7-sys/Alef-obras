@@ -15889,7 +15889,16 @@ body.edLight .edBillingPlan{background:#fff;color:#111827}
       if(sb){const r=await sb.from('edifiq_assinaturas').update({plano_preferido:codigo}).eq('empresa_user_id',user.id);if(r.error)throw r.error}
       const data=await invoke11('edifiq-assinatura-checkout',{plano:codigo,return_url:location.href.split('#')[0]});
       if(data.already_active){toast('Sua assinatura já está ativa.');await refreshBilling11();return}
-      if(!data.checkout_url)throw new Error('O servidor não retornou o endereço de pagamento.');
+      if(forma==='pix'&&data.pix?.payload){
+        const box=qs('#edAsaasFormaModal .modalBox');
+        if(box){box.innerHTML=`<div class="modalHead"><h2>Pix copia e cola</h2><button class="x" onclick="closeM('edAsaasFormaModal')">×</button></div>`;}
+        const title=document.createElement('p');title.textContent='Pagamento pendente. A emissão do Pix não libera a assinatura.';box.appendChild(title);
+        if(data.pix.encodedImage&&/^[A-Za-z0-9+/=]+$/.test(data.pix.encodedImage)){const img=document.createElement('img');img.src='data:image/png;base64,'+data.pix.encodedImage;img.alt='QR Code Pix';img.style.cssText='display:block;width:220px;max-width:100%;margin:16px auto;background:white';box.appendChild(img)}
+        const field=document.createElement('textarea');field.readOnly=true;field.value=data.pix.payload;field.setAttribute('aria-label','Código Pix copia e cola');box.appendChild(field);
+        const copy=document.createElement('button');copy.className='btn primary';copy.textContent='Copiar código Pix';copy.onclick=async()=>{try{await navigator.clipboard.writeText(field.value);toastA('Pix copiado.')}catch(_){field.focus();field.select();toastA('Selecione e copie o código Pix.')}};box.appendChild(copy);
+        const check=document.createElement('button');check.className='btn';check.textContent='Já paguei — verificar';check.onclick=()=>window.sincronizarAssinaturaEdifiq11?.();box.appendChild(check);return;
+      }
+      if(!data.checkout_url)throw new Error('A cobrança ainda não está disponível. Tente novamente em instantes.');
       try{localStorage.setItem('edifiq_billing_return_v1',JSON.stringify({at:new Date().toISOString(),plano:codigo}))}catch(_){}
       toast(data.reused?'Continuando pagamento pendente...':'Abrindo pagamento seguro...');
       location.assign(String(data.checkout_url));
@@ -20302,7 +20311,7 @@ body #edSubscriptionBanner :is(strong,small){overflow-wrap:anywhere}
     codigo=String(codigo||'').toLowerCase();
     if(!['mensal','anual'].includes(codigo)){toastA('Plano inválido.');return}
     let m=qs('#edAsaasFormaModal');if(!m){m=document.createElement('div');m.id='edAsaasFormaModal';m.className='modal';document.body.appendChild(m)}
-    m.innerHTML=`<div class="modalBox" style="max-width:620px"><div class="modalHead"><div><h2>💳 Forma de pagamento</h2><p class="sub">Pagamento seguro processado pelo Asaas.</p></div><button class="x" onclick="closeM('edAsaasFormaModal')">×</button></div><div class="edAsaasMethods"><button class="edAsaasMethod" type="button" onclick="edifiqAsaasContinuar('${esc(codigo)}','cartao')"><b>💳 Cartão de crédito</b><small>Cadastre o cartão no ambiente seguro do Asaas.</small></button><button class="edAsaasMethod" type="button" onclick="edifiqAsaasMostrarDados('${esc(codigo)}','pix')"><b>◆ Pix</b><small>QR Code Pix na cobrança recorrente do Asaas.</small></button><button class="edAsaasMethod" type="button" onclick="edifiqAsaasMostrarDados('${esc(codigo)}','boleto')"><b>▤ Boleto</b><small>Boleto com vencimento da primeira cobrança após o teste.</small></button></div><div id="edAsaasBoleto" class="edAsaasBoleto"><b id="edAsaasDadosTitulo">Dados necessários para pagamento</b><input id="edAsaasNome" class="input" autocomplete="name" placeholder="Nome completo"><input id="edAsaasCpf" class="input" inputmode="numeric" placeholder="CPF ou CNPJ"><button id="edAsaasDadosBtn" class="btn primary" style="margin-top:10px;width:100%" type="button">Continuar</button></div><div class="edAsaasNote">Se o teste grátis ainda estiver ativo, a primeira cobrança será programada para depois do fim do teste.</div></div>`;
+    m.innerHTML=`<div class="modalBox" style="max-width:620px"><div class="modalHead"><div><h2>💳 Forma de pagamento</h2><p class="sub">Pagamento seguro processado pelo Asaas.</p></div><button class="x" onclick="closeM('edAsaasFormaModal')">×</button></div><div class="edAsaasMethods"><button class="edAsaasMethod" type="button" onclick="edifiqAsaasContinuar('${esc(codigo)}','cartao')"><b>💳 Cartão de crédito</b><small>Cadastre o cartão no ambiente seguro do Asaas.</small></button><button class="edAsaasMethod" type="button" onclick="edifiqAsaasContinuar('${esc(codigo)}','pix')"><b>◆ Pix</b><small>Abrir QR Code e código Pix copia e cola.</small></button><button class="edAsaasMethod" type="button" onclick="edifiqAsaasMostrarDados('${esc(codigo)}','boleto')"><b>▤ Boleto</b><small>Boleto com vencimento da primeira cobrança após o teste.</small></button></div><div id="edAsaasBoleto" class="edAsaasBoleto"><b id="edAsaasDadosTitulo">Dados necessários para pagamento</b><input id="edAsaasNome" class="input" autocomplete="name" placeholder="Nome completo"><input id="edAsaasCpf" class="input" inputmode="numeric" placeholder="CPF ou CNPJ"><button id="edAsaasDadosBtn" class="btn primary" style="margin-top:10px;width:100%" type="button">Continuar</button></div><div class="edAsaasNote">7 dias de teste grátis a partir do primeiro acesso. A primeira cobrança fica para depois do teste. Emitir boleto ou Pix não confirma pagamento nem libera a assinatura.</div></div>`;
     if(typeof openM==='function')openM('edAsaasFormaModal');else m.classList.add('open');
   };
   window.edifiqAsaasMostrarDados=function(codigo,forma){const box=qs('#edAsaasBoleto'),t=qs('#edAsaasDadosTitulo'),b=qs('#edAsaasDadosBtn');if(t)t.textContent=forma==='pix'?'Dados necessários para gerar o Pix':'Dados necessários para gerar o boleto';if(b){b.textContent=forma==='pix'?'Continuar com Pix':'Continuar com boleto';b.onclick=()=>window.edifiqAsaasContinuar(codigo,forma)}box?.classList.add('open');setTimeout(()=>qs('#edAsaasNome')?.focus(),50)};
@@ -20310,15 +20319,24 @@ body #edSubscriptionBanner :is(strong,small){overflow-wrap:anywhere}
     if(window.__edifiqBillingBusy)return;window.__edifiqBillingBusy=true;
     try{
       const body={plano:codigo,forma,return_url:location.href.split('#')[0]};
-      if(forma==='boleto'||forma==='pix'){body.nome=String(qs('#edAsaasNome')?.value||'').trim();body.cpf_cnpj=String(qs('#edAsaasCpf')?.value||'').replace(/\D/g,'');if(!body.nome||body.cpf_cnpj.length<11){toastA('Informe nome completo e CPF/CNPJ para gerar '+(forma==='pix'?'o Pix':'o boleto')+'.');return}}
-      const data=await invokeA(body);if(data.already_active){toastA('Sua assinatura já está ativa.');return}if(!data.checkout_url)throw new Error('O servidor não retornou o endereço de pagamento.');
+      if(forma==='boleto'){body.nome=String(qs('#edAsaasNome')?.value||'').trim();body.cpf_cnpj=String(qs('#edAsaasCpf')?.value||'').replace(/\D/g,'');if(!body.nome||body.cpf_cnpj.length<11){toastA('Informe nome completo e CPF/CNPJ para gerar '+(forma==='pix'?'o Pix':'o boleto')+'.');return}}
+      const data=await invokeA(body);if(data.already_active){toastA('Sua assinatura já está ativa.');return}if(forma==='pix'&&data.pix?.payload){
+        const box=qs('#edAsaasFormaModal .modalBox');
+        if(box){box.innerHTML=`<div class="modalHead"><h2>Pix copia e cola</h2><button class="x" onclick="closeM('edAsaasFormaModal')">×</button></div>`;}
+        const title=document.createElement('p');title.textContent='Pagamento pendente. A emissão do Pix não libera a assinatura.';box.appendChild(title);
+        if(data.pix.encodedImage&&/^[A-Za-z0-9+/=]+$/.test(data.pix.encodedImage)){const img=document.createElement('img');img.src='data:image/png;base64,'+data.pix.encodedImage;img.alt='QR Code Pix';img.style.cssText='display:block;width:220px;max-width:100%;margin:16px auto;background:white';box.appendChild(img)}
+        const field=document.createElement('textarea');field.readOnly=true;field.value=data.pix.payload;field.setAttribute('aria-label','Código Pix copia e cola');box.appendChild(field);
+        const copy=document.createElement('button');copy.className='btn primary';copy.textContent='Copiar código Pix';copy.onclick=async()=>{try{await navigator.clipboard.writeText(field.value);toastA('Pix copiado.')}catch(_){field.focus();field.select();toastA('Selecione e copie o código Pix.')}};box.appendChild(copy);
+        const check=document.createElement('button');check.className='btn';check.textContent='Já paguei — verificar';check.onclick=()=>window.sincronizarAssinaturaEdifiq11?.();box.appendChild(check);return;
+      }
+      if(!data.checkout_url)throw new Error('A cobrança ainda não está disponível. Tente novamente em instantes.');
       try{localStorage.setItem('edifiq_billing_return_v1',JSON.stringify({at:new Date().toISOString(),plano:codigo,forma,provedor:'asaas'}))}catch(_){}
       if(typeof closeM==='function')closeM('edAsaasFormaModal');toastA('Abrindo pagamento seguro no Asaas...');location.assign(String(data.checkout_url));
     }catch(e){console.error('EDIFIQ Asaas checkout',e);toastA(String(e?.message||'Não foi possível iniciar o pagamento.'))}finally{window.__edifiqBillingBusy=false}
   };
   window.assinarPlanoEdifiq11=function(codigo){return window.edifiqAsaasEscolher(codigo)};
   function patchText(root=document){
-    const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(/Mercado Pago/i.test(n.nodeValue||''))n.nodeValue=(n.nodeValue||'').replace(/Mercado Pago/gi,'Asaas').replace(/credenciais do Asaas ainda precisam ser configuradas no servidor/gi,'integração do Asaas ainda precisa ser configurada no servidor')}
+    const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(n.parentElement?.closest('script,style,textarea,input,noscript'))continue;if(/Mercado Pago/i.test(n.nodeValue||''))n.nodeValue=(n.nodeValue||'').replace(/Mercado Pago/gi,'Asaas').replace(/credenciais do Asaas ainda precisam ser configuradas no servidor/gi,'integração do Asaas ainda precisa ser configurada no servidor')}
   }
   const oldOpen=window.openPlanosEdifiq11;if(typeof oldOpen==='function')window.openPlanosEdifiq11=async function(){const r=await oldOpen.apply(this,arguments);setTimeout(()=>patchText(qs('#edPlanosModal')||document),0);return r};
   const obs=new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1)patchText(n)});try{obs.observe(document.body,{childList:true,subtree:true})}catch(_){}
@@ -20349,5 +20367,21 @@ body #edSubscriptionBanner :is(strong,small){overflow-wrap:anywhere}
 })();
 </script>
 
+
+<style id="edifiq-theme-payment-fix">
+body{--edPayBg:#101827;--edPayCard:#1e293b;--edPayText:#f8fafc;--edPayMuted:#cbd5e1;--edPayBorder:#64748b}
+body.edLight{--edPayBg:#ffffff;--edPayCard:#f1f5f9;--edPayText:#111827;--edPayMuted:#334155;--edPayBorder:#94a3b8}
+body :is(#edAsaasFormaModal,#edPlanosModal,#edConfiguracoesModal) .modalBox{background:var(--edPayBg)!important;background-image:none!important;color:var(--edPayText)!important;opacity:1!important;filter:none!important}
+body :is(#edAsaasFormaModal,#edPlanosModal,#edConfiguracoesModal) :is(h2,h3,h4,b,strong,label){color:var(--edPayText)!important;-webkit-text-fill-color:currentColor!important;opacity:1!important}
+body :is(#edAsaasFormaModal,#edPlanosModal,#edConfiguracoesModal) :is(p,small,.sub,.edBillingMeta,.edAsaasNote){color:var(--edPayMuted)!important;-webkit-text-fill-color:currentColor!important;opacity:1!important}
+body #edAsaasFormaModal .edAsaasMethod{background:var(--edPayCard)!important;color:var(--edPayText)!important;border:1px solid var(--edPayBorder)!important;min-height:100px;opacity:1!important}
+body #edAsaasFormaModal :is(input,textarea,.x,.btn:not(.primary)){background:var(--edPayCard)!important;color:var(--edPayText)!important;-webkit-text-fill-color:currentColor!important;border-color:var(--edPayBorder)!important}
+body #edAsaasFormaModal textarea{width:100%;min-height:100px;margin:12px 0;overflow-wrap:anywhere}
+body #edAsaasFormaModal .btn{margin:6px 8px 6px 0}
+body #edAsaasFormaModal .btn.primary{background:#d9ad55!important;color:#111827!important;-webkit-text-fill-color:#111827!important}
+body:not(.edLight) :is(.authLogo h1,.edInstallTitle){color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important}
+body.edLight :is(.authLogo h1,.edInstallTitle){color:#111827!important;-webkit-text-fill-color:#111827!important}
+body .edifiqDrawerLogo img{object-fit:contain!important}
+</style>
 </body>
 </html>
