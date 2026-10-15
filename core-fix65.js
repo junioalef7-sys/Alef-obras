@@ -105,16 +105,86 @@
     return true;
   }
 
+  function reportAdvances65(data,id){
+    const applied=typeof window.getAdvanceApplied==='function'?window.getAdvanceApplied()||{}:{};
+    return (Array.isArray(data?.gastos)?data.gastos:[]).filter(g=>{
+      const gid=String(g?.funcionario_id??g?.funcionarioId??'');
+      if(gid!==String(id))return false;
+      const cat=normalizeName65(g?.categoria||g?.descricao||'');
+      return cat.includes('adiantamento')||cat.includes('vale');
+    }).map(g=>({
+      ...g,
+      obra_id:g?.obra_id??g?.obraId??'',
+      disponivel:Math.max(0,Number(g?.valor||0)-Number(g?.valor_baixado??applied[g?.id]??0))
+    }));
+  }
+  function reportBalance65(d){
+    const C=window.EdifiqRelease27;
+    const data=typeof D!=='undefined'?D:window.D;
+    if(!C?.payroll||!d?.f?.id||!data)return null;
+    const helpers={
+      paid:r=>typeof window.diariaEstaPaga==='function'?window.diariaEstaPaga(r):['pago','paid','quitado','liquidado'].includes(normalizeName65(r?.status)),
+      daily:r=>typeof window.diariaValor==='function'?window.diariaValor(r):Number(r?.valor_diaria||0)*Number(r?.qtd??r?.quantidade??1),
+      days:rows=>typeof window.edifiqDiariasCanonicas==='function'?window.edifiqDiariasCanonicas(rows):rows||[],
+      extras:id=>typeof window.getFuncionarioExtras==='function'?window.getFuncionarioExtras(id):(Array.isArray(data?.servicosExtras)?data.servicosExtras:[]).filter(x=>String(x?.funcionario_id??x?.funcionarioId??'')===String(id)),
+      advances:id=>reportAdvances65(data,id)
+    };
+    const bounds=d?.r?{start:d.r.ini,end:d.r.fim}:null;
+    return C.payroll(data,d.f.id,{obra:'all',bounds},helpers);
+  }
+  function installReportBalance(){
+    const originalData=window.rtData;
+    if(typeof originalData!=='function')return false;
+    if(!originalData.__edifiqBalance65){
+      const wrappedData=function(){
+        const d=originalData.apply(this,arguments);
+        if(!d)return d;
+        try{
+          const balance=reportBalance65(d);
+          if(balance){
+            d.balance=balance;
+            d.pendDiarias=balance.pendingDiarias;
+            d.totalExtras=balance.extrasTotal;
+            d.totalAdiant=balance.advance;
+          }
+        }catch(e){console.warn('EDIFIQ relatório saldo 65:',e)}
+        return d;
+      };
+      wrappedData.__edifiqBalance65=true;
+      wrappedData.__edifiqOriginal65=originalData;
+      window.rtData=wrappedData;
+    }
+    const originalBuild=window.rtBuildHtml;
+    if(typeof originalBuild==='function'&&!originalBuild.__edifiqBalance65){
+      const wrappedBuild=function(){
+        let html=originalBuild.apply(this,arguments);
+        try{
+          const d=window.rtData?.();
+          if(d?.balance){
+            const value=typeof window.rtMoney==='function'?window.rtMoney(d.balance.net):Number(d.balance.net||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+            html=String(html).replace(/(<small>Saldo estimado pendente<\/small><b>)[\s\S]*?(<\/b>)/,'$1'+value+'$2');
+          }
+        }catch(e){console.warn('EDIFIQ relatório HTML 65:',e)}
+        return html;
+      };
+      wrappedBuild.__edifiqBalance65=true;
+      wrappedBuild.__edifiqOriginal65=originalBuild;
+      window.rtBuildHtml=wrappedBuild;
+    }
+    return true;
+  }
+
   function install(){
     const money=installMoney();
     const progress=installProgress();
     installReportMatch();
+    installReportBalance();
     return money&&progress;
   }
   window.edifiqInstallCoreFix65=install;
 
   if(!install()){
-    const retry=()=>{installMoney();installProgress();installReportMatch()};
+    const retry=()=>{installMoney();installProgress();installReportMatch();installReportBalance()};
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',retry,{once:true});
     else setTimeout(retry,0);
   }
