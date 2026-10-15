@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  const VERSION='60';
+  const VERSION='64';
   const LOGO='./edifiq-menu-logo.jpg?v='+VERSION;
   const $=(s,r=document)=>r.querySelector(s);
   let trialBusy=false,trialUser='',plansWrapped=false;
@@ -13,6 +13,7 @@
   function fmtDate(v){if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR')}
   function daysLeft(s){if(!s)return null;const end=String(s.status||'').toLowerCase()==='trial'?s.trial_fim:s.periodo_fim;if(!end)return null;const ms=new Date(end).getTime()-Date.now();return Math.max(0,Math.ceil(ms/86400000))}
   function trialActive(s){return !!(s&&String(s.status||'').toLowerCase()==='trial'&&s.trial_fim&&new Date(s.trial_fim).getTime()>Date.now())}
+  function setHtmlStable(el,html){if(el&&el.innerHTML!==html)el.innerHTML=html}
 
   async function ensureClient(){
     if((typeof sb==='undefined'||!sb)&&typeof ensureSupabaseClient==='function')await ensureSupabaseClient();
@@ -41,12 +42,14 @@
       if(data){
         data.dias_restantes=daysLeft(data);
         window.__edifiqSubscription=data;
+        window.__edifiqSubscriptionVerifiedOnline=true;
+        window.__edifiqSubscriptionVerifiedAt=Date.now();
         try{localStorage.setItem('edifiq_subscription_cache_v1',JSON.stringify(data))}catch(_){}
       }
       trialUser=uid;
       patchPlansModal();
       return data||null;
-    }catch(e){console.warn('EDIFIQ trial 60:',e);return window.__edifiqSubscription||null}
+    }catch(e){console.warn('EDIFIQ trial 64:',e);return window.__edifiqSubscription||null}
     finally{trialBusy=false}
   }
   window.edifiqEnsureTrial60=ensureTrialNow;
@@ -74,15 +77,16 @@
     const s=window.__edifiqSubscription||{};
     let summary=document.getElementById('edTrial60Summary');
     if(!summary){summary=document.createElement('div');summary.id='edTrial60Summary';summary.className='card';const head=modal.querySelector('.modalHead');if(head)head.insertAdjacentElement('afterend',summary);else modal.querySelector('.modalBox')?.prepend(summary)}
-    const days=daysLeft(s);
+    const days=daysLeft(s);let html='';
     if(trialActive(s)){
-      summary.innerHTML=`<div class="financeRow"><span>🎁 Teste grátis</span><b>${days} dia${days===1?'':'s'} restante${days===1?'':'s'}</b></div><div class="financeRow"><span>Início do teste</span><b>${fmtDate(s.trial_inicio)}</b></div><div class="financeRow"><span>Fim do teste</span><b>${fmtDate(s.trial_fim)}</b></div><div class="financeRow"><span>Primeira cobrança</span><b>${fmtDate(s.trial_fim)}</b></div><div class="note" style="margin-top:10px">A assinatura pode ser escolhida agora, mas a primeira cobrança fica programada para depois dos 7 dias grátis.</div>`;
+      html=`<div class="financeRow"><span>🎁 Teste grátis</span><b>${days} dia${days===1?'':'s'} restante${days===1?'':'s'}</b></div><div class="financeRow"><span>Início do teste</span><b>${fmtDate(s.trial_inicio)}</b></div><div class="financeRow"><span>Vencimento do teste</span><b>${fmtDate(s.trial_fim)}</b></div><div class="financeRow"><span>Primeira cobrança</span><b>${fmtDate(s.trial_fim)}</b></div><div class="note" style="margin-top:10px">A assinatura pode ser escolhida agora, mas a primeira cobrança fica programada para depois dos 7 dias grátis.</div>`;
     }else if(String(s.status||'').toLowerCase()==='trial'){
-      summary.innerHTML='<div class="financeRow"><span>Teste grátis</span><b>Encerrado</b></div><div class="note" style="margin-top:10px">O período gratuito já terminou. A próxima cobrança segue o plano escolhido.</div>';
+      html='<div class="financeRow"><span>Teste grátis</span><b>Encerrado</b></div><div class="note" style="margin-top:10px">O período gratuito terminou. O modo gratuito limitado permanece disponível até o pagamento.</div>';
     }else{
-      summary.innerHTML=`<div class="financeRow"><span>Status da assinatura</span><b>${String(s.status||'—')}</b></div>${s.proxima_cobranca_em?`<div class="financeRow"><span>Próxima cobrança</span><b>${fmtDate(s.proxima_cobranca_em)}</b></div>`:''}`;
+      html=`<div class="financeRow"><span>Status da assinatura</span><b>${String(s.status||'—')}</b></div>${s.proxima_cobranca_em?`<div class="financeRow"><span>Próxima cobrança</span><b>${fmtDate(s.proxima_cobranca_em)}</b></div>`:''}`;
     }
-    modal.querySelectorAll('*').forEach(el=>{if(el.children.length)return;let t=String(el.textContent||'');if(/Mercado Pago/i.test(t))el.textContent=t.replace(/Mercado Pago/gi,'Asaas');if(t.trim().toLowerCase()==='cortesia')el.textContent='Teste grátis'});
+    setHtmlStable(summary,html);
+    modal.querySelectorAll('*').forEach(el=>{if(el.children.length)return;const t=String(el.textContent||'');let next=t;if(/Mercado Pago/i.test(next))next=next.replace(/Mercado Pago/gi,'Asaas');if(next.trim().toLowerCase()==='cortesia')next='Teste grátis';if(next!==t)el.textContent=next});
   }
 
   function wrapPlanOpeners(){
@@ -90,13 +94,12 @@
     const original=window.openPlanosEdifiq11||window.openPlanosEdifiq10;
     if(typeof original!=='function')return;
     plansWrapped=true;
-    const wrapped=async function(){await ensureTrialNow(true);const r=await original.apply(this,arguments);setTimeout(patchPlansModal,0);return r};
+    const wrapped=async function(){await ensureTrialNow(true);const r=await original.apply(this,arguments);requestAnimationFrame(()=>patchPlansModal());return r};
     window.openPlanosEdifiq11=wrapped;window.openPlanosEdifiq10=wrapped;
   }
 
   async function invokeCheckout(plano,forma,nome='',cpf=''){
-    await ensureTrialNow(true);
-    await ensureClient();
+    await ensureTrialNow(true);await ensureClient();
     const body={plano,forma,return_url:location.href.split('#')[0]};
     if(forma==='boleto'){body.nome=nome;body.cpf_cnpj=cpf}
     const {data,error}=await sb.functions.invoke('edifiq-assinatura-checkout',{body});
@@ -123,7 +126,7 @@
       const data=await invokeCheckout(plano,forma,nome,cpf);
       try{localStorage.setItem('edifiq_billing_return_v1',JSON.stringify({at:new Date().toISOString(),plano,forma,status:'pending',charge_on:data?.charge_on||null,trial_active:!!data?.trial_active}))}catch(_){}
       openUrl(data.checkout_url);
-    }catch(e){console.error('EDIFIQ billing 60',e);setBusy(wrap,false);toastSafe(String(e?.message||'Não foi possível iniciar o pagamento.'))}
+    }catch(e){console.error('EDIFIQ billing 64',e);setBusy(wrap,false);toastSafe(String(e?.message||'Não foi possível iniciar o pagamento.'))}
   }
 
   function mount(plano){
@@ -146,9 +149,9 @@
   const css=document.createElement('style');css.id='edPay57Style';css.textContent=`#edSubConfig10,#edSubscriptionConfigCard,#edBillingConfig11{display:none!important}#edPay57{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:18px}.edPay57Backdrop{position:absolute;inset:0;background:rgba(0,0,0,.62)}.edPay57Card{position:relative;width:min(560px,100%);background:#111827;color:#fff;border:1px solid #334155;border-radius:18px;padding:20px;box-shadow:0 24px 80px rgba(0,0,0,.45)}.edPay57Card h3{margin:0 36px 8px 0}.edPay57Trial{margin:0 0 14px;color:#cbd5e1;line-height:1.4}.edPay57Methods{display:grid;grid-template-columns:1fr;gap:10px}.edPay57Methods button{padding:14px;border-radius:12px;border:1px solid #475569;background:#fff;color:#0f172a;text-align:left}.edPay57Methods button b{display:block;font-size:17px}.edPay57Methods button small{display:block;margin-top:5px;color:#64748b}.edPay57Payer{margin-top:14px}.edPay57Payer[hidden]{display:none!important}.edPay57Card label{display:block;font-weight:700;margin:10px 0 0}.edPay57Card input{width:100%;box-sizing:border-box;margin-top:6px;padding:12px 13px;border-radius:11px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:16px}.edPay57Continue{width:100%;margin-top:12px;padding:12px;border-radius:11px;border:1px solid #d8a937;background:#d8a937;color:#111827;font-weight:800}.edPay57Close{position:absolute;right:12px;top:10px;border:0;background:transparent;color:#fff;font-size:28px}.edPay57Foot{display:block;margin-top:12px;color:#cbd5e1;line-height:1.35}body.edLight .edPay57Card{background:#fff;color:#111827;border-color:#d8dee9}body.edLight .edPay57Trial,body.edLight .edPay57Foot{color:#667085}body.edLight .edPay57Card input{background:#fff;color:#111827;border-color:#cbd5e1}@media(max-width:560px){.edPay57Card{padding:18px 16px}}`;document.head.appendChild(css);
 
   function backgroundTrialTick(){
-    try{hideConfigBilling();ensureMenuPlans();wrapPlanOpeners();patchPlansModal();fixLogo()}catch(_){ }
+    try{hideConfigBilling();ensureMenuPlans();wrapPlanOpeners();fixLogo();if(document.getElementById('edPlanosModal')?.classList.contains('open'))patchPlansModal()}catch(_){ }
     if(typeof user!=='undefined'&&user?.id&&trialUser!==String(user.id))ensureTrialNow().catch(()=>{});
   }
-  const init=()=>{backgroundTrialTick();const mo=new MutationObserver(()=>{hideConfigBilling();ensureMenuPlans();patchPlansModal();fixLogo()});mo.observe(document.documentElement,{childList:true,subtree:true});setInterval(backgroundTrialTick,1800)};
+  const init=()=>{backgroundTrialTick();setInterval(backgroundTrialTick,5000)};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
