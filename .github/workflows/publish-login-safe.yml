@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Validar login e JavaScript
+    name: Validar login, módulos e JavaScript
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +42,9 @@ jobs:
                   n+=1
           print(f'{n} scripts JavaScript válidos; login protegido.')
           PY
-      - name: Validar teste grátis, checkout e modo limitado
+      - name: Auditar núcleo completo do aplicativo
+        run: python3 scripts/check-release.py
+      - name: Validar planos, checkout, Pix e modo limitado
         run: |
           node --check billing-fix57.js
           node --check trial-fix62.js
@@ -50,12 +52,19 @@ jobs:
           node --check access-limit63.js
           grep -q "edifiqEnsureTrial60" billing-fix57.js
           grep -q "edifiqEnsureTrial63" trial-fix62.js
-          grep -q "Forma de pagamento" billing-hotfix63.js
+          grep -q "edPlanTrial65" billing-hotfix63.js
+          grep -q "Dias restantes" billing-hotfix63.js
+          grep -q "Primeira cobrança" billing-hotfix63.js
+          grep -q "copyTextIOS" billing-hotfix63.js
+          grep -q "Copiar código Pix" billing-hotfix63.js
           grep -q "No plano gratuito é permitido cadastrar somente 1 obra" access-limit63.js
           grep -q "No plano gratuito é permitido cadastrar somente 1 funcionário" access-limit63.js
           ! grep -q "Teste grátis de 7 dias" access-limit63.js
           ! grep -q "MutationObserver" trial-fix62.js
+          ! grep -q "MutationObserver" billing-hotfix63.js
           ! grep -q "MutationObserver" access-limit63.js
+          ! grep -q "setInterval(backgroundTrialTick" billing-fix57.js
+          ! grep -q "window.edifiqAsaasEscolher=" billing-fix57.js
       - name: Validar exclusão imediata de conta
         run: |
           node --check account-delete-fix61.js
@@ -81,7 +90,7 @@ jobs:
               html=re.sub(r'<script[^>]+src=["\']\./'+re.escape(name)+r'[^"\']*["\'][^>]*></script>\s*','',html,flags=re.I)
           pos=html.lower().rfind('</body>')
           if pos<0: raise SystemExit('Fechamento </body> não encontrado')
-          addons='''<script src="./billing-fix57.js?v=64" defer></script>\n<script src="./account-delete-fix61.js?v=64" defer></script>\n<script src="./trial-fix62.js?v=64" defer></script>\n<script src="./billing-hotfix63.js?v=64" defer></script>\n<script src="./access-limit63.js?v=64" defer></script>\n'''
+          addons='''<script src="./billing-fix57.js?v=65" defer></script>\n<script src="./account-delete-fix61.js?v=65" defer></script>\n<script src="./trial-fix62.js?v=65" defer></script>\n<script src="./billing-hotfix63.js?v=65" defer></script>\n<script src="./access-limit63.js?v=65" defer></script>\n'''
           html=html[:pos]+addons+html[pos:]
           required=['edifiqPostLoginStartup','setTimeout(()=>edifiqPostLoginStartup(session),0)','classList.remove("hidden")']
           for x in required:
@@ -90,9 +99,9 @@ jobs:
 
           sw=Path('.pages/edifiq-sw.js')
           s=sw.read_text(encoding='utf-8')
-          s=re.sub(r"const CACHE='[^']+';","const CACHE='edifiq-shell-v64-ui-stable';",s,count=1)
-          for old in ['57','58','59','60','61','62','63']:
-              s=s.replace(f'billing-fix57.js?v={old}','billing-fix57.js?v=64')
+          s=re.sub(r"const CACHE='[^']+';","const CACHE='edifiq-shell-v65-plans-stable';",s,count=1)
+          for old in ['57','58','59','60','61','62','63','64']:
+              s=s.replace(f'billing-fix57.js?v={old}','billing-fix57.js?v=65')
           s=re.sub(r"if\(url\.pathname\.endsWith\('/billing-fix57\\.js'\)\)\{event\.respondWith\(new Response\(BILLING_FIX,[\s\S]*?\);return;\}","",s,count=1)
           sw.write_text(s,encoding='utf-8')
           PY
