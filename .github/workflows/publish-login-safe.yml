@@ -48,7 +48,7 @@ jobs:
       - name: Auditar núcleo completo do aplicativo
         run: python3 scripts/check-release.py
 
-      - name: Validar patches e auditoria v75
+      - name: Validar patches, auditoria e correção visual v76
         run: |
           for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js edifiq-sw.js; do node --check "$f"; done
           node tests/core65.cjs
@@ -71,13 +71,16 @@ jobs:
           grep -q "data-ed-close-overview" ui-fix67.js
           grep -q "edifiqReportPrint" ui-fix67.js
           grep -q "ed27PrintReport" ui-fix67.js
+          grep -q "edifiqVisual76Style" ui-fix67.js
+          grep -q "#menuPasta .menuPastaHead.edifiqDrawerHead>.x" ui-fix67.js
+          grep -q "#app .top{backdrop-filter:none" ui-fix67.js
           grep -q "Senha incorreta ou dados incorretos." login-ui68.js
           grep -q "authCommercialHint{display:none!important}" login-ui68.js
           grep -q "No plano gratuito é permitido cadastrar somente 1 obra" access-limit63.js
           grep -q "No plano gratuito é permitido cadastrar somente 1 funcionário" access-limit63.js
           ! grep -q "BILLING_FIX" edifiq-sw.js
           ! grep -q "injectFix" edifiq-sw.js
-          grep -q "edifiq-shell-v75-audit" edifiq-sw.js
+          grep -q "edifiq-shell-v76-visual" edifiq-sw.js
 
       - name: Validar exclusão imediata de conta
         run: |
@@ -121,10 +124,10 @@ jobs:
               html=re.sub(r'<script[^>]+src=["\']\./'+re.escape(name)+r'[^"\']*["\'][^>]*></script>\s*','',html,flags=re.I)
           pos=html.lower().rfind('</body>')
           if pos<0: raise SystemExit('Fechamento </body> não encontrado')
-          addons='''<script src="./core-fix65.js?v=75" defer></script>\n<script src="./billing-fix57.js?v=75" defer></script>\n<script src="./account-delete-fix61.js?v=75" defer></script>\n<script src="./trial-fix62.js?v=75" defer></script>\n<script src="./billing-hotfix63.js?v=75" defer></script>\n<script src="./access-limit63.js?v=75" defer></script>\n<script src="./ui-fix67.js?v=75" defer></script>\n<script src="./login-ui68.js?v=75" defer></script>\n'''
+          addons='''<script src="./core-fix65.js?v=75" defer></script>\n<script src="./billing-fix57.js?v=75" defer></script>\n<script src="./account-delete-fix61.js?v=75" defer></script>\n<script src="./trial-fix62.js?v=75" defer></script>\n<script src="./billing-hotfix63.js?v=75" defer></script>\n<script src="./access-limit63.js?v=75" defer></script>\n<script src="./ui-fix67.js?v=76" defer></script>\n<script src="./login-ui68.js?v=75" defer></script>\n'''
           html=html[:pos]+addons+html[pos:]
 
-          required=['edifiqPostLoginStartup','setTimeout(()=>edifiqPostLoginStartup(session),0)','classList.remove("hidden")','./trial-fix62.js?v=75','./ui-fix67.js?v=75','./login-ui68.js?v=75','Senha incorreta ou dados incorretos.','data:image/jpeg;base64,']
+          required=['edifiqPostLoginStartup','setTimeout(()=>edifiqPostLoginStartup(session),0)','classList.remove("hidden")','./trial-fix62.js?v=75','./ui-fix67.js?v=76','./login-ui68.js?v=75','Senha incorreta ou dados incorretos.','data:image/jpeg;base64,']
           for x in required:
               if x not in html: raise SystemExit('PUBLICAÇÃO PROTEGIDA: marcador ausente: '+x)
           forbidden=["hint.textContent='7 dias de teste grátis';",'authMsg("E-mail ou senha incorretos.");',"authMsg('E-mail ou senha incorretos.');"]
@@ -133,9 +136,9 @@ jobs:
           page.write_text(html,encoding='utf-8')
           PY
           grep -q 'edifiq-menu-logo.jpg?v=75' .pages/manifest.webmanifest
-          grep -q 'edifiq-shell-v75-audit' .pages/edifiq-sw.js
+          grep -q 'edifiq-shell-v76-visual' .pages/edifiq-sw.js
           grep -q './trial-fix62.js?v=75' .pages/index.html
-          grep -q './ui-fix67.js?v=75' .pages/index.html
+          grep -q './ui-fix67.js?v=76' .pages/index.html
           grep -q './login-ui68.js?v=75' .pages/index.html
           ! grep -q 'BILLING_FIX' .pages/edifiq-sw.js
           ! grep -q 'injectFix' .pages/edifiq-sw.js
