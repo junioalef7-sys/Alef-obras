@@ -1,7 +1,10 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const code=fs.readFileSync('core-fix65.js','utf8');
 const calls=[];
-const C={cents(v){return Math.round(Number(v||0)*100)}};
+const C={
+  cents(v){return Math.round(Number(v||0)*100)},
+  stageFinance(data){return (data.obras||[]).map(o=>({id:o.id}))}
+};
 const context={
   console,
   Number,
@@ -25,4 +28,6 @@ assert.equal(C.cents('1.234,56'),123456,'formato brasileiro deve ser preservado'
 assert.equal(C.cents(1.005),101,'arredondamento positivo de meio centavo deve subir');
 assert.equal(C.cents(-1.005),-101,'arredondamento negativo deve ser simétrico');
 assert.equal(C.cents(0.1+0.2),30,'soma decimal comum deve conservar centavos');
-console.log('CORE65 OK: progresso aceita objeto ou ID e moeda arredonda centavos de forma simétrica.');
+const groups=C.stageFinance({obras:[{id:'a'},{id:'a'},{id:'b'}]},[],'all',()=>[]);
+assert.deepEqual(groups.map(g=>g.id),['a','b'],'obras duplicadas por ID não podem duplicar o financeiro por etapa');
+console.log('CORE65 OK: progresso, moeda e deduplicação financeira validados.');
