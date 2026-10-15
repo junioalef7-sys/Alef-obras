@@ -74,15 +74,47 @@
     return true;
   }
 
+  function normalizeName65(v){
+    return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/\s+/g,' ');
+  }
+  function installReportMatch(){
+    const original=window.rtMatchEmployee;
+    if(typeof original!=='function')return false;
+    if(original.__edifiqReport65)return true;
+    const compatible=function(row,func){
+      const id=String(func?.id??'');
+      const explicit=String(row?.funcionario_id??row?.funcionarioId??row?.funcId??'');
+      if(explicit)return explicit===id;
+      const name=normalizeName65(func?.nome);
+      if(!name)return false;
+      const supplier=normalizeName65(row?.fornecedor);
+      if(supplier)return supplier===name;
+      const description=normalizeName65(row?.descricao);
+      if(!description)return false;
+      const data=typeof D!=='undefined'?D:window.D;
+      const candidates=(Array.isArray(data?.funcionarios)?data.funcionarios:[])
+        .map(f=>normalizeName65(f?.nome))
+        .filter(n=>n&&description.includes(n))
+        .sort((a,b)=>b.length-a.length);
+      if(candidates.length)return candidates[0]===name;
+      return description===name;
+    };
+    compatible.__edifiqReport65=true;
+    compatible.__edifiqOriginal65=original;
+    window.rtMatchEmployee=compatible;
+    return true;
+  }
+
   function install(){
     const money=installMoney();
     const progress=installProgress();
+    installReportMatch();
     return money&&progress;
   }
   window.edifiqInstallCoreFix65=install;
 
   if(!install()){
-    const retry=()=>{installMoney();installProgress()};
+    const retry=()=>{installMoney();installProgress();installReportMatch()};
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',retry,{once:true});
     else setTimeout(retry,0);
   }
