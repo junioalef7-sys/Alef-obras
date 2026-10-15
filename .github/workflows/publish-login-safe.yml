@@ -48,7 +48,7 @@ jobs:
       - name: Auditar núcleo completo do aplicativo
         run: python3 scripts/check-release.py
 
-      - name: Validar patches, auditoria e correção visual v77
+      - name: Validar patches, auditoria e correção visual v78
         run: |
           for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js edifiq-sw.js; do node --check "$f"; done
           node tests/core65.cjs
@@ -71,9 +71,10 @@ jobs:
           grep -q "data-ed-close-overview" ui-fix67.js
           grep -q "edifiqReportPrint" ui-fix67.js
           grep -q "ed27PrintReport" ui-fix67.js
-          grep -q "edifiqVisual77Style" ui-fix67.js
-          grep -q "#menuPasta .menuPastaHead.edifiqDrawerHead>.x" ui-fix67.js
-          grep -q "#app .top,#app .modalHead{backdrop-filter:none" ui-fix67.js
+          grep -q '^\.top{' visual-fix78.css
+          grep -q 'body.edLight .top{' visual-fix78.css
+          grep -q '#menuPasta .menuPastaHead.edifiqDrawerHead>.x' visual-fix78.css
+          ! grep -q '^#menuPasta{' visual-fix78.css
           grep -q "apple-mobile-web-app-status-bar-style" ui-fix67.js
           grep -q "Senha incorreta ou dados incorretos." login-ui68.js
           grep -q "authCommercialHint{display:none!important}" login-ui68.js
@@ -81,7 +82,8 @@ jobs:
           grep -q "No plano gratuito é permitido cadastrar somente 1 funcionário" access-limit63.js
           ! grep -q "BILLING_FIX" edifiq-sw.js
           ! grep -q "injectFix" edifiq-sw.js
-          grep -q "edifiq-shell-v77-opaque-top" edifiq-sw.js
+          grep -q "edifiq-shell-v78-opaque-global" edifiq-sw.js
+          grep -q "visual-fix78.css?v=78" edifiq-sw.js
 
       - name: Validar exclusão imediata de conta
         run: |
@@ -94,7 +96,7 @@ jobs:
           rm -rf .pages
           mkdir -p .pages
           cp index.html .pages/index.html
-          for f in edifiq-sw.js manifest.webmanifest edifiq-icon-192.png edifiq-menu-logo.jpg edific-icon.svg privacidade.html exclusao-conta.html billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js; do
+          for f in edifiq-sw.js manifest.webmanifest edifiq-icon-192.png edifiq-menu-logo.jpg edific-icon.svg privacidade.html exclusao-conta.html billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js visual-fix78.css; do
             test -f "$f" || { echo "::error::Arquivo obrigatório ausente: $f"; exit 1; }
             cp "$f" ".pages/$f"
           done
@@ -121,6 +123,10 @@ jobs:
           html=re.sub(r'<link\s+[^>]*rel=["\'](?:icon|shortcut icon)["\'][^>]*>\s*','',html,flags=re.I)
           html=html.replace('</head>','<link rel="icon" type="image/jpeg" sizes="1254x1254" href="./edifiq-menu-logo.jpg?v=75"/>\n</head>',1)
 
+          # CSS v78 é carregado por último no head para vencer os estilos translúcidos legados sem tocar nas funções.
+          html=re.sub(r'<link[^>]+href=["\']\./visual-fix78\.css[^"\']*["\'][^>]*>\s*','',html,flags=re.I)
+          html=html.replace('</head>','<link rel="stylesheet" href="./visual-fix78.css?v=78"/>\n</head>',1)
+
           fixes=['billing-fix57.js','account-delete-fix61.js','trial-fix62.js','billing-hotfix63.js','access-limit63.js','core-fix65.js','ui-fix67.js','login-ui68.js']
           for name in fixes:
               html=re.sub(r'<script[^>]+src=["\']\./'+re.escape(name)+r'[^"\']*["\'][^>]*></script>\s*','',html,flags=re.I)
@@ -129,7 +135,7 @@ jobs:
           addons='''<script src="./core-fix65.js?v=75" defer></script>\n<script src="./billing-fix57.js?v=75" defer></script>\n<script src="./account-delete-fix61.js?v=75" defer></script>\n<script src="./trial-fix62.js?v=75" defer></script>\n<script src="./billing-hotfix63.js?v=75" defer></script>\n<script src="./access-limit63.js?v=75" defer></script>\n<script src="./ui-fix67.js?v=77" defer></script>\n<script src="./login-ui68.js?v=75" defer></script>\n'''
           html=html[:pos]+addons+html[pos:]
 
-          required=['edifiqPostLoginStartup','setTimeout(()=>edifiqPostLoginStartup(session),0)','classList.remove("hidden")','./trial-fix62.js?v=75','./ui-fix67.js?v=77','./login-ui68.js?v=75','Senha incorreta ou dados incorretos.','data:image/jpeg;base64,','apple-mobile-web-app-status-bar-style']
+          required=['edifiqPostLoginStartup','setTimeout(()=>edifiqPostLoginStartup(session),0)','classList.remove("hidden")','./trial-fix62.js?v=75','./ui-fix67.js?v=77','./login-ui68.js?v=75','./visual-fix78.css?v=78','Senha incorreta ou dados incorretos.','data:image/jpeg;base64,','apple-mobile-web-app-status-bar-style']
           for x in required:
               if x not in html: raise SystemExit('PUBLICAÇÃO PROTEGIDA: marcador ausente: '+x)
           forbidden=["hint.textContent='7 dias de teste grátis';",'authMsg("E-mail ou senha incorretos.");',"authMsg('E-mail ou senha incorretos.');",'black-translucent']
@@ -138,10 +144,11 @@ jobs:
           page.write_text(html,encoding='utf-8')
           PY
           grep -q 'edifiq-menu-logo.jpg?v=75' .pages/manifest.webmanifest
-          grep -q 'edifiq-shell-v77-opaque-top' .pages/edifiq-sw.js
+          grep -q 'edifiq-shell-v78-opaque-global' .pages/edifiq-sw.js
           grep -q './trial-fix62.js?v=75' .pages/index.html
           grep -q './ui-fix67.js?v=77' .pages/index.html
           grep -q './login-ui68.js?v=75' .pages/index.html
+          grep -q './visual-fix78.css?v=78' .pages/index.html
           grep -q 'content="default" name="apple-mobile-web-app-status-bar-style"' .pages/index.html
           ! grep -q 'black-translucent' .pages/index.html
           ! grep -q 'BILLING_FIX' .pages/edifiq-sw.js
