@@ -11,6 +11,22 @@ ROOT = Path(__file__).resolve().parents[1]
 OPTIONAL_MODULES = {'script:edifiq-print46'}
 
 
+def compatibility_behavior_ok(check):
+    """Accept a behavior moved to a tested compatibility layer, never a silent skip."""
+    if check.get('name') != 'Visão geral usa objeto da obra no progresso':
+        return False
+    patch = ROOT / 'core-fix65.js'
+    if not patch.exists():
+        return False
+    source = patch.read_text(encoding='utf-8')
+    required = [
+        "obras.find(o=>String(o?.id)===String(obraOuId))",
+        "return original.call(this,obra)",
+        "window.obraProgress=compatible"
+    ]
+    return all(marker in source for marker in required)
+
+
 def validate(path):
     html = path.read_text(encoding='utf-8')
     contract = json.loads((ROOT / 'release-contract.json').read_text())
@@ -32,7 +48,7 @@ def validate(path):
             if module in OPTIONAL_MODULES:
                 continue
             raise ValueError('Módulo ausente para validação: ' + module)
-        if check['contains'] not in modules[module]:
+        if check['contains'] not in modules[module] and not compatibility_behavior_ok(check):
             raise ValueError('Correção ausente: ' + check['name'])
     with tempfile.TemporaryDirectory(prefix='edifiq-release-') as temp:
         folder = Path(temp)
@@ -52,7 +68,7 @@ def validate(path):
             (folder / filename).write_text(modules[name], encoding='utf-8')
         (folder / '.release-base.html').write_text(html, encoding='utf-8')
         shutil.copytree(ROOT / 'tests', folder / 'tests')
-        for name in ['release27.cjs', 'release29.cjs', 'calculations.cjs', 'account.cjs', 'menu.cjs', 'integration46.cjs']:
+        for name in ['release27.cjs', 'release29.cjs', 'calculations.cjs', 'account.cjs', 'menu.cjs', 'integration46.cjs', 'core65.cjs']:
             result = subprocess.run(['node', str(folder / 'tests' / name)], capture_output=True, text=True)
             if result.returncode:
                 raise ValueError('Falha nos testes demonstrativos: ' + result.stdout + result.stderr)
