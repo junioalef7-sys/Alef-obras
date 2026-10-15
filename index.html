@@ -3594,65 +3594,73 @@ async function login(){
   if(btn){btn.disabled=true;btn.textContent="Entrando...";}
   authMsg("Conectando ao EDIFIQ...");
 
+  const edifiqPostLoginStartup=async(session)=>{
+    // Tudo que é nuvem/sincronização roda DEPOIS da tela inicial abrir.
+    // Falha aqui nunca volta o usuário para o login.
+    try{
+      try{ await edifiqAuthDeadline(ensureSupabaseClient(),5000); }catch(e){ console.warn("SDK Supabase em segundo plano:",e); }
+
+      if(sb?.auth?.setSession && session?.access_token && session?.refresh_token){
+        try{
+          const persisted=await edifiqAuthDeadline(
+            sb.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token}),
+            5000
+          );
+          if(persisted?.error)console.warn("Sessão Supabase não persistida:",persisted.error);
+        }catch(e){ console.warn("Persistência da sessão indisponível; app permanece aberto.",e); }
+      }
+
+      try{
+        await Promise.race([edifiqCarregarEmpresaAtiva(),new Promise(resolve=>setTimeout(resolve,2500))]);
+      }catch(e){ console.warn("Contexto da empresa indisponível:",e); }
+
+      if(!edifiqEmpresaAtivaId)edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(user.id)||user.id;
+      edifiqRememberEmpresaForUser(user.id,edifiqEmpresaAtivaId);
+      edifiqApplyScopedKeys();
+
+      try{ await edifiqClaimLegacyStorage(); }catch(e){ console.warn("Migração local:",e); }
+      try{ await edifiqLoadScopedLocalState(); }catch(e){ console.warn("Estado local:",e); }
+      try{ edifiqRememberOfflineAccess(); }catch(e){}
+
+      try{
+        if(sb)await Promise.race([loadCloud(),new Promise(resolve=>setTimeout(resolve,7000))]);
+      }catch(e){
+        console.warn("Sincronização após login indisponível:",e);
+        try{toast("Você entrou. A sincronização será tentada novamente em segundo plano.");}catch(_){}
+      }
+
+      try{ saveLocalData(); }catch(e){ console.warn("Salvar local:",e); }
+      try{ renderAll(); }catch(e){ console.warn("Renderização após login:",e); }
+      try{ startEdifiqRealtime(); }catch(e){ console.warn("Realtime após login:",e); }
+    }catch(e){
+      console.warn("Pós-login isolado falhou; sessão continua aberta:",e);
+    }
+  };
+
   const finishLogin=async(session)=>{
     if(!session?.user){
       authMsg("Login não concluído. Verifique o e-mail e a senha.");
       return false;
     }
 
-    // A autenticação REST já validou e-mail/senha. Abra o app PRIMEIRO.
-    // O SDK, a persistência da sessão e a nuvem não podem travar a entrada no iPhone/PWA.
+    // REGRA DA BASE ESTÁVEL: autenticação válida => abre o aplicativo imediatamente.
+    // Banco, assinatura, sincronização, realtime e renderizações pesadas jamais bloqueiam esta etapa.
     const previousUserId=String(user?.id||'');
-    if(previousUserId && previousUserId!==String(session.user.id)){stopEdifiqRealtime();edifiqResetInMemoryState();}
-    user=session.user;edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(user.id)||null;
+    if(previousUserId && previousUserId!==String(session.user.id)){
+      try{stopEdifiqRealtime();}catch(_){}
+      try{edifiqResetInMemoryState();}catch(_){}
+    }
+    user=session.user;
+    edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(user.id)||null;
 
     $("auth")?.classList.add("hidden");
     $("app")?.classList.remove("hidden");
     authMsg("");
-    try{ window.scrollTo({top:0,behavior:"instant"}); }catch(_){ window.scrollTo(0,0); }
+    try{ renderAll(); }catch(e){ console.warn("Renderização imediata:",e); }
+    try{ window.scrollTo({top:0,behavior:"instant"}); }catch(_){ try{window.scrollTo(0,0)}catch(__){} }
 
-    // Tenta persistir a sessão sem bloquear a abertura do aplicativo.
-    try{
-      if(sb?.auth?.setSession && session.access_token && session.refresh_token){
-        const persisted=await edifiqAuthDeadline(
-          sb.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token}),
-          4000
-        );
-        if(persisted?.error)console.warn("Sessão Supabase não persistida:",persisted.error);
-      }
-    }catch(e){
-      console.warn("Persistência da sessão indisponível; app já liberado.",e);
-    }
-
-    try{
-      await Promise.race([
-        edifiqCarregarEmpresaAtiva(),
-        new Promise(resolve=>setTimeout(resolve,2500))
-      ]);
-    }catch(e){
-      console.warn("Contexto da empresa indisponível; seguindo com a sessão autenticada.",e);
-    }
-    if(!edifiqEmpresaAtivaId)edifiqEmpresaAtivaId=edifiqCachedEmpresaForUser(user.id)||user.id;
-    edifiqRememberEmpresaForUser(user.id,edifiqEmpresaAtivaId);edifiqApplyScopedKeys();
-    await edifiqClaimLegacyStorage();await edifiqLoadScopedLocalState();edifiqRememberOfflineAccess();
-
-    // A sincronização não pode impedir a entrada no aplicativo.
-    try{
-      if(sb){
-        await Promise.race([
-          loadCloud(),
-          new Promise(resolve=>setTimeout(resolve,7000))
-        ]);
-      }
-      /* Records without names are preserved for manual correction. */
-      saveLocalData();
-    }catch(e){
-      console.warn("Sincronização após login indisponível:",e);
-      toast("Login realizado. Dados locais mantidos.");
-    }
-
-    try{ renderAll(); }catch(e){ console.warn("Renderização após login:",e); }
-    window.scrollTo({top:0,behavior:"instant"});
+    // Não usar await: este trabalho é deliberadamente desacoplado do login.
+    setTimeout(()=>edifiqPostLoginStartup(session),0);
     return true;
   };
 
@@ -3692,9 +3700,7 @@ async function login(){
         user:data.user
       };
 
-      // Carrega o cliente apenas depois que o login já foi validado.
-      try{ await ensureSupabaseClient(); }catch(e){ console.warn("SDK Supabase:",e); }
-
+      // O REST já validou a senha. Não espere SDK/Supabase para abrir o aplicativo.
       await finishLogin(session);
       return;
     }
@@ -15118,11 +15124,16 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
         const r=await sb.rpc('edifiq_iniciar_trial');if(r.error)throw r.error;
         data=r.data;
       }
+      // Somente uma resposta válida do servidor pode bloquear/liberar comercialmente.
+      window.__edifiqSubscriptionVerifiedOnline=true;
+      window.__edifiqSubscriptionVerifiedAt=Date.now();
       if(data){data.acesso_liberado=computeAccess10(data);data.dias_restantes=daysRemaining10(data);window.__edifiqSubscription=data;cacheSub10(data)}
-      else{window.__edifiqSubscription=cachedSub10()}
+      else{window.__edifiqSubscription=null}
       return window.__edifiqSubscription;
     }catch(e){
       console.warn('EDIFIQ assinatura:',e);
+      // Falha de rede/banco não pode bloquear quem acabou de autenticar.
+      window.__edifiqSubscriptionVerifiedOnline=false;
       const c=cachedSub10();if(c){c.acesso_liberado=computeAccess10(c);c.dias_restantes=daysRemaining10(c);window.__edifiqSubscription=c}
       return window.__edifiqSubscription;
     }
@@ -15187,7 +15198,10 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
 
   function renderGate10(){
     let gate=$('edSubscriptionGate');const s=window.__edifiqSubscription,access=computeAccess10(s);
-    if(!user?.id||!s||access!==false){if(gate)gate.classList.add('hidden');return}
+    // Fail-safe: somente bloqueia após status comercial confirmado online nesta sessão.
+    // Erro de internet, RPC ou cache antigo nunca pode parecer erro de login.
+    const verified=window.__edifiqSubscriptionVerifiedOnline===true;
+    if(!user?.id||!verified||!s||access!==false){if(gate)gate.classList.add('hidden');return}
     if(!gate){gate=document.createElement('div');gate.id='edSubscriptionGate';gate.className='edSubscriptionGate';document.body.appendChild(gate)}
     gate.classList.remove('hidden');
     gate.innerHTML=`<div class="edSubscriptionGateBox"><h2>Seu acesso precisa de uma assinatura</h2><p class="sub">${esc10(label10(s))}. Seus dados continuam preservados; nenhuma obra, funcionário ou lançamento foi apagado.</p>${planCards10()}<div class="note" style="margin-top:12px">Nesta etapa a cobrança ainda não é processada. A integração com o pagamento será conectada na próxima etapa antes da venda pública.</div><div class="edAccountActions" style="margin-top:14px"><button class="btn" type="button" onclick="logout()">Sair da conta</button></div></div>`;
@@ -15244,7 +15258,7 @@ body.edLight .edPlanCard,body.edLight .edSubBanner,body.edLight .edSubscriptionG
   patchAuth10();
   let tries10=0;const timer10=setInterval(()=>{tries10++;patchAuth10();if(user?.id&&!window.__edifiqCommercialInit)initCommercial10().catch(()=>{});if(window.__edifiqCommercialInit||tries10>30)clearInterval(timer10)},700);
 
-  window.EDIFIQ_BUILD='2026-10-11-etapa10-clientes-assinatura';
+  window.EDIFIQ_BUILD='2026-10-15-base-estavel-v1-auth-isolado';
 })();
 </script>
 
@@ -19926,6 +19940,10 @@ html body.edLight .edifiq-pwa-install .pwaClose{color:#111827!important;-webkit-
   else limparCodigoExposto();
   setTimeout(limparCodigoExposto,1200);
 })();
+</script>
+
+<script>
+window.EDIFIQ_STABLE_BASE={version:'1.0.0',build:'2026-10-15',authIsolated:true,subscriptionFailSafe:true};
 </script>
 </body>
 </html>
