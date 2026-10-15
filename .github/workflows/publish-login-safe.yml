@@ -42,6 +42,12 @@ jobs:
                   n+=1
           print(f'{n} scripts JavaScript válidos; login protegido.')
           PY
+      - name: Validar correções do teste grátis
+        run: |
+          node --check billing-fix57.js
+          grep -q "edifiqEnsureTrial60" billing-fix57.js
+          grep -q "Planos e assinaturas" billing-fix57.js
+          grep -q "Primeira cobrança" billing-fix57.js
       - name: Preparar versão pública sem tocar no login
         run: |
           mkdir -p .pages
@@ -60,8 +66,7 @@ jobs:
           html=re.sub(r'<script[^>]+src=["\']\./billing-fix57\.js[^"\']*["\'][^>]*></script>\s*','',html,flags=re.I)
           pos=html.lower().rfind('</body>')
           if pos<0: raise SystemExit('Fechamento </body> não encontrado')
-          html=html[:pos]+'<script src="./billing-fix57.js?v=59" defer></script>\n'+html[pos:]
-          # O deploy não altera nenhuma função de autenticação/login.
+          html=html[:pos]+'<script src="./billing-fix57.js?v=60" defer></script>\n'+html[pos:]
           required=['edifiqPostLoginStartup','setTimeout(()=>edifiqPostLoginStartup(session),0)','classList.remove("hidden")']
           for x in required:
               if x not in html: raise SystemExit('LOGIN PROTEGIDO: marcador ausente: '+x)
@@ -69,8 +74,8 @@ jobs:
 
           sw=Path('.pages/edifiq-sw.js')
           s=sw.read_text(encoding='utf-8')
-          s=re.sub(r"const CACHE='[^']+';","const CACHE='edifiq-shell-v59-login-safe';",s,count=1)
-          s=s.replace('billing-fix57.js?v=57','billing-fix57.js?v=59').replace('billing-fix57.js?v=58','billing-fix57.js?v=59')
+          s=re.sub(r"const CACHE='[^']+';","const CACHE='edifiq-shell-v60-trial-planos';",s,count=1)
+          s=s.replace('billing-fix57.js?v=57','billing-fix57.js?v=60').replace('billing-fix57.js?v=58','billing-fix57.js?v=60').replace('billing-fix57.js?v=59','billing-fix57.js?v=60')
           s=re.sub(r"if\(url\.pathname\.endsWith\('/billing-fix57\\.js'\)\)\{event\.respondWith\(new Response\(BILLING_FIX,[\s\S]*?\);return;\}","",s,count=1)
           sw.write_text(s,encoding='utf-8')
           PY
