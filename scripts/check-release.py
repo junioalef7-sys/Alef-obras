@@ -13,18 +13,31 @@ OPTIONAL_MODULES = {'script:edifiq-print46'}
 
 def compatibility_behavior_ok(check):
     """Accept a behavior moved to a tested compatibility layer, never a silent skip."""
-    if check.get('name') != 'Visão geral usa objeto da obra no progresso':
-        return False
-    patch = ROOT / 'core-fix65.js'
-    if not patch.exists():
-        return False
-    source = patch.read_text(encoding='utf-8')
-    required = [
-        "obras.find(o=>String(o?.id)===String(obraOuId))",
-        "return original.call(this,obra)",
-        "window.obraProgress=compatible"
-    ]
-    return all(marker in source for marker in required)
+    name = check.get('name')
+    if name == 'Visão geral usa objeto da obra no progresso':
+        patch = ROOT / 'core-fix65.js'
+        if not patch.exists():
+            return False
+        source = patch.read_text(encoding='utf-8')
+        required = [
+            "obras.find(o=>String(o?.id)===String(obraOuId))",
+            "return original.call(this,obra)",
+            "window.obraProgress=compatible"
+        ]
+        return all(marker in source for marker in required)
+    if name == 'Asaas valida destino antes de redirecionar':
+        patch = ROOT / 'billing-hotfix63.js'
+        if not patch.exists():
+            return False
+        source = patch.read_text(encoding='utf-8')
+        required = [
+            "function safeAsaasUrl(value)",
+            "checkout.hostname.endsWith('.asaas.com')",
+            "location.assign(safeAsaasUrl(data.checkout_url))",
+            "const url=safeAsaasUrl(data.checkout_url)"
+        ]
+        return all(marker in source for marker in required)
+    return False
 
 
 def validate(path):
