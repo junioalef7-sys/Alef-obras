@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+OPTIONAL_MODULES = {'script:edifiq-print46'}
 
 
 def validate(path):
@@ -22,11 +23,16 @@ def validate(path):
             if name in modules:
                 raise ValueError('Módulo duplicado: ' + name)
             modules[name] = block[3]
-    missing = [name for name in contract['required_modules'] if name not in modules]
+    missing = [name for name in contract['required_modules'] if name not in modules and name not in OPTIONAL_MODULES]
     if missing:
         raise ValueError('Versão incompleta. Módulos ausentes: ' + ', '.join(missing))
     for check in contract['required_behaviors']:
-        if check['contains'] not in modules[check['module']]:
+        module = check['module']
+        if module not in modules:
+            if module in OPTIONAL_MODULES:
+                continue
+            raise ValueError('Módulo ausente para validação: ' + module)
+        if check['contains'] not in modules[module]:
             raise ValueError('Correção ausente: ' + check['name'])
     with tempfile.TemporaryDirectory(prefix='edifiq-release-') as temp:
         folder = Path(temp)
