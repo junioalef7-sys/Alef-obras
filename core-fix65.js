@@ -25,13 +25,28 @@
       const originalStage=C.stageFinance;
       const stagePatched=function(data,rows,obra,distribution){
         const source=data&&typeof data==='object'?data:{};
-        const seen=new Set();
+        const workSeen=new Set();
         const obras=(Array.isArray(source.obras)?source.obras:[]).filter(o=>{
           const id=String(o?.id??'');
-          if(seen.has(id))return false;
-          seen.add(id);return true;
+          if(workSeen.has(id))return false;
+          workSeen.add(id);return true;
         });
-        return originalStage.call(this,{...source,obras},rows,obra,distribution);
+        const stageSeen=new Set();
+        const checklist=(Array.isArray(source.checklist)?source.checklist:[]).map(c=>({
+          ...c,
+          obra_id:c?.obra_id??c?.obraId??'',
+          id:c?.id??c?.checklist_id??c?.checklistId??''
+        })).filter(c=>{
+          const key=String(c.obra_id)+'|'+String(c.id);
+          if(stageSeen.has(key))return false;
+          stageSeen.add(key);return true;
+        });
+        const normalizedRows=(Array.isArray(rows)?rows:[]).map(r=>({
+          ...r,
+          obra_id:r?.obra_id??r?.obraId??'',
+          checklist_id:r?.checklist_id??r?.checklistId??''
+        }));
+        return originalStage.call(this,{...source,obras,checklist},normalizedRows,obra,distribution);
       };
       stagePatched.__edifiqStage65=true;
       stagePatched.__edifiqOriginal65=originalStage;
