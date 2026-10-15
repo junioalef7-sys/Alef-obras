@@ -3,10 +3,30 @@
   if(window.__EDIFIQ_UI_FIX67)return;
   window.__EDIFIQ_UI_FIX67=true;
 
-  const VERSION='67';
+  const VERSION='69';
   const byId=id=>document.getElementById(id);
 
   function toast67(msg){try{if(typeof window.toast==='function')window.toast(msg);else console.warn(msg)}catch(_){}}
+
+  /* ---------- Tela inicial: mantém o cartão Primeiros passos removido. ---------- */
+  function suppressOnboardingBanner69(){
+    let style=byId('edifiqHome69Style');
+    if(!style){
+      style=document.createElement('style');
+      style.id='edifiqHome69Style';
+      style.textContent='#edOnboardingBanner12{display:none!important}';
+      document.head.appendChild(style);
+    }
+    byId('edOnboardingBanner12')?.remove();
+    const original=window.renderBanner12;
+    if(typeof original==='function'&&!original.__edifiqHidden69){
+      const hidden=function(){byId('edOnboardingBanner12')?.remove();return null};
+      hidden.__edifiqHidden69=true;
+      hidden.__edifiqOriginal69=original;
+      window.renderBanner12=hidden;
+    }
+  }
+  window.edifiqSuppressOnboardingBanner69=suppressOnboardingBanner69;
 
   /* ---------- Planos: garante o resumo do teste depois que o modal assíncrono terminou de renderizar. ---------- */
   function refreshPlan67(){
@@ -18,12 +38,12 @@
       }
       const info=byId('edPlanTrial66');
       if(info){
-        info.setAttribute('data-edifiq-ui','67');
+        info.setAttribute('data-edifiq-ui','69');
         const box=modal.querySelector('.modalBox');
         const head=modal.querySelector('.modalHead');
         if(box&&head&&info.parentElement!==box)head.insertAdjacentElement('afterend',info);
       }
-    }catch(e){console.warn('EDIFIQ planos UI67:',e)}
+    }catch(e){console.warn('EDIFIQ planos UI69:',e)}
   }
 
   function wrapPlan67(name){
@@ -39,7 +59,7 @@
     window[name]=wrapped;
   }
 
-  /* ---------- Visão geral: botão Fechar sempre presente, inclusive após trocar o filtro. ---------- */
+  /* ---------- Visão geral: botão Fechar sempre presente. ---------- */
   function closeOverview67(){
     try{
       if(typeof window.go==='function'){window.go('dashboard');return}
@@ -81,7 +101,7 @@
     window[name]=wrapped;
   }
 
-  /* ---------- Impressão: evita depender de print() dentro de iframe no iPhone/PWA. ---------- */
+  /* ---------- Impressão ---------- */
   function ensurePrintStyle67(){
     let style=byId('edifiqPrint67Style');if(style)return style;
     style=document.createElement('style');style.id='edifiqPrint67Style';
@@ -114,7 +134,7 @@
       return true;
     }catch(e){
       cleanup();
-      console.error('EDIFIQ impressão UI67:',e);
+      console.error('EDIFIQ impressão UI69:',e);
       toast67('Não foi possível abrir a impressão. Tente novamente pelo botão Imprimir.');
       return false;
     }
@@ -146,6 +166,7 @@
   }
 
   function install67(){
+    suppressOnboardingBanner69();
     wrapPlan67('openPlanosEdifiq11');
     wrapPlan67('openPlanosEdifiq10');
     wrapOverview67('renderResumoGeral');
