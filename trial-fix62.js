@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  const VERSION='62';
+  const VERSION='63';
   let authHooked=false,trialBusy=false,trialUid='';
 
   const normalize=s=>String(s||'').replace(/\s+/g,' ').trim();
@@ -37,11 +37,15 @@
     try{
       let current=await client.rpc('edifiq_assinatura_atual');
       if(current.error)throw current.error;
+      window.__edifiqSubscriptionVerifiedOnline=true;
+      window.__edifiqSubscriptionVerifiedAt=Date.now();
       let data=current.data;
       if(!data){
         const started=await client.rpc('edifiq_iniciar_trial');
         if(started.error)throw started.error;
         data=started.data;
+        window.__edifiqSubscriptionVerifiedOnline=true;
+        window.__edifiqSubscriptionVerifiedAt=Date.now();
       }
       if(data){
         data.dias_restantes=daysLeft(data);
@@ -49,12 +53,14 @@
         trialUid=uid;
         try{localStorage.setItem('edifiq_subscription_cache_v1',JSON.stringify(data))}catch(_){}
         patchPlanSummary62();
+        try{window.dispatchEvent(new CustomEvent('edifiq:subscription-updated',{detail:data}))}catch(_){}
       }
       return data||null;
-    }catch(e){console.warn('EDIFIQ trial 62:',e);return window.__edifiqSubscription||null}
+    }catch(e){console.warn('EDIFIQ trial 63:',e);return window.__edifiqSubscription||null}
     finally{trialBusy=false}
   }
   window.edifiqEnsureTrial62=ensureTrialForSession62;
+  window.edifiqEnsureTrial63=ensureTrialForSession62;
 
   function attachTrialAuthHook62(){
     if(authHooked||typeof sb==='undefined'||!sb?.auth?.onAuthStateChange)return;
@@ -68,7 +74,7 @@
       sb.auth.getSession().then(({data})=>{
         if(data?.session?.user?.id)setTimeout(()=>ensureTrialForSession62(data.session).catch(()=>{}),0);
       }).catch(()=>{});
-    }catch(e){authHooked=false;console.warn('EDIFIQ auth trial hook 62:',e)}
+    }catch(e){authHooked=false;console.warn('EDIFIQ auth trial hook 63:',e)}
   }
 
   function hideBillingInsideSettings62(){
@@ -125,7 +131,7 @@
     if(trialActive(sub)){
       box.innerHTML=`<div class="financeRow"><span>🎁 Teste grátis</span><b>${days} dia${days===1?'':'s'} restante${days===1?'':'s'}</b></div><div class="financeRow"><span>Início do teste</span><b>${fmtDate(sub.trial_inicio)}</b></div><div class="financeRow"><span>Fim do teste</span><b>${fmtDate(sub.trial_fim)}</b></div><div class="financeRow"><span>Primeira cobrança</span><b>${fmtDate(sub.trial_fim)}</b></div><div class="note" style="margin-top:10px">A cobrança começa somente depois dos 7 dias grátis. Se o plano for escolhido durante o teste, a primeira cobrança continua programada para o fim do período gratuito.</div>`;
     }else if(String(sub.status||'').toLowerCase()==='trial'){
-      box.innerHTML='<div class="financeRow"><span>Teste grátis</span><b>Encerrado</b></div><div class="note" style="margin-top:10px">O período gratuito terminou. A cobrança do plano pode começar a partir de agora.</div>';
+      box.innerHTML='<div class="financeRow"><span>Teste grátis</span><b>Encerrado</b></div><div class="note" style="margin-top:10px">O período gratuito terminou. O modo gratuito limitado permanece disponível até o pagamento.</div>';
     }
   }
 
