@@ -1,7 +1,7 @@
-const CACHE='edifiq-shell-v71-clean-v74';
+const CACHE='edifiq-shell-v75-audit';
 const SHELL=[
   './','./manifest.webmanifest','./edifiq-icon-192.png','./edifiq-menu-logo.jpg','./edific-icon.svg','./exclusao-conta.html',
-  './core-fix65.js?v=74','./billing-fix57.js?v=74','./account-delete-fix61.js?v=74','./trial-fix62.js?v=74','./billing-hotfix63.js?v=74','./access-limit63.js?v=74','./ui-fix67.js?v=74','./login-ui68.js?v=74'
+  './core-fix65.js?v=75','./billing-fix57.js?v=75','./account-delete-fix61.js?v=75','./trial-fix62.js?v=75','./billing-hotfix63.js?v=75','./access-limit63.js?v=75','./ui-fix67.js?v=75','./login-ui68.js?v=75'
 ];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(SHELL.map(url=>cache.add(url)))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('edifiq-shell-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
