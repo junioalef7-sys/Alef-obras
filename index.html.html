@@ -7881,37 +7881,32 @@ async function openFotoVisual(id){
       return;
     }
 
-    const titulo=esc(f.titulo||'Registro fotográfico');
-    const data=esc(f.data||'');
-    const observacao=esc(f.observacao||'');
-    const src=esc(f.src||'');
+    const titulo=String(f.titulo||'Registro fotográfico');
+    const data=String(f.data||'');
+    const observacao=String(f.observacao||'');
+    const src=String(f.src||'');
+    const doc=win.document;
 
-    win.document.open();
-    win.document.write(`<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>EDIFIQ — Foto</title>
-<style>
-html,body{margin:0;background:#090b0e;color:#f8fafc;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-body{padding:16px;box-sizing:border-box;min-height:100vh}
-main{width:min(1000px,100%);margin:0 auto}
-img{display:block;width:100%;height:auto;border-radius:14px;background:#11151a}
-h3{margin:14px 0 6px;font-size:20px}
-p{margin:6px 0;color:#cbd5e1;line-height:1.45;white-space:pre-wrap}
-</style>
-</head>
-<body>
-<main>
-<img src="${src}" alt="${titulo}">
-<h3>${titulo}</h3>
-<p>${data}</p>
-<p>${observacao}</p>
-</main>
-</body>
-</html>`);
-    win.document.close();
+    doc.open();
+    doc.write('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EDIFIQ — Foto</title><main id="edFotoView"></main>');
+    doc.close();
+    doc.documentElement.lang='pt-BR';
+
+    const style=doc.createElement('style');
+    style.textContent='html,body{margin:0;background:#090b0e;color:#f8fafc;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{padding:16px;box-sizing:border-box;min-height:100vh}main{width:min(1000px,100%);margin:0 auto}img{display:block;width:100%;height:auto;border-radius:14px;background:#11151a}h3{margin:14px 0 6px;font-size:20px}p{margin:6px 0;color:#cbd5e1;line-height:1.45;white-space:pre-wrap}';
+    doc.head.appendChild(style);
+
+    const main=doc.getElementById('edFotoView');
+    const img=doc.createElement('img');
+    img.src=src;
+    img.alt=titulo;
+    const h3=doc.createElement('h3');
+    h3.textContent=titulo;
+    const pData=doc.createElement('p');
+    pData.textContent=data;
+    const pObs=doc.createElement('p');
+    pObs.textContent=observacao;
+    main.append(img,h3,pData,pObs);
   }catch(err){
     console.error('EDIFIQ visualizar foto:',err);
     toast('Não foi possível abrir a foto.');
@@ -7992,9 +7987,6 @@ ${esc(o.nome)}
 </option>
 `).join("")
 }
-  
-}
-
 
 `;
 
@@ -19875,5 +19867,61 @@ body.edLight #auth .authBtns .btn.primary{background:linear-gradient(180deg,#e3b
 #auth #authMsg{color:#cbd5e1!important;opacity:1!important}
 body.edLight #auth #authMsg{color:#475569!important}
 </style>
+
+
+<!-- EDIFIQ — correção final login/PWA iPhone 2026-10-14 -->
+<style id="edifiq-login-pwa-visual-fix-v5">
+/* O tema escuro é o padrão; o claro só entra quando body.edLight estiver ativo. */
+html body #auth{background:#090b0e!important;color:#f8fafc!important}
+html body #auth .authBox{background:#11151a!important;background-image:none!important;color:#f8fafc!important;border:1px solid #303844!important;opacity:1!important;filter:none!important}
+html body #auth .authLogoSimple h1,
+html body #auth .authLogo h1{color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;background:none!important;background-image:none!important;opacity:1!important;filter:none!important;text-shadow:none!important}
+html body #auth label{color:#cbd5e1!important;-webkit-text-fill-color:#cbd5e1!important;opacity:1!important}
+html body #auth input{background:#0c1014!important;background-image:none!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;border-color:#46505d!important;caret-color:#f8fafc!important;opacity:1!important}
+html body #auth input::placeholder{color:#9ca3af!important;-webkit-text-fill-color:#9ca3af!important;opacity:1!important}
+html body #auth .authBtns .btn{background:#171c22!important;background-image:none!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;border-color:#303844!important;opacity:1!important}
+html body #auth .authBtns .btn.primary{background:linear-gradient(180deg,#e3bb66,#c4953d)!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#e4c16f!important}
+
+html body.edLight #auth{background:#eef2f6!important;color:#111827!important}
+html body.edLight #auth .authBox{background:#fff!important;background-image:none!important;color:#111827!important;border-color:#cbd5e1!important}
+html body.edLight #auth .authLogoSimple h1,
+html body.edLight #auth .authLogo h1{color:#111827!important;-webkit-text-fill-color:#111827!important;background:none!important;background-image:none!important;opacity:1!important}
+html body.edLight #auth label{color:#334155!important;-webkit-text-fill-color:#334155!important}
+html body.edLight #auth input{background:#fff!important;background-image:none!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#94a3b8!important;caret-color:#111827!important}
+html body.edLight #auth input::placeholder{color:#64748b!important;-webkit-text-fill-color:#64748b!important;opacity:1!important}
+html body.edLight #auth .authBtns .btn{background:#f8fafc!important;background-image:none!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#cbd5e1!important}
+html body.edLight #auth .authBtns .btn.primary{background:linear-gradient(180deg,#e3bb66,#c4953d)!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#c99d48!important}
+
+/* Banner de instalação: o título estava herdando uma cor escura no modo escuro. */
+html body .edifiq-pwa-install{background:#11151a!important;color:#f8fafc!important;border-color:#715827!important;opacity:1!important}
+html body .edifiq-pwa-install .pwaText b{color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;opacity:1!important}
+html body .edifiq-pwa-install .pwaText small{color:#cbd5e1!important;-webkit-text-fill-color:#cbd5e1!important;opacity:1!important}
+html body .edifiq-pwa-install .pwaClose{color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;background:#171c22!important;border-color:#303844!important}
+html body.edLight .edifiq-pwa-install{background:#fff!important;color:#111827!important;border-color:#c99d48!important}
+html body.edLight .edifiq-pwa-install .pwaText b{color:#111827!important;-webkit-text-fill-color:#111827!important}
+html body.edLight .edifiq-pwa-install .pwaText small{color:#475569!important;-webkit-text-fill-color:#475569!important}
+html body.edLight .edifiq-pwa-install .pwaClose{color:#111827!important;-webkit-text-fill-color:#111827!important;background:#f8fafc!important;border-color:#cbd5e1!important}
+</style>
+<script id="edifiq-source-spill-guard-v1">
+(function(){
+  'use strict';
+  function limparCodigoExposto(){
+    if(!document.body)return;
+    const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+    const remove=[];
+    let n;
+    while((n=walker.nextNode())){
+      const p=n.parentElement;
+      if(!p||p.closest('script,style,textarea,pre,code'))continue;
+      const t=String(n.nodeValue||'');
+      if(t.length>120 && /win\.document\.close\(\)|async function\s+deleteFoto|getAllPhotosDB\(\)\.find/.test(t))remove.push(n);
+    }
+    remove.forEach(n=>n.remove());
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',limparCodigoExposto,{once:true});
+  else limparCodigoExposto();
+  setTimeout(limparCodigoExposto,1200);
+})();
+</script>
 </body>
 </html>
