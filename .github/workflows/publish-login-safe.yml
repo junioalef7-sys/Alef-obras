@@ -33,7 +33,7 @@ jobs:
 
       - name: Validar scripts externos
         run: |
-          for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js orcamentos-link79.js orcamentos-fix81.js navigation-fix82.js edifiq-sw.js; do
+          for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js orcamentos-link79.js orcamentos-fix81.js navigation-fix82.js photo-purge83.js edifiq-sw.js; do
             node --check "$f"
           done
 
@@ -64,16 +64,25 @@ jobs:
           grep -q "EXCLUIR MINHA CONTA" account-delete-fix61.js
           grep -q "Excluir conta agora" account-delete-fix61.js
 
+      - name: Validar exclusão manual de fotos
+        run: |
+          grep -q "edifiq-purge-minhas-fotos" photo-purge83.js
+          grep -q "EXCLUIR FOTOS" photo-purge83.js
+          grep -q "Excluir todas as fotos antigas" photo-purge83.js
+          ! grep -q "setTimeout(run83" photo-purge83.js
+
       - name: Preparar versão pública auditada
         run: |
-          python3 scripts/prepare-pages-v82.py
+          python3 scripts/prepare-pages-v83.py
           grep -q './orcamentos-link79.js?v=79' .pages/index.html
           grep -q './navigation-fix82.js?v=82' .pages/index.html
-          grep -q 'edifiq-shell-v82-navigation-safe' .pages/edifiq-sw.js
+          grep -q './photo-purge83.js?v=83' .pages/index.html
+          grep -q 'edifiq-shell-v83-manual-photo-delete' .pages/edifiq-sw.js
           grep -q 'ORCAMENTOS_V80_TIMEOUT_SAFE' .pages/orcamentos.html
           grep -q './orcamentos-fix81.js?v=81' .pages/orcamentos.html
           grep -q './orcamentos-fix81.js?v=81' .pages/edifiq-sw.js
           grep -q './navigation-fix82.js?v=82' .pages/edifiq-sw.js
+          grep -q './photo-purge83.js?v=83' .pages/edifiq-sw.js
           grep -q 'Tentar novamente' .pages/orcamentos.html
           grep -q 'withTimeout' .pages/orcamentos.html
           grep -q 'ensureClient' .pages/orcamentos.html
@@ -82,6 +91,7 @@ jobs:
           test -f .pages/orcamentos-link79.js
           test -f .pages/orcamentos-fix81.js
           test -f .pages/navigation-fix82.js
+          test -f .pages/photo-purge83.js
           ! grep -q 'black-translucent' .pages/index.html
           ! grep -q 'BILLING_FIX' .pages/edifiq-sw.js
           ! grep -q 'injectFix' .pages/edifiq-sw.js
