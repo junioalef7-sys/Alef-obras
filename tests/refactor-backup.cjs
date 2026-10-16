@@ -1,12 +1,10 @@
-const assert=require('node:assert/strict'),B=require('../src/core/backup-core.js');
-const data=()=>({obras:[{id:1}],funcionarios:[{id:10}],checklist:[],servicos_adicionais:[],servicos:[],terceirizados:[],orcamentos:[],diarias:[{id:30,valor:280,operation_id:'d1'}],gastos:[{id:40,valor:500}],pagamentos:[{id:50,valor:18435}],faltas:[],adiantamentos:[{id:70,valor:660}],diario:[],presencas:[],pagamentos_terceirizados:[]});
-const b=B.createBackup(data(),{backupId:'test',date:'2026-10-16T00:00:00Z'});
-assert.equal(b.app,'EDIFIQ');assert.equal(b.format,'EDIFIQ_BACKUP');assert.equal(b.version,'12.0');
-assert.equal(b.manifest.integrity_snapshot.diarias.sum_cents,28000);assert.equal(b.manifest.integrity_snapshot.adiantamentos.sum_cents,66000);assert.equal(b.manifest.integrity_snapshot.pagamentos.sum_cents,1843500);
-assert.equal(B.validateBackup(b).ok,true);
-const bad=JSON.parse(JSON.stringify(b));bad.data.adiantamentos[0].valor=640;assert.throws(()=>B.validateBackup(bad),e=>e.code==='BACKUP_INTEGRITY_MISMATCH');
-const plan=B.planImport(b,{obras:[{id:999}]},{mode:'exact'});assert.equal(plan.after.obras[0].id,1);assert.equal(B.assertApplied(plan,plan.after).ok,true);
-const partial=JSON.parse(JSON.stringify(plan.after));partial.pagamentos=[];assert.throws(()=>B.assertApplied(plan,partial),e=>e.code==='IMPORT_INCOMPLETE');
-const legacy={...b,app:'EDIFIC',format:'EDIFIC_BACKUP',version:'11.0'};assert.equal(B.validateBackup(legacy).ok,true);
-assert.throws(()=>B.validateBackup({app:'OUTRO',data:{}}),/EDIFIQ/);
-console.log('REFACTOR BACKUP V12 OK');
+const assert=require('node:assert/strict');
+const B=require('../src/core/backup-core.js');
+function sample(){return{data:{obras:[{id:1,nome:'Obra A'}],funcionarios:[{id:10,nome:'João'}],checklist:[{id:20,obra_id:1,tarefa:'Alvenaria'}],servicos_adicionais:[],servicos:[],terceirizados:[],orcamentos:[],diarias:[{id:30,funcionario_id:10,valor:280,operation_id:'dia-1'}],gastos:[{id:40,valor:500,operation_id:'g-1'}],pagamentos:[{id:50,valor:18435,operation_id:'p-1'}],faltas:[{id:60,funcionario_id:10,data:'2026-10-01'}],adiantamentos:[{id:70,valor:660,operation_id:'v-1'}],diario:[],presencas:[],pagamentos_terceirizados:[]},aux:{funcionarioObras:{10:1},adiantamentosAplicados:{70:0},servicosAdicionais:{},diariasBaixadas:{30:false}}}}
+(()=>{const b=B.createBackup(sample(),{backupId:'test-1',date:'2026-10-16T00:00:00.000Z'});assert.equal(b.app,'EDIFIQ');assert.equal(b.format,'EDIFIC_BACKUP');assert.equal(b.version,'11.0');assert.equal(b.manifest.integrity_snapshot.diarias.sum_cents,28000);assert.equal(b.manifest.integrity_snapshot.adiantamentos.sum_cents,66000);assert.equal(b.manifest.integrity_snapshot.pagamentos.sum_cents,1843500);assert.equal(B.validateBackup(b).total,b.manifest.total_records)})();
+(()=>{const b=B.createBackup(sample());b.data.adiantamentos[0].valor=640;assert.throws(()=>B.validateBackup(b),e=>e.code==='BACKUP_INTEGRITY_MISMATCH')})();
+(()=>{const b=B.createBackup(sample()),plan=B.planImport(b,{obras:[{id:999}]},{mode:'exact'});assert.equal(plan.after.obras[0].id,1);assert.equal(plan.aux.funcionarioObras['10'],1);assert.equal(B.assertApplied(plan,plan.after).ok,true);const partial=JSON.parse(JSON.stringify(plan.after));partial.pagamentos=[];assert.throws(()=>B.assertApplied(plan,partial),e=>e.code==='IMPORT_INCOMPLETE'&&e.diffs.some(d=>d.table==='pagamentos'))})();
+(()=>{const b=B.createBackup(sample()),current=sample().data;current.diarias.push({id:999,valor:100,operation_id:'dia-1'});const plan=B.planImport(b,current,{mode:'merge'});assert.equal(plan.after.diarias.filter(x=>x.operation_id==='dia-1').length,1)})();
+(()=>{const src=sample(),modern=B.createBackup(src),legacy={app:'EDIFIQ',version:'10.0',manifest:{tables:modern.manifest.tables,total_records:modern.manifest.total_records,integrity_snapshot:modern.manifest.integrity_snapshot},data:modern.data,...src.aux},checked=B.validateBackup(legacy);assert.match(checked.warnings.join(' '),/legado 10\.0/i);assert.throws(()=>B.validateBackup({app:'OUTRO',version:'10.0',data:{}}),/não pertence ao EDIFIQ/i)})();
+(()=>{const b=B.createBackup(sample()),before=sample().data,original=JSON.stringify(before);B.planImport(b,before,{mode:'exact'});assert.equal(JSON.stringify(before),original)})();
+console.log('REFACTOR BACKUP V11 EDIFIQ OK');
