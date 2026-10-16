@@ -40,3 +40,21 @@ jobs:
         run: node tests/refactor-account-deletion.cjs
       - name: Testar integração completa
         run: node tests/refactor-integration.cjs
+      - name: Validar prévia de homologação
+        run: |
+          test -f homologacao-refactor.html
+          grep -q 'Homologação da nova arquitetura' homologacao-refactor.html
+          grep -q 'Relatório fotográfico fora do escopo' homologacao-refactor.html
+          grep -q './src/core/integration-controller.js' homologacao-refactor.html
+      - name: Montar pacote de homologação
+        run: |
+          rm -rf .homologacao
+          mkdir -p .homologacao/src/core
+          cp homologacao-refactor.html .homologacao/index.html
+          cp src/core/*.js .homologacao/src/core/
+      - name: Salvar pacote de homologação
+        uses: actions/upload-artifact@v4
+        with:
+          name: edific-refactor-homologacao
+          path: .homologacao
+          if-no-files-found: error
