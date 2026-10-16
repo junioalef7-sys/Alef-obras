@@ -27,6 +27,7 @@ jobs:
           node --check src/core/account-deletion-core.js
           node --check src/core/integration-controller.js
           node --check src/adapters/supabase-readonly.js
+          node --check src/adapters/supabase-obras-write.js
           node --check src/app/homologacao-shell.js
       - name: Testar autenticação e sessão
         run: node tests/refactor-auth.cjs
@@ -44,11 +45,14 @@ jobs:
         run: node tests/refactor-integration.cjs
       - name: Testar Supabase somente leitura
         run: node tests/refactor-readonly-supabase.cjs
+      - name: Testar gravação controlada de Obras e Checklist
+        run: node tests/refactor-obras-write.cjs
       - name: Validar interface funcional de homologação
         run: |
           test -f homologacao-refactor.html
           test -f src/app/homologacao-shell.js
           test -f src/adapters/supabase-readonly.js
+          test -f src/adapters/supabase-obras-write.js
           grep -q '<title>EDIFIQ • Homologação</title>' homologacao-refactor.html
           grep -q 'Entrar no ambiente de teste' homologacao-refactor.html
           grep -q 'data-screen="obras"' homologacao-refactor.html
@@ -70,6 +74,7 @@ jobs:
           test -f homologacao-build/index.html
           test -f homologacao-build/src/core/integration-controller.js
           test -f homologacao-build/src/adapters/supabase-readonly.js
+          test -f homologacao-build/src/adapters/supabase-obras-write.js
           test -f homologacao-build/src/app/homologacao-shell.js
       - name: Salvar pacote de homologação
         uses: actions/upload-artifact@v4
