@@ -1,10 +1,1 @@
-(function(root,factory){
-  const api=factory();
-  if(typeof module==='object'&&module.exports) module.exports=api;
-  root.EDIFIQTeamWrite=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(){
-  'use strict';
-  const txt=(v,m=160)=>String(v??'').trim().slice(0,m);
-  const num=v=>{const n=Number(v||0);if(!Number.isFinite(n)||n<0)throw new Error('VALOR_INVALIDO');return Math.round(n*100)/100};
-  const id=v=>{if(v===undefined||v===null||v==='')return null;const n=Number(v);if(!Number.isSafeInteger(n)||n<=0)throw new Error('ID_INVALIDO');return n};
-  async function uid(c){const {data,error}=await
+(function(g){'use strict';function id(v){if(v==null||v==='')return null;v=Number(v);if(!Number.isSafeInteger(v)||v<=0)throw Error('ID_INVALIDO');return v}function money(v){v=Number(v||0);if(!Number.isFinite(v)||v<0)throw Error('VALOR_INVALIDO');return Math.round(v*100)/100}async function user(c){var r=await c.auth.getSession();if(r.error)throw r.error;var u=r.data&&r.data.session&&r.data.session.user&&r.data.session.user.id;if(!u)throw Error('SESSAO_INVALIDA');return u}function createWriter(c){if(!c||!c.auth||typeof c.from!=='function')throw Error('SUPABASE_INVALIDO');async function save(t,i,p){var k=id(i.id),q=k?c.from(t).update(p).eq('id',k).eq('user_id',p.user_id):c.from(t).insert(p),r=await q.select('*').single();if(r.error)throw r.error;return r.data}return{mode:'controlled-write',saveFuncionario:async function(i){i=i||{};var u=await user(c),n=String(i.nome||'').trim().slice(0,160);if(!n)throw Error('NOME_FUNCIONARIO_OBRIGATORIO');return save('funcionarios',i,{user_id:u,nome:n,funcao:String(i.funcao||'').trim().slice(0,100)||null,valor_diaria:money(i.valor_diaria),ativo:i.ativo!==false,obra_id:id(i.obra_id)})},saveDiaria:async function(i){i=i||{};var u=await user(c),f=id(i.funcionario_id),o=id(i.obra_id),q=Number(i.qtd==null?1:i.qtd);if(!f||!o)throw Error('FUNCIONARIO_E_OBRA_OBRIGATORIOS');if(q!==.5&&q!==1)throw Error('DIARIA_INVALIDA');return save('diarias',i,{user_id:u,funcionario_id:f,obra_id:o,qtd:q,valor_diaria:money(i.valor_diaria),status:String(i.status||'pendente').trim().slice(0,30)})}}}var api={createWriter:createWriter};if(typeof module==='object'&&module.exports)module.exports=api;g.EDIFIQTeamWrite=api})(typeof globalThis!=='undefined'?globalThis:this);
