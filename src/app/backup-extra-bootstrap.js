@@ -1,0 +1,1 @@
+(function(w){'use strict';w.EDIFIQBackupSnapshot=w.EDIFIQSnapshot||null;w.addEventListener('edifiq:snapshot',function(e){w.EDIFIQBackupSnapshot=e.detail||null;});})(window);
