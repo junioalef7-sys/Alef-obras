@@ -1,1 +1,10 @@
-(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;root.EDIFIQTeamWrite=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){'use strict';const txt=(v,m=160)=>String(v??'').trim().slice(0,m);const num=v=>{const n=Number(v||0);if(!Number.isFinite(n)||n<0)throw new Error('VALOR_INVALIDO');return Math.round(n*100)/100};const id=v=>{if(v===undefined||v===null||v==='')return null;const n=Number(v);if(!Number
+(function(root,factory){
+  const api=factory();
+  if(typeof module==='object'&&module.exports) module.exports=api;
+  root.EDIFIQTeamWrite=api;
+})(typeof globalThis!=='undefined'?globalThis:this,function(){
+  'use strict';
+  const txt=(v,m=160)=>String(v??'').trim().slice(0,m);
+  const num=v=>{const n=Number(v||0);if(!Number.isFinite(n)||n<0)throw new Error('VALOR_INVALIDO');return Math.round(n*100)/100};
+  const id=v=>{if(v===undefined||v===null||v==='')return null;const n=Number(v);if(!Number.isSafeInteger(n)||n<=0)throw new Error('ID_INVALIDO');return n};
+  async function uid(c){const {data,error}=await
