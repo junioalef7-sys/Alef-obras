@@ -1,31 +1,39 @@
 (function(){
 'use strict';
-if(window.__EDIFIQ_ACTION85)return;window.__EDIFIQ_ACTION85=true;
-const VERSION='85';
-const q=id=>document.getElementById(id);
-const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+if(window.__EDIFIQ_ACTION85M2)return;window.__EDIFIQ_ACTION85M2=true;
+const VERSION='85m2',q=id=>document.getElementById(id),norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
 const isPage=id=>!!q(id)?.classList?.contains('page');
-function toast85(msg){try{window.toast?.(msg)}catch(_){}}
-function closeDrawer(){try{q('menuPasta')?.classList.remove('open');q('menuPastaBackdrop')?.classList.remove('open')}catch(_){}}
+function toast85(m){try{window.toast?.(m)}catch(_){}}
+function closeDrawer(){q('menuPasta')?.classList.remove('open');q('menuPastaBackdrop')?.classList.remove('open')}
 function enforcePage(id){if(!isPage(id))return false;closeDrawer();document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav.nav button[data-p],.nav button[data-p]').forEach(b=>b.classList.toggle('active',b.dataset.p===id));try{window.scrollTo(0,0)}catch(_){}return true}
-function navigate85(id){id=String(id||'').trim();if(!isPage(id))return false;try{window.renderAll?.()}catch(e){console.warn('EDIFIQ v85 render',e)}enforcePage(id);[0,60,220].forEach(ms=>setTimeout(()=>{if(!document.querySelector('.modal.open'))enforcePage(id)},ms));try{window.dispatchEvent(new CustomEvent('edifiq:navigation',{detail:{page:id,version:VERSION}}))}catch(_){}return true}
-window.edifiqNavigate85=navigate85;window.go=function(page){return navigate85(page)};window.goMenu=function(page){closeDrawer();return navigate85(page)};
-function openModal(id){const m=q(id);if(!m)return false;try{window.openM?.(id)}catch(_){}m.classList.add('open');return true}
-function clear(id,val=''){const e=q(id);if(e)e.value=val}
-function today(){try{return window.today?.()||new Date().toISOString().slice(0,10)}catch(_){return new Date().toISOString().slice(0,10)}}
-function safeAction(fn,args=[],fallback){try{const f=window[fn];if(typeof f==='function'){const r=f.apply(window,args);if(r===false)return false;return true}}catch(e){console.warn('EDIFIQ v85 ação',fn,e)}try{return fallback?fallback()!==false:false}catch(e){console.error('EDIFIQ v85 fallback',fn,e);toast85('Não foi possível abrir esta função.');return false}}
-function openFin85(){return safeAction('openFin',[],()=>{try{window.fillSelectors?.()}catch(_){};clear('tFin','entrada');clear('dFin');clear('vFin');clear('dtFin',today());clear('forFin');clear('obsFin');try{window.atualizarCategoriaFinanceira?.();window.atualizarReceitaChecklistDistribuicao?.();window.atualizarDespesaChecklistDistribuicao?.()}catch(_){}return openModal('finM')})}
-function openObra85(){return safeAction('openObra',[],()=>{clear('oNome');clear('oCli');clear('oLoc');clear('oVal');clear('oIni',today());clear('oFim');clear('oTipo');clear('oObs');const st=q('oStatus');if(st)st.value='em_andamento';const t=q('obraTitle');if(t)t.textContent='Nova obra';return openModal('obraM')})}
-function openFunc85(){return safeAction('openFunc',[],()=>{try{window.fillSelectors?.()}catch(_){};['fNome','fFunc','fTel','fDia','fSal','fPag'].forEach(id=>clear(id));clear('fAtivo','true');clear('fTipo','diaria');clear('fDiariaRegistro','true');clear('fObra');const t=q('funcTitle');if(t)t.textContent='Novo funcionário';return openModal('funcM')})}
-function openDia85(id){return safeAction(id?'openDiaFuncionario':'openDia',id?[id]:[],()=>{try{window.fillSelectors?.()}catch(_){};clear('dData',today());clear('dQtd','1');if(id)clear('dFunc',String(id));try{window.aplicarTipoDiaria?.();window.fillDiariaChecklistSelector?.()}catch(_){}return openModal('diaM')})}
-function openVale85(id){return safeAction(id?'openAdiantamentoFuncionario':'openAdiantamento',id?[id]:[],()=>{try{window.fillSelectors?.();window.fillAdiantamentoFuncionarios?.()}catch(_){};if(id)clear('adiantFunc',String(id));clear('adiantValor');clear('adiantData',today());clear('adiantObs');try{window.fillValeChecklistSelector?.()}catch(_){}return openModal('adiantM')})}
-function openPay85(id){return safeAction(id?'openPagamentoFuncionario':'openPagamentoEquipe',id?[id]:[],()=>openModal('pagEquipeM'))}
-function funcCommand85(action){return safeAction('openFuncCommand',[action],()=>action==='add'?openFunc85():false)}
+function navigate85(id){if(!enforcePage(String(id||'').trim()))return false;try{window.renderAll?.()}catch(e){console.warn('EDIFIQ mobile render',e)};setTimeout(()=>enforcePage(id),80);return true}
+window.edifiqNavigate85=navigate85;window.go=navigate85;window.goMenu=function(p){closeDrawer();return navigate85(p)};
+function openModal(id){const m=q(id);if(!m)return false;document.querySelectorAll('.modal.open').forEach(x=>x.classList.remove('open'));m.classList.add('open');m.removeAttribute('hidden');m.style.display='';document.body.classList.add('modal-open');return true}
+function setv(id,v=''){const e=q(id);if(e)e.value=v}
+function today(){return new Date().toISOString().slice(0,10)}
+function prepSelectors(){try{window.fillSelectors?.()}catch(_){} }
+/* No iPhone, abre os modais diretamente. Isso evita wrappers antigos disputando o mesmo toque. */
+function openFin85(){prepSelectors();setv('tFin','entrada');setv('dFin');setv('vFin');setv('dtFin',today());setv('forFin');setv('obsFin');try{window.atualizarCategoriaFinanceira?.();window.atualizarReceitaChecklistDistribuicao?.();window.atualizarDespesaChecklistDistribuicao?.()}catch(_){}return openModal('finM')}
+function openObra85(){setv('oNome');setv('oCli');setv('oLoc');setv('oVal');setv('oIni',today());setv('oFim');setv('oTipo');setv('oObs');setv('oStatus','em_andamento');if(q('obraTitle'))q('obraTitle').textContent='Nova obra';return openModal('obraM')}
+function openFunc85(){prepSelectors();['fNome','fFunc','fTel','fDia','fSal','fPag'].forEach(id=>setv(id));setv('fAtivo','true');setv('fTipo','diaria');setv('fDiariaRegistro','true');setv('fObra');if(q('funcTitle'))q('funcTitle').textContent='Novo funcionário';return openModal('funcM')}
+function openDia85(id){prepSelectors();setv('dData',today());setv('dQtd','1');if(id)setv('dFunc',String(id));try{window.aplicarTipoDiaria?.();window.fillDiariaChecklistSelector?.()}catch(_){}return openModal('diaM')}
+function openVale85(id){prepSelectors();try{window.fillAdiantamentoFuncionarios?.()}catch(_){};if(id)setv('adiantFunc',String(id));setv('adiantValor');setv('adiantData',today());setv('adiantObs');try{window.fillValeChecklistSelector?.()}catch(_){}return openModal('adiantM')}
+function openPay85(id){try{if(id&&typeof window.openPagamentoFuncionario==='function'){window.openPagamentoFuncionario(id);return true}if(typeof window.openPagamentoEquipe==='function'){window.openPagamentoEquipe();return true}}catch(e){console.warn(e)}return openModal('pagEquipeM')}
 function argsFrom(on,name){const m=String(on||'').match(new RegExp(name+'\\([\\"\\\']?([^\\"\\\'\\)]*)'));return m&&m[1]?m[1]:null}
-function criticalAction(el){const on=String(el.getAttribute?.('onclick')||'');const text=norm(el.textContent);if(/openFin\s*\(/.test(on)||(/lancamento/.test(text)&&el.closest('#financeiro')))return()=>openFin85();if(/openObra\s*\(/.test(on)&&!/openObra\s*\([^\)]/.test(on))return()=>openObra85();if(/openFuncCommand\s*\(/.test(on)){const m=on.match(/openFuncCommand\(['\"]([^'\"]+)/);return()=>funcCommand85(m?.[1]||'list')}if(/openFunc\s*\(\s*\)/.test(on)||((text.includes('funcionario')||text.includes('adicionar funcionario'))&&el.closest('#funcionarios')&&/gold|primary/.test(el.className)))return()=>openFunc85();if(/openDiaFuncionario/.test(on)){const id=argsFrom(on,'openDiaFuncionario');return()=>openDia85(id)}if(/openDia\s*\(\s*\)/.test(on))return()=>openDia85(null);if(/openAdiantamentoFuncionario/.test(on)){const id=argsFrom(on,'openAdiantamentoFuncionario');return()=>openVale85(id)}if(/openAdiantamento\s*\(\s*\)/.test(on))return()=>openVale85(null);if(/openPagamentoFuncionario/.test(on)){const id=argsFrom(on,'openPagamentoFuncionario');return()=>openPay85(id)}if(/openPagamentoEquipe\s*\(/.test(on))return()=>openPay85(null);if(/rtPrint\s*\(/.test(on))return()=>safeAction('rtPrint');if(/edifiqReportPrint\s*\(/.test(on))return()=>safeAction('edifiqReportPrint');if(/edifiqReportSavePDF\s*\(/.test(on))return()=>safeAction('edifiqReportSavePDF');if(/ed27PrintReport\s*\(/.test(on))return()=>safeAction('ed27PrintReport');if(/window\.print\s*\(/.test(on))return()=>{try{window.focus();window.print();return true}catch(e){console.error(e);return false}};return null}
-function pageFrom(el){const p=el.dataset?.p;if(p&&isPage(p))return p;const on=String(el.getAttribute?.('onclick')||'');const m=on.match(/go(?:Menu)?\(['\"]([^'\"]+)['\"]\)/i);return m&&isPage(m[1])?m[1]:''}
-function capture85(ev){const el=ev.target?.closest?.('button,a,[role="button"]');if(!el)return;const page=pageFrom(el);if(page&&(el.closest('#menuPasta')||el.closest('nav.nav')||/go(?:Menu)?\s*\(/.test(String(el.getAttribute?.('onclick')||'')))){ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();navigate85(page);return}const act=criticalAction(el);if(!act)return;ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();const ok=act();if(ok===false)console.warn('EDIFIQ v85: ação não concluída',el.textContent)}
-document.addEventListener('click',capture85,true);
-function health85(){const required=['dashboard','financeiro','funcionarios','obras'];const missing=required.filter(id=>!isPage(id));if(missing.length)console.error('EDIFIQ v85 páginas ausentes',missing);const modals=['finM','obraM','funcM','diaM','adiantM'];const missingModals=modals.filter(id=>!q(id));if(missingModals.length)console.error('EDIFIQ v85 modais ausentes',missingModals)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',health85,{once:true});else health85();setTimeout(health85,1000);
+function print85(){try{window.focus();setTimeout(()=>window.print(),120);return true}catch(e){console.error(e);toast85('Não foi possível abrir a impressão.');return false}}
+function action(el){const on=String(el.getAttribute?.('onclick')||''),text=norm(el.textContent);
+ if(/openFin\s*\(/.test(on)||(/lancamento/.test(text)&&el.closest('#financeiro')))return openFin85;
+ if(/openObra\s*\(\s*\)/.test(on))return openObra85;
+ if(/openFuncCommand\(['\"]add/.test(on)||/openFunc\s*\(\s*\)/.test(on)||(/funcionario/.test(text)&&/adicionar|novo|\+/.test(text)))return openFunc85;
+ if(/openDiaFuncionario/.test(on)){const id=argsFrom(on,'openDiaFuncionario');return()=>openDia85(id)} if(/openDia\s*\(\s*\)/.test(on))return()=>openDia85();
+ if(/openAdiantamentoFuncionario/.test(on)){const id=argsFrom(on,'openAdiantamentoFuncionario');return()=>openVale85(id)} if(/openAdiantamento\s*\(\s*\)/.test(on))return()=>openVale85();
+ if(/openPagamentoFuncionario/.test(on)){const id=argsFrom(on,'openPagamentoFuncionario');return()=>openPay85(id)} if(/openPagamentoEquipe/.test(on))return()=>openPay85();
+ if(/print|imprimir/.test(text)||/rtPrint|edifiqReportPrint|ed27PrintReport|window\.print/.test(on))return print85;
+ return null}
+function pageFrom(el){const p=el.dataset?.p;if(p&&isPage(p))return p;const m=String(el.getAttribute?.('onclick')||'').match(/go(?:Menu)?\(['\"]([^'\"]+)/i);return m&&isPage(m[1])?m[1]:''}
+let lastTouch=0;
+function handle(ev){if(ev.type==='click'&&Date.now()-lastTouch<650)return;const el=ev.target?.closest?.('button,a,[role="button"]');if(!el)return;const p=pageFrom(el);const a=action(el);if(!p&&!a)return;if(ev.type==='touchend')lastTouch=Date.now();ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();if(p)navigate85(p);else a()}
+/* touchend resolve o Safari/iPhone antes que handlers antigos cancelem o click sintetizado. */
+document.addEventListener('touchend',handle,{capture:true,passive:false});document.addEventListener('click',handle,true);
+window.addEventListener('pageshow',()=>{document.documentElement.classList.add('edifiq-mobile-actions-ready')});
 })();
