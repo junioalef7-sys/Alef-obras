@@ -1,4 +1,4 @@
-const CACHE='edifiq-shell-v79-orcamentos';
+const CACHE='edifiq-shell-v80-orcamentos-safe';
 const SHELL=[
   './','./manifest.webmanifest','./edifiq-icon-192.png','./edifiq-menu-logo.jpg','./edific-icon.svg','./exclusao-conta.html','./orcamentos.html','./visual-fix78.css?v=78',
   './core-fix65.js?v=75','./billing-fix57.js?v=75','./account-delete-fix61.js?v=75','./trial-fix62.js?v=75','./billing-hotfix63.js?v=75','./access-limit63.js?v=75','./ui-fix67.js?v=77','./login-ui68.js?v=75','./orcamentos-link79.js?v=79'
