@@ -1,0 +1,96 @@
+(function(){
+'use strict';
+if(window.__EDIFIQ_ACTION85)return;window.__EDIFIQ_ACTION85=true;
+const VERSION='85';
+const q=id=>document.getElementById(id);
+const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+const isPage=id=>!!q(id)?.classList?.contains('page');
+function toast85(msg){try{window.toast?.(msg)}catch(_){}}
+function closeDrawer(){try{q('menuPasta')?.classList.remove('open');q('menuPastaBackdrop')?.classList.remove('open')}catch(_){}}
+function enforcePage(id){
+ if(!isPage(id))return false;
+ closeDrawer();
+ document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));
+ document.querySelectorAll('nav.nav button[data-p],.nav button[data-p]').forEach(b=>b.classList.toggle('active',b.dataset.p===id));
+ try{window.scrollTo(0,0)}catch(_){}
+ return true;
+}
+function navigate85(id){
+ id=String(id||'').trim();
+ if(!isPage(id))return false;
+ try{window.renderAll?.()}catch(e){console.warn('EDIFIQ v85 render',e)}
+ enforcePage(id);
+ [0,60,220].forEach(ms=>setTimeout(()=>{if(!document.querySelector('.modal.open'))enforcePage(id)},ms));
+ try{window.dispatchEvent(new CustomEvent('edifiq:navigation',{detail:{page:id,version:VERSION}}))}catch(_){}
+ return true;
+}
+window.edifiqNavigate85=navigate85;
+window.go=function(page){return navigate85(page)};
+window.goMenu=function(page){closeDrawer();return navigate85(page)};
+
+function openModal(id){const m=q(id);if(!m)return false;try{window.openM?.(id)}catch(_){}m.classList.add('open');return true}
+function clear(id,val=''){const e=q(id);if(e)e.value=val}
+function today(){try{return window.today?.()||new Date().toISOString().slice(0,10)}catch(_){return new Date().toISOString().slice(0,10)}}
+function safeAction(fn,args=[],fallback){
+ try{
+  const f=window[fn];
+  if(typeof f==='function'){
+   const r=f.apply(window,args);
+   if(r===false)return false;
+   return true;
+  }
+ }catch(e){console.warn('EDIFIQ v85 ação',fn,e)}
+ try{return fallback?fallback()!==false:false}catch(e){console.error('EDIFIQ v85 fallback',fn,e);toast85('Não foi possível abrir esta função.');return false}
+}
+function openFin85(){return safeAction('openFin',[],()=>{try{window.fillSelectors?.()}catch(_){};clear('tFin','entrada');clear('dFin');clear('vFin');clear('dtFin',today());clear('forFin');clear('obsFin');try{window.atualizarCategoriaFinanceira?.();window.atualizarReceitaChecklistDistribuicao?.();window.atualizarDespesaChecklistDistribuicao?.()}catch(_){}return openModal('finM')})}
+function openObra85(){return safeAction('openObra',[],()=>{clear('oNome');clear('oCli');clear('oLoc');clear('oVal');clear('oIni',today());clear('oFim');clear('oTipo');clear('oObs');const st=q('oStatus');if(st)st.value='em_andamento';const t=q('obraTitle');if(t)t.textContent='Nova obra';return openModal('obraM')})}
+function openFunc85(){return safeAction('openFunc',[],()=>{try{window.fillSelectors?.()}catch(_){};['fNome','fFunc','fTel','fDia','fSal','fPag'].forEach(id=>clear(id));clear('fAtivo','true');clear('fTipo','diaria');clear('fDiariaRegistro','true');clear('fObra');const t=q('funcTitle');if(t)t.textContent='Novo funcionário';return openModal('funcM')})}
+function openDia85(id){return safeAction(id?'openDiaFuncionario':'openDia',id?[id]:[],()=>{try{window.fillSelectors?.()}catch(_){};clear('dData',today());clear('dQtd','1');if(id)clear('dFunc',String(id));try{window.aplicarTipoDiaria?.();window.fillDiariaChecklistSelector?.()}catch(_){}return openModal('diaM')})}
+function openVale85(id){return safeAction(id?'openAdiantamentoFuncionario':'openAdiantamento',id?[id]:[],()=>{try{window.fillSelectors?.();window.fillAdiantamentoFuncionarios?.()}catch(_){};if(id)clear('adiantFunc',String(id));clear('adiantValor');clear('adiantData',today());clear('adiantObs');try{window.fillValeChecklistSelector?.()}catch(_){}return openModal('adiantM')})}
+function openPay85(id){return safeAction(id?'openPagamentoFuncionario':'openPagamentoEquipe',id?[id]:[],()=>openModal('pagEquipeM'))}
+function funcCommand85(action){return safeAction('openFuncCommand',[action],()=>action==='add'?openFunc85():false)}
+
+function argsFrom(on,name){const m=String(on||'').match(new RegExp(name+'\\([\\"\\\']?([^\\"\\\'\\)]*)'));return m&&m[1]?m[1]:null}
+function criticalAction(el){
+ const on=String(el.getAttribute?.('onclick')||'');const text=norm(el.textContent);
+ if(/openFin\s*\(/.test(on)||(/lancamento/.test(text)&&el.closest('#financeiro')))return()=>openFin85();
+ if(/openObra\s*\(/.test(on)&&!/openObra\s*\([^\)]/.test(on))return()=>openObra85();
+ if(/openFuncCommand\s*\(/.test(on)){const m=on.match(/openFuncCommand\(['\"]([^'\"]+)/);return()=>funcCommand85(m?.[1]||'list')}
+ if(/openFunc\s*\(\s*\)/.test(on)||((text.includes('funcionario')||text.includes('adicionar funcionario'))&&el.closest('#funcionarios')&&/gold|primary/.test(el.className)))return()=>openFunc85();
+ if(/openDiaFuncionario/.test(on)){const id=argsFrom(on,'openDiaFuncionario');return()=>openDia85(id)}
+ if(/openDia\s*\(\s*\)/.test(on))return()=>openDia85(null);
+ if(/openAdiantamentoFuncionario/.test(on)){const id=argsFrom(on,'openAdiantamentoFuncionario');return()=>openVale85(id)}
+ if(/openAdiantamento\s*\(\s*\)/.test(on))return()=>openVale85(null);
+ if(/openPagamentoFuncionario/.test(on)){const id=argsFrom(on,'openPagamentoFuncionario');return()=>openPay85(id)}
+ if(/openPagamentoEquipe\s*\(/.test(on))return()=>openPay85(null);
+ if(/rtPrint\s*\(/.test(on))return()=>safeAction('rtPrint');
+ if(/edifiqReportPrint\s*\(/.test(on))return()=>safeAction('edifiqReportPrint');
+ if(/edifiqReportSavePDF\s*\(/.test(on))return()=>safeAction('edifiqReportSavePDF');
+ if(/ed27PrintReport\s*\(/.test(on))return()=>safeAction('ed27PrintReport');
+ if(/window\.print\s*\(/.test(on))return()=>{try{window.focus();window.print();return true}catch(e){console.error(e);return false}};
+ return null;
+}
+function pageFrom(el){const p=el.dataset?.p;if(p&&isPage(p))return p;const on=String(el.getAttribute?.('onclick')||'');const m=on.match(/go(?:Menu)?\(['\"]([^'\"]+)['\"]\)/i);return m&&isPage(m[1])?m[1]:''}
+function capture85(ev){
+ const el=ev.target?.closest?.('button,a,[role="button"]');if(!el)return;
+ const page=pageFrom(el);
+ if(page&&(el.closest('#menuPasta')||el.closest('nav.nav')||/go(?:Menu)?\s*\(/.test(String(el.getAttribute?.('onclick')||'')))){
+  ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();navigate85(page);return;
+ }
+ const act=criticalAction(el);if(!act)return;
+ ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
+ const ok=act();if(ok===false)console.warn('EDIFIQ v85: ação não concluída',el.textContent);
+}
+document.addEventListener('click',capture85,true);
+
+function health85(){
+ const required=['dashboard','financeiro','funcionarios','obras'];
+ const missing=required.filter(id=>!isPage(id));
+ if(missing.length)console.error('EDIFIQ v85 páginas ausentes',missing);
+ const modals=['finM','obraM','funcM','diaM','adiantM'];
+ const missingModals=modals.filter(id=>!q(id));
+ if(missingModals.length)console.error('EDIFIQ v85 modais ausentes',missingModals);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',health85,{once:true});else health85();
+setTimeout(health85,1000);
+})();
