@@ -89,7 +89,6 @@
         }catch(error){
           await mark(op.operationId,{status:'pending',lastError:String(error?.message||error||'Falha de sincronização')});
           result.failed++;
-          // Para no primeiro erro de transporte para não martelar a rede offline.
           if(options.stopOnError!==false) break;
         }
       }
@@ -97,7 +96,7 @@
       return result;
     }
 
-    async function flush(){
+    function flush(){
       if(flushing) return flushing;
       flushing=flushOnce().finally(()=>{flushing=null});
       return flushing;
