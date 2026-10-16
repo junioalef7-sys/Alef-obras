@@ -1,17 +1,13 @@
 name: Publicar EDIFIQ auditado
-
 on:
   push:
     branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: read
-
 concurrency:
   group: edific-pages-audit-safe
   cancel-in-progress: true
-
 jobs:
   validate:
     name: Validar e preparar versão pública
@@ -21,34 +17,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
       - name: Proteger login contra regressão
         run: node tests/login-smoke.cjs
-
       - name: Auditar núcleo do aplicativo
         run: |
           python3 scripts/check-release.py
           node tests/core65.cjs
           node tests/audit75.cjs
-
       - name: Validar scripts externos
         run: |
-          for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js orcamentos-link79.js orcamentos-fix81.js navigation-fix82.js photo-purge83.js action-fix85.js edifiq-sw.js; do
-            node --check "$f"
-          done
-
+          for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js orcamentos-link79.js orcamentos-fix81.js navigation-fix82.js photo-purge83.js action-fix85.js edifiq-sw.js; do node --check "$f"; done
       - name: Validar navegação e ações críticas
         run: |
           grep -q "MAIN_PAGES=new Set(\['dashboard','financeiro','funcionarios','obras'\])" navigation-fix82.js
-          grep -q "openFin85" action-fix85.js
-          grep -q "openObra85" action-fix85.js
-          grep -q "openFunc85" action-fix85.js
-          grep -q "openDia85" action-fix85.js
-          grep -q "openVale85" action-fix85.js
-          grep -q "openPay85" action-fix85.js
-          grep -q "edifiqReportPrint" action-fix85.js
-          grep -q "rtPrint" action-fix85.js
-          grep -q "ed27PrintReport" action-fix85.js
+          for x in openFin85 openObra85 openFunc85 openDia85 openVale85 openPay85; do grep -q "$x" action-fix85.js; done
+          grep -q "touchend" action-fix85.js
+          grep -q "window.print" action-fix85.js
           grep -q "go('financeiro')" index.html
           grep -q "go('funcionarios')" index.html
           grep -q "goMenu('obras')" index.html
@@ -56,12 +40,7 @@ jobs:
           grep -q 'onclick="openObra()"' index.html
           grep -q 'onclick="openFunc()"' index.html
           grep -q 'onclick="openDia()"' index.html
-          grep -q 'id="finM"' index.html
-          grep -q 'id="obraM"' index.html
-          grep -q 'id="funcM"' index.html
-          grep -q 'id="diaM"' index.html
-          grep -q 'id="adiantM"' index.html
-
+          for x in finM obraM funcM diaM adiantM; do grep -q "id=\"$x\"" index.html; done
       - name: Validar módulo de Orçamentos
         run: |
           grep -q "menuOrcamentos79" orcamentos-link79.js
@@ -70,29 +49,26 @@ jobs:
           grep -q "build(r)" orcamentos-fix81.js
           grep -q "Assinatura do prestador de serviço" orcamentos-fix81.js
           grep -q "files:\[pack.file\]" orcamentos-fix81.js
-
       - name: Validar exclusão imediata de conta
         run: |
           grep -q "edifiq-excluir-conta-imediato" account-delete-fix61.js
           grep -q "EXCLUIR MINHA CONTA" account-delete-fix61.js
           grep -q "Excluir conta agora" account-delete-fix61.js
-
       - name: Validar exclusão manual de fotos
         run: |
           grep -q "edifiq-purge-minhas-fotos" photo-purge83.js
           grep -q "EXCLUIR FOTOS" photo-purge83.js
           grep -q "Excluir todas as fotos antigas" photo-purge83.js
           ! grep -q "setTimeout(run83" photo-purge83.js
-
       - name: Preparar versão pública auditada
         run: |
           python3 scripts/prepare-pages-v85.py
           grep -q './orcamentos-link79.js?v=79' .pages/index.html
           grep -q './navigation-fix82.js?v=82' .pages/index.html
           grep -q './photo-purge83.js?v=83' .pages/index.html
-          grep -q './action-fix85.js?v=85' .pages/index.html
-          grep -q 'edifiq-shell-v85-actions-safe' .pages/edifiq-sw.js
-          grep -q './action-fix85.js?v=85' .pages/edifiq-sw.js
+          grep -q './action-fix85.js?v=852' .pages/index.html
+          grep -q 'edifiq-shell-v85-2-mobile-touch-print' .pages/edifiq-sw.js
+          grep -q './action-fix85.js?v=852' .pages/edifiq-sw.js
           grep -q 'ORCAMENTOS_V80_TIMEOUT_SAFE' .pages/orcamentos.html
           grep -q './orcamentos-fix81.js?v=81' .pages/orcamentos.html
           grep -q 'Orçamentos — EDIFIQ' .pages/orcamentos.html
@@ -104,11 +80,9 @@ jobs:
           ! grep -q 'black-translucent' .pages/index.html
           ! grep -q 'BILLING_FIX' .pages/edifiq-sw.js
           ! grep -q 'injectFix' .pages/edifiq-sw.js
-
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .pages
-
   deploy:
     name: Publicar versão auditada
     needs: validate
