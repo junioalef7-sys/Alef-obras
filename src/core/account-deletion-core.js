@@ -1,7 +1,7 @@
 (function(root,factory){
   const api=factory();
   if(typeof module==='object'&&module.exports) module.exports=api;
-  if(root) root.EdificAccountDeletionCore=api;
+  if(root){root.EDIFIQAccountDeletionCore=api;root.EdificAccountDeletionCore=api;}
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
   const INACTIVE=new Set(['inactive','canceled','cancelled','expired','sem_assinatura','none','']);
