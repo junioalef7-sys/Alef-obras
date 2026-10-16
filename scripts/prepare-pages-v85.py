@@ -8,18 +8,15 @@ if OUT.exists():
     shutil.rmtree(OUT)
 OUT.mkdir(parents=True)
 
-# Publica somente a nova base de homologação como entrada do Preview.
-shutil.copy2(ROOT / 'homologacao-real.html', OUT / 'index.html')
+html = (ROOT / 'homologacao-real.html').read_text(encoding='utf-8')
+html = html.replace('let snap=null;', 'window.__EDIFIQ_SB__=sb;let snap=null;', 1)
+html = html.replace('</head>', '<link rel="stylesheet" href="./src/app/obras-checklist-view.css"></head>', 1)
+html = html.replace('</body>', '<script src="./src/app/obras-checklist-view.js"></script><script src="./src/app/homologacao-obras-bridge.js"></script><script src="./src/app/homologacao-obras-autoload.js"></script></body>', 1)
+(OUT / 'index.html').write_text(html, encoding='utf-8')
 
-for folder in ('src',):
-    source = ROOT / folder
-    if source.exists():
-        shutil.copytree(source, OUT / folder)
+source = ROOT / 'src'
+if source.exists():
+    shutil.copytree(source, OUT / 'src')
 
-# Arquivo marcador para confirmar que o Preview veio da base limpa.
-(OUT / 'preview-edifiq.txt').write_text(
-    'EDIFIQ refactor preview - clean readonly homologation\n',
-    encoding='utf-8'
-)
-
-print('EDIFIQ refactor preview preparado em .pages')
+(OUT / 'preview-edifiq.txt').write_text('EDIFIQ refactor preview - Obras e Checklist conectados\n', encoding='utf-8')
+print('EDIFIQ refactor preview preparado em .pages com Obras e Checklist')
