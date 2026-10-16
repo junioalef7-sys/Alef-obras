@@ -42,7 +42,7 @@ jobs:
           grep -q "menuOrcamentos79" orcamentos-link79.js
           grep -q "edifiq_orcamento_salvar" orcamentos.html
           grep -q "edifiq_orcamento_converter_em_obra" orcamentos.html
-          grep -q "edifiq-shell-v79-orcamentos" edifiq-sw.js
+          grep -q "edifiq-shell-v80-orcamentos-safe" edifiq-sw.js
 
       - name: Validar exclusão imediata de conta
         run: |
@@ -52,9 +52,14 @@ jobs:
 
       - name: Preparar versão pública auditada
         run: |
-          python3 scripts/prepare-pages-v79.py
+          python3 scripts/prepare-pages-v80.py
           grep -q './orcamentos-link79.js?v=79' .pages/index.html
-          grep -q 'edifiq-shell-v79-orcamentos' .pages/edifiq-sw.js
+          grep -q 'edifiq-shell-v80-orcamentos-safe' .pages/edifiq-sw.js
+          grep -q 'ORCAMENTOS_V80_TIMEOUT_SAFE' .pages/orcamentos.html
+          grep -q 'Tentar novamente' .pages/orcamentos.html
+          grep -q 'withTimeout' .pages/orcamentos.html
+          grep -q 'ensureClient' .pages/orcamentos.html
+          ! grep -q 'esm.sh/@supabase/supabase-js' .pages/orcamentos.html
           test -f .pages/orcamentos.html
           test -f .pages/orcamentos-link79.js
           ! grep -q 'black-translucent' .pages/index.html
