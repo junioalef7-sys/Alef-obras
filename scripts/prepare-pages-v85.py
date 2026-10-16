@@ -10,6 +10,7 @@ scripts=''.join([
 '<script src="./src/adapters/supabase-obras-write.js"></script>',
 '<script src="./src/adapters/supabase-team-write.js"></script>',
 '<script src="./src/core/team-finance-summary.js"></script>',
+'<script src="./src/app/equipe-summary-view.js"></script>',
 '<script src="./src/app/obras-checklist-view.js"></script>',
 '<script src="./src/app/homologacao-obras-bridge.js"></script>',
 '<script src="./src/app/homologacao-obras-autoload.js"></script>',
