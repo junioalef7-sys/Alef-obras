@@ -49,7 +49,7 @@ assert.match(orcLink,/menuOrcamentos79/,'Menu precisa expor Orçamentos');
 assert.match(orcPage,/edifiq_orcamento_salvar/,'Orçamentos precisa salvar pelo RPC seguro');
 assert.match(orcPage,/edifiq_orcamento_converter_em_obra/,'Orçamentos precisa converter proposta aprovada em obra');
 
-assert.match(sw,/edifiq-shell-v79-orcamentos/,'cache PWA deve incluir o módulo de Orçamentos v79');
+assert.match(sw,/edifiq-shell-v80-orcamentos-safe/,'cache PWA deve forçar a versão segura de Orçamentos v80');
 assert.match(sw,/orcamentos\.html/,'Service Worker deve incluir a página de Orçamentos');
 assert.match(sw,/orcamentos-link79\.js\?v=79/,'Service Worker deve incluir o atalho de Orçamentos');
 assert.doesNotMatch(sw,/BILLING_FIX/,'Service Worker não pode injetar cobrança antiga');
@@ -59,4 +59,4 @@ assert.match(sw,/visual-fix78\.css\?v=78/,'Service Worker deve carregar a corre�
 assert.match(sw,/ui-fix67\.js\?v=77/,'Service Worker deve preservar o patch funcional visual anterior sem mudança desnecessária');
 assert.match(manifest,/edifiq-menu-logo\.jpg\?v=75/,'manifest deve preservar a logo aprovada sem mudança desnecessária');
 
-console.log('AUDIT79 OK: Orçamentos adicionado preservando login, sessão, sync, cobrança, visual e PWA.');
+console.log('AUDIT80 OK: Orçamentos protegido contra carregamento infinito, preservando login, sessão, sync, cobrança, visual e PWA.');
