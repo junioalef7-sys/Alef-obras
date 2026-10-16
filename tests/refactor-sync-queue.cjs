@@ -43,8 +43,9 @@ const {createMemoryStore,createSyncQueue}=require('../src/core/sync-queue.js');
 
   {
     let resolveSend;
+    const hold=new Promise(r=>{resolveSend=r});
     let calls=0;
-    const q=createSyncQueue({store:createMemoryStore(),send:()=>{calls++;return new Promise(r=>{resolveSend=r})},makeId:()=> 'lock-1'});
+    const q=createSyncQueue({store:createMemoryStore(),send:()=>{calls++;return hold},makeId:()=> 'lock-1'});
     await q.enqueue({type:'insert',entity:'gastos',payload:{valor:50}});
     const a=q.flush();
     const b=q.flush();
