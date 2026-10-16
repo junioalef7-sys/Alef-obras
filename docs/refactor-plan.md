@@ -12,6 +12,7 @@ Esta branch é a nova base de desenvolvimento. A produção permanece na `main` 
 6. Cobrança decidida pelo servidor/webhook, nunca pelo navegador.
 7. Módulos separados para reduzir regressões entre áreas.
 8. Testes automáticos antes de integrar qualquer módulo à produção.
+9. Relatório fotográfico não será reintroduzido nesta reformulação.
 
 ## Ordem de execução
 
@@ -51,13 +52,17 @@ Esta branch é a nova base de desenvolvimento. A produção permanece na `main` 
 - cancelamento confirmado antes de exclusão;
 - exclusão de conta no servidor.
 
-### Fase 6 — Relatório fotográfico
-- Supabase Storage;
-- metadados no banco;
-- miniaturas/compressão;
-- paginação;
-- fila de upload offline;
-- retry sem duplicação.
+### Fase 6 — Integração e homologação
+- integrar os núcleos novos em uma versão de teste;
+- manter produção atual isolada;
+- testar login, navegação, sincronização, backup, obras, equipe, financeiro e cobrança em conjunto;
+- validar no navegador e no iPhone/PWA;
+- somente depois preparar migração controlada para produção.
+
+## Escopo excluído
+
+- Relatório fotográfico não será reintroduzido no Edific nesta reformulação.
+- Fotos antigas existentes no banco/Storage não serão apagadas automaticamente; qualquer exclusão futura deverá ser uma decisão explícita e separada.
 
 ## Regra de integração
 
