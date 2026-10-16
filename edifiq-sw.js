@@ -1,7 +1,7 @@
-const CACHE='edifiq-shell-v78-opaque-global';
+const CACHE='edifiq-shell-v79-orcamentos';
 const SHELL=[
-  './','./manifest.webmanifest','./edifiq-icon-192.png','./edifiq-menu-logo.jpg','./edific-icon.svg','./exclusao-conta.html','./visual-fix78.css?v=78',
-  './core-fix65.js?v=75','./billing-fix57.js?v=75','./account-delete-fix61.js?v=75','./trial-fix62.js?v=75','./billing-hotfix63.js?v=75','./access-limit63.js?v=75','./ui-fix67.js?v=77','./login-ui68.js?v=75'
+  './','./manifest.webmanifest','./edifiq-icon-192.png','./edifiq-menu-logo.jpg','./edific-icon.svg','./exclusao-conta.html','./orcamentos.html','./visual-fix78.css?v=78',
+  './core-fix65.js?v=75','./billing-fix57.js?v=75','./account-delete-fix61.js?v=75','./trial-fix62.js?v=75','./billing-hotfix63.js?v=75','./access-limit63.js?v=75','./ui-fix67.js?v=77','./login-ui68.js?v=75','./orcamentos-link79.js?v=79'
 ];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(SHELL.map(url=>cache.add(url)))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('edifiq-shell-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
