@@ -3,6 +3,7 @@ const {createReadonlyAdapter}=require('../src/adapters/supabase-readonly.js');
 
 const rows={
   obras:[{id:1,nome:'Obra A',valor:1000,status:'em_andamento'}],
+  checklist:[{id:8,obra_id:1,tarefa:'Alvenaria',concluida:false,progresso:50,valor:0}],
   funcionarios:[{id:2,nome:'João',ativo:true,valor_diaria:200}],
   diarias:[{id:3,funcionario_id:2,obra_id:1,qtd:1,valor_diaria:200,status:'pendente'}],
   adiantamentos:[{id:4,funcionario_id:2,obra_id:1,valor:50}],
@@ -35,13 +36,14 @@ const client={
   for(const forbidden of ['insert','update','delete','upsert','save','remove'])assert.equal(typeof adapter[forbidden],'undefined');
   const snap=await adapter.loadSnapshot();
   assert.equal(snap.user_id,'user-123');
-  assert.equal(snap.obras.length,1);assert.equal(snap.funcionarios.length,1);assert.equal(snap.diarias.length,1);
+  assert.equal(snap.obras.length,1);assert.equal(snap.checklist.length,1);assert.equal(snap.checklist[0].progresso,50);
+  assert.equal(snap.funcionarios.length,1);assert.equal(snap.diarias.length,1);
   assert.equal(snap.adiantamentos[0].valor,50);assert.equal(snap.gastos[0].valor,100);assert.equal(snap.pagamentos[0].valor,400);assert.equal(snap.servicos_adicionais[0].valor,250);
-  const expected=['obras','funcionarios','diarias','adiantamentos','gastos','pagamentos','servicos_adicionais'];
+  const expected=['obras','checklist','funcionarios','diarias','adiantamentos','gastos','pagamentos','servicos_adicionais'];
   const froms=calls.filter(x=>x[0]==='from').map(x=>x[1]);
   assert.deepEqual(froms,expected);
   const eqs=calls.filter(x=>x[0]==='eq');
-  assert.equal(eqs.length,7);for(const c of eqs){assert.equal(c[2],'user_id');assert.equal(c[3],'user-123')}
+  assert.equal(eqs.length,8);for(const c of eqs){assert.equal(c[2],'user_id');assert.equal(c[3],'user-123')}
   assert.ok(!calls.some(x=>/^write/i.test(String(x[0]))));
-  console.log('REFACTOR SUPABASE READONLY OK');
+  console.log('REFACTOR SUPABASE READONLY + CHECKLIST OK');
 })().catch(e=>{console.error(e);process.exit(1)});
