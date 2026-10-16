@@ -1,0 +1,1 @@
+(function(r){'use strict';r.EDIFIQBackupExtraTables=Object.freeze({servicos:'servicos',terceirizados:'terceirizados',faltas:'faltas',diario:'diario',presencas:'presencas',pagamentos_terceirizados:'pagamentos_terceirizados'});})(typeof globalThis!=='undefined'?globalThis:this);
