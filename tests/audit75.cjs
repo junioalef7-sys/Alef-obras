@@ -8,6 +8,8 @@ const visual=read('visual-fix78.css');
 const login=read('login-ui68.js');
 const sw=read('edifiq-sw.js');
 const manifest=read('manifest.webmanifest');
+const orcLink=read('orcamentos-link79.js');
+const orcPage=read('orcamentos.html');
 
 assert.match(trial,/edifiqSyncSessionState75/,'sincronização precisa conhecer estado da sessão');
 assert.match(trial,/sessionState==='signed_out'/,'sincronização deve ser bloqueada após logout');
@@ -43,7 +45,13 @@ assert.doesNotMatch(visual,/^#menuPasta\s*\{/m,'correção v78 não pode alterar
 assert.match(login,/Senha incorreta ou dados incorretos\./,'erro de login padronizado ausente');
 assert.match(login,/authCommercialHint\{display:none!important\}/,'propaganda de teste não pode voltar ao login');
 
-assert.match(sw,/edifiq-shell-v78-opaque-global/,'cache PWA deve estar na versão visual global atual');
+assert.match(orcLink,/menuOrcamentos79/,'Menu precisa expor Orçamentos');
+assert.match(orcPage,/edifiq_orcamento_salvar/,'Orçamentos precisa salvar pelo RPC seguro');
+assert.match(orcPage,/edifiq_orcamento_converter_em_obra/,'Orçamentos precisa converter proposta aprovada em obra');
+
+assert.match(sw,/edifiq-shell-v79-orcamentos/,'cache PWA deve incluir o módulo de Orçamentos v79');
+assert.match(sw,/orcamentos\.html/,'Service Worker deve incluir a página de Orçamentos');
+assert.match(sw,/orcamentos-link79\.js\?v=79/,'Service Worker deve incluir o atalho de Orçamentos');
 assert.doesNotMatch(sw,/BILLING_FIX/,'Service Worker não pode injetar cobrança antiga');
 assert.doesNotMatch(sw,/injectFix/,'Service Worker não pode reescrever HTML com correções antigas');
 assert.match(sw,/cache:'no-store'/,'navegação e assets devem priorizar versão atual');
@@ -51,4 +59,4 @@ assert.match(sw,/visual-fix78\.css\?v=78/,'Service Worker deve carregar a corre�
 assert.match(sw,/ui-fix67\.js\?v=77/,'Service Worker deve preservar o patch funcional visual anterior sem mudança desnecessária');
 assert.match(manifest,/edifiq-menu-logo\.jpg\?v=75/,'manifest deve preservar a logo aprovada sem mudança desnecessária');
 
-console.log('AUDIT78 OK: topo global opaco corrigido sem alterar menu, sessão/sync, pagamentos, login ou impressão.');
+console.log('AUDIT79 OK: Orçamentos adicionado preservando login, sessão, sync, cobrança, visual e PWA.');
