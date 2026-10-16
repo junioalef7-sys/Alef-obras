@@ -10,6 +10,7 @@ scripts=''.join([
 '<script src="./src/adapters/supabase-obras-write.js"></script>',
 '<script src="./src/adapters/supabase-team-write.js"></script>',
 '<script src="./src/core/team-finance-summary.js"></script>',
+'<script src="./src/app/financeiro-summary-view.js"></script>',
 '<script src="./src/app/equipe-summary-view.js"></script>',
 '<script src="./src/app/obras-checklist-view.js"></script>',
 '<script src="./src/app/homologacao-obras-bridge.js"></script>',
@@ -21,5 +22,5 @@ html=html.replace('</body>',scripts+'</body>',1)
 (OUT/'index.html').write_text(html,encoding='utf-8')
 source=ROOT/'src'
 if source.exists(): shutil.copytree(source,OUT/'src')
-(OUT/'preview-edifiq.txt').write_text('EDIFIQ refactor preview - Obras Checklist e Equipe com escrita controlada; Vale Falta e baixa financeira bloqueados ate validacao completa\n',encoding='utf-8')
+(OUT/'preview-edifiq.txt').write_text('EDIFIQ refactor preview - Obras Checklist Equipe e resumo Financeiro; operacoes financeiras nao validadas permanecem bloqueadas\n',encoding='utf-8')
 print('EDIFIQ preview preparado com operacoes nao validadas bloqueadas')
