@@ -1,0 +1,43 @@
+name: Validar ações v85
+
+on:
+  push:
+    branches: [tmp-v85-actions]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar sintaxe
+        run: node --check action-fix85.js
+      - name: Validar ações críticas
+        run: |
+          grep -q "openFin85" action-fix85.js
+          grep -q "openObra85" action-fix85.js
+          grep -q "openFunc85" action-fix85.js
+          grep -q "openDia85" action-fix85.js
+          grep -q "openVale85" action-fix85.js
+          grep -q "openPay85" action-fix85.js
+          grep -q "edifiqReportPrint" action-fix85.js
+          grep -q "rtPrint" action-fix85.js
+          grep -q "ed27PrintReport" action-fix85.js
+      - name: Confirmar estruturas no aplicativo
+        run: |
+          grep -q 'onclick="openFin()"' index.html
+          grep -q 'onclick="openObra()"' index.html
+          grep -q "openFuncCommand('list')" index.html
+          grep -q 'onclick="openFunc()"' index.html
+          grep -q 'onclick="openDia()"' index.html
+          grep -q 'id="finM"' index.html
+          grep -q 'id="obraM"' index.html
+          grep -q 'id="funcM"' index.html
+          grep -q 'id="diaM"' index.html
+          grep -q 'id="adiantM"' index.html
