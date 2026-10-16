@@ -17,6 +17,10 @@ jobs:
         with:
           node-version: '22'
       - name: Validar sintaxe do núcleo novo
-        run: node --check src/core/auth-controller.js
+        run: |
+          node --check src/core/auth-controller.js
+          node --check src/core/sync-queue.js
       - name: Testar autenticação e sessão
         run: node tests/refactor-auth.cjs
+      - name: Testar fila idempotente de sincronização
+        run: node tests/refactor-sync-queue.cjs
