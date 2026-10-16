@@ -13,16 +13,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Sintaxe
+      - name: Sintaxe segura
         run: |
           node --check src/core/auth-controller.js
           node --check src/adapters/supabase-readonly.js
           node --check src/adapters/supabase-obras-write.js
           node --check src/adapters/supabase-team-write.js
-          node --check src/adapters/supabase-team-adjustments.js
           node --check src/core/team-finance-summary.js
           node --check src/app/equipe-editor.js
-          node --check src/app/equipe-ajustes-ui.js
       - name: Testes da reformulação
         run: |
           node tests/refactor-auth.cjs
@@ -30,3 +28,16 @@ jobs:
           node tests/refactor-obras-write.cjs
           node tests/refactor-team-write.cjs
           node tests/refactor-team-finance-summary.cjs
+      - name: Montar Preview
+        run: python3 scripts/prepare-pages-v85.py
+      - name: Garantir Preview protegido
+        run: |
+          test -f .pages/index.html
+          grep -q 'supabase-obras-write.js' .pages/index.html
+          grep -q 'supabase-team-write.js' .pages/index.html
+          grep -q 'team-finance-summary.js' .pages/index.html
+          ! grep -q 'supabase-team-settlement.js' .pages/index.html
+          ! grep -q 'supabase-team-adjustments.js' .pages/index.html
+          ! grep -q 'equipe-ajustes-ui.js' .pages/index.html
+          ! grep -q 'team-payroll-v2.js' .pages/index.html
+          ! grep -q 'team-settlement-plan.js' .pages/index.html
