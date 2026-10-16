@@ -33,7 +33,7 @@ jobs:
 
       - name: Validar scripts externos
         run: |
-          for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js orcamentos-link79.js edifiq-sw.js; do
+          for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js orcamentos-link79.js orcamentos-fix81.js edifiq-sw.js; do
             node --check "$f"
           done
 
@@ -42,6 +42,9 @@ jobs:
           grep -q "menuOrcamentos79" orcamentos-link79.js
           grep -q "edifiq_orcamento_salvar" orcamentos.html
           grep -q "edifiq_orcamento_converter_em_obra" orcamentos.html
+          grep -q "build(r)" orcamentos-fix81.js
+          grep -q "Assinatura do prestador de serviço" orcamentos-fix81.js
+          grep -q "files:\[pack.file\]" orcamentos-fix81.js
           grep -q "edifiq-shell-v80-orcamentos-safe" edifiq-sw.js
 
       - name: Validar exclusão imediata de conta
@@ -52,16 +55,19 @@ jobs:
 
       - name: Preparar versão pública auditada
         run: |
-          python3 scripts/prepare-pages-v80.py
+          python3 scripts/prepare-pages-v81.py
           grep -q './orcamentos-link79.js?v=79' .pages/index.html
-          grep -q 'edifiq-shell-v80-orcamentos-safe' .pages/edifiq-sw.js
+          grep -q 'edifiq-shell-v81-orcamentos-pdf' .pages/edifiq-sw.js
           grep -q 'ORCAMENTOS_V80_TIMEOUT_SAFE' .pages/orcamentos.html
+          grep -q './orcamentos-fix81.js?v=81' .pages/orcamentos.html
+          grep -q './orcamentos-fix81.js?v=81' .pages/edifiq-sw.js
           grep -q 'Tentar novamente' .pages/orcamentos.html
           grep -q 'withTimeout' .pages/orcamentos.html
           grep -q 'ensureClient' .pages/orcamentos.html
           ! grep -q 'esm.sh/@supabase/supabase-js' .pages/orcamentos.html
           test -f .pages/orcamentos.html
           test -f .pages/orcamentos-link79.js
+          test -f .pages/orcamentos-fix81.js
           ! grep -q 'black-translucent' .pages/index.html
           ! grep -q 'BILLING_FIX' .pages/edifiq-sw.js
           ! grep -q 'injectFix' .pages/edifiq-sw.js
