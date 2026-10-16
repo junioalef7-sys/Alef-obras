@@ -47,9 +47,11 @@ function pageFromClick82(el){
  return m&&pageExists(m[1])?m[1]:'';
 }
 function captureNav82(ev){
- const el=ev.target?.closest?.('nav.nav button[data-p],#menuPasta button,[onclick*="go(\'"] ,[onclick*="go(&quot;"],[onclick*="goMenu(\'"] ,[onclick*="goMenu(&quot;"]');
- if(!el)return;
+ const el=ev.target?.closest?.('button,a,[role="button"]');if(!el)return;
  const page=pageFromClick82(el);if(!page)return;
+ const inPrimaryNav=!!el.closest?.('nav.nav,#menuPasta');
+ const on=String(el.getAttribute?.('onclick')||'');
+ if(!inPrimaryNav&&!/go(?:Menu)?\s*\(/i.test(on))return;
  ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();activate82(page);
 }
 document.addEventListener('click',captureNav82,true);
@@ -77,9 +79,11 @@ function patchButtons82(){
  });
 }
 function captureVale82(ev){
- const btn=ev.target?.closest?.('[data-ed-vale82="1"],[onclick*="openAdiantamento"]');if(!btn)return;
+ const btn=ev.target?.closest?.('button,a,[role="button"]');if(!btn)return;
+ const on=String(btn.getAttribute?.('onclick')||'');
+ if(btn.dataset?.edVale82!=='1'&&!/openAdiantamento/i.test(on))return;
  ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
- const raw=String(btn.getAttribute('onclick')||''),m=raw.match(/openAdiantamentoFuncionario\(['"]?([^'"\)]+)['"]?\)/i);
+ const m=on.match(/openAdiantamentoFuncionario\(['"]?([^'"\)]+)['"]?\)/i);
  openVale82(m?m[1]:null);
 }
 document.addEventListener('click',captureVale82,true);
