@@ -1,0 +1,22 @@
+name: Validar reformulação Edific
+
+on:
+  push:
+    branches: [refactor-edific-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar sintaxe do núcleo novo
+        run: node --check src/core/auth-controller.js
+      - name: Testar autenticação e sessão
+        run: node tests/refactor-auth.cjs
