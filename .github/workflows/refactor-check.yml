@@ -1,4 +1,4 @@
-name: Validar reformulação Edific
+name: Validar reformulação EDIFIQ
 
 on:
   push:
@@ -26,6 +26,7 @@ jobs:
           node --check src/core/billing-core.js
           node --check src/core/account-deletion-core.js
           node --check src/core/integration-controller.js
+          node --check src/app/homologacao-shell.js
       - name: Testar autenticação e sessão
         run: node tests/refactor-auth.cjs
       - name: Testar fila idempotente de sincronização
@@ -40,23 +41,31 @@ jobs:
         run: node tests/refactor-account-deletion.cjs
       - name: Testar integração completa
         run: node tests/refactor-integration.cjs
-      - name: Validar prévia de homologação
+      - name: Validar interface funcional de homologação
         run: |
           test -f homologacao-refactor.html
-          grep -q 'Homologação da nova arquitetura' homologacao-refactor.html
-          grep -q 'Relatório fotográfico fora do escopo' homologacao-refactor.html
-          grep -q './src/core/integration-controller.js' homologacao-refactor.html
+          test -f src/app/homologacao-shell.js
+          grep -q '<title>EDIFIQ • Homologação</title>' homologacao-refactor.html
+          grep -q 'Entrar no ambiente de teste' homologacao-refactor.html
+          grep -q 'data-screen="obras"' homologacao-refactor.html
+          grep -q 'data-screen="equipe"' homologacao-refactor.html
+          grep -q 'data-screen="financeiro"' homologacao-refactor.html
+          grep -q 'Marca oficial: EDIFIQ' homologacao-refactor.html
+          grep -q 'simulateBackup' src/app/homologacao-shell.js
+          grep -q 'simulateSync' src/app/homologacao-shell.js
       - name: Montar pacote de homologação
         run: |
           rm -rf homologacao-build
-          mkdir -p homologacao-build/src/core
+          mkdir -p homologacao-build/src/core homologacao-build/src/app
           cp homologacao-refactor.html homologacao-build/index.html
           cp src/core/*.js homologacao-build/src/core/
+          cp src/app/*.js homologacao-build/src/app/
           test -f homologacao-build/index.html
           test -f homologacao-build/src/core/integration-controller.js
+          test -f homologacao-build/src/app/homologacao-shell.js
       - name: Salvar pacote de homologação
         uses: actions/upload-artifact@v4
         with:
-          name: edific-refactor-homologacao
+          name: edifiq-refactor-homologacao
           path: homologacao-build
           if-no-files-found: error
