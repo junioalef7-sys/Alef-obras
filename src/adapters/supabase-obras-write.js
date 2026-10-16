@@ -1,0 +1,13 @@
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;root.EDIFIQObrasWrite=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){'use strict';
+const allowedStatus=new Set(['planejada','andamento','em_andamento','pausada','concluida']);
+function text(v,max=500){return String(v??'').trim().slice(0,max)}
+function money(v){const n=Number(v);if(!Number.isFinite(n)||n<0)throw new Error('VALOR_INVALIDO');return Math.round(n*100)/100}
+function pct(v){const n=Number(v);if(!Number.isFinite(n))return 0;return Math.max(0,Math.min(100,Math.round(n)))}
+function requireId(v,name){const n=Number(v);if(!Number.isInteger(n)||n<=0)throw new Error(name+'_INVALIDO');return n}
+function obraPayload(input,userId){const nome=text(input.nome,160);if(!nome)throw new Error('NOME_OBRA_OBRIGATORIO');const status=text(input.status||'planejada',30);if(!allowedStatus.has(status))throw new Error('STATUS_INVALIDO');return {user_id:userId,nome,cliente:text(input.cliente,160)||null,endereco:text(input.endereco,240)||null,valor:money(input.valor||0),status,tipo_servico:text(input.tipo_servico,120)||null,tipo_servico_personalizado:text(input.tipo_servico_personalizado,160)||null,data_inicio:input.data_inicio||null,data_fim:input.data_fim||null,observacoes:text(input.observacoes,2000)||null,progresso:pct(input.progresso)};}
+function checklistPayload(input,userId){const tarefa=text(input.tarefa,180);if(!tarefa)throw new Error('TAREFA_OBRIGATORIA');return {user_id:userId,obra_id:requireId(input.obra_id,'OBRA'),tarefa,concluida:!!input.concluida,progresso:input.concluida?100:pct(input.progresso),valor:money(input.valor||0)};}
+async function sessionUser(client){const {data,error}=await client.auth.getSession();if(error)throw error;const id=data?.session?.user?.id;if(!id)throw new Error('SESSAO_INVALIDA');return id;}
+function createWriter(client){if(!client||!client.auth||typeof client.from!=='function')throw new Error('SUPABASE_INVALIDO');async function save(table,id,payload){let q;if(id){q=client.from(table).update(payload).eq('id',requireId(id,'ID')).eq('user_id',payload.user_id).select('*').single();}else{q=client.from(table).insert(payload).select('*').single();}const {data,error}=await q;if(error)throw error;return data;}
+return {mode:'controlled-write',async saveObra(input){const uid=await sessionUser(client);return save('obras',input?.id,obraPayload(input||{},uid));},async saveChecklist(input){const uid=await sessionUser(client);return save('checklist',input?.id,checklistPayload(input||{},uid));}};}
+return {createWriter,obraPayload,checklistPayload};
+});
