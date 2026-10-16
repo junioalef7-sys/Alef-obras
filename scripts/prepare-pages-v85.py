@@ -16,11 +16,15 @@ scripts=''.join([
 '<script src="./src/app/homologacao-obras-bridge.js"></script>',
 '<script src="./src/app/homologacao-obras-autoload.js"></script>',
 '<script src="./src/app/obras-editor.js"></script>',
-'<script src="./src/app/equipe-editor.js"></script>'
+'<script src="./src/app/equipe-editor.js"></script>',
+'<script src="./orcamentos-link79.js"></script>'
 ])
 html=html.replace('</body>',scripts+'</body>',1)
 (OUT/'index.html').write_text(html,encoding='utf-8')
 source=ROOT/'src'
 if source.exists(): shutil.copytree(source,OUT/'src')
-(OUT/'preview-edifiq.txt').write_text('EDIFIQ refactor preview - Obras Checklist Equipe e resumo Financeiro; operacoes financeiras nao validadas permanecem bloqueadas\n',encoding='utf-8')
+for name in ('orcamentos.html','orcamentos-link79.js','orcamentos-fix81.js'):
+ p=ROOT/name
+ if p.exists(): shutil.copy2(p,OUT/name)
+(OUT/'preview-edifiq.txt').write_text('EDIFIQ refactor preview - Obras Checklist Equipe Financeiro e Orcamentos; operacoes financeiras nao validadas permanecem bloqueadas\n',encoding='utf-8')
 print('EDIFIQ preview preparado com operacoes nao validadas bloqueadas')
