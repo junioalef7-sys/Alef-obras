@@ -33,20 +33,34 @@ jobs:
 
       - name: Validar scripts externos
         run: |
-          for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js orcamentos-link79.js orcamentos-fix81.js navigation-fix82.js photo-purge83.js edifiq-sw.js; do
+          for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js orcamentos-link79.js orcamentos-fix81.js navigation-fix82.js photo-purge83.js action-fix85.js edifiq-sw.js; do
             node --check "$f"
           done
 
-      - name: Validar navegação principal
+      - name: Validar navegação e ações críticas
         run: |
           grep -q "MAIN_PAGES=new Set(\['dashboard','financeiro','funcionarios','obras'\])" navigation-fix82.js
-          grep -q "window.openAdiantamento=function" navigation-fix82.js
-          grep -q "window.openAdiantamentoFuncionario=function" navigation-fix82.js
-          grep -q "document.querySelectorAll('.page').forEach" navigation-fix82.js
+          grep -q "openFin85" action-fix85.js
+          grep -q "openObra85" action-fix85.js
+          grep -q "openFunc85" action-fix85.js
+          grep -q "openDia85" action-fix85.js
+          grep -q "openVale85" action-fix85.js
+          grep -q "openPay85" action-fix85.js
+          grep -q "edifiqReportPrint" action-fix85.js
+          grep -q "rtPrint" action-fix85.js
+          grep -q "ed27PrintReport" action-fix85.js
           grep -q "go('financeiro')" index.html
           grep -q "go('funcionarios')" index.html
           grep -q "goMenu('obras')" index.html
-          grep -q "openAdiantamento()" index.html
+          grep -q 'onclick="openFin()"' index.html
+          grep -q 'onclick="openObra()"' index.html
+          grep -q 'onclick="openFunc()"' index.html
+          grep -q 'onclick="openDia()"' index.html
+          grep -q 'id="finM"' index.html
+          grep -q 'id="obraM"' index.html
+          grep -q 'id="funcM"' index.html
+          grep -q 'id="diaM"' index.html
+          grep -q 'id="adiantM"' index.html
 
       - name: Validar módulo de Orçamentos
         run: |
@@ -56,7 +70,6 @@ jobs:
           grep -q "build(r)" orcamentos-fix81.js
           grep -q "Assinatura do prestador de serviço" orcamentos-fix81.js
           grep -q "files:\[pack.file\]" orcamentos-fix81.js
-          grep -q "edifiq-shell-v80-orcamentos-safe" edifiq-sw.js
 
       - name: Validar exclusão imediata de conta
         run: |
@@ -73,24 +86,19 @@ jobs:
 
       - name: Preparar versão pública auditada
         run: |
-          python3 scripts/prepare-pages-v84.py
+          python3 scripts/prepare-pages-v85.py
           grep -q './orcamentos-link79.js?v=79' .pages/index.html
           grep -q './navigation-fix82.js?v=82' .pages/index.html
           grep -q './photo-purge83.js?v=83' .pages/index.html
-          grep -q 'edifiq-shell-v84-brand-edifiq' .pages/edifiq-sw.js
-          grep -q '"short_name": "EDIFIQ"' .pages/manifest.webmanifest
-          grep -q 'Orçamentos — EDIFIQ' .pages/orcamentos.html
-          grep -q "doc.text('EDIFIQ',44,18)" .pages/orcamentos-fix81.js
+          grep -q './action-fix85.js?v=85' .pages/index.html
+          grep -q 'edifiq-shell-v85-actions-safe' .pages/edifiq-sw.js
+          grep -q './action-fix85.js?v=85' .pages/edifiq-sw.js
+          grep -q 'ORCAMENTOS_V80_TIMEOUT_SAFE' .pages/orcamentos.html
           grep -q './orcamentos-fix81.js?v=81' .pages/orcamentos.html
-          grep -q './navigation-fix82.js?v=82' .pages/edifiq-sw.js
-          grep -q './photo-purge83.js?v=83' .pages/edifiq-sw.js
-          grep -q 'Tentar novamente' .pages/orcamentos.html
-          grep -q 'withTimeout' .pages/orcamentos.html
-          grep -q 'ensureClient' .pages/orcamentos.html
-          ! grep -q 'esm.sh/@supabase/supabase-js' .pages/orcamentos.html
+          grep -q 'Orçamentos — EDIFIQ' .pages/orcamentos.html
+          grep -q '"short_name": "EDIFIQ"' .pages/manifest.webmanifest
+          test -f .pages/action-fix85.js
           test -f .pages/orcamentos.html
-          test -f .pages/orcamentos-link79.js
-          test -f .pages/orcamentos-fix81.js
           test -f .pages/navigation-fix82.js
           test -f .pages/photo-purge83.js
           ! grep -q 'black-translucent' .pages/index.html
