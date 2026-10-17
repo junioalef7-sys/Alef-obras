@@ -12,6 +12,8 @@ required_pages = [
     Path('obrix-estoque-transferencia-test.js'),
     Path('obrix-estoque-ajuste-test.html'),
     Path('obrix-estoque-ajuste-test.js'),
+    Path('obrix-estoque-reposicao-test.html'),
+    Path('obrix-estoque-reposicao-test.js'),
     Path('obrix-estoque-menu-integration.js'),
 ]
 
@@ -25,7 +27,8 @@ if not app.exists():
     raise SystemExit('PWA v86: app principal de teste OBRIX ausente')
 html = app.read_text(encoding='utf-8')
 html = html.replace('<script src="./obrix-estoque-menu-integration.js?v=213"></script>','')
-marker = '<script src="./obrix-estoque-menu-integration.js?v=214"></script>'
+html = html.replace('<script src="./obrix-estoque-menu-integration.js?v=214"></script>','')
+marker = '<script src="./obrix-estoque-menu-integration.js?v=215"></script>'
 if marker not in html:
     pos = html.lower().rfind('</body>')
     if pos < 0:
@@ -33,4 +36,4 @@ if marker not in html:
     html = html[:pos] + marker + '\n' + html[pos:]
     app.write_text(html, encoding='utf-8')
 
-print('Versão pública v86 preparada com ajuste de inventário integrado ao estoque do OBRIX.')
+print('Versão pública v86 preparada com reposição e lista de compras integradas ao estoque do OBRIX.')
