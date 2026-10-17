@@ -7,7 +7,7 @@ shutil.copy2(fix,out/fix.name)
 pagbank_test=Path('pagbank-teste.html')
 if not pagbank_test.exists(): raise SystemExit('PWA v86: página de teste PagBank ausente')
 shutil.copy2(pagbank_test,out/pagbank_test.name)
-for name in ['obrix-backend-test.html','obrix-backend-adapter.js','obrix-app-test.html','obrix-financeiro-test.html','obrix-sync-test.html','obrix-realtime-sync.js','obrix-equipe-pagamento-test.html','obrix-vales-bonus-test.html','obrix-faltas-meia-test.html','obrix-checklist-test.html','obrix-diario-test.html','obrix-fotos-test.html','obrix-fotos-mobile.html','foto1.js','foto2.js','foto3.js','foto4.js','obrix-relatorios-test.html','obrix-relatorios-mobile.html','obrix-relatorios-test.js','obrix-relatorios-mobile-pdf.js','obrix-documentos-test.html','obrix-documentos-test.js','obrix-documentos-pdf.js']:
+for name in ['obrix-backend-test.html','obrix-backend-adapter.js','obrix-app-test.html','obrix-financeiro-test.html','obrix-sync-test.html','obrix-realtime-sync.js','obrix-equipe-pagamento-test.html','obrix-vales-bonus-test.html','obrix-faltas-meia-test.html','obrix-checklist-test.html','obrix-diario-test.html','obrix-fotos-test.html','obrix-fotos-mobile.html','foto1.js','foto2.js','foto3.js','foto4.js','obrix-relatorios-test.html','obrix-relatorios-mobile.html','obrix-relatorios-test.js','obrix-relatorios-mobile-pdf.js','obrix-documentos-test.html','obrix-documentos-test.js','obrix-documentos-pdf.js','obrix-documentos-actions-v201.js']:
  p=Path(name)
  if not p.exists(): raise SystemExit('PWA v86: arquivo de teste OBRIX ausente: '+name)
  shutil.copy2(p,out/p.name)
