@@ -42,9 +42,9 @@ if stock_marker not in html:
         raise SystemExit('PWA v86: body ausente no app principal OBRIX')
     html = html[:pos] + stock_marker + '\n' + html[pos:]
 
-for old in ('256','257'):
+for old in ('256','257','258'):
     html = html.replace(f'<script src="./obrix-obras-resumo-integration.js?v={old}"></script>','')
-obras_marker = '<script src="./obrix-obras-resumo-integration.js?v=258"></script>'
+obras_marker = '<script src="./obrix-obras-resumo-integration.js?v=259"></script>'
 if obras_marker not in html:
     pos = html.lower().rfind('</body>')
     if pos < 0:
@@ -52,4 +52,4 @@ if obras_marker not in html:
     html = html[:pos] + obras_marker + '\n' + html[pos:]
 app.write_text(html, encoding='utf-8')
 
-print('Versão pública v86 preparada com estoque e resumo financeiro por obra do OBRIX.')
+print('Versão pública v86 preparada com estoque, resumo financeiro e serviços extras por obra do OBRIX.')
