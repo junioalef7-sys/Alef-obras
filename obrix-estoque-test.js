@@ -15,6 +15,53 @@
   function obraNome(id){return obras.find(x=>x.id===id)?.nome||'Sem obra';}
   function materialNome(id){return materiais.find(x=>x.id===id)?.nome||'Material';}
   function estoqueNome(id){return estoques.find(x=>x.id===id)?.nome||'Estoque';}
+  function saldoTotalMaterial(materialId){return saldos.filter(s=>s.material_id===materialId).reduce((a,s)=>a+Number(s.quantidade||0),0);}
+
+  function garantirAreaAlertas(){
+    const kMateriais=$('kMateriais');
+    const kpis=kMateriais?.closest('.kpis');
+    if(kpis&&!$('kAlertas')){
+      const box=document.createElement('div');
+      box.className='kpi';
+      box.innerHTML='<span>Alertas de estoque</span><br><b id="kAlertas">0</b>';
+      kpis.appendChild(box);
+      kpis.style.gridTemplateColumns='repeat(4,1fr)';
+    }
+    if(!$('estoqueAlertasCard')){
+      const saldosCard=$('listaSaldos')?.closest('.card');
+      if(saldosCard){
+        const card=document.createElement('div');
+        card.className='card';
+        card.id='estoqueAlertasCard';
+        card.innerHTML='<h3>Alertas de estoque mínimo</h3><p class="muted">Materiais que chegaram ou ficaram abaixo do limite configurado.</p><div id="listaAlertasEstoque"></div>';
+        saldosCard.parentNode.insertBefore(card,saldosCard);
+      }
+    }
+  }
+
+  function renderAlertas(matsAtivos){
+    garantirAreaAlertas();
+    const alertas=matsAtivos.map(m=>{
+      const minimo=Number(m.estoque_minimo||0);
+      const total=saldoTotalMaterial(m.id);
+      return {m,minimo,total,falta:Math.max(0,minimo-total)};
+    }).filter(x=>x.minimo>0&&x.total<=x.minimo)
+      .sort((a,b)=>(a.total/a.minimo)-(b.total/b.minimo));
+
+    if($('kAlertas'))$('kAlertas').textContent=String(alertas.length);
+    const lista=$('listaAlertasEstoque');
+    if(!lista)return;
+    if(!alertas.length){
+      lista.innerHTML='<div class="row"><b>Estoque em dia</b><br><span class="muted">Nenhum material está no limite mínimo.</span></div>';
+      return;
+    }
+    lista.innerHTML=alertas.map(({m,minimo,total,falta})=>{
+      const critico=total<=0;
+      const statusTxt=critico?'SEM ESTOQUE':'ESTOQUE BAIXO';
+      const cor=critico?'#9f1d20':'#92400e';
+      return `<div class="row" style="border-left:4px solid ${cor};padding-left:12px"><b>${esc(m.nome)}</b> <span style="font-weight:800;color:${cor}">· ${statusTxt}</span><br><span class="muted">Saldo total ${qtd(total)} ${esc(m.unidade||'un')} · mínimo ${qtd(minimo)} · faltam ${qtd(falta)} para atingir o mínimo</span></div>`;
+    }).join('');
+  }
 
   async function carregar(){
     perfil=await OBRIX_BACKEND.profile();
@@ -34,6 +81,8 @@
     $('kMateriais').textContent=matsAtivos.length;
     $('kEstoques').textContent=estAtivos.length;
     $('kSaldos').textContent=saldos.filter(x=>Number(x.quantidade||0)>0).length;
+
+    renderAlertas(matsAtivos);
 
     $('estObra').innerHTML='<option value="">Sem obra vinculada</option>'+obras.map(o=>`<option value="${o.id}">${esc(o.nome)}</option>`).join('');
 
