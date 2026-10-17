@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OBRIX — PagBank Sandbox</title>
 <style>
-*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f5f7fb;color:#111827}.wrap{max-width:760px;margin:32px auto;padding:16px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px;box-shadow:0 8px 28px rgba(0,0,0,.06);margin-bottom:16px}h1{margin:0 0 8px;font-size:24px}h2{font-size:18px;margin:0 0 14px}p{line-height:1.45}label{display:block;font-weight:700;margin-top:12px;margin-bottom:6px}input,select,button{width:100%;padding:12px;border-radius:10px;border:1px solid #cbd5e1;font-size:16px}button{border:0;background:#111827;color:#fff;font-weight:700;cursor:pointer;margin-top:12px}.secondary{background:#e5e7eb;color:#111827}.status{padding:12px;border-radius:10px;background:#f1f5f9;white-space:pre-wrap;word-break:break-word;margin-top:12px}.ok{background:#ecfdf5;color:#065f46}.err{background:#fef2f2;color:#991b1b}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hidden{display:none}a.pay{display:block;text-align:center;text-decoration:none;background:#16a34a;color:#fff;font-weight:700;padding:14px;border-radius:10px;margin-top:12px}@media(max-width:600px){.grid{grid-template-columns:1fr}}
+*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f5f7fb;color:#111827}.wrap{max-width:760px;margin:32px auto;padding:16px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px;box-shadow:0 8px 28px rgba(0,0,0,.06);margin-bottom:16px}h1{margin:0 0 8px;font-size:24px}h2{font-size:18px;margin:0 0 14px}p{line-height:1.45}label{display:block;font-weight:700;margin-top:12px;margin-bottom:6px}input,select,button{width:100%;padding:12px;border-radius:10px;border:1px solid #cbd5e1;font-size:16px}button{border:0;background:#111827;color:#fff;font-weight:700;cursor:pointer;margin-top:12px}.secondary{background:#e5e7eb;color:#111827}.status{padding:12px;border-radius:10px;background:#f1f5f9;white-space:pre-wrap;word-break:break-word;margin-top:12px}.ok{background:#ecfdf5;color:#065f46}.err{background:#fef2f2;color:#991b1b}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hidden{display:none!important}a.pay{display:block;text-align:center;text-decoration:none;background:#16a34a;color:#fff;font-weight:700;padding:14px;border-radius:10px;margin-top:12px}@media(max-width:600px){.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -32,13 +32,13 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-let client=null;
+let client=null, cfg=null, accessToken='';
 const CONFIG_URL='https://gnvclctqnwxnjxydzhwc.supabase.co/functions/v1/obrix-public-config';
 const loginCard=document.getElementById('loginCard'),paymentCard=document.getElementById('paymentCard'),loginStatus=document.getElementById('loginStatus'),checkoutStatus=document.getElementById('checkoutStatus'),payLink=document.getElementById('payLink');
 function show(el,text,ok=true){el.textContent=text;el.className='status '+(ok?'ok':'err')}
 async function init(){
   try{
-    const r=await fetch(CONFIG_URL,{cache:'no-store'});const cfg=await r.json();
+    const r=await fetch(CONFIG_URL,{cache:'no-store'});cfg=await r.json();
     if(!r.ok||!cfg.url||!cfg.publishableKey)throw new Error(cfg.error||'Configuração indisponível');
     client=window.supabase.createClient(cfg.url,cfg.publishableKey);
   }catch(e){loginStatus.classList.remove('hidden');show(loginStatus,'Erro de configuração: '+e.message,false)}
@@ -46,20 +46,22 @@ async function init(){
 document.getElementById('loginBtn').onclick=async()=>{
   if(!client)return;
   const btn=document.getElementById('loginBtn');btn.disabled=true;loginStatus.classList.remove('hidden');show(loginStatus,'Entrando...');
-  const {error}=await client.auth.signInWithPassword({email:document.getElementById('email').value.trim(),password:document.getElementById('password').value});
-  if(error){show(loginStatus,'Erro no login: '+error.message,false);btn.disabled=false;return}
+  const {data,error}=await client.auth.signInWithPassword({email:document.getElementById('email').value.trim(),password:document.getElementById('password').value});
+  if(error||!data?.session){show(loginStatus,'Erro no login: '+(error?.message||'Sessão não criada'),false);btn.disabled=false;return}
+  accessToken=data.session.access_token;
   loginCard.classList.add('hidden');paymentCard.classList.remove('hidden');btn.disabled=false;
 };
 document.getElementById('checkoutBtn').onclick=async()=>{
   const btn=document.getElementById('checkoutBtn');btn.disabled=true;payLink.classList.add('hidden');checkoutStatus.classList.remove('hidden');show(checkoutStatus,'Criando checkout no PagBank Sandbox...');
-  const {data,error}=await client.functions.invoke('pagbank-criar-checkout',{body:{plano:document.getElementById('plano').value,metodo:document.getElementById('metodo').value,requestId:crypto.randomUUID()}});
-  if(error){show(checkoutStatus,'Erro ao chamar a função: '+(error.message||String(error)),false);btn.disabled=false;return}
-  if(data?.error){show(checkoutStatus,'PagBank: '+data.error+(data.detalhes?'\n'+JSON.stringify(data.detalhes,null,2):''),false);btn.disabled=false;return}
-  show(checkoutStatus,'Checkout criado com sucesso.\nStatus: '+(data?.status||'-')+'\nMétodo: '+(data?.metodo||'-'));
-  if(data?.checkoutUrl){payLink.href=data.checkoutUrl;payLink.classList.remove('hidden')}
-  btn.disabled=false;
+  try{
+    const r=await fetch(cfg.url+'/functions/v1/pagbank-criar-checkout',{method:'POST',headers:{'apikey':cfg.publishableKey,'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({plano:document.getElementById('plano').value,metodo:document.getElementById('metodo').value,requestId:crypto.randomUUID()})});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok||data?.error)throw new Error((data?.error||('HTTP '+r.status))+(data?.detalhes?'\n'+JSON.stringify(data.detalhes,null,2):''));
+    show(checkoutStatus,'Checkout criado com sucesso.\nStatus: '+(data?.status||'-')+'\nMétodo: '+(data?.metodo||'-'));
+    if(data?.checkoutUrl){payLink.href=data.checkoutUrl;payLink.classList.remove('hidden')}
+  }catch(e){show(checkoutStatus,'Erro: '+e.message,false)}finally{btn.disabled=false}
 };
-document.getElementById('logoutBtn').onclick=async()=>{if(client)await client.auth.signOut();paymentCard.classList.add('hidden');loginCard.classList.remove('hidden')};
+document.getElementById('logoutBtn').onclick=async()=>{if(client)await client.auth.signOut();accessToken='';paymentCard.classList.add('hidden');loginCard.classList.remove('hidden');payLink.classList.add('hidden')};
 init();
 </script>
 </body>
