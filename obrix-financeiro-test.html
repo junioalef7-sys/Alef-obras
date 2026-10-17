@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OBRIX — Teste Financeiro</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:#f4f6f8;color:#111827}.hidden{display:none!important}.wrap{max-width:1000px;margin:auto;padding:16px}.notice{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:14px;padding:12px 14px;margin-bottom:16px;font-weight:800}.card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 8px 28px rgba(0,0,0,.05)}.brand{font-size:28px;font-weight:900}.muted{color:#667085}.login{max-width:460px;margin:36px auto}.login label,.modal label{display:block;font-weight:800;margin:13px 0 6px}.login input,.modal input,.modal select,.modal textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:11px;font-size:16px}.btn,.login button{border:0;border-radius:11px;padding:12px 15px;font-weight:800;cursor:pointer;background:#111827;color:white}.login button{width:100%;margin-top:15px}.light{background:#e5e7eb!important;color:#111827!important}.danger{background:#b42318!important}.top,.sectionHead{display:flex;justify-content:space-between;align-items:center;gap:12px}.top{margin-bottom:16px}.topActions,.actions{display:flex;gap:8px;flex-wrap:wrap}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}.kpi{background:#fff;border:1px solid #e5e7eb;border-radius:15px;padding:17px}.kpi small{display:block;color:#667085;font-weight:700}.kpi strong{display:block;font-size:23px;margin-top:7px}.list{display:grid;gap:11px}.item{border:1px solid #e5e7eb;border-radius:14px;padding:15px}.itemHead{display:flex;justify-content:space-between;gap:12px}.item h3{margin:0 0 5px}.item p{margin:4px 0;color:#667085}.badge{padding:5px 9px;border-radius:999px;background:#ecfdf5;color:#065f46;font-weight:800;font-size:12px}.badge.despesa{background:#fef2f2;color:#991b1b}.status{padding:11px 12px;border-radius:10px;margin-top:12px;background:#f1f5f9;white-space:pre-wrap}.ok{background:#ecfdf5;color:#065f46}.err{background:#fef2f2;color:#991b1b}.empty{text-align:center;color:#667085;padding:28px;border:1px dashed #cbd5e1;border-radius:14px}.modalBack{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:18px;z-index:50}.modal{width:min(620px,100%);max-height:92vh;overflow:auto;background:white;border-radius:18px;padding:20px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.modal textarea{min-height:90px}.modalActions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}@media(max-width:760px){.kpis{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}.top,.sectionHead{align-items:flex-start;flex-direction:column}}@media(max-width:430px){.kpis{grid-template-columns:1fr}.topActions,.sectionHead .btn{width:100%}.topActions .btn{flex:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="notice">AMBIENTE DE TESTE — Financeiro conectado ao backend novo do OBRIX.</div>
+  <section id="loginView" class="card login">
+    <div class="brand">OBRIX</div><p class="muted">Teste do Financeiro</p>
+    <label>E-mail</label><input id="email" type="email" autocomplete="username">
+    <label>Senha</label><input id="password" type="password" autocomplete="current-password">
+    <button id="loginBtn">Entrar</button><div id="loginStatus" class="status hidden"></div>
+  </section>
+  <section id="appView" class="hidden">
+    <div class="top"><div><div class="brand">Financeiro</div><div id="userLine" class="muted"></div></div><div class="topActions"><button class="btn light" id="refreshBtn">Atualizar</button><button class="btn light" id="logoutBtn">Sair</button></div></div>
+    <div class="kpis">
+      <div class="kpi"><small>Contrato</small><strong id="kContrato">R$ 0,00</strong></div>
+      <div class="kpi"><small>Recebido</small><strong id="kRecebido">R$ 0,00</strong></div>
+      <div class="kpi"><small>Despesas</small><strong id="kDespesas">R$ 0,00</strong></div>
+      <div class="kpi"><small>Resultado</small><strong id="kResultado">R$ 0,00</strong></div>
+    </div>
+    <div class="card">
+      <div class="sectionHead"><div><h2 style="margin:0">Lançamentos</h2><div class="muted">Receitas e despesas manuais vinculadas à obra correta.</div></div><div class="topActions"><button class="btn" id="newReceitaBtn">+ Receita</button><button class="btn" id="newDespesaBtn">+ Despesa</button></div></div>
+      <div id="appStatus" class="status hidden"></div>
+      <div id="noWork" class="status err hidden">Nenhuma obra cadastrada. Primeiro crie uma obra na tela de teste principal para validar o vínculo do Financeiro com a obra.</div>
+      <div id="launches" class="list" style="margin-top:14px"></div>
+    </div>
+  </section>
+</div>
+<div id="modalBack" class="modalBack hidden"><div class="modal">
+  <h2 id="modalTitle">Novo lançamento</h2><input id="finId" type="hidden"><input id="finTipo" type="hidden">
+  <label>Obra</label><select id="finObra"></select>
+  <div class="grid2"><div><label>Categoria</label><select id="finCategoria"></select></div><div><label>Valor</label><input id="finValor" type="number" min="0.01" step="0.01"></div></div>
+  <div class="grid2"><div><label>Data</label><input id="finData" type="date"></div><div><label>Descrição</label><input id="finDescricao" maxlength="180"></div></div>
+  <label>Observações</label><textarea id="finObs"></textarea>
+  <div class="modalActions"><button class="btn light" id="cancelBtn">Cancelar</button><button class="btn" id="saveBtn">Salvar</button></div>
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
+<script src="./obrix-backend-adapter.js"></script>
+<script>
+const $=id=>document.getElementById(id);const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});let profile=null,obras=[],financeiro=[];
+const cats={receita:[['entrada','Entrada']],despesa:[['material','Material'],['mao_de_obra','Mão de obra'],['servico_terceirizado','Serviço terceirizado'],['ferramentas_equipamentos','Ferramentas e Equipamentos'],['locacao','Locação'],['transporte','Transporte'],['combustivel','Combustível'],['outros','Outros']]};
+function show(el,text,ok=true){el.textContent=text;el.className='status '+(ok?'ok':'err');el.classList.remove('hidden')}function hide(el){el.classList.add('hidden')}
+async function load(){profile=await OBRIX_BACKEND.profile();const [o,f]=await Promise.all([OBRIX_BACKEND.readTable('obras','criado_em'),OBRIX_BACKEND.readTable('financeiro','data')]);obras=o;financeiro=f;render()}
+function render(){
+ $('userLine').textContent=profile?.nome||profile?.email||'Usuário';const ativos=financeiro.filter(x=>x.status_lancamento==='ativo');const contrato=obras.reduce((s,o)=>s+Number(o.valor_contrato||0),0);const recebido=ativos.filter(x=>x.tipo==='receita').reduce((s,x)=>s+Number(x.valor||0),0);const despesas=ativos.filter(x=>x.tipo==='despesa').reduce((s,x)=>s+Number(x.valor||0),0);$('kContrato').textContent=money(contrato);$('kRecebido').textContent=money(recebido);$('kDespesas').textContent=money(despesas);$('kResultado').textContent=money(recebido-despesas);$('noWork').classList.toggle('hidden',obras.length>0);
+ const host=$('launches');host.innerHTML='';if(!ativos.length){host.innerHTML='<div class="empty">Nenhum lançamento financeiro neste usuário de teste.</div>';return}ativos.forEach(x=>{const obra=obras.find(o=>o.id===x.obra_id);const el=document.createElement('div');el.className='item';el.innerHTML='<div class="itemHead"><div><h3></h3><p class="obra"></p><p class="meta"></p></div><span class="badge"></span></div><p class="valor"></p><div class="actions"></div>';el.querySelector('h3').textContent=x.descricao;el.querySelector('.obra').textContent='Obra: '+(obra?.nome||'Sem obra vinculada');el.querySelector('.meta').textContent='Data: '+x.data+' • Categoria: '+x.categoria;const badge=el.querySelector('.badge');badge.textContent=x.tipo==='receita'?'Receita':'Despesa';if(x.tipo==='despesa')badge.classList.add('despesa');el.querySelector('.valor').textContent='Valor: '+money(x.valor);const a=el.querySelector('.actions');if(x.origem==='manual'){const e=document.createElement('button');e.className='btn';e.textContent='Editar';e.onclick=()=>openModal(x.tipo,x);const d=document.createElement('button');d.className='btn danger';d.textContent='Excluir';d.onclick=()=>removeFin(x);a.append(e,d)}host.appendChild(el)})
+}
+function fillObras(selected=''){const s=$('finObra');s.innerHTML='<option value="">Sem obra vinculada</option>';obras.forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.nome;if(o.id===selected)op.selected=true;s.appendChild(op)})}
+function fillCats(tipo,selected=''){const s=$('finCategoria');s.innerHTML='';cats[tipo].forEach(([v,l])=>{const op=document.createElement('option');op.value=v;op.textContent=l;if(v===selected)op.selected=true;s.appendChild(op)})}
+function openModal(tipo,x=null){if(!obras.length&&!x){show($('appStatus'),'Crie uma obra antes para testar o vínculo financeiro com a obra.',false);return}$('modalTitle').textContent=x?'Editar '+(tipo==='receita'?'receita':'despesa'):'Nova '+(tipo==='receita'?'receita':'despesa');$('finId').value=x?.id||'';$('finTipo').value=tipo;fillObras(x?.obra_id||'');fillCats(tipo,x?.categoria||'');$('finValor').value=x?.valor??'';$('finData').value=x?.data||new Date().toISOString().slice(0,10);$('finDescricao').value=x?.descricao||'';$('finObs').value=x?.observacoes||'';$('modalBack').classList.remove('hidden')}
+function closeModal(){$('modalBack').classList.add('hidden')}
+async function saveFin(){const valor=Number($('finValor').value||0),descricao=$('finDescricao').value.trim(),tipo=$('finTipo').value;if(valor<=0||!descricao){alert('Informe descrição e valor maior que zero.');return}const btn=$('saveBtn');btn.disabled=true;try{const sb=await OBRIX_BACKEND.init(),id=$('finId').value;const payload={obra_id:$('finObra').value||null,tipo,categoria:$('finCategoria').value,descricao,valor,data:$('finData').value,observacoes:$('finObs').value.trim()||null,origem:'manual',status_lancamento:'ativo',atualizado_em:new Date().toISOString()};let q=id?sb.from('financeiro').update(payload).eq('id',id).eq('origem','manual').select('id'):sb.from('financeiro').insert({...payload,empresa_id:profile.empresa_id}).select('id');const {data,error}=await q;if(error)throw error;if(!data?.length)throw new Error('Gravação não confirmada.');closeModal();show($('appStatus'),id?'Lançamento atualizado com sucesso.':'Lançamento criado com sucesso.');await load()}catch(e){show($('appStatus'),'Erro ao salvar: '+e.message,false)}finally{btn.disabled=false}}
+async function removeFin(x){if(!confirm('Excluir este lançamento?'))return;try{const sb=await OBRIX_BACKEND.init();const {error}=await sb.from('financeiro').delete().eq('id',x.id).eq('origem','manual');if(error)throw error;show($('appStatus'),'Lançamento excluído com sucesso.');await load()}catch(e){show($('appStatus'),'Erro ao excluir: '+e.message,false)}}
+$('loginBtn').onclick=async()=>{const b=$('loginBtn');b.disabled=true;show($('loginStatus'),'Entrando...');try{const sb=await OBRIX_BACKEND.init();const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error||!data?.session)throw error||new Error('Sessão não criada.');hide($('loginView'));$('appView').classList.remove('hidden');await load()}catch(e){show($('loginStatus'),'Erro: '+e.message,false)}finally{b.disabled=false}};
+$('logoutBtn').onclick=async()=>{const sb=await OBRIX_BACKEND.init();await sb.auth.signOut();$('appView').classList.add('hidden');$('loginView').classList.remove('hidden')};$('refreshBtn').onclick=load;$('newReceitaBtn').onclick=()=>openModal('receita');$('newDespesaBtn').onclick=()=>openModal('despesa');$('cancelBtn').onclick=closeModal;$('saveBtn').onclick=saveFin;$('modalBack').addEventListener('click',e=>{if(e.target===$('modalBack'))closeModal()});
+(async()=>{try{const sb=await OBRIX_BACKEND.init();const {data}=await sb.auth.getSession();if(data?.session){hide($('loginView'));$('appView').classList.remove('hidden');await load()}}catch(_){}})();
+</script>
+</body></html>
