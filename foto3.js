@@ -1,0 +1,1 @@
+async function saveMeta(x,n){let r=await sb.from('fotos_obra').insert({empresa_id:p.empresa_id,obra_id:o.value,titulo:'Foto teste',storage_path:n,nome_arquivo:x.name,mime_type:x.type,tamanho_bytes:x.size,status_upload:'concluido'});if(r.error)throw r.error}
