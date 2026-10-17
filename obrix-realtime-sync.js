@@ -59,6 +59,7 @@
       const filter='empresa_id=eq.'+p.empresa_id;
       channel=sb.channel('obrix-core-'+p.empresa_id)
         .on('postgres_changes',{event:'*',schema:'public',table:'obras',filter},refreshSoon)
+        .on('postgres_changes',{event:'*',schema:'public',table:'checklist_itens',filter},refreshSoon)
         .on('postgres_changes',{event:'*',schema:'public',table:'funcionarios',filter},refreshSoon)
         .on('postgres_changes',{event:'*',schema:'public',table:'financeiro',filter},refreshSoon)
         .on('postgres_changes',{event:'*',schema:'public',table:'diarias',filter},refreshSoon)
