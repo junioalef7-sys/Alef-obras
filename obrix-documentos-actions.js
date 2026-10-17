@@ -27,7 +27,7 @@
       aba=window.open('about:blank','_blank');
       status('Abrindo documento...');
       const d=await obterDocumento(id);
-      if(!d?.caminho_arquivo)throw new Error('Arquivo não encontrado.');
+      if(!d?.caminho_arquivo)throw new Error('Este registro antigo não possui arquivo salvo.');
       const sb=await OBRIX_BACKEND.init();
       const {data,error}=await sb.storage.from('obrix-documentos').createSignedUrl(d.caminho_arquivo,300);
       if(error)throw error;
@@ -83,7 +83,7 @@
     }
   }
 
-  function separarBotoes(root=document){
+  function ajustarHistorico(root=document){
     root.querySelectorAll?.('[data-baixar]').forEach(botaoAntigo=>{
       const id=botaoAntigo.dataset.baixar;
       if(!id)return;
@@ -108,6 +108,20 @@
 
       botaoAntigo.replaceWith(visualizar,baixar,compartilhar);
     });
+
+    root.querySelectorAll?.('.history-item').forEach(item=>{
+      const actions=item.querySelector('.history-actions');
+      if(!actions)return;
+      if(actions.querySelector('[data-visualizar-arquivo],[data-baixar-arquivo],[data-baixar]'))return;
+      if(actions.querySelector('[data-sem-arquivo]'))return;
+      const aviso=document.createElement('button');
+      aviso.type='button';
+      aviso.className='secondary';
+      aviso.disabled=true;
+      aviso.dataset.semArquivo='1';
+      aviso.textContent='Sem arquivo salvo';
+      actions.prepend(aviso);
+    });
   }
 
   document.addEventListener('click',e=>{
@@ -130,9 +144,9 @@
     }
   });
 
-  separarBotoes();
+  ajustarHistorico();
   const historico=document.getElementById('historico');
   if(historico){
-    new MutationObserver(()=>separarBotoes(historico)).observe(historico,{childList:true,subtree:true});
+    new MutationObserver(()=>ajustarHistorico(historico)).observe(historico,{childList:true,subtree:true});
   }
 })();
