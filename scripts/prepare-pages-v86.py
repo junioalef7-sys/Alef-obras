@@ -31,8 +31,9 @@ for old in ('256','257','258','259','260'):
     html=html.replace(f'<script src="./obrix-obras-resumo-integration.js?v={old}"></script>','')
 obras='<script src="./obrix-obras-resumo-integration.js?v=261"></script>'
 pos=html.lower().rfind('</body>'); html=html[:pos]+obras+'\n'+html[pos:]
-equipe='<script src="./obrix-equipe-diarias-integration.js?v=263"></script>'
-if equipe not in html:
-    pos=html.lower().rfind('</body>'); html=html[:pos]+equipe+'\n'+html[pos:]
+for old in ('263','264','265'):
+    html=html.replace(f'<script src="./obrix-equipe-diarias-integration.js?v={old}"></script>','')
+equipe='<script src="./obrix-equipe-diarias-integration.js?v=266"></script>'
+pos=html.lower().rfind('</body>'); html=html[:pos]+equipe+'\n'+html[pos:]
 app.write_text(html,encoding='utf-8')
-print('Versão pública v86 preparada com registro de diárias da Equipe do OBRIX.')
+print('Versão pública v86 preparada com integração de diárias atualizada no PC e celular.')
