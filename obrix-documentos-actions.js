@@ -21,6 +21,29 @@
     return data;
   }
 
+  async function visualizarArquivo(id){
+    let aba=null;
+    try{
+      aba=window.open('about:blank','_blank');
+      status('Abrindo documento...');
+      const d=await obterDocumento(id);
+      if(!d?.caminho_arquivo)throw new Error('Arquivo não encontrado.');
+      const sb=await OBRIX_BACKEND.init();
+      const {data,error}=await sb.storage.from('obrix-documentos').createSignedUrl(d.caminho_arquivo,300);
+      if(error)throw error;
+      if(!data?.signedUrl)throw new Error('Não foi possível gerar a visualização.');
+      if(aba){
+        aba.location.replace(data.signedUrl);
+      }else{
+        window.location.href=data.signedUrl;
+      }
+      status('Documento aberto para visualização.');
+    }catch(e){
+      try{if(aba&&!aba.closed)aba.close();}catch(_){ }
+      status('Erro ao visualizar: '+(e.message||e),true);
+    }
+  }
+
   async function baixarArquivo(id){
     try{
       status('Baixando documento...');
@@ -64,6 +87,13 @@
     root.querySelectorAll?.('[data-baixar]').forEach(botaoAntigo=>{
       const id=botaoAntigo.dataset.baixar;
       if(!id)return;
+
+      const visualizar=document.createElement('button');
+      visualizar.type='button';
+      visualizar.className='secondary';
+      visualizar.textContent='Visualizar';
+      visualizar.dataset.visualizarArquivo=id;
+
       const baixar=document.createElement('button');
       baixar.type='button';
       baixar.className='secondary';
@@ -76,11 +106,17 @@
       compartilhar.textContent='Compartilhar';
       compartilhar.dataset.compartilharArquivo=id;
 
-      botaoAntigo.replaceWith(baixar,compartilhar);
+      botaoAntigo.replaceWith(visualizar,baixar,compartilhar);
     });
   }
 
   document.addEventListener('click',e=>{
+    const visualizar=e.target.closest?.('[data-visualizar-arquivo]');
+    if(visualizar){
+      e.preventDefault();
+      visualizarArquivo(visualizar.dataset.visualizarArquivo);
+      return;
+    }
     const baixar=e.target.closest?.('[data-baixar-arquivo]');
     if(baixar){
       e.preventDefault();
