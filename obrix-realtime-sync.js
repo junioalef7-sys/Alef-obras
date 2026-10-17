@@ -61,6 +61,9 @@
         .on('postgres_changes',{event:'*',schema:'public',table:'obras',filter},refreshSoon)
         .on('postgres_changes',{event:'*',schema:'public',table:'funcionarios',filter},refreshSoon)
         .on('postgres_changes',{event:'*',schema:'public',table:'financeiro',filter},refreshSoon)
+        .on('postgres_changes',{event:'*',schema:'public',table:'diarias',filter},refreshSoon)
+        .on('postgres_changes',{event:'*',schema:'public',table:'pagamentos_equipe',filter},refreshSoon)
+        .on('postgres_changes',{event:'*',schema:'public',table:'pagamento_diarias',filter},refreshSoon)
         .subscribe(status=>{
           if(status==='SUBSCRIBED')setStatus('Sincronização em tempo real: conectada',true);
           else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')setStatus('Sincronização em tempo real: erro',false);
