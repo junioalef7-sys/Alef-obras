@@ -21,14 +21,15 @@ function initEstoqueMenu(){
     <div class="sectionHead">
       <div>
         <h2>Estoque</h2>
-        <div class="subline">Materiais, locais, entradas, saídas e transferências.</div>
+        <div class="subline">Materiais, locais, entradas, saídas, transferências e inventário.</div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
-      <a class="btn" style="text-decoration:none;text-align:center" href="./obrix-estoque-test.html?v=213">Central de estoque</a>
-      <a class="btn light" style="text-decoration:none;text-align:center" href="./obrix-estoque-entrada-test.html?v=213">Entrada de material</a>
-      <a class="btn light" style="text-decoration:none;text-align:center" href="./obrix-estoque-saida-test.html?v=213">Saída de material</a>
-      <a class="btn" style="text-decoration:none;text-align:center" href="./obrix-estoque-transferencia-test.html?v=213">Transferência</a>
+      <a class="btn" style="text-decoration:none;text-align:center" href="./obrix-estoque-test.html?v=214">Central de estoque</a>
+      <a class="btn light" style="text-decoration:none;text-align:center" href="./obrix-estoque-entrada-test.html?v=214">Entrada de material</a>
+      <a class="btn light" style="text-decoration:none;text-align:center" href="./obrix-estoque-saida-test.html?v=214">Saída de material</a>
+      <a class="btn" style="text-decoration:none;text-align:center" href="./obrix-estoque-transferencia-test.html?v=214">Transferência</a>
+      <a class="btn" style="text-decoration:none;text-align:center;grid-column:1/-1" href="./obrix-estoque-ajuste-test.html?v=214">Ajuste / Inventário</a>
     </div>`;
   equipePanel.insertAdjacentElement('afterend',panel);
 
