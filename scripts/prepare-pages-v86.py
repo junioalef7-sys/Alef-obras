@@ -10,6 +10,7 @@ required_pages = [
     Path('obrix-estoque-saida-test.js'),
     Path('obrix-estoque-transferencia-test.html'),
     Path('obrix-estoque-transferencia-test.js'),
+    Path('obrix-estoque-menu-integration.js'),
 ]
 
 for page in required_pages:
@@ -17,4 +18,16 @@ for page in required_pages:
         raise SystemExit(f'PWA v86: arquivo público ausente: {page.name}')
     shutil.copy2(page, out / page.name)
 
-print('Versão pública v86 preparada com testes de meia diária/faltas, saída e transferência de estoque.')
+app = out / 'obrix-app-test.html'
+if not app.exists():
+    raise SystemExit('PWA v86: app principal de teste OBRIX ausente')
+html = app.read_text(encoding='utf-8')
+marker = '<script src="./obrix-estoque-menu-integration.js?v=213"></script>'
+if marker not in html:
+    pos = html.lower().rfind('</body>')
+    if pos < 0:
+        raise SystemExit('PWA v86: body ausente no app principal OBRIX')
+    html = html[:pos] + marker + '\n' + html[pos:]
+    app.write_text(html, encoding='utf-8')
+
+print('Versão pública v86 preparada com estoque integrado ao menu principal do OBRIX.')
