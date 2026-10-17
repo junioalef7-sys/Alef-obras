@@ -14,7 +14,7 @@ required_pages = [
     Path('obrix-estoque-pagamento-test.html'), Path('obrix-estoque-pagamento-test.js'),
     Path('obrix-estoque-historico-test.html'), Path('obrix-estoque-historico-test.js'),
     Path('obrix-estoque-menu-integration.js'), Path('obrix-obras-resumo-integration.js'),
-    Path('obrix-equipe-diarias-integration.js'),
+    Path('obrix-equipe-diarias-integration.js'), Path('obrix-equipe-vale.js'),
 ]
 for page in required_pages:
     if not page.exists(): raise SystemExit(f'PWA v86: arquivo público ausente: {page.name}')
@@ -35,5 +35,7 @@ for old in ('263','264','265','266'):
     html=html.replace(f'<script src="./obrix-equipe-diarias-integration.js?v={old}"></script>','')
 equipe='<script src="./obrix-equipe-diarias-integration.js?v=267"></script>'
 pos=html.lower().rfind('</body>'); html=html[:pos]+equipe+'\n'+html[pos:]
+vale='<script src="./obrix-equipe-vale.js?v=269"></script>'
+pos=html.lower().rfind('</body>'); html=html[:pos]+vale+'\n'+html[pos:]
 app.write_text(html,encoding='utf-8')
-print('Versão pública v86 preparada com histórico e exclusão de diárias do OBRIX.')
+print('Versão pública v86 preparada com Vale na Equipe do OBRIX.')
