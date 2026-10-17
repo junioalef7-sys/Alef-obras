@@ -21,6 +21,7 @@ required_pages = [
     Path('obrix-estoque-historico-test.html'),
     Path('obrix-estoque-historico-test.js'),
     Path('obrix-estoque-menu-integration.js'),
+    Path('obrix-obras-resumo-integration.js'),
 ]
 
 for page in required_pages:
@@ -34,12 +35,21 @@ if not app.exists():
 html = app.read_text(encoding='utf-8')
 for old in ('213','214','215','216'):
     html = html.replace(f'<script src="./obrix-estoque-menu-integration.js?v={old}"></script>','')
-marker = '<script src="./obrix-estoque-menu-integration.js?v=217"></script>'
-if marker not in html:
+stock_marker = '<script src="./obrix-estoque-menu-integration.js?v=217"></script>'
+if stock_marker not in html:
     pos = html.lower().rfind('</body>')
     if pos < 0:
         raise SystemExit('PWA v86: body ausente no app principal OBRIX')
-    html = html[:pos] + marker + '\n' + html[pos:]
-    app.write_text(html, encoding='utf-8')
+    html = html[:pos] + stock_marker + '\n' + html[pos:]
 
-print('Versão pública v86 preparada com histórico completo de movimentações do estoque OBRIX.')
+for old in ('256','257'):
+    html = html.replace(f'<script src="./obrix-obras-resumo-integration.js?v={old}"></script>','')
+obras_marker = '<script src="./obrix-obras-resumo-integration.js?v=258"></script>'
+if obras_marker not in html:
+    pos = html.lower().rfind('</body>')
+    if pos < 0:
+        raise SystemExit('PWA v86: body ausente no app principal OBRIX')
+    html = html[:pos] + obras_marker + '\n' + html[pos:]
+app.write_text(html, encoding='utf-8')
+
+print('Versão pública v86 preparada com estoque e resumo financeiro por obra do OBRIX.')
