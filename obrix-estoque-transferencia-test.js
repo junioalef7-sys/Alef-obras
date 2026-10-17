@@ -7,24 +7,47 @@ const matNome=id=>materiais.find(x=>x.id===id)?.nome||'Material';
 const estNome=id=>estoques.find(x=>x.id===id)?.nome||'Estoque';
 function show(el,text,ok=true){el.textContent=text;el.className='status '+(ok?'ok':'err');el.classList.remove('hidden')}
 function saldo(materialId,estoqueId){return Number(saldos.find(s=>s.material_id===materialId&&s.estoque_id===estoqueId)?.quantidade||0)}
-function renderSelects(){
-  $('material').innerHTML=materiais.filter(x=>x.ativo!==false).map(x=>`<option value="${x.id}">${x.nome}</option>`).join('');
-  const opts=estoques.filter(x=>x.ativo!==false).map(x=>`<option value="${x.id}">${x.nome}</option>`).join('');
-  $('origem').innerHTML=opts;$('destino').innerHTML=opts;
-  if(estoques.length>1){$('origem').selectedIndex=0;$('destino').selectedIndex=1;}
+function optionExists(select,value){return [...select.options].some(o=>o.value===value)}
+function renderSelects(preservar={}){
+  const materialAnterior=preservar.material||$('material').value;
+  const origemAnterior=preservar.origem||$('origem').value;
+  const destinoAnterior=preservar.destino||$('destino').value;
+  const mats=materiais.filter(x=>x.ativo!==false);
+  const ests=estoques.filter(x=>x.ativo!==false);
+  $('material').innerHTML=mats.map(x=>`<option value="${x.id}">${x.nome}</option>`).join('');
+  const opts=ests.map(x=>`<option value="${x.id}">${x.nome}</option>`).join('');
+  $('origem').innerHTML=opts;
+  $('destino').innerHTML=opts;
+
+  if(materialAnterior&&optionExists($('material'),materialAnterior))$('material').value=materialAnterior;
+  const materialAtual=$('material').value;
+
+  if(origemAnterior&&optionExists($('origem'),origemAnterior)){
+    $('origem').value=origemAnterior;
+  }else{
+    const comSaldo=ests.find(e=>saldo(materialAtual,e.id)>0);
+    if(comSaldo)$('origem').value=comSaldo.id;
+  }
+
+  if(destinoAnterior&&optionExists($('destino'),destinoAnterior)&&destinoAnterior!==$('origem').value){
+    $('destino').value=destinoAnterior;
+  }else{
+    const outro=ests.find(e=>e.id!==$('origem').value);
+    if(outro)$('destino').value=outro.id;
+  }
   atualizarSaldos();
 }
 function atualizarSaldos(){
   $('saldoOrigem').textContent=qtd(saldo($('material').value,$('origem').value));
   $('saldoDestino').textContent=qtd(saldo($('material').value,$('destino').value));
 }
-function render(){
-  renderSelects();
+function render(preservar={}){
+  renderSelects(preservar);
   $('saldos').innerHTML=saldos.length?saldos.map(s=>`<div class="row"><b>${matNome(s.material_id)}</b><br><span class="muted">${estNome(s.estoque_id)} · ${qtd(s.quantidade)}</span></div>`).join(''):'Nenhum saldo.';
   const trs=movimentos.filter(m=>m.tipo==='transferencia').slice(0,20);
   $('movimentos').innerHTML=trs.length?trs.map(m=>`<div class="row"><b>${matNome(m.material_id)} · ${qtd(m.quantidade)}</b><br><span class="muted">${estNome(m.estoque_origem_id)} → ${estNome(m.estoque_destino_id)} · ${m.data||''}</span></div>`).join(''):'Nenhuma transferência registrada.';
 }
-async function carregar(){
+async function carregar(preservar={}){
   await OBRIX_BACKEND.profile();
   [materiais,estoques,saldos,movimentos]=await Promise.all([
     OBRIX_BACKEND.readTable('materiais','criado_em'),
@@ -33,7 +56,7 @@ async function carregar(){
     OBRIX_BACKEND.readTable('estoque_movimentacoes','criado_em')
   ]);
   $('loginView').classList.add('hidden');$('appView').classList.remove('hidden');
-  render();
+  render(preservar);
 }
 async function login(){
   try{const b=$('loginBtn');b.disabled=true;b.textContent='Entrando...';sb=await OBRIX_BACKEND.init();const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await carregar();}
@@ -46,13 +69,25 @@ async function transferir(){
   if(origem===destino)return show($('status'),'Origem e destino precisam ser diferentes.',false);
   if(!q||q<=0)return show($('status'),'Informe uma quantidade maior que zero.',false);
   const disp=saldo(material,origem);if(q>disp)return show($('status'),'Saldo insuficiente. Disponível: '+qtd(disp)+'.',false);
-  try{const b=$('transferirBtn');b.disabled=true;b.textContent='Transferindo...';sb=sb||await OBRIX_BACKEND.init();const {error}=await sb.rpc('obrix_transferir_estoque',{p_material_id:material,p_estoque_origem_id:origem,p_estoque_destino_id:destino,p_quantidade:q,p_data:$('data').value||null,p_documento:$('documento').value.trim()||null,p_observacoes:$('observacoes').value.trim()||null});if(error)throw error;show($('status'),'Transferência registrada com sucesso.');$('quantidade').value='';$('documento').value='';$('observacoes').value='';await carregar();}
+  try{
+    const b=$('transferirBtn');
+    b.disabled=true;b.textContent='Transferindo...';
+    sb=sb||await OBRIX_BACKEND.init();
+    const {error}=await sb.rpc('obrix_transferir_estoque',{p_material_id:material,p_estoque_origem_id:origem,p_estoque_destino_id:destino,p_quantidade:q,p_data:$('data').value||null,p_documento:$('documento').value.trim()||null,p_observacoes:$('observacoes').value.trim()||null});
+    if(error)throw error;
+    show($('status'),'Transferência registrada com sucesso.');
+    $('quantidade').value='';$('documento').value='';$('observacoes').value='';
+    await carregar({material,origem,destino});
+  }
   catch(e){show($('status'),'Erro: '+(e.message||e),false)}
   finally{$('transferirBtn').disabled=false;$('transferirBtn').textContent='Transferir material'}
 }
 $('loginBtn').addEventListener('click',login);
 $('transferirBtn').addEventListener('click',transferir);
-['material','origem','destino'].forEach(id=>$(id).addEventListener('change',atualizarSaldos));
+['material','origem','destino'].forEach(id=>$(id).addEventListener('change',()=>{
+  if(id==='origem'&&$('origem').value===$('destino').value){const outro=estoques.find(e=>e.ativo!==false&&e.id!==$('origem').value);if(outro)$('destino').value=outro.id;}
+  atualizarSaldos();
+}));
 $('data').value=new Date().toISOString().slice(0,10);
 (async()=>{try{sb=await OBRIX_BACKEND.init();const {data}=await sb.auth.getSession();if(data?.session)await carregar();}catch(e){show($('loginStatus'),'Erro ao carregar: '+(e.message||e),false)}})();
 })();
