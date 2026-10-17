@@ -1,0 +1,19 @@
+(()=>{
+'use strict';
+let diarias=[];
+const brl=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+async function carregar(){try{diarias=await OBRIX_BACKEND.readTable('diarias','data')}catch(e){console.error('Diárias:',e);diarias=[]}}
+function modal(f){
+ const back=document.createElement('div');back.className='modalBack';
+ const hoje=new Date().toISOString().slice(0,10);
+ back.innerHTML=`<div class="modal"><h2>Registrar diária</h2><p><strong class="fn"></strong></p><label>Obra</label><select class="obra"><option value="">Selecione a obra</option></select><div class="grid2"><div><label>Data</label><input class="data" type="date" value="${hoje}"></div><div><label>Tipo</label><select class="qtd"><option value="1">Diária inteira</option><option value="0.5">Meia diária</option></select></div></div><label>Valor da diária</label><input class="valor" type="number" min="0" step="0.01" value="${Number(f.valor_diaria||0)}"><label>Observações</label><textarea class="obs"></textarea><div class="modalActions"><button class="btn light cancel">Cancelar</button><button class="btn save">Registrar</button></div></div>`;
+ back.querySelector('.fn').textContent=f.nome;
+ const sel=back.querySelector('.obra');(window.obras||[]).filter(o=>o.status!=='concluida').forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.nome;if(o.id===f.obra_id)op.selected=true;sel.appendChild(op)});
+ document.body.appendChild(back);back.querySelector('.cancel').onclick=()=>back.remove();
+ back.querySelector('.save').onclick=async()=>{const obra_id=sel.value,data=back.querySelector('.data').value,quantidade=Number(back.querySelector('.qtd').value),valor_unitario=Number(back.querySelector('.valor').value||0);if(!obra_id||!data||valor_unitario<=0){alert('Selecione a obra, a data e informe o valor da diária.');return}const sb=await OBRIX_BACKEND.init();const payload={empresa_id:profile.empresa_id,funcionario_id:f.id,obra_id,data,quantidade,valor_unitario,valor_total:valor_unitario*quantidade,paga:false,observacoes:back.querySelector('.obs').value.trim()||null};const {error}=await sb.from('diarias').insert(payload);if(error){alert('Não foi possível registrar a diária: '+error.message);return}back.remove();await carregar();renderEquipe();};
+}
+function aplicar(){const host=document.getElementById('team');if(!host||typeof funcionarios==='undefined')return;const cards=[...host.querySelectorAll('.item')];funcionarios.forEach((f,i)=>{const card=cards[i];if(!card)return;const actions=card.querySelector('.actions');if(actions&&!actions.querySelector('.reg-diaria')){const b=document.createElement('button');b.className='btn reg-diaria';b.textContent='Registrar diária';b.onclick=()=>modal(f);actions.prepend(b)}let box=card.querySelector('.obrix-diarias-resumo');if(!box){box=document.createElement('div');box.className='obrix-diarias-resumo';card.insertBefore(box,actions)}const itens=diarias.filter(d=>d.funcionario_id===f.id);const abertas=itens.filter(d=>!d.paga);const qtd=abertas.reduce((s,d)=>s+Number(d.quantidade||0),0),total=abertas.reduce((s,d)=>s+Number(d.valor_total||0),0);box.innerHTML=`<small>Diárias em aberto</small><strong>${qtd.toLocaleString('pt-BR')} • ${brl(total)}</strong>`})}
+const css=document.createElement('style');css.textContent='.obrix-diarias-resumo{margin-top:10px;padding:10px 12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px}.obrix-diarias-resumo small{display:block;color:#667085;font-weight:700}.obrix-diarias-resumo strong{display:block;margin-top:3px;color:#111827}';document.head.appendChild(css);
+async function iniciar(){await carregar();if(typeof renderEquipe==='function'){const original=renderEquipe;window.renderEquipe=function(){original();aplicar()};aplicar()}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(iniciar,300));else setTimeout(iniciar,300);
+})();
