@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OBRIX — Teste do novo backend</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f7fb;color:#111827}.wrap{max-width:760px;margin:32px auto;padding:16px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 8px 28px rgba(0,0,0,.06)}h1{margin:0 0 8px;font-size:24px}h2{font-size:18px}label{display:block;font-weight:700;margin:12px 0 6px}input,button{width:100%;padding:12px;border-radius:10px;font-size:16px}input{border:1px solid #cbd5e1}button{border:0;background:#111827;color:#fff;font-weight:700;margin-top:12px;cursor:pointer}.secondary{background:#e5e7eb;color:#111827}.status{margin-top:12px;padding:12px;border-radius:10px;background:#f1f5f9;white-space:pre-wrap}.ok{background:#ecfdf5;color:#065f46}.err{background:#fef2f2;color:#991b1b}.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card"><h1>OBRIX — Teste do novo backend</h1><p>Esta página valida o novo Supabase sem alterar a versão principal do aplicativo.</p></div>
+  <div class="card" id="loginCard">
+    <h2>Entrar com usuário de teste</h2>
+    <label>E-mail</label><input id="email" type="email" autocomplete="username">
+    <label>Senha</label><input id="password" type="password" autocomplete="current-password">
+    <button id="loginBtn">Entrar e testar</button>
+    <div id="loginStatus" class="status hidden"></div>
+  </div>
+  <div class="card hidden" id="resultCard">
+    <h2>Resultado</h2>
+    <div id="result" class="status"></div>
+    <button id="againBtn">Executar teste novamente</button>
+    <button id="logoutBtn" class="secondary">Sair</button>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
+<script src="./obrix-backend-adapter.js"></script>
+<script>
+const loginCard=document.getElementById('loginCard');
+const resultCard=document.getElementById('resultCard');
+const loginStatus=document.getElementById('loginStatus');
+const result=document.getElementById('result');
+function paint(el,text,ok){el.textContent=text;el.className='status '+(ok?'ok':'err');el.classList.remove('hidden')}
+async function runCheck(){
+  paint(result,'Validando autenticação, perfil, assinatura, obras, equipe e financeiro...',true);
+  try{
+    const h=await window.OBRIX_BACKEND.healthcheck();
+    const a=h.assinatura||{};
+    paint(result,
+      'Conexão com o novo OBRIX: OK\n'+
+      'Perfil/RLS: OK\n'+
+      'Plano: '+(a.plano||'-')+'\n'+
+      'Status da assinatura: '+(a.status||'-')+'\n'+
+      'Obras visíveis: '+h.contagens.obras+'\n'+
+      'Funcionários visíveis: '+h.contagens.funcionarios+'\n'+
+      'Lançamentos financeiros visíveis: '+h.contagens.financeiro,
+      true
+    );
+  }catch(e){paint(result,'Falha no teste: '+e.message,false)}
+}
+document.getElementById('loginBtn').onclick=async()=>{
+  const btn=document.getElementById('loginBtn');btn.disabled=true;
+  paint(loginStatus,'Entrando no novo OBRIX...',true);
+  try{
+    const sb=await window.OBRIX_BACKEND.init();
+    const {data,error}=await sb.auth.signInWithPassword({email:document.getElementById('email').value.trim(),password:document.getElementById('password').value});
+    if(error||!data?.session)throw error||new Error('Sessão não criada.');
+    loginCard.classList.add('hidden');resultCard.classList.remove('hidden');
+    await runCheck();
+  }catch(e){paint(loginStatus,'Erro: '+e.message,false)}finally{btn.disabled=false}
+};
+document.getElementById('againBtn').onclick=runCheck;
+document.getElementById('logoutBtn').onclick=async()=>{const sb=await window.OBRIX_BACKEND.init();await sb.auth.signOut();resultCard.classList.add('hidden');loginCard.classList.remove('hidden')};
+</script>
+</body>
+</html>
