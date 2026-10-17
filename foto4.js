@@ -1,0 +1,1 @@
+b.onclick=async()=>{let x=f.files[0],n;if(!x)return m.textContent='Escolha uma foto';b.disabled=true;try{m.textContent='Enviando...';n=await sendFile(x);await saveMeta(x,n);m.textContent='Foto enviada com sucesso'}catch(e){if(n)await sb.storage.from('obrix-fotos').remove([n]);m.textContent='Erro: '+e.message}b.disabled=false}
