@@ -6,6 +6,7 @@ out = Path('.pages')
 
 required_pages = [
     Path('obrix-faltas-meia-test.html'),
+    Path('obrix-financeiro-test.html'),
     Path('obrix-estoque-saida-test.html'),
     Path('obrix-estoque-saida-test.js'),
     Path('obrix-estoque-transferencia-test.html'),
@@ -52,4 +53,4 @@ if obras_marker not in html:
     html = html[:pos] + obras_marker + '\n' + html[pos:]
 app.write_text(html, encoding='utf-8')
 
-print('Versão pública v86 preparada com estoque, resumo financeiro e serviços extras por obra do OBRIX.')
+print('Versão pública v86 preparada com Financeiro, estoque, resumo financeiro e serviços extras por obra do OBRIX.')
