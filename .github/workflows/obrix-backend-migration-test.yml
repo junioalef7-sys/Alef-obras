@@ -1,0 +1,30 @@
+name: OBRIX backend migration test
+
+on:
+  push:
+    branches: [obrix-backend-migration-test]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar adaptador
+        run: node --check obrix-backend-adapter.js
+      - name: Validar página de teste
+        run: |
+          test -f obrix-backend-test.html
+          grep -q 'OBRIX_BACKEND.healthcheck' obrix-backend-test.html
+          grep -q '@supabase/supabase-js@2.117.1' obrix-backend-test.html
+          grep -q 'obrix-public-config' obrix-backend-adapter.js
+      - name: Confirmar isolamento
+        run: |
+          git branch --show-current
+          test "$(git branch --show-current)" = "obrix-backend-migration-test"
