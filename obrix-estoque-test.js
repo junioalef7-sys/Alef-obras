@@ -33,7 +33,7 @@
         const card=document.createElement('div');
         card.className='card';
         card.id='estoqueAlertasCard';
-        card.innerHTML='<h3>Alertas de estoque mínimo</h3><p class="muted">Materiais que chegaram ou ficaram abaixo do limite configurado.</p><div id="listaAlertasEstoque"></div>';
+        card.innerHTML='<h3>Alertas de estoque mínimo</h3><p class="muted">Materiais que estão abaixo do limite configurado.</p><div id="listaAlertasEstoque"></div>';
         saldosCard.parentNode.insertBefore(card,saldosCard);
       }
     }
@@ -45,14 +45,14 @@
       const minimo=Number(m.estoque_minimo||0);
       const total=saldoTotalMaterial(m.id);
       return {m,minimo,total,falta:Math.max(0,minimo-total)};
-    }).filter(x=>x.minimo>0&&x.total<=x.minimo)
+    }).filter(x=>x.minimo>0&&x.total<x.minimo)
       .sort((a,b)=>(a.total/a.minimo)-(b.total/b.minimo));
 
     if($('kAlertas'))$('kAlertas').textContent=String(alertas.length);
     const lista=$('listaAlertasEstoque');
     if(!lista)return;
     if(!alertas.length){
-      lista.innerHTML='<div class="row"><b>Estoque em dia</b><br><span class="muted">Nenhum material está no limite mínimo.</span></div>';
+      lista.innerHTML='<div class="row"><b>Estoque em dia</b><br><span class="muted">Nenhum material está abaixo do estoque mínimo.</span></div>';
       return;
     }
     lista.innerHTML=alertas.map(({m,minimo,total,falta})=>{
