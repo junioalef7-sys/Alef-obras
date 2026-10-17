@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OBRIX — Transferência de Estoque</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.wrap{max-width:900px;margin:auto;padding:14px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;margin-bottom:14px}.brand{font-size:28px;font-weight:900}.muted{color:#667085}.hidden{display:none!important}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{display:block;font-weight:800;margin:12px 0 6px}input,select,textarea,button{width:100%;padding:12px;border-radius:10px;border:1px solid #cbd5e1;font-size:16px;background:#fff;color:#111827}textarea{min-height:84px;resize:vertical}button{background:#111827;color:#fff;font-weight:800;cursor:pointer}.status{margin-top:12px;padding:10px;border-radius:10px;background:#f1f5f9;white-space:pre-wrap}.ok{background:#ecfdf5;color:#166534}.err{background:#fef2f2;color:#991b1b}.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{background:#fafafa;border:1px solid #e5e7eb;border-radius:12px;padding:14px}.kpi small{display:block;color:#667085;font-weight:700}.kpi strong{display:block;font-size:24px;margin-top:6px}.row{padding:10px 0;border-bottom:1px solid #eee}.row:last-child{border-bottom:0}@media(max-width:650px){.grid,.kpis{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="loginView">
+    <div class="brand">OBRIX</div>
+    <p class="muted">Transferência de material entre estoques</p>
+    <label>E-mail</label><input id="email" type="email" autocomplete="username">
+    <label>Senha</label><input id="password" type="password" autocomplete="current-password">
+    <br><br><button id="loginBtn">Entrar</button>
+    <div id="loginStatus" class="status hidden"></div>
+  </div>
+
+  <div id="appView" class="hidden">
+    <div class="card">
+      <div class="brand">Transferência de Estoque</div>
+      <p class="muted">Move o material do estoque de origem para o destino em uma única operação.</p>
+      <div class="grid">
+        <div><label>Material</label><select id="material"></select></div>
+        <div><label>Quantidade</label><input id="quantidade" type="number" min="0.001" step="0.001" inputmode="decimal"></div>
+        <div><label>Estoque de origem</label><select id="origem"></select></div>
+        <div><label>Estoque de destino</label><select id="destino"></select></div>
+        <div><label>Data</label><input id="data" type="date"></div>
+        <div><label>Documento / referência</label><input id="documento" maxlength="120"></div>
+      </div>
+      <label>Observações</label><textarea id="observacoes"></textarea>
+      <br><button id="transferirBtn">Transferir material</button>
+      <div id="status" class="status hidden"></div>
+    </div>
+
+    <div class="card">
+      <div class="kpis">
+        <div class="kpi"><small>Saldo na origem</small><strong id="saldoOrigem">0</strong></div>
+        <div class="kpi"><small>Saldo no destino</small><strong id="saldoDestino">0</strong></div>
+      </div>
+    </div>
+
+    <div class="card"><h3>Saldos atuais</h3><div id="saldos"></div></div>
+    <div class="card"><h3>Últimas transferências</h3><div id="movimentos"></div></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./obrix-backend-adapter.js?v=210"></script>
+<script src="./obrix-estoque-transferencia-test.js?v=210"></script>
+</body>
+</html>
