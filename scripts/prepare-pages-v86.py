@@ -8,6 +8,8 @@ required_pages = [
     Path('obrix-faltas-meia-test.html'),
     Path('obrix-estoque-saida-test.html'),
     Path('obrix-estoque-saida-test.js'),
+    Path('obrix-estoque-transferencia-test.html'),
+    Path('obrix-estoque-transferencia-test.js'),
 ]
 
 for page in required_pages:
@@ -15,4 +17,4 @@ for page in required_pages:
         raise SystemExit(f'PWA v86: arquivo público ausente: {page.name}')
     shutil.copy2(page, out / page.name)
 
-print('Versão pública v86 preparada com testes de meia diária/faltas e saída de estoque.')
+print('Versão pública v86 preparada com testes de meia diária/faltas, saída e transferência de estoque.')
