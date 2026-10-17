@@ -62,6 +62,8 @@
         .on('postgres_changes',{event:'*',schema:'public',table:'funcionarios',filter},refreshSoon)
         .on('postgres_changes',{event:'*',schema:'public',table:'financeiro',filter},refreshSoon)
         .on('postgres_changes',{event:'*',schema:'public',table:'diarias',filter},refreshSoon)
+        .on('postgres_changes',{event:'*',schema:'public',table:'vales',filter},refreshSoon)
+        .on('postgres_changes',{event:'*',schema:'public',table:'bonus_extras',filter},refreshSoon)
         .on('postgres_changes',{event:'*',schema:'public',table:'pagamentos_equipe',filter},refreshSoon)
         .on('postgres_changes',{event:'*',schema:'public',table:'pagamento_diarias',filter},refreshSoon)
         .subscribe(status=>{
