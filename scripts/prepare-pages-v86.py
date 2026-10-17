@@ -18,6 +18,8 @@ required_pages = [
     Path('obrix-estoque-recebimento-test.js'),
     Path('obrix-estoque-pagamento-test.html'),
     Path('obrix-estoque-pagamento-test.js'),
+    Path('obrix-estoque-historico-test.html'),
+    Path('obrix-estoque-historico-test.js'),
     Path('obrix-estoque-menu-integration.js'),
 ]
 
@@ -40,4 +42,4 @@ if marker not in html:
     html = html[:pos] + marker + '\n' + html[pos:]
     app.write_text(html, encoding='utf-8')
 
-print('Versão pública v86 preparada com pagamento de compras integrado ao Financeiro do OBRIX.')
+print('Versão pública v86 preparada com histórico completo de movimentações do estoque OBRIX.')
