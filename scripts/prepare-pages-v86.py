@@ -17,6 +17,6 @@ for old in ('256','257','258','259','260'): html=html.replace(f'<script src="./o
 pos=html.lower().rfind('</body>');html=html[:pos]+'<script src="./obrix-obras-resumo-integration.js?v=261"></script>\n'+html[pos:]
 for old in ('263','264','265','266'): html=html.replace(f'<script src="./obrix-equipe-diarias-integration.js?v={old}"></script>','')
 pos=html.lower().rfind('</body>');html=html[:pos]+'<script src="./obrix-equipe-diarias-integration.js?v=267"></script>\n'+html[pos:]
-pos=html.lower().rfind('</body>');html=html[:pos]+'<script src="./obrix-equipe-vale.js?v=269"></script>\n<script src="./obrix-equipe-bonus.js?v=271"></script>\n<script src="./obrix-equipe-pagamento.js?v=273"></script>\n'+html[pos:]
+pos=html.lower().rfind('</body>');html=html[:pos]+'<script src="./obrix-equipe-vale.js?v=269"></script>\n<script src="./obrix-equipe-bonus.js?v=271"></script>\n<script src="./obrix-equipe-pagamento.js?v=276"></script>\n'+html[pos:]
 app.write_text(html,encoding='utf-8')
-print('Versão pública v86 preparada com pagamento da Equipe do OBRIX.')
+print('Versão pública v86 preparada com pagamento detalhado da Equipe do OBRIX.')
