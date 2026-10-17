@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OBRIX — Teste de sincronização</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:#f4f6f8;color:#111827}.hidden{display:none!important}.wrap{max-width:1000px;margin:auto;padding:16px}.card{background:white;border:1px solid #e5e7eb;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 8px 28px rgba(0,0,0,.05)}.notice{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-weight:800}.brand{font-size:28px;font-weight:900}.muted{color:#667085}.login{max-width:460px;margin:35px auto}.login label{display:block;font-weight:800;margin:13px 0 6px}.login input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:11px;font-size:16px}.btn,.login button{border:0;border-radius:11px;padding:12px 15px;font-weight:800;cursor:pointer;background:#111827;color:#fff}.login button{width:100%;margin-top:15px}.light{background:#e5e7eb;color:#111827}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.status{padding:12px;border-radius:12px;background:#e5e7eb;font-weight:800;margin-top:12px}.ok{background:#dcfce7;color:#166534}.err{background:#fee2e2;color:#991b1b}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.panel h2{margin:0 0 10px}.row{border-top:1px solid #e5e7eb;padding:10px 0}.row:first-child{border-top:0}.event{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;white-space:pre-wrap;background:#0f172a;color:#e2e8f0;border-radius:12px;padding:12px;min-height:72px}@media(max-width:800px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card notice">AMBIENTE DE TESTE — monitor de sincronização em tempo real do OBRIX.</div>
+  <section id="loginView" class="card login">
+    <div class="brand">OBRIX</div><p class="muted">Teste celular ↔ computador</p>
+    <label>E-mail</label><input id="email" type="email" autocomplete="username">
+    <label>Senha</label><input id="password" type="password" autocomplete="current-password">
+    <button id="loginBtn">Entrar</button><div id="loginStatus" class="status hidden"></div>
+  </section>
+  <section id="appView" class="hidden">
+    <div class="card top"><div><div class="brand">Sincronização em tempo real</div><div id="userLine" class="muted"></div></div><div><button id="refreshBtn" class="btn light">Atualizar manualmente</button> <button id="logoutBtn" class="btn light">Sair</button></div></div>
+    <div id="syncStatus" class="status">Conectando...</div>
+    <div class="card"><strong>Último evento recebido</strong><div id="lastEvent" class="event" style="margin-top:10px">Nenhum evento ainda.</div></div>
+    <div class="grid">
+      <div class="card panel"><h2>Obras <span id="countObras">0</span></h2><div id="obras"></div></div>
+      <div class="card panel"><h2>Equipe <span id="countEquipe">0</span></h2><div id="equipe"></div></div>
+      <div class="card panel"><h2>Financeiro <span id="countFin">0</span></h2><div id="fin"></div></div>
+    </div>
+  </section>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
+<script src="./obrix-backend-adapter.js"></script>
+<script>
+const $=id=>document.getElementById(id);let profile=null,obras=[],funcionarios=[],financeiro=[],channel=null,timer=null;
+function show(el,text,ok=true){el.textContent=text;el.className='status '+(ok?'ok':'err');el.classList.remove('hidden')}
+function render(){
+ $('userLine').textContent=(profile?.nome||profile?.email||'Usuário')+' • empresa protegida por RLS';
+ $('countObras').textContent=obras.length;$('countEquipe').textContent=funcionarios.length;$('countFin').textContent=financeiro.filter(x=>x.status_lancamento==='ativo').length;
+ const fill=(id,rows,fn)=>{const h=$(id);h.innerHTML=rows.length?'':'<div class="muted">Nenhum registro</div>';rows.slice(0,8).forEach(r=>{const d=document.createElement('div');d.className='row';d.textContent=fn(r);h.appendChild(d)})};
+ fill('obras',obras,o=>o.nome+' • '+o.status+' • R$ '+Number(o.valor_contrato||0).toLocaleString('pt-BR',{minimumFractionDigits:2}));
+ fill('equipe',funcionarios,f=>f.nome+' • '+(f.ativo?'ativo':'inativo')+' • '+(f.cargo||'-'));
+ fill('fin',financeiro.filter(x=>x.status_lancamento==='ativo'),x=>(x.tipo==='receita'?'Receita':'Despesa')+' • '+x.descricao+' • R$ '+Number(x.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2}));
+}
+async function loadAll(){profile=await OBRIX_BACKEND.profile();[obras,funcionarios,financeiro]=await Promise.all([OBRIX_BACKEND.readTable('obras','criado_em'),OBRIX_BACKEND.readTable('funcionarios','criado_em'),OBRIX_BACKEND.readTable('financeiro','data')]);render()}
+function scheduleReload(){clearTimeout(timer);timer=setTimeout(async()=>{try{await loadAll();show($('syncStatus'),'Sincronização em tempo real: conectada e atualizada',true)}catch(e){show($('syncStatus'),'Erro ao atualizar: '+e.message,false)}},120)}
+function describe(payload){const who=payload.table||'-',type=payload.eventType||'-',row=payload.new||payload.old||{};return new Date().toLocaleTimeString('pt-BR')+' — '+who+' — '+type+'\nID: '+(row.id||'-')}
+async function startRealtime(){
+ const sb=await OBRIX_BACKEND.init();if(channel)await sb.removeChannel(channel);const filter='empresa_id=eq.'+profile.empresa_id;show($('syncStatus'),'Sincronização em tempo real: conectando...');
+ const handler=p=>{$('lastEvent').textContent=describe(p);scheduleReload()};
+ channel=sb.channel('obrix-sync-monitor-'+profile.empresa_id)
+ .on('postgres_changes',{event:'*',schema:'public',table:'obras',filter},handler)
+ .on('postgres_changes',{event:'*',schema:'public',table:'funcionarios',filter},handler)
+ .on('postgres_changes',{event:'*',schema:'public',table:'financeiro',filter},handler)
+ .subscribe(s=>{if(s==='SUBSCRIBED')show($('syncStatus'),'Sincronização em tempo real: conectada',true);else if(s==='CHANNEL_ERROR'||s==='TIMED_OUT')show($('syncStatus'),'Sincronização em tempo real: erro',false);else if(s==='CLOSED')show($('syncStatus'),'Sincronização em tempo real: desconectada',false)});
+}
+async function enter(){await loadAll();await startRealtime();$('loginView').classList.add('hidden');$('appView').classList.remove('hidden')}
+$('loginBtn').onclick=async()=>{const b=$('loginBtn');b.disabled=true;show($('loginStatus'),'Entrando...');try{const sb=await OBRIX_BACKEND.init();const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error||!data?.session)throw error||new Error('Sessão não criada.');await enter()}catch(e){show($('loginStatus'),'Erro: '+e.message,false)}finally{b.disabled=false}};
+$('refreshBtn').onclick=loadAll;$('logoutBtn').onclick=async()=>{const sb=await OBRIX_BACKEND.init();if(channel)await sb.removeChannel(channel);await sb.auth.signOut();$('appView').classList.add('hidden');$('loginView').classList.remove('hidden')};
+(async()=>{try{const sb=await OBRIX_BACKEND.init();const {data}=await sb.auth.getSession();if(data?.session)await enter()}catch(e){}})();
+</script>
+</body></html>
