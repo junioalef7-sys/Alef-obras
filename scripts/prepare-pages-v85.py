@@ -7,7 +7,7 @@ shutil.copy2(fix,out/fix.name)
 pagbank_test=Path('pagbank-teste.html')
 if not pagbank_test.exists(): raise SystemExit('PWA v86: página de teste PagBank ausente')
 shutil.copy2(pagbank_test,out/pagbank_test.name)
-for name in ['obrix-backend-test.html','obrix-backend-adapter.js','obrix-app-test.html','obrix-financeiro-test.html','obrix-sync-test.html','obrix-realtime-sync.js']:
+for name in ['obrix-backend-test.html','obrix-backend-adapter.js','obrix-app-test.html','obrix-financeiro-test.html','obrix-sync-test.html','obrix-realtime-sync.js','obrix-equipe-pagamento-test.html']:
  p=Path(name)
  if not p.exists(): raise SystemExit('PWA v86: arquivo de teste OBRIX ausente: '+name)
  shutil.copy2(p,out/p.name)
