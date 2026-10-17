@@ -21,17 +21,18 @@ function initEstoqueMenu(){
     <div class="sectionHead">
       <div>
         <h2>Estoque</h2>
-        <div class="subline">Materiais, locais, movimentações, inventário, reposição e recebimento de compras.</div>
+        <div class="subline">Materiais, movimentações, inventário, compras, recebimento e pagamento.</div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
-      <a class="btn" style="text-decoration:none;text-align:center" href="./obrix-estoque-test.html?v=216">Central de estoque</a>
-      <a class="btn light" style="text-decoration:none;text-align:center" href="./obrix-estoque-entrada-test.html?v=216">Entrada de material</a>
-      <a class="btn light" style="text-decoration:none;text-align:center" href="./obrix-estoque-saida-test.html?v=216">Saída de material</a>
-      <a class="btn" style="text-decoration:none;text-align:center" href="./obrix-estoque-transferencia-test.html?v=216">Transferência</a>
-      <a class="btn" style="text-decoration:none;text-align:center" href="./obrix-estoque-ajuste-test.html?v=216">Ajuste / Inventário</a>
-      <a class="btn light" style="text-decoration:none;text-align:center" href="./obrix-estoque-reposicao-test.html?v=216">Reposição / Compras</a>
-      <a class="btn" style="text-decoration:none;text-align:center;grid-column:1/-1" href="./obrix-estoque-recebimento-test.html?v=216">Recebimento de Compra</a>
+      <a class="btn" style="text-decoration:none;text-align:center" href="./obrix-estoque-test.html?v=217">Central de estoque</a>
+      <a class="btn light" style="text-decoration:none;text-align:center" href="./obrix-estoque-entrada-test.html?v=217">Entrada de material</a>
+      <a class="btn light" style="text-decoration:none;text-align:center" href="./obrix-estoque-saida-test.html?v=217">Saída de material</a>
+      <a class="btn" style="text-decoration:none;text-align:center" href="./obrix-estoque-transferencia-test.html?v=217">Transferência</a>
+      <a class="btn" style="text-decoration:none;text-align:center" href="./obrix-estoque-ajuste-test.html?v=217">Ajuste / Inventário</a>
+      <a class="btn light" style="text-decoration:none;text-align:center" href="./obrix-estoque-reposicao-test.html?v=217">Reposição / Compras</a>
+      <a class="btn" style="text-decoration:none;text-align:center" href="./obrix-estoque-recebimento-test.html?v=217">Recebimento de Compra</a>
+      <a class="btn light" style="text-decoration:none;text-align:center" href="./obrix-estoque-pagamento-test.html?v=217">Pagamento de Compra</a>
     </div>`;
   equipePanel.insertAdjacentElement('afterend',panel);
 
