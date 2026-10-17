@@ -3,12 +3,14 @@
 let diarias=[];
 const brl=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 async function carregar(){try{diarias=await OBRIX_BACKEND.readTable('diarias','data')}catch(e){console.error('Diárias:',e);diarias=[]}}
-function modal(f){
+async function carregarObras(){try{return await OBRIX_BACKEND.readTable('obras','criado_em')}catch(e){console.error('Obras da diária:',e);return []}}
+async function modal(f){
+ const listaObras=await carregarObras();
  const back=document.createElement('div');back.className='modalBack';
  const hoje=new Date().toISOString().slice(0,10);
  back.innerHTML=`<div class="modal"><h2>Registrar diária</h2><p><strong class="fn"></strong></p><label>Obra</label><select class="obra"><option value="">Selecione a obra</option></select><div class="grid2"><div><label>Data</label><input class="data" type="date" value="${hoje}"></div><div><label>Tipo</label><select class="qtd"><option value="1">Diária inteira</option><option value="0.5">Meia diária</option></select></div></div><label>Valor da diária</label><input class="valor" type="number" min="0" step="0.01" value="${Number(f.valor_diaria||0)}"><label>Observações</label><textarea class="obs"></textarea><div class="modalActions"><button class="btn light cancel">Cancelar</button><button class="btn save">Registrar</button></div></div>`;
  back.querySelector('.fn').textContent=f.nome;
- const sel=back.querySelector('.obra');(window.obras||[]).filter(o=>o.status!=='concluida').forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.nome;if(o.id===f.obra_id)op.selected=true;sel.appendChild(op)});
+ const sel=back.querySelector('.obra');listaObras.filter(o=>o.status!=='concluida').forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.nome;if(o.id===f.obra_id)op.selected=true;sel.appendChild(op)});
  document.body.appendChild(back);back.querySelector('.cancel').onclick=()=>back.remove();
  back.querySelector('.save').onclick=async()=>{const obra_id=sel.value,data=back.querySelector('.data').value,quantidade=Number(back.querySelector('.qtd').value),valor_unitario=Number(back.querySelector('.valor').value||0);if(!obra_id||!data||valor_unitario<=0){alert('Selecione a obra, a data e informe o valor da diária.');return}const sb=await OBRIX_BACKEND.init();const payload={empresa_id:profile.empresa_id,funcionario_id:f.id,obra_id,data,quantidade,valor_unitario,valor_total:valor_unitario*quantidade,paga:false,observacoes:back.querySelector('.obs').value.trim()||null};const {error}=await sb.from('diarias').insert(payload);if(error){alert('Não foi possível registrar a diária: '+error.message);return}back.remove();await carregar();renderEquipe();};
 }
