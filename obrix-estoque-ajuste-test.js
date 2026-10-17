@@ -9,23 +9,29 @@ const estNome=id=>estoques.find(x=>x.id===id)?.nome||'Estoque';
 const inteiroMaterial=id=>['un','unidade','unidades','saco','sacos','cx','caixa','caixas'].includes(String(mat(id)?.unidade||'').toLowerCase());
 function show(el,text,ok=true){el.textContent=text;el.className='status '+(ok?'ok':'err');el.classList.remove('hidden')}
 function saldo(materialId,estoqueId){return Number(saldos.find(s=>s.material_id===materialId&&s.estoque_id===estoqueId)?.quantidade||0)}
+function optionExists(select,value){return [...select.options].some(o=>o.value===value)}
 function atualizarCampos(){
   const m=$('material').value,e=$('estoque').value;
-  const atual=saldo(m,e),real=Number($('quantidadeReal').value||0),dif=real-atual;
+  const atual=saldo(m,e);
+  const raw=$('quantidadeReal').value.trim();
   $('saldoAtual').textContent=qtd(atual);
-  $('diferenca').textContent=(dif>0?'+':'')+qtd(dif);
+  $('diferenca').textContent=raw===''?'0':(()=>{const dif=Number(raw)-atual;return (dif>0?'+':'')+qtd(dif)})();
   $('quantidadeReal').step=inteiroMaterial(m)?'1':'0.001';
   $('quantidadeReal').inputMode=inteiroMaterial(m)?'numeric':'decimal';
 }
-function render(){
+function render(preservar={}){
+  const materialAnterior=preservar.material||$('material').value;
+  const estoqueAnterior=preservar.estoque||$('estoque').value;
   $('material').innerHTML=materiais.filter(x=>x.ativo!==false).map(x=>`<option value="${x.id}">${x.nome} (${x.unidade||'un'})</option>`).join('');
   $('estoque').innerHTML=estoques.filter(x=>x.ativo!==false).map(x=>`<option value="${x.id}">${x.nome}</option>`).join('');
+  if(materialAnterior&&optionExists($('material'),materialAnterior))$('material').value=materialAnterior;
+  if(estoqueAnterior&&optionExists($('estoque'),estoqueAnterior))$('estoque').value=estoqueAnterior;
   $('saldos').innerHTML=saldos.length?saldos.map(s=>`<div class="row"><b>${matNome(s.material_id)}</b><br><span class="muted">${estNome(s.estoque_id)} · saldo ${qtd(s.quantidade)}</span></div>`).join(''):'Nenhum saldo registrado.';
   const ajustes=movimentos.filter(m=>m.tipo==='ajuste').slice(0,20);
   $('movimentos').innerHTML=ajustes.length?ajustes.map(m=>`<div class="row"><b>${matNome(m.material_id)} · ${qtd(m.quantidade)}</b><br><span class="muted">${m.estoque_destino_id?'Acréscimo':'Redução'} · ${estNome(m.estoque_destino_id||m.estoque_origem_id)} · ${m.data||''}</span></div>`).join(''):'Nenhum ajuste registrado.';
   atualizarCampos();
 }
-async function carregar(){
+async function carregar(preservar={}){
   await OBRIX_BACKEND.profile();
   [materiais,estoques,saldos,movimentos]=await Promise.all([
     OBRIX_BACKEND.readTable('materiais','criado_em'),
@@ -34,7 +40,7 @@ async function carregar(){
     OBRIX_BACKEND.readTable('estoque_movimentacoes','criado_em')
   ]);
   $('loginView').classList.add('hidden');$('appView').classList.remove('hidden');
-  render();
+  render(preservar);
 }
 async function login(){
   try{const b=$('loginBtn');b.disabled=true;b.textContent='Entrando...';sb=await OBRIX_BACKEND.init();const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await carregar();}
@@ -44,7 +50,7 @@ async function login(){
 async function ajustar(){
   const material=$('material').value,estoque=$('estoque').value,real=Number($('quantidadeReal').value);
   if(!material||!estoque)return show($('status'),'Selecione material e local de estoque.',false);
-  if(!Number.isFinite(real)||real<0)return show($('status'),'Informe uma quantidade real válida.',false);
+  if($('quantidadeReal').value.trim()===''||!Number.isFinite(real)||real<0)return show($('status'),'Informe uma quantidade real válida.',false);
   if(inteiroMaterial(material)&&real!==Math.trunc(real))return show($('status'),'Este material só aceita quantidade inteira.',false);
   const atual=saldo(material,estoque);
   if(real===atual)return show($('status'),'A quantidade informada já é igual ao saldo atual. Nenhum ajuste é necessário.',false);
@@ -55,7 +61,7 @@ async function ajustar(){
     if(error)throw error;
     show($('status'),'Ajuste registrado com sucesso.');
     $('quantidadeReal').value='';$('documento').value='';$('observacoes').value='';
-    await carregar();
+    await carregar({material,estoque});
   }catch(e){show($('status'),'Erro: '+(e.message||e),false)}
   finally{$('ajustarBtn').disabled=false;$('ajustarBtn').textContent='Confirmar ajuste'}
 }
