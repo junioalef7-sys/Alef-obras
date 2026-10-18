@@ -5,20 +5,43 @@
   const recoveryHint=/(^|[?#&])type=recovery([&#]|$)/i.test(location.href)||/[?&]code=/.test(location.search);
   let recoveryOpened=false;
 
+  function friendlyMessage(e){
+    const raw=(e?.message||String(e||'Não foi possível concluir.')).trim();
+    const s=raw.toLowerCase();
+    if(/already|registered|exists|duplicate|cadastrad|já possui|ja possui/.test(s))return 'Este e-mail já possui cadastro. Entre normalmente ou use “Esqueci minha senha” para recuperar o acesso.';
+    if(/invalid login credentials|invalid credentials|email or password|credenciais/.test(s))return 'E-mail ou senha incorretos. Confira os dados ou use “Esqueci minha senha”.';
+    if(/email not confirmed|email.*confirm/.test(s))return 'Este e-mail ainda não foi confirmado. Verifique sua caixa de entrada ou tente recuperar a senha.';
+    if(/rate limit|too many|muitas tentativas/.test(s))return 'Muitas tentativas em pouco tempo. Aguarde alguns instantes e tente novamente.';
+    if(/network|failed to fetch|fetch failed/.test(s))return 'Não foi possível conectar agora. Verifique sua internet e tente novamente.';
+    return raw;
+  }
+
   function style(){
     if($('obrixAuthStyles'))return;
     const s=document.createElement('style');
     s.id='obrixAuthStyles';
     s.textContent=`
       .loginAux{display:flex;gap:8px;margin-top:10px}.loginAux button{flex:1;border:1px solid var(--border,#cbd5e1);background:var(--surface,#fff);color:var(--text,#0f172a);border-radius:11px;padding:11px 8px;font-weight:800}.loginAux button:active{transform:scale(.98)}
-      .authModal{max-width:460px;width:calc(100% - 24px);margin:auto}.authModal h2{margin-top:0}.authModal input{width:100%;padding:13px;border:1px solid var(--border,#cbd5e1);border-radius:11px;font-size:16px;margin:6px 0 10px}.authModal .authActions{display:flex;gap:8px;margin-top:8px}.authModal .authActions button{flex:1}.authHelp{font-size:13px;color:var(--muted,#475569);margin:2px 0 10px}.authError{display:none;background:#fee2e2;color:#991b1b;border-radius:10px;padding:10px;margin:8px 0}.authError.show{display:block}
+      .authModal{max-width:460px;width:calc(100% - 24px);margin:auto}.authModal h2{margin-top:0}.authModal input{width:100%;padding:13px;border:1px solid var(--border,#cbd5e1);border-radius:11px;font-size:16px;margin:6px 0 10px}.authModal .authActions{display:flex;gap:8px;margin-top:8px}.authModal .authActions button{flex:1}.authHelp{font-size:13px;color:var(--muted,#475569);margin:2px 0 10px}
+      .authError,#erro.status{position:relative;background:#fff1f2!important;color:#7f1d1d!important;border:1px solid #fecaca!important;border-left:4px solid #dc2626!important;border-radius:12px!important;padding:12px 14px 12px 42px!important;margin:10px 0!important;font-size:14px!important;font-weight:800!important;line-height:1.45!important;box-shadow:0 6px 18px rgba(127,29,29,.08)!important;opacity:1!important}
+      .authError{display:none}.authError.show{display:block}.authError:before,#erro.status:before{content:'!';position:absolute;left:13px;top:11px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:#dc2626;color:#fff;font-size:13px;font-weight:950;line-height:1}
+      html[data-theme="dark"] .authError,html[data-theme="dark"] #erro.status{background:#2b1217!important;color:#fecdd3!important;border-color:#7f1d1d!important;border-left-color:#fb7185!important;box-shadow:0 8px 24px rgba(0,0,0,.22)!important}
+      html[data-theme="dark"] .authError:before,html[data-theme="dark"] #erro.status:before{background:#fb7185;color:#25080d}
     `;
     document.head.appendChild(s);
   }
 
   function err(box,e){
-    box.textContent=e?.message||String(e||'Não foi possível concluir.');
+    box.textContent=friendlyMessage(e);
     box.classList.add('show');
+  }
+
+  function installLoginErrorMap(){
+    const box=$('erro');
+    if(!box)return;
+    const normalize=()=>{const current=(box.textContent||'').trim();if(!current)return;const next=friendlyMessage(current);if(next!==current)box.textContent=next};
+    new MutationObserver(normalize).observe(box,{childList:true,characterData:true,subtree:true});
+    normalize();
   }
 
   function modal(html){
@@ -132,6 +155,7 @@
 
   function installButtons(){
     style();
+    installLoginErrorMap();
     const entrar=$('entrar');
     if(!entrar||$('obrixAuthAux'))return;
     const row=document.createElement('div');
