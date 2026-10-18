@@ -56,13 +56,15 @@
       btn.disabled=true;btn.textContent='Criando...';
       try{
         const sb=await OBRIX_BACKEND.init();
-        const {data,error}=await sb.auth.signUp({email,password:senha,options:{data:{nome:nome||email}}});
-        if(error)throw error;
-        if(!data?.session){
-          back.remove();
-          alert('Conta criada. Se for solicitado, confira seu e-mail para concluir o acesso.');
-          return;
+        const {data,error}=await sb.functions.invoke('obrix-signup',{body:{nome:nome||email,email,password:senha}});
+        if(error){
+          let msg=data?.error||'Não foi possível criar a conta agora.';
+          try{const j=await error.context?.json?.();if(j?.error)msg=j.error}catch(_){}
+          throw new Error(msg);
         }
+        if(!data?.ok)throw new Error(data?.error||'Não foi possível criar a conta agora.');
+        const login=await sb.auth.signInWithPassword({email,password:senha});
+        if(login.error)throw login.error;
         back.remove();
         if(typeof carregar==='function')await carregar();else location.reload();
       }catch(e){btn.disabled=false;btn.textContent='Criar conta';err(box,e)}
