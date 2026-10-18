@@ -6,6 +6,13 @@ required_pages=[Path('obrix.html'),Path('obrix-financeiro-main.js'),Path('obrix-
 for page in required_pages:
  if not page.exists(): raise SystemExit(f'PWA v86: arquivo público ausente: {page.name}')
  shutil.copy2(page,out/page.name)
+# Forca cache novo dos modulos do OBRIX em cada publicacao.
+obrix=out/'obrix.html'
+obrix_html=obrix.read_text(encoding='utf-8')
+for modulo in ('obrix-financeiro-main.js','obrix-estoque-main.js','obrix-equipe-main.js','obrix-obras-main.js','obrix-estoque-operacoes-main.js','obrix-menu-main.js','obrix-theme-main.js'):
+ import re
+ obrix_html=re.sub(rf'({re.escape(modulo)}\?v=)\d+',rf'\g<1>315',obrix_html)
+obrix.write_text(obrix_html,encoding='utf-8')
 app=out/'obrix-app-test.html'
 if not app.exists(): raise SystemExit('PWA v86: app principal de teste OBRIX ausente')
 html=app.read_text(encoding='utf-8')
