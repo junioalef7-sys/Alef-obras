@@ -1,55 +1,41 @@
 (()=>{'use strict';
   const normalize=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
-  const isWelcome=t=>/^(ola\b|bem[- ]?vind[oa]s?\b|boas[- ]?vindas?\b|seja bem[- ]?vind[oa]\b)/.test(normalize(t));
 
-  function isProtected(el){
-    return !el||el.id==='inicio'||el.classList?.contains('hero')||el.classList?.contains('kpis')||el.classList?.contains('nav')||el.matches?.('.kpi,.nav button');
-  }
-
-  function removeWholeCard(el,inicio){
-    if(!el||!inicio.contains(el))return;
-
-    let card=el.closest('section,article,.card,[class*="card"],.welcome,.welcome-message,.greeting,.saudacao,.boas-vindas,[data-welcome],[class*="welcome"],[class*="greet"],[class*="hello"]');
-    if(card&&inicio.contains(card)&&!isProtected(card)&&!card.querySelector('.kpis,.nav')){
-      card.remove();
-      return;
-    }
-
-    let top=el;
-    while(top.parentElement&&top.parentElement!==inicio)top=top.parentElement;
-    if(top&&top.parentElement===inicio&&!isProtected(top)&&!top.querySelector('.kpis,.nav,.hero')){
-      top.remove();
-      return;
-    }
-
-    let parent=el.parentElement;
-    while(parent&&parent!==inicio){
-      if(!isProtected(parent)&&!parent.querySelector('.kpis,.nav,.hero')){
-        const txt=normalize(parent.textContent);
-        if(txt.startsWith('ola')||txt.startsWith('bem-vind')||txt.startsWith('bem vind')){parent.remove();return;}
-      }
-      parent=parent.parentElement;
-    }
+  function isGreetingBlock(el){
+    if(!el)return false;
+    const text=normalize(el.textContent);
+    const hasHello=/\bola\b/.test(text);
+    const hasWelcome=/bem[- ]?vind[oa]/.test(text)||text.includes('bem vindo');
+    const hasKnownPhrase=text.includes('acompanhe suas obras')||text.includes('de volta');
+    return hasHello&&(hasWelcome||hasKnownPhrase);
   }
 
   function clean(){
     const inicio=document.getElementById('inicio');
     if(!inicio)return;
 
-    inicio.querySelectorAll('.welcome,.welcome-message,.greeting,.saudacao,.boas-vindas,[data-welcome],[class*="welcome"],[class*="greet"],[class*="hello"]').forEach(el=>{
-      if(!el.closest('.kpis,.nav,.hero'))removeWholeCard(el,inicio);
+    // Remove o cartão inteiro de boas-vindas quando ele é inserido como bloco da tela Início.
+    [...inicio.children].forEach(child=>{
+      if(child.classList?.contains('kpis')||child.classList?.contains('nav'))return;
+      if(isGreetingBlock(child))child.remove();
     });
 
-    inicio.querySelectorAll('h1,h2,h3,h4,p,span,strong,b,div').forEach(el=>{
-      if(!inicio.contains(el)||el.closest('.kpis,.nav,.hero'))return;
-      const text=(el.textContent||'').trim();
-      if(text&&isWelcome(text))removeWholeCard(el,inicio);
+    // Fallback para qualquer versão do card criada dentro de wrappers extras.
+    inicio.querySelectorAll('section,article,.card,.hero,[class*="card"],[class*="welcome"],[class*="greet"],[class*="hello"],[data-welcome]').forEach(el=>{
+      if(!inicio.contains(el)||el.closest('.kpis,.nav'))return;
+      if(isGreetingBlock(el)){
+        let target=el;
+        while(target.parentElement&&target.parentElement!==inicio&&isGreetingBlock(target.parentElement))target=target.parentElement;
+        target.remove();
+      }
     });
   }
 
   let queued=false;
   const queue=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;clean()})};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(clean,120));else setTimeout(clean,120);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(clean,0));else setTimeout(clean,0);
   new MutationObserver(queue).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+  window.addEventListener('pageshow',clean);
+  window.addEventListener('focus',clean);
   window.OBRIX_HOME_CLEAN={clean};
 })();
