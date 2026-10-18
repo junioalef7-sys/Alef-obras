@@ -12,7 +12,9 @@
     if(!window.OBRIX_BACKEND||document.visibilityState==='hidden'||!appAtivo())return;
     executando=true;
     try{
-      if(visivel('equipe')&&window.OBRIX_EQUIPE?.refresh){
+      if(document.querySelector('.checkModalBack')&&window.OBRIX_CHECKLIST?.check){
+        await window.OBRIX_CHECKLIST.check();
+      }else if(visivel('equipe')&&window.OBRIX_EQUIPE?.refresh){
         await window.OBRIX_EQUIPE.refresh();
         setTimeout(()=>window.OBRIX_EQUIPE_TOTAL_PAGO?.refresh?.(),80);
       }else if(visivel('financeiroMain')&&window.OBRIX_FIN?.render){
@@ -40,7 +42,7 @@
     try{
       const id=await contexto(),sb=await OBRIX_BACKEND.init(),filtro=`empresa_id=eq.${id}`;
       canal=sb.channel('obrix-sync-fast-'+String(id));
-      ['obras','servicos_extras','financeiro','funcionarios','diarias','vales','bonus_extras','pagamentos_equipe'].forEach(t=>{
+      ['obras','servicos_extras','checklist_itens','financeiro','funcionarios','diarias','vales','bonus_extras','pagamentos_equipe'].forEach(t=>{
         canal.on('postgres_changes',{event:'*',schema:'public',table:t,filter:filtro},()=>agendar(40));
       });
       canal.subscribe(status=>{
@@ -57,6 +59,7 @@
     if(checando||!appAtivo()||document.visibilityState==='hidden'||!window.OBRIX_BACKEND)return;
     checando=true;
     try{
+      if(document.querySelector('.checkModalBack')&&window.OBRIX_CHECKLIST?.check){await window.OBRIX_CHECKLIST.check();return}
       const id=await contexto(),sb=await OBRIX_BACKEND.init();
       if(visivel('equipe')){
         const [fn,di,va,bo,pa]=await Promise.all([
@@ -72,14 +75,15 @@
           sigEquipe=s;
         }
       }else if(visivel('obras')||visivel('financeiroMain')||visivel('inicio')){
-        const [ob,ex,fi,fn]=await Promise.all([
+        const [ob,ex,fi,fn,ck]=await Promise.all([
           sb.from('obras').select('*').eq('empresa_id',id),
           sb.from('servicos_extras').select('*').eq('empresa_id',id),
           sb.from('financeiro').select('*').eq('empresa_id',id),
-          sb.from('funcionarios').select('*').eq('empresa_id',id)
+          sb.from('funcionarios').select('*').eq('empresa_id',id),
+          sb.from('checklist_itens').select('*').eq('empresa_id',id)
         ]);
-        if([ob,ex,fi,fn].every(r=>!r.error)){
-          const s=assinatura([ob.data,ex.data,fi.data,fn.data]);
+        if([ob,ex,fi,fn,ck].every(r=>!r.error)){
+          const s=assinatura([ob.data,ex.data,fi.data,fn.data,ck.data]);
           if(sigGeral&&s!==sigGeral)agendar(20);
           sigGeral=s;
         }
