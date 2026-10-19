@@ -2,217 +2,244 @@
   'use strict';
 
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const hoje=()=>new Date().toISOString().slice(0,10);
   let filtro='todos';
 
-  function getFuncionarios(){
-    try{return (typeof funcionarios!=='undefined'&&Array.isArray(funcionarios))?funcionarios:[]}catch(_){return[]}
-  }
-  function getObras(){
-    try{return (typeof obras!=='undefined'&&Array.isArray(obras))?obras:[]}catch(_){return[]}
-  }
-  function acharFunc(id){return getFuncionarios().find(f=>String(f.id)===String(id))||null}
-  function nomeObra(id){return getObras().find(o=>String(o.id)===String(id))?.nome||'Sem obra vinculada'}
+  function funcs(){try{return typeof funcionarios!=='undefined'&&Array.isArray(funcionarios)?funcionarios:[]}catch(_){return[]}}
+  function obrasList(){try{return typeof obras!=='undefined'&&Array.isArray(obras)?obras:[]}catch(_){return[]}}
+  function diariasList(){try{return typeof diarias!=='undefined'&&Array.isArray(diarias)?diarias:[]}catch(_){return[]}}
+  function valesList(){try{return typeof vales!=='undefined'&&Array.isArray(vales)?vales:[]}catch(_){return[]}}
+  function bonusList(){try{return typeof bonus!=='undefined'&&Array.isArray(bonus)?bonus:[]}catch(_){return[]}}
+  function acharFunc(id){return funcs().find(f=>String(f.id)===String(id))||null}
+  function nomeObra(id){return obrasList().find(o=>String(o.id)===String(id))?.nome||'Sem obra'}
+  function tipoPagamento(v){return ({diaria:'Por diária',semana:'Por semana',quinzena:'Por quinzena',mes:'Por mês'})[String(v||'diaria')]||'Por diária'}
+  function valorBase(f){return String(f.tipo_pagamento)==='mes'?Number(f.salario_mensal||0):Number(f.valor_diaria||0)}
 
-  function fecharCard(card){
-    const detalhes=card.querySelector(':scope > .obrix-func-detalhes');
-    const toggle=card.querySelector(':scope > .obrix-func-topo .obrix-func-toggle');
-    if(!detalhes||!toggle)return;
-    detalhes.hidden=true;
-    toggle.setAttribute('aria-expanded','false');
-    card.classList.remove('obrix-func-aberto');
+  function resumo(f){
+    const ds=diariasList().filter(x=>String(x.funcionario_id)===String(f.id)&&!x.paga);
+    const qs=diariasList().filter(x=>String(x.funcionario_id)===String(f.id)&&x.paga);
+    const vs=valesList().filter(x=>String(x.funcionario_id)===String(f.id)&&!x.quitado);
+    const bs=bonusList().filter(x=>String(x.funcionario_id)===String(f.id)&&!x.pago);
+    const td=ds.reduce((s,x)=>s+Number(x.valor_total||0),0);
+    const tb=bs.reduce((s,x)=>s+Number(x.valor||0),0);
+    const tv=vs.reduce((s,x)=>s+Number(x.valor||0),0);
+    const bruto=td+tb;
+    const abate=Math.min(tv,Math.max(0,bruto));
+    return {
+      completas:ds.filter(x=>Number(x.quantidade||1)>=1).length,
+      meias:ds.filter(x=>Number(x.quantidade||0)>0&&Number(x.quantidade||0)<1).length,
+      bruto,tv,tb,abate,
+      liquido:Math.max(0,bruto-abate),
+      quitadas:qs.reduce((s,x)=>s+Number(x.valor_total||0),0)
+    };
   }
 
-  function abrirCard(card){
-    document.querySelectorAll('#listaEquipe .obrix-func-aberto').forEach(outro=>{if(outro!==card)fecharCard(outro)});
-    const detalhes=card.querySelector(':scope > .obrix-func-detalhes');
-    const toggle=card.querySelector(':scope > .obrix-func-topo .obrix-func-toggle');
-    if(!detalhes||!toggle)return;
-    detalhes.hidden=false;
-    toggle.setAttribute('aria-expanded','true');
-    card.classList.add('obrix-func-aberto');
+  function cardHtml(f){
+    const r=resumo(f);
+    return `<article class="card item obrix-modelo-card" data-id="${esc(f.id)}">
+      <div class="obrix-modelo-cabecalho">
+        <h3>${esc(f.nome||'Funcionário')}</h3>
+        <div class="obrix-modelo-subnome">${esc(f.nome||'Funcionário')}</div>
+        <span class="obrix-modelo-status ${f.ativo===false?'off':''}">${f.ativo===false?'Inativo':'Ativo'}</span>
+      </div>
+
+      <div class="obrix-modelo-pagamento">
+        <small>Forma de pagamento</small>
+        <strong>${esc(tipoPagamento(f.tipo_pagamento))}</strong>
+        <span>${esc(nomeObra(f.obra_id))}</span>
+        <b>${money(valorBase(f))}</b>
+      </div>
+
+      <div class="obrix-modelo-pilulas">
+        <span>${r.completas} diária${r.completas===1?'':'s'} completa${r.completas===1?'':'s'} em aberto</span>
+        <span>${r.meias} meia${r.meias===1?'':'s'} diária${r.meias===1?'':'s'} em aberto</span>
+      </div>
+
+      <div class="obrix-modelo-metricas">
+        <div class="obrix-modelo-metrica azul"><small>Bruto em aberto no filtro</small><b>${money(r.bruto)}</b></div>
+        <div class="obrix-modelo-metrica ouro"><small>Vales em aberto</small><b>${money(r.tv)}</b><span>Abate nesta folha: ${money(r.abate)}</span></div>
+        <div class="obrix-modelo-metrica ouro"><small>Bônus e extras em aberto</small><b>${money(r.tb)}</b></div>
+        <div class="obrix-modelo-metrica liquido"><small>Líquido a pagar</small><b>${money(r.liquido)}</b></div>
+        <div class="obrix-modelo-metrica verde"><small>Diárias quitadas no filtro</small><b>${money(r.quitadas)}</b></div>
+      </div>
+
+      <div class="obrix-modelo-acoes">
+        <button type="button" data-acao="diaria" data-id="${esc(f.id)}">Marcar diária</button>
+        <button type="button" data-acao="falta" data-id="${esc(f.id)}">Falta</button>
+        <button type="button" data-acao="registros" data-id="${esc(f.id)}">Ver registros</button>
+        <button type="button" data-acao="faltas" data-id="${esc(f.id)}">Histórico de faltas</button>
+        <button type="button" class="editar" data-acao="editar" data-id="${esc(f.id)}">Editar cadastro</button>
+      </div>
+    </article>`;
   }
 
-  function registrarDiaria(id){
-    if(typeof window.equipeAcao!=='function')return alert('Ação de diária indisponível. Atualize a página e tente novamente.');
-    window.equipeAcao(String(id),'diaria');
+  function renderEquipeModelo(){
+    montarTopo();
+    const box=document.getElementById('listaEquipe');if(!box)return;
+    const fs=funcs().filter(f=>filtro==='todos'||(filtro==='ativos'&&f.ativo!==false)||(filtro==='inativos'&&f.ativo===false));
+    box.innerHTML=fs.length?fs.map(cardHtml).join(''):'<div class="card muted">Nenhum funcionário encontrado.</div>';
+    box.querySelectorAll('[data-acao]').forEach(btn=>btn.onclick=()=>acao(btn.dataset.id,btn.dataset.acao));
+  }
+
+  function abrirModal(titulo,conteudo,classe=''){
+    const back=document.createElement('div');back.className='modalBack';
+    back.innerHTML=`<div class="modal ${classe}"><div class="obrix-modal-head"><h2>${esc(titulo)}</h2><button type="button" class="obrix-modal-x" aria-label="Fechar">×</button></div>${conteudo}</div>`;
+    document.body.appendChild(back);
+    back.querySelector('.obrix-modal-x').onclick=()=>back.remove();
+    back.addEventListener('click',e=>{if(e.target===back)back.remove()});
+    return back;
   }
 
   async function registrarFalta(id){
     const f=acharFunc(id);if(!f)return alert('Funcionário não encontrado.');
-    const ops=getObras().map(o=>`<option value="${esc(o.id)}">${esc(o.nome||'Obra')}</option>`).join('');
-    const back=document.createElement('div');
-    back.className='modalBack';
-    back.innerHTML=`<div class="modal obrix-modal-falta"><h2>Registrar falta</h2><p class="muted"><b>${esc(f.nome||'Funcionário')}</b></p><label>Obra</label><select class="obra"><option value="">Sem obra</option>${ops}</select><label>Data</label><input class="data" type="date" value="${new Date().toISOString().slice(0,10)}"><label>Tipo</label><select class="tipo"><option value="false">Falta injustificada</option><option value="true">Falta justificada</option></select><label>Motivo</label><input class="motivo" placeholder="Motivo da falta"><label>Observações</label><input class="obs" placeholder="Observações opcionais"><div class="modalActions"><button class="btn cancelar" type="button">Cancelar</button><button class="btn salvar" type="button">Registrar falta</button></div></div>`;
-    document.body.appendChild(back);
+    const opts='<option value="">Sem obra</option>'+obrasList().map(o=>`<option value="${esc(o.id)}" ${String(o.id)===String(f.obra_id||'')?'selected':''}>${esc(o.nome||'Obra')}</option>`).join('');
+    const back=abrirModal('Registrar falta',`<p class="muted"><b>${esc(f.nome)}</b></p><label>Obra</label><select class="obra">${opts}</select><label>Data</label><input class="data" type="date" value="${hoje()}"><label>Tipo</label><select class="tipo"><option value="false">Falta injustificada</option><option value="true">Falta justificada</option></select><label>Motivo</label><input class="motivo" placeholder="Motivo da falta"><label>Observações</label><input class="obs" placeholder="Observações opcionais"><div class="modalActions"><button class="btn cancelar" type="button">Cancelar</button><button class="btn salvar" type="button">Registrar falta</button></div>`,'obrix-modelo-modal');
     back.querySelector('.cancelar').onclick=()=>back.remove();
     back.querySelector('.salvar').onclick=async()=>{
-      const data=back.querySelector('.data').value;
-      if(!data)return alert('Informe a data da falta.');
-      const salvar=back.querySelector('.salvar');salvar.disabled=true;
+      const data=back.querySelector('.data').value;if(!data)return alert('Informe a data da falta.');
+      const btn=back.querySelector('.salvar');btn.disabled=true;
       try{
-        const sb=await OBRIX_BACKEND.init();
-        const eid=(typeof profile!=='undefined'&&profile?.empresa_id)?profile.empresa_id:null;
-        if(!eid)throw new Error('Empresa não identificada.');
-        const {error}=await sb.from('faltas').insert({
-          empresa_id:eid,
-          funcionario_id:f.id,
-          obra_id:back.querySelector('.obra').value||null,
-          data,
-          justificada:back.querySelector('.tipo').value==='true',
-          motivo:back.querySelector('.motivo').value.trim()||null,
-          observacoes:back.querySelector('.obs').value.trim()||null
-        });
-        if(error)throw error;
-        back.remove();
-        alert('Falta registrada no histórico.');
-      }catch(e){alert('Não foi possível registrar a falta: '+(e.message||e))}
-      finally{salvar.disabled=false}
+        const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();
+        const {error}=await sb.from('faltas').insert({empresa_id:p.empresa_id,funcionario_id:f.id,obra_id:back.querySelector('.obra').value||null,data,justificada:back.querySelector('.tipo').value==='true',motivo:back.querySelector('.motivo').value.trim()||null,observacoes:back.querySelector('.obs').value.trim()||null});
+        if(error)throw error;back.remove();alert('Falta registrada.');
+      }catch(e){alert(e.message||'Não foi possível registrar a falta.')}finally{btn.disabled=false}
     };
   }
 
-  function clicarGestao(id,classe){
-    const card=document.querySelector(`#listaEquipe [data-obrix-func-id="${CSS.escape(String(id))}"]`);
-    const btn=card?.querySelector(classe);
-    if(!btn)return alert('Ação indisponível. Atualize a página e tente novamente.');
-    btn.click();
+  async function historicoFaltas(id){
+    const f=acharFunc(id);if(!f)return;
+    const back=abrirModal('Histórico de faltas','<div class="obrix-carregando">Carregando...</div>','obrix-modelo-modal');
+    try{
+      const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();
+      const {data,error}=await sb.from('faltas').select('id,obra_id,data,justificada,motivo,observacoes').eq('empresa_id',p.empresa_id).eq('funcionario_id',f.id).order('data',{ascending:false});
+      if(error)throw error;
+      const area=back.querySelector('.obrix-carregando');
+      area.innerHTML=(data||[]).length?(data||[]).map(x=>`<div class="obrix-registro-linha"><div><b>${new Date(x.data+'T12:00:00').toLocaleDateString('pt-BR')}</b><span>${esc(nomeObra(x.obra_id))}</span></div><div><strong>${x.justificada?'Justificada':'Injustificada'}</strong>${x.motivo?`<span>${esc(x.motivo)}</span>`:''}${x.observacoes?`<small>${esc(x.observacoes)}</small>`:''}</div></div>`).join(''):'<p class="muted">Nenhuma falta registrada.</p>';
+    }catch(e){back.querySelector('.obrix-carregando').innerHTML=`<div class="status">${esc(e.message||'Não foi possível carregar.')}</div>`}
   }
 
-  function abrirDiretorio(){
-    document.querySelector('.obrix-diretorio-back')?.remove();
-    const funcs=getFuncionarios().slice().sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR'));
-    const back=document.createElement('div');back.className='modalBack obrix-diretorio-back';
-    back.innerHTML=`<div class="modal obrix-diretorio"><h2>Funcionários</h2><p class="muted">Somente dados pessoais e cadastrais.</p><div class="obrix-diretorio-lista">${funcs.length?funcs.map(f=>`<article class="obrix-pessoa"><div><h3>${esc(f.nome||'Funcionário')}</h3><p>${esc(f.cargo||'Cargo não informado')}</p><small>${f.ativo===false?'Inativo':'Ativo'} · ${esc(nomeObra(f.obra_id))}</small>${f.observacoes?`<small>${esc(f.observacoes)}</small>`:''}</div><button class="btn editar" type="button" data-id="${esc(f.id)}">Editar cadastro</button></article>`).join(''):'<div class="card muted">Nenhum funcionário cadastrado.</div>'}</div><div class="modalActions"><button class="btn fechar" type="button">Fechar</button></div></div>`;
-    document.body.appendChild(back);
-    back.querySelector('.fechar').onclick=()=>back.remove();
-    back.addEventListener('click',e=>{if(e.target===back)back.remove()});
-    back.querySelectorAll('.editar').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.id;back.remove();clicarGestao(id,'.editarF')});
+  function verRegistros(id){
+    const f=acharFunc(id);if(!f)return;
+    const rows=[];
+    diariasList().filter(x=>String(x.funcionario_id)===String(id)).forEach(x=>rows.push({data:x.data,tipo:Number(x.quantidade||1)<1?'Meia diária':'Diária',obra:nomeObra(x.obra_id),valor:Number(x.valor_total||0),status:x.paga?'Quitada':'Em aberto'}));
+    valesList().filter(x=>String(x.funcionario_id)===String(id)).forEach(x=>rows.push({data:x.data,tipo:'Vale',obra:nomeObra(x.obra_id),valor:-Number(x.valor||0),status:x.quitado?'Quitado':'Em aberto'}));
+    bonusList().filter(x=>String(x.funcionario_id)===String(id)).forEach(x=>rows.push({data:x.data,tipo:x.tipo==='extra'?'Extra':'Bônus',obra:nomeObra(x.obra_id),valor:Number(x.valor||0),status:x.pago?'Pago':'Em aberto'}));
+    rows.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+    const html=`<p class="muted"><b>${esc(f.nome)}</b></p><div class="obrix-registros-lista">${rows.length?rows.map(x=>`<div class="obrix-registro-linha"><div><b>${x.data?new Date(x.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span></div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small></div></div>`).join(''):'<p class="muted">Nenhum registro encontrado.</p>'}</div><div class="obrix-registros-acoes"><button type="button" data-extra="vale">Vale</button><button type="button" data-extra="bonus">Bônus e Extras</button><button type="button" class="pagar" data-extra="pagar">Pagar</button></div>`;
+    const back=abrirModal('Registros do funcionário',html,'obrix-modelo-modal');
+    back.querySelectorAll('[data-extra]').forEach(btn=>btn.onclick=()=>{back.remove();window.equipeAcao?.(String(id),btn.dataset.extra)});
   }
 
-  function abrirSeletorGestao(tipo){
-    const funcs=getFuncionarios().slice().sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR'));
-    if(!funcs.length)return alert('Nenhum funcionário cadastrado.');
-    const back=document.createElement('div');back.className='modalBack';
-    const titulo=tipo==='toggle'?'Ativar / Desativar':'Excluir funcionário';
-    back.innerHTML=`<div class="modal"><h2>${titulo}</h2><label>Funcionário</label><select class="func">${funcs.map(f=>`<option value="${esc(f.id)}">${esc(f.nome||'Funcionário')} — ${f.ativo===false?'Inativo':'Ativo'}</option>`).join('')}</select><div class="modalActions"><button class="btn cancelar" type="button">Cancelar</button><button class="btn continuar" type="button">Continuar</button></div></div>`;
-    document.body.appendChild(back);
-    back.querySelector('.cancelar').onclick=()=>back.remove();
-    back.querySelector('.continuar').onclick=()=>{const id=back.querySelector('.func').value;back.remove();clicarGestao(id,tipo==='toggle'?'.toggleF':'.excluirF')};
+  function editarCadastro(id){
+    if(!window.OBRIX_FUNCIONARIOS_PESSOAL?.open)return alert('Cadastro indisponível. Atualize a página e tente novamente.');
+    window.OBRIX_FUNCIONARIOS_PESSOAL.open();
+    setTimeout(()=>{
+      const item=[...document.querySelectorAll('.obrix-pessoal-item')].find(x=>String(x.dataset.id)===String(id));
+      if(!item)return;
+      item.querySelector('.obrix-pessoal-toggle')?.click();
+      setTimeout(()=>item.querySelector('.obrix-pessoal-editar-btn')?.click(),40);
+    },80);
+  }
+
+  function acao(id,tipo){
+    if(tipo==='diaria')return window.equipeAcao?.(String(id),'diaria');
+    if(tipo==='falta')return registrarFalta(id);
+    if(tipo==='registros')return verRegistros(id);
+    if(tipo==='faltas')return historicoFaltas(id);
+    if(tipo==='editar')return editarCadastro(id);
   }
 
   function novoFuncionario(){
-    const original=document.querySelector('#equipe .sectionHead > .btn,#equipe .sectionHead .btn');
-    if(original)return original.click();
-    alert('Cadastro de funcionário indisponível. Atualize a página e tente novamente.');
+    const btn=document.querySelector('#equipe .sectionHead > .btn');
+    if(btn)return btn.click();
+    alert('Cadastro de funcionário indisponível.');
   }
 
   async function atualizar(){
-    const b=document.querySelector('.obrix-atualizar-equipe');if(b)b.disabled=true;
-    try{await window.OBRIX_EQUIPE?.refresh?.()}catch(e){alert('Não foi possível atualizar a equipe: '+(e.message||e))}
-    finally{if(b)b.disabled=false;setTimeout(aplicar,0)}
+    const btn=document.querySelector('.obrix-atualizar-equipe');if(btn)btn.disabled=true;
+    try{await window.OBRIX_EQUIPE?.refresh?.()}catch(e){alert(e.message||'Não foi possível atualizar.')}finally{if(btn)btn.disabled=false;renderEquipeModelo()}
   }
 
-  function aplicarFiltro(){
-    const funcs=getFuncionarios();
-    document.querySelectorAll('#listaEquipe > .card.item').forEach((card,index)=>{
-      const f=acharFunc(card.dataset.obrixFuncId)||funcs[index];
-      const mostrar=f&&(filtro==='todos'||(filtro==='ativos'&&f.ativo!==false)||(filtro==='inativos'&&f.ativo===false));
-      card.style.display=mostrar?'':'none';
-    });
+  function seletor(tipo){
+    const fs=funcs().slice().sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR'));
+    if(!fs.length)return alert('Nenhum funcionário cadastrado.');
+    const titulo=tipo==='toggle'?'Ativar / Desativar':'Excluir funcionário';
+    const back=abrirModal(titulo,`<label>Funcionário</label><select class="func">${fs.map(f=>`<option value="${esc(f.id)}">${esc(f.nome)} — ${f.ativo===false?'Inativo':'Ativo'}</option>`).join('')}</select><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn continuar">Continuar</button></div>`,'obrix-modelo-modal');
+    back.querySelector('.cancelar').onclick=()=>back.remove();
+    back.querySelector('.continuar').onclick=async()=>{
+      const f=acharFunc(back.querySelector('.func').value);if(!f)return;
+      if(tipo==='delete'&&!confirm(`Excluir o funcionário “${f.nome}”?`))return;
+      const btn=back.querySelector('.continuar');btn.disabled=true;
+      try{
+        const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();
+        const r=tipo==='toggle'?await sb.from('funcionarios').update({ativo:f.ativo===false,atualizado_em:new Date().toISOString()}).eq('id',f.id).eq('empresa_id',p.empresa_id):await sb.from('funcionarios').delete().eq('id',f.id).eq('empresa_id',p.empresa_id);
+        if(r.error)throw r.error;back.remove();await window.OBRIX_EQUIPE?.refresh?.();
+      }catch(e){alert(e.message||'Não foi possível concluir.')}finally{btn.disabled=false}
+    };
   }
 
   function montarTopo(){
     const sec=document.getElementById('equipe');if(!sec)return;
-    const head=sec.querySelector('.sectionHead');if(head)head.classList.add('obrix-head-original');
+    sec.querySelector('.sectionHead')?.classList.add('obrix-head-original');
     let box=sec.querySelector('.obrix-equipe-controles');
     if(!box){
       box=document.createElement('div');box.className='obrix-equipe-controles';
       box.innerHTML=`<div class="obrix-equipe-botoes"><button class="obrix-cmd" data-cmd="lista" type="button">👥 Funcionários</button><button class="obrix-cmd" data-cmd="toggle" type="button">⏯️ Ativar / Desativar</button><button class="obrix-cmd perigo" data-cmd="excluir" type="button">🗑️ Excluir</button><button class="obrix-cmd destaque" data-cmd="novo" type="button">＋ Funcionário</button></div><div class="obrix-equipe-secundario"><select class="obrix-filtro-equipe" aria-label="Filtrar funcionários"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select><button class="obrix-cmd obrix-atualizar-equipe" type="button">↻ Atualizar</button></div>`;
-      const hero=sec.querySelector('.hero');hero?.insertAdjacentElement('afterend',box);
-      box.querySelector('[data-cmd="lista"]').onclick=abrirDiretorio;
-      box.querySelector('[data-cmd="toggle"]').onclick=()=>abrirSeletorGestao('toggle');
-      box.querySelector('[data-cmd="excluir"]').onclick=()=>abrirSeletorGestao('delete');
-      box.querySelector('[data-cmd="novo"]').onclick=novoFuncionario;
-      box.querySelector('.obrix-atualizar-equipe').onclick=atualizar;
-      box.querySelector('.obrix-filtro-equipe').onchange=e=>{filtro=e.target.value;aplicarFiltro()};
+      sec.querySelector('.hero')?.insertAdjacentElement('afterend',box);
     }
-  }
-
-  function prepararDetalhes(detalhes){
-    const titulo=detalhes.querySelector(':scope > h3');if(titulo)titulo.classList.add('obrix-titulo-original');
-    const acoes=Array.from(detalhes.querySelectorAll(':scope > .actions')).find(el=>!el.classList.contains('gestaoFunc'));
-    if(acoes){
-      acoes.classList.add('obrix-acoes-financeiras');
-      acoes.querySelectorAll('button').forEach(btn=>{
-        const t=(btn.textContent||'').trim().toLowerCase();
-        if(t.includes('registrar diária')||t.includes('registrar diaria'))btn.classList.add('obrix-acao-diaria-duplicada');
-        if(t==='pagar')btn.classList.add('obrix-acao-pagar');
-      });
-    }
-    const gestao=detalhes.querySelector(':scope > .gestaoFunc');
-    if(gestao&&!detalhes.querySelector(':scope > .obrix-gerenciar-label')){
-      const label=document.createElement('div');label.className='obrix-gerenciar-label';label.textContent='Gerenciar funcionário';gestao.insertAdjacentElement('beforebegin',label);
-    }
-  }
-
-  function organizarCard(card,index){
-    const f=getFuncionarios()[index]||acharFunc(card.dataset.obrixFuncId);if(!f)return;
-    card.dataset.obrixFuncId=String(f.id);
-    if(card.dataset.obrixEquipeOrganizada==='1'){
-      const detalhes=card.querySelector(':scope > .obrix-func-detalhes');
-      if(detalhes){Array.from(card.children).forEach(el=>{if(!el.classList.contains('obrix-func-topo')&&el!==detalhes)detalhes.appendChild(el)});prepararDetalhes(detalhes)}
-      return;
-    }
-    const detalhes=document.createElement('div');detalhes.className='obrix-func-detalhes';detalhes.hidden=true;
-    while(card.firstChild)detalhes.appendChild(card.firstChild);prepararDetalhes(detalhes);
-    const topo=document.createElement('div');topo.className='obrix-func-topo';
-    const toggle=document.createElement('button');toggle.type='button';toggle.className='obrix-func-toggle';toggle.setAttribute('aria-expanded','false');toggle.innerHTML='<span class="obrix-func-nome"></span><span class="obrix-func-seta" aria-hidden="true">›</span>';toggle.querySelector('.obrix-func-nome').textContent=f.nome||'Funcionário';toggle.onclick=()=>card.classList.contains('obrix-func-aberto')?fecharCard(card):abrirCard(card);
-    const diaria=document.createElement('button');diaria.type='button';diaria.className='obrix-func-rapido diaria';diaria.textContent='Marcar diária';diaria.onclick=e=>{e.stopPropagation();registrarDiaria(f.id)};
-    const falta=document.createElement('button');falta.type='button';falta.className='obrix-func-rapido falta';falta.textContent='Falta';falta.onclick=e=>{e.stopPropagation();registrarFalta(f.id)};
-    topo.append(toggle,diaria,falta);card.classList.add('obrix-func-item');card.dataset.obrixEquipeOrganizada='1';card.append(topo,detalhes);
-  }
-
-  function aplicar(){
-    montarTopo();
-    const box=document.getElementById('listaEquipe');if(!box)return;
-    Array.from(box.querySelectorAll(':scope > .card.item')).forEach((card,index)=>organizarCard(card,index));
-    aplicarFiltro();
+    box.querySelector('[data-cmd="lista"]').onclick=()=>window.OBRIX_FUNCIONARIOS_PESSOAL?.open?.();
+    box.querySelector('[data-cmd="toggle"]').onclick=()=>seletor('toggle');
+    box.querySelector('[data-cmd="excluir"]').onclick=()=>seletor('delete');
+    box.querySelector('[data-cmd="novo"]').onclick=novoFuncionario;
+    box.querySelector('.obrix-atualizar-equipe').onclick=atualizar;
+    const sel=box.querySelector('.obrix-filtro-equipe');sel.value=filtro;sel.onchange=e=>{filtro=e.target.value;renderEquipeModelo()};
   }
 
   function instalar(){
     montarTopo();
-    const original=window.renderEquipe;
-    if(typeof original==='function'&&!original.__obrixEquipeOrganizada){
-      const render=function(){const r=original.apply(this,arguments);requestAnimationFrame(aplicar);return r};render.__obrixEquipeOrganizada=true;window.renderEquipe=render;
-    }
-    const box=document.getElementById('listaEquipe');
-    if(box){let pendente=false;new MutationObserver(()=>{if(pendente)return;pendente=true;requestAnimationFrame(()=>{pendente=false;aplicar()})}).observe(box,{childList:true,subtree:true})}
-    aplicar();setTimeout(aplicar,220);
+    window.renderEquipe=renderEquipeModelo;
+    renderEquipeModelo();
+    setTimeout(()=>{window.renderEquipe=renderEquipeModelo;montarTopo();renderEquipeModelo()},350);
+    setTimeout(()=>{window.renderEquipe=renderEquipeModelo;montarTopo();renderEquipeModelo()},900);
   }
 
   const css=document.createElement('style');
   css.textContent=`
     #equipe .obrix-head-original{display:none!important}
-    .obrix-equipe-controles{margin:0 0 16px}
+    .obrix-equipe-controles{margin:0 0 18px}
     .obrix-equipe-botoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
     .obrix-equipe-secundario{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
     .obrix-cmd,.obrix-filtro-equipe{width:100%;min-height:58px;border:1px solid #cbd5e1;border-radius:15px;background:#fff;color:#0f172a;font:inherit;font-weight:900;padding:12px;text-align:center}
     .obrix-cmd.destaque{border-color:#c48b18;color:#a66f00}.obrix-cmd.perigo{border-color:#ef4444;color:#dc2626}
-    #listaEquipe{display:flex;flex-direction:column;gap:10px}
-    #listaEquipe .card.item.obrix-func-item{padding:0;margin:0;overflow:hidden}
-    .obrix-func-topo{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:stretch;gap:8px;padding:8px}
-    .obrix-func-toggle{min-width:0;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 10px;text-align:left;font:inherit;font-weight:900;font-size:17px;border-radius:12px}
-    .obrix-func-toggle:active{background:rgba(100,116,139,.08)}
-    .obrix-func-nome{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.obrix-func-seta{font-size:27px;line-height:1;font-weight:500;transition:transform .18s ease;color:#64748b}.obrix-func-aberto .obrix-func-seta{transform:rotate(90deg)}
-    .obrix-func-rapido{border:0;border-radius:11px;padding:10px 13px;font-weight:900;background:#0f172a;color:#fff;white-space:nowrap}.obrix-func-rapido.falta{background:#fff;color:#dc2626;border:1px solid #ef4444}
-    .obrix-func-detalhes{border-top:1px solid #e2e8f0;padding:14px 16px 16px}.obrix-func-detalhes[hidden]{display:none!important}.obrix-titulo-original{display:none!important}.obrix-func-detalhes>.muted{margin-bottom:10px;font-size:13px}
-    .obrix-func-detalhes>.grid{margin-top:0;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.obrix-func-detalhes>.grid .mini{padding:10px 9px;min-width:0}.obrix-func-detalhes>.grid .mini small{font-size:11px;line-height:1.25}.obrix-func-detalhes>.grid .mini b{display:block;margin-top:4px;font-size:14px;overflow-wrap:anywhere}
-    .obrix-acoes-financeiras{display:grid!important;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.obrix-acoes-financeiras button{min-width:0!important;width:100%;padding:10px 8px!important}.obrix-acao-diaria-duplicada{display:none!important}.obrix-acao-pagar{background:#0f172a!important;color:#fff!important;border-color:#0f172a!important}
-    .obrix-gerenciar-label{font-size:12px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin:16px 0 7px;padding-top:12px;border-top:1px solid #e2e8f0}.gestaoFunc{margin-top:0!important;display:grid!important;grid-template-columns:repeat(3,1fr);gap:7px}.gestaoFunc button{min-width:0!important;padding:8px!important;font-size:12px}
-    .obrix-diretorio-lista{display:grid;gap:10px}.obrix-pessoa{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid #e2e8f0;border-radius:14px;padding:13px}.obrix-pessoa h3{margin:0 0 4px}.obrix-pessoa p,.obrix-pessoa small{display:block;margin:2px 0;color:#64748b}.obrix-pessoa .editar{flex:0 0 auto}
-    @media(max-width:700px){.obrix-equipe-botoes{gap:8px}.obrix-equipe-secundario{gap:8px}.obrix-cmd,.obrix-filtro-equipe{min-height:54px;padding:10px 8px;font-size:14px}.obrix-func-topo{grid-template-columns:minmax(0,1fr) 1fr 72px;padding:6px}.obrix-func-toggle{font-size:16px;padding:11px 8px}.obrix-func-rapido{padding:9px 7px;font-size:12px}.obrix-func-detalhes{padding:12px}.obrix-func-detalhes>.grid{grid-template-columns:1fr 1fr}.obrix-acoes-financeiras{grid-template-columns:1fr}.gestaoFunc{grid-template-columns:repeat(3,1fr)}.obrix-pessoa{align-items:stretch;flex-direction:column}.obrix-pessoa .editar{width:100%}}
-    @media(max-width:390px){.obrix-func-topo{grid-template-columns:1fr 1fr}.obrix-func-toggle{grid-column:1/-1}.gestaoFunc{grid-template-columns:1fr}}
+    #listaEquipe{display:flex;flex-direction:column;gap:18px}
+    #listaEquipe .obrix-modelo-card{border-radius:22px;padding:28px;margin:0;overflow:hidden}
+    .obrix-modelo-cabecalho h3{font-size:28px;line-height:1.15;margin:0 0 8px;font-weight:900}
+    .obrix-modelo-subnome{font-size:20px;color:#64748b;margin-bottom:20px}
+    .obrix-modelo-status{display:inline-flex;align-items:center;border:1px solid #3b82f6;border-radius:999px;padding:8px 14px;color:#2563eb;font-weight:900;margin-bottom:24px;background:rgba(37,99,235,.06)}
+    .obrix-modelo-status.off{border-color:#94a3b8;color:#64748b;background:rgba(100,116,139,.08)}
+    .obrix-modelo-pagamento{border:1px solid #e2e8f0;border-radius:18px;padding:20px 22px;background:#f8fafc;margin-bottom:16px}
+    .obrix-modelo-pagamento small,.obrix-modelo-pagamento span{display:block;color:#64748b}.obrix-modelo-pagamento small{font-size:15px;margin-bottom:4px}.obrix-modelo-pagamento strong{display:block;font-size:20px;margin-bottom:3px}.obrix-modelo-pagamento span{font-size:15px}.obrix-modelo-pagamento>b{display:block;font-size:30px;color:#3b82f6;margin-top:22px}
+    .obrix-modelo-pilulas{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px}.obrix-modelo-pilulas span{border:1px solid #e2e8f0;border-radius:999px;padding:9px 15px;font-size:16px;background:#f8fafc}
+    .obrix-modelo-metricas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .obrix-modelo-metrica{min-height:116px;border:1px solid #e2e8f0;border-radius:16px;padding:16px;background:#f8fafc}.obrix-modelo-metrica small{display:block;color:#64748b;font-size:15px;margin-bottom:7px}.obrix-modelo-metrica b{display:block;font-size:26px}.obrix-modelo-metrica span{display:block;color:#64748b;font-size:13px;margin-top:4px}.obrix-modelo-metrica.azul b{color:#3b82f6}.obrix-modelo-metrica.ouro b{color:#d59b28}.obrix-modelo-metrica.verde b{color:#10b981}.obrix-modelo-metrica.liquido{background:#fff1f2;border-color:#fecdd3}.obrix-modelo-metrica.liquido b{color:#f43f5e}
+    .obrix-modelo-acoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}.obrix-modelo-acoes button{min-height:58px;border:1px solid #cbd5e1;border-radius:14px;background:#fff;color:#0f172a;font:inherit;font-weight:900;padding:12px}.obrix-modelo-acoes .editar{grid-column:1/-1}
+    .obrix-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.obrix-modal-head h2{margin:0}.obrix-modal-x{border:0;background:transparent;color:inherit;font-size:30px;line-height:1;padding:2px 8px}.obrix-modelo-modal label{display:block;font-weight:800;margin-top:8px}.obrix-modelo-modal input,.obrix-modelo-modal select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;margin:5px 0 9px;font:inherit}.obrix-registros-lista,.obrix-carregando{display:grid;gap:8px}.obrix-registro-linha{display:flex;justify-content:space-between;gap:12px;border:1px solid #e2e8f0;border-radius:12px;padding:12px}.obrix-registro-linha span,.obrix-registro-linha small{display:block;color:#64748b;margin-top:3px}.obrix-registro-valor{text-align:right}.obrix-registros-acoes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.obrix-registros-acoes button{border:1px solid #cbd5e1;background:#fff;border-radius:10px;padding:11px;font-weight:900}.obrix-registros-acoes .pagar{background:#0f172a;color:#fff;border-color:#0f172a}
+    html[data-theme="dark"] .obrix-cmd,body.dark .obrix-cmd,html[data-theme="dark"] .obrix-filtro-equipe,body.dark .obrix-filtro-equipe{background:#111827;color:#f8fafc;border-color:#334155}
+    html[data-theme="dark"] #listaEquipe .obrix-modelo-card,body.dark #listaEquipe .obrix-modelo-card{background:#0f172a;color:#f8fafc;border-color:#334155}
+    html[data-theme="dark"] .obrix-modelo-subnome,body.dark .obrix-modelo-subnome,html[data-theme="dark"] .obrix-modelo-pagamento small,body.dark .obrix-modelo-pagamento small,html[data-theme="dark"] .obrix-modelo-pagamento span,body.dark .obrix-modelo-pagamento span,html[data-theme="dark"] .obrix-modelo-metrica small,body.dark .obrix-modelo-metrica small,html[data-theme="dark"] .obrix-modelo-metrica span,body.dark .obrix-modelo-metrica span{color:#94a3b8}
+    html[data-theme="dark"] .obrix-modelo-pagamento,body.dark .obrix-modelo-pagamento,html[data-theme="dark"] .obrix-modelo-pilulas span,body.dark .obrix-modelo-pilulas span,html[data-theme="dark"] .obrix-modelo-metrica,body.dark .obrix-modelo-metrica{background:#111827;border-color:#273449}
+    html[data-theme="dark"] .obrix-modelo-metrica.liquido,body.dark .obrix-modelo-metrica.liquido{background:#231b27;border-color:#3d2934}
+    html[data-theme="dark"] .obrix-modelo-acoes button,body.dark .obrix-modelo-acoes button,html[data-theme="dark"] .obrix-registros-acoes button,body.dark .obrix-registros-acoes button{background:#161d25;color:#f8fafc;border-color:#334155}
+    html[data-theme="dark"] .obrix-registros-acoes .pagar,body.dark .obrix-registros-acoes .pagar{background:#2563eb;border-color:#2563eb}
+    html[data-theme="dark"] .obrix-registro-linha,body.dark .obrix-registro-linha{border-color:#334155}
+    @media(max-width:700px){
+      #listaEquipe .obrix-modelo-card{padding:20px 18px}.obrix-modelo-cabecalho h3{font-size:24px}.obrix-modelo-subnome{font-size:17px}.obrix-modelo-pagamento{padding:17px}.obrix-modelo-pagamento>b{font-size:27px}.obrix-modelo-metrica{min-height:106px;padding:14px}.obrix-modelo-metrica b{font-size:22px}.obrix-modelo-acoes button{min-height:54px}.obrix-cmd,.obrix-filtro-equipe{min-height:54px;font-size:14px;padding:10px 8px}
+    }
+    @media(max-width:390px){.obrix-modelo-metricas{grid-template-columns:1fr}.obrix-modelo-acoes{grid-template-columns:1fr}.obrix-modelo-acoes .editar{grid-column:auto}.obrix-registros-acoes{grid-template-columns:1fr}}
   `;
   document.head.appendChild(css);
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(instalar,0));else setTimeout(instalar,0);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(instalar,220));else setTimeout(instalar,220);
+  window.OBRIX_EQUIPE_MODELO={render:renderEquipeModelo,refresh:atualizar};
 })();
