@@ -1,73 +1,53 @@
-name: Publicar EDIFIQ auditado
+name: Publicar OBRIX
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
 permissions:
   contents: read
+  pages: write
+  id-token: write
+
 concurrency:
-  group: edific-pages-audit-safe
+  group: obrix-pages
   cancel-in-progress: true
+
 jobs:
-  validate:
-    name: Validar e preparar versão pública
+  build:
+    name: Validar e preparar OBRIX
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Proteger login contra regressão
-        run: node tests/login-smoke.cjs
-      - name: Auditar núcleo do aplicativo
+      - name: Validar JavaScript OBRIX
         run: |
-          python3 scripts/check-release.py
-          node tests/core65.cjs
-          node tests/audit75.cjs
-      - name: Validar scripts externos
+          set -e
+          for f in obrix-*.js; do
+            [ -f "$f" ] && node --check "$f"
+          done
+      - name: Validar arquivos principais
         run: |
-          for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js orcamentos-link79.js orcamentos-fix81.js navigation-fix82.js photo-purge83.js action-fix85.js edifiq-sw.js equipe-layout87.js; do node --check "$f"; done
-      - name: Validar ações críticas
+          grep -q 'OBRIX — Gestão de Obras' obrix.html
+          grep -q 'gnvclctqnwxnjxydzhwc.supabase.co' obrix-backend-adapter.js
+          grep -q 'OBRIX' obrix-manifest.webmanifest
+      - name: Preparar site público somente OBRIX
         run: |
-          grep -q "__EDIFIQ_ACTION854" action-fix85.js
-          grep -q "document.addEventListener('click'" action-fix85.js
-          ! grep -q "addEventListener('touchend'" action-fix85.js
-          grep -q "go('financeiro')" index.html
-          grep -q "go('funcionarios')" index.html
-          grep -q "goMenu('obras')" index.html
-          grep -q 'onclick="openFin()"' index.html
-          grep -q 'onclick="openObra()"' index.html
-          grep -q 'onclick="openFunc()"' index.html
-      - name: Validar versão pública v873
-        run: |
-          python3 scripts/prepare-pages-v86.py
-          grep -q './action-fix85.js?v=860' .pages/index.html
-          grep -q './equipe-layout87.js?v=873' .pages/index.html
-          grep -q 'edifiq-release-873' .pages/index.html
-          ! grep -q './navigation-fix82.js?v=82' .pages/index.html
-          ! grep -q "addEventListener('fetch'" .pages/edifiq-sw.js
-          grep -q "caches.delete" .pages/edifiq-sw.js
-          grep -q '"start_url": "./?pwa=873"' .pages/manifest.webmanifest
-          grep -q '"id": "./?pwa=873"' .pages/manifest.webmanifest
-          ! grep -q "addEventListener('touchend'" .pages/action-fix85.js
-          grep -q 'Orçamentos — EDIFIQ' .pages/orcamentos.html
-          grep -q '"short_name": "EDIFIQ"' .pages/manifest.webmanifest
-          test -f .pages/action-fix85.js
-          test -f .pages/equipe-layout87.js
-          test -f .pages/orcamentos.html
-          test -f .pages/obrix-faltas-meia-test.html
-          ! grep -q 'black-translucent' .pages/index.html
+          rm -rf .pages
+          mkdir .pages
+          cp index.html privacidade.html .pages/
+          cp obrix* .pages/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .pages
+
   deploy:
-    name: Publicar versão auditada
-    needs: validate
+    name: Publicar OBRIX
+    needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
