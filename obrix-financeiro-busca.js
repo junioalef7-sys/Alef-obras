@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const estado={q:'',obra:'',tipo:'',categoria:'',subcategoria:'',checklist:''};
+  const estado={q:'',obra:'',tipo:'',categoria:''};
   const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -10,17 +10,15 @@
     const form=document.getElementById('fmForm'),wrap=document.createElement('section');
     wrap.id='fmFiltrosPanel';wrap.className='card fmFiltrosPanel';
     wrap.innerHTML=`<div class="fmFiltrosHead"><div><h3>Filtros do financeiro</h3><p>Busque e filtre os lançamentos sem perder a visão da tela.</p></div><button type="button" id="fmFiltrosLimpar">Limpar filtros</button></div>
-      <div class="fmBuscaWrap"><span class="fmBuscaIcon">⌕</span><input id="fmBusca" type="search" placeholder="Buscar descrição, obra, categoria, subcategoria, checklist, data ou valor..." autocomplete="off"><button type="button" id="fmBuscaLimpar" aria-label="Limpar busca">×</button></div>
+      <div class="fmBuscaWrap"><span class="fmBuscaIcon">⌕</span><input id="fmBusca" type="search" placeholder="Buscar descrição, obra, categoria, data ou valor..." autocomplete="off"><button type="button" id="fmBuscaLimpar" aria-label="Limpar busca">×</button></div>
       <div class="fmFiltrosGrid">
         <label>Obra<select id="fmFiltroObra"><option value="">Todas as obras</option></select></label>
         <label>Tipo<select id="fmFiltroTipo"><option value="">Receitas e despesas</option><option value="receita">Receitas</option><option value="despesa">Despesas</option></select></label>
         <label>Categoria<select id="fmFiltroCategoria"><option value="">Todas as categorias</option></select></label>
-        <label>Subcategoria<select id="fmFiltroSubcategoria"><option value="">Todas as subcategorias</option></select></label>
-        <label>Checklist / etapa<select id="fmFiltroChecklist"><option value="">Todos os checklists</option></select></label>
       </div>
       <div id="fmFiltroResultado" class="fmFiltroResultado"></div>`;
     form?.parentNode?.insertBefore(wrap,form);
-    const ids={fmBusca:'q',fmFiltroObra:'obra',fmFiltroTipo:'tipo',fmFiltroCategoria:'categoria',fmFiltroSubcategoria:'subcategoria',fmFiltroChecklist:'checklist'};
+    const ids={fmBusca:'q',fmFiltroObra:'obra',fmFiltroTipo:'tipo',fmFiltroCategoria:'categoria'};
     Object.entries(ids).forEach(([id,key])=>{const el=document.getElementById(id);if(!el)return;el.value=estado[key];el.addEventListener(id==='fmBusca'?'input':'change',()=>{estado[key]=el.value;aplicar()})});
     document.getElementById('fmBuscaLimpar').onclick=()=>{estado.q='';document.getElementById('fmBusca').value='';aplicar()};
     document.getElementById('fmFiltrosLimpar').onclick=limpar;
@@ -40,11 +38,7 @@
     setOptions('fmFiltroObra',obras,'Todas as obras',o=>o.nome||'Obra',o=>String(o.id));
     const cats=Object.entries(window.OBRIX_FIN?.categorias||{}).map(([value,label])=>({value,label}));
     setOptions('fmFiltroCategoria',cats,'Todas as categorias');
-    const subs=[...new Set((window.financeiro||[]).map(x=>String(x.subcategoria||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR')).map(x=>({value:x,label:x}));
-    setOptions('fmFiltroSubcategoria',subs,'Todas as subcategorias');
-    const checks=(window.OBRIX_FIN?.checklists?.()||[]).slice().sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR'));
-    setOptions('fmFiltroChecklist',checks,'Todos os checklists',c=>{const obra=obras.find(o=>String(o.id)===String(c.obra_id));return obra?`${c.nome} — ${obra.nome}`:c.nome||'Checklist'},c=>String(c.id));
-    ['obra','tipo','categoria','subcategoria','checklist'].forEach(key=>{const id={obra:'fmFiltroObra',tipo:'fmFiltroTipo',categoria:'fmFiltroCategoria',subcategoria:'fmFiltroSubcategoria',checklist:'fmFiltroChecklist'}[key],el=document.getElementById(id);if(el&&[...el.options].some(o=>o.value===estado[key]))el.value=estado[key]});
+    ['obra','tipo','categoria'].forEach(key=>{const id={obra:'fmFiltroObra',tipo:'fmFiltroTipo',categoria:'fmFiltroCategoria'}[key],el=document.getElementById(id);if(el&&[...el.options].some(o=>o.value===estado[key]))el.value=estado[key]});
   }
 
   function aplicar(){
@@ -56,9 +50,7 @@
       const okObra=!estado.obra||card.dataset.obra===estado.obra;
       const okTipo=!estado.tipo||card.dataset.tipo===estado.tipo;
       const okCat=!estado.categoria||card.dataset.categoria===estado.categoria;
-      const okSub=!estado.subcategoria||card.dataset.subcategoria===estado.subcategoria;
-      const okCheck=!estado.checklist||card.dataset.checklist===estado.checklist;
-      const ok=okBusca&&okObra&&okTipo&&okCat&&okSub&&okCheck;card.style.display=ok?'':'none';if(ok)vis++;
+      const ok=okBusca&&okObra&&okTipo&&okCat;card.style.display=ok?'':'none';if(ok)vis++;
     });
     let vazio=document.getElementById('fmBuscaVazio');
     if(!vazio){vazio=document.createElement('div');vazio.id='fmBuscaVazio';vazio.className='card muted fmBuscaVazio';vazio.textContent='Nenhum lançamento encontrado com estes filtros.';lista.appendChild(vazio)}
@@ -69,7 +61,7 @@
 
   function limpar(){
     Object.keys(estado).forEach(k=>estado[k]='');
-    const ids=['fmBusca','fmFiltroObra','fmFiltroTipo','fmFiltroCategoria','fmFiltroSubcategoria','fmFiltroChecklist'];ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});aplicar();
+    ['fmBusca','fmFiltroObra','fmFiltroTipo','fmFiltroCategoria'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});aplicar();
   }
 
   const css=document.createElement('style');
@@ -77,9 +69,10 @@
     .fmFiltrosPanel{margin:0 0 14px!important;padding:16px!important}
     .fmFiltrosHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}.fmFiltrosHead h3{margin:0 0 3px;font-size:19px}.fmFiltrosHead p{margin:0;color:#64748b;font-size:13px}.fmFiltrosHead button{border:1px solid #cbd5e1;background:transparent;color:inherit;border-radius:10px;padding:8px 10px;font-weight:800;white-space:nowrap}
     .fmBuscaWrap{display:flex;align-items:center;gap:10px;min-height:50px;padding:0 12px;border:1px solid #cbd5e1;border-radius:13px;background:#fff;margin-bottom:10px}.fmBuscaWrap:focus-within{border-color:#64748b;box-shadow:0 0 0 2px rgba(100,116,139,.12)}.fmBuscaIcon{font-size:21px;color:#64748b}#fmBusca{flex:1;min-width:0;border:0!important;outline:0!important;background:transparent!important;color:#0f172a!important;font-size:15px!important;margin:0!important;padding:0!important;box-shadow:none!important}#fmBuscaLimpar{border:0;background:transparent;color:#64748b;font-size:24px;line-height:1;padding:4px 7px;visibility:hidden}
-    .fmFiltrosGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.fmFiltrosGrid label{font-size:12px;font-weight:800;color:#64748b}.fmFiltrosGrid select{display:block;width:100%;min-height:46px;margin-top:5px;border:1px solid #cbd5e1;border-radius:11px;background:#fff;color:#0f172a;padding:0 10px;font:inherit;font-size:14px}.fmFiltrosGrid label:last-child{grid-column:1/-1}.fmFiltroResultado{margin-top:10px;color:#64748b;font-size:13px;font-weight:800}.fmBuscaVazio{text-align:center;padding:18px}
+    .fmFiltrosGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.fmFiltrosGrid label{font-size:12px;font-weight:800;color:#64748b}.fmFiltrosGrid select{display:block;width:100%;min-height:46px;margin-top:5px;border:1px solid #cbd5e1;border-radius:11px;background:#fff;color:#0f172a;padding:0 10px;font:inherit;font-size:14px}.fmFiltroResultado{margin-top:10px;color:#64748b;font-size:13px;font-weight:800}.fmBuscaVazio{text-align:center;padding:18px}
     html[data-theme="dark"] .fmFiltrosPanel,body.dark .fmFiltrosPanel{background:#0f172a;color:#f8fafc;border-color:#334155}html[data-theme="dark"] .fmBuscaWrap,body.dark .fmBuscaWrap,html[data-theme="dark"] .fmFiltrosGrid select,body.dark .fmFiltrosGrid select{background:#111827;color:#f8fafc!important;border-color:#334155}html[data-theme="dark"] #fmBusca,body.dark #fmBusca{color:#f8fafc!important}html[data-theme="dark"] .fmFiltrosHead button,body.dark .fmFiltrosHead button{border-color:#334155;color:#f8fafc}
-    @media(max-width:560px){.fmFiltrosHead{display:block}.fmFiltrosHead button{width:100%;margin-top:10px}.fmFiltrosGrid{grid-template-columns:1fr}.fmFiltrosGrid label:last-child{grid-column:auto}}
+    @media(max-width:760px){.fmFiltrosGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:560px){.fmFiltrosHead{display:block}.fmFiltrosHead button{width:100%;margin-top:10px}}
   `;document.head.appendChild(css);
 
   const obs=new MutationObserver(m=>{if(document.getElementById('financeiroMain')&&m.some(x=>x.target?.id==='fmLista'||x.target?.closest?.('#fmLista')))requestAnimationFrame(aplicar)});obs.observe(document.body,{childList:true,subtree:true});
