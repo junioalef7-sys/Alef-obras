@@ -1,1 +1,0 @@
-const $=x=>document.getElementById(x);let sb,p;async function boot(){try{sb=await OBRIX_BACKEND.init();p=await OBRIX_BACKEND.profile();let a=await OBRIX_BACKEND.readTable('obras','criado_em');o.innerHTML='';a.forEach(x=>{let q=document.createElement('option');q.value=x.id;q.textContent=x.nome;o.appendChild(q)});m.textContent='Pronto'}catch(e){m.textContent=e.message}}boot();

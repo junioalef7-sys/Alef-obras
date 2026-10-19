@@ -1,1 +1,0 @@
-async function sendFile(x){let e=(x.name.split('.').pop()||'jpg').toLowerCase(),n=p.empresa_id+'/'+o.value+'/'+Date.now()+'-'+crypto.randomUUID()+'.'+e,r=await sb.storage.from('obrix-fotos').upload(n,x,{upsert:false});if(r.error)throw r.error;return n}
