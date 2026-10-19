@@ -26,7 +26,7 @@ jobs:
           node tests/audit75.cjs
       - name: Validar scripts externos
         run: |
-          for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js orcamentos-link79.js orcamentos-fix81.js navigation-fix82.js photo-purge83.js action-fix85.js edifiq-sw.js; do node --check "$f"; done
+          for f in billing-fix57.js account-delete-fix61.js trial-fix62.js billing-hotfix63.js access-limit63.js core-fix65.js ui-fix67.js login-ui68.js orcamentos-link79.js orcamentos-fix81.js navigation-fix82.js photo-purge83.js action-fix85.js edifiq-sw.js equipe-layout87.js; do node --check "$f"; done
       - name: Validar ações críticas
         run: |
           grep -q "__EDIFIQ_ACTION854" action-fix85.js
@@ -38,18 +38,22 @@ jobs:
           grep -q 'onclick="openFin()"' index.html
           grep -q 'onclick="openObra()"' index.html
           grep -q 'onclick="openFunc()"' index.html
-      - name: Validar versão pública v86
+      - name: Validar versão pública v873
         run: |
           python3 scripts/prepare-pages-v86.py
           grep -q './action-fix85.js?v=860' .pages/index.html
+          grep -q './equipe-layout87.js?v=873' .pages/index.html
+          grep -q 'edifiq-release-873' .pages/index.html
           ! grep -q './navigation-fix82.js?v=82' .pages/index.html
           ! grep -q "addEventListener('fetch'" .pages/edifiq-sw.js
           grep -q "caches.delete" .pages/edifiq-sw.js
-          grep -q '"start_url": "./?pwa=860"' .pages/manifest.webmanifest
+          grep -q '"start_url": "./?pwa=873"' .pages/manifest.webmanifest
+          grep -q '"id": "./?pwa=873"' .pages/manifest.webmanifest
           ! grep -q "addEventListener('touchend'" .pages/action-fix85.js
           grep -q 'Orçamentos — EDIFIQ' .pages/orcamentos.html
           grep -q '"short_name": "EDIFIQ"' .pages/manifest.webmanifest
           test -f .pages/action-fix85.js
+          test -f .pages/equipe-layout87.js
           test -f .pages/orcamentos.html
           test -f .pages/obrix-faltas-meia-test.html
           ! grep -q 'black-translucent' .pages/index.html
