@@ -1,0 +1,65 @@
+(()=>{'use strict';
+const $=id=>document.getElementById(id),today=()=>new Date().toISOString().slice(0,10),escHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let diarios=[];
+function ensure(){
+  if(document.getElementById('diarioMain'))return;
+  const app=document.getElementById('app'),bottom=app?.querySelector('.bottom');
+  if(!app||!bottom)return;
+  const main=document.createElement('main');
+  main.id='diarioMain';main.className='hidden';
+  main.innerHTML=`<div class="hero"><h1>Diário de Obras</h1><p>Registre o andamento diário de cada obra</p></div>
+  <div class="diarioKpis"><div class="kpi"><small>Registros</small><strong id="diarioKTotal">0</strong></div><div class="kpi"><small>Finalizados</small><strong id="diarioKFinal">0</strong></div><div class="kpi"><small>Rascunhos</small><strong id="diarioKRasc">0</strong></div></div>
+  <div class="card diarioForm"><div class="sectionHead"><strong id="diarioFormTitle">Novo diário</strong><button class="btn diarioAtualizar" type="button">Atualizar</button></div><input id="diarioId" type="hidden">
+  <div class="diarioGrid2"><label>Obra<select id="diarioObra"></select></label><label>Data<input id="diarioData" type="date"></label></div>
+  <div class="diarioGrid3"><label>Clima<select id="diarioClima"><option>Ensolarado</option><option>Nublado</option><option>Chuvoso</option><option>Parcialmente nublado</option></select></label><label>Temperatura<input id="diarioTemperatura" placeholder="Ex.: 28°C"></label><label>Status<select id="diarioStatus"><option value="rascunho">Rascunho</option><option value="finalizado">Finalizado</option></select></label></div>
+  <label>Serviços executados<textarea id="diarioServicos" placeholder="Ex.: Alvenaria, reboco, pintura..."></textarea></label>
+  <label>Ocorrências<textarea id="diarioOcorrencias" placeholder="Ex.: Sem ocorrências"></textarea></label>
+  <label>Materiais utilizados<textarea id="diarioMateriais" placeholder="Ex.: Cimento, areia, blocos..."></textarea></label>
+  <label>Equipamentos utilizados<textarea id="diarioEquipamentos" placeholder="Ex.: Betoneira, andaime..."></textarea></label>
+  <label>Observações<textarea id="diarioObs"></textarea></label>
+  <div class="diarioActions"><button class="btn" id="diarioSalvar" type="button">Salvar diário</button><button class="btn diarioSecundario hidden" id="diarioCancelar" type="button">Cancelar edição</button></div><div id="diarioMsg" class="diarioMsg hidden"></div></div>
+  <div class="card"><div class="sectionHead"><strong>Histórico da obra</strong><span class="muted">1 diário por obra/data</span></div><div id="diarioLista"></div></div>`;
+  app.insertBefore(main,bottom);
+  main.querySelector('.diarioAtualizar').onclick=()=>load().catch(showError);
+  $('diarioObra').onchange=render;
+  $('diarioSalvar').onclick=save;
+  $('diarioCancelar').onclick=resetForm;
+}
+function showMsg(text,ok=true){const el=$('diarioMsg');if(!el)return;el.textContent=text;el.className='diarioMsg '+(ok?'ok':'erro');}
+function showError(e){showMsg('Erro: '+(e?.message||e),false)}
+function fillObras(){
+  const s=$('diarioObra');if(!s)return;
+  const old=s.value;s.innerHTML='';
+  (window.obras||[]).forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.nome||'Obra';s.appendChild(op)});
+  if([...s.options].some(o=>o.value===old))s.value=old;
+  if(!s.options.length){const op=document.createElement('option');op.value='';op.textContent='Cadastre uma obra primeiro';s.appendChild(op)}
+}
+function currentRows(){const oid=$('diarioObra')?.value;return diarios.filter(d=>String(d.obra_id)===String(oid)).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')))}
+function render(){
+  const rows=currentRows();
+  $('diarioKTotal').textContent=String(rows.length);$('diarioKFinal').textContent=String(rows.filter(x=>x.status==='finalizado').length);$('diarioKRasc').textContent=String(rows.filter(x=>x.status!=='finalizado').length);
+  const box=$('diarioLista');if(!box)return;
+  if(!rows.length){box.innerHTML='<div class="muted diarioVazio">Nenhum diário registrado para esta obra.</div>';return}
+  box.innerHTML=rows.map(d=>`<div class="diarioItem" data-id="${escHtml(d.id)}"><button class="diarioItemHead" type="button"><span><b>${escHtml(formatDate(d.data))}</b><small>${escHtml(d.clima||'Sem clima')}${d.temperatura?' • '+escHtml(d.temperatura):''}</small></span><span class="diarioBadge ${d.status==='finalizado'?'finalizado':''}">${d.status==='finalizado'?'Finalizado':'Rascunho'}</span></button><div class="diarioItemBody hidden"><div class="diarioResumo"><b>Serviços executados</b><p>${escHtml(d.servicos_executados||'Não informado')}</p><b>Ocorrências</b><p>${escHtml(d.ocorrencias||'Sem ocorrências')}</p><b>Materiais utilizados</b><p>${escHtml(d.materiais_utilizados||'Não informado')}</p><b>Equipamentos utilizados</b><p>${escHtml(d.equipamentos_utilizados||'Não informado')}</p>${d.observacoes?`<b>Observações</b><p>${escHtml(d.observacoes)}</p>`:''}</div><div class="diarioActions"><button class="btn editar" type="button">Editar</button><button class="btn diarioPerigo excluir" type="button">Excluir</button></div></div></div>`).join('');
+  box.querySelectorAll('.diarioItem').forEach(el=>{const d=rows.find(x=>String(x.id)===String(el.dataset.id));if(!d)return;el.querySelector('.diarioItemHead').onclick=()=>el.querySelector('.diarioItemBody').classList.toggle('hidden');el.querySelector('.editar').onclick=()=>edit(d);el.querySelector('.excluir').onclick=()=>removeD(d)});
+}
+function formatDate(v){if(!v)return'';const [y,m,d]=String(v).slice(0,10).split('-');return d&&m&&y?`${d}/${m}/${y}`:v}
+function resetForm(){if(!$('diarioId'))return;$('diarioId').value='';$('diarioData').value=today();$('diarioClima').value='Ensolarado';$('diarioTemperatura').value='';$('diarioStatus').value='rascunho';$('diarioServicos').value='';$('diarioOcorrencias').value='';$('diarioMateriais').value='';$('diarioEquipamentos').value='';$('diarioObs').value='';$('diarioFormTitle').textContent='Novo diário';$('diarioCancelar').classList.add('hidden');$('diarioMsg').classList.add('hidden')}
+function edit(d){$('diarioId').value=d.id;$('diarioObra').value=d.obra_id;$('diarioData').value=d.data;$('diarioClima').value=d.clima||'Ensolarado';$('diarioTemperatura').value=d.temperatura||'';$('diarioStatus').value=d.status||'rascunho';$('diarioServicos').value=d.servicos_executados||'';$('diarioOcorrencias').value=d.ocorrencias||'';$('diarioMateriais').value=d.materiais_utilizados||'';$('diarioEquipamentos').value=d.equipamentos_utilizados||'';$('diarioObs').value=d.observacoes||'';$('diarioFormTitle').textContent='Editar diário';$('diarioCancelar').classList.remove('hidden');scrollTo({top:0,behavior:'smooth'})}
+async function load(){ensure();if(!profile)return;try{if(!window.obras?.length){window.obras=await OBRIX_BACKEND.readTable('obras','criado_em')}diarios=await OBRIX_BACKEND.readTable('diarios_obra','data')||[];fillObras();if(!$('diarioData').value)$('diarioData').value=today();render()}catch(e){showError(e)}}
+async function save(){
+  const oid=$('diarioObra').value,date=$('diarioData').value;if(!oid||!date)return showMsg('Selecione a obra e a data.',false);
+  const btn=$('diarioSalvar');btn.disabled=true;
+  try{const sb=await OBRIX_BACKEND.init(),id=$('diarioId').value,payload={obra_id:oid,data:date,clima:$('diarioClima').value,temperatura:$('diarioTemperatura').value.trim()||null,servicos_executados:$('diarioServicos').value.trim()||null,ocorrencias:$('diarioOcorrencias').value.trim()||null,materiais_utilizados:$('diarioMateriais').value.trim()||null,equipamentos_utilizados:$('diarioEquipamentos').value.trim()||null,observacoes:$('diarioObs').value.trim()||null,status:$('diarioStatus').value,atualizado_em:new Date().toISOString()};let q=id?sb.from('diarios_obra').update(payload).eq('id',id).eq('empresa_id',profile.empresa_id).select('id'):sb.from('diarios_obra').insert({...payload,empresa_id:profile.empresa_id}).select('id');const {data,error}=await q;if(error)throw error;if(!data?.length)throw new Error('A gravação não foi confirmada.');resetForm();await load();showMsg(id?'Diário atualizado com sucesso.':'Diário salvo com sucesso.')}catch(e){let m=e?.message||String(e);if(m.includes('duplicate key'))m='Já existe um diário para esta obra nessa data.';showMsg(m,false)}finally{btn.disabled=false}
+}
+async function removeD(d){if(!confirm(`Excluir o diário de ${formatDate(d.data)}?`))return;try{const sb=await OBRIX_BACKEND.init(),{error}=await sb.from('diarios_obra').delete().eq('id',d.id).eq('empresa_id',profile.empresa_id);if(error)throw error;await load();showMsg('Diário excluído com sucesso.')}catch(e){showError(e)}}
+function hideOthers(){['inicio','obras','equipe','financeiroMain','estoqueMain','relatoriosMain','backupMain','configMain','assinaturaMain','menuMain'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'))}
+async function open(){ensure();hideOthers();$('diarioMain').classList.remove('hidden');await load();scrollTo({top:0,behavior:'smooth'})}
+function wireNavigation(){
+  const oldAbrir=window.abrir;if(typeof oldAbrir==='function'&&!oldAbrir.__obrixDiario){const fn=function(){document.getElementById('diarioMain')?.classList.add('hidden');return oldAbrir.apply(this,arguments)};fn.__obrixDiario=true;window.abrir=fn}
+  ['OBRIX_FIN','OBRIX_EST','OBRIX_RELATORIOS','OBRIX_BACKUP','OBRIX_CONFIG','OBRIX_ASSINATURA'].forEach(k=>{const obj=window[k];if(!obj?.open||obj.open.__obrixDiario)return;const old=obj.open.bind(obj);const fn=function(){document.getElementById('diarioMain')?.classList.add('hidden');return old(...arguments)};fn.__obrixDiario=true;obj.open=fn})
+}
+const css=document.createElement('style');css.textContent=`.diarioKpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.diarioForm label{display:block;font-weight:800;margin:10px 0 5px}.diarioForm input,.diarioForm select,.diarioForm textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:11px;font:inherit;background:#fff;color:#0f172a}.diarioForm textarea{min-height:88px;resize:vertical}.diarioGrid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.diarioGrid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.diarioActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.diarioSecundario{background:#e2e8f0;color:#0f172a}.diarioPerigo{background:#b91c1c!important;color:#fff!important}.diarioMsg{margin-top:12px;padding:11px;border-radius:10px;font-weight:800}.diarioMsg.ok{background:#dcfce7;color:#166534}.diarioMsg.erro{background:#fee2e2;color:#991b1b}.diarioVazio{padding:15px 0}.diarioItem{border-top:1px solid #e2e8f0}.diarioItem:first-child{border-top:0}.diarioItemHead{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;background:transparent;border:0;padding:15px 0;color:inherit}.diarioItemHead b,.diarioItemHead small{display:block}.diarioItemHead small{color:#64748b;margin-top:4px}.diarioBadge{background:#e2e8f0;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:900}.diarioBadge.finalizado{background:#dcfce7;color:#166534}.diarioItemBody{padding:0 0 15px}.diarioResumo p{white-space:pre-wrap;margin:4px 0 12px;color:#475569}@media(max-width:700px){.diarioKpis,.diarioGrid2,.diarioGrid3{grid-template-columns:1fr}.diarioItemHead{align-items:flex-start}}`;document.head.appendChild(css);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{ensure();wireNavigation()});else{ensure();wireNavigation()}
+window.OBRIX_DIARIO={open,load,render};
+})();
