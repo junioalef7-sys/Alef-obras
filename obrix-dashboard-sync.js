@@ -3,11 +3,11 @@
   const $=id=>document.getElementById(id),money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   let syncing=false,channel=null,timer=null,lastFetch=0;
   function appAtivo(){const app=$('app');return !!app&&!app.classList.contains('hidden')}
-  function paint(){
-    const obras=window.obras||[],extras=window.extras||[],financeiro=window.financeiro||[],funcionarios=window.funcionarios||[];
-    const total=obras.reduce((s,o)=>s+Number(o.valor_contrato||0),0)+extras.reduce((s,x)=>s+Number(x.valor||0),0),recebido=financeiro.filter(x=>x.tipo==='receita'&&(!x.status_lancamento||x.status_lancamento==='ativo')).reduce((s,x)=>s+Number(x.valor||0),0),ativas=obras.filter(o=>['andamento','em_andamento'].includes(String(o.status||'').toLowerCase())).length,funcs=funcionarios.filter(f=>f.ativo!==false).length;
+  function pintarCom(obras,extras,financeiro,funcionarios){
+    const total=(obras||[]).reduce((s,o)=>s+Number(o.valor_contrato||0),0)+(extras||[]).reduce((s,x)=>s+Number(x.valor||0),0),recebido=(financeiro||[]).filter(x=>x.tipo==='receita'&&(!x.status_lancamento||x.status_lancamento==='ativo')).reduce((s,x)=>s+Number(x.valor||0),0),ativas=(obras||[]).filter(o=>['andamento','em_andamento'].includes(String(o.status||'').toLowerCase())).length,funcs=(funcionarios||[]).filter(f=>f.ativo!==false).length;
     if($('contratado'))$('contratado').textContent=money(total);if($('receber'))$('receber').textContent=money(Math.max(0,total-recebido));if($('ativas'))$('ativas').textContent=String(ativas);if($('funcs'))$('funcs').textContent=String(funcs);
   }
+  function paint(){pintarCom(window.obras||[],window.extras||[],window.financeiro||[],window.funcionarios||[])}
   async function sync(force=false){
     if(syncing||!window.OBRIX_BACKEND||!appAtivo())return;
     if(!force&&Date.now()-lastFetch<15000){paint();return}
@@ -21,7 +21,7 @@
         sb.from('funcionarios').select('id,ativo').eq('empresa_id',eid)
       ]);
       for(const r of [ob,ex,fi,fn])if(r.error)throw r.error;
-      window.obras=ob.data||[];window.extras=ex.data||[];window.financeiro=fi.data||[];window.funcionarios=fn.data||[];lastFetch=Date.now();paint();
+      lastFetch=Date.now();pintarCom(ob.data||[],ex.data||[],fi.data||[],fn.data||[]);
     }catch(e){console.warn('Visão Geral: atualização indisponível',e)}finally{syncing=false}
   }
   function agendar(){clearTimeout(timer);timer=setTimeout(()=>sync(true),180)}
