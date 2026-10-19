@@ -7,12 +7,12 @@ for page in required_pages:
  if not page.exists(): raise SystemExit(f'PWA v86: arquivo público ausente: {page.name}')
  shutil.copy2(page,out/page.name)
 
-# Layout final da Equipe na página pública: botões no topo e lista direta, sem o bloco de resumo.
+# Layout final da Equipe na página pública: botões no topo, lista direta, dados cadastrais e falta rápida.
 public_index=out/'index.html'
 public_html=public_index.read_text(encoding='utf-8')
 import re
 public_html=re.sub(r'<script src="\./equipe-layout87\.js\?v=\d+" defer></script>\s*','',public_html)
-team_marker='<script src="./equipe-layout87.js?v=871" defer></script>'
+team_marker='<script src="./equipe-layout87.js?v=872" defer></script>'
 pos=public_html.lower().rfind('</body>')
 if pos<0: raise SystemExit('PWA v86: body ausente na página pública')
 public_html=public_html[:pos]+team_marker+'\n'+public_html[pos:]
@@ -37,4 +37,4 @@ for old in ('263','264','265','266'): html=html.replace(f'<script src="./obrix-e
 pos=html.lower().rfind('</body>');html=html[:pos]+'<script src="./obrix-equipe-diarias-integration.js?v=267"></script>\n'+html[pos:]
 pos=html.lower().rfind('</body>');html=html[:pos]+'<script src="./obrix-equipe-vale.js?v=269"></script>\n<script src="./obrix-equipe-bonus.js?v=271"></script>\n<script src="./obrix-equipe-pagamento.js?v=276"></script>\n<script src="./obrix-dashboard-integration.js?v=278"></script>\n'+html[pos:]
 app.write_text(html,encoding='utf-8')
-print('Versão pública v86 preparada com Equipe simplificada e OBRIX em /obrix.html.')
+print('Versão pública v86 preparada com Equipe simplificada, dados cadastrais e Falta rápida.')
