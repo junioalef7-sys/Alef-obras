@@ -3,4 +3,5 @@
 (()=>{if(window.__OBRIX_GRADE_FOTO_LOADER)return;window.__OBRIX_GRADE_FOTO_LOADER=true;const s=document.createElement('script');s.src='./obrix-relatorio-grade-miniaturas.js?v=20261019grade1';s.defer=true;document.head.appendChild(s)})();
 (()=>{if(window.__OBRIX_DIARIO_FOTO_LOADER)return;window.__OBRIX_DIARIO_FOTO_LOADER=true;const s=document.createElement('script');s.src='./obrix-diario-fotos.js?v=20261019diariofoto1';s.defer=true;document.head.appendChild(s)})();
 (()=>{if(window.__OBRIX_REL_DIARIO_LOADER)return;window.__OBRIX_REL_DIARIO_LOADER=true;const s=document.createElement('script');s.src='./obrix-relatorio-diario.js?v=20261019reld2';s.defer=true;document.head.appendChild(s)})();
-(()=>{if(window.__OBRIX_REL_COMP_LOADER)return;window.__OBRIX_REL_COMP_LOADER=true;const s=document.createElement('script');s.src='./obrix-relatorios-complementos.js?v=20261019relcomp1';s.defer=true;document.head.appendChild(s)})();
+(()=>{if(window.__OBRIX_REL_COMP_LOADER)return;window.__OBRIX_REL_COMP_LOADER=true;const s=document.createElement('script');s.src='./obrix-relatorios-complementos.js?v=20261019relcomp2';s.defer=true;document.head.appendChild(s)})();
+(()=>{if(window.__OBRIX_DOCS_LOADER)return;window.__OBRIX_DOCS_LOADER=true;const s=document.createElement('script');s.src='./obrix-documentos-main.js?v=20261019docs1';s.defer=true;document.head.appendChild(s)})();
