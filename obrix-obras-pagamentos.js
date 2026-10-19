@@ -53,3 +53,4 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',iniciar);else iniciar();
   window.OBRIX_OBRAS_PAGAMENTOS={open:abrir,refresh:instalarBotoes};
 })();
+(()=>{if(window.__OBRIX_OBRAS_BUSCA_LOADER)return;window.__OBRIX_OBRAS_BUSCA_LOADER=true;const s=document.createElement('script');s.src='./obrix-obras-busca.js?v=20261019busca1';s.defer=true;document.head.appendChild(s)})();
