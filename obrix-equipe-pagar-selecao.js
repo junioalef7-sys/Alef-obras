@@ -105,3 +105,5 @@
   new MutationObserver(()=>instalarBotao()).observe(document.documentElement,{childList:true,subtree:true});
   window.OBRIX_PAGAR_EQUIPE={open:abrir};
 })();
+
+(()=>{if(document.querySelector('script[data-obrix-equipe-historico-pag]'))return;const s=document.createElement('script');s.dataset.obrixEquipeHistoricoPag='1';s.src='./obrix-equipe-historico-pagamentos.js?v=20261019hist1';document.head.appendChild(s)})();
