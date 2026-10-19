@@ -2,3 +2,4 @@
 (()=>{if(window.__OBRIX_MULTI_FOTO_LOADER)return;window.__OBRIX_MULTI_FOTO_LOADER=true;const s=document.createElement('script');s.src='./obrix-relatorio-multifoto.js?v=20261019multi1';s.defer=true;document.head.appendChild(s)})();
 (()=>{if(window.__OBRIX_GRADE_FOTO_LOADER)return;window.__OBRIX_GRADE_FOTO_LOADER=true;const s=document.createElement('script');s.src='./obrix-relatorio-grade-miniaturas.js?v=20261019grade1';s.defer=true;document.head.appendChild(s)})();
 (()=>{if(window.__OBRIX_DIARIO_FOTO_LOADER)return;window.__OBRIX_DIARIO_FOTO_LOADER=true;const s=document.createElement('script');s.src='./obrix-diario-fotos.js?v=20261019diariofoto1';s.defer=true;document.head.appendChild(s)})();
+(()=>{if(window.__OBRIX_REL_DIARIO_LOADER)return;window.__OBRIX_REL_DIARIO_LOADER=true;const s=document.createElement('script');s.src='./obrix-relatorio-diario.js?v=20261019reld1';s.defer=true;document.head.appendChild(s)})();
