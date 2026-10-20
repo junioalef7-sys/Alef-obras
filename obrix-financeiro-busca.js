@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const estado={q:'',obra:'',tipo:'',categoria:''};
+  const estado={q:'',obra:'',tipo:'',categoria:'',dataInicio:'',dataFim:''};
   const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -15,10 +15,12 @@
         <label>Obra<select id="fmFiltroObra"><option value="">Todas as obras</option></select></label>
         <label>Tipo<select id="fmFiltroTipo"><option value="">Receitas e despesas</option><option value="receita">Receitas</option><option value="despesa">Despesas</option></select></label>
         <label>Categoria<select id="fmFiltroCategoria"><option value="">Todas as categorias</option></select></label>
+        <label>Data inicial<input id="fmFiltroDataInicio" type="date"></label>
+        <label>Data final<input id="fmFiltroDataFim" type="date"></label>
       </div>
       <div id="fmFiltroResultado" class="fmFiltroResultado"></div>`;
     form?.parentNode?.insertBefore(wrap,form);
-    const ids={fmBusca:'q',fmFiltroObra:'obra',fmFiltroTipo:'tipo',fmFiltroCategoria:'categoria'};
+    const ids={fmBusca:'q',fmFiltroObra:'obra',fmFiltroTipo:'tipo',fmFiltroCategoria:'categoria',fmFiltroDataInicio:'dataInicio',fmFiltroDataFim:'dataFim'};
     Object.entries(ids).forEach(([id,key])=>{const el=document.getElementById(id);if(!el)return;el.value=estado[key];el.addEventListener(id==='fmBusca'?'input':'change',()=>{estado[key]=el.value;aplicar()})});
     document.getElementById('fmBuscaLimpar').onclick=()=>{estado.q='';document.getElementById('fmBusca').value='';aplicar()};
     document.getElementById('fmFiltrosLimpar').onclick=limpar;
@@ -50,7 +52,10 @@
       const okObra=!estado.obra||card.dataset.obra===estado.obra;
       const okTipo=!estado.tipo||card.dataset.tipo===estado.tipo;
       const okCat=!estado.categoria||card.dataset.categoria===estado.categoria;
-      const ok=okBusca&&okObra&&okTipo&&okCat;card.style.display=ok?'':'none';if(ok)vis++;
+      const data=card.dataset.data||'';
+      const okInicio=!estado.dataInicio||data>=estado.dataInicio;
+      const okFim=!estado.dataFim||data<=estado.dataFim;
+      const ok=okBusca&&okObra&&okTipo&&okCat&&okInicio&&okFim;card.style.display=ok?'':'none';if(ok)vis++;
     });
     let vazio=document.getElementById('fmBuscaVazio');
     if(!vazio){vazio=document.createElement('div');vazio.id='fmBuscaVazio';vazio.className='card muted fmBuscaVazio';vazio.textContent='Nenhum lançamento encontrado com estes filtros.';lista.appendChild(vazio)}
@@ -61,7 +66,7 @@
 
   function limpar(){
     Object.keys(estado).forEach(k=>estado[k]='');
-    ['fmBusca','fmFiltroObra','fmFiltroTipo','fmFiltroCategoria'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});aplicar();
+    ['fmBusca','fmFiltroObra','fmFiltroTipo','fmFiltroCategoria','fmFiltroDataInicio','fmFiltroDataFim'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});aplicar();
   }
 
   const css=document.createElement('style');
@@ -69,10 +74,10 @@
     .fmFiltrosPanel{margin:0 0 14px!important;padding:16px!important}
     .fmFiltrosHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}.fmFiltrosHead h3{margin:0 0 3px;font-size:19px}.fmFiltrosHead p{margin:0;color:#64748b;font-size:13px}.fmFiltrosHead button{border:1px solid #cbd5e1;background:transparent;color:inherit;border-radius:10px;padding:8px 10px;font-weight:800;white-space:nowrap}
     .fmBuscaWrap{display:flex;align-items:center;gap:10px;min-height:50px;padding:0 12px;border:1px solid #cbd5e1;border-radius:13px;background:#fff;margin-bottom:10px}.fmBuscaWrap:focus-within{border-color:#64748b;box-shadow:0 0 0 2px rgba(100,116,139,.12)}.fmBuscaIcon{font-size:21px;color:#64748b}#fmBusca{flex:1;min-width:0;border:0!important;outline:0!important;background:transparent!important;color:#0f172a!important;font-size:15px!important;margin:0!important;padding:0!important;box-shadow:none!important}#fmBuscaLimpar{border:0;background:transparent;color:#64748b;font-size:24px;line-height:1;padding:4px 7px;visibility:hidden}
-    .fmFiltrosGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.fmFiltrosGrid label{font-size:12px;font-weight:800;color:#64748b}.fmFiltrosGrid select{display:block;width:100%;min-height:46px;margin-top:5px;border:1px solid #cbd5e1;border-radius:11px;background:#fff;color:#0f172a;padding:0 10px;font:inherit;font-size:14px}.fmFiltroResultado{margin-top:10px;color:#64748b;font-size:13px;font-weight:800}.fmBuscaVazio{text-align:center;padding:18px}
-    html[data-theme="dark"] .fmFiltrosPanel,body.dark .fmFiltrosPanel{background:#0f172a;color:#f8fafc;border-color:#334155}html[data-theme="dark"] .fmBuscaWrap,body.dark .fmBuscaWrap,html[data-theme="dark"] .fmFiltrosGrid select,body.dark .fmFiltrosGrid select{background:#111827;color:#f8fafc!important;border-color:#334155}html[data-theme="dark"] #fmBusca,body.dark #fmBusca{color:#f8fafc!important}html[data-theme="dark"] .fmFiltrosHead button,body.dark .fmFiltrosHead button{border-color:#334155;color:#f8fafc}
+    .fmFiltrosGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.fmFiltrosGrid label{font-size:12px;font-weight:800;color:#64748b}.fmFiltrosGrid select,.fmFiltrosGrid input[type="date"]{display:block;width:100%;min-height:46px;margin-top:5px;border:1px solid #cbd5e1;border-radius:11px;background:#fff;color:#0f172a;padding:0 10px;font:inherit;font-size:14px}.fmFiltroResultado{margin-top:10px;color:#64748b;font-size:13px;font-weight:800}.fmBuscaVazio{text-align:center;padding:18px}
+    html[data-theme="dark"] .fmFiltrosPanel,body.dark .fmFiltrosPanel{background:#0f172a;color:#f8fafc;border-color:#334155}html[data-theme="dark"] .fmBuscaWrap,body.dark .fmBuscaWrap,html[data-theme="dark"] .fmFiltrosGrid select,body.dark .fmFiltrosGrid select,html[data-theme="dark"] .fmFiltrosGrid input[type="date"],body.dark .fmFiltrosGrid input[type="date"]{background:#111827;color:#f8fafc!important;border-color:#334155}html[data-theme="dark"] #fmBusca,body.dark #fmBusca{color:#f8fafc!important}html[data-theme="dark"] .fmFiltrosHead button,body.dark .fmFiltrosHead button{border-color:#334155;color:#f8fafc}
     @media(max-width:760px){.fmFiltrosGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:560px){.fmFiltrosHead{display:block}.fmFiltrosHead button{width:100%;margin-top:10px}}
+    @media(max-width:560px){.fmFiltrosHead{display:block}.fmFiltrosHead button{width:100%;margin-top:10px}.fmFiltrosGrid{grid-template-columns:1fr}}
   `;document.head.appendChild(css);
 
   const obs=new MutationObserver(m=>{if(document.getElementById('financeiroMain')&&m.some(x=>x.target?.id==='fmLista'||x.target?.closest?.('#fmLista')))requestAnimationFrame(aplicar)});obs.observe(document.body,{childList:true,subtree:true});
