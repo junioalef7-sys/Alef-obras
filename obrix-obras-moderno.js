@@ -1,1 +1,1 @@
-(()=>{'use strict';const s=document.createElement('script');s.src='./obrix-obras-v2.js?v=20261021geral1';s.async=false;document.head.appendChild(s)})();
+(()=>{'use strict';const s=document.createElement('script');s.src='./obrix-obras-v2.js?v=20261021blind1';s.async=false;document.head.appendChild(s)})();
