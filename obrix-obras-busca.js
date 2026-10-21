@@ -13,10 +13,9 @@
       box=document.createElement('div');
       box.id='obrixBuscaObras';
       box.className='card obrix-busca-obras';
-      box.innerHTML=`<label for="obrixBuscaObraInput">Buscar obra</label><div class="obrix-busca-obras-linha"><input id="obrixBuscaObraInput" type="search" list="obrixBuscaObraSugestoes" placeholder="Digite o nome da obra ou cliente" autocomplete="off"><datalist id="obrixBuscaObraSugestoes"></datalist><button type="button" id="obrixLimparBuscaObra">Todas</button></div><small id="obrixBuscaObraInfo" class="muted"></small>`;
+      box.innerHTML=`<label for="obrixBuscaObraInput">Buscar obra</label><div class="obrix-busca-obras-linha"><input id="obrixBuscaObraInput" type="search" list="obrixBuscaObraSugestoes" placeholder="Digite o nome da obra ou cliente" autocomplete="off"><datalist id="obrixBuscaObraSugestoes"></datalist></div><small id="obrixBuscaObraInfo" class="muted"></small>`;
       lista.insertAdjacentElement('beforebegin',box);
       box.querySelector('#obrixBuscaObraInput').addEventListener('input',aplicar);
-      box.querySelector('#obrixLimparBuscaObra').onclick=()=>{const i=box.querySelector('#obrixBuscaObraInput');i.value='';aplicar()};
     }
     atualizarSugestoes();
     aplicar();
@@ -46,9 +45,8 @@
 
   const css=document.createElement('style');
   css.textContent=`
-    .obrix-busca-obras{padding:14px!important;margin-bottom:14px!important}.obrix-busca-obras label{display:block;font-weight:900;margin-bottom:7px}.obrix-busca-obras-linha{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.obrix-busca-obras input{width:100%;min-width:0;padding:12px 13px;border:1px solid #cbd5e1;border-radius:11px;font-size:16px;background:#fff;color:#0f172a}.obrix-busca-obras button{border:1px solid #cbd5e1;background:#fff;color:#0f172a;border-radius:11px;padding:0 16px;font-weight:900}.obrix-busca-obras small{display:block;margin-top:7px}
-    html[data-theme="dark"] .obrix-busca-obras input,body.dark .obrix-busca-obras input,html[data-theme="dark"] .obrix-busca-obras button,body.dark .obrix-busca-obras button{background:#111827;color:#f8fafc;border-color:#334155}
-    @media(max-width:420px){.obrix-busca-obras-linha{grid-template-columns:1fr}.obrix-busca-obras button{min-height:44px}}
+    .obrix-busca-obras{padding:14px!important;margin-bottom:14px!important}.obrix-busca-obras label{display:block;font-weight:900;margin-bottom:7px}.obrix-busca-obras-linha{display:block}.obrix-busca-obras input{width:100%;min-width:0;padding:12px 13px;border:1px solid #cbd5e1;border-radius:11px;font-size:16px;background:#fff;color:#0f172a}.obrix-busca-obras small{display:block;margin-top:7px}
+    html[data-theme="dark"] .obrix-busca-obras input,body.dark .obrix-busca-obras input{background:#111827;color:#f8fafc;border-color:#334155}
   `;
   document.head.appendChild(css);
 
