@@ -1,14 +1,14 @@
 (()=>{'use strict';
-const KEY='obrix_diario_offline_v1',CACHE='obrix_diario_cache_v1';
-const read=(k,d=[])=>{try{return JSON.parse(localStorage.getItem(k)||JSON.stringify(d))}catch{return d}},write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-function queue(){return read(KEY,[])}
-function cache(){return read(CACHE,[])}
-function saveCache(rows){write(CACHE,Array.isArray(rows)?rows:[])}
-function add(payload){const q=queue(),localId='offline-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);q.push({localId,payload:{...payload},createdAt:new Date().toISOString()});write(KEY,q);return localId}
-function pendingRows(){return queue().map(x=>({...x.payload,id:x.localId,__offline:true}))}
-async function sync(){if(!navigator.onLine||!window.OBRIX_BACKEND||!window.profile)return false;const q=queue();if(!q.length)return true;const sb=await OBRIX_BACKEND.init();const rest=[];for(const item of q){try{const p={...item.payload};delete p.id;const {error}=await sb.from('diarios_obra').upsert(p,{onConflict:'empresa_id,obra_id,data'});if(error)throw error}catch(e){rest.push(item)}}write(KEY,rest);if(!rest.length)window.OBRIX_DIARIO?.load?.().catch(()=>{});return !rest.length}
+const KEY='obrix_diario_offline_v1';
+const read=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}},write=v=>localStorage.setItem(KEY,JSON.stringify(v));
+function queue(){return read()}
+function add(payload){const q=read(),localId='offline-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);q.push({localId,payload:{...payload},createdAt:new Date().toISOString()});write(q);return localId}
+async function sync(){if(!navigator.onLine||!window.OBRIX_BACKEND||!window.profile)return false;const q=read();if(!q.length)return true;const sb=await OBRIX_BACKEND.init(),rest=[];for(const item of q){try{const {error}=await sb.from('diarios_obra').upsert(item.payload,{onConflict:'empresa_id,obra_id,data'});if(error)throw error}catch(e){rest.push(item)}}write(rest);if(!rest.length)window.OBRIX_DIARIO?.load?.().catch(()=>{});return !rest.length}
 function installSW(){if('serviceWorker'in navigator)navigator.serviceWorker.register('./obrix-sw.js?v=1').catch(()=>{})}
-window.addEventListener('online',()=>sync().catch(()=>{}));
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installSW);else installSW();
-window.OBRIX_OFFLINE_DIARIO={add,queue,pendingRows,cache,saveCache,sync,isOffline:()=>!navigator.onLine};
+function val(id){return document.getElementById(id)?.value||''}
+function offlineSave(e){const btn=e.target.closest?.('#diarioSalvar');if(!btn||navigator.onLine)return;e.preventDefault();e.stopImmediatePropagation();const obra=val('diarioObra'),data=val('diarioData');const msg=document.getElementById('diarioMsg');if(!obra||!data){if(msg){msg.textContent='Selecione a obra e a data.';msg.className='diarioMsg erro'}return}const empresa=window.profile?.empresa_id;if(!empresa){if(msg){msg.textContent='Abra o OBRIX conectado pelo menos uma vez antes de usar o modo offline.';msg.className='diarioMsg erro'}return}const payload={empresa_id:empresa,obra_id:obra,data,clima:val('diarioClima'),temperatura:val('diarioTemperatura').trim()||null,servicos_executados:val('diarioServicos').trim()||null,ocorrencias:val('diarioOcorrencias').trim()||null,materiais_utilizados:val('diarioMateriais').trim()||null,equipamentos_utilizados:val('diarioEquipamentos').trim()||null,observacoes:val('diarioObs').trim()||null,status:val('diarioStatus')||'rascunho',atualizado_em:new Date().toISOString()};add(payload);['diarioServicos','diarioOcorrencias','diarioMateriais','diarioEquipamentos','diarioObs','diarioTemperatura'].forEach(id=>{const x=document.getElementById(id);if(x)x.value=''});if(msg){msg.textContent='Salvo no aparelho. Será sincronizado automaticamente quando a internet voltar.';msg.className='diarioMsg ok'}updateBadge()}
+function updateBadge(){let el=document.getElementById('obrixOfflineAviso');const n=read().length;if(!n){el?.remove();return}if(!el){el=document.createElement('div');el.id='obrixOfflineAviso';el.style.cssText='position:fixed;left:12px;right:12px;bottom:76px;z-index:9999;padding:10px 14px;border-radius:12px;background:#f59e0b;color:#111827;font-weight:900;text-align:center';document.body.appendChild(el)}el.textContent=n+' registro'+(n===1?'':'s')+' aguardando sincronização'}
+document.addEventListener('click',offlineSave,true);window.addEventListener('online',()=>sync().then(updateBadge).catch(()=>{}));window.addEventListener('offline',updateBadge);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{installSW();updateBadge()});else{installSW();updateBadge()}
+window.OBRIX_OFFLINE_DIARIO={add,queue,sync,isOffline:()=>!navigator.onLine};
 })();
