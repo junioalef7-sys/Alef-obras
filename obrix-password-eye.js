@@ -17,4 +17,5 @@ load('./obrix-offline-central.js?v=20261021central6','obrix-offline-central');
 load('./obrix-offline-diagnostico.js?v=20261021diag2','obrix-offline-diagnostico');
 load('./obrix-offline-preparo.js?v=20261021prep2','obrix-offline-preparo');
 load('./obrix-offline-teste.js?v=20261021test1','obrix-offline-teste');
+load('./obrix-offline-aprovacao.js?v=20261021approval1','obrix-offline-aprovacao');
 })();
