@@ -1,5 +1,5 @@
-const CACHE='obrix-offline-v1';
-const APP=['./obrix.html','./obrix-diario-main.js','./obrix-diario-equipe.js','./obrix-backend-adapter.js','./obrix-core-main.js','./obrix-theme-main.js','./obrix-light-polish.js','./obrix-brand-main.js','./obrix-icon.svg','./obrix-manifest.webmanifest'];
+const CACHE='obrix-offline-v2';
+const APP=['./obrix.html','./obrix-offline-diario.js','./obrix-diario-main.js','./obrix-diario-equipe.js','./obrix-backend-adapter.js','./obrix-core-main.js','./obrix-menu-main.js','./obrix-nav-active.js','./obrix-theme-main.js','./obrix-light-polish.js','./obrix-brand-main.js','./obrix-icon.svg','./obrix-manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==location.origin)return;e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('./obrix.html'))))});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==location.origin)return;e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match(u.pathname.endsWith('/obrix.html')?'./obrix.html':e.request).then(x=>x||caches.match('./obrix.html')))))});
