@@ -25,10 +25,11 @@ function patch(){const fin=window.OBRIX_FIN;if(!fin||patched)return;patched=true
 function intercept(e){if(navigator.onLine)return;const t=e.target?.closest?.('#fmReceita,#fmDespesa,[data-fin]');if(!t)return;e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();alert('O Financeiro está disponível somente para consulta no modo offline. Para alterar valores, conecte o aparelho à internet.')}
 document.addEventListener('click',intercept,true);document.addEventListener('pointerdown',intercept,true);
 function status(){const c=cache();return{online:navigator.onLine,syncing:capturing,pendentes:0,conflitos:0,erro:lastError,cachedAt:c.savedAt||null}}
+function decorateCentral(){const list=document.getElementById('offlineCentralLista');if(!list)return;let card=list.querySelector('[data-fin-offline-card]');if(!card){card=document.createElement('article');card.dataset.finOfflineCard='1';card.className='offlineCentralCard ok';list.appendChild(card)}const c=cache(),txt=c.savedAt?`Atualizado ${new Date(c.savedAt).toLocaleString('pt-BR')}`:'Abra conectado uma vez';card.innerHTML=`<div><h3>Financeiro</h3><span>Consulta offline</span></div><strong>✓</strong><p style="color:#64748b">${esc(txt)}</p>`}
 async function sync(){if(!navigator.onLine)return false;return capture()}
-function boot(){patch();if(navigator.onLine)capture();else if(!document.getElementById('financeiroMain')?.classList.contains('hidden'))renderOffline()}
+function boot(){patch();decorateCentral();if(navigator.onLine)capture();else if(!document.getElementById('financeiroMain')?.classList.contains('hidden'))renderOffline()}
 window.addEventListener('online',()=>setTimeout(()=>{patch();clearOfflineUi();capture().then(()=>{if(!document.getElementById('financeiroMain')?.classList.contains('hidden'))oldRender?.(true).catch?.(()=>{})})},250));window.addEventListener('offline',()=>{patch();if(!document.getElementById('financeiroMain')?.classList.contains('hidden'))renderOffline()});window.addEventListener('pageshow',()=>setTimeout(boot,350));
-new MutationObserver(()=>patch()).observe(document.documentElement,{childList:true,subtree:true});setInterval(()=>{if(navigator.onLine&&!capturing)capture()},120000);
+new MutationObserver(()=>{patch();decorateCentral()}).observe(document.documentElement,{childList:true,subtree:true});setInterval(()=>{decorateCentral();if(navigator.onLine&&!capturing)capture()},120000);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,650));else setTimeout(boot,650);
 window.OBRIX_OFFLINE_FINANCEIRO={sync,status,capture,cache};
 })();
