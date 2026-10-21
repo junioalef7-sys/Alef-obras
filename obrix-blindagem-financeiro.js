@@ -1,1 +1,1 @@
-(()=>{'use strict';['./obrix-financeiro-protecao-automaticos.js?v=d943c467','./obrix-equipe-estorno-pagamentos.js?v=1ee50dd2','./obrix-obras-interligacao.js?v=20261021link1'].forEach(src=>{const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)})})();
+(()=>{'use strict';['./obrix-financeiro-protecao-automaticos.js?v=d943c467','./obrix-equipe-estorno-pagamentos.js?v=1ee50dd2','./obrix-obras-interligacao.js?v=20261021link2'].forEach(src=>{const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)})})();
