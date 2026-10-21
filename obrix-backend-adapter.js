@@ -3,7 +3,24 @@
   const CONFIG_URL='https://gnvclctqnwxnjxydzhwc.supabase.co/functions/v1/obrix-public-config';
   const CONFIG_CACHE='obrix_public_config_v2';
   const CONFIG_TTL=6*60*60*1000;
+  const OFFLINE_BASE='obrix_offline_base_v3',OFFLINE_BASE_OLD='obrix_offline_base_v2';
   let client=null,userCache=null,userPromise=null,profileCache=null,profilePromise=null;
+
+  function lerJson(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(_){return null}}
+  function baseOffline(){const b=lerJson(OFFLINE_BASE)||lerJson(OFFLINE_BASE_OLD);return b?.profile?.empresa_id?b:null}
+  function restaurarShellOffline(reason='offline'){
+    if(navigator.onLine)return false;
+    const b=baseOffline();if(!b)return false;
+    const typed=(document.getElementById('email')?.value||'').trim().toLowerCase(),cached=String(b.profile.email||'').trim().toLowerCase();
+    if(typed&&cached&&typed!==cached)return false;
+    window.__OBRIX_OFFLINE_BOOTSTRAP_BASE=b;window.obras=Array.isArray(b.obras)?b.obras:[];window.funcionarios=Array.isArray(b.funcionarios)?b.funcionarios:[];
+    const login=document.getElementById('login'),app=document.getElementById('app'),usuario=document.getElementById('usuario');login?.classList.add('hidden');app?.classList.remove('hidden');if(usuario)usuario.textContent=b.profile.nome||b.profile.email||'';
+    document.documentElement.dataset.obrixOffline='1';document.documentElement.dataset.obrixOfflineBoot=reason;
+    window.dispatchEvent(new CustomEvent('obrix:offline-bootstrap',{detail:{reason,updatedAt:b.updatedAt||null,empresa_id:b.profile.empresa_id}}));return true;
+  }
+  if(!navigator.onLine)restaurarShellOffline('backend-early');
+  window.addEventListener('offline',()=>restaurarShellOffline('backend-offline'));
+  window.OBRIX_OFFLINE_EARLY={restore:restaurarShellOffline,base:baseOffline,status:()=>({online:navigator.onLine,available:!!baseOffline()})};
 
   function lerConfigCache(){
     try{
