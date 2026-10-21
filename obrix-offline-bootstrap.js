@@ -21,6 +21,6 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!navigato
 document.addEventListener('click',e=>{if(e.target.closest?.('#sair,#menuSair')){try{localStorage.removeItem(BASE_KEY);localStorage.removeItem(OLD_BASE_KEY)}catch{}}},true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 setTimeout(()=>{if(!navigator.onLine)restore('fallback')},800);
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./obrix-sw.js?v=14').catch(()=>{});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./obrix-sw.js?v=15').catch(()=>{});
 window.OBRIX_OFFLINE_BOOTSTRAP_API={restore,base,status:()=>({online:navigator.onLine,available:!!base(),active:document.documentElement.dataset.obrixOffline==='1'})};
 })();
