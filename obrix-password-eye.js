@@ -7,4 +7,5 @@ function load(src,key){if(document.querySelector(`script[data-${key}]`))return;c
 load('./obrix-backup-completo.js?v=20261020full2','obrix-backup-completo');
 load('./obrix-notas-main.js?v=20261020notas3','obrix-notas-main');
 load('./obrix-checklist-offline.js?v=20261021offline1','obrix-checklist-offline');
+load('./obrix-offline-central.js?v=20261021central1','obrix-offline-central');
 })();
