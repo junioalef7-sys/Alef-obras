@@ -6,6 +6,6 @@ const style=document.createElement('style');style.textContent=`.obrixPasswordWra
 function load(src,key){if(document.querySelector(`script[data-${key}]`))return;const s=document.createElement('script');s.setAttribute(`data-${key}`,'1');s.src=src;document.head.appendChild(s)}
 load('./obrix-backup-completo.js?v=20261020full2','obrix-backup-completo');
 load('./obrix-notas-main.js?v=20261020notas3','obrix-notas-main');
-load('./obrix-checklist-offline.js?v=20261021offline1','obrix-checklist-offline');
-load('./obrix-offline-central.js?v=20261021central1','obrix-offline-central');
+load('./obrix-checklist-offline.js?v=20261021offline2','obrix-checklist-offline');
+load('./obrix-offline-central.js?v=20261021central2','obrix-offline-central');
 })();
