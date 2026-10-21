@@ -10,6 +10,7 @@ load('./obrix-checklist-offline.js?v=20261021offline3','obrix-checklist-offline'
 load('./obrix-obras-offline.js?v=20261021offlineobras1','obrix-obras-offline');
 load('./obrix-equipe-offline.js?v=20261021offlineequipe1','obrix-equipe-offline');
 load('./obrix-estoque-offline.js?v=20261021offlineestoque1','obrix-estoque-offline');
+load('./obrix-financeiro-offline.js?v=20261021offlinefin1','obrix-financeiro-offline');
 load('./obrix-offline-conflicts.js?v=20261021resolve1','obrix-offline-conflicts');
 load('./obrix-offline-central.js?v=20261021central6','obrix-offline-central');
 })();
