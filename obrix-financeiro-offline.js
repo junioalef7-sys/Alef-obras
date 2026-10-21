@@ -31,5 +31,6 @@ function boot(){patch();decorateCentral();if(navigator.onLine)capture();else if(
 window.addEventListener('online',()=>setTimeout(()=>{patch();clearOfflineUi();capture().then(()=>{if(!document.getElementById('financeiroMain')?.classList.contains('hidden'))oldRender?.(true).catch?.(()=>{})})},250));window.addEventListener('offline',()=>{patch();if(!document.getElementById('financeiroMain')?.classList.contains('hidden'))renderOffline()});window.addEventListener('pageshow',()=>setTimeout(boot,350));
 new MutationObserver(()=>{patch();decorateCentral()}).observe(document.documentElement,{childList:true,subtree:true});setInterval(()=>{decorateCentral();if(navigator.onLine&&!capturing)capture()},120000);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,650));else setTimeout(boot,650);
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./obrix-sw.js?v=12').catch(()=>{});
 window.OBRIX_OFFLINE_FINANCEIRO={sync,status,capture,cache};
 })();
