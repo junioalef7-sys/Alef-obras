@@ -8,5 +8,5 @@ load('./obrix-backup-completo.js?v=20261020full2','obrix-backup-completo');
 load('./obrix-notas-main.js?v=20261020notas3','obrix-notas-main');
 load('./obrix-checklist-offline.js?v=20261021offline3','obrix-checklist-offline');
 load('./obrix-offline-conflicts.js?v=20261021resolve1','obrix-offline-conflicts');
-load('./obrix-offline-central.js?v=20261021central3','obrix-offline-central');
+load('./obrix-offline-central.js?v=20261021central4','obrix-offline-central');
 })();
