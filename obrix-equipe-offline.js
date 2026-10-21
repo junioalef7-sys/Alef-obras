@@ -1,9 +1,28 @@
-(()=>{'use strict';
-if(window.__OBRIX_EQUIPE_OFFLINE)return;window.__OBRIX_EQUIPE_OFFLINE=true;
-const BASE_KEY='obrix_offline_base_v3',QUEUE_KEY='obrix_equipe_offline_v1',CACHE_PREFIX='obrix_equipe_cache_v1:',RETRY_MS=30000;
-const read=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}},write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}},uuid=()=>crypto?.randomUUID?.()||('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&3|8);return v.toString(16)}));
-let syncing=false,lastError='',retryTimer=null,originalAcao=null,originalRefresh=null;
-function prof(){try{if(typeof profile!=='undefined'&&profile)return profile}catch{}return read(BASE_KEY,null)?.profile||null}
+(()=>{
+'use strict';
+if(window.__OBRIX_EQUIPE_OFFLINE)return;
+window.__OBRIX_EQUIPE_OFFLINE=true;
+
+const BASE_KEY='obrix_offline_base_v3';
+const QUEUE_KEY='obrix_equipe_offline_v1';
+const CACHE_PREFIX='obrix_equipe_cache_v1:';
+const RETRY_MS=30000;
+
+const read=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}};
+const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}};
+const uuid=()=>globalThis.crypto?.randomUUID?.()||'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&3|8);return v.toString(16)});
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+let syncing=false;
+let lastError='';
+let retryTimer=null;
+let originalAcao=null;
+let originalRefresh=null;
+
+function prof(){
+  try{if(typeof profile!=='undefined'&&profile)return profile}catch{}
+  return read(BASE_KEY,null)?.profile||null;
+}
 function empresa(){return prof()?.empresa_id||null}
 function qAll(){const q=read(QUEUE_KEY,[]);return Array.isArray(q)?q:[]}
 function mine(){const e=empresa();return e?qAll().filter(x=>String(x.empresa_id)===String(e)):[]}
@@ -11,27 +30,221 @@ function saveAll(q){write(QUEUE_KEY,Array.isArray(q)?q:[]);window.dispatchEvent(
 function replaceMine(rest){const e=empresa(),others=qAll().filter(x=>String(x.empresa_id)!==String(e));saveAll([...others,...rest])}
 function cacheKey(){const e=empresa();return e?CACHE_PREFIX+e:null}
 function cache(){const k=cacheKey();return k?read(k,{funcionarios:[],diarias:[],faltas:[]}):{funcionarios:[],diarias:[],faltas:[]}}
-function saveCache(c){const k=cacheKey();if(k)write(k,{funcionarios:Array.isArray(c.funcionarios)?c.funcionarios:[],diarias:Array.isArray(c.diarias)?c.diarias:[],faltas:Array.isArray(c.faltas)?c.faltas:[],savedAt:new Date().toISOString()})}
-function globals(){let fs=[],ds=[];try{fs=typeof funcionarios!=='undefined'?funcionarios:window.funcionarios||[]}catch{fs=window.funcionarios||[]}try{ds=typeof diarias!=='undefined'?diarias:window.diarias||[]}catch{ds=window.diarias||[]}return{funcionarios:Array.isArray(fs)?fs:[],diarias:Array.isArray(ds)?ds:[]}}
-async function capture(){if(!navigator.onLine||!empresa())return;try{const g=globals(),sb=await OBRIX_BACKEND.init(),r=await sb.from('faltas').select('*').eq('empresa_id',empresa()).order('data',{ascending:false});if(r.error)throw r.error;saveCache({funcionarios:g.funcionarios,diarias:g.diarias,faltas:r.data||[]});lastError=''}catch(e){lastError=e?.message||'Não foi possível atualizar o cache da equipe.'}}
-function restore(){const c=cache();if(!c.funcionarios.length)return false;try{funcionarios=[...c.funcionarios];diarias=[...c.diarias]}catch{}window.funcionarios=[...c.funcionarios];window.diarias=[...c.diarias];try{renderEquipe()}catch{}decorate();return true}
-function obraOpts(sel=''){let os=[];try{os=typeof obras!=='undefined'?obras:window.obras||[]}catch{os=window.obras||[]}return '<option value="">Selecione a obra</option>'+os.filter(o=>o.status!=='concluida').map(o=>`<option value="${o.id}" ${String(o.id)===String(sel)?'selected':''}>${String(o.nome||'Obra').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</option>`).join('')}
-function modal(title,html){const b=document.createElement('div');b.className='modalBack';b.innerHTML=`<div class="modal"><h2>${title}</h2>${html}</div>`;document.body.appendChild(b);b.querySelector('.cancelar')?.addEventListener('click',()=>b.remove());return b}
-function addLocalDiaria(row){try{if(typeof diarias!=='undefined'){diarias=Array.isArray(diarias)?diarias:[];diarias.push(row)}}catch{}window.diarias=Array.isArray(window.diarias)?window.diarias:[];if(!window.diarias.some(x=>String(x.id)===String(row.id)))window.diarias.push(row);const c=cache();c.diarias=[...c.diarias.filter(x=>String(x.id)!==String(row.id)),row];saveCache(c);try{renderEquipe()}catch{}decorate()}
-function queue(type,payload){const e=empresa();if(!e)throw new Error('Conta não identificada. Abra o OBRIX conectado novamente.');const item={id:payload.id||uuid(),empresa_id:e,type,payload:{...payload,id:payload.id||undefined,empresa_id:e},at:new Date().toISOString()};item.payload.id=item.id;saveAll([...qAll(),item]);return item}
-function diariaOffline(f){const b=modal('Registrar diária',`<p><b>${f.nome||'Funcionário'}</b></p><label>Obra</label><select class="obra">${obraOpts(f.obra_id||'')}</select><label>Data</label><input class="data" type="date" value="${new Date().toISOString().slice(0,10)}"><label>Tipo</label><select class="qtd"><option value="1">Diária inteira</option><option value="0.5">Meia diária</option></select><label>Valor da diária</label><input class="valor" type="number" min="0" step="0.01" value="${Number(f.valor_diaria||0)}"><label>Observações</label><input class="obs"><p class="muted"><b>Sem internet:</b> esta diária ficará aguardando sincronização.</p><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Salvar offline</button></div>`);b.querySelector('.salvar').onclick=()=>{const obra_id=b.querySelector('.obra').value,data=b.querySelector('.data').value,q=Number(b.querySelector('.qtd').value),v=Number(b.querySelector('.valor').value);if(!obra_id||!data||v<=0)return alert('Selecione a obra, data e valor.');const id=uuid(),payload={id,funcionario_id:f.id,obra_id,data,quantidade:q,valor_unitario:v,valor_total:v*q,paga:false,observacoes:b.querySelector('.obs').value.trim()||null,criado_em:new Date().toISOString()};queue('diaria',payload);addLocalDiaria({...payload,empresa_id:empresa(),__offline:true});b.remove();alert('Diária salva no aparelho. Será sincronizada quando a internet voltar.')}
-function falta(f){const b=modal('Registrar falta',`<p><b>${f.nome||'Funcionário'}</b></p><label>Obra</label><select class="obra">${obraOpts(f.obra_id||'')}</select><label>Data</label><input class="data" type="date" value="${new Date().toISOString().slice(0,10)}"><label style="display:flex;gap:8px;align-items:center"><input class="just" type="checkbox" style="width:auto"> Falta justificada</label><label>Motivo</label><input class="motivo"><label>Observações</label><input class="obs"><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Registrar falta</button></div>`);b.querySelector('.salvar').onclick=async()=>{const data=b.querySelector('.data').value;if(!data)return alert('Informe a data.');const id=uuid(),payload={id,funcionario_id:f.id,obra_id:b.querySelector('.obra').value||null,data,justificada:b.querySelector('.just').checked,motivo:b.querySelector('.motivo').value.trim()||null,observacoes:b.querySelector('.obs').value.trim()||null,criado_em:new Date().toISOString()};const btn=b.querySelector('.salvar');btn.disabled=true;try{if(!navigator.onLine){queue('falta',payload);const c=cache();c.faltas=[{...payload,empresa_id:empresa(),__offline:true},...c.faltas];saveCache(c);b.remove();alert('Falta salva no aparelho. Será sincronizada quando a internet voltar.');return}const sb=await OBRIX_BACKEND.init(),r=await sb.from('faltas').insert({...payload,empresa_id:empresa()});if(r.error)throw r.error;b.remove();await capture();alert('Falta registrada.')}catch(e){btn.disabled=false;alert(e?.message||'Não foi possível registrar a falta.')}}}
-function employeeById(id){let fs=[];try{fs=typeof funcionarios!=='undefined'?funcionarios:window.funcionarios||[]}catch{fs=window.funcionarios||[]}return (fs||[]).find(x=>String(x.id)===String(id))}
-function installActions(){if(!originalAcao&&typeof window.equipeAcao==='function')originalAcao=window.equipeAcao;if(!originalAcao)return;const wrapped=function(id,tipo){const f=employeeById(id);if(!f)return alert('Funcionário não encontrado.');if(!navigator.onLine){if(tipo==='diaria')return diariaOffline(f);if(['vale','bonus','pagar'].includes(tipo))return alert('Esta ação exige internet. Diárias e faltas podem ser registradas offline.')}return originalAcao.apply(this,arguments)};if(!window.equipeAcao?.__obrixOfflineEquipe){wrapped.__obrixOfflineEquipe=true;window.equipeAcao=wrapped}}
-function decorate(){installActions();document.querySelectorAll('#listaEquipe .card.item').forEach((card,i)=>{const fs=(()=>{try{return typeof funcionarios!=='undefined'?funcionarios:window.funcionarios||[]}catch{return window.funcionarios||[]}})(),f=fs[i];if(!f)return;let actions=card.querySelector('.actions');if(!actions)return;if(!actions.querySelector('.obrixFaltaBtn')){const b=document.createElement('button');b.type='button';b.className='obrixFaltaBtn';b.textContent='Falta';b.onclick=()=>falta(f);actions.insertBefore(b,actions.children[1]||null)}if(!navigator.onLine){actions.querySelectorAll('button').forEach(b=>{const oc=b.getAttribute('onclick')||'';if(/'vale'|'bonus'|'pagar'/.test(oc)){b.disabled=true;b.title='Disponível somente com internet'}})}else actions.querySelectorAll('button[title="Disponível somente com internet"]').forEach(b=>{b.disabled=false;b.removeAttribute('title')})})}
-function installRender(){if(typeof window.renderEquipe!=='function'||window.renderEquipe.__obrixOfflineEquipe)return;const old=window.renderEquipe;window.renderEquipe=function(){const r=old.apply(this,arguments);setTimeout(decorate,0);return r};window.renderEquipe.__obrixOfflineEquipe=true;decorate()}
-function installRefresh(){const m=window.OBRIX_EQUIPE;if(!m||typeof m.refresh!=='function')return;if(!originalRefresh)originalRefresh=m.refresh;if(m.refresh.__obrixOfflineEquipe)return;const w=async function(){if(!navigator.onLine){restore();return true}const r=await originalRefresh.apply(this,arguments);await capture();return r};w.__obrixOfflineEquipe=true;m.refresh=w}
-async function sync(){if(syncing||!navigator.onLine||!empresa())return false;const items=mine();if(!items.length){lastError='';return true}syncing=true;lastError='';window.dispatchEvent(new CustomEvent('obrix:equipe-offline-atualizado'));const keep=[];try{const sb=await OBRIX_BACKEND.init();for(const item of items){try{const table=item.type==='falta'?'faltas':'diarias',r=await sb.from(table).insert({...item.payload,id:item.id,empresa_id:empresa()});if(r.error&&String(r.error.code)!=='23505')throw r.error}catch(e){keep.push({...item,error:e?.message||'Falha ao sincronizar'})}}replaceMine(keep);if(!keep.length){try{await originalRefresh?.()}catch{}await capture();window.dispatchEvent(new CustomEvent('obrix:equipe-sincronizada',{detail:{ok:true}}));return true}lastError=`${keep.length} registro${keep.length===1?'':'s'} da equipe ainda pendente${keep.length===1?'':'s'}.`;return false}finally{syncing=false;window.dispatchEvent(new CustomEvent('obrix:equipe-offline-atualizado'));scheduleRetry()}}
-function scheduleRetry(){if(retryTimer){clearInterval(retryTimer);retryTimer=null}if(navigator.onLine&&mine().length){retryTimer=setInterval(()=>{if(navigator.onLine&&mine().length)sync().catch(()=>{})},RETRY_MS)}}
+function saveCache(c){
+  const k=cacheKey();
+  if(!k)return;
+  write(k,{funcionarios:Array.isArray(c.funcionarios)?c.funcionarios:[],diarias:Array.isArray(c.diarias)?c.diarias:[],faltas:Array.isArray(c.faltas)?c.faltas:[],savedAt:new Date().toISOString()});
+}
+function globals(){
+  let fs=[],ds=[];
+  try{fs=typeof funcionarios!=='undefined'?funcionarios:(window.funcionarios||[])}catch{fs=window.funcionarios||[]}
+  try{ds=typeof diarias!=='undefined'?diarias:(window.diarias||[])}catch{ds=window.diarias||[]}
+  return{funcionarios:Array.isArray(fs)?fs:[],diarias:Array.isArray(ds)?ds:[]};
+}
+async function capture(){
+  if(!navigator.onLine||!empresa())return;
+  try{
+    const g=globals(),sb=await OBRIX_BACKEND.init();
+    const r=await sb.from('faltas').select('*').eq('empresa_id',empresa()).order('data',{ascending:false});
+    if(r.error)throw r.error;
+    saveCache({funcionarios:g.funcionarios,diarias:g.diarias,faltas:r.data||[]});
+    lastError='';
+  }catch(e){lastError=e?.message||'Não foi possível atualizar o cache da equipe.'}
+}
+function restore(){
+  const c=cache();
+  if(!c.funcionarios.length)return false;
+  try{funcionarios=[...c.funcionarios];diarias=[...c.diarias]}catch{}
+  window.funcionarios=[...c.funcionarios];
+  window.diarias=[...c.diarias];
+  try{renderEquipe()}catch{}
+  decorate();
+  return true;
+}
+function obraOpts(sel=''){
+  let os=[];
+  try{os=typeof obras!=='undefined'?obras:(window.obras||[])}catch{os=window.obras||[]}
+  return '<option value="">Selecione a obra</option>'+os.filter(o=>o.status!=='concluida').map(o=>`<option value="${o.id}" ${String(o.id)===String(sel)?'selected':''}>${esc(o.nome||'Obra')}</option>`).join('');
+}
+function modal(title,html){
+  const b=document.createElement('div');
+  b.className='modalBack';
+  b.innerHTML=`<div class="modal"><h2>${title}</h2>${html}</div>`;
+  document.body.appendChild(b);
+  b.querySelector('.cancelar')?.addEventListener('click',()=>b.remove());
+  return b;
+}
+function addLocalDiaria(row){
+  try{if(typeof diarias!=='undefined'){diarias=Array.isArray(diarias)?diarias:[];if(!diarias.some(x=>String(x.id)===String(row.id)))diarias.push(row)}}catch{}
+  window.diarias=Array.isArray(window.diarias)?window.diarias:[];
+  if(!window.diarias.some(x=>String(x.id)===String(row.id)))window.diarias.push(row);
+  const c=cache();
+  c.diarias=[...c.diarias.filter(x=>String(x.id)!==String(row.id)),row];
+  saveCache(c);
+  try{renderEquipe()}catch{}
+  decorate();
+}
+function queue(type,payload){
+  const e=empresa();
+  if(!e)throw new Error('Conta não identificada. Abra o OBRIX conectado novamente.');
+  const id=payload.id||uuid();
+  const item={id,empresa_id:e,type,payload:{...payload,id,empresa_id:e},at:new Date().toISOString()};
+  saveAll([...qAll(),item]);
+  return item;
+}
+function diariaOffline(f){
+  const b=modal('Registrar diária',`<p><b>${esc(f.nome||'Funcionário')}</b></p><label>Obra</label><select class="obra">${obraOpts(f.obra_id||'')}</select><label>Data</label><input class="data" type="date" value="${new Date().toISOString().slice(0,10)}"><label>Tipo</label><select class="qtd"><option value="1">Diária inteira</option><option value="0.5">Meia diária</option></select><label>Valor da diária</label><input class="valor" type="number" min="0" step="0.01" value="${Number(f.valor_diaria||0)}"><label>Observações</label><input class="obs"><p class="muted"><b>Sem internet:</b> esta diária ficará aguardando sincronização.</p><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Salvar offline</button></div>`);
+  b.querySelector('.salvar').onclick=()=>{
+    const obra_id=b.querySelector('.obra').value;
+    const data=b.querySelector('.data').value;
+    const q=Number(b.querySelector('.qtd').value);
+    const v=Number(b.querySelector('.valor').value);
+    if(!obra_id||!data||v<=0)return alert('Selecione a obra, data e valor.');
+    const id=uuid();
+    const payload={id,funcionario_id:f.id,obra_id,data,quantidade:q,valor_unitario:v,valor_total:v*q,paga:false,observacoes:b.querySelector('.obs').value.trim()||null,criado_em:new Date().toISOString()};
+    queue('diaria',payload);
+    addLocalDiaria({...payload,empresa_id:empresa(),__offline:true});
+    b.remove();
+    alert('Diária salva no aparelho. Será sincronizada quando a internet voltar.');
+  };
+}
+function falta(f){
+  const b=modal('Registrar falta',`<p><b>${esc(f.nome||'Funcionário')}</b></p><label>Obra</label><select class="obra">${obraOpts(f.obra_id||'')}</select><label>Data</label><input class="data" type="date" value="${new Date().toISOString().slice(0,10)}"><label style="display:flex;gap:8px;align-items:center"><input class="just" type="checkbox" style="width:auto"> Falta justificada</label><label>Motivo</label><input class="motivo"><label>Observações</label><input class="obs"><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Registrar falta</button></div>`);
+  b.querySelector('.salvar').onclick=async()=>{
+    const data=b.querySelector('.data').value;
+    if(!data)return alert('Informe a data.');
+    const id=uuid();
+    const payload={id,funcionario_id:f.id,obra_id:b.querySelector('.obra').value||null,data,justificada:b.querySelector('.just').checked,motivo:b.querySelector('.motivo').value.trim()||null,observacoes:b.querySelector('.obs').value.trim()||null,criado_em:new Date().toISOString()};
+    const btn=b.querySelector('.salvar');
+    btn.disabled=true;
+    try{
+      if(!navigator.onLine){
+        queue('falta',payload);
+        const c=cache();
+        c.faltas=[{...payload,empresa_id:empresa(),__offline:true},...c.faltas];
+        saveCache(c);
+        b.remove();
+        alert('Falta salva no aparelho. Será sincronizada quando a internet voltar.');
+        return;
+      }
+      const sb=await OBRIX_BACKEND.init();
+      const r=await sb.from('faltas').insert({...payload,empresa_id:empresa()});
+      if(r.error)throw r.error;
+      b.remove();
+      await capture();
+      alert('Falta registrada.');
+    }catch(e){
+      btn.disabled=false;
+      alert(e?.message||'Não foi possível registrar a falta.');
+    }
+  };
+}
+function employeeById(id){
+  let fs=[];
+  try{fs=typeof funcionarios!=='undefined'?funcionarios:(window.funcionarios||[])}catch{fs=window.funcionarios||[]}
+  return (fs||[]).find(x=>String(x.id)===String(id));
+}
+function installActions(){
+  if(!originalAcao&&typeof window.equipeAcao==='function')originalAcao=window.equipeAcao;
+  if(!originalAcao)return;
+  if(window.equipeAcao?.__obrixOfflineEquipe)return;
+  const wrapped=function(id,tipo){
+    const f=employeeById(id);
+    if(!f)return alert('Funcionário não encontrado.');
+    if(!navigator.onLine){
+      if(tipo==='diaria')return diariaOffline(f);
+      if(['vale','bonus','pagar'].includes(tipo))return alert('Esta ação exige internet. Diárias e faltas podem ser registradas offline.');
+    }
+    return originalAcao.apply(this,arguments);
+  };
+  wrapped.__obrixOfflineEquipe=true;
+  window.equipeAcao=wrapped;
+}
+function decorate(){
+  installActions();
+  document.querySelectorAll('#listaEquipe .card.item').forEach((card,i)=>{
+    let fs=[];
+    try{fs=typeof funcionarios!=='undefined'?funcionarios:(window.funcionarios||[])}catch{fs=window.funcionarios||[]}
+    const f=fs[i];
+    if(!f)return;
+    const actions=card.querySelector('.actions');
+    if(!actions)return;
+    if(!actions.querySelector('.obrixFaltaBtn')){
+      const b=document.createElement('button');
+      b.type='button';b.className='obrixFaltaBtn';b.textContent='Falta';b.onclick=()=>falta(f);
+      actions.insertBefore(b,actions.children[1]||null);
+    }
+    if(!navigator.onLine){
+      actions.querySelectorAll('button').forEach(btn=>{const oc=btn.getAttribute('onclick')||'';if(/'vale'|'bonus'|'pagar'/.test(oc)){btn.disabled=true;btn.title='Disponível somente com internet'}});
+    }else{
+      actions.querySelectorAll('button[title="Disponível somente com internet"]').forEach(btn=>{btn.disabled=false;btn.removeAttribute('title')});
+    }
+  });
+}
+function installRender(){
+  if(typeof window.renderEquipe!=='function'||window.renderEquipe.__obrixOfflineEquipe)return;
+  const old=window.renderEquipe;
+  window.renderEquipe=function(){const r=old.apply(this,arguments);setTimeout(decorate,0);return r};
+  window.renderEquipe.__obrixOfflineEquipe=true;
+  decorate();
+}
+function installRefresh(){
+  const m=window.OBRIX_EQUIPE;
+  if(!m||typeof m.refresh!=='function')return;
+  if(!originalRefresh)originalRefresh=m.refresh;
+  if(m.refresh.__obrixOfflineEquipe)return;
+  const w=async function(){
+    if(!navigator.onLine){restore();return true}
+    const r=await originalRefresh.apply(this,arguments);
+    await capture();
+    return r;
+  };
+  w.__obrixOfflineEquipe=true;
+  m.refresh=w;
+}
+async function sync(){
+  if(syncing||!navigator.onLine||!empresa())return false;
+  const items=mine();
+  if(!items.length){lastError='';return true}
+  syncing=true;lastError='';
+  window.dispatchEvent(new CustomEvent('obrix:equipe-offline-atualizado'));
+  const keep=[];
+  try{
+    const sb=await OBRIX_BACKEND.init();
+    for(const item of items){
+      try{
+        const table=item.type==='falta'?'faltas':'diarias';
+        const r=await sb.from(table).insert({...item.payload,id:item.id,empresa_id:empresa()});
+        if(r.error&&String(r.error.code)!=='23505')throw r.error;
+      }catch(e){keep.push({...item,error:e?.message||'Falha ao sincronizar'})}
+    }
+    replaceMine(keep);
+    if(!keep.length){
+      try{await originalRefresh?.()}catch{}
+      await capture();
+      window.dispatchEvent(new CustomEvent('obrix:equipe-sincronizada',{detail:{ok:true}}));
+      return true;
+    }
+    lastError=`${keep.length} registro${keep.length===1?'':'s'} da equipe ainda pendente${keep.length===1?'':'s'}.`;
+    return false;
+  }finally{
+    syncing=false;
+    window.dispatchEvent(new CustomEvent('obrix:equipe-offline-atualizado'));
+    scheduleRetry();
+  }
+}
+function scheduleRetry(){
+  if(retryTimer){clearInterval(retryTimer);retryTimer=null}
+  if(navigator.onLine&&mine().length){retryTimer=setInterval(()=>{if(navigator.onLine&&mine().length)sync().catch(()=>{})},RETRY_MS)}
+}
 function status(){const p=mine();return{online:navigator.onLine,syncing,pendentes:p.length,conflitos:0,erro:lastError}}
 function boot(){installRender();installActions();installRefresh();if(!navigator.onLine)restore();else setTimeout(()=>capture(),1200);decorate();scheduleRetry()}
-window.addEventListener('online',()=>{setTimeout(()=>{installActions();installRefresh();sync().catch(()=>{})},250)});window.addEventListener('offline',()=>{restore();decorate();scheduleRetry()});window.addEventListener('pageshow',()=>setTimeout(boot,250));
+
+window.addEventListener('online',()=>{setTimeout(()=>{installActions();installRefresh();sync().catch(()=>{})},250)});
+window.addEventListener('offline',()=>{restore();decorate();scheduleRetry()});
+window.addEventListener('pageshow',()=>setTimeout(boot,250));
 new MutationObserver(()=>{installRender();installActions();installRefresh();if(!document.getElementById('equipe')?.classList.contains('hidden'))decorate()}).observe(document.documentElement,{childList:true,subtree:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,500));else setTimeout(boot,500);
+
 window.OBRIX_OFFLINE_EQUIPE={sync,status,capture,restore,rows:mine};
 })();
