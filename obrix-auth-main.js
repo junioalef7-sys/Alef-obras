@@ -8,11 +8,24 @@
   function friendlyMessage(e){
     const raw=(e?.message||String(e||'Não foi possível concluir.')).trim();
     const s=raw.toLowerCase();
-    if(/already|registered|exists|duplicate|cadastrad|já possui|ja possui/.test(s))return 'Este e-mail já possui cadastro. Entre normalmente ou use “Esqueci minha senha” para recuperar o acesso.';
-    if(/invalid login credentials|invalid credentials|email or password|credenciais/.test(s))return 'E-mail ou senha incorretos. Confira os dados ou use “Esqueci minha senha”.';
+    if(!raw)return 'Não foi possível concluir a operação. Tente novamente.';
+    if(/invalid login credentials|invalid credentials|email or password|wrong password|credenciais/.test(s))return 'E-mail ou senha incorretos. Confira os dados ou use “Esqueci minha senha”.';
     if(/email not confirmed|email.*confirm/.test(s))return 'Este e-mail ainda não foi confirmado. Verifique sua caixa de entrada ou tente recuperar a senha.';
-    if(/rate limit|too many|muitas tentativas/.test(s))return 'Muitas tentativas em pouco tempo. Aguarde alguns instantes e tente novamente.';
-    if(/network|failed to fetch|fetch failed/.test(s))return 'Não foi possível conectar agora. Verifique sua internet e tente novamente.';
+    if(/user.*already|email.*already|already registered|already been registered|user.*exists|email.*exists/.test(s))return 'Este e-mail já possui cadastro. Entre normalmente ou use “Esqueci minha senha” para recuperar o acesso.';
+    if(/rate limit|too many|over_email_send_rate_limit|muitas tentativas/.test(s))return 'Muitas tentativas em pouco tempo. Aguarde alguns instantes e tente novamente.';
+    if(/network|failed to fetch|fetch failed|load failed|networkerror|offline|internet connection/.test(s))return 'Não foi possível conectar agora. Verifique sua internet e tente novamente.';
+    if(/auth session missing|session.*expired|expired.*session|jwt.*expired|invalid jwt|refresh token|token.*expired/.test(s))return 'Sua sessão expirou. Entre novamente para continuar.';
+    if(/user not found|no user|usuario não encontrado|usuário não encontrado/.test(s))return 'Usuário não encontrado. Confira o e-mail informado.';
+    if(/invalid email|email.*invalid|valid email|email address.*valid/.test(s))return 'Informe um endereço de e-mail válido.';
+    if(/password.*least|at least.*character|weak password|password.*short|senha.*caracter/.test(s))return 'A senha não atende aos requisitos mínimos. Use pelo menos 6 caracteres.';
+    if(/permission denied|row level security|not authorized|unauthorized|forbidden|insufficient privilege/.test(s))return 'Você não tem permissão para concluir esta operação.';
+    if(/duplicate key|unique constraint|already exists|duplicate/.test(s))return 'Já existe um registro com esses dados.';
+    if(/foreign key|violates.*constraint|constraint.*violat/.test(s))return 'Não foi possível concluir porque este registro está ligado a outros dados.';
+    if(/timeout|timed out|time limit|connection.*time/.test(s))return 'A operação demorou demais. Tente novamente.';
+    if(/bucket not found|object not found|file not found|storage.*not found/.test(s))return 'Arquivo não encontrado.';
+    if(/database error|database.*failed|server error|internal server|bad gateway|service unavailable/.test(s))return 'O servidor não conseguiu concluir a operação agora. Tente novamente.';
+    if(/already|registered|exists|cadastrad|já possui|ja possui/.test(s))return 'Este cadastro já existe.';
+    if(/\b(error|failed|invalid|not found|request|network|timeout|permission|denied|unauthorized|forbidden|password|session|token|database|missing|cannot|could not|unable to|unexpected)\b/.test(s))return 'Não foi possível concluir a operação. Tente novamente.';
     return raw;
   }
 
@@ -42,6 +55,25 @@
     const normalize=()=>{const current=(box.textContent||'').trim();if(!current)return;const next=friendlyMessage(current);if(next!==current)box.textContent=next};
     new MutationObserver(normalize).observe(box,{childList:true,characterData:true,subtree:true});
     normalize();
+  }
+
+  function installGlobalErrorMap(){
+    window.OBRIX_PT_ERROR=friendlyMessage;
+    if(!window.__OBRIX_PT_ALERT){
+      window.__OBRIX_PT_ALERT=true;
+      const nativeAlert=window.alert.bind(window);
+      window.alert=msg=>nativeAlert(friendlyMessage(msg));
+    }
+    const selector='#erro,.authError,.diarioMsg.erro,.cfgStatus,.status';
+    const normalizeEl=el=>{if(!el)return;const current=(el.textContent||'').trim();if(!current)return;const next=friendlyMessage(current);if(next!==current)el.textContent=next};
+    const scan=root=>{if(!root)return;if(root.matches?.(selector))normalizeEl(root);root.querySelectorAll?.(selector).forEach(normalizeEl)};
+    const start=()=>{
+      if(!document.body)return;
+      scan(document.body);
+      const obs=new MutationObserver(ms=>ms.forEach(m=>{if(m.type==='characterData')scan(m.target.parentElement);else{scan(m.target);m.addedNodes.forEach(n=>{if(n.nodeType===1)scan(n)})}}));
+      obs.observe(document.body,{childList:true,subtree:true,characterData:true});
+    };
+    if(document.body)start();else document.addEventListener('DOMContentLoaded',start,{once:true});
   }
 
   function modal(html){
@@ -155,6 +187,7 @@
 
   function installButtons(){
     style();
+    installGlobalErrorMap();
     installLoginErrorMap();
     const entrar=$('entrar');
     if(!entrar||$('obrixAuthAux'))return;
@@ -177,7 +210,8 @@
     }catch(e){console.warn('OBRIX auth recovery indisponível',e)}
   }
 
+  window.OBRIX_PT_ERROR=friendlyMessage;
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installButtons);else installButtons();
   setTimeout(installRecovery,500);
-  window.OBRIX_AUTH={criarConta,esqueceuSenha,novaSenha};
+  window.OBRIX_AUTH={criarConta,esqueceuSenha,novaSenha,friendlyMessage};
 })();
