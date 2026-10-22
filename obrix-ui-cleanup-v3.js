@@ -13,17 +13,17 @@ function neutral(el,goldText=false){
 function classify(el){
  const t=norm(el.textContent),plain=t.replace(/^[+＋]\s*/,'');if(!t)return;
  if(inside(el,'#diarioMain')){
-  if(t==='salvar diario'||t==='salvar diário'||t==='salvar')return neutral(el);
+  if(t==='salvar diario'||t==='salvar'||t.includes('salvar diario'))return neutral(el);
  }
  if(inside(el,'#equipe')){
   if(t.includes('bonus e extras'))return neutral(el,true);
-  if(plain==='funcionario'||plain==='funcionarios'||t==='ativar'||t==='desativar'||t==='vale'||t==='pagamentos'||t.includes('vale e pagamento')||t.includes('marcar diario')||t==='falta'||t.includes('historico de faltas')||t.includes('ver registro')||t.includes('editar cadastro'))return neutral(el);
+  if(plain==='funcionario'||plain==='funcionarios'||t==='ativar'||t==='desativar'||t.includes('ativar / desativar')||t==='vale'||t==='pagamentos'||t.includes('vale e pagamento')||t.includes('marcar diario')||t.includes('marcar diaria')||t==='falta'||t.includes('historico de faltas')||t.includes('ver registro')||t.includes('ver registros')||t.includes('editar cadastro'))return neutral(el);
  }
  if(inside(el,'#orcamentosMain')){
   if(t==='editar'||t==='visualizar'||t==='imprimir'||t.includes('visualizar / imprimir')||t.includes('visualizar e imprimir')||(t.includes('visualizar')&&t.includes('imprimir')))return neutral(el);
  }
  if(inside(el,'#relatoriosMain')){
-  if(el.id==='relTipoFinanceiro'||el.id==='relTipoEquipe'||t==='financeiro'||t.includes('relatorio financeiro')||t.includes('equipe / trabalhador')||t.includes('equipe trabalhador')||t==='diario de obras'||t.includes('relatorio diario de obras'))return neutral(el);
+  if(el.id==='relTipoFinanceiro'||el.id==='relTipoEquipe'||t==='financeiro'||t==='equipe'||t==='trabalhador'||t.includes('relatorio financeiro')||t.includes('equipe / trabalhador')||t.includes('equipe trabalhador')||t==='diario de obras'||t.includes('relatorio diario de obras'))return neutral(el);
  }
  if(inside(el,'#documentosMain,#docViewerModal,.docViewerModal')){
   if(t==='fechar'||t==='abrir arquivo'||t==='imprimir'||t==='salvar'||(t.includes('imprimir')&&t.includes('salvar')))return neutral(el);
