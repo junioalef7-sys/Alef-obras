@@ -29,6 +29,7 @@ load('./obrix-offline-backup-emergencia.js?v=20261022emergency1','obrix-offline-
 load('./obrix-offline-restaurar-backup.js?v=20261022restore2','obrix-offline-restaurar-backup');
 load('./obrix-offline-restaurar-previa.js?v=20261022restorepreview2','obrix-offline-restaurar-previa');
 load('./obrix-offline-restaurar-pos.js?v=20261022restorepost1','obrix-offline-restaurar-pos');
+load('./obrix-offline-restaurar-auditoria.js?v=20261022restoreaudit1','obrix-offline-restaurar-auditoria');
 load('./obrix-offline-aprovacao.js?v=20261022approval7','obrix-offline-aprovacao');
 load('./obrix-offline-certificado.js?v=20261022cert2','obrix-offline-certificado');
 })();
