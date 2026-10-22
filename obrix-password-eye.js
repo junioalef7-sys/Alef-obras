@@ -23,6 +23,7 @@ load('./obrix-offline-pos-sync.js?v=20261021postsync1','obrix-offline-pos-sync')
 load('./obrix-offline-recuperacao.js?v=20261021recovery1','obrix-offline-recuperacao');
 load('./obrix-offline-historico.js?v=20261021history2','obrix-offline-historico');
 load('./obrix-offline-integridade.js?v=20261022integrity1','obrix-offline-integridade');
+load('./obrix-offline-reparo.js?v=20261022repair1','obrix-offline-reparo');
 load('./obrix-offline-aprovacao.js?v=20261022approval7','obrix-offline-aprovacao');
 load('./obrix-offline-certificado.js?v=20261022cert2','obrix-offline-certificado');
 })();
