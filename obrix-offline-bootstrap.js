@@ -7,7 +7,7 @@ function sameAccount(b){const typed=(document.getElementById('email')?.value||''
 function restore(reason='offline'){
   const b=base();if(!b||!sameAccount(b))return false;
   const login=document.getElementById('login'),app=document.getElementById('app'),usuario=document.getElementById('usuario');
-  window.__OBRIX_OFFLINE_BOOTSTRAP_BASE=b;window.obras=Array.isArray(b.obras)?b.obras:[];window.funcionarios=Array.isArray(b.funcionarios)?b.funcionarios:[];
+  window.__OBRIX_OFFLINE_BOOTSTRAP_BASE=b;window.obras=Array.isArray(b.obras)?b.obras:[];window.funcionarios=Array.isArray(b.funcionarios)?b.funcionarios:[];window.financeiro=Array.isArray(b.financeiro)?b.financeiro:[];window.extras=Array.isArray(b.extras)?b.extras:[];window.diarias=Array.isArray(b.diarias)?b.diarias:[];window.vales=Array.isArray(b.vales)?b.vales:[];window.bonus=Array.isArray(b.bonus)?b.bonus:[];
   login?.classList.add('hidden');app?.classList.remove('hidden');if(usuario)usuario.textContent=b.profile.nome||b.profile.email||'';
   document.documentElement.dataset.obrixOffline='1';document.documentElement.dataset.obrixOfflineBoot=reason;
   window.dispatchEvent(new CustomEvent('obrix:offline-bootstrap',{detail:{reason,updatedAt:b.updatedAt||null,empresa_id:b.profile.empresa_id}}));
@@ -21,6 +21,6 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!navigato
 document.addEventListener('click',e=>{if(e.target.closest?.('#sair,#menuSair')){try{localStorage.removeItem(BASE_KEY);localStorage.removeItem(OLD_BASE_KEY)}catch{}}},true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 setTimeout(()=>{if(!navigator.onLine)restore('fallback')},800);
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./obrix-sw.js?v=20261022diarioequipe1').catch(()=>{});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./obrix-sw.js?v=20261022offlinefix2').catch(()=>{});
 window.OBRIX_OFFLINE_BOOTSTRAP_API={restore,base,status:()=>({online:navigator.onLine,available:!!base(),active:document.documentElement.dataset.obrixOffline==='1'})};
 })();
