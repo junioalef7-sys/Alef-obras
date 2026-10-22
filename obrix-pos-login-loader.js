@@ -17,8 +17,6 @@
     './obrix-ajustes-ui-final.js?v=20261021ui3'
   ];
 
-  // Sem internet, preserva a Home/Equipe já restauradas pelo Core e evita
-  // módulos que tentam consultar o servidor ou instalar observadores pesados.
   const BASE_OFFLINE=[
     './obrix-financeiro-main.js?v=20261019checkval1',
     './obrix-estoque-main.js?v=b777d66c',
@@ -69,8 +67,6 @@
     ]
   };
 
-  // Grupos mínimos no modo avião. A Equipe básica já vem do Core e o
-  // formulário de diária/checklist é carregado pelo loader específico do HTML.
   const OFFLINE_GROUPS={
     financeiro:[
       './obrix-financeiro-offline-basefix.js?v=20261022offlinefix1',
@@ -94,8 +90,8 @@
     ],
     orcamentos:[
       './obrix-orcamentos-main.js?v=20261019orc1',
-      './obrix-orcamentos-itens-topo.js?v=20261019topo1',
-      './obrix-orcamentos-rascunho-print.js?v=20261022orcint2'
+      './obrix-orcamentos-itens-topo.js?v=20261022savefix3',
+      './obrix-orcamentos-rascunho-print.js?v=20261022obs3'
     ],
     relatorios:[
       './obrix-relatorios-v2.js?v=20261018equipe1',
@@ -179,7 +175,6 @@
       s.onload=()=>finish(true);
       s.onerror=()=>{console.warn('OBRIX: módulo não carregou',src);finish(false)};
       document.body.appendChild(s);
-      // Evita qualquer botão/boot ficar preso para sempre caso o Safari não dispare load/error.
       setTimeout(()=>finish(false),7000);
     });
   }
