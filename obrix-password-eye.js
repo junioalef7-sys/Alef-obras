@@ -23,4 +23,5 @@ load('./obrix-offline-pos-sync.js?v=20261021postsync1','obrix-offline-pos-sync')
 load('./obrix-offline-recuperacao.js?v=20261021recovery1','obrix-offline-recuperacao');
 load('./obrix-offline-historico.js?v=20261021history2','obrix-offline-historico');
 load('./obrix-offline-aprovacao.js?v=20261022approval6','obrix-offline-aprovacao');
+load('./obrix-offline-certificado.js?v=20261022cert1','obrix-offline-certificado');
 })();
