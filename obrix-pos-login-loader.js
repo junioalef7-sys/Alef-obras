@@ -92,18 +92,21 @@
       './obrix-account-delete.js?v=20261018conta1'
     ],
     offline:[
+      './obrix-offline-central-lite.js?v=20261022central-lite1'
+    ],
+    offlineSync:[
       './obrix-offline-diario.js?v=20261022menuroute1',
-      './obrix-notas-main.js?v=20261020notas3',
       './obrix-notas-offline.js?v=20261021offline2',
       './obrix-checklist-offline.js?v=20261022offlinefix1',
       './obrix-obras-offline.js?v=20261022offlinefix1',
       './obrix-equipe-offline.js?v=20261022offlinefix1',
       './obrix-estoque-offline.js?v=20261022offlinefix1',
+      './obrix-offline-conflicts.js?v=20261021resolve1'
+    ],
+    offlineTools:[
       './obrix-financeiro-offline-basefix.js?v=20261022offlinefix1',
       './obrix-financeiro-offline.js?v=20261022offlinefix1',
       './obrix-home-offline.js?v=20261021offlinehome1',
-      './obrix-offline-conflicts.js?v=20261021resolve1',
-      './obrix-offline-central.js?v=20261022central7',
       './obrix-offline-diagnostico.js?v=20261022diag9',
       './obrix-offline-preparo.js?v=20261022prep7',
       './obrix-offline-retomada-sync.js?v=20261022resume1',
