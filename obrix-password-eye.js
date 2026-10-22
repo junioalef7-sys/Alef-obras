@@ -34,4 +34,5 @@ load('./obrix-offline-aprovacao.js?v=20261022approval7','obrix-offline-aprovacao
 load('./obrix-offline-certificado.js?v=20261022cert2','obrix-offline-certificado');
 load('./obrix-offline-suporte.js?v=20261022support1','obrix-offline-suporte');
 load('./obrix-offline-suporte-validar.js?v=20261022supportvalidate1','obrix-offline-suporte-validar');
+load('./obrix-offline-homologacao.js?v=20261022homolog1','obrix-offline-homologacao');
 })();
