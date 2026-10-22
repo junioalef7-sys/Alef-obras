@@ -12,7 +12,7 @@ async function run(force=false){
     const [notas,diarios,checks]=await Promise.all([
       sb.from('notas').select('*').eq('empresa_id',e).order('atualizado_em',{ascending:false}),
       sb.from('diarios_obra').select('*').eq('empresa_id',e).order('data',{ascending:false}),
-      sb.from('checklist_itens').select('id,empresa_id,obra_id,nome,ordem,progresso,atualizado_em').eq('empresa_id',e).order('ordem',{ascending:true})
+      sb.from('checklist_itens').select('*').eq('empresa_id',e).order('ordem',{ascending:true})
     ]);
     if(!notas.error)write('obrix_notas_cache_v1:'+e,notas.data||[]);
     if(!diarios.error)write('obrix_diario_cache_v3:'+e,diarios.data||[]);
