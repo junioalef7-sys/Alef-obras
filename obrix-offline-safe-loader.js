@@ -20,14 +20,36 @@ function load(src){
   if(already(src)||loaded.has(path(src)))return Promise.resolve(true);
   return new Promise(resolve=>{const s=document.createElement('script');s.src=src;s.async=false;let done=false;const end=ok=>{if(done)return;done=true;if(ok)loaded.add(path(src));resolve(ok)};s.onload=()=>end(true);s.onerror=()=>end(false);document.body.appendChild(s);setTimeout(()=>end(false),5000)});
 }
-async function loadMenu(){await load('./obrix-menu-main.js?v=20261022offlinesafe1');await load('./obrix-nav-active.js?v=20261022offlinesafe1')}
-async function loadFinanceiro(){const ok1=await load('./obrix-financeiro-main.js?v=20261022offlinesafe1'),ok2=await load('./obrix-financeiro-offline-basefix.js?v=20261022offlinesafe1'),ok3=await load('./obrix-financeiro-offline.js?v=20261022offlinesafe1');if(ok1&&ok2&&ok3){setTimeout(()=>window.OBRIX_FIN?.open?.(),0);return true}alert('O Financeiro offline não pôde ser aberto neste momento.');return false}
-async function loadEstoque(){const ok1=await load('./obrix-estoque-main.js?v=20261022offlinesafe1'),ok2=await load('./obrix-estoque-offline.js?v=20261022offlinesafe1');if(ok1&&ok2){setTimeout(()=>window.OBRIX_EST?.open?.(),0);return true}alert('O Estoque offline não pôde ser aberto neste momento.');return false}
-async function loadObras(){await load('./obrix-obras-main.js?v=20261022offlinesafe1');await load('./obrix-obras-offline.js?v=20261022offlinesafe1');await load('./obrix-checklist-offline.js?v=20261022offlinesafe1');try{window.OBRIX_OBRAS?.render?.()}catch{}}
-function intercept(e){if(navigator.onLine)return;const el=e.target.closest?.('button,a,[role="button"],[data-go]');if(!el)return;const t=(el.textContent||'').trim().toLowerCase(),go=String(el.dataset?.go||'').toLowerCase();if(t.includes('financeiro')||go==='financeiro'){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();loadFinanceiro();return}if(t.includes('estoque')||t.includes('materiais')||go==='estoque'){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();loadEstoque();return}if(t.startsWith('obras')||go==='obras')setTimeout(loadObras,0);if(t.includes('equipe')||go==='equipe')setTimeout(paint,0)}
+function hideAll(){
+  ['inicio','obras','equipe','financeiroMain','estoqueMain','menuMain','offlineCentralMain','diarioMain','notasMain','documentosMain','orcamentosMain','relatoriosMain','backupMain','configMain','assinaturaMain'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
+}
+function activate(index){document.querySelectorAll('#app>.bottom button').forEach((b,i)=>b.classList.toggle('active',i===index))}
+function showLocal(id,index){hideAll();document.getElementById(id)?.classList.remove('hidden');activate(index);if(id==='inicio')paint();if(id==='equipe'){paint();try{window.renderEquipe?.()}catch{}setTimeout(()=>window.OBRIX_EQUIPE_CHECKLIST_LOADER?.load?.(),0)}if(id==='obras'){paint();try{window.renderObras?.()}catch{}}scrollTo({top:0,behavior:'smooth'});return true}
+async function loadMenu(){return await load('./obrix-menu-main.js?v=20261022offlinesafe2')}
+async function openMenu(){const ok=await loadMenu();if(!ok)return alert('O Menu offline não pôde ser aberto neste momento.');if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();activate(3);return true}alert('O Menu offline não ficou disponível.');return false}
+async function loadFinanceiro(){const ok1=await load('./obrix-financeiro-main.js?v=20261022offlinesafe2'),ok2=await load('./obrix-financeiro-offline-basefix.js?v=20261022offlinesafe2'),ok3=await load('./obrix-financeiro-offline.js?v=20261022offlinesafe2');if(ok1&&ok2&&ok3){setTimeout(()=>{window.OBRIX_FIN?.open?.();activate(1)},0);return true}alert('O Financeiro offline não pôde ser aberto neste momento.');return false}
+async function loadEstoque(){const ok1=await load('./obrix-estoque-main.js?v=20261022offlinesafe2'),ok2=await load('./obrix-estoque-offline.js?v=20261022offlinesafe2');if(ok1&&ok2){setTimeout(()=>window.OBRIX_EST?.open?.(),0);return true}alert('O Estoque offline não pôde ser aberto neste momento.');return false}
+async function loadObras(){await load('./obrix-obras-main.js?v=20261022offlinesafe2');await load('./obrix-obras-offline.js?v=20261022offlinesafe2');await load('./obrix-checklist-offline.js?v=20261022offlinesafe2');showLocal('obras',-1);try{window.OBRIX_OBRAS?.render?.()}catch{}}
+function bottomIndex(el){const btn=el.closest?.('#app>.bottom button');if(!btn)return-1;return [...document.querySelectorAll('#app>.bottom button')].indexOf(btn)}
+function intercept(e){
+  if(navigator.onLine)return;
+  const el=e.target.closest?.('button,a,[role="button"],[data-go]');if(!el)return;
+  const bi=bottomIndex(el);
+  if(bi===0){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();showLocal('inicio',0);return}
+  if(bi===1){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();loadFinanceiro();return}
+  if(bi===2){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();showLocal('equipe',2);return}
+  if(bi===3){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();openMenu();return}
+  const t=(el.textContent||'').trim().toLowerCase(),go=String(el.dataset?.go||'').toLowerCase();
+  if(t.includes('financeiro')||go==='financeiro'){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();loadFinanceiro();return}
+  if(t.includes('estoque')||t.includes('materiais')||go==='estoque'){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();loadEstoque();return}
+  if(t.startsWith('obras')||go==='obras'){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();loadObras();return}
+  if(t.includes('equipe')||go==='equipe'){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();showLocal('equipe',2);return}
+  if(go==='dashboard'||t==='início'||t==='inicio'){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();showLocal('inicio',0);return}
+  if(go==='offline'){return}
+}
 document.addEventListener('click',intercept,true);
-window.addEventListener('pageshow',()=>setTimeout(paint,40));window.addEventListener('focus',()=>setTimeout(paint,40));window.addEventListener('obrix:offline-bootstrap',()=>setTimeout(paint,0));window.addEventListener('obrix:offline-core-restaurado',()=>setTimeout(paint,0));
-window.addEventListener('online',()=>{document.documentElement.removeAttribute('data-obrix-offline-safe');load('./obrix-pos-login-loader.js?v=20261022onlineafteroffline1').then(()=>setTimeout(()=>window.OBRIX_POS_LOGIN_LOADER?.start?.('online-after-offline'),0))});
-setTimeout(paint,0);setTimeout(paint,250);setTimeout(()=>{if(!navigator.onLine)loadMenu()},450);
-window.OBRIX_OFFLINE_SAFE={paint,loadFinanceiro,loadEstoque,loadObras,status:()=>{const b=base();return{online:navigator.onLine,empresa_id:b?.profile?.empresa_id||null,obras:b?.obras?.length||0,funcionarios:b?.funcionarios?.length||0,financeiro:b?.financeiro?.length||0}}};
+window.addEventListener('pageshow',()=>setTimeout(()=>{paint();if(!navigator.onLine&&document.getElementById('financeiroMain')?.classList.contains('hidden'))showLocal('inicio',0)},40));window.addEventListener('focus',()=>setTimeout(paint,40));window.addEventListener('obrix:offline-bootstrap',()=>setTimeout(paint,0));window.addEventListener('obrix:offline-core-restaurado',()=>setTimeout(paint,0));
+window.addEventListener('online',()=>{document.documentElement.removeAttribute('data-obrix-offline-safe');load('./obrix-pos-login-loader.js?v=20261022onlineafteroffline2').then(()=>setTimeout(()=>window.OBRIX_POS_LOGIN_LOADER?.start?.('online-after-offline'),0))});
+setTimeout(()=>{paint();if(!navigator.onLine)showLocal('inicio',0)},0);setTimeout(paint,250);
+window.OBRIX_OFFLINE_SAFE={paint,showLocal,openMenu,loadFinanceiro,loadEstoque,loadObras,status:()=>{const b=base();return{online:navigator.onLine,empresa_id:b?.profile?.empresa_id||null,obras:b?.obras?.length||0,funcionarios:b?.funcionarios?.length||0,financeiro:b?.financeiro?.length||0}}};
 })();
