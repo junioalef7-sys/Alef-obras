@@ -1,31 +1,28 @@
 (()=>{'use strict';
 if(window.__OBRIX_EQUIPE_CHECKLIST_LOADER)return;window.__OBRIX_EQUIPE_CHECKLIST_LOADER=true;
 let promise=null;
-function loaded(){return !!document.querySelector('script[data-obrix-equipe-checklist-dados]')||!!window.equipeAcao?.__checklistDados}
-function load(){
-  if(loaded())return Promise.resolve(true);
+const pathOf=src=>{try{return new URL(src,location.href).pathname}catch{return src}};
+function hasPath(path){return [...document.scripts].some(s=>s.src&&pathOf(s.src)===path)}
+function dadosLoaded(){return hasPath('/obrix-equipe-checklist-dados.js')||!!window.equipeAcao?.__checklistDados}
+function patchLoaded(){return hasPath('/obrix-equipe-checklist-diaria.js')||!!window.OBRIX_EQUIPE_CHECKLIST_DIARIA}
+function loadScript(src,flag){return new Promise(resolve=>{if(hasPath(pathOf(src)))return resolve(true);const s=document.createElement('script');s.src=src;s.async=false;if(flag)s.dataset[flag]='1';s.onload=()=>resolve(true);s.onerror=()=>{console.warn('OBRIX: módulo do Checklist da Equipe não carregou.',src);resolve(false)};document.body.appendChild(s)})}
+async function load(){
+  if(dadosLoaded()&&patchLoaded())return true;
   if(promise)return promise;
-  promise=new Promise(resolve=>{
-    const s=document.createElement('script');
-    s.src='./obrix-equipe-checklist-dados.js?v=20261022restore1';
-    s.async=false;
-    s.dataset.obrixEquipeChecklistDados='1';
-    s.onload=()=>resolve(true);
-    s.onerror=()=>{console.warn('OBRIX: Checklist da Equipe não carregou.');promise=null;resolve(false)};
-    document.body.appendChild(s);
-  });
-  return promise;
+  promise=(async()=>{
+    let ok=true;
+    if(!dadosLoaded())ok=await loadScript('./obrix-equipe-checklist-dados.js?v=20261022restore2','obrixEquipeChecklistDados')&&ok;
+    if(!patchLoaded())ok=await loadScript('./obrix-equipe-checklist-diaria.js?v=20261022checkdiaria1','obrixEquipeChecklistDiaria')&&ok;
+    return ok;
+  })();
+  try{return await promise}finally{promise=null}
 }
 function equipeAberta(){const sec=document.getElementById('equipe');return !!(sec&&!sec.classList.contains('hidden'))}
 function check(){if(equipeAberta())load()}
-function observe(){
-  const sec=document.getElementById('equipe');
-  if(sec&&!sec.dataset.obrixChecklistObserved){sec.dataset.obrixChecklistObserved='1';new MutationObserver(check).observe(sec,{attributes:true,attributeFilter:['class']})}
-  check();
-}
+function observe(){const sec=document.getElementById('equipe');if(sec&&!sec.dataset.obrixChecklistObserved){sec.dataset.obrixChecklistObserved='1';new MutationObserver(check).observe(sec,{attributes:true,attributeFilter:['class']})}check()}
 document.addEventListener('click',e=>{const el=e.target.closest?.('#bEquipe,[data-go="equipe"]');if(el)setTimeout(load,0)},true);
 window.addEventListener('pageshow',()=>setTimeout(observe,100));
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(observe,100));else setTimeout(observe,100);
 setTimeout(observe,900);
-window.OBRIX_EQUIPE_CHECKLIST_LOADER={load,status:()=>({loaded:loaded(),loading:!!promise,equipeAberta:equipeAberta()})};
+window.OBRIX_EQUIPE_CHECKLIST_LOADER={load,status:()=>({dados:dadosLoaded(),patch:patchLoaded(),loading:!!promise,equipeAberta:equipeAberta()})};
 })();
