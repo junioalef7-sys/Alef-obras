@@ -17,6 +17,7 @@ load('./obrix-offline-central.js?v=20261021central6','obrix-offline-central');
 load('./obrix-offline-diagnostico.js?v=20261021diag3','obrix-offline-diagnostico');
 load('./obrix-offline-preparo.js?v=20261021prep3','obrix-offline-preparo');
 load('./obrix-offline-teste.js?v=20261021test2','obrix-offline-teste');
+load('./obrix-offline-acoes-teste.js?v=20261021actions1','obrix-offline-acoes-teste');
 load('./obrix-offline-historico.js?v=20261021history1','obrix-offline-historico');
-load('./obrix-offline-aprovacao.js?v=20261021approval2','obrix-offline-aprovacao');
+load('./obrix-offline-aprovacao.js?v=20261021approval3','obrix-offline-aprovacao');
 })();
