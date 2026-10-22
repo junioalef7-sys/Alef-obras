@@ -1,68 +1,16 @@
 const CACHE='obrix-offline-v21';
-const BUILD='20261022-safari-offline-redirect1';
+const BUILD='20261022-offline-safe2';
 const CDN_SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1';
 const APP=[
-'./obrix.html','./obrix-offline-bootstrap.js','./obrix-login-eye-lite.js','./obrix-pos-login-loader.js','./obrix-equipe-checklist-loader.js','./obrix-equipe-checklist-dados.js','./obrix-equipe-checklist-diaria.js','./obrix-offline-diario.js','./obrix-diario-main.js','./obrix-diario-equipe.js','./obrix-notas-main.js','./obrix-notas-offline.js','./obrix-obras-offline.js','./obrix-equipe-offline.js','./obrix-estoque-offline.js','./obrix-financeiro-offline-basefix.js','./obrix-financeiro-offline.js','./obrix-home-offline.js','./obrix-offline-conflicts.js','./obrix-offline-central-lite.js','./obrix-offline-diagnostico.js','./obrix-offline-preparo.js','./obrix-offline-retomada-sync.js','./obrix-offline-teste.js','./obrix-offline-acoes-teste.js','./obrix-offline-pos-sync.js','./obrix-offline-recuperacao.js','./obrix-offline-historico.js','./obrix-offline-integridade.js','./obrix-offline-reparo.js','./obrix-offline-armazenamento.js','./obrix-offline-backup-emergencia.js','./obrix-offline-restaurar-backup.js','./obrix-offline-restaurar-previa.js','./obrix-offline-restaurar-pos.js','./obrix-offline-restaurar-auditoria.js','./obrix-offline-aprovacao.js','./obrix-offline-certificado.js','./obrix-offline-suporte.js','./obrix-offline-suporte-validar.js','./obrix-offline-homologacao.js','./obrix-backend-adapter.js','./obrix-core-main.js','./obrix-login-rescue.js','./obrix-financeiro-main.js','./obrix-financeiro-resumo-obras.js','./obrix-financeiro-resumo-geral.js','./obrix-financeiro-protecao-estoque.js','./obrix-financeiro-busca.js','./obrix-financeiro-filtros-layout.js','./obrix-financeiro-grafico-receitas.js','./obrix-estoque-main.js','./obrix-equipe-main.js','./obrix-equipe-total-pago.js','./obrix-equipe-pagamento-seguro.js','./obrix-equipe-lista-vertical.js','./obrix-equipe-diretorio-pessoal.js','./obrix-equipe-folha-install.js','./obrix-equipe-pagar-selecao.js','./obrix-obras-main.js','./obrix-obras-busca.js','./obrix-obras-pagamentos.js','./obrix-relatorio-fotografico.js','./obrix-relatorio-fotografico-realtime.js','./obrix-checklist-v2.js','./obrix-checklist-offline.js','./obrix-estoque-saida-obra.js','./obrix-estoque-operacoes-main.js','./obrix-estoque-estorno-final.js','./obrix-assinaturas-main.js','./obrix-relatorios-v2.js','./obrix-relatorios-mobile-fix.js','./obrix-relatorios-complementos.js','./obrix-backup-v2.js','./obrix-backup-import-run.js','./obrix-backup-completo.js','./obrix-config-main.js','./obrix-account-delete.js','./obrix-orcamentos-main.js','./obrix-orcamentos-itens-topo.js','./obrix-orcamentos-rascunho-print.js','./obrix-menu-main.js','./obrix-nav-active.js','./obrix-dashboard-sync.js','./obrix-sync-fast.js','./obrix-home-clean.js','./obrix-blindagem-financeiro.js','./obrix-theme-main.js','./obrix-light-polish.js','./obrix-brand-main.js','./obrix-password-eye.js','./obrix-auth-main.js','./obrix-login-profissional.js','./obrix-documentos-main.js','./obrix-documentos-direto.js','./obrix-ajustes-ui-final.js','./obrix-relatorio-multifoto.js','./obrix-relatorio-grade-miniaturas.js','./obrix-diario-fotos.js','./obrix-relatorio-diario.js','./obrix-icon.svg','./obrix-manifest.webmanifest',CDN_SUPABASE
+'./obrix.html','./obrix-offline-bootstrap.js','./obrix-login-eye-lite.js','./obrix-pos-login-loader.js','./obrix-offline-safe-loader.js','./obrix-equipe-checklist-loader.js','./obrix-equipe-checklist-dados.js','./obrix-equipe-checklist-diaria.js','./obrix-offline-diario.js','./obrix-diario-main.js','./obrix-diario-equipe.js','./obrix-notas-main.js','./obrix-notas-offline.js','./obrix-obras-offline.js','./obrix-equipe-offline.js','./obrix-estoque-offline.js','./obrix-financeiro-offline-basefix.js','./obrix-financeiro-offline.js','./obrix-home-offline.js','./obrix-offline-conflicts.js','./obrix-offline-central-lite.js','./obrix-offline-diagnostico.js','./obrix-offline-preparo.js','./obrix-offline-retomada-sync.js','./obrix-offline-teste.js','./obrix-offline-acoes-teste.js','./obrix-offline-pos-sync.js','./obrix-offline-recuperacao.js','./obrix-offline-historico.js','./obrix-offline-integridade.js','./obrix-offline-reparo.js','./obrix-offline-armazenamento.js','./obrix-offline-backup-emergencia.js','./obrix-offline-restaurar-backup.js','./obrix-offline-restaurar-previa.js','./obrix-offline-restaurar-pos.js','./obrix-offline-restaurar-auditoria.js','./obrix-offline-aprovacao.js','./obrix-offline-certificado.js','./obrix-offline-suporte.js','./obrix-offline-suporte-validar.js','./obrix-offline-homologacao.js','./obrix-backend-adapter.js','./obrix-core-main.js','./obrix-login-rescue.js','./obrix-financeiro-main.js','./obrix-financeiro-resumo-obras.js','./obrix-financeiro-resumo-geral.js','./obrix-financeiro-protecao-estoque.js','./obrix-financeiro-busca.js','./obrix-financeiro-filtros-layout.js','./obrix-financeiro-grafico-receitas.js','./obrix-estoque-main.js','./obrix-equipe-main.js','./obrix-equipe-total-pago.js','./obrix-equipe-pagamento-seguro.js','./obrix-equipe-lista-vertical.js','./obrix-equipe-diretorio-pessoal.js','./obrix-equipe-folha-install.js','./obrix-equipe-pagar-selecao.js','./obrix-obras-main.js','./obrix-obras-busca.js','./obrix-obras-pagamentos.js','./obrix-relatorio-fotografico.js','./obrix-relatorio-fotografico-realtime.js','./obrix-checklist-v2.js','./obrix-checklist-offline.js','./obrix-estoque-saida-obra.js','./obrix-estoque-operacoes-main.js','./obrix-estoque-estorno-final.js','./obrix-assinaturas-main.js','./obrix-relatorios-v2.js','./obrix-relatorios-mobile-fix.js','./obrix-relatorios-complementos.js','./obrix-backup-v2.js','./obrix-backup-import-run.js','./obrix-backup-completo.js','./obrix-config-main.js','./obrix-account-delete.js','./obrix-orcamentos-main.js','./obrix-orcamentos-itens-topo.js','./obrix-orcamentos-rascunho-print.js','./obrix-menu-main.js','./obrix-nav-active.js','./obrix-dashboard-sync.js','./obrix-sync-fast.js','./obrix-home-clean.js','./obrix-blindagem-financeiro.js','./obrix-theme-main.js','./obrix-light-polish.js','./obrix-brand-main.js','./obrix-password-eye.js','./obrix-auth-main.js','./obrix-login-profissional.js','./obrix-documentos-main.js','./obrix-documentos-direto.js','./obrix-ajustes-ui-final.js','./obrix-relatorio-multifoto.js','./obrix-relatorio-grade-miniaturas.js','./obrix-diario-fotos.js','./obrix-relatorio-diario.js','./obrix-icon.svg','./obrix-manifest.webmanifest',CDN_SUPABASE
 ];
-const FRESH_CRITICAL=['/obrix.html','/obrix-offline-bootstrap.js','/obrix-backend-adapter.js','/obrix-core-main.js','/obrix-login-rescue.js','/obrix-login-eye-lite.js','/obrix-auth-main.js','/obrix-login-profissional.js','/obrix-pos-login-loader.js','/obrix-equipe-checklist-loader.js','/obrix-equipe-checklist-dados.js','/obrix-equipe-checklist-diaria.js','/obrix-menu-main.js','/obrix-diario-main.js','/obrix-diario-equipe.js','/obrix-offline-diario.js','/obrix-orcamentos-main.js','/obrix-orcamentos-itens-topo.js','/obrix-orcamentos-rascunho-print.js','/obrix-relatorios-v2.js','/obrix-relatorios-mobile-fix.js','/obrix-relatorios-complementos.js','/obrix-documentos-main.js','/obrix-documentos-direto.js','/obrix-notas-main.js','/obrix-notas-offline.js','/obrix-backup-v2.js','/obrix-backup-import-run.js','/obrix-backup-completo.js','/obrix-assinaturas-main.js','/obrix-config-main.js','/obrix-account-delete.js','/obrix-offline-central-lite.js'];
+const FRESH_CRITICAL=['/obrix.html','/obrix-offline-bootstrap.js','/obrix-backend-adapter.js','/obrix-core-main.js','/obrix-login-rescue.js','/obrix-login-eye-lite.js','/obrix-auth-main.js','/obrix-login-profissional.js','/obrix-pos-login-loader.js','/obrix-offline-safe-loader.js','/obrix-equipe-checklist-loader.js','/obrix-equipe-checklist-dados.js','/obrix-equipe-checklist-diaria.js','/obrix-menu-main.js','/obrix-diario-main.js','/obrix-diario-equipe.js','/obrix-offline-diario.js','/obrix-orcamentos-main.js','/obrix-orcamentos-itens-topo.js','/obrix-orcamentos-rascunho-print.js','/obrix-relatorios-v2.js','/obrix-relatorios-mobile-fix.js','/obrix-relatorios-complementos.js','/obrix-documentos-main.js','/obrix-documentos-direto.js','/obrix-notas-main.js','/obrix-notas-offline.js','/obrix-backup-v2.js','/obrix-backup-import-run.js','/obrix-backup-completo.js','/obrix-assinaturas-main.js','/obrix-config-main.js','/obrix-account-delete.js','/obrix-offline-central-lite.js'];
 function isFreshCritical(pathname){return FRESH_CRITICAL.some(p=>pathname.endsWith(p))}
-async function directResponse(res){
-  if(!res||res.type==='opaque'||!res.redirected)return res;
-  try{
-    const body=await res.clone().arrayBuffer();
-    const headers=new Headers(res.headers);
-    headers.delete('content-encoding');
-    headers.delete('content-length');
-    headers.delete('transfer-encoding');
-    return new Response(body,{status:res.status,statusText:res.statusText,headers});
-  }catch(_){return res}
-}
-async function cachedDirect(req){
-  const cached=await caches.match(req,{ignoreSearch:true});
-  return cached?await directResponse(cached):null;
-}
-async function cachePut(req,res){
-  if(!res)return res;
-  const safe=await directResponse(res);
-  if(safe&&(safe.ok||safe.type==='opaque')){const c=await caches.open(CACHE);c.put(req,safe.clone()).catch(()=>{})}
-  return safe;
-}
-async function networkFirst(req,ms=4500){
-  try{
-    const freshReq=new Request(req,{cache:'reload'});
-    const r=await Promise.race([fetch(freshReq),new Promise((_,rej)=>setTimeout(()=>rej(new Error('network-timeout')),ms))]);
-    return await cachePut(req,r);
-  }catch(_){return await cachedDirect(req)}
-}
-self.addEventListener('install',e=>e.waitUntil((async()=>{
-  const c=await caches.open(CACHE);
-  await Promise.allSettled(APP.map(async url=>{
-    try{
-      const req=new Request(url,{cache:'reload'}),res=await fetch(req),safe=await directResponse(res);
-      if(safe&&(safe.ok||safe.type==='opaque'))await c.put(req,safe.clone());
-    }catch(_){}
-  }));
-  await self.skipWaiting();
-})()));
+async function directResponse(res){if(!res||res.type==='opaque'||!res.redirected)return res;try{const body=await res.clone().arrayBuffer();const headers=new Headers(res.headers);headers.delete('content-encoding');headers.delete('content-length');headers.delete('transfer-encoding');return new Response(body,{status:res.status,statusText:res.statusText,headers})}catch(_){return res}}
+async function cachedDirect(req){const cached=await caches.match(req,{ignoreSearch:true});return cached?await directResponse(cached):null}
+async function cachePut(req,res){if(!res)return res;const safe=await directResponse(res);if(safe&&(safe.ok||safe.type==='opaque')){const c=await caches.open(CACHE);c.put(req,safe.clone()).catch(()=>{})}return safe}
+async function networkFirst(req,ms=4500){try{const freshReq=new Request(req,{cache:'reload'});const r=await Promise.race([fetch(freshReq),new Promise((_,rej)=>setTimeout(()=>rej(new Error('network-timeout')),ms))]);return await cachePut(req,r)}catch(_){return await cachedDirect(req)}}
+async function posLoginResponse(req){try{const freshReq=new Request(req,{cache:'reload'});const r=await Promise.race([fetch(freshReq),new Promise((_,rej)=>setTimeout(()=>rej(new Error('network-timeout')),3000))]);return await cachePut(req,r)}catch(_){const safe=await caches.match('./obrix-offline-safe-loader.js',{ignoreSearch:true});if(safe)return await directResponse(safe);return await cachedDirect(req)}}
+self.addEventListener('install',e=>e.waitUntil((async()=>{const c=await caches.open(CACHE);await Promise.allSettled(APP.map(async url=>{try{const req=new Request(url,{cache:'reload'}),res=await fetch(req),safe=await directResponse(res);if(safe&&(safe.ok||safe.type==='opaque'))await c.put(req,safe.clone())}catch(_){}}));await self.skipWaiting()})()));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',e=>{
-  if(e.request.method!=='GET')return;
-  const u=new URL(e.request.url),same=u.origin===location.origin,isSupabase=u.href.startsWith(CDN_SUPABASE);
-  if(!same&&!isSupabase)return;
-  e.respondWith((async()=>{
-    if(same&&(e.request.mode==='navigate'||isFreshCritical(u.pathname))){
-      const fresh=await networkFirst(e.request,e.request.mode==='navigate'?6000:4500);
-      if(fresh)return fresh;
-    }
-    const isObrixScript=same&&/^\/.*obrix-[^/]+\.js$/.test(u.pathname);
-    if(isObrixScript){const bundled=await cachedDirect(e.request);if(bundled)return bundled}
-    try{return await cachePut(e.request,await fetch(e.request))}catch(_){
-      const cached=await cachedDirect(e.request);if(cached)return cached;
-      if(e.request.mode==='navigate'){
-        const shell=await caches.match('./obrix.html',{ignoreSearch:true});
-        if(shell)return await directResponse(shell);
-      }
-      return Response.error();
-    }
-  })());
-});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url),same=u.origin===location.origin,isSupabase=u.href.startsWith(CDN_SUPABASE);if(!same&&!isSupabase)return;e.respondWith((async()=>{if(same&&u.pathname.endsWith('/obrix-pos-login-loader.js')){const r=await posLoginResponse(e.request);if(r)return r}if(same&&(e.request.mode==='navigate'||isFreshCritical(u.pathname))){const fresh=await networkFirst(e.request,e.request.mode==='navigate'?6000:4500);if(fresh)return fresh}const isObrixScript=same&&/^\/.*obrix-[^/]+\.js$/.test(u.pathname);if(isObrixScript){const bundled=await cachedDirect(e.request);if(bundled)return bundled}try{return await cachePut(e.request,await fetch(e.request))}catch(_){const cached=await cachedDirect(e.request);if(cached)return cached;if(e.request.mode==='navigate'){const shell=await caches.match('./obrix.html',{ignoreSearch:true});if(shell)return await directResponse(shell)}return Response.error()}})())});
