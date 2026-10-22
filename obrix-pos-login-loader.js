@@ -19,6 +19,7 @@
 
   const GROUPS={
     financeiro:[
+      './obrix-financeiro-offline.js?v=20261022offlinefix1',
       './obrix-financeiro-resumo-obras.js?v=20261020resumo1',
       './obrix-financeiro-resumo-geral.js?v=20261019perf1',
       './obrix-financeiro-protecao-estoque.js?v=357',
@@ -28,6 +29,7 @@
       './obrix-blindagem-financeiro.js?v=2864a637'
     ],
     equipe:[
+      './obrix-equipe-offline.js?v=20261022offlinefix1',
       './obrix-equipe-total-pago.js?v=20261019fix4',
       './obrix-equipe-pagamento-seguro.js?v=20261018dados1',
       './obrix-equipe-lista-vertical.js?v=20261019modelo1',
@@ -36,11 +38,14 @@
       './obrix-equipe-pagar-selecao.js?v=20261019checkpay2'
     ],
     estoque:[
+      './obrix-estoque-offline.js?v=20261022offlinefix1',
       './obrix-estoque-saida-obra.js?v=349',
       './obrix-estoque-operacoes-main.js?v=340',
       './obrix-estoque-estorno-final.js?v=350'
     ],
     obras:[
+      './obrix-obras-offline.js?v=20261022offlinefix1',
+      './obrix-checklist-offline.js?v=20261022offlinefix1',
       './obrix-obras-busca.js?v=20261021semTodas1',
       './obrix-obras-pagamentos.js?v=20261019pagobra1',
       './obrix-relatorio-fotografico.js?v=20261019foto2',
