@@ -1,4 +1,4 @@
-const $=id=>document.getElementById(id),money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const $=id=>document.getElementById(id),money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const OFFLINE_BASE_KEY='obrix_offline_base_v3',OFFLINE_IDENTITY_KEY='obrix_offline_identity_v1';
 let profile=null,obras=[],funcionarios=[],financeiro=[],extras=[],diarias=[],vales=[],bonus=[],carregandoCore=false;
 
@@ -16,7 +16,7 @@ function salvarBaseOffline(){
     return true;
   }catch(_){return false}
 }
-function lerBaseOffline(){try{const b=JSON.parse(localStorage.getItem(OFFLINE_BASE_KEY)||'null');if(b?.profile?.empresa_id)return b;const i=JSON.parse(localStorage.getItem(OFFLINE_IDENTITY_KEY)||'null');if(i?.empresa_id)return{profile:{empresa_id:i.empresa_id,nome:i.nome||'',email:i.email||'',papel:i.papel||''},obras:[],funcionarios:[],financeiro:[],extras:[],diarias:[],vales:[],bonus:[],updatedAt:i.updatedAt||null,identityFallback:true}}catch(_){}return null}
+function lerBaseOffline(){try{const viaBoot=window.OBRIX_OFFLINE_BOOTSTRAP_API?.base?.();if(viaBoot?.profile?.empresa_id)return viaBoot;const b=JSON.parse(localStorage.getItem(OFFLINE_BASE_KEY)||'null');if(b?.profile?.empresa_id)return b;const i=JSON.parse(localStorage.getItem(OFFLINE_IDENTITY_KEY)||'null');if(i?.empresa_id)return{profile:{empresa_id:i.empresa_id,nome:i.nome||'',email:i.email||'',papel:i.papel||''},obras:[],funcionarios:[],financeiro:[],extras:[],diarias:[],vales:[],bonus:[],updatedAt:i.updatedAt||null,identityFallback:true}}catch(_){}return null}
 function atualizarInicio(){const total=obras.reduce((s,o)=>s+Number(o.valor_contrato||0),0)+extras.reduce((s,x)=>s+Number(x.valor||0),0),recebido=financeiro.filter(x=>x.tipo==='receita'&&(!x.status_lancamento||x.status_lancamento==='ativo')).reduce((s,x)=>s+Number(x.valor||0),0);if($('contratado'))$('contratado').textContent=money(total);if($('receber'))$('receber').textContent=money(Math.max(0,total-recebido));if($('ativas'))$('ativas').textContent=String(obras.filter(o=>['andamento','em_andamento'].includes(String(o.status||'').toLowerCase())).length);if($('funcs'))$('funcs').textContent=String(funcionarios.filter(f=>f.ativo!==false).length)}
 function timeout(p,ms,msg){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg||'Tempo de conexão esgotado.')),ms))])}
 function mostrarApp(){if($('login'))$('login').classList.add('hidden');if($('app'))$('app').classList.remove('hidden')}
