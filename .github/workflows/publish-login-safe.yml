@@ -29,6 +29,22 @@ jobs:
           for f in obrix-*.js; do
             [ -f "$f" ] && node --check "$f"
           done
+      - name: Blindagem geral contra regressao
+        run: |
+          set -e
+          test -f obrix-release-lock.json
+          grep -q "pointerdown" obrix-estoque-saida-obra.js
+          grep -q "e.isTrusted" obrix-estoque-saida-obra.js
+          grep -q "Carregando dados" obrix-estoque-saida-obra.js
+          grep -q "obrixPermanentNeutral" obrix-equipe-botoes-neutros-v1.js
+          grep -q "data-extra=\\\"vale\\\"" obrix-equipe-botoes-neutros-v1.js
+          grep -q "f==='ativos'&&ativo(x)" obrix-equipe-estoque-fix-v1.js
+          grep -q "f==='inativos'&&!ativo(x)" obrix-equipe-estoque-fix-v1.js
+          grep -q "obrix-equipe-botoes-neutros-v1.js" obrix-sw.js
+          grep -q "obrix-equipe-estoque-fix-v1.js" obrix-sw.js
+          grep -q "obrix-estoque-saida-obra.js" obrix-sw.js
+          grep -q "obrix-equipe-botoes-neutros-v1.js" obrix-startup-router.js
+          grep -q "obrix-equipe-estoque-fix-v1.js" obrix-startup-router.js
       - name: Validar arquivos principais
         run: |
           grep -q 'OBRIX — Gestão de Obras' obrix.html
