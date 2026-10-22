@@ -95,7 +95,7 @@
     orcamentos:[
       './obrix-orcamentos-main.js?v=20261019orc1',
       './obrix-orcamentos-itens-topo.js?v=20261019topo1',
-      './obrix-orcamentos-rascunho-print.js?v=20261019draftprint1'
+      './obrix-orcamentos-rascunho-print.js?v=20261022orcint2'
     ],
     relatorios:[
       './obrix-relatorios-v2.js?v=20261018equipe1',
