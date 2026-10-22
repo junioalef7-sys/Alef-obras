@@ -14,8 +14,9 @@ load('./obrix-financeiro-offline.js?v=20261021offlinefin1','obrix-financeiro-off
 load('./obrix-home-offline.js?v=20261021offlinehome1','obrix-home-offline');
 load('./obrix-offline-conflicts.js?v=20261021resolve1','obrix-offline-conflicts');
 load('./obrix-offline-central.js?v=20261021central6','obrix-offline-central');
-load('./obrix-offline-diagnostico.js?v=20261021diag2','obrix-offline-diagnostico');
-load('./obrix-offline-preparo.js?v=20261021prep2','obrix-offline-preparo');
-load('./obrix-offline-teste.js?v=20261021test1','obrix-offline-teste');
-load('./obrix-offline-aprovacao.js?v=20261021approval1','obrix-offline-aprovacao');
+load('./obrix-offline-diagnostico.js?v=20261021diag3','obrix-offline-diagnostico');
+load('./obrix-offline-preparo.js?v=20261021prep3','obrix-offline-preparo');
+load('./obrix-offline-teste.js?v=20261021test2','obrix-offline-teste');
+load('./obrix-offline-historico.js?v=20261021history1','obrix-offline-historico');
+load('./obrix-offline-aprovacao.js?v=20261021approval2','obrix-offline-aprovacao');
 })();
