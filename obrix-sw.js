@@ -1,5 +1,5 @@
-const CACHE='obrix-offline-v26';
-const BUILD='20261022-auditoria-profunda2';
+const CACHE='obrix-offline-v27';
+const BUILD='20261022-auditoria-profunda-final';
 const CDN_SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1';
 const CDN_HTML2CANVAS='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const CDN_JSPDF='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
