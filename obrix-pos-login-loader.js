@@ -19,6 +19,7 @@
 
   const GROUPS={
     financeiro:[
+      './obrix-financeiro-offline-basefix.js?v=20261022offlinefix1',
       './obrix-financeiro-offline.js?v=20261022offlinefix1',
       './obrix-financeiro-resumo-obras.js?v=20261020resumo1',
       './obrix-financeiro-resumo-geral.js?v=20261019perf1',
