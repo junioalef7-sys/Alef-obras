@@ -17,6 +17,20 @@
     './obrix-ajustes-ui-final.js?v=20261021ui3'
   ];
 
+  // Sem internet, preserva a Home/Equipe já restauradas pelo Core e evita
+  // módulos que tentam consultar o servidor ou instalar observadores pesados.
+  const BASE_OFFLINE=[
+    './obrix-financeiro-main.js?v=20261019checkval1',
+    './obrix-estoque-main.js?v=b777d66c',
+    './obrix-obras-main.js?v=20261021restauraclassico1',
+    './obrix-menu-main.js?v=20261022menuroute1',
+    './obrix-nav-active.js?v=20261019docs1',
+    './obrix-theme-main.js?v=91d02863',
+    './obrix-light-polish.js?v=20261020login2',
+    './obrix-brand-main.js?v=20261020brandfix4',
+    './obrix-ajustes-ui-final.js?v=20261021ui3'
+  ];
+
   const GROUPS={
     financeiro:[
       './obrix-financeiro-offline-basefix.js?v=20261022offlinefix1',
@@ -52,6 +66,23 @@
       './obrix-relatorio-fotografico.js?v=20261019foto2',
       './obrix-relatorio-fotografico-realtime.js?v=20261020rt2',
       './obrix-checklist-v2.js?v=20261019checkval1'
+    ]
+  };
+
+  // Grupos mínimos no modo avião. A Equipe básica já vem do Core e o
+  // formulário de diária/checklist é carregado pelo loader específico do HTML.
+  const OFFLINE_GROUPS={
+    financeiro:[
+      './obrix-financeiro-offline-basefix.js?v=20261022offlinefix1',
+      './obrix-financeiro-offline.js?v=20261022offlinefix1'
+    ],
+    equipe:[],
+    estoque:[
+      './obrix-estoque-offline.js?v=20261022offlinefix1'
+    ],
+    obras:[
+      './obrix-obras-offline.js?v=20261022offlinefix1',
+      './obrix-checklist-offline.js?v=20261022offlinefix1'
     ]
   };
 
@@ -131,8 +162,8 @@
     ]
   };
 
-  const groupPromises=new Map(),groupDone=new Set(),featurePromises=new Map(),featureDone=new Set();
-  let started=false,baseDone=false,index=0;
+  const groupPromises=new Map(),groupDone=new Set(),offlineGroupDone=new Set(),featurePromises=new Map(),featureDone=new Set();
+  let started=false,baseDone=false,baseMode=null;
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const appOpen=()=>{const app=document.getElementById('app'),login=document.getElementById('login');return !!(app&&!app.classList.contains('hidden')&&(!login||login.classList.contains('hidden')))};
   const pathOf=src=>{try{return new URL(src,location.href).pathname}catch(_){return src}};
@@ -143,9 +174,13 @@
       if(loaded(src))return resolve(true);
       try{localStorage.setItem('obrix_boot_ultimo_modulo_v2',JSON.stringify({scope,src,at:new Date().toISOString(),state:'loading'}))}catch(_){}
       const s=document.createElement('script');s.src=src;s.async=false;s.dataset.obrixPosLogin=scope;
-      s.onload=()=>{try{localStorage.setItem('obrix_boot_ultimo_modulo_v2',JSON.stringify({scope,src,at:new Date().toISOString(),state:'loaded'}))}catch(_){}resolve(true)};
-      s.onerror=()=>{console.warn('OBRIX: módulo não carregou',src);try{localStorage.setItem('obrix_boot_ultimo_modulo_v2',JSON.stringify({scope,src,at:new Date().toISOString(),state:'error'}))}catch(_){}resolve(false)};
+      let done=false;
+      const finish=ok=>{if(done)return;done=true;try{localStorage.setItem('obrix_boot_ultimo_modulo_v2',JSON.stringify({scope,src,at:new Date().toISOString(),state:ok?'loaded':'error'}))}catch(_){}resolve(ok)};
+      s.onload=()=>finish(true);
+      s.onerror=()=>{console.warn('OBRIX: módulo não carregou',src);finish(false)};
       document.body.appendChild(s);
+      // Evita qualquer botão/boot ficar preso para sempre caso o Safari não dispare load/error.
+      setTimeout(()=>finish(false),7000);
     });
   }
   async function yieldUI(){await sleep(30);await new Promise(r=>requestAnimationFrame(()=>r()))}
@@ -157,19 +192,22 @@
   }
 
   async function loadGroup(name){
-    if(groupDone.has(name))return true;
-    if(groupPromises.has(name))return groupPromises.get(name);
-    const list=GROUPS[name];if(!list)return false;
+    const offline=!navigator.onLine;
+    if(!offline&&groupDone.has(name))return true;
+    if(offline&&offlineGroupDone.has(name))return true;
+    const key=(offline?'offline:':'online:')+name;
+    if(groupPromises.has(key))return groupPromises.get(key);
+    const list=offline?(OFFLINE_GROUPS[name]||[]):GROUPS[name];if(!list)return false;
     const p=(async()=>{
-      document.documentElement.dataset.obrixGroup=name;
-      const ok=await loadList(list,name);
-      if(ok)groupDone.add(name);
+      document.documentElement.dataset.obrixGroup=key;
+      const ok=await loadList(list,key);
+      if(ok){if(offline)offlineGroupDone.add(name);else groupDone.add(name)}
       document.documentElement.removeAttribute('data-obrix-group');
-      window.dispatchEvent(new CustomEvent('obrix:grupo-pronto',{detail:{name,count:list.length,ok}}));
+      window.dispatchEvent(new CustomEvent('obrix:grupo-pronto',{detail:{name,count:list.length,ok,offline}}));
       return ok;
     })();
-    groupPromises.set(name,p);
-    try{return await p}finally{groupPromises.delete(name)}
+    groupPromises.set(key,p);
+    try{return await p}finally{groupPromises.delete(key)}
   }
 
   async function loadFeature(name){
@@ -211,13 +249,31 @@
     },true);
   }
 
+  async function loadBase(list,scope){
+    document.documentElement.dataset.obrixBoot=scope;
+    for(const src of list){await loadOne(src,scope);await yieldUI()}
+    instalarLazyHooks();
+  }
+
   async function start(reason='app-open'){
     if(started||!appOpen())return false;
-    started=true;document.documentElement.dataset.obrixBoot='base';
+    started=true;baseMode=navigator.onLine?'online':'offline';
     await sleep(60);
-    for(;index<BASE.length;index++){await loadOne(BASE[index],'base');await yieldUI()}
-    instalarLazyHooks();baseDone=true;document.documentElement.dataset.obrixBoot='ready';
-    window.dispatchEvent(new CustomEvent('obrix:modules-ready',{detail:{reason,count:BASE.length,lazy:true}}));
+    const list=navigator.onLine?BASE:BASE_OFFLINE;
+    await loadBase(list,'base:'+baseMode);
+    baseDone=navigator.onLine;
+    document.documentElement.dataset.obrixBoot=navigator.onLine?'ready':'offline-ready';
+    window.dispatchEvent(new CustomEvent('obrix:modules-ready',{detail:{reason,count:list.length,lazy:true,offline:!navigator.onLine}}));
+    return true;
+  }
+
+  async function upgradeOnline(){
+    if(!started||!navigator.onLine||baseDone||!appOpen())return false;
+    offlineGroupDone.clear();
+    await loadBase(BASE,'base:online-upgrade');
+    baseDone=true;baseMode='online';
+    document.documentElement.dataset.obrixBoot='ready';
+    window.dispatchEvent(new CustomEvent('obrix:modules-online-ready',{detail:{count:BASE.length}}));
     return true;
   }
 
@@ -225,7 +281,8 @@
   const app=document.getElementById('app');
   if(app)new MutationObserver(watch).observe(app,{attributes:true,attributeFilter:['class']});
   window.addEventListener('obrix:offline-bootstrap',()=>setTimeout(()=>start('offline-bootstrap'),0));
+  window.addEventListener('online',()=>setTimeout(()=>upgradeOnline(),120));
   window.addEventListener('pageshow',()=>setTimeout(watch,0));
   setTimeout(watch,100);setTimeout(watch,700);setTimeout(watch,1800);
-  window.OBRIX_POS_LOGIN_LOADER={start,loadGroup,loadFeature,status:()=>({started,baseDone,index,total:BASE.length,groups:[...groupDone],features:[...featureDone],appOpen:appOpen()})};
+  window.OBRIX_POS_LOGIN_LOADER={start,upgradeOnline,loadGroup,loadFeature,status:()=>({started,baseDone,baseMode,groups:[...groupDone],offlineGroups:[...offlineGroupDone],features:[...featureDone],appOpen:appOpen()})};
 })();
