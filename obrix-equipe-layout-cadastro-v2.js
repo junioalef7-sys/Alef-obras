@@ -77,6 +77,7 @@ window.addEventListener('obrix:grupo-pronto',e=>{if(e.detail?.name==='equipe'){s
 const listaBox=document.getElementById('listaEquipe');if(listaBox)new MutationObserver(()=>setTimeout(arrumarCartoes,0)).observe(listaBox,{childList:true,subtree:true});
 setTimeout(aplicar,400);setTimeout(aplicar,1200);setTimeout(aplicar,2600);
 const css=document.createElement('style');css.id='obrixEquipeLayoutCadastroV2Css';css.textContent=`
+#equipe .obrix-atualizar-equipe{display:none!important}
 #equipe .obrix-equipe-botoes{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 #equipe .obrix-equipe-secundario{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
 #equipe .obrix-equipe-secundario .obrix-pagar-equipe-topo{grid-column:1/-1!important;justify-self:center!important;width:min(72%,340px)!important;background:#3b82f6!important;color:#fff!important;border-color:#3b82f6!important}
