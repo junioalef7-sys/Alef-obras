@@ -18,7 +18,6 @@
 
   function resumo(f){
     const ds=diariasList().filter(x=>String(x.funcionario_id)===String(f.id)&&!x.paga);
-    const qs=diariasList().filter(x=>String(x.funcionario_id)===String(f.id)&&x.paga);
     const vs=valesList().filter(x=>String(x.funcionario_id)===String(f.id)&&!x.quitado);
     const bs=bonusList().filter(x=>String(x.funcionario_id)===String(f.id)&&!x.pago);
     const td=ds.reduce((s,x)=>s+Number(x.valor_total||0),0);
@@ -30,8 +29,7 @@
       completas:ds.filter(x=>Number(x.quantidade||1)>=1).length,
       meias:ds.filter(x=>Number(x.quantidade||0)>0&&Number(x.quantidade||0)<1).length,
       bruto,tv,tb,abate,
-      liquido:Math.max(0,bruto-abate),
-      quitadas:qs.reduce((s,x)=>s+Number(x.valor_total||0),0)
+      liquido:Math.max(0,bruto-abate)
     };
   }
 
@@ -57,11 +55,10 @@
       </div>
 
       <div class="obrix-modelo-metricas">
-        <div class="obrix-modelo-metrica azul"><small>Bruto em aberto no filtro</small><b>${money(r.bruto)}</b></div>
+        <div class="obrix-modelo-metrica azul"><small>Total bruto em aberto</small><b>${money(r.bruto)}</b></div>
         <div class="obrix-modelo-metrica ouro"><small>Vales em aberto</small><b>${money(r.tv)}</b><span>Abate nesta folha: ${money(r.abate)}</span></div>
         <div class="obrix-modelo-metrica ouro"><small>Bônus e extras em aberto</small><b>${money(r.tb)}</b></div>
         <div class="obrix-modelo-metrica liquido"><small>Líquido a pagar</small><b>${money(r.liquido)}</b></div>
-        <div class="obrix-modelo-metrica verde"><small>Diárias quitadas no filtro</small><b>${money(r.quitadas)}</b></div>
       </div>
 
       <div class="obrix-modelo-acoes">
@@ -231,7 +228,7 @@
     .obrix-modelo-pagamento small,.obrix-modelo-pagamento span{display:block;color:#64748b}.obrix-modelo-pagamento small{font-size:15px;margin-bottom:4px}.obrix-modelo-pagamento strong{display:block;font-size:20px;margin-bottom:3px}.obrix-modelo-pagamento span{font-size:15px}.obrix-modelo-pagamento>b{display:block;font-size:30px;color:#3b82f6;margin-top:22px}
     .obrix-modelo-pilulas{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px}.obrix-modelo-pilulas span{border:1px solid #e2e8f0;border-radius:999px;padding:9px 15px;font-size:16px;background:#f8fafc}
     .obrix-modelo-metricas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    .obrix-modelo-metrica{min-height:116px;border:1px solid #e2e8f0;border-radius:16px;padding:16px;background:#f8fafc}.obrix-modelo-metrica small{display:block;color:#64748b;font-size:15px;margin-bottom:7px}.obrix-modelo-metrica b{display:block;font-size:26px}.obrix-modelo-metrica span{display:block;color:#64748b;font-size:13px;margin-top:4px}.obrix-modelo-metrica.azul b{color:#3b82f6}.obrix-modelo-metrica.ouro b{color:#d59b28}.obrix-modelo-metrica.verde b{color:#10b981}.obrix-modelo-metrica.liquido{background:#fff1f2;border-color:#fecdd3}.obrix-modelo-metrica.liquido b{color:#f43f5e}
+    .obrix-modelo-metrica{min-height:116px;border:1px solid #e2e8f0;border-radius:16px;padding:16px;background:#f8fafc;animation:none!important;transition:none!important;transform:none!important}.obrix-modelo-metrica small{display:block;color:#64748b;font-size:15px;margin-bottom:7px}.obrix-modelo-metrica b{display:block;font-size:26px}.obrix-modelo-metrica span{display:block;color:#64748b;font-size:13px;margin-top:4px}.obrix-modelo-metrica.azul b{color:#3b82f6}.obrix-modelo-metrica.ouro b{color:#d59b28}.obrix-modelo-metrica.liquido{background:#fff1f2;border-color:#fecdd3}.obrix-modelo-metrica.liquido b{color:#f43f5e}
     #equipe #listaEquipe .obrix-modelo-acoes{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:8px!important;margin-top:14px!important}
     #equipe #listaEquipe .obrix-modelo-acoes [data-acao="diaria"]{order:1!important;grid-column:span 2!important}
     #equipe #listaEquipe .obrix-modelo-acoes [data-acao="falta"]{order:2!important;grid-column:span 2!important}
@@ -246,6 +243,8 @@
     html[data-theme="dark"] .obrix-modelo-pagamento,body.dark .obrix-modelo-pagamento,html[data-theme="dark"] .obrix-modelo-pilulas span,body.dark .obrix-modelo-pilulas span,html[data-theme="dark"] .obrix-modelo-metrica,body.dark .obrix-modelo-metrica{background:#111827;border-color:#273449}
     html[data-theme="dark"] .obrix-modelo-metrica.liquido,body.dark .obrix-modelo-metrica.liquido{background:#231b27;border-color:#3d2934}
     html[data-theme="dark"] .obrix-modelo-acoes button,body.dark .obrix-modelo-acoes button,html[data-theme="dark"] .obrix-registros-acoes button,body.dark .obrix-registros-acoes button{background:#161d25;color:#f8fafc;border-color:#334155}
+    html[data-theme="dark"] #equipe #listaEquipe .obrix-modelo-acoes [data-acao="vale"],body.dark #equipe #listaEquipe .obrix-modelo-acoes [data-acao="vale"]{background:#60a5fa!important;background-color:#60a5fa!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#3b82f6!important;animation:none!important;transition:none!important;transform:none!important}
+    html[data-theme="dark"] #equipe #listaEquipe .obrix-modelo-acoes [data-acao="bonus"],body.dark #equipe #listaEquipe .obrix-modelo-acoes [data-acao="bonus"]{border-color:#f2b84b!important;box-shadow:none!important}
     html[data-theme="dark"] .obrix-registros-acoes .pagar,body.dark .obrix-registros-acoes .pagar{background:#2563eb;border-color:#2563eb}
     html[data-theme="dark"] .obrix-registro-linha,body.dark .obrix-registro-linha{border-color:#334155}
     @media(max-width:700px){
