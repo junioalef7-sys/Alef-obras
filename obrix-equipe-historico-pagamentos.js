@@ -4,7 +4,7 @@
   window.__OBRIX_EQUIPE_HIST_PAG=true;
 
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]||c));
   const dataBR=v=>{if(!v)return '—';const [y,m,d]=String(v).slice(0,10).split('-');return y&&m&&d?`${d}/${m}/${y}`:String(v)};
   let abrindo=false;
 
@@ -35,11 +35,12 @@
   function render(back,base){
     const lista=back.querySelector('#obrixHistPagLista'),res=back.querySelector('#obrixHistPagResumo');
     const ativos=base.pagamentos.filter(x=>!x.estornado_em),estornados=base.pagamentos.filter(x=>!!x.estornado_em);
-    const total=ativos.reduce((s,x)=>s+Number(x.valor_liquido||0),0);
-    res.innerHTML=`<div><small>Pagamentos válidos</small><strong>${ativos.length}</strong></div><div><small>Total pago acumulado</small><strong>${money(total)}</strong></div><div><small>Estornados</small><strong>${estornados.length}</strong></div>`;
+    const acumulados=new Map();
+    ativos.forEach(x=>{const id=String(x.funcionario_id||'');if(id)acumulados.set(id,(acumulados.get(id)||0)+Number(x.valor_liquido||0))});
+    res.innerHTML=`<div><small>Pagamentos válidos</small><strong>${ativos.length}</strong></div><div><small>Estornados</small><strong>${estornados.length}</strong></div>`;
     if(!base.pagamentos.length){lista.innerHTML='<div class="card muted">Nenhum pagamento registrado.</div>';return}
     lista.innerHTML=base.pagamentos.map(p=>{
-      const est=!!p.estornado_em,nome=base.funcs.get(String(p.funcionario_id))||'Funcionário';
+      const est=!!p.estornado_em,nome=base.funcs.get(String(p.funcionario_id))||'Funcionário',acumulado=acumulados.get(String(p.funcionario_id))||0;
       return `<article class="card obrix-hist-pag-card ${est?'estornado':''}" data-pag-id="${esc(p.id)}">
         <div class="obrix-hist-pag-cardtop"><div><h3>${esc(nome)}</h3><p>${dataBR(p.data_pagamento)}</p></div><span class="obrix-hist-pag-status">${est?'Estornado':'Pago'}</span></div>
         <div class="obrix-hist-pag-grid">
@@ -48,6 +49,7 @@
           <div><small>Vales</small><b>-${money(p.valor_vales)}</b></div>
           <div><small>Bruto</small><b>${money(p.valor_bruto)}</b></div>
           <div class="liq"><small>Líquido pago</small><b>${money(p.valor_liquido)}</b></div>
+          <div class="acum"><small>Total pago acumulado</small><b>${money(acumulado)}</b></div>
         </div>
         ${est?`<div class="obrix-hist-pag-estorno-info"><b>Estornado em ${dataBR(p.estornado_em)}</b>${p.motivo_estorno?`<span>Motivo: ${esc(p.motivo_estorno)}</span>`:''}</div>`:`<div class="obrix-hist-pag-actions"><button type="button" class="obrix-hist-pag-estornar" data-estornar-pag="${esc(p.id)}">Estornar pagamento</button></div>`}
       </article>`;
@@ -71,33 +73,37 @@
       try{await window.OBRIX_FIN?.render?.()}catch(_){}
       try{window.OBRIX_DASH?.paint?.()}catch(_){}
       alert('Pagamento estornado. Os valores voltaram para aberto e o Financeiro foi atualizado.');
-    }catch(e){btn.disabled=false;btn.textContent='Estornar pagamento';alert(e.message||'Não foi possível estornar o pagamento.')}
+    }catch(e){btn.disabled=false;btn.textContent='Estornar pagamento';alert(window.OBRIX_PT_ERROR?.(e)||e.message||'Não foi possível estornar o pagamento.')}
   }
 
   async function abrir(){
     if(abrindo)return;abrindo=true;const back=modal();
-    try{const base=await buscar();render(back,base)}catch(e){back.querySelector('#obrixHistPagLista').innerHTML=`<div class="status">${esc(e.message||'Não foi possível carregar o histórico de pagamentos.')}</div>`}finally{abrindo=false}
+    try{const base=await buscar();render(back,base)}catch(e){back.querySelector('#obrixHistPagLista').innerHTML=`<div class="status">${esc(window.OBRIX_PT_ERROR?.(e)||e.message||'Não foi possível carregar o histórico de pagamentos.')}</div>`}finally{abrindo=false}
   }
 
   function instalarBotao(){
     const sec=document.querySelector('#equipe .obrix-equipe-secundario')||document.querySelector('#equipe .obrix-equipe-botoes');if(!sec)return false;
     let btn=sec.querySelector('.obrix-historico-pagamentos-topo');
-    if(!btn){btn=document.createElement('button');btn.type='button';btn.className='obrix-cmd obrix-historico-pagamentos-topo';btn.textContent='🧾 Pagamentos';sec.appendChild(btn)}
-    btn.onclick=abrir;return true;
+    if(!btn){btn=document.createElement('button');btn.type='button';btn.className='obrix-cmd obrix-historico-pagamentos-topo';sec.appendChild(btn)}
+    btn.textContent='🧾 Histórico de pagamentos';btn.onclick=abrir;return true;
   }
 
   const css=document.createElement('style');css.textContent=`
-    .obrix-historico-pagamentos-topo{border-color:#0f172a!important;color:#0f172a!important}
+    .obrix-historico-pagamentos-topo{background:#fff!important;color:#334155!important;border-color:#cbd5e1!important;box-shadow:none!important}
     .obrix-hist-pag-modal{width:min(760px,100%);max-height:90vh;overflow:auto}.obrix-hist-pag-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.obrix-hist-pag-head h2{margin:0 0 4px}.obrix-hist-pag-head p{margin:0;color:#64748b}.obrix-hist-pag-x{border:0;background:transparent;color:inherit;font-size:30px;line-height:1}
-    .obrix-hist-pag-resumo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0}.obrix-hist-pag-resumo>div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px}.obrix-hist-pag-resumo small{display:block;color:#64748b;font-weight:700}.obrix-hist-pag-resumo strong{display:block;margin-top:4px;font-size:18px}
-    .obrix-hist-pag-card{margin-bottom:10px!important}.obrix-hist-pag-card.estornado{opacity:.72}.obrix-hist-pag-cardtop{display:flex;justify-content:space-between;gap:10px}.obrix-hist-pag-cardtop h3{margin:0}.obrix-hist-pag-cardtop p{margin:4px 0 0;color:#64748b}.obrix-hist-pag-status{height:max-content;border-radius:999px;padding:6px 9px;background:#dcfce7;color:#166534;font-size:12px;font-weight:900}.obrix-hist-pag-card.estornado .obrix-hist-pag-status{background:#fee2e2;color:#991b1b}
-    .obrix-hist-pag-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:12px}.obrix-hist-pag-grid>div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:9px}.obrix-hist-pag-grid small{display:block;color:#64748b;font-size:11px;font-weight:700}.obrix-hist-pag-grid b{display:block;margin-top:4px}.obrix-hist-pag-grid .liq{background:#ecfdf5;border-color:#bbf7d0}.obrix-hist-pag-actions{display:flex;justify-content:flex-end;margin-top:12px}.obrix-hist-pag-estornar{border:1px solid #fecaca;background:#fff1f2;color:#991b1b;border-radius:10px;padding:10px 12px;font-weight:900}.obrix-hist-pag-estornar:disabled{opacity:.55}.obrix-hist-pag-estorno-info{display:grid;gap:3px;margin-top:10px;padding:10px;border-radius:10px;background:#fff1f2;color:#991b1b;font-size:13px}
-    html[data-theme="dark"] .obrix-historico-pagamentos-topo,body.dark .obrix-historico-pagamentos-topo{color:#f8fafc!important;border-color:#64748b!important}html[data-theme="dark"] .obrix-hist-pag-resumo>div,body.dark .obrix-hist-pag-resumo>div,html[data-theme="dark"] .obrix-hist-pag-grid>div,body.dark .obrix-hist-pag-grid>div{background:#111827;border-color:#334155}html[data-theme="dark"] .obrix-hist-pag-grid .liq,body.dark .obrix-hist-pag-grid .liq{background:#0f241d;border-color:#14532d}html[data-theme="dark"] .obrix-hist-pag-estornar,body.dark .obrix-hist-pag-estornar,html[data-theme="dark"] .obrix-hist-pag-estorno-info,body.dark .obrix-hist-pag-estorno-info{background:#2b1217;border-color:#7f1d1d;color:#fecdd3}
-    @media(max-width:620px){.obrix-hist-pag-resumo{grid-template-columns:1fr 1fr}.obrix-hist-pag-resumo>div:nth-child(2){grid-column:1/-1;grid-row:2}.obrix-hist-pag-grid{grid-template-columns:1fr 1fr}.obrix-hist-pag-grid .liq{grid-column:1/-1}}
+    .obrix-hist-pag-resumo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:16px 0}.obrix-hist-pag-resumo>div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px}.obrix-hist-pag-resumo small{display:block;color:#64748b;font-weight:700}.obrix-hist-pag-resumo strong{display:block;margin-top:4px;font-size:18px}
+    .obrix-hist-pag-card{margin-bottom:10px!important}.obrix-hist-pag-card.estornado{opacity:.72}.obrix-hist-pag-cardtop{display:flex;justify-content:space-between;gap:10px}.obrix-hist-pag-cardtop h3{margin:0}.obrix-hist-pag-cardtop p{margin:4px 0 0;color:#64748b}.obrix-hist-pag-status{height:max-content;border:1px solid #cbd5e1;border-radius:999px;padding:6px 9px;background:#fff;color:#334155;font-size:12px;font-weight:900}.obrix-hist-pag-card.estornado .obrix-hist-pag-status{background:#fff1f2;color:#991b1b;border-color:#fecaca}
+    .obrix-hist-pag-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-top:12px}.obrix-hist-pag-grid>div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:9px}.obrix-hist-pag-grid small{display:block;color:#64748b;font-size:11px;font-weight:700}.obrix-hist-pag-grid b{display:block;margin-top:4px}.obrix-hist-pag-grid .liq,.obrix-hist-pag-grid .acum{background:#f8fafc;border-color:#e2e8f0}
+    .obrix-hist-pag-actions{display:flex;justify-content:flex-end;margin-top:12px}.obrix-hist-pag-estornar{border:1px solid #fecaca;background:#fff1f2;color:#991b1b;border-radius:10px;padding:10px 12px;font-weight:900}.obrix-hist-pag-estornar:disabled{opacity:.55}.obrix-hist-pag-estorno-info{display:grid;gap:3px;margin-top:10px;padding:10px;border-radius:10px;background:#fff1f2;color:#991b1b;font-size:13px}
+    html[data-theme="dark"] .obrix-historico-pagamentos-topo,body.dark .obrix-historico-pagamentos-topo{background:#111827!important;color:#f8fafc!important;border-color:#334155!important;box-shadow:none!important}
+    html[data-theme="dark"] .obrix-hist-pag-resumo>div,body.dark .obrix-hist-pag-resumo>div,html[data-theme="dark"] .obrix-hist-pag-grid>div,body.dark .obrix-hist-pag-grid>div,html[data-theme="dark"] .obrix-hist-pag-grid .liq,body.dark .obrix-hist-pag-grid .liq,html[data-theme="dark"] .obrix-hist-pag-grid .acum,body.dark .obrix-hist-pag-grid .acum{background:#111827;border-color:#334155}
+    html[data-theme="dark"] .obrix-hist-pag-status,body.dark .obrix-hist-pag-status{background:#111827;color:#f8fafc;border-color:#334155}
+    html[data-theme="dark"] .obrix-hist-pag-card.estornado .obrix-hist-pag-status,body.dark .obrix-hist-pag-card.estornado .obrix-hist-pag-status,html[data-theme="dark"] .obrix-hist-pag-estornar,body.dark .obrix-hist-pag-estornar,html[data-theme="dark"] .obrix-hist-pag-estorno-info,body.dark .obrix-hist-pag-estorno-info{background:#2b1217;border-color:#7f1d1d;color:#fecdd3}
+    @media(max-width:620px){.obrix-hist-pag-resumo{grid-template-columns:1fr 1fr}.obrix-hist-pag-grid{grid-template-columns:1fr 1fr}}
   `;document.head.appendChild(css);
 
   const t=setInterval(()=>{if(instalarBotao())clearInterval(t)},150);
   setTimeout(instalarBotao,1000);setTimeout(instalarBotao,2200);
-  new MutationObserver(()=>instalarBotao()).observe(document.documentElement,{childList:true,subtree:true});
+  window.addEventListener('obrix:grupo-pronto',e=>{if(e.detail?.name==='equipe')setTimeout(instalarBotao,80)});
   window.OBRIX_EQUIPE_HISTORICO_PAGAMENTOS={open:abrir};
 })();
