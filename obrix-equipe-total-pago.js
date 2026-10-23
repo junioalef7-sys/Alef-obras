@@ -1,2 +1,22 @@
-(()=>{'use strict';let carregando=false,timer=null,totais=new Map();const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});function funcionariosAtuais(){try{return typeof funcionarios!=='undefined'?(funcionarios||[]):(window.funcionarios||[])}catch(_){return window.funcionarios||[]}}function pintar(){const lista=document.getElementById('listaEquipe');if(!lista)return;const funcs=funcionariosAtuais();const cards=[...lista.querySelectorAll('.card.item')];cards.forEach((card,i)=>{const id=String(card.dataset.id||funcs[i]?.id||'');if(!id)return;const total=money(totais.get(id)||0);const metrica=card.querySelector('.obrix-modelo-metrica.verde');if(metrica){const small=metrica.querySelector('small'),b=metrica.querySelector('b');if(small&&small.textContent!=='Total pago acumulado')small.textContent='Total pago acumulado';if(b&&b.textContent!==total)b.textContent=total;return}const grid=card.querySelector('.grid');if(!grid)return;let box=grid.querySelector('.totalPagoMini');if(!box){box=document.createElement('div');box.className='mini totalPagoMini';box.innerHTML='<small>Total pago acumulado</small><b></b>';grid.appendChild(box)}else{const small=box.querySelector('small');if(small)small.textContent='Total pago acumulado'}const b=box.querySelector('b');if(b&&b.textContent!==total)b.textContent=total})}async function atualizar(){if(carregando||!window.OBRIX_BACKEND)return;carregando=true;try{const sb=await OBRIX_BACKEND.init(),r=await sb.rpc('obrix_totais_pagos_equipe');if(r.error)throw r.error;totais=new Map((r.data||[]).map(x=>[String(x.funcionario_id),Number(x.total_pago||0)]));pintar()}catch(e){console.warn('Equipe: total pago indisponível',e)}finally{carregando=false}}function agendar(ms=250){clearTimeout(timer);timer=setTimeout(atualizar,ms)}function instalar(){const anterior=window.renderEquipe;if(typeof anterior==='function'&&!anterior.__obrixTotalPagoStable){const renderComTotal=function(){const r=anterior.apply(this,arguments);setTimeout(pintar,0);return r};renderComTotal.__obrixTotalPagoStable=true;window.renderEquipe=renderComTotal}pintar();agendar(0)}document.addEventListener('click',e=>{const b=e.target.closest?.('button');if(!b)return;const t=(b.textContent||'').trim();if(t==='Equipe'||t.includes('Pagar')||t==='Confirmar pagamento'||t==='Estornar'||t==='Registrar diária'||t==='Vale'||t==='Bônus e Extras'){agendar(t==='Confirmar pagamento'||t==='Estornar'?900:300)}},true);new MutationObserver(m=>{if(m.some(x=>x.target?.id==='listaEquipe'||x.target?.closest?.('#listaEquipe')))requestAnimationFrame(pintar)}).observe(document.body,{childList:true,subtree:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',instalar);else instalar();window.OBRIX_EQUIPE_TOTAL_PAGO={refresh:atualizar,paint:pintar,get:id=>totais.get(String(id))||0};})();
+(()=>{'use strict';
+let carregando=false,timer=null,totais=new Map();
+async function atualizar(){
+  if(carregando||!window.OBRIX_BACKEND)return;
+  carregando=true;
+  try{
+    const sb=await OBRIX_BACKEND.init(),r=await sb.rpc('obrix_totais_pagos_equipe');
+    if(r.error)throw r.error;
+    totais=new Map((r.data||[]).map(x=>[String(x.funcionario_id),Number(x.total_pago||0)]));
+  }catch(e){console.warn('Equipe: total pago indisponível',e)}finally{carregando=false}
+}
+function agendar(ms=250){clearTimeout(timer);timer=setTimeout(atualizar,ms)}
+function instalar(){agendar(0)}
+document.addEventListener('click',e=>{
+  const b=e.target.closest?.('button');if(!b)return;
+  const t=(b.textContent||'').trim();
+  if(t==='Equipe'||t.includes('Pagar')||t==='Confirmar pagamento'||t==='Estornar'||t==='Registrar diária'||t==='Vale'||t==='Bônus e Extras')agendar(t==='Confirmar pagamento'||t==='Estornar'?900:300)
+},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',instalar,{once:true});else instalar();
+window.OBRIX_EQUIPE_TOTAL_PAGO={refresh:atualizar,paint:()=>{},get:id=>totais.get(String(id))||0};
+})();
 (()=>{if(window.__OBRIX_REGISTROS_EXCLUIR_LOADER)return;window.__OBRIX_REGISTROS_EXCLUIR_LOADER=true;const s=document.createElement('script');s.src='./obrix-equipe-registros-excluir.js?v=20261019diaria1';s.defer=true;document.head.appendChild(s)})();
