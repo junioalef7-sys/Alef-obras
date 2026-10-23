@@ -8,9 +8,7 @@ function prepararChecklist(modal){if(!modal||modal.__obrixSemChecklist)return;mo
 function observarModais(){if(!document.body||document.body.__obrixChecklistOpcionalObs)return;document.body.__obrixChecklistOpcionalObs=true;const obs=new MutationObserver(ms=>ms.forEach(m=>{m.addedNodes.forEach(n=>{if(!(n instanceof Element))return;if(n.matches?.('.obrix-checklist-diaria-modal'))prepararChecklist(n);n.querySelectorAll?.('.obrix-checklist-diaria-modal').forEach(prepararChecklist)});m.removedNodes.forEach(n=>{if(n instanceof Element&&n.__obrixCheckObs)n.__obrixCheckObs.disconnect()})}));obs.observe(document.body,{childList:true})}
 const css=document.createElement('style');css.id='obrixEquipeAjustes20261023Css';css.textContent=`
 #equipe .obrix-modelo-metrica{animation:none!important;transition:none!important;transform:none!important}
-#equipe .obrix-modelo-metrica.azul small{font-size:0!important}
-#equipe .obrix-modelo-metrica.azul small::after{content:'Total bruto em aberto';font-size:15px!important}
-@media(max-width:700px){#equipe .obrix-modelo-metrica.azul small::after{font-size:15px!important}}
+#equipe .obrix-modelo-metrica.azul small::after{content:none!important;display:none!important}
 `;document.head.appendChild(css);
 function start(){observarModais();patch();setTimeout(patch,350);setTimeout(patch,1000);setTimeout(patch,2200)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
