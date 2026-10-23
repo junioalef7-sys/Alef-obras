@@ -2,9 +2,41 @@
 if(window.__OBRIX_OFFLINE_BOOTSTRAP)return;window.__OBRIX_OFFLINE_BOOTSTRAP=true;
 const BASE_KEY='obrix_offline_base_v3',OLD_BASE_KEY='obrix_offline_base_v2',IDENTITY_KEY='obrix_offline_identity_v1';
 const OBRAS_PREFIX='obrix_obras_cache_v1:',EQUIPE_PREFIX='obrix_equipe_cache_v1:',FIN_PREFIX='obrix_financeiro_cache_v1:';
+const NOTAS_PREFIX='obrix_notas_cache_v1:',DIARIO_PREFIX='obrix_diario_cache_v3:',CHECK_PREFIX='obrix_checklist_cache_v1:';
 const read=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}};
 const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}};
-function discoverIdentity(){try{const prefixes=[EQUIPE_PREFIX,OBRAS_PREFIX,FIN_PREFIX];const ids=new Set();for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i)||'';for(const p of prefixes)if(k.startsWith(p)&&k.length>p.length)ids.add(k.slice(p.length))}if(ids.size!==1)return null;const empresa_id=[...ids][0],email=(document.getElementById('email')?.value||'').trim();return{empresa_id,email,nome:email,papel:'',updatedAt:new Date().toISOString(),discovered:true}}catch{return null}}
+function localSessionIdentity(){
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i)||'';if(!/^sb-.+-auth-token$/i.test(k))continue;
+      const raw=read(k,null);if(!raw)continue;
+      const session=raw?.currentSession||raw?.session||raw;
+      const user=session?.user||raw?.user||null;
+      const email=String(user?.email||'').trim();
+      let empresa_id=user?.user_metadata?.empresa_id||user?.app_metadata?.empresa_id||null;
+      if(!empresa_id&&session?.access_token){
+        try{const p=JSON.parse(atob(String(session.access_token).split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));empresa_id=p?.empresa_id||p?.app_metadata?.empresa_id||p?.user_metadata?.empresa_id||null}catch(_){ }
+      }
+      if(email||empresa_id)return{email,empresa_id:empresa_id?String(empresa_id):null};
+    }
+  }catch(_){ }
+  return null;
+}
+function discoverIdentity(){
+  try{
+    const typed=(document.getElementById('email')?.value||'').trim(),session=localSessionIdentity();
+    if(session?.email&&typed&&session.email.toLowerCase()!==typed.toLowerCase())return null;
+    if(session?.empresa_id)return{empresa_id:session.empresa_id,email:session.email||typed,nome:session.email||typed,papel:'',updatedAt:new Date().toISOString(),discovered:true,fromSession:true};
+    const prefixes=[EQUIPE_PREFIX,OBRAS_PREFIX,FIN_PREFIX,NOTAS_PREFIX,DIARIO_PREFIX,CHECK_PREFIX],ids=new Set();
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i)||'';
+      for(const p of prefixes)if(k.startsWith(p)&&k.length>p.length)ids.add(k.slice(p.length));
+    }
+    if(ids.size!==1)return null;
+    const empresa_id=[...ids][0],email=session?.email||typed;
+    return{empresa_id,email,nome:email,papel:'',updatedAt:new Date().toISOString(),discovered:true,fromSession:!!session?.email};
+  }catch{return null}
+}
 function hydrate(raw){
   const b=raw&&typeof raw==='object'?{...raw}:null,eid=b?.profile?.empresa_id;if(!eid)return b;
   const oc=read(OBRAS_PREFIX+eid,[]),ec=read(EQUIPE_PREFIX+eid,{funcionarios:[],diarias:[],faltas:[]}),fc=read(FIN_PREFIX+eid,{financeiro:[],extras:[],checklists:[],savedAt:null});
@@ -26,8 +58,12 @@ function hydrate(raw){
 function base(){
   const saved=read(BASE_KEY,null)||read(OLD_BASE_KEY,null);if(saved?.profile?.empresa_id)return hydrate(saved);
   let i=read(IDENTITY_KEY,null);if(!i?.empresa_id){i=discoverIdentity();if(i?.empresa_id)write(IDENTITY_KEY,i)}
-  if(i?.empresa_id)return hydrate({profile:{empresa_id:i.empresa_id,nome:i.nome||'',email:i.email||'',papel:i.papel||''},obras:[],funcionarios:[],financeiro:[],extras:[],diarias:[],vales:[],bonus:[],updatedAt:i.updatedAt||null,identityFallback:true,identityDiscovered:!!i.discovered});
-  return null
+  if(i?.empresa_id){
+    const rebuilt=hydrate({profile:{empresa_id:i.empresa_id,nome:i.nome||'',email:i.email||'',papel:i.papel||''},obras:[],funcionarios:[],financeiro:[],extras:[],diarias:[],vales:[],bonus:[],updatedAt:i.updatedAt||null,identityFallback:true,identityDiscovered:!!i.discovered,identityFromSession:!!i.fromSession});
+    if(rebuilt?.profile?.empresa_id)write(BASE_KEY,rebuilt);
+    return rebuilt;
+  }
+  return null;
 }
 function sameAccount(b){const typed=(document.getElementById('email')?.value||'').trim().toLowerCase(),cached=String(b?.profile?.email||'').trim().toLowerCase();return !typed||!cached||typed===cached}
 function restore(reason='offline'){
