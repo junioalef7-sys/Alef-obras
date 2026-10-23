@@ -15,6 +15,7 @@ function traduz(v){const raw=String(v?.message??v??'').trim();if(!raw)return'Nã
  if(/permission denied|row-level security|violates row-level security|not authorized|unauthorized|forbidden/.test(s))return'Você não tem permissão para realizar esta operação.';
  if(/duplicate key|unique constraint|already exists/.test(s))return'Este registro já existe.';
  if(/timeout|timed out/.test(s))return'A operação demorou demais. Tente novamente.';
+ if(/\b(error|failed|failure|invalid|required|not found|cannot|could not|must be|unexpected|constraint|violates|column|relation|request)\b/.test(s)){console.warn('OBRIX erro original:',raw);return'Ocorreu um erro ao concluir a operação. Tente novamente.'}
  return raw;
 }
 window.OBRIX_PT_ERROR=traduz;
