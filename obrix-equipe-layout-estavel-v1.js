@@ -1,17 +1,11 @@
 (()=>{'use strict';
-if(window.__OBRIX_EQUIPE_LAYOUT_ESTAVEL_V1)return;window.__OBRIX_EQUIPE_LAYOUT_ESTAVEL_V1=true;
-const css=document.createElement('style');css.id='obrixEquipeLayoutEstavelV1Css';css.textContent=`
+if(window.__OBRIX_EQUIPE_LAYOUT_ESTAVEL_V2)return;window.__OBRIX_EQUIPE_LAYOUT_ESTAVEL_V2=true;
+const css=document.createElement('style');css.id='obrixEquipeLayoutEstavelV2Css';css.textContent=`
 #equipe .obrix-equipe-controles{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;margin-bottom:18px!important}
 #equipe .obrix-equipe-botoes,#equipe .obrix-equipe-secundario{display:contents!important}
-#equipe .obrix-equipe-controles [data-cmd="novo"]{order:1!important;grid-column:1!important}
-#equipe .obrix-equipe-controles [data-cmd="lista"]{order:2!important;grid-column:2!important}
-#equipe .obrix-equipe-controles [data-cmd="toggle"]{order:3!important;grid-column:1!important}
-#equipe .obrix-equipe-controles .obrix-historico-pagamentos-topo{order:4!important;grid-column:2!important}
-#equipe .obrix-equipe-controles .obrix-filtro-equipe{order:5!important;grid-column:1!important;width:100%!important}
-#equipe .obrix-equipe-controles .obrix-pagar-equipe-topo{order:6!important;grid-column:2!important;width:100%!important}
-#equipe .obrix-equipe-controles [data-cmd="excluir"]{order:7!important;grid-column:1/-1!important;width:100%!important}
 #equipe .obrix-atualizar-equipe{display:none!important}
 #equipe [data-acao="faltas"],#equipe [data-acao="editar"]{display:none!important}
+#equipe .obrix-slot-vazio{visibility:hidden!important;pointer-events:none!important;min-height:54px!important}
 #equipe #listaEquipe .obrix-modelo-acoes{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
 #equipe #listaEquipe .obrix-modelo-acoes [data-acao="diaria"]{order:1!important;grid-column:1!important}
 #equipe #listaEquipe .obrix-modelo-acoes [data-acao="falta"]{order:2!important;grid-column:2!important}
@@ -31,18 +25,29 @@ function decorarCard(card){
  vale.onclick=()=>acaoExtra(id,'vale');bonus.onclick=()=>acaoExtra(id,'bonus');
 }
 function decorarCards(){document.querySelectorAll('#equipe #listaEquipe .obrix-modelo-card').forEach(decorarCard)}
-function rotulosTopo(){
+function ehVale(b){const t=(b?.textContent||'').trim().toLowerCase();return t==='vale'||t==='💵 vale'||t==='💰 vale'}
+function ehBonus(b){const t=(b?.textContent||'').trim().toLowerCase();return t.includes('bônus')&&t.includes('extra')}
+function trocarTopo(){
  const box=document.querySelector('#equipe .obrix-equipe-controles');if(!box)return;
- const novo=box.querySelector('[data-cmd="novo"]');if(novo)novo.textContent='＋ Novo Funcionário';
- box.querySelectorAll('button').forEach(b=>{const t=(b.textContent||'').trim().toLowerCase();if((t==='vale'||t.includes('bônus e extras'))&&!b.hasAttribute('data-obrix-card-extra'))b.style.display='none'});
+ const novo=box.querySelector('[data-cmd="novo"]'),lista=box.querySelector('[data-cmd="lista"]');if(novo)novo.textContent='＋ Novo Funcionário';
+ if(box.dataset.obrixTrocaValeBonus==='1')return;
+ const botoes=[...box.querySelectorAll('button')].filter(b=>!b.classList.contains('obrix-atualizar-equipe'));
+ const vale=botoes.find(b=>b!==novo&&b!==lista&&ehVale(b));
+ const bonus=botoes.find(b=>b!==novo&&b!==lista&&ehBonus(b));
+ if(!novo||!lista||!vale||!bonus)return;
+ const paiNovo=novo.parentElement,paiLista=lista.parentElement;
+ const slotNovo=document.createElement('span'),slotLista=document.createElement('span');slotNovo.className='obrix-slot-vazio';slotLista.className='obrix-slot-vazio';
+ paiNovo?.insertBefore(slotNovo,novo);paiLista?.insertBefore(slotLista,lista);
+ vale.replaceWith(novo);bonus.replaceWith(lista);
+ box.dataset.obrixTrocaValeBonus='1';
 }
 function patchApi(){
- const api=window.OBRIX_EQUIPE_MODELO;if(!api||api.__obrixLayoutEstavelPatched)return;
- if(typeof api.render==='function'){const old=api.render;api.render=function(){const r=old.apply(this,arguments);setTimeout(decorarCards,0);return r}}
- if(typeof api.refresh==='function'){const old=api.refresh;api.refresh=async function(){const r=await old.apply(this,arguments);decorarCards();return r}}
- api.__obrixLayoutEstavelPatched=true;
+ const api=window.OBRIX_EQUIPE_MODELO;if(!api||api.__obrixLayoutEstavelV2Patched)return;
+ if(typeof api.render==='function'){const old=api.render;api.render=function(){const r=old.apply(this,arguments);setTimeout(()=>{decorarCards();trocarTopo()},0);return r}}
+ if(typeof api.refresh==='function'){const old=api.refresh;api.refresh=async function(){const r=await old.apply(this,arguments);decorarCards();trocarTopo();return r}}
+ api.__obrixLayoutEstavelV2Patched=true;
 }
-function aplicar(){rotulosTopo();patchApi();decorarCards()}
+function aplicar(){trocarTopo();patchApi();decorarCards()}
 document.addEventListener('change',e=>{if(e.target?.matches?.('#equipe .obrix-filtro-equipe'))setTimeout(decorarCards,0)},true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(aplicar,120),{once:true});else setTimeout(aplicar,120);
 window.addEventListener('obrix:grupo-pronto',e=>{if(e.detail?.name==='equipe'){setTimeout(aplicar,60);setTimeout(aplicar,700)}});
