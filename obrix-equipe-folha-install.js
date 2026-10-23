@@ -24,9 +24,7 @@
   }
 
   function garantirBotoesTopo(){
-    const botoes=document.querySelector('#equipe .obrix-equipe-botoes');if(!botoes)return;
-    let vale=botoes.querySelector('[data-cmd="vale"]');if(!vale){vale=document.createElement('button');vale.type='button';vale.className='obrix-cmd obrix-vale-topo';vale.dataset.cmd='vale';vale.textContent='💵 Vale';botoes.appendChild(vale)}vale.onclick=()=>abrirAcaoTopo('vale');
-    let bonus=botoes.querySelector('[data-cmd="bonus"]');if(!bonus){bonus=document.createElement('button');bonus.type='button';bonus.className='obrix-cmd obrix-bonus-topo';bonus.dataset.cmd='bonus';bonus.textContent='🎁 Bônus e Extras';botoes.appendChild(bonus)}bonus.onclick=()=>abrirAcaoTopo('bonus');
+    document.querySelectorAll('#equipe .obrix-equipe-botoes [data-cmd="vale"],#equipe .obrix-equipe-botoes [data-cmd="bonus"],#equipe .obrix-vale-topo,#equipe .obrix-bonus-topo').forEach(b=>b.remove());
   }
 
   function retirarAcoesDosRegistros(){document.querySelectorAll('.obrix-registros-acoes [data-extra="vale"],.obrix-registros-acoes [data-extra="bonus"]').forEach(b=>b.remove())}
