@@ -68,8 +68,8 @@
         <button type="button" data-acao="diaria" data-id="${esc(f.id)}">Marcar diária</button>
         <button type="button" data-acao="falta" data-id="${esc(f.id)}">Falta</button>
         <button type="button" data-acao="registros" data-id="${esc(f.id)}">Ver registros</button>
-        <button type="button" data-acao="faltas" data-id="${esc(f.id)}">Histórico de faltas</button>
-        <button type="button" class="editar" data-acao="editar" data-id="${esc(f.id)}">Editar cadastro</button>
+        <button type="button" data-acao="vale" data-id="${esc(f.id)}">Vale</button>
+        <button type="button" data-acao="bonus" data-id="${esc(f.id)}">Bônus e Extras</button>
       </div>
     </article>`;
   }
@@ -146,6 +146,8 @@
     if(tipo==='diaria')return window.equipeAcao?.(String(id),'diaria');
     if(tipo==='falta')return registrarFalta(id);
     if(tipo==='registros')return verRegistros(id);
+    if(tipo==='vale')return window.equipeAcao?.(String(id),'vale');
+    if(tipo==='bonus')return window.equipeAcao?.(String(id),'bonus');
     if(tipo==='faltas')return historicoFaltas(id);
     if(tipo==='editar')return editarCadastro(id);
   }
@@ -185,15 +187,15 @@
     let box=sec.querySelector('.obrix-equipe-controles');
     if(!box){
       box=document.createElement('div');box.className='obrix-equipe-controles';
-      box.innerHTML=`<div class="obrix-equipe-botoes"><button class="obrix-cmd" data-cmd="lista" type="button">👥 Funcionários</button><button class="obrix-cmd" data-cmd="toggle" type="button">⏯️ Ativar / Desativar</button><button class="obrix-cmd perigo" data-cmd="excluir" type="button">🗑️ Excluir</button><button class="obrix-cmd destaque" data-cmd="novo" type="button">＋ Funcionário</button></div><div class="obrix-equipe-secundario"><select class="obrix-filtro-equipe" aria-label="Filtrar funcionários"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select><button class="obrix-cmd obrix-atualizar-equipe" type="button">↻ Atualizar</button></div>`;
+      box.innerHTML=`<div class="obrix-equipe-botoes"><button class="obrix-cmd destaque" data-cmd="novo" type="button">Novo Funcionário</button><button class="obrix-cmd" data-cmd="lista" type="button">👥 Funcionários</button><button class="obrix-cmd" data-cmd="toggle" type="button">⏯️ Ativar / Desativar</button><button class="obrix-cmd perigo" data-cmd="excluir" type="button">🗑️ Excluir</button></div><div class="obrix-equipe-secundario"><select class="obrix-filtro-equipe" aria-label="Filtrar funcionários"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option></select><button class="obrix-cmd obrix-atualizar-equipe" type="button">↻ Atualizar</button></div>`;
       sec.querySelector('.hero')?.insertAdjacentElement('afterend',box);
     }
-    box.querySelector('[data-cmd="lista"]').onclick=()=>window.OBRIX_FUNCIONARIOS_PESSOAL?.open?.();
-    box.querySelector('[data-cmd="toggle"]').onclick=()=>seletor('toggle');
-    box.querySelector('[data-cmd="excluir"]').onclick=()=>seletor('delete');
-    box.querySelector('[data-cmd="novo"]').onclick=novoFuncionario;
-    box.querySelector('.obrix-atualizar-equipe').onclick=atualizar;
-    const sel=box.querySelector('.obrix-filtro-equipe');sel.value=filtro;sel.onchange=e=>{filtro=e.target.value;renderEquipeModelo()};
+    const lista=box.querySelector('[data-cmd="lista"]');if(lista)lista.onclick=()=>window.OBRIX_FUNCIONARIOS_PESSOAL?.open?.();
+    const toggle=box.querySelector('[data-cmd="toggle"]');if(toggle)toggle.onclick=()=>seletor('toggle');
+    const excluir=box.querySelector('[data-cmd="excluir"]');if(excluir)excluir.onclick=()=>seletor('delete');
+    const novo=box.querySelector('[data-cmd="novo"]');if(novo){novo.textContent='Novo Funcionário';novo.onclick=novoFuncionario}
+    const atualizarBtn=box.querySelector('.obrix-atualizar-equipe');if(atualizarBtn)atualizarBtn.onclick=atualizar;
+    const sel=box.querySelector('.obrix-filtro-equipe');if(sel){sel.value=filtro;sel.onchange=e=>{filtro=e.target.value;renderEquipeModelo()}}
   }
 
   function instalar(){
@@ -207,12 +209,19 @@
   const css=document.createElement('style');
   css.textContent=`
     #equipe .obrix-head-original{display:none!important}
-    .obrix-equipe-controles{margin:0 0 18px}
-    .obrix-equipe-botoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .obrix-equipe-secundario{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    #equipe .obrix-equipe-controles{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;margin:0 0 18px!important}
+    #equipe .obrix-equipe-botoes,#equipe .obrix-equipe-secundario{display:contents!important}
+    #equipe .obrix-equipe-controles [data-cmd="novo"]{order:1!important;grid-column:1!important}
+    #equipe .obrix-equipe-controles [data-cmd="lista"]{order:2!important;grid-column:2!important}
+    #equipe .obrix-equipe-controles .obrix-pagar-equipe-topo{order:3!important;grid-column:1!important;width:100%!important}
+    #equipe .obrix-equipe-controles .obrix-historico-pagamentos-topo{order:4!important;grid-column:2!important;width:100%!important}
+    #equipe .obrix-equipe-controles [data-cmd="toggle"]{order:5!important;grid-column:1!important}
+    #equipe .obrix-equipe-controles .obrix-filtro-equipe{order:6!important;grid-column:2!important;width:100%!important}
+    #equipe .obrix-equipe-controles [data-cmd="excluir"]{order:7!important;grid-column:1/-1!important;width:100%!important}
+    #equipe .obrix-atualizar-equipe{display:none!important}
     .obrix-cmd,.obrix-filtro-equipe{width:100%;min-height:58px;border:1px solid #cbd5e1;border-radius:15px;background:#fff;color:#0f172a;font:inherit;font-weight:900;padding:12px;text-align:center}
     .obrix-cmd.destaque{border-color:#c48b18;color:#a66f00}.obrix-cmd.perigo{border-color:#ef4444;color:#dc2626}
-    #listaEquipe{display:flex;flex-direction:column;gap:18px}
+    #listaEquipe{display:flex!important;flex-direction:column;gap:18px;visibility:visible!important;opacity:1!important}
     #listaEquipe .obrix-modelo-card{border-radius:22px;padding:28px;margin:0;overflow:hidden}
     .obrix-modelo-cabecalho h3{font-size:28px;line-height:1.15;margin:0 0 8px;font-weight:900}
     .obrix-modelo-subnome{font-size:20px;color:#64748b;margin-bottom:20px}
@@ -223,7 +232,13 @@
     .obrix-modelo-pilulas{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px}.obrix-modelo-pilulas span{border:1px solid #e2e8f0;border-radius:999px;padding:9px 15px;font-size:16px;background:#f8fafc}
     .obrix-modelo-metricas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     .obrix-modelo-metrica{min-height:116px;border:1px solid #e2e8f0;border-radius:16px;padding:16px;background:#f8fafc}.obrix-modelo-metrica small{display:block;color:#64748b;font-size:15px;margin-bottom:7px}.obrix-modelo-metrica b{display:block;font-size:26px}.obrix-modelo-metrica span{display:block;color:#64748b;font-size:13px;margin-top:4px}.obrix-modelo-metrica.azul b{color:#3b82f6}.obrix-modelo-metrica.ouro b{color:#d59b28}.obrix-modelo-metrica.verde b{color:#10b981}.obrix-modelo-metrica.liquido{background:#fff1f2;border-color:#fecdd3}.obrix-modelo-metrica.liquido b{color:#f43f5e}
-    .obrix-modelo-acoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}.obrix-modelo-acoes button{min-height:58px;border:1px solid #cbd5e1;border-radius:14px;background:#fff;color:#0f172a;font:inherit;font-weight:900;padding:12px}.obrix-modelo-acoes .editar{grid-column:1/-1}
+    #equipe #listaEquipe .obrix-modelo-acoes{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:8px!important;margin-top:14px!important}
+    #equipe #listaEquipe .obrix-modelo-acoes [data-acao="diaria"]{order:1!important;grid-column:span 2!important}
+    #equipe #listaEquipe .obrix-modelo-acoes [data-acao="falta"]{order:2!important;grid-column:span 2!important}
+    #equipe #listaEquipe .obrix-modelo-acoes [data-acao="registros"]{order:3!important;grid-column:span 2!important}
+    #equipe #listaEquipe .obrix-modelo-acoes [data-acao="vale"]{order:4!important;grid-column:span 3!important}
+    #equipe #listaEquipe .obrix-modelo-acoes [data-acao="bonus"]{order:5!important;grid-column:span 3!important}
+    #equipe #listaEquipe .obrix-modelo-acoes button{min-width:0!important;width:100%!important;min-height:48px!important;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#334155;font-weight:900;padding:7px 4px!important;font-size:12px!important;line-height:1.05!important;white-space:nowrap!important;word-break:normal!important;overflow-wrap:normal!important}
     .obrix-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.obrix-modal-head h2{margin:0}.obrix-modal-x{border:0;background:transparent;color:inherit;font-size:30px;line-height:1;padding:2px 8px}.obrix-modelo-modal label{display:block;font-weight:800;margin-top:8px}.obrix-modelo-modal input,.obrix-modelo-modal select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;margin:5px 0 9px;font:inherit}.obrix-registros-lista,.obrix-carregando{display:grid;gap:8px}.obrix-registro-linha{display:flex;justify-content:space-between;gap:12px;border:1px solid #e2e8f0;border-radius:12px;padding:12px}.obrix-registro-linha span,.obrix-registro-linha small{display:block;color:#64748b;margin-top:3px}.obrix-registro-valor{text-align:right}.obrix-registros-acoes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.obrix-registros-acoes button{border:1px solid #cbd5e1;background:#fff;border-radius:10px;padding:11px;font-weight:900}.obrix-registros-acoes .pagar{background:#0f172a;color:#fff;border-color:#0f172a}
     html[data-theme="dark"] .obrix-cmd,body.dark .obrix-cmd,html[data-theme="dark"] .obrix-filtro-equipe,body.dark .obrix-filtro-equipe{background:#111827;color:#f8fafc;border-color:#334155}
     html[data-theme="dark"] #listaEquipe .obrix-modelo-card,body.dark #listaEquipe .obrix-modelo-card{background:#0f172a;color:#f8fafc;border-color:#334155}
@@ -234,9 +249,10 @@
     html[data-theme="dark"] .obrix-registros-acoes .pagar,body.dark .obrix-registros-acoes .pagar{background:#2563eb;border-color:#2563eb}
     html[data-theme="dark"] .obrix-registro-linha,body.dark .obrix-registro-linha{border-color:#334155}
     @media(max-width:700px){
-      #listaEquipe .obrix-modelo-card{padding:20px 18px}.obrix-modelo-cabecalho h3{font-size:24px}.obrix-modelo-subnome{font-size:17px}.obrix-modelo-pagamento{padding:17px}.obrix-modelo-pagamento>b{font-size:27px}.obrix-modelo-metrica{min-height:106px;padding:14px}.obrix-modelo-metrica b{font-size:22px}.obrix-modelo-acoes button{min-height:54px}.obrix-cmd,.obrix-filtro-equipe{min-height:54px;font-size:14px;padding:10px 8px}
+      #listaEquipe .obrix-modelo-card{padding:20px 18px}.obrix-modelo-cabecalho h3{font-size:24px}.obrix-modelo-subnome{font-size:17px}.obrix-modelo-pagamento{padding:17px}.obrix-modelo-pagamento>b{font-size:27px}.obrix-modelo-metrica{min-height:106px;padding:14px}.obrix-modelo-metrica b{font-size:22px}.obrix-cmd,.obrix-filtro-equipe{min-height:54px;font-size:14px;padding:10px 8px}
+      #equipe #listaEquipe .obrix-modelo-acoes button{min-height:46px!important;font-size:11.5px!important;padding:6px 2px!important}
     }
-    @media(max-width:390px){.obrix-modelo-metricas{grid-template-columns:1fr}.obrix-modelo-acoes{grid-template-columns:1fr}.obrix-modelo-acoes .editar{grid-column:auto}.obrix-registros-acoes{grid-template-columns:1fr}}
+    @media(max-width:390px){.obrix-modelo-metricas{grid-template-columns:1fr}.obrix-registros-acoes{grid-template-columns:1fr}#equipe #listaEquipe .obrix-modelo-acoes{grid-template-columns:repeat(6,minmax(0,1fr))!important}#equipe #listaEquipe .obrix-modelo-acoes button{font-size:10.5px!important;letter-spacing:-.15px!important}}
   `;
   document.head.appendChild(css);
 
