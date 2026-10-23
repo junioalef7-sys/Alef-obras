@@ -15,12 +15,16 @@ function traduz(v){const raw=String(v?.message??v??'').trim();if(!raw)return'Nã
  if(/permission denied|row-level security|violates row-level security|not authorized|unauthorized|forbidden/.test(s))return'Você não tem permissão para realizar esta operação.';
  if(/duplicate key|unique constraint|already exists/.test(s))return'Este registro já existe.';
  if(/timeout|timed out/.test(s))return'A operação demorou demais. Tente novamente.';
- if(/\b(error|failed|failure|invalid|required|not found|cannot|could not|must be|unexpected|constraint|violates|column|relation|request)\b/.test(s)){console.warn('OBRIX erro original:',raw);return'Ocorreu um erro ao concluir a operação. Tente novamente.'}
+ if(/not null|violates.*constraint|required field|missing required/.test(s))return'Preencha os campos obrigatórios e tente novamente.';
+ if(/foreign key|violates foreign key|referenced row/.test(s))return'Não foi possível concluir porque existem dados vinculados a este registro.';
+ if(/storage|bucket|upload.*failed|file.*too large/.test(s))return'Não foi possível enviar o arquivo. Verifique o arquivo e tente novamente.';
+ const pareceIngles=/\b(the|this|that|is|are|was|were|with|from|for|to|of|and|or|not|failed|failure|error|invalid|required|missing|cannot|could|request|response|column|relation|constraint|permission|denied|unexpected|server|database|user|password|email|token|session|found)\b/.test(s);
+ if(pareceIngles){console.warn('OBRIX erro original:',raw);return'Ocorreu um erro ao concluir a operação. Tente novamente.'}
  return raw;
 }
 window.OBRIX_PT_ERROR=traduz;
 window.alert=function(v){return originalAlert(traduz(v))};
 function patchMostrar(){const fn=window.mostrarErro;if(typeof fn!=='function'||fn.__obrixPtBr)return;const w=function(e){return fn.call(this,{message:traduz(e)})};w.__obrixPtBr=true;window.mostrarErro=w}
-patchMostrar();setTimeout(patchMostrar,300);setTimeout(patchMostrar,1200);
+patchMostrar();setTimeout(patchMostrar,100);setTimeout(patchMostrar,500);setTimeout(patchMostrar,1500);
 window.addEventListener('pageshow',patchMostrar);window.addEventListener('obrix:session-shell',patchMostrar);
 })();
