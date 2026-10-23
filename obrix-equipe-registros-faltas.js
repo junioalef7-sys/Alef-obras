@@ -6,7 +6,7 @@ const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'B
 function lista(nome){try{const v=window[nome];return Array.isArray(v)?v:[]}catch(_){return[]}}
 function nomeObra(id){return lista('obras').find(o=>String(o.id)===String(id))?.nome||'Sem obra'}
 function nomeFuncionario(id){return lista('funcionarios').find(f=>String(f.id)===String(id))?.nome||'Funcionário'}
-function removerBotaoHistorico(){document.querySelectorAll('#equipe [data-acao="faltas"]').forEach(b=>b.remove())}
+function limparRemovidos(){document.querySelectorAll('#equipe [data-acao="faltas"],#equipe [data-acao="editar"]').forEach(b=>b.remove())}
 function criarModal(id){
  const back=document.createElement('div');back.className='modalBack obrix-registros-faltas-back';
  back.innerHTML=`<div class="modal obrix-modelo-modal"><div class="obrix-modal-head"><h2>Registros do funcionário</h2><button type="button" class="obrix-modal-x" aria-label="Fechar">×</button></div><p class="muted"><b>${esc(nomeFuncionario(id))}</b></p><div class="obrix-registros-corpo"><div class="obrix-carregando">Carregando...</div></div></div>`;
@@ -42,9 +42,9 @@ async function carregar(id,back){
 }
 function abrir(id){const back=criarModal(id);void carregar(id,back)}
 document.addEventListener('click',e=>{const b=e.target.closest?.('#equipe [data-acao="registros"]');if(!b)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();abrir(b.dataset.id)},true);
-function instalar(){removerBotaoHistorico();const box=document.getElementById('listaEquipe');if(box&&!box.__obrixFaltasObserver){box.__obrixFaltasObserver=true;new MutationObserver(removerBotaoHistorico).observe(box,{childList:true,subtree:true})}}
+function instalar(){limparRemovidos();const box=document.getElementById('listaEquipe');if(box&&!box.__obrixFaltasObserver){box.__obrixFaltasObserver=true;new MutationObserver(limparRemovidos).observe(box,{childList:true,subtree:true})}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(instalar,0),{once:true});else instalar();
 window.addEventListener('obrix:grupo-pronto',e=>{if(e.detail?.name==='equipe')setTimeout(instalar,0)});
-const css=document.createElement('style');css.textContent='.obrix-excluir-falta{margin-top:8px;border:1px solid #ef4444!important;background:#fff!important;color:#dc2626!important;border-radius:9px;padding:7px 10px;font-weight:900}.obrix-registro-falta .obrix-registro-valor{min-width:104px}.obrix-registros-acoes{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.obrix-registros-acoes .pagar{grid-column:1!important}.obrix-registros-acoes .pagamentos{grid-column:2!important}html[data-theme="dark"] .obrix-excluir-falta,body.dark .obrix-excluir-falta{background:#161d25!important;color:#f87171!important;border-color:#ef4444!important}@media(max-width:390px){.obrix-registros-acoes{grid-template-columns:repeat(2,minmax(0,1fr))!important}}';document.head.appendChild(css);
-window.OBRIX_EQUIPE_REGISTROS_FALTAS={open:abrir,refreshButtons:removerBotaoHistorico};
+const css=document.createElement('style');css.textContent='#equipe .obrix-atualizar-equipe,#equipe .obrix-pagar-equipe-topo,#equipe .obrix-historico-pagamentos-topo,.obrix-pessoal-editar-btn{display:none!important}.obrix-excluir-falta{margin-top:8px;border:1px solid #ef4444!important;background:#fff!important;color:#dc2626!important;border-radius:9px;padding:7px 10px;font-weight:900}.obrix-registro-falta .obrix-registro-valor{min-width:104px}.obrix-registros-acoes{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.obrix-registros-acoes .pagar{grid-column:1!important}.obrix-registros-acoes .pagamentos{grid-column:2!important}html[data-theme="dark"] .obrix-excluir-falta,body.dark .obrix-excluir-falta{background:#161d25!important;color:#f87171!important;border-color:#ef4444!important}@media(max-width:390px){.obrix-registros-acoes{grid-template-columns:repeat(2,minmax(0,1fr))!important}}';document.head.appendChild(css);
+window.OBRIX_EQUIPE_REGISTROS_FALTAS={open:abrir,refreshButtons:limparRemovidos};
 })();
