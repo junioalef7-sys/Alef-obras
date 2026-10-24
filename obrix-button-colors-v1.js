@@ -18,7 +18,7 @@ function paint(b,theme){let bg=PETROLEO,border=PETROLEO_BORDER,color=WHITE,shado
  else if(theme==='petroleum'){shadow='0 6px 16px rgba(23,107,135,.18)'}
  else if(theme==='cancel-dark'){bg=BLACK;border=BLACK;color=WHITE}
  else if(theme==='team-light'){bg=TEAM_LIGHT;border=TEAM_LIGHT_BORDER;color=TEAM_LIGHT_TEXT}
- else if(theme==='team-blue'){bg=TEAM_BLUE;border='#1d4ed8'}else if(theme==='team-slate'){bg=TEAM_SLATE;border='#334155'}else if(theme==='team-green'){bg=TEAM_GREEN;border='#2A8E50'}else if(theme==='team-orange'){bg=TEAM_ORANGE;border='#9a3412'}else if(theme==='team-steel'){bg=TEAM_STEEL;border='#075985'}else if(theme==='team-amber'){bg=TEAM_AMBER;border='#854d0e'}else if(theme==='team-teal'){bg=TEAM_TEAL;border='#115e59'}
+ else if(theme==='team-blue'){bg=TEAM_BLUE;border='#1d4ed8'}else if(theme==='team-slate'){bg=TEAM_SLATE;border='#334155'}else if(theme==='team-green'){bg=TEAM_GREEN;border='#2A8E50'}else if(theme==='team-orange'){bg=TEAM_ORANGE;border='#9a3412'}else if(theme==='team-steel'){bg=TEAM_STEEL;border='#075985'}else if(theme==='team-amber'){bg=TEAM_AMER;border='#854d0e'}else if(theme==='team-teal'){bg=TEAM_TEAL;border='#115e59'}
  else if(theme==='team-neutral'){bg=isDark()?DARK_NEUTRAL:'#e2e8f0';border=isDark()?'#3d4650':'#cbd5e1';color=isDark()?'#eef2f7':'#334155'}
  else if(theme==='transparent'){bg='transparent';border='transparent';shadow='none';const login=b.matches?.('.obrixEyeLiteBtn')||!!b.closest?.('#obrixAuthAux');color=b.closest?.('#menuMain')?(isDark()?WHITE:'#0f172a'):(isDark()?'#eef2f7':(login?'#0f172a':'#334155'))}
  force(b,'background',bg);force(b,'background-color',bg);force(b,'background-image','none');force(b,'border-color',border);force(b,'color',color);force(b,'-webkit-text-fill-color',color);force(b,'box-shadow',shadow);force(b,'text-shadow','none')}
@@ -32,16 +32,18 @@ function classify(b){if(!(b instanceof HTMLButtonElement))return;const t=norm(te
  const dadosVerde=['pagar equipe','pagar obras','pagar financeiro'].some(x=>t===x||t.endsWith(' '+x));
  if(b.id==='cfgSair'||(t==='sair da conta'&&!b.closest?.('#menuMain'))){applyClass(b,'obrixTransparentButton','transparent');return}
  if(dadosVerde){applyClass(b,'obrixTeamGreen','team-green');return}
- if(b.id==='cfgExcluirConta'||danger(b)){applyClass(b,'obrixDangerButton','danger');return}
+ if(b.id==='cfgExcluirConta'||(b.closest?.('#configMain')&&t==='excluir conta')||danger(b)){applyClass(b,'obrixDangerButton','danger');return}
  if(b.classList.contains('obrixEyeLiteBtn')||b.closest?.('#obrixAuthAux')){applyClass(b,'obrixTransparentButton','transparent');return}
  if(b.classList.contains('obrix-pessoal-item')){applyClass(b,'obrixTransparentButton','transparent');return}
  if(b.closest?.('#orcamentosMain')&&t.includes('rascunho')){applyClass(b,'obrixTransparentButton','transparent');return}
  if(b.id==='diarioSalvar'&&!isDark()){applyClass(b,'obrixCancelDark','cancel-dark');return}
+ if(b.closest?.('#diarioMain')&&t==='finalizar'){applyClass(b,'obrixTransparentButton','transparent');return}
  if(b.id==='obrixNotifBell'||b.closest?.('.bottom')||b.closest?.('#menuMain')||t==='selecionar todos'||(b.closest?.('#estoqueMain .nav')&&b.hasAttribute('data-est'))){applyClass(b,'obrixTransparentButton','transparent');return}
  if(team){
   if(!isDark()&&mt.includes('registrar diaria')&&(t==='cancelar'||t==='registrar'||t.includes('registrar diaria'))){applyClass(b,'obrixCancelDark','cancel-dark');return}
   if(!isDark()&&mt.includes('registrar falta')&&(t==='cancelar'||t==='registrar'||t.includes('registrar falta'))){applyClass(b,'obrixCancelDark','cancel-dark');return}
   if(!isDark()&&mt.includes('registrar vale')&&(t==='cancelar'||t==='registrar'||t.includes('registrar vale'))){applyClass(b,'obrixCancelDark','cancel-dark');return}
+  if(!isDark()&&(mt.includes('bonus e extras')||mt.includes('bonus')||mt.includes('extra'))&&(t==='cancelar'||t==='registrar'||t.includes('registrar bonus')||t.includes('registrar extra'))){applyClass(b,'obrixCancelDark','cancel-dark');return}
   if(!isDark()&&t==='falta'){applyClass(b,'obrixCancelDark','cancel-dark');return}
   if(/^\+?\s*(novo\s+)?funcionario$/.test(t)||t==='novo funcionario'){applyClass(b,'obrixPetroleumButton','petroleum');return}
   if(t==='funcionarios'||t==='funcionario'){applyClass(b,'obrixTeamBlue','team-blue');return}
@@ -70,7 +72,7 @@ html[data-theme="dark"] body button.obrixTransparentButton.obrixTransparentButto
 html body button.obrixTransparentButton span,html body button.obrixTransparentButton strong,html body button.obrixTransparentButton small,html body button.obrixTransparentButton b,html body button.obrixTransparentButton i{color:inherit!important;-webkit-text-fill-color:inherit!important}
 html body #app#app#app button.obrixTeamNeutral.obrixTeamNeutral,html body .modalBack.modalBack button.obrixTeamNeutral.obrixTeamNeutral,html body button.obrixTeamNeutral.obrixTeamNeutral.obrixTeamNeutral{background:#e2e8f0!important;background-color:#e2e8f0!important;background-image:none!important;color:#334155!important;-webkit-text-fill-color:#334155!important;border:1px solid #cbd5e1!important;box-shadow:none!important;text-shadow:none!important}
 html[data-theme="dark"] body button.obrixTeamNeutral.obrixTeamNeutral,body.dark button.obrixTeamNeutral.obrixTeamNeutral{background:${DARK_NEUTRAL}!important;background-color:${DARK_NEUTRAL}!important;color:#eef2f7!important;-webkit-text-fill-color:#eef2f7!important;border-color:#3d4650!important}
-html body #app#app#app #configMain #cfgExcluirConta,html body #configMain #cfgExcluirConta.accountDeleteBtn{background:${DANGER}!important;background-color:${DANGER}!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border:1px solid ${DANGER_BORDER}!important;box-shadow:0 6px 16px rgba(185,28,28,.14)!important}
+html body #app#app#app #configMain #cfgExcluirConta,html body #configMain #cfgExcluirConta.accountDeleteBtn,html body #app#app#app #configMain button.accountDeleteBtn{background:${DANGER}!important;background-color:${DANGER}!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border:1px solid ${DANGER_BORDER}!important;box-shadow:0 6px 16px rgba(185,28,28,.14)!important}
 html body .accountDeleteModal .excluir{background:${DANGER}!important;background-color:${DANGER}!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:${DANGER_BORDER}!important}
 html body #app#app#app #configMain #cfgTrocarEmail,html body #app#app#app #configMain #cfgTrocarSenha{background:${PETROLEO}!important;background-color:${PETROLEO}!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:${PETROLEO_BORDER}!important}
 html body #app#app#app #configMain #cfgSair{background:transparent!important;background-color:transparent!important;background-image:none!important;color:#334155!important;-webkit-text-fill-color:#334155!important;border-color:transparent!important;box-shadow:none!important}
