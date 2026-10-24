@@ -33,7 +33,7 @@ function appearance(){
   const moon=darkBtn.querySelector('.obrixMoonGold');if(moon){imp(moon,'color',GOLD);imp(moon,'-webkit-text-fill-color',GOLD)}
  }
  const del=document.getElementById('cfgExcluirConta');
- if(del){imp(del,'background','#D6001C');imp(del,'background-color','#D6001C');imp(del,'background-image','none');imp(del,'color',WHITE);imp(del,'-webkit-text-fill-color',WHITE);imp(del,'border','1px solid #B80018');imp(del,'box-shadow','none')}
+ if(del){del.classList.add('danger');imp(del,'background','#D6001C');imp(del,'background-color','#D6001C');imp(del,'background-image','none');imp(del,'color',WHITE);imp(del,'-webkit-text-fill-color',WHITE);imp(del,'border','1px solid #B80018');imp(del,'box-shadow','none')}
 }
 function paymentButtons(){
  if(!light())return;
