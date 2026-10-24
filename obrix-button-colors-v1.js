@@ -64,7 +64,24 @@ body.dark #app button.selecionado:not(.danger):not(.perigo):not(.obrixPermanentN
 body.dark #app button[aria-pressed="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
 body.dark #app button[aria-selected="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold){background:#17212B!important;background-color:#17212B!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-color:#334155!important;box-shadow:none!important;text-shadow:none!important}
 html[data-theme="dark"] #app button.obrixPermanentNeutral.obrixPermanentGoldText,
-body.dark #app button.obrixPermanentNeutral.obrixPermanentGoldText{color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important}`;
+body.dark #app button.obrixPermanentNeutral.obrixPermanentGoldText{color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important}
+/* Modo claro homologado: qualquer botão que receberia dourado passa a preto, sem tocar no escuro nem no offline. */
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] #app .btn:not(#sair):not(#obrixTheme):not(.secondary):not(.cancelar):not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .btn:not(#sair):not(#obrixTheme):not(.secondary):not(.cancelar):not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] #app button.obrixApprovedGold:not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app button.obrixApprovedGold:not(.obrixPermanentNeutral):not(.obrixEquipeNoGold){background:#111111!important;background-color:#111111!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-color:#111111!important;box-shadow:none!important;text-shadow:none!important}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] #app button.active:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.nav button):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] #app button.selected:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] #app button.selecionado:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] #app button[aria-pressed="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] #app button[aria-selected="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app button.active:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.nav button):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app button.selected:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app button.selecionado:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app button[aria-pressed="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app button[aria-selected="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold){background:#111111!important;background-color:#111111!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-color:#111111!important;box-shadow:none!important;text-shadow:none!important}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] #app button.obrixPermanentNeutral.obrixPermanentGoldText,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app button.obrixPermanentNeutral.obrixPermanentGoldText{color:#111111!important;-webkit-text-fill-color:#111111!important}`;
 function css(){let s=document.getElementById('obrixButtonColorsV1');if(!s){s=document.createElement('style');s.id='obrixButtonColorsV1';s.textContent=STYLE;document.head.appendChild(s);return}if(s.textContent!==STYLE)s.textContent=STYLE;if(s!==document.head.lastElementChild)document.head.appendChild(s)}
 let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(()=>{css();scan(document)},30)}
 let bodyMo=null,themeMo=null;
