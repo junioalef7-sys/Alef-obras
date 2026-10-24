@@ -32,3 +32,14 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 setTimeout(observe,900);
 window.OBRIX_EQUIPE_CHECKLIST_LOADER={load,status:()=>({dados:dadosLoaded(),patch:patchLoaded(),loading:!!promise,equipeAberta:equipeAberta(),online:navigator.onLine})};
 })();
+
+;(()=>{'use strict';
+if(window.__OBRIX_LIGHT_UI_BOOT_V2)return;window.__OBRIX_LIGHT_UI_BOOT_V2=true;
+const offlineV3=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||document.documentElement.dataset.obrixOfflineV3==='1';
+function hasLightUi(){return !!window.__OBRIX_LIGHT_UI_FINAL_V2||[...document.scripts].some(s=>/obrix-light-ui-final-v2\.js(?:\?|$)/.test(String(s.src||'')))}
+function loadLightUi(){if(offlineV3()||hasLightUi())return;const s=document.createElement('script');s.src='./obrix-light-ui-final-v2.js?v=20261024lightui-final2';s.async=false;s.dataset.obrixLightUiFinal='1';document.body.appendChild(s)}
+function preloadConfig(){if(offlineV3())return;const l=window.OBRIX_POS_LOGIN_LOADER;if(l?.loadFeature)setTimeout(()=>l.loadFeature('config').catch?.(()=>{}),650)}
+function boot(){loadLightUi();preloadConfig()}
+window.addEventListener('online',()=>setTimeout(boot,120));window.addEventListener('pageshow',()=>setTimeout(boot,120));window.addEventListener('obrix:modules-ready',()=>setTimeout(boot,120));
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,120),{once:true});else setTimeout(boot,120);
+})();
