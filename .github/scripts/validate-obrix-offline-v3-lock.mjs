@@ -27,6 +27,45 @@ const paths=Array.isArray(lock.protected_paths)?lock.protected_paths:[];
 const guardApproved=String(lock.approved_guard_commit||'').trim();
 const guardPaths=Array.isArray(lock.guard_paths)?lock.guard_paths:[];
 
+// Baseline visual estável restaurado após regressão. Fica deliberadamente
+// dentro do validador protegido para que uma mudança visual exija alteração
+// consciente da própria blindagem, e não possa acontecer por acidente.
+const visualApproved='4418ecb479111ede6723efd0fc019bdc9a792aad';
+const visualPaths=[
+  'obrix-button-colors-v1.js',
+  'obrix-offline-online-visual-v1.js',
+  'obrix-online-visual-approved-v1.css',
+  'obrix-dark-aprovado-v1.js',
+  'obrix-dark-actions-final-v1.js',
+  'obrix-light-static-final.css',
+  'obrix-light-polish.js',
+  'obrix-final-dois-ajustes-v1.js',
+  'obrix-pagamentos-ui-alinhamento.js',
+  'obrix-global-ui-report-fix.js',
+  'obrix-config-oneclick.js',
+  'obrix-avatar-dark-fix.js',
+  'obrix-brand-main.js',
+  'obrix-theme-main.js',
+  'obrix-ajustes-ui-final.js',
+  'obrix-equipe-botoes-neutros-v1.js',
+  'obrix-equipe-controles-guard.js'
+];
+
+const mandatoryCoreProtected=[
+  'obrix.html',
+  'obrix-startup-router.js',
+  'obrix-backend-adapter.js',
+  'obrix-core-main.js',
+  'obrix-auth-main.js',
+  'obrix-login-profissional.js',
+  'obrix-login-rescue.js',
+  'obrix-menu-main.js',
+  'obrix-nav-active.js',
+  'obrix-home-clean.js',
+  'obrix-theme-main.js',
+  'obrix-brand-main.js'
+];
+
 expect(typeof approved==='string'&&approved.length>=40,'Commit aprovado do runtime offline v3 não definido.');
 expect(paths.length>=51,'Blindagem incompleta: menos de 51 arquivos do runtime protegidos.');
 expect(lock?.homologation?.status==='approved_by_user','Lock do offline perdeu o status de homologação do usuário.');
@@ -37,6 +76,8 @@ expect(homologation?.policy?.ordinary_updates_must_preserve_this_runtime===true,
 expect(homologation?.runtime_commit===approved,'Commit do registro de homologação difere do commit protegido pelo lock.');
 expect(homologation?.release===lock?.release,'Identificador da release homologada diverge entre os arquivos de blindagem.');
 if(envApproved)expect(approved===envApproved,'Commit homologado no workflow diverge do commit protegido pelo lock.');
+for(const p of mandatoryCoreProtected)expect(paths.includes(p),`Blindagem do núcleo perdeu arquivo obrigatório: ${p}`);
+expect(visualPaths.length>=17,'Blindagem visual estável incompleta.');
 
 function verifyPaths(commit,list,label){
   for(const path of list){
@@ -48,6 +89,7 @@ function verifyPaths(commit,list,label){
   }
 }
 verifyPaths(approved,paths,'Arquivo offline protegido');
+verifyPaths(visualApproved,visualPaths,'Arquivo visual estável protegido');
 
 if(guardApproved||guardPaths.length){
   expect(guardApproved.length>=40,'Commit aprovado da própria blindagem não definido.');
@@ -99,10 +141,11 @@ expect(sw.includes("'./obrix-offline-v3-nav.js'"),'Service Worker deixou de cach
 expect(sw.includes("'./obrix-offline-v3-guard.js'"),'Service Worker deixou de cachear a proteção do v3.');
 
 if(errors.length){
-  console.error('\nBLINDAGEM OFFLINE V3 HOMOLOGADO: PUBLICAÇÃO BLOQUEADA.\n');
+  console.error('\nBLINDAGEM OBRIX: PUBLICAÇÃO BLOQUEADA.\n');
   for(const e of errors)console.error(`- ${e}`);
-  console.error('\nO modo offline desta versão foi homologado em teste real. Qualquer mudança no runtime exige nova aprovação explícita antes de atualizar os baselines.\n');
+  console.error('\nO offline homologado, o núcleo de login/navegação e o visual estável estão protegidos. Alterações nesses pontos exigem uma mudança consciente da blindagem antes de publicar.\n');
   process.exit(1);
 }
 console.log(`Offline homologado protegido: ${paths.length} arquivos do runtime conferidos contra ${approved}.`);
+console.log(`Visual estável protegido: ${visualPaths.length} arquivos conferidos contra ${visualApproved}.`);
 if(guardApproved&&guardPaths.length)console.log(`Blindagem também protegida: ${guardPaths.length} arquivos conferidos contra ${guardApproved}.`);
