@@ -3,7 +3,7 @@
 
   const STYLE_ID='obrixDarkAprovadoV1';
   const CARD_BG='#0f1720';
-  const APP_BG='#070b10';
+  const APP_BG='#0A1018';
   const BORDER='#2a3948';
   const TEXT='#eef2f7';
   const GREEN='#65d99b';
