@@ -30,7 +30,7 @@ const guardPaths=Array.isArray(lock.guard_paths)?lock.guard_paths:[];
 // Baseline visual estável restaurado após regressão. Fica deliberadamente
 // dentro do validador protegido para que uma mudança visual exija alteração
 // consciente da própria blindagem, e não possa acontecer por acidente.
-const visualApproved='3d85a18f8199e8cecbfac8fb40b808e4d9bdfb06';
+const visualApproved='58103238971dd7624b3ab316492f60fb9b3559a5';
 const visualPaths=[
   'obrix-button-colors-v1.js',
   'obrix-offline-online-visual-v1.js',
@@ -43,7 +43,8 @@ const visualPaths=[
   'obrix-theme-main.js',
   'obrix-ajustes-ui-final.js',
   'obrix-equipe-botoes-neutros-v1.js',
-  'obrix-equipe-controles-guard.js'
+  'obrix-equipe-controles-guard.js',
+  'obrix-account-delete.js'
 ];
 
 const mandatoryCoreProtected=[
@@ -72,7 +73,7 @@ expect(homologation?.runtime_commit===approved,'Commit do registro de homologaç
 expect(homologation?.release===lock?.release,'Identificador da release homologada diverge entre os arquivos de blindagem.');
 if(envApproved)expect(approved===envApproved,'Commit homologado no workflow diverge do commit protegido pelo lock.');
 for(const p of mandatoryCoreProtected)expect(paths.includes(p),`Blindagem do núcleo perdeu arquivo obrigatório: ${p}`);
-expect(visualPaths.length>=12,'Blindagem visual estável incompleta.');
+expect(visualPaths.length>=13,'Blindagem visual estável incompleta.');
 
 function verifyPaths(commit,list,label){
   for(const path of list){
@@ -99,7 +100,7 @@ const nav=read('obrix-offline-v3-nav.js');
 const guard=read('obrix-offline-v3-guard.js');
 const bootstrap=read('obrix-offline-bootstrap.js');
 const sw=read('obrix-sw.js');
-const buttonColors=read('obrix-button-colors-v1.js');
+const visualBridge=read('obrix-offline-online-visual-v1.js');
 const offlineBody=(router.match(/async function offline\(\)\{([\s\S]*?)\}\nfunction route/)||[])[1]||'';
 
 expect(html.includes('obrix-offline-v3.js?v=20261024offline-v3-1'),'HTML deixou de carregar o motor offline v3.');
@@ -127,6 +128,11 @@ expect(nav.includes("setInterval(()=>{if(offline())ensure()},1500)"),'Barra offl
 expect(!nav.includes('MutationObserver'),'Barra offline homologada não pode usar MutationObserver.');
 expect(nav.includes("document.addEventListener('click'"),'Barra offline perdeu o manipulador de navegação por clique.');
 
+expect(visualBridge.includes("DARK_LOCK_STYLE_ID='obrixDarkModalButtonsLockedV1'"),'Blindagem visual perdeu a trava dos botões de modal no modo escuro.');
+expect(visualBridge.includes('.modalBack:not(.accountDeleteBack) .modalActions button.btn'),'Botões Cancelar/Registrar/Salvar de modais deixaram de ser neutralizados no modo escuro.');
+expect(visualBridge.includes('.accountDeleteModal .modalActions button.cancelar'),'Cancelar da exclusão de conta deixou de ser vermelho no modo escuro.');
+expect(visualBridge.includes('background:#B91C1C!important'),'Exclusão de conta deixou de usar fundo vermelho protegido.');
+
 expect(guard.includes("capture?.('pre-online-logout')"),'Proteção de dados no logout foi removida.');
 expect(!guard.includes('localStorage.clear('),'Proteção de logout não pode limpar o armazenamento local.');
 expect(bootstrap.includes("obrix-sw.js?v=20261024-offline-v3-nav1"),'Bootstrap deixou de forçar a geração homologada do Service Worker.');
@@ -135,9 +141,6 @@ expect(sw.includes("const CACHE='obrix-offline-v61-v3-nav'"),'Geração aprovada
 expect(sw.includes("'./obrix-offline-v3.js'"),'Service Worker deixou de cachear o motor v3.');
 expect(sw.includes("'./obrix-offline-v3-nav.js'"),'Service Worker deixou de cachear a barra inferior offline independente.');
 expect(sw.includes("'./obrix-offline-v3-guard.js'"),'Service Worker deixou de cachear a proteção do v3.');
-expect(buttonColors.includes('Modo escuro homologado: nenhum botão comum recebe fundo/texto dourado'),'Blindagem visual perdeu a regra que remove dourado dos botões no modo escuro.');
-expect(buttonColors.includes('background:#0F1720!important;background-color:#0F1720!important;background-image:none!important;color:#FFFFFF!important'),'Botões comuns do modo escuro deixaram de usar o fundo neutro aprovado.');
-expect(buttonColors.includes('background:#17212B!important;background-color:#17212B!important;background-image:none!important;color:#FFFFFF!important'),'Estados selecionados do modo escuro voltaram a usar dourado.');
 
 if(errors.length){
   console.error('\nBLINDAGEM OBRIX: PUBLICAÇÃO BLOQUEADA.\n');
