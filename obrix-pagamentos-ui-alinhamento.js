@@ -12,10 +12,7 @@ const ICONS={
 function decorateButton(btn,type,label){
   if(!btn||btn.dataset.obrixPayDecorated==='1')return;
   btn.dataset.obrixPayDecorated='1';
-  btn.dataset.obrixPermanentNeutral='1';
-  btn.classList.add('obrixPayMethod','obrixPermanentNeutral');
-  btn.classList.remove('obrixApprovedGold');
-  btn.removeAttribute('data-obrix-approved-color');
+  btn.classList.add('obrixPayMethod');
   btn.setAttribute('aria-label',label);
   btn.innerHTML=`<span class="obrixPayIcon">${ICONS[type]}</span><span class="obrixPayLabel">${label}</span>`;
 }
@@ -28,6 +25,7 @@ function decorateCard(card){
   const boleto=row.querySelector('[data-ass-cob-efi$=":boleto"]');
   const cartao=row.querySelector('[data-ass-cob-efi$=":cartao"]');
   if(!boleto||!cartao)return;
+
   card.dataset.obrixPayReady='1';
   row.classList.add('obrixPayStack');
   decorateButton(pix,'pix','Pagar com Pix');
@@ -36,46 +34,86 @@ function decorateCard(card){
   row.append(pix,boleto,cartao);
 }
 
-function marcarPagarSemFundo(){
-  document.querySelectorAll('#app button').forEach(btn=>{
-    const t=String(btn.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
-    if(t==='pagar'){
-      btn.classList.add('obrixPagarSemFundo');
-      btn.classList.remove('obrixApprovedGold','obrixApprovedSecondary');
-      btn.removeAttribute('data-obrix-approved-color');
-    }
-  });
-}
-
 function scan(){
   const box=document.getElementById('assPlanos');
-  if(box)box.querySelectorAll('.assPlano').forEach(decorateCard);
-  marcarPagarSemFundo();
+  if(!box)return;
+  box.querySelectorAll('.assPlano').forEach(decorateCard);
 }
 
 const css=document.createElement('style');
 css.id='obrixPagamentosUiAlinhamentoCss';
 css.textContent=`
-#assPlanos .assCobEfiRow.obrixPayStack{display:flex!important;flex-direction:column!important;gap:10px!important;width:100%!important;margin-top:12px!important;background:transparent!important}
-#app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;width:100%!important;min-width:0!important;margin:0!important;padding:13px 16px!important;border:1px solid #cbd5e1!important;border-radius:12px!important;background:transparent!important;background-color:transparent!important;background-image:none!important;color:#334155!important;-webkit-text-fill-color:#334155!important;box-shadow:none!important;text-shadow:none!important;text-align:left!important;font-weight:800!important}
-#assPlanos .obrixPayIcon{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 24px!important;width:24px!important;height:24px!important}
+#assPlanos .assCobEfiRow.obrixPayStack{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:10px!important;
+  width:100%!important;
+  margin-top:12px!important;
+  background:transparent!important;
+}
+#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:12px!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:13px 16px!important;
+  border:1px solid #cbd5e1!important;
+  border-radius:12px!important;
+  background:#ffffff!important;
+  color:#0f172a!important;
+  box-shadow:none!important;
+  text-align:left!important;
+  font-weight:800!important;
+}
+#assPlanos .obrixPayIcon{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex:0 0 24px!important;
+  width:24px!important;
+  height:24px!important;
+}
 #assPlanos .obrixPayIcon svg{width:22px!important;height:22px!important;display:block!important}
 #assPlanos .obrixPayLabel{display:block!important;flex:1!important;text-align:left!important}
-#app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,#app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,#app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{background:rgba(148,163,184,.08)!important;background-color:rgba(148,163,184,.08)!important;color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;border-color:#94a3b8!important}
-html[data-theme="dark"] #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod,body.dark #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod{background:transparent!important;background-color:transparent!important;background-image:none!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;border-color:#475569!important;box-shadow:none!important}
-html[data-theme="dark"] #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,html[data-theme="dark"] #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,html[data-theme="dark"] #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active,body.dark #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,body.dark #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,body.dark #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{background:rgba(148,163,184,.08)!important;background-color:rgba(148,163,184,.08)!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;border-color:#64748b!important}
-html:not([data-theme="dark"]) body #app .btn:not(#sair):not(#obrixTheme):not(.secondary):not(.cancelar):not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold):not(.obrixPagarSemFundo),html:not([data-theme="dark"]) body #app button.obrixApprovedGold:not(.obrixPermanentNeutral):not(.obrixEquipeNoGold):not(.obrixPagarSemFundo){background:#0f172a!important;background-color:#0f172a!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#0f172a!important;box-shadow:none!important;text-shadow:none!important}
-html body #app button.obrixPagarSemFundo,html[data-theme="dark"] body #app button.obrixPagarSemFundo,body.dark #app button.obrixPagarSemFundo{background:transparent!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important;text-shadow:none!important}
-html:not([data-theme="dark"]) body #app button.obrixPagarSemFundo{color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;border-color:#cbd5e1!important}
-html[data-theme="dark"] body #app button.obrixPagarSemFundo,body.dark #app button.obrixPagarSemFundo{color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;border-color:#475569!important}
+#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,
+#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,
+#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{
+  background:#f8fafc!important;
+  color:#0f172a!important;
+  border-color:#94a3b8!important;
+}
+html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod,
+body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod{
+  background:#111827!important;
+  color:#f8fafc!important;
+  border-color:#475569!important;
+}
+html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,
+html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,
+html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active,
+body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,
+body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,
+body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{
+  background:#1e293b!important;
+  color:#f8fafc!important;
+  border-color:#64748b!important;
+}
 `;
 document.head.appendChild(css);
 
 let scheduled=false;
-function scheduleScan(){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;scan()})}
-new MutationObserver(scheduleScan).observe(document.body,{childList:true,subtree:true,characterData:true});
+function scheduleScan(){
+  if(scheduled)return;
+  scheduled=true;
+  requestAnimationFrame(()=>{scheduled=false;scan()});
+}
+
+new MutationObserver(scheduleScan).observe(document.body,{childList:true,subtree:true});
 document.addEventListener('obrix:feature-pronto',scheduleScan);
-window.addEventListener('offline',scheduleScan);
-window.addEventListener('online',scheduleScan);
-setTimeout(scan,100);setTimeout(scan,500);setTimeout(scan,1200);
+setTimeout(scan,100);
+setTimeout(scan,500);
+setTimeout(scan,1200);
 })();

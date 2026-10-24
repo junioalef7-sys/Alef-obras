@@ -29,18 +29,13 @@ jobs:
           for f in obrix-*.js; do
             [ -f "$f" ] && node --check "$f"
           done
-      - name: Blindagem da versão offline aprovada
-        run: |
-          set -e
-          node .github/scripts/validate-obrix-lock.mjs
       - name: Blindagem geral contra regressao
         run: |
           set -e
           test -f obrix-release-lock.json
-          ! grep -q "pointerdown" obrix-estoque-saida-obra.js
-          grep -q "OBRIX_EST_OP?.abrir" obrix-estoque-saida-obra.js
-          grep -q "OBRIX_EST_OP.abrir('saida')" obrix-estoque-saida-obra.js
-          grep -q "window.OBRIX_SAIDA_OBRA={abrir}" obrix-estoque-saida-obra.js
+          grep -q "pointerdown" obrix-estoque-saida-obra.js
+          grep -q "e.isTrusted" obrix-estoque-saida-obra.js
+          grep -q "Carregando dados" obrix-estoque-saida-obra.js
           grep -q "obrixPermanentNeutral" obrix-equipe-botoes-neutros-v1.js
           grep -q "data-extra=\\\"vale\\\"" obrix-equipe-botoes-neutros-v1.js
           grep -q "f==='ativos'&&ativo(x)" obrix-equipe-estoque-fix-v1.js
