@@ -2,9 +2,10 @@
 'use strict';
 if(window.__OBRIX_ASSINATURAS_COBRANCAS_EFI)return;window.__OBRIX_ASSINATURAS_COBRANCAS_EFI=true;
 const pt=e=>window.OBRIX_PT_ERROR?.(e)||e?.message||String(e||'Não foi possível concluir a operação.');
-const S={id:'obrix_efi_cobranca_link_id',url:'obrix_efi_cobranca_link_url',metodo:'obrix_efi_cobranca_link_metodo',plano:'obrix_efi_cobranca_link_plano'};
+const S={id:'obrix_efi_cobranca_link_id',url:'obrix_efi_cobranca_link_url',metodo:'obrix_efi_cobranca_link_metodo',plano:'obrix_efi_cobranca_link_plano',owner:'obrix_efi_cobranca_link_owner'};
 let atual={id:'',url:'',metodo:'boleto',plano:'mensal'},refreshSeq=0;
 const $=id=>document.getElementById(id);
+const ownerId=()=>String(window.profile?.id||window.profile?.user_id||'');
 function labelMetodo(m){return m==='cartao'?'Cartão de crédito':'Boleto'}
 function limpar(){Object.values(S).forEach(k=>localStorage.removeItem(k));atual={id:'',url:'',metodo:'boleto',plano:'mensal'}}
 function modal(){
@@ -27,9 +28,13 @@ function modal(){
 }
 function status(txt,ok=true){const b=$('assCobEfiStatus');if(!b)return;b.textContent=txt;b.className='status '+(ok?'assOk':'assErr')}
 function abrir(plano,metodo){
-  modal();atual={id:'',url:'',plano:plano||'mensal',metodo:metodo||'boleto'};
-  const savedPlan=localStorage.getItem(S.plano)||'',savedMetodo=localStorage.getItem(S.metodo)||'';
-  if(savedPlan===atual.plano&&savedMetodo===atual.metodo){atual.id=localStorage.getItem(S.id)||'';atual.url=localStorage.getItem(S.url)||''}
+  modal();
+  const desejado={id:'',url:'',plano:plano||'mensal',metodo:metodo||'boleto'},owner=ownerId();
+  const temSalvo=!!(localStorage.getItem(S.id)||localStorage.getItem(S.url));
+  if(temSalvo&&localStorage.getItem(S.owner)!==owner)limpar();
+  atual=desejado;
+  const savedPlan=localStorage.getItem(S.plano)||'',savedMetodo=localStorage.getItem(S.metodo)||'',savedOwner=localStorage.getItem(S.owner)||'';
+  if(savedOwner===owner&&savedPlan===atual.plano&&savedMetodo===atual.metodo){atual.id=localStorage.getItem(S.id)||'';atual.url=localStorage.getItem(S.url)||''}
   $('assCobEfiTitulo').textContent=`${atual.plano==='anual'?'Plano Anual':'Plano Mensal'} — ${labelMetodo(atual.metodo)}`;
   $('assCobEfiTexto').textContent=atual.metodo==='boleto'
     ?'O boleto será emitido na página segura da Efí. O OBRIX só libera o acesso depois que a Efí confirmar o pagamento.'
@@ -44,13 +49,14 @@ async function gerar(){
   const btn=$('assCobEfiGerar');
   try{
     btn.disabled=true;btn.textContent='Gerando...';status('Criando página segura de pagamento na Efí...');
-    const sb=await OBRIX_BACKEND.init();
-    const reqKey=`obrix_efi_cobranca_req_${atual.plano}_${atual.metodo}`;
+    const sb=await OBRIX_BACKEND.init(),owner=ownerId();
+    if(!owner)throw new Error('Sessão sem usuário identificado. Entre novamente.');
+    const reqKey=`obrix_efi_cobranca_req_${owner}_${atual.plano}_${atual.metodo}`;
     let requestId=localStorage.getItem(reqKey)||'';if(!requestId){requestId=crypto.randomUUID();localStorage.setItem(reqKey,requestId)}
     const {data,error}=await sb.functions.invoke('efi-criar-cobranca-link',{body:{plano:atual.plano,metodo:atual.metodo,requestId}});
     if(error)throw error;if(data?.error)throw new Error(data.error);if(!data?.pagamentoId||!data?.checkoutUrl)throw new Error('A Efí não retornou a página de pagamento.');
     atual.id=String(data.pagamentoId);atual.url=String(data.checkoutUrl);
-    localStorage.setItem(S.id,atual.id);localStorage.setItem(S.url,atual.url);localStorage.setItem(S.metodo,atual.metodo);localStorage.setItem(S.plano,atual.plano);
+    localStorage.setItem(S.id,atual.id);localStorage.setItem(S.url,atual.url);localStorage.setItem(S.metodo,atual.metodo);localStorage.setItem(S.plano,atual.plano);localStorage.setItem(S.owner,owner);
     const a=$('assCobEfiAbrir');a.href=atual.url;a.textContent=atual.metodo==='boleto'?'Abrir boleto na Efí':'Abrir pagamento no cartão';a.classList.remove('hidden');
     $('assCobEfiVerificar').classList.remove('hidden');
     status(atual.metodo==='boleto'?'Boleto preparado. Abra a página da Efí para emitir e pagar.':'Pagamento preparado. Abra a página segura da Efí para informar o cartão.');
@@ -60,6 +66,7 @@ async function verificar(opts={}){
   const btn=$('assCobEfiVerificar'),silencioso=!!opts.silencioso;
   try{
     if(btn){btn.disabled=true;btn.textContent='Verificando...'}
+    const owner=ownerId();if(localStorage.getItem(S.owner)&&localStorage.getItem(S.owner)!==owner){limpar();if(!silencioso)throw new Error('Pagamento pertence a outro acesso. Gere uma nova cobrança nesta conta.');return false}
     const sb=await OBRIX_BACKEND.init();
     const id=atual.id||localStorage.getItem(S.id)||'';if(!id){if(!silencioso)throw new Error('Nenhum pagamento foi gerado ainda.');return false}
     const {data,error}=await sb.functions.invoke('efi-reconciliar-cobranca',{body:{pagamentoId:id}});
@@ -81,9 +88,11 @@ async function verificar(opts={}){
 function assinaturaAberta(){const m=$('assinaturaMain');return !!(m&&!m.classList.contains('hidden'))}
 function atualizarAoRetornar(){
   if(!assinaturaAberta())return;
+  const owner=ownerId(),savedOwner=localStorage.getItem(S.owner)||'';
+  if(savedOwner&&savedOwner!==owner)limpar();
   const seq=++refreshSeq;
   window.OBRIX_ASSINATURA?.load?.();
-  if(localStorage.getItem(S.id))verificar({silencioso:true});
+  if(localStorage.getItem(S.id)&&localStorage.getItem(S.owner)===owner)verificar({silencioso:true});
   setTimeout(()=>{if(seq===refreshSeq&&assinaturaAberta())window.OBRIX_ASSINATURA?.load?.()},1200);
   setTimeout(()=>{if(seq===refreshSeq&&assinaturaAberta())window.OBRIX_ASSINATURA?.load?.()},3500);
 }
