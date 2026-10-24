@@ -1,12 +1,13 @@
 (()=>{'use strict';
 if(window.__OBRIX_OFFLINE_ONLINE_VISUAL_V1)return;window.__OBRIX_OFFLINE_ONLINE_VISUAL_V1=true;
 const CSS_ID='obrixOnlineVisualApprovedV1';
-const CSS_HREF='./obrix-online-visual-approved-v1.css?v=20261024visual-approved1';
+const CSS_HREF='./obrix-online-visual-approved-v1.css?v=20261024visual-approved6';
 const GOLD_STYLE_ID='obrixButtonColorsV1';
 const DARK_LOCK_STYLE_ID='obrixDarkModalButtonsLockedV1';
+const INLINE_LOCK_ATTR='data-obrix-dark-inline-lock';
 const DARK_LOCK_STYLE=`
-html:not([data-obrix-offline-v3="1"])[data-theme="dark"] body .modalBack:not(.accountDeleteBack) .modalActions button.btn:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.excluir),
-html:not([data-obrix-offline-v3="1"]) body.dark .modalBack:not(.accountDeleteBack) .modalActions button.btn:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.excluir){
+html:not([data-obrix-offline-v3="1"])[data-theme="dark"] body .modalBack:not(.accountDeleteBack) .modalActions button,
+html:not([data-obrix-offline-v3="1"]) body.dark .modalBack:not(.accountDeleteBack) .modalActions button{
  background:#0F1720!important;background-color:#0F1720!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border:1px solid #2A3948!important;box-shadow:none!important;text-shadow:none!important
 }
 html:not([data-obrix-offline-v3="1"])[data-theme="dark"] body #app #cfgExcluirConta,
@@ -22,7 +23,8 @@ const offlineV3=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||docu
 let timer=0,headMo=null;
 function ensureCss(){
  let l=document.getElementById(CSS_ID);
- if(!l){l=document.createElement('link');l.id=CSS_ID;l.rel='stylesheet';l.href=CSS_HREF;document.head.appendChild(l)}
+ if(!l){l=document.createElement('link');l.id=CSS_ID;l.rel='stylesheet';document.head.appendChild(l)}
+ if(l.getAttribute('href')!==CSS_HREF)l.setAttribute('href',CSS_HREF);
  l.disabled=offlineV3();
  return l;
 }
@@ -35,8 +37,7 @@ function ensureDarkLockStyle(){
 }
 function suppressGoldStyle(){
  if(offlineV3())return;
- const s=document.getElementById(GOLD_STYLE_ID);
- if(s)s.remove();
+ document.getElementById(GOLD_STYLE_ID)?.remove();
 }
 function watchGoldStyle(){
  if(headMo||!document.head)return;
@@ -49,7 +50,7 @@ function watchGoldStyle(){
    }
    if(found)break;
   }
-  if(found)queueMicrotask(()=>{suppressGoldStyle();ensureDarkLockStyle()});
+  if(found)queueMicrotask(()=>{suppressGoldStyle();ensureDarkLockStyle();forceDarkActions()});
  });
  headMo.observe(document.head,{childList:true});
 }
@@ -66,6 +67,24 @@ function markButtons(){
   if(exclude){b.classList.add('obrixExcluirFinal');b.classList.remove('obrixAcaoOriginalFinal');clearOld(b);return}
   b.classList.remove('obrixExcluirFinal');
   if(neutral){b.classList.add('obrixAcaoOriginalFinal');clearOld(b)}else b.classList.remove('obrixAcaoOriginalFinal');
+ });
+}
+const INLINE_PROPS=['background','background-color','background-image','color','-webkit-text-fill-color','border','border-color','box-shadow','text-shadow'];
+function clearInlineLock(b){if(!b?.hasAttribute?.(INLINE_LOCK_ATTR))return;INLINE_PROPS.forEach(p=>b.style.removeProperty(p));b.removeAttribute(INLINE_LOCK_ATTR)}
+function setImp(b,p,v){b.style.setProperty(p,v,'important')}
+function forceDarkActions(){
+ if(offlineV3())return;
+ const darkMode=document.documentElement.dataset.theme==='dark'||document.body?.classList.contains('dark');
+ const all=[...document.querySelectorAll(`.modalBack .modalActions button,#cfgExcluirConta,[${INLINE_LOCK_ATTR}]`)];
+ if(!darkMode){all.forEach(clearInlineLock);return}
+ all.forEach(b=>{
+  if(!(b instanceof HTMLButtonElement))return;
+  const red=b.id==='cfgExcluirConta'||!!b.closest('.accountDeleteModal')||b.matches('.danger,.perigo,.orcPerigo,.diarioPerigo,.excluir');
+  const bg=red?'#B91C1C':'#0F1720',border=red?'#991B1B':'#2A3948';
+  setImp(b,'background',bg);setImp(b,'background-color',bg);setImp(b,'background-image','none');
+  setImp(b,'color','#FFFFFF');setImp(b,'-webkit-text-fill-color','#FFFFFF');
+  setImp(b,'border',`1px solid ${border}`);setImp(b,'border-color',border);setImp(b,'box-shadow','none');setImp(b,'text-shadow','none');
+  b.setAttribute(INLINE_LOCK_ATTR,red?'red':'neutral');
  });
 }
 function mark(el,cls){if(!el)return;el.classList.remove('obrixValorReceita','obrixValorDespesa','obrixValorResultado');el.classList.add(cls)}
@@ -86,13 +105,13 @@ function ensureTheme(){
  if(!b){b=document.createElement('button');b.id='obrixThemeInicioFinal';b.type='button';b.className='obrixThemeInicioFinal';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const next=dark()?'light':'dark';window.OBRIX_THEME?.apply?.(next);setTimeout(()=>{themeLabel();apply()},0)});inicio.insertBefore(b,inicio.firstChild)}
  themeLabel();
 }
-function apply(){if(offlineV3())return;suppressGoldStyle();ensureCss();ensureDarkLockStyle();ensureTheme();markButtons();markValues();ensureDarkLockStyle()}
+function apply(){if(offlineV3())return;suppressGoldStyle();ensureCss();ensureDarkLockStyle();ensureTheme();markButtons();markValues();forceDarkActions();ensureDarkLockStyle()}
 function schedule(ms=50){clearTimeout(timer);timer=setTimeout(apply,ms)}
 function start(){watchGoldStyle();suppressGoldStyle();ensureCss();ensureDarkLockStyle();schedule(0);setTimeout(apply,250);setTimeout(apply,800);setTimeout(apply,1600)}
 ['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','obrix:theme-changed','pageshow','focus'].forEach(n=>window.addEventListener(n,()=>schedule(40)));
-document.addEventListener('click',()=>schedule(80),true);
-window.addEventListener('offline',()=>{const l=document.getElementById(CSS_ID);if(l)l.disabled=true;document.getElementById(DARK_LOCK_STYLE_ID)?.remove();document.getElementById('obrixThemeInicioFinal')?.remove()});
+document.addEventListener('click',()=>{schedule(80);setTimeout(()=>schedule(0),180)},true);
+window.addEventListener('offline',()=>{const l=document.getElementById(CSS_ID);if(l)l.disabled=true;document.getElementById(DARK_LOCK_STYLE_ID)?.remove();document.querySelectorAll(`[${INLINE_LOCK_ATTR}]`).forEach(clearInlineLock);document.getElementById('obrixThemeInicioFinal')?.remove()});
 window.addEventListener('online',()=>{suppressGoldStyle();ensureCss();ensureDarkLockStyle();schedule(100)});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
-window.OBRIX_OFFLINE_ONLINE_VISUAL={repaint:()=>schedule(0),apply};
+window.OBRIX_OFFLINE_ONLINE_VISUAL={repaint:()=>schedule(0),apply,forceDarkActions};
 })();
