@@ -27,10 +27,9 @@ const paths=Array.isArray(lock.protected_paths)?lock.protected_paths:[];
 const guardApproved=String(lock.approved_guard_commit||'').trim();
 const guardPaths=Array.isArray(lock.guard_paths)?lock.guard_paths:[];
 
-// Baseline visual estável restaurado após regressão. Fica deliberadamente
-// dentro do validador protegido para que uma mudança visual exija alteração
-// consciente da própria blindagem, e não possa acontecer por acidente.
-const visualApproved='58103238971dd7624b3ab316492f60fb9b3559a5';
+// Baseline visual estável. Mudanças nestes arquivos exigem atualização
+// consciente deste commit de homologação visual.
+const visualApproved='2cfccb50b691e759e8573f45539a9176ecf177c1';
 const visualPaths=[
   'obrix-button-colors-v1.js',
   'obrix-offline-online-visual-v1.js',
@@ -129,8 +128,14 @@ expect(!nav.includes('MutationObserver'),'Barra offline homologada não pode usa
 expect(nav.includes("document.addEventListener('click'"),'Barra offline perdeu o manipulador de navegação por clique.');
 
 expect(visualBridge.includes("DARK_LOCK_STYLE_ID='obrixDarkModalButtonsLockedV1'"),'Blindagem visual perdeu a trava dos botões de modal no modo escuro.');
-expect(visualBridge.includes('.modalBack:not(.accountDeleteBack) .modalActions button.btn'),'Botões Cancelar/Registrar/Salvar de modais deixaram de ser neutralizados no modo escuro.');
+expect(visualBridge.includes("INLINE_LOCK_ATTR='data-obrix-dark-inline-lock'"),'Blindagem visual perdeu a trava inline dos botões escuros.');
+expect(visualBridge.includes('visual-approved6'),'Versão do CSS visual deixou de forçar atualização no navegador/PWA.');
+expect(visualBridge.includes('.modalBack:not(.accountDeleteBack) .modalActions button'),'Botões Cancelar/Registrar/Salvar/Fechar dos modais deixaram de ser neutralizados no modo escuro.');
 expect(visualBridge.includes('.accountDeleteModal .modalActions button.cancelar'),'Cancelar da exclusão de conta deixou de ser vermelho no modo escuro.');
+expect(visualBridge.includes('function forceDarkActions()'),'Aplicação direta da cor dos botões escuros foi removida.');
+expect(visualBridge.includes("document.querySelectorAll(`.modalBack .modalActions button,#cfgExcluirConta,[${INLINE_LOCK_ATTR}]`)"),'Aplicação direta deixou de cobrir modais e Excluir Conta.');
+expect(visualBridge.includes("setImp(b,'background',bg)"),'Blindagem deixou de aplicar fundo com prioridade máxima.');
+expect(visualBridge.includes("b.id==='cfgExcluirConta'||!!b.closest('.accountDeleteModal')"),'Excluir Conta e sua confirmação deixaram de ser classificados como vermelhos.');
 expect(visualBridge.includes('background:#B91C1C!important'),'Exclusão de conta deixou de usar fundo vermelho protegido.');
 
 expect(guard.includes("capture?.('pre-online-logout')"),'Proteção de dados no logout foi removida.');
