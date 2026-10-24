@@ -46,6 +46,6 @@ window.addEventListener('pageshow',()=>{if(!navigator.onLine)restore('pageshow')
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!navigator.onLine)restore('resume')});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 setTimeout(()=>{if(!navigator.onLine)restore('fallback')},800);
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./obrix-sw.js?v=20261024-offline-v2-1',{updateViaCache:'none'}).then(r=>r.update?.()).catch(()=>{});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./obrix-sw.js?v=20261024-offline-v2-3',{updateViaCache:'none'}).then(r=>r.update?.()).catch(()=>{});
 window.OBRIX_OFFLINE_BOOTSTRAP_API={restore,base,hydrate,discoverIdentity,status:()=>{const b=base();return{online:navigator.onLine,available:!!b,active:document.documentElement.dataset.obrixOffline==='1',identityFallback:document.documentElement.dataset.obrixOfflineIdentityFallback==='1',obras:b?.obras?.length||0,funcionarios:b?.funcionarios?.length||0,financeiro:b?.financeiro?.length||0}}};
 })();
