@@ -1,6 +1,6 @@
 (()=>{'use strict';
 if(window.__OBRIX_LIGHT_UI_FINAL_V3)return;window.__OBRIX_LIGHT_UI_FINAL_V3=true;
-const RED='#E0002A',BLUE='#0057FF',BEIGE='#B88952',GRAY='#E2E8F0',BLACK='#111111',GOLD='#F2B84B',WHITE='#FFFFFF';
+const RED='#E0002A',BLUE='#0057FF',GREEN='#00A63E',GRAY='#E2E8F0',BLACK='#111111',GOLD='#F2B84B',WHITE='#FFFFFF';
 const offlineV3=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||document.documentElement.dataset.obrixOfflineV3==='1';
 const light=()=>!offlineV3()&&document.documentElement.dataset.theme!=='dark'&&!document.body?.classList.contains('dark');
 const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
@@ -13,7 +13,7 @@ function paintObras(){
  document.querySelectorAll('#listaObras .mini,#listaObras .kpi').forEach(box=>{
   const label=labelOf(box),v=valueOf(box);if(!label||!v)return;
   if(label.includes('despesa'))paintValue(v,RED);
-  else if(label.includes('recebido'))paintValue(v,BEIGE);
+  else if(label.includes('recebido'))paintValue(v,GREEN);
   else if(label.includes('resultado')||label.includes('lucro'))paintValue(v,BLUE);
  });
 }
@@ -41,6 +41,7 @@ function paymentButtons(){
  root.querySelectorAll('button').forEach(b=>{
   const t=norm(b.textContent);
   if(t==='pagar com pix'||t==='pagar com boleto'||t==='pagar com cartao'){
+   b.classList.add('obrixPermanentNeutral','obrixPayMethod');b.dataset.obrixPermanentNeutral='1';
    imp(b,'background',GRAY);imp(b,'background-color',GRAY);imp(b,'background-image','none');imp(b,'color',BLACK);imp(b,'-webkit-text-fill-color',BLACK);imp(b,'border','1px solid #CBD5E1');imp(b,'box-shadow','none');imp(b,'text-shadow','none');
   }
  });
