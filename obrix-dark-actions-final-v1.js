@@ -1,5 +1,5 @@
 (()=>{'use strict';
-if(window.__OBRIX_DARK_ACTIONS_FINAL_V2)return;window.__OBRIX_DARK_ACTIONS_FINAL_V2=true;
+if(window.__OBRIX_DARK_ACTIONS_FINAL_V3)return;window.__OBRIX_DARK_ACTIONS_FINAL_V3=true;
 const CARD='#0f1720',BORDER='#2a3948',WHITE='#ffffff',RED='#b91c1c';
 const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
 const dark=()=>document.documentElement.dataset.theme==='dark'||document.body?.classList.contains('dark');
@@ -20,7 +20,7 @@ function danger(btn){
 function isNeutral(btn,t){
   const ttl=titleOf(btn),team=!!btn.closest('#equipe,.obrix-modelo-card,.obrix-modelo-modal,.obrix-checklist-diaria-modal');
   if(t==='vale'&&team)return true;
-  if(t==='adicionar etapa')return true;
+  if(/adicionar etapa/.test(t))return true;
   if(/^salvar( servico)? extras?$/.test(t)||t==='salvar extra'||t==='salvar extras')return true;
   if(t==='fechar'&&/(extra|adicional|servico)/.test(ttl))return true;
   if(t==='cancelar'&&/(diaria|diario|falta|vale|bonus|extra)/.test(ttl))return true;
@@ -37,7 +37,13 @@ function scan(){
     if(isNeutral(btn,t))neutral(btn);
   });
 }
-let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(scan,30)}
-function start(){scan();new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true,characterData:true});document.addEventListener('click',()=>setTimeout(scan,0),true);['pageshow','online','offline','obrix:modules-ready','obrix:grupo-pronto','obrix:feature-pronto','obrix:theme-changed'].forEach(n=>window.addEventListener(n,schedule));setTimeout(scan,120);setTimeout(scan,500);setTimeout(scan,1200)}
+let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(scan,0)}
+function start(){
+  scan();
+  new MutationObserver(()=>scan()).observe(document.body,{childList:true,subtree:true,characterData:true});
+  document.addEventListener('click',()=>queueMicrotask(scan),true);
+  ['pageshow','online','offline','obrix:modules-ready','obrix:grupo-pronto','obrix:feature-pronto','obrix:theme-changed'].forEach(n=>window.addEventListener(n,schedule));
+  setTimeout(scan,100);setTimeout(scan,400);setTimeout(scan,1000)
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
