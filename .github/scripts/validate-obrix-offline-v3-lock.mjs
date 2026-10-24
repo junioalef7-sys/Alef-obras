@@ -29,7 +29,7 @@ const guardPaths=Array.isArray(lock.guard_paths)?lock.guard_paths:[];
 
 // Baseline visual estável. Mudanças nestes arquivos exigem atualização
 // consciente deste commit de homologação visual.
-const visualApproved='b734c80924afc0cfb4c758e556f0e1d0bc0ecb8e';
+const visualApproved='577c1ebcae7be262e3d460f4bcf9cd71af7cf66a';
 const visualPaths=[
   'obrix-button-colors-v1.js',
   'obrix-offline-online-visual-v1.js',
@@ -81,11 +81,13 @@ expect(lock?.dark_mode_homologation?.gold_buttons_forbidden===true,'Blindagem de
 expect(lock?.dark_mode_homologation?.gold_flicker_forbidden===true,'Blindagem deixou de proibir o piscar dourado no modo escuro.');
 expect(lock?.dark_mode_homologation?.requires_explicit_reapproval_for_change===true,'Modo escuro deixou de exigir nova homologação para mudança.');
 
-// Homologação explícita do modo claro: botões que eram dourados são pretos.
+// Homologação explícita do modo claro.
 expect(lock?.light_mode_homologation?.status==='approved_by_user','Modo claro perdeu o status de homologação do usuário.');
 expect(lock?.light_mode_homologation?.baseline_commit===visualApproved,'Baseline homologado do modo claro diverge do baseline visual protegido.');
 expect(lock?.light_mode_homologation?.gold_buttons_forbidden===true,'Blindagem deixou de proibir botões dourados no modo claro.');
 expect(lock?.light_mode_homologation?.black_replacement_required===true,'Blindagem deixou de exigir substituição dos botões dourados por preto no modo claro.');
+expect(lock?.light_mode_homologation?.navigation_background_forbidden===true,'Blindagem deixou de proibir fundo preto na barra inferior e no Menu no modo claro.');
+expect(lock?.light_mode_homologation?.config_neutral_actions_required===true,'Blindagem deixou de exigir ações neutras em Configurações no modo claro.');
 expect(lock?.light_mode_homologation?.requires_explicit_reapproval_for_change===true,'Modo claro deixou de exigir nova homologação para mudança.');
 
 function verifyPaths(commit,list,label){
@@ -185,6 +187,15 @@ expect(buttonColors.includes('background:#111111!important;background-color:#111
 expect(buttonColors.includes('[data-theme="light"] #app button.active'),'Estado ativo no modo claro perdeu a substituição preta e pode voltar ao dourado.');
 expect(buttonColors.includes('[data-theme="light"] #app button.selected'),'Estado selecionado no modo claro perdeu a substituição preta e pode voltar ao dourado.');
 expect(buttonColors.includes('body:not(.dark) #app button.obrixPermanentNeutral.obrixPermanentGoldText{color:#111111!important;-webkit-text-fill-color:#111111!important}'),'Texto dourado residual voltou a ser permitido no modo claro.');
+expect(buttonColors.includes('/* Modo claro refinado: Configurações, Menu e barra inferior sem fundos pretos acidentais.'),'Modo claro perdeu a proteção refinada de Configurações/Menu/barra inferior.');
+expect(buttonColors.includes('#app .bottom button.active')&&buttonColors.includes('background:transparent!important;background-color:transparent!important'),'Barra inferior do modo claro pode voltar a receber fundo preto ao selecionar.');
+expect(buttonColors.includes('#app #menuMain .opmSide nav button.active'),'Menu perdeu a neutralização do fundo ao selecionar item no modo claro.');
+expect(buttonColors.includes('#app #menuMain .opmGrid button:active'),'Menu pode voltar a mostrar fundo preto ao tocar em um item no modo claro.');
+expect(buttonColors.includes('#app #configMain #cfgTrocarEmail')&&buttonColors.includes('#app #configMain #cfgTrocarSenha')&&buttonColors.includes('#app #configMain #cfgSair'),'Configurações perdeu os três botões sem fundo solicitados.');
+expect(buttonColors.includes('#app #configMain #cfgClaro')&&buttonColors.includes('outline:none!important'),'Botão Modo claro perdeu o estado claro sem fundo.');
+expect(buttonColors.includes('#app #configMain #cfgEscuro::after')&&buttonColors.includes('background:#F2B84B'),'Botão Modo escuro perdeu o detalhe dourado solicitado na aparência clara.');
+expect(buttonColors.includes('color:#D60000!important')&&buttonColors.includes('color:#005FEA!important')&&buttonColors.includes('color:#05070A!important'),'Contraste dos números vermelho, azul e preto no modo claro foi reduzido.');
+expect(buttonColors.includes('function warmConfig()')&&buttonColors.includes("l.loadFeature('config')"),'Pré-carregamento de Configurações foi removido e pode voltar a exigir dois cliques.');
 
 expect(guard.includes("capture?.('pre-online-logout')"),'Proteção de dados no logout foi removida.');
 expect(!guard.includes('localStorage.clear('),'Proteção de logout não pode limpar o armazenamento local.');
@@ -204,5 +215,5 @@ if(errors.length){
 console.log(`Offline homologado protegido: ${paths.length} arquivos do runtime conferidos contra ${approved}.`);
 console.log(`Visual estável protegido: ${visualPaths.length} arquivos conferidos contra ${visualApproved}.`);
 console.log('Modo escuro homologado protegido: dourado e piscar dourado bloqueados por hash + regras semânticas.');
-console.log('Modo claro homologado protegido: botões dourados substituídos por preto e estados ativos/selecionados sem dourado.');
+console.log('Modo claro protegido: botões dourados substituídos, navegação sem fundo preto, Configurações refinadas e contraste reforçado.');
 if(guardApproved&&guardPaths.length)console.log(`Blindagem também protegida: ${guardPaths.length} arquivos conferidos contra ${guardApproved}.`);
