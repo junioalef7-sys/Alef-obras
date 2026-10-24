@@ -1,11 +1,33 @@
 (()=>{'use strict';
 if(window.__OBRIX_LIGHT_UI_FINAL_V2)return;window.__OBRIX_LIGHT_UI_FINAL_V2=true;
 const STYLE_ID='obrixLightUiFinalV2';
-const GREEN='#009B3A',RED='#E0002A',BLUE='#0057FF',GOLD='#F2B84B';
+const CARD='#F5F7FA',GREEN='#00A63E',RED='#E0002A',BLUE='#0057FF',GOLD='#F2B84B',BLACK='#111111';
 const offlineV3=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||document.documentElement.dataset.obrixOfflineV3==='1';
 const light=()=>!offlineV3()&&document.documentElement.dataset.theme!=='dark'&&!document.body?.classList.contains('dark');
 const CSS=`
 /* OBRIX modo claro refinado — isolado do modo escuro e do offline V3. */
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .card,
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .kpi,
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .mini,
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #menuMain .opmGrid article,
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #menuMain .opmVersion,
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #menuMain .opmProfile,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .card,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .kpi,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .mini,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #menuMain .opmGrid article,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #menuMain .opmVersion,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #menuMain .opmProfile{
+ background:${CARD}!important;background-color:${CARD}!important;background-image:none!important
+}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #assPlanos button[data-ass-plano],
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #assPlanos button[data-ass-cob-efi],
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #assPlanos button.obrixPayMethod,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #assPlanos button[data-ass-plano],
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #assPlanos button[data-ass-cob-efi],
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #assPlanos button.obrixPayMethod{
+ background:${CARD}!important;background-color:${CARD}!important;background-image:none!important;color:${BLACK}!important;-webkit-text-fill-color:${BLACK}!important;border:1px solid #D9E0E8!important;box-shadow:none!important;text-shadow:none!important
+}
 html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .bottom :is(#bInicio,#bEquipe,#bMenu,button:nth-child(2)).active,
 html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .bottom :is(#bInicio,#bEquipe,#bMenu,button:nth-child(2)):active,
 html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .bottom :is(#bInicio,#bEquipe,#bMenu,button:nth-child(2)).active,
@@ -30,7 +52,7 @@ html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #
 }
 html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #configMain #cfgEscuro,
 html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #configMain #cfgEscuro{
- background:#111111!important;background-color:#111111!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border:2px solid ${GOLD}!important;box-shadow:none!important;outline:none!important
+ background:${BLACK}!important;background-color:${BLACK}!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border:2px solid ${GOLD}!important;box-shadow:none!important;outline:none!important
 }
 html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #configMain #cfgEscuro::before,
 html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #configMain #cfgEscuro::after,
@@ -39,8 +61,8 @@ html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #
 html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #configMain #cfgEscuro .obrixMoonGold,
 html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #configMain #cfgEscuro .obrixMoonGold{color:${GOLD}!important;-webkit-text-fill-color:${GOLD}!important;font-size:19px!important;line-height:1!important;margin-right:7px!important}
 html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #financeiroMain #fmContrato,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #financeiroMain #fmContrato{color:${BLACK}!important;-webkit-text-fill-color:${BLACK}!important;font-weight:950!important}
 html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #financeiroMain #fmRecebido,
-html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #financeiroMain #fmContrato,
 html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #financeiroMain #fmRecebido{color:${GREEN}!important;-webkit-text-fill-color:${GREEN}!important;font-weight:950!important}
 html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #financeiroMain #fmDespesas,
 html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #financeiroMain #fmDespesas{color:${RED}!important;-webkit-text-fill-color:${RED}!important;font-weight:950!important}
@@ -59,7 +81,7 @@ html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #
 html:not([data-obrix-offline-v3="1"])[data-theme="light"] body .checkModal .obrixLightSummaryBlue,
 html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) .checkModal .obrixLightSummaryBlue{color:${BLUE}!important;-webkit-text-fill-color:${BLUE}!important;font-weight:950!important}
 html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #financeiroMain #fmLista .obrixLightSummaryNeutral,
-html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #financeiroMain #fmLista .obrixLightSummaryNeutral{color:#111827!important;-webkit-text-fill-color:#111827!important;font-weight:900!important}
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #financeiroMain #fmLista .obrixLightSummaryNeutral{color:${BLACK}!important;-webkit-text-fill-color:${BLACK}!important;font-weight:900!important}
 `;
 function ensureStyle(){
  if(offlineV3())return;
@@ -84,7 +106,7 @@ function appearance(){
 }
 function values(){
  if(!light())return;
- mark(document.getElementById('fmContrato'),'obrixLightSummaryGreen');mark(document.getElementById('fmRecebido'),'obrixLightSummaryGreen');mark(document.getElementById('fmDespesas'),'obrixLightSummaryRed');mark(document.getElementById('fmResultado'),'obrixLightSummaryBlue');
+ mark(document.getElementById('fmContrato'),'obrixLightSummaryNeutral');mark(document.getElementById('fmRecebido'),'obrixLightSummaryGreen');mark(document.getElementById('fmDespesas'),'obrixLightSummaryRed');mark(document.getElementById('fmResultado'),'obrixLightSummaryBlue');
  document.querySelectorAll('#listaObras .mini,.checkResumoFinance>div,.checkMoneyGrid>div').forEach(paintBox);
  document.querySelectorAll('#financeiroMain #fmLista .mini b,#financeiroMain #fmLista .mini strong').forEach(v=>mark(v,'obrixLightSummaryNeutral'));
 }
