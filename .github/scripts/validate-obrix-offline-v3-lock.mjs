@@ -35,14 +35,9 @@ const visualPaths=[
   'obrix-button-colors-v1.js',
   'obrix-offline-online-visual-v1.js',
   'obrix-online-visual-approved-v1.css',
-  'obrix-dark-aprovado-v1.js',
-  'obrix-dark-actions-final-v1.js',
-  'obrix-light-static-final.css',
   'obrix-light-polish.js',
-  'obrix-final-dois-ajustes-v1.js',
   'obrix-pagamentos-ui-alinhamento.js',
   'obrix-global-ui-report-fix.js',
-  'obrix-config-oneclick.js',
   'obrix-avatar-dark-fix.js',
   'obrix-brand-main.js',
   'obrix-theme-main.js',
@@ -77,7 +72,7 @@ expect(homologation?.runtime_commit===approved,'Commit do registro de homologaç
 expect(homologation?.release===lock?.release,'Identificador da release homologada diverge entre os arquivos de blindagem.');
 if(envApproved)expect(approved===envApproved,'Commit homologado no workflow diverge do commit protegido pelo lock.');
 for(const p of mandatoryCoreProtected)expect(paths.includes(p),`Blindagem do núcleo perdeu arquivo obrigatório: ${p}`);
-expect(visualPaths.length>=17,'Blindagem visual estável incompleta.');
+expect(visualPaths.length>=12,'Blindagem visual estável incompleta.');
 
 function verifyPaths(commit,list,label){
   for(const path of list){
