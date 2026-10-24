@@ -30,7 +30,7 @@ const guardPaths=Array.isArray(lock.guard_paths)?lock.guard_paths:[];
 // Baseline visual estável restaurado após regressão. Fica deliberadamente
 // dentro do validador protegido para que uma mudança visual exija alteração
 // consciente da própria blindagem, e não possa acontecer por acidente.
-const visualApproved='4418ecb479111ede6723efd0fc019bdc9a792aad';
+const visualApproved='3d85a18f8199e8cecbfac8fb40b808e4d9bdfb06';
 const visualPaths=[
   'obrix-button-colors-v1.js',
   'obrix-offline-online-visual-v1.js',
@@ -99,6 +99,7 @@ const nav=read('obrix-offline-v3-nav.js');
 const guard=read('obrix-offline-v3-guard.js');
 const bootstrap=read('obrix-offline-bootstrap.js');
 const sw=read('obrix-sw.js');
+const buttonColors=read('obrix-button-colors-v1.js');
 const offlineBody=(router.match(/async function offline\(\)\{([\s\S]*?)\}\nfunction route/)||[])[1]||'';
 
 expect(html.includes('obrix-offline-v3.js?v=20261024offline-v3-1'),'HTML deixou de carregar o motor offline v3.');
@@ -134,6 +135,9 @@ expect(sw.includes("const CACHE='obrix-offline-v61-v3-nav'"),'Geração aprovada
 expect(sw.includes("'./obrix-offline-v3.js'"),'Service Worker deixou de cachear o motor v3.');
 expect(sw.includes("'./obrix-offline-v3-nav.js'"),'Service Worker deixou de cachear a barra inferior offline independente.');
 expect(sw.includes("'./obrix-offline-v3-guard.js'"),'Service Worker deixou de cachear a proteção do v3.');
+expect(buttonColors.includes('Modo escuro homologado: nenhum botão comum recebe fundo/texto dourado'),'Blindagem visual perdeu a regra que remove dourado dos botões no modo escuro.');
+expect(buttonColors.includes('background:#0F1720!important;background-color:#0F1720!important;background-image:none!important;color:#FFFFFF!important'),'Botões comuns do modo escuro deixaram de usar o fundo neutro aprovado.');
+expect(buttonColors.includes('background:#17212B!important;background-color:#17212B!important;background-image:none!important;color:#FFFFFF!important'),'Estados selecionados do modo escuro voltaram a usar dourado.');
 
 if(errors.length){
   console.error('\nBLINDAGEM OBRIX: PUBLICAÇÃO BLOQUEADA.\n');
