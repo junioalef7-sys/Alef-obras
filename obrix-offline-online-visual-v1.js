@@ -2,7 +2,6 @@
 if(window.__OBRIX_OFFLINE_ONLINE_VISUAL_V1)return;window.__OBRIX_OFFLINE_ONLINE_VISUAL_V1=true;
 const CSS_ID='obrixOnlineVisualApprovedV1';
 const CSS_HREF='./obrix-online-visual-approved-v1.css?v=20261024visual-approved6';
-const GOLD_STYLE_ID='obrixButtonColorsV1';
 const DARK_LOCK_STYLE_ID='obrixDarkModalButtonsLockedV1';
 const INLINE_LOCK_ATTR='data-obrix-dark-inline-lock';
 const DARK_LOCK_STYLE=`
@@ -20,7 +19,7 @@ html:not([data-obrix-offline-v3="1"]) body.dark .accountDeleteModal .modalAction
 }`;
 const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
 const offlineV3=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||document.documentElement.dataset.obrixOfflineV3==='1';
-let timer=0,headMo=null;
+let timer=0;
 function ensureCss(){
  let l=document.getElementById(CSS_ID);
  if(!l){l=document.createElement('link');l.id=CSS_ID;l.rel='stylesheet';document.head.appendChild(l)}
@@ -34,25 +33,6 @@ function ensureDarkLockStyle(){
  if(!s){s=document.createElement('style');s.id=DARK_LOCK_STYLE_ID;document.head.appendChild(s)}
  if(s.textContent!==DARK_LOCK_STYLE)s.textContent=DARK_LOCK_STYLE;
  if(s!==document.head.lastElementChild)document.head.appendChild(s);
-}
-function suppressGoldStyle(){
- if(offlineV3())return;
- document.getElementById(GOLD_STYLE_ID)?.remove();
-}
-function watchGoldStyle(){
- if(headMo||!document.head)return;
- headMo=new MutationObserver(ms=>{
-  if(offlineV3())return;
-  let found=false;
-  for(const m of ms){
-   for(const n of m.addedNodes||[]){
-    if(n?.nodeType===1&&(n.id===GOLD_STYLE_ID||n.querySelector?.('#'+GOLD_STYLE_ID))){found=true;break}
-   }
-   if(found)break;
-  }
-  if(found)queueMicrotask(()=>{suppressGoldStyle();ensureDarkLockStyle();forceDarkActions()});
- });
- headMo.observe(document.head,{childList:true});
 }
 function clearOld(b){b.classList.remove('obrixApprovedGold','obrixApprovedSecondary','obrixEquipeAzulClaro');b.removeAttribute('data-obrix-approved-color')}
 function markButtons(){
@@ -105,13 +85,13 @@ function ensureTheme(){
  if(!b){b=document.createElement('button');b.id='obrixThemeInicioFinal';b.type='button';b.className='obrixThemeInicioFinal';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const next=dark()?'light':'dark';window.OBRIX_THEME?.apply?.(next);setTimeout(()=>{themeLabel();apply()},0)});inicio.insertBefore(b,inicio.firstChild)}
  themeLabel();
 }
-function apply(){if(offlineV3())return;suppressGoldStyle();ensureCss();ensureDarkLockStyle();ensureTheme();markButtons();markValues();forceDarkActions();ensureDarkLockStyle()}
+function apply(){if(offlineV3())return;ensureCss();ensureDarkLockStyle();ensureTheme();markButtons();markValues();forceDarkActions();ensureDarkLockStyle()}
 function schedule(ms=50){clearTimeout(timer);timer=setTimeout(apply,ms)}
-function start(){watchGoldStyle();suppressGoldStyle();ensureCss();ensureDarkLockStyle();schedule(0);setTimeout(apply,250);setTimeout(apply,800);setTimeout(apply,1600)}
+function start(){ensureCss();ensureDarkLockStyle();schedule(0);setTimeout(apply,250);setTimeout(apply,800);setTimeout(apply,1600)}
 ['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','obrix:theme-changed','pageshow','focus'].forEach(n=>window.addEventListener(n,()=>schedule(40)));
-document.addEventListener('click',()=>{schedule(80);setTimeout(()=>schedule(0),180)},true);
+document.addEventListener('click',()=>schedule(0),true);
 window.addEventListener('offline',()=>{const l=document.getElementById(CSS_ID);if(l)l.disabled=true;document.getElementById(DARK_LOCK_STYLE_ID)?.remove();document.querySelectorAll(`[${INLINE_LOCK_ATTR}]`).forEach(clearInlineLock);document.getElementById('obrixThemeInicioFinal')?.remove()});
-window.addEventListener('online',()=>{suppressGoldStyle();ensureCss();ensureDarkLockStyle();schedule(100)});
+window.addEventListener('online',()=>{ensureCss();ensureDarkLockStyle();schedule(0)});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 window.OBRIX_OFFLINE_ONLINE_VISUAL={repaint:()=>schedule(0),apply,forceDarkActions};
 })();
