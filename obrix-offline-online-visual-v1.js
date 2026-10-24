@@ -2,14 +2,35 @@
 if(window.__OBRIX_OFFLINE_ONLINE_VISUAL_V1)return;window.__OBRIX_OFFLINE_ONLINE_VISUAL_V1=true;
 const CSS_ID='obrixOnlineVisualApprovedV1';
 const CSS_HREF='./obrix-online-visual-approved-v1.css?v=20261024visual-approved1';
+const GOLD_STYLE_ID='obrixButtonColorsV1';
 const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
 const offlineV3=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||document.documentElement.dataset.obrixOfflineV3==='1';
-let timer=0;
+let timer=0,headMo=null;
 function ensureCss(){
  let l=document.getElementById(CSS_ID);
  if(!l){l=document.createElement('link');l.id=CSS_ID;l.rel='stylesheet';l.href=CSS_HREF;document.head.appendChild(l)}
  l.disabled=offlineV3();
  return l;
+}
+function suppressGoldStyle(){
+ if(offlineV3())return;
+ const s=document.getElementById(GOLD_STYLE_ID);
+ if(s)s.remove();
+}
+function watchGoldStyle(){
+ if(headMo||!document.head)return;
+ headMo=new MutationObserver(ms=>{
+  if(offlineV3())return;
+  let found=false;
+  for(const m of ms){
+   for(const n of m.addedNodes||[]){
+    if(n?.nodeType===1&&(n.id===GOLD_STYLE_ID||n.querySelector?.('#'+GOLD_STYLE_ID))){found=true;break}
+   }
+   if(found)break;
+  }
+  if(found)queueMicrotask(suppressGoldStyle);
+ });
+ headMo.observe(document.head,{childList:true});
 }
 function clearOld(b){b.classList.remove('obrixApprovedGold','obrixApprovedSecondary','obrixEquipeAzulClaro');b.removeAttribute('data-obrix-approved-color')}
 function markButtons(){
@@ -44,13 +65,13 @@ function ensureTheme(){
  if(!b){b=document.createElement('button');b.id='obrixThemeInicioFinal';b.type='button';b.className='obrixThemeInicioFinal';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const next=dark()?'light':'dark';window.OBRIX_THEME?.apply?.(next);setTimeout(()=>{themeLabel();apply()},0)});inicio.insertBefore(b,inicio.firstChild)}
  themeLabel();
 }
-function apply(){if(offlineV3())return;ensureCss();ensureTheme();markButtons();markValues()}
+function apply(){if(offlineV3())return;suppressGoldStyle();ensureCss();ensureTheme();markButtons();markValues()}
 function schedule(ms=50){clearTimeout(timer);timer=setTimeout(apply,ms)}
-function start(){ensureCss();schedule(0);setTimeout(apply,250);setTimeout(apply,800);setTimeout(apply,1600)}
+function start(){watchGoldStyle();suppressGoldStyle();ensureCss();schedule(0);setTimeout(apply,250);setTimeout(apply,800);setTimeout(apply,1600)}
 ['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','obrix:theme-changed','pageshow','focus'].forEach(n=>window.addEventListener(n,()=>schedule(40)));
 document.addEventListener('click',()=>schedule(80),true);
 window.addEventListener('offline',()=>{const l=document.getElementById(CSS_ID);if(l)l.disabled=true;document.getElementById('obrixThemeInicioFinal')?.remove()});
-window.addEventListener('online',()=>{ensureCss();schedule(100)});
+window.addEventListener('online',()=>{suppressGoldStyle();ensureCss();schedule(100)});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 window.OBRIX_OFFLINE_ONLINE_VISUAL={repaint:()=>schedule(0),apply};
 })();
