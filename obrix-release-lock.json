@@ -1,16 +1,81 @@
 {
-  "release": "OBRIX-venda-2026-10-22",
-  "description": "Baseline funcional aprovado antes da liberacao comercial. Alteracoes futuras devem preservar comportamentos aprovados e itens removidos.",
+  "release": "OBRIX-offline-v2-aprovado-2026-10-24",
+  "approved_commit": "a8d9df0ec2614c03ed180ef8dce49047b849664d",
+  "approved_branch": "aprovado-offline-v2-20261024",
+  "description": "Versão homologada pelo usuário em 24/10/2026. Alterações futuras não podem reintroduzir os motores offline antigos, apagar a base local nem modificar os arquivos críticos sem atualizar conscientemente esta blindagem e passar novamente pela validação.",
   "protected_files": {
+    "obrix-offline-v2.js": "8078b2f92407c232dc2f29d16720cda7b03e19b8",
+    "obrix-offline-v2-loader.js": "95bef47886c735005716479773b033e9782cce0a",
+    "obrix-offline-v2-diario-bridge.js": "f73326a5122ec3794c622370f8e29a618c472221",
+    "obrix-offline-v2-legacy-guard.js": "0b5429975435c5a72292ecbece972ce6531c65d3",
+    "obrix-offline-bootstrap.js": "34a08f760d721b6526099d623aec02085ed834e0",
+    "obrix-session-offline-fix.js": "a7180cd479a8aacac0a6b8b947bb6a5ff1e3ec01",
+    "obrix-startup-router.js": "8e00d176d57e0af67c02c401593b2eb20c5e1e79",
+    "obrix-sw.js": "fd2aef25785a285771bdd6bce7b19367544b7b03",
     "obrix-estoque-saida-obra.js": "f82e3aa0541a3fec2a85e7774ee5e244649a2000",
-    "obrix-equipe-botoes-neutros-v1.js": "dce3daf625c599080a3799b1ead98c71b6802d0e",
-    "obrix-equipe-estoque-fix-v1.js": "4c5cc3edc37ffeb8ca3c385811b43b76b9af51c8"
+    "obrix-equipe-botoes-neutros-v1.js": "b38359aa8d9e224cd517f27bdef94589117dd86e",
+    "obrix-equipe-estoque-fix-v1.js": "136ea185ff977cde4a5f90963b7c189c45107864"
+  },
+  "offline_v2": {
+    "required_active_modules": [
+      "obrix-offline-v2.js",
+      "obrix-offline-v2-legacy-guard.js",
+      "obrix-offline-v2-loader.js",
+      "obrix-offline-v2-diario-bridge.js"
+    ],
+    "required_cached_modules": [
+      "obrix-offline-v2.js",
+      "obrix-offline-v2-legacy-guard.js",
+      "obrix-offline-v2-loader.js",
+      "obrix-offline-v2-diario-bridge.js",
+      "obrix-offline-bootstrap.js",
+      "obrix-session-offline-fix.js"
+    ],
+    "forbidden_active_modules": [
+      "obrix-offline-safe-loader.js",
+      "obrix-offline-diario.js",
+      "obrix-financeiro-offline.js",
+      "obrix-equipe-offline.js",
+      "obrix-estoque-offline.js",
+      "obrix-obras-offline.js",
+      "obrix-checklist-offline.js",
+      "obrix-notas-offline.js",
+      "obrix-home-offline.js"
+    ],
+    "forbidden_storage_wipes": [
+      "removeItem(BASE_KEY)",
+      "removeItem(OLD_BASE_KEY)",
+      "removeItem(IDENTITY_KEY)",
+      "localStorage.clear("
+    ],
+    "engine_markers": [
+      "const DB_PREFIX='obrix_offline_v2_db:'",
+      "const QUEUE_PREFIX='obrix_offline_v2_queue:'",
+      "function activate()",
+      "async function prepare(",
+      "async function sync()",
+      "function patchBackend()",
+      "window.OBRIX_OFFLINE_V2={activate,deactivate,active,prepare,sync,status,client:localClient"
+    ],
+    "legacy_guard_flags": [
+      "__OBRIX_FIN_OFFLINE_BASEFIX",
+      "__OBRIX_FINANCEIRO_OFFLINE",
+      "__OBRIX_EQUIPE_OFFLINE",
+      "__OBRIX_ESTOQUE_OFFLINE",
+      "__OBRIX_OBRAS_OFFLINE",
+      "__OBRIX_CHECKLIST_OFFLINE"
+    ]
   },
   "invariants": [
-    "Saida de estoque nunca abre automaticamente e abre imediatamente somente por acao real do usuario.",
-    "Filtro Ativos mostra somente funcionarios ativos; filtro Inativos mostra somente funcionarios inativos.",
-    "Botoes Funcionarios, Vale e Pagamentos da Equipe permanecem neutros, sem fundo dourado.",
-    "Modo offline preserva o mesmo visual e comportamento aprovado do modo online.",
-    "Itens removidos nao devem ser reintroduzidos por atualizacoes de cache ou modulos antigos."
+    "O modo offline usa apenas o motor offline v2 no caminho ativo.",
+    "A base local nunca é apagada ao sair da conta, fechar o aplicativo ou alternar entre online e offline.",
+    "Alterações feitas sem internet permanecem no aparelho até serem sincronizadas.",
+    "Ao voltar a internet, a fila do offline v2 sincroniza sem reativar filas antigas.",
+    "O Diário de Obras usa a ponte do offline v2 e não a fila offline antiga.",
+    "Service Worker mantém em cache todos os módulos necessários ao offline v2.",
+    "Saída de estoque nunca abre automaticamente e abre imediatamente somente por ação real do usuário.",
+    "Filtro Ativos mostra somente funcionários ativos; filtro Inativos mostra somente funcionários inativos.",
+    "Botões Funcionários, Vale e Pagamentos da Equipe permanecem neutros, sem fundo dourado.",
+    "Uma alteração acidental em qualquer arquivo protegido bloqueia a publicação no GitHub Actions."
   ]
 }
