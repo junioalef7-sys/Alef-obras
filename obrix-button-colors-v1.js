@@ -47,7 +47,24 @@ html[data-theme="dark"] #app button.selected:not(.danger):not(.perigo):not(.obri
 html[data-theme="dark"] #app .opmSide nav button.active{background:#172334!important;color:#eef2f7!important}
 #app button.obrixApprovedSecondary{background:#fff!important;color:#334155!important;-webkit-text-fill-color:#334155!important;border:1px solid #cbd5e1!important;box-shadow:none!important}
 html[data-theme="dark"] #app button.obrixApprovedSecondary{background:#172334!important;color:#eef2f7!important;-webkit-text-fill-color:#eef2f7!important;border-color:#334155!important}
-#app .btn.danger,#app .btn.perigo,#app .btn.orcPerigo,#app .btn.diarioPerigo{background:#b91c1c!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#991b1b!important}`;
+#app .btn.danger,#app .btn.perigo,#app .btn.orcPerigo,#app .btn.diarioPerigo{background:#b91c1c!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#991b1b!important}
+/* Modo escuro homologado: nenhum botão comum recebe fundo/texto dourado. O claro permanece intacto. */
+html[data-theme="dark"] #app .btn:not(#sair):not(#obrixTheme):not(.secondary):not(.cancelar):not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+body.dark #app .btn:not(#sair):not(#obrixTheme):not(.secondary):not(.cancelar):not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html[data-theme="dark"] #app button.obrixApprovedGold:not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+body.dark #app button.obrixApprovedGold:not(.obrixPermanentNeutral):not(.obrixEquipeNoGold){background:#0F1720!important;background-color:#0F1720!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-color:#2A3948!important;box-shadow:none!important;text-shadow:none!important}
+html[data-theme="dark"] #app button.active:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.nav button):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html[data-theme="dark"] #app button.selected:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html[data-theme="dark"] #app button.selecionado:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html[data-theme="dark"] #app button[aria-pressed="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+html[data-theme="dark"] #app button[aria-selected="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+body.dark #app button.active:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.nav button):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+body.dark #app button.selected:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+body.dark #app button.selecionado:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+body.dark #app button[aria-pressed="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
+body.dark #app button[aria-selected="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold){background:#17212B!important;background-color:#17212B!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-color:#334155!important;box-shadow:none!important;text-shadow:none!important}
+html[data-theme="dark"] #app button.obrixPermanentNeutral.obrixPermanentGoldText,
+body.dark #app button.obrixPermanentNeutral.obrixPermanentGoldText{color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important}`;
 function css(){let s=document.getElementById('obrixButtonColorsV1');if(!s){s=document.createElement('style');s.id='obrixButtonColorsV1';s.textContent=STYLE;document.head.appendChild(s);return}if(s.textContent!==STYLE)s.textContent=STYLE;if(s!==document.head.lastElementChild)document.head.appendChild(s)}
 let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(()=>{css();scan(document)},30)}
 let bodyMo=null,themeMo=null;
