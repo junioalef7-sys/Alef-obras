@@ -108,17 +108,18 @@ async function atualizarAoRetornar(){
   setTimeout(()=>{if(seq===refreshSeq&&assinaturaAberta())window.OBRIX_ASSINATURA?.load?.()},1200);
   setTimeout(()=>{if(seq===refreshSeq&&assinaturaAberta())window.OBRIX_ASSINATURA?.load?.()},3500);
 }
-function botao(txt,plano,metodo){const b=document.createElement('button');b.type='button';b.className='btn assCobEfiBtn';b.textContent=txt;b.dataset.assCobEfi=`${plano}:${metodo}`;b.onclick=()=>abrir(plano,metodo);return b}
+function botao(txt,plano,metodo){const b=document.createElement('button');b.type='button';b.className='btn assCobEfiBtn obrixPermanentNeutral obrixPayMethod';b.dataset.obrixPermanentNeutral='1';b.textContent=txt;b.dataset.assCobEfi=`${plano}:${metodo}`;b.onclick=()=>abrir(plano,metodo);return b}
 function scan(){
   const box=$('assPlanos');if(!box)return;
   box.querySelectorAll('.assPlano').forEach(card=>{
     const pix=card.querySelector('[data-ass-plano]');if(!pix)return;const plano=pix.dataset.assPlano||'mensal';
+    pix.classList.add('obrixPermanentNeutral','obrixPayMethod');pix.dataset.obrixPermanentNeutral='1';
     let row=card.querySelector('.assCobEfiRow');if(!row){row=document.createElement('div');row.className='assCobEfiRow';pix.insertAdjacentElement('afterend',row)}
     if(!row.querySelector(`[data-ass-cob-efi="${plano}:boleto"]`))row.appendChild(botao('Pagar com Boleto',plano,'boleto'));
     if(!row.querySelector(`[data-ass-cob-efi="${plano}:cartao"]`))row.appendChild(botao('Pagar com Cartão',plano,'cartao'));
   });
 }
-const css=document.createElement('style');css.textContent=`.assCobEfiRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.assCobEfiBtn{width:100%}.assCobEfiGerar,.assCobEfiAbrir,.assCobEfiCard .assVerify{width:100%;margin-top:12px;text-align:center;text-decoration:none;display:block}.assCobEfiAbrir.hidden{display:none!important}@media(max-width:620px){.assCobEfiRow{grid-template-columns:1fr}}`;document.head.appendChild(css);
+const css=document.createElement('style');css.textContent=`.assCobEfiRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.assCobEfiBtn{width:100%}html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #assPlanos button.obrixPayMethod,html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #assPlanos button.obrixPayMethod{background:#E2E8F0!important;background-color:#E2E8F0!important;background-image:none!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#CBD5E1!important;box-shadow:none!important}.assCobEfiGerar,.assCobEfiAbrir,.assCobEfiCard .assVerify{width:100%;margin-top:12px;text-align:center;text-decoration:none;display:block}.assCobEfiAbrir.hidden{display:none!important}@media(max-width:620px){.assCobEfiRow{grid-template-columns:1fr}}`;document.head.appendChild(css);
 new MutationObserver(()=>scan()).observe(document.body,{childList:true,subtree:true});document.addEventListener('obrix:feature-pronto',()=>setTimeout(scan,50));
 window.addEventListener('focus',atualizarAoRetornar);window.addEventListener('pageshow',atualizarAoRetornar);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')atualizarAoRetornar()});
 setTimeout(scan,100);setTimeout(scan,1000);
