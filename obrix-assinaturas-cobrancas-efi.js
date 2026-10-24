@@ -3,7 +3,7 @@
 if(window.__OBRIX_ASSINATURAS_COBRANCAS_EFI)return;window.__OBRIX_ASSINATURAS_COBRANCAS_EFI=true;
 const pt=e=>window.OBRIX_PT_ERROR?.(e)||e?.message||String(e||'Não foi possível concluir a operação.');
 const S={id:'obrix_efi_cobranca_link_id',url:'obrix_efi_cobranca_link_url',metodo:'obrix_efi_cobranca_link_metodo',plano:'obrix_efi_cobranca_link_plano'};
-let atual={id:'',url:'',metodo:'boleto',plano:'mensal'};
+let atual={id:'',url:'',metodo:'boleto',plano:'mensal'},refreshSeq=0;
 const $=id=>document.getElementById(id);
 function labelMetodo(m){return m==='cartao'?'Cartão de crédito':'Boleto'}
 function limpar(){Object.values(S).forEach(k=>localStorage.removeItem(k));atual={id:'',url:'',metodo:'boleto',plano:'mensal'}}
@@ -56,18 +56,36 @@ async function gerar(){
     status(atual.metodo==='boleto'?'Boleto preparado. Abra a página da Efí para emitir e pagar.':'Pagamento preparado. Abra a página segura da Efí para informar o cartão.');
   }catch(e){status(pt(e),false)}finally{btn.disabled=false;btn.textContent=atual.url?'Gerar novo pagamento':'Gerar pagamento'}
 }
-async function verificar(){
-  const btn=$('assCobEfiVerificar');
+async function verificar(opts={}){
+  const btn=$('assCobEfiVerificar'),silencioso=!!opts.silencioso;
   try{
-    btn.disabled=true;btn.textContent='Verificando...';const sb=await OBRIX_BACKEND.init();
-    const id=atual.id||localStorage.getItem(S.id)||'';if(!id)throw new Error('Nenhum pagamento foi gerado ainda.');
+    if(btn){btn.disabled=true;btn.textContent='Verificando...'}
+    const sb=await OBRIX_BACKEND.init();
+    const id=atual.id||localStorage.getItem(S.id)||'';if(!id){if(!silencioso)throw new Error('Nenhum pagamento foi gerado ainda.');return false}
     const {data,error}=await sb.functions.invoke('efi-reconciliar-cobranca',{body:{pagamentoId:id}});
     if(error)throw error;if(data?.error)throw new Error(data.error);
-    if(data?.status==='aprovado'&&data?.aplicado){status('Pagamento confirmado. Assinatura OBRIX ativada com sucesso.');limpar();setTimeout(async()=>{ $('assCobEfiModal')?.classList.add('hidden');await window.OBRIX_ASSINATURA?.load?.()},600)}
-    else if(data?.status==='expirado')status('Esta cobrança venceu. Gere uma nova.',false);
-    else if(data?.status==='cancelado'||data?.status==='rejeitado')status('Pagamento não aprovado. Gere uma nova cobrança.',false);
-    else status('Pagamento ainda não confirmado pela Efí. O acesso permanece inalterado.');
-  }catch(e){status(pt(e),false)}finally{btn.disabled=false;btn.textContent='Verificar pagamento'}
+    if(data?.status==='aprovado'&&data?.aplicado){
+      if(!silencioso)status('Pagamento confirmado. Assinatura OBRIX ativada com sucesso.');
+      limpar();await window.OBRIX_ASSINATURA?.load?.();
+      if(!silencioso)setTimeout(()=>$('assCobEfiModal')?.classList.add('hidden'),500);
+      return true;
+    }
+    if(!silencioso){
+      if(data?.status==='expirado')status('Esta cobrança venceu. Gere uma nova.',false);
+      else if(data?.status==='cancelado'||data?.status==='rejeitado')status('Pagamento não aprovado. Gere uma nova cobrança.',false);
+      else status('Pagamento ainda não confirmado pela Efí. O acesso permanece inalterado.');
+    }
+    return false;
+  }catch(e){if(!silencioso)status(pt(e),false);return false}finally{if(btn){btn.disabled=false;btn.textContent='Verificar pagamento'}}
+}
+function assinaturaAberta(){const m=$('assinaturaMain');return !!(m&&!m.classList.contains('hidden'))}
+function atualizarAoRetornar(){
+  if(!assinaturaAberta())return;
+  const seq=++refreshSeq;
+  window.OBRIX_ASSINATURA?.load?.();
+  if(localStorage.getItem(S.id))verificar({silencioso:true});
+  setTimeout(()=>{if(seq===refreshSeq&&assinaturaAberta())window.OBRIX_ASSINATURA?.load?.()},1200);
+  setTimeout(()=>{if(seq===refreshSeq&&assinaturaAberta())window.OBRIX_ASSINATURA?.load?.()},3500);
 }
 function botao(txt,plano,metodo){const b=document.createElement('button');b.type='button';b.className='btn assCobEfiBtn';b.textContent=txt;b.dataset.assCobEfi=`${plano}:${metodo}`;b.onclick=()=>abrir(plano,metodo);return b}
 function scan(){
@@ -80,6 +98,8 @@ function scan(){
   });
 }
 const css=document.createElement('style');css.textContent=`.assCobEfiRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.assCobEfiBtn{width:100%}.assCobEfiGerar,.assCobEfiAbrir,.assCobEfiCard .assVerify{width:100%;margin-top:12px;text-align:center;text-decoration:none;display:block}.assCobEfiAbrir.hidden{display:none!important}@media(max-width:620px){.assCobEfiRow{grid-template-columns:1fr}}`;document.head.appendChild(css);
-new MutationObserver(()=>scan()).observe(document.body,{childList:true,subtree:true});document.addEventListener('obrix:feature-pronto',()=>setTimeout(scan,50));setTimeout(scan,100);setTimeout(scan,1000);
-window.OBRIX_EFI_COBRANCAS={abrir,gerar,verificar,scan};
+new MutationObserver(()=>scan()).observe(document.body,{childList:true,subtree:true});document.addEventListener('obrix:feature-pronto',()=>setTimeout(scan,50));
+window.addEventListener('focus',atualizarAoRetornar);window.addEventListener('pageshow',atualizarAoRetornar);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')atualizarAoRetornar()});
+setTimeout(scan,100);setTimeout(scan,1000);
+window.OBRIX_EFI_COBRANCAS={abrir,gerar,verificar,scan,atualizar:atualizarAoRetornar};
 })();
