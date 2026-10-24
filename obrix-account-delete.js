@@ -13,7 +13,7 @@ function abrirConfirmacao(){
     <p class="muted">Para confirmar, digite <b>EXCLUIR CONTA</b>.</p>
     <input class="accountDeleteText" autocomplete="off" placeholder="EXCLUIR CONTA">
     <div class="accountDeleteError"></div>
-    <div class="modalActions"><button type="button" class="btn cancelar">Cancelar</button><button type="button" class="btn excluir">Excluir conta definitivamente</button></div>
+    <div class="modalActions"><button type="button" class="btn cancelar">Cancelar</button><button type="button" class="btn excluir danger">Excluir conta definitivamente</button></div>
   </div>`;
   document.body.appendChild(b);
   b.querySelector('.cancelar').onclick=fechar;
@@ -51,12 +51,12 @@ function instalar(){
   if(!sair||$('#cfgExcluirConta'))return false;
   const card=sair.closest('.card');if(!card)return false;
   const info=document.createElement('p');info.className='muted accountDeleteInfo';info.textContent='Exclua permanentemente seu acesso e, quando aplicável, todos os dados vinculados à conta.';
-  const btn=document.createElement('button');btn.type='button';btn.id='cfgExcluirConta';btn.className='btn cfgFull accountDeleteBtn';btn.textContent='Excluir conta';btn.onclick=abrirConfirmacao;
+  const btn=document.createElement('button');btn.type='button';btn.id='cfgExcluirConta';btn.className='btn cfgFull accountDeleteBtn danger';btn.textContent='Excluir conta';btn.onclick=abrirConfirmacao;
   card.appendChild(info);card.appendChild(btn);return true;
 }
 const css=document.createElement('style');css.textContent=`
-.accountDeleteInfo{margin:16px 0 8px}.accountDeleteBtn{background:#b91c1c!important;color:#fff!important;border:1px solid #b91c1c!important}.accountDeleteBtn:hover{filter:brightness(.96)}
-.accountDeleteModal{max-width:520px}.accountDeleteModal h2{margin-top:0}.accountDeleteWarn{color:#991b1b;background:#fff1f2;border:1px solid #fecaca;border-radius:11px;padding:10px 12px}.accountDeleteText{width:100%;padding:13px;border:1px solid var(--border,#cbd5e1);border-radius:11px;font-size:16px;margin:8px 0 10px}.accountDeleteError{min-height:20px;color:#b91c1c;font-weight:800;font-size:13px;margin-bottom:8px}.accountDeleteModal .excluir{background:#b91c1c!important}.accountDeleteModal .excluir:disabled{opacity:.55}
+#app #configMain #cfgExcluirConta.accountDeleteBtn{background:#b91c1c!important;background-color:#b91c1c!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border:1px solid #991b1b!important;box-shadow:none!important;text-shadow:none!important}.accountDeleteBtn:hover{filter:brightness(.96)}
+.accountDeleteModal{max-width:520px}.accountDeleteModal h2{margin-top:0}.accountDeleteWarn{color:#991b1b;background:#fff1f2;border:1px solid #fecaca;border-radius:11px;padding:10px 12px}.accountDeleteText{width:100%;padding:13px;border:1px solid var(--border,#cbd5e1);border-radius:11px;font-size:16px;margin:8px 0 10px}.accountDeleteError{min-height:20px;color:#b91c1c;font-weight:800;font-size:13px;margin-bottom:8px}.accountDeleteModal .excluir{background:#b91c1c!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#991b1b!important}.accountDeleteModal .excluir:disabled{opacity:.55}
 html[data-theme="dark"] .accountDeleteWarn{background:#2b1217;color:#fecdd3;border-color:#7f1d1d}
 `;document.head.appendChild(css);
 const obs=new MutationObserver(()=>instalar());obs.observe(document.body,{childList:true,subtree:true});
