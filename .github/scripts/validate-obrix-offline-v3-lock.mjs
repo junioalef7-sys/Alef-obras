@@ -29,7 +29,7 @@ const guardPaths=Array.isArray(lock.guard_paths)?lock.guard_paths:[];
 
 // Baseline visual estável. Mudanças nestes arquivos exigem atualização
 // consciente deste commit de homologação visual.
-const visualApproved='2cfccb50b691e759e8573f45539a9176ecf177c1';
+const visualApproved='9dc45bd321844cc3ee6218019222a221ce030fed';
 const visualPaths=[
   'obrix-button-colors-v1.js',
   'obrix-offline-online-visual-v1.js',
@@ -137,6 +137,8 @@ expect(visualBridge.includes("document.querySelectorAll(`.modalBack .modalAction
 expect(visualBridge.includes("setImp(b,'background',bg)"),'Blindagem deixou de aplicar fundo com prioridade máxima.');
 expect(visualBridge.includes("b.id==='cfgExcluirConta'||!!b.closest('.accountDeleteModal')"),'Excluir Conta e sua confirmação deixaram de ser classificados como vermelhos.');
 expect(visualBridge.includes('background:#B91C1C!important'),'Exclusão de conta deixou de usar fundo vermelho protegido.');
+expect(!visualBridge.includes('suppressGoldStyle'),'Camada visual voltou a remover e recriar a folha de cores, causando piscar.');
+expect(!visualBridge.includes('watchGoldStyle'),'Camada visual voltou a observar/reordenar a folha dourada, causando disputa visual.');
 
 expect(guard.includes("capture?.('pre-online-logout')"),'Proteção de dados no logout foi removida.');
 expect(!guard.includes('localStorage.clear('),'Proteção de logout não pode limpar o armazenamento local.');
