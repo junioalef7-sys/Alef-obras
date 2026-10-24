@@ -40,7 +40,6 @@
       background-image:none!important;
     }
 
-    /* No modo escuro, nenhum botão aprovado pode voltar a dourado/amarelo/azul. */
     html[data-theme="dark"] body #app button.btn:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixExcluirAprovado),
     html[data-theme="dark"] body #app button.obrixApprovedGold:not(.obrixExcluirAprovado),
     html[data-theme="dark"] body #app button.obrixEquipeAzulClaro:not(.obrixExcluirAprovado),
@@ -63,7 +62,6 @@
       text-shadow:none!important;
     }
 
-    /* Entrar: escuro aprovado, sem dourado. */
     html[data-theme="dark"] body #login.obrixLoginPro #entrar,
     body.dark #login.obrixLoginPro #entrar{
       background:${CARD_BG}!important;
@@ -75,7 +73,6 @@
       box-shadow:none!important;
     }
 
-    /* Estados selecionados também não podem ficar dourados. */
     html[data-theme="dark"] body #app button.active:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixExcluirAprovado),
     html[data-theme="dark"] body #app button.selected:not(.obrixExcluirAprovado),
     html[data-theme="dark"] body #app button.selecionado:not(.obrixExcluirAprovado),
@@ -95,7 +92,6 @@
       box-shadow:none!important;
     }
 
-    /* Excluir: fundo original, texto vermelho e borda vermelha. */
     html[data-theme="dark"] body #app button.obrixExcluirAprovado,
     body.dark #app button.obrixExcluirAprovado{
       background:${CARD_BG}!important;
@@ -123,13 +119,16 @@
 
   function ensureStyle(){
     let style=document.getElementById(STYLE_ID);
-    if(!style){style=document.createElement('style');style.id=STYLE_ID;document.head.appendChild(style)}
+    if(!style){
+      style=document.createElement('style');
+      style.id=STYLE_ID;
+      document.head.appendChild(style);
+    }
     if(style.textContent!==CSS)style.textContent=CSS;
-    if(document.head.lastElementChild!==style)document.head.appendChild(style);
   }
 
   function mark(el,cls){
-    if(!el)return;
+    if(!el||el.classList.contains(cls))return;
     el.classList.remove('obrixValorReceita','obrixValorDespesa','obrixValorResultado');
     el.classList.add(cls);
   }
@@ -164,7 +163,7 @@
     root.querySelectorAll?.('#app button').forEach(btn=>{
       const t=String(btn.textContent||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
       const isDelete=/\b(excluir|remover|apagar|deletar)\b/.test(t)||btn.matches('.danger,.perigo,.orcPerigo,.diarioPerigo,[data-cmd="excluir"],[data-acao="excluir"]');
-      if(isDelete){
+      if(isDelete&&!btn.classList.contains('obrixExcluirAprovado')){
         btn.classList.add('obrixExcluirAprovado');
         btn.classList.remove('obrixApprovedGold','obrixApprovedSecondary','obrixEquipeAzulClaro');
         btn.removeAttribute('data-obrix-approved-color');
@@ -179,7 +178,7 @@
       ensureStyle();
       applyValueColors(document);
       applyDeleteStyle(document);
-    },40);
+    },80);
   }
 
   function start(){
@@ -187,11 +186,9 @@
     applyValueColors(document);
     applyDeleteStyle(document);
     const target=document.getElementById('app')||document.body;
-    new MutationObserver(schedule).observe(target,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class','aria-pressed','aria-selected']});
-    new MutationObserver(()=>setTimeout(ensureStyle,0)).observe(document.head,{childList:true});
+    new MutationObserver(schedule).observe(target,{childList:true,subtree:true,characterData:true});
     window.addEventListener('obrix:theme-changed',schedule);
-    ['pageshow','focus','online','offline','obrix:feature-pronto','obrix:modules-ready'].forEach(n=>window.addEventListener(n,schedule));
-    document.addEventListener('click',()=>{setTimeout(schedule,0);setTimeout(schedule,80)},true);
+    ['pageshow','online','offline','obrix:feature-pronto','obrix:modules-ready'].forEach(n=>window.addEventListener(n,schedule));
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
