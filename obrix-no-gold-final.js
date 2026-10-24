@@ -7,8 +7,16 @@ function bottom(){document.querySelectorAll('#app .bottom button').forEach(b=>{i
 function equipe(){const sec=document.getElementById('equipe');if(!sec)return;sec.querySelectorAll('button').forEach(b=>{if(b.matches('.danger,.perigo,.orcPerigo,.diarioPerigo'))return;neutralButton(b,b.matches('.active,.selected,.selecionado,[aria-pressed="true"],[aria-selected="true"]'))});
  sec.querySelectorAll('#listaEquipe .obrix-modelo-card').forEach(c=>{imp(c,'background',dark()?'#0f172a':'#ffffff');imp(c,'background-color',dark()?'#0f172a':'#ffffff');imp(c,'background-image','none')});
  sec.querySelectorAll('#listaEquipe .obrix-modelo-pagamento,#listaEquipe .obrix-modelo-pilulas span,#listaEquipe .obrix-modelo-metrica').forEach(c=>{if(c.classList.contains('liquido')){imp(c,'background',dark()?'#231b27':'#fff1f2');imp(c,'background-color',dark()?'#231b27':'#fff1f2')}else{imp(c,'background',dark()?'#111827':'#f8fafc');imp(c,'background-color',dark()?'#111827':'#f8fafc')}imp(c,'background-image','none')})}
-function apply(){bottom();equipe()}
+function planos(){
+  const box=document.getElementById('assPlanos');if(!box)return;
+  box.querySelectorAll('[data-ass-plano],[data-ass-cob-efi],.obrixPayMethod').forEach(b=>neutralButton(b,false));
+}
+function notificacoes(){
+  const bell=document.getElementById('obrixNotifBell');if(!bell)return;
+  neutralButton(bell,false);
+}
+function apply(){bottom();equipe();planos();notificacoes()}
 let t=0;function later(){clearTimeout(t);apply();t=setTimeout(apply,70);setTimeout(apply,180)}
-function start(){apply();if(document.body)new MutationObserver(later).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-pressed','aria-selected']});new MutationObserver(later).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});document.addEventListener('click',later,true);['pageshow','focus','online','offline','obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto'].forEach(n=>window.addEventListener(n,later));setInterval(apply,1200)}
+function start(){apply();if(document.body)new MutationObserver(later).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-pressed','aria-selected','style']});new MutationObserver(later).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});document.addEventListener('click',later,true);['pageshow','focus','online','offline','obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto'].forEach(n=>window.addEventListener(n,later));setInterval(apply,700)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();window.OBRIX_NO_GOLD_FINAL={apply:later};
 })();
