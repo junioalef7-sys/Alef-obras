@@ -7,7 +7,7 @@ const fmt=v=>{if(!v)return'';try{return new Date(v).toLocaleString('pt-BR',{date
 let bell=null,overlay=null,list=[],virtualTrial=null,user=null,profile=null,busy=false,lastLoad=0;
 const icons={suporte:'💬',pagamento:'✓',assinatura:'♕',aviso:'🔔',trial:'⏳'};
 function appOpen(){const a=$('app'),l=$('login');return !!(a&&!a.classList.contains('hidden')&&(!l||l.classList.contains('hidden')))}
-function trialKey(){return virtualTrial&&user?`obrix_notif_trial_${user.id}_${String(virtualTrial.trial_fim||'')}`:''}
+function trialKey(){return virtualTrial&&user?`obrix_notif_alert_${user.id}_${String(virtualTrial.alert_key||virtualTrial.trial_fim||virtualTrial.periodo_fim||'')}`:''}
 function trialSeen(){try{return !!localStorage.getItem(trialKey())}catch{return false}}
 function setTrialSeen(){try{const k=trialKey();if(k)localStorage.setItem(k,new Date().toISOString())}catch{}}
 function ensure(){
@@ -26,7 +26,12 @@ function ensure(){
   return true;
 }
 async function session(){const sb=await OBRIX_BACKEND.init();user=await OBRIX_BACKEND.currentUser();profile=await OBRIX_BACKEND.profile();if(!user||!profile)throw new Error('Sessão não identificada.');return sb}
-function calcTrial(a){virtualTrial=null;if(!a||a.status!=='teste'||!a.trial_fim)return;const fim=new Date(a.trial_fim).getTime(),dias=Math.max(0,Math.ceil((fim-Date.now())/86400000));if(dias>0&&dias<=2)virtualTrial={id:'trial',tipo:'trial',titulo:'Seu teste grátis está acabando',mensagem:`Restam ${dias} dia${dias===1?'':'s'} de teste grátis. Escolha um plano para manter o acesso completo.`,alvo:'assinatura',trial_fim:a.trial_fim,criado_em:new Date().toISOString(),virtual:true,lida_em:trialSeen()?new Date().toISOString():null}}
+function calcTrial(a){
+  virtualTrial=null;if(!a)return;const now=Date.now();
+  if(a.status==='teste'&&a.trial_fim){const fim=new Date(a.trial_fim).getTime();if(Number.isFinite(fim)){const diff=fim-now;if(diff<=0){virtualTrial={id:'trial',tipo:'trial',titulo:'Seu teste grátis terminou',mensagem:'O acesso está no modo limitado. Escolha um plano para voltar a usar todos os recursos do OBRIX.',alvo:'assinatura',trial_fim:a.trial_fim,alert_key:`trial_expired_${a.trial_fim}`,criado_em:new Date().toISOString(),virtual:true,lida_em:null}}else{const dias=Math.ceil(diff/86400000);if(dias<=2)virtualTrial={id:'trial',tipo:'trial',titulo:'Seu teste grátis está acabando',mensagem:`Restam ${dias} dia${dias===1?'':'s'} de teste grátis. Escolha um plano para manter o acesso completo.`,alvo:'assinatura',trial_fim:a.trial_fim,alert_key:`trial_ending_${a.trial_fim}`,criado_em:new Date().toISOString(),virtual:true,lida_em:null}}}}
+  if(!virtualTrial&&a.status==='ativo'&&a.periodo_fim){const fim=new Date(a.periodo_fim).getTime();if(Number.isFinite(fim)&&fim<=now)virtualTrial={id:'trial',tipo:'trial',titulo:'Sua assinatura venceu',mensagem:'O período pago terminou. Regularize a assinatura para manter o acesso completo ao OBRIX.',alvo:'assinatura',periodo_fim:a.periodo_fim,alert_key:`subscription_expired_${a.periodo_fim}`,criado_em:new Date().toISOString(),virtual:true,lida_em:null}}
+  if(virtualTrial&&trialSeen())virtualTrial.lida_em=new Date().toISOString();
+}
 function combined(){const a=[...list];if(virtualTrial)a.unshift(virtualTrial);return a.sort((x,y)=>new Date(y.criado_em||0)-new Date(x.criado_em||0))}
 function unreadCount(){return combined().filter(n=>!n.lida_em).length}
 function paintBadge(){if(!bell)return;const c=$('obrixNotifCount'),n=unreadCount();if(!c)return;c.textContent=n>99?'99+':String(n);c.classList.toggle('hidden',n===0)}
