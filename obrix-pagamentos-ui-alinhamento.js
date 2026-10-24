@@ -10,17 +10,15 @@ const ICONS={
 };
 
 function decorateButton(btn,type,label){
-  if(!btn)return;
-  btn.classList.add('obrixPayMethod','obrixPermanentNeutral');
-  btn.dataset.obrixPermanentNeutral='1';
-  if(btn.dataset.obrixPayDecorated==='1')return;
+  if(!btn||btn.dataset.obrixPayDecorated==='1')return;
   btn.dataset.obrixPayDecorated='1';
+  btn.classList.add('obrixPayMethod');
   btn.setAttribute('aria-label',label);
   btn.innerHTML=`<span class="obrixPayIcon">${ICONS[type]}</span><span class="obrixPayLabel">${label}</span>`;
 }
 
 function decorateCard(card){
-  if(!card)return;
+  if(!card||card.dataset.obrixPayReady==='1')return;
   const pix=card.querySelector('[data-ass-plano]');
   const row=card.querySelector('.assCobEfiRow');
   if(!pix||!row)return;
@@ -28,12 +26,12 @@ function decorateCard(card){
   const cartao=row.querySelector('[data-ass-cob-efi$=":cartao"]');
   if(!boleto||!cartao)return;
 
+  card.dataset.obrixPayReady='1';
   row.classList.add('obrixPayStack');
   decorateButton(pix,'pix','Pagar com Pix');
   decorateButton(boleto,'boleto','Pagar com Boleto');
   decorateButton(cartao,'cartao','Pagar com Cartão');
   row.append(pix,boleto,cartao);
-  card.dataset.obrixPayReady='1';
 }
 
 function scan(){
@@ -53,8 +51,7 @@ css.textContent=`
   margin-top:12px!important;
   background:transparent!important;
 }
-html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod,
-html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod{
+#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod{
   display:flex!important;
   align-items:center!important;
   justify-content:flex-start!important;
@@ -65,11 +62,8 @@ html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #
   padding:13px 16px!important;
   border:1px solid #cbd5e1!important;
   border-radius:12px!important;
-  background:#E2E8F0!important;
-  background-color:#E2E8F0!important;
-  background-image:none!important;
+  background:#ffffff!important;
   color:#0f172a!important;
-  -webkit-text-fill-color:#0f172a!important;
   box-shadow:none!important;
   text-align:left!important;
   font-weight:800!important;
@@ -84,18 +78,12 @@ html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #
 }
 #assPlanos .obrixPayIcon svg{width:22px!important;height:22px!important;display:block!important}
 #assPlanos .obrixPayLabel{display:block!important;flex:1!important;text-align:left!important}
-html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,
-html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,
-html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active,
-html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,
-html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,
-html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{
-  background:#E2E8F0!important;
-  background-color:#E2E8F0!important;
+#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,
+#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,
+#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{
+  background:#f8fafc!important;
   color:#0f172a!important;
-  -webkit-text-fill-color:#0f172a!important;
-  border-color:#cbd5e1!important;
-  box-shadow:none!important;
+  border-color:#94a3b8!important;
 }
 html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod,
 body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod{
