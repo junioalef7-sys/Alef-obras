@@ -15,7 +15,7 @@ function extraCss(){
 function loadFinalVisual(){
  if(window.__OBRIX_NO_GOLD_FINAL||document.querySelector('script[data-obrix-final-visual="1"]'))return;
  const s=document.createElement('script');
- s.src='./obrix-no-gold-final.js?v=20261024visualfinal2';
+ s.src='./obrix-no-gold-final.js?v=20261024visualfinal3';
  s.async=false;
  s.dataset.obrixFinalVisual='1';
  document.body.appendChild(s);
