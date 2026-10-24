@@ -74,6 +74,13 @@ if(envApproved)expect(approved===envApproved,'Commit homologado no workflow dive
 for(const p of mandatoryCoreProtected)expect(paths.includes(p),`Blindagem do núcleo perdeu arquivo obrigatório: ${p}`);
 expect(visualPaths.length>=13,'Blindagem visual estável incompleta.');
 
+// Homologação explícita do modo escuro aprovado pelo usuário.
+expect(lock?.dark_mode_homologation?.status==='approved_by_user','Modo escuro perdeu o status de homologação do usuário.');
+expect(lock?.dark_mode_homologation?.baseline_commit===visualApproved,'Baseline homologado do modo escuro diverge do baseline visual protegido.');
+expect(lock?.dark_mode_homologation?.gold_buttons_forbidden===true,'Blindagem deixou de proibir botões dourados no modo escuro.');
+expect(lock?.dark_mode_homologation?.gold_flicker_forbidden===true,'Blindagem deixou de proibir o piscar dourado no modo escuro.');
+expect(lock?.dark_mode_homologation?.requires_explicit_reapproval_for_change===true,'Modo escuro deixou de exigir nova homologação para mudança.');
+
 function verifyPaths(commit,list,label){
   for(const path of list){
     if(!fs.existsSync(path)){fail(`${label} ausente: ${path}`);continue}
@@ -100,6 +107,9 @@ const guard=read('obrix-offline-v3-guard.js');
 const bootstrap=read('obrix-offline-bootstrap.js');
 const sw=read('obrix-sw.js');
 const visualBridge=read('obrix-offline-online-visual-v1.js');
+const buttonColors=read('obrix-button-colors-v1.js');
+const approvedCss=read('obrix-online-visual-approved-v1.css');
+const accountDelete=read('obrix-account-delete.js');
 const offlineBody=(router.match(/async function offline\(\)\{([\s\S]*?)\}\nfunction route/)||[])[1]||'';
 
 expect(html.includes('obrix-offline-v3.js?v=20261024offline-v3-1'),'HTML deixou de carregar o motor offline v3.');
@@ -140,6 +150,17 @@ expect(visualBridge.includes('background:#B91C1C!important'),'Exclusão de conta
 expect(!visualBridge.includes('suppressGoldStyle'),'Camada visual voltou a remover e recriar a folha de cores, causando piscar.');
 expect(!visualBridge.includes('watchGoldStyle'),'Camada visual voltou a observar/reordenar a folha dourada, causando disputa visual.');
 
+// Blindagem semântica específica do modo escuro homologado.
+expect(buttonColors.includes('/* Modo escuro homologado: nenhum botão comum recebe fundo/texto dourado.'),'Arquivo de cores perdeu a regra homologada que neutraliza dourado no modo escuro.');
+expect(buttonColors.includes('background:#0F1720!important;background-color:#0F1720!important;background-image:none!important;color:#FFFFFF!important'),'Botões comuns do modo escuro deixaram de ter fundo escuro/texto branco protegido.');
+expect(buttonColors.includes('background:#17212B!important;background-color:#17212B!important;background-image:none!important;color:#FFFFFF!important'),'Estado ativo/selecionado do modo escuro deixou de ser neutro e pode voltar ao dourado.');
+expect(buttonColors.includes('html[data-theme="dark"] #app button.obrixPermanentNeutral.obrixPermanentGoldText'),'Arquivo perdeu a neutralização de texto dourado permanente no modo escuro.');
+expect(buttonColors.includes('body.dark #app button.obrixPermanentNeutral.obrixPermanentGoldText{color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important}'),'Texto dourado permanente voltou a ser permitido no modo escuro.');
+expect(approvedCss.includes('html:not([data-obrix-offline-v3="1"])[data-theme="dark"] body #app button:not(.obrixExcluirFinal):not(.obrixDestrutivoFinal):not(.obrixPayMethod)'),'CSS aprovado perdeu a regra global de botões neutros no modo escuro.');
+expect(approvedCss.includes('background:#0F1720!important;background-color:#0F1720!important;background-image:none!important;color:#FFFFFF!important'),'CSS aprovado perdeu a paleta neutra do modo escuro.');
+expect(approvedCss.includes('background:#B91C1C!important;background-color:#B91C1C!important'),'CSS aprovado perdeu o vermelho protegido de ações destrutivas.');
+expect(accountDelete.includes('cfgExcluirConta')||accountDelete.includes('accountDelete'),'Módulo de exclusão de conta deixou de expor os controles protegidos.');
+
 expect(guard.includes("capture?.('pre-online-logout')"),'Proteção de dados no logout foi removida.');
 expect(!guard.includes('localStorage.clear('),'Proteção de logout não pode limpar o armazenamento local.');
 expect(bootstrap.includes("obrix-sw.js?v=20261024-offline-v3-nav1"),'Bootstrap deixou de forçar a geração homologada do Service Worker.');
@@ -152,9 +173,10 @@ expect(sw.includes("'./obrix-offline-v3-guard.js'"),'Service Worker deixou de ca
 if(errors.length){
   console.error('\nBLINDAGEM OBRIX: PUBLICAÇÃO BLOQUEADA.\n');
   for(const e of errors)console.error(`- ${e}`);
-  console.error('\nO offline homologado, o núcleo de login/navegação e o visual estável estão protegidos. Alterações nesses pontos exigem uma mudança consciente da blindagem antes de publicar.\n');
+  console.error('\nO offline homologado, o núcleo de login/navegação, o visual estável e o modo escuro homologado estão protegidos. Alterações nesses pontos exigem uma mudança consciente da blindagem antes de publicar.\n');
   process.exit(1);
 }
 console.log(`Offline homologado protegido: ${paths.length} arquivos do runtime conferidos contra ${approved}.`);
 console.log(`Visual estável protegido: ${visualPaths.length} arquivos conferidos contra ${visualApproved}.`);
+console.log('Modo escuro homologado protegido: dourado e piscar dourado bloqueados por hash + regras semânticas.');
 if(guardApproved&&guardPaths.length)console.log(`Blindagem também protegida: ${guardPaths.length} arquivos conferidos contra ${guardApproved}.`);
