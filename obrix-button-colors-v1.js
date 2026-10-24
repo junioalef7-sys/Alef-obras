@@ -29,8 +29,9 @@ function classify(b){if(!(b instanceof HTMLButtonElement))return;const t=norm(te
   ((mt.includes('registrar diaria')||mt.includes('registrar falta')||mt.includes('registrar vale')||mt.includes('bonus e extras')||mt.includes('bonus')||mt.includes('extra'))&&(t==='cancelar'||t==='registrar'||t.includes('registrar diaria')||t.includes('registrar falta')||t.includes('registrar vale')||t.includes('registrar bonus')||t.includes('registrar extra')))
  );
  if(darkTeamLight){applyClass(b,'obrixTeamLight','team-light');return}
- const dadosVerde=['pagar equipe','pagar obras','pagar financeiro','apagar equipe','apagar obras','apagar financeiro'].some(x=>t===x||t.endsWith(' '+x));
- if(dadosVerde||b.id==='cfgSair'||(t==='sair da conta'&&!b.closest?.('#menuMain'))){applyClass(b,'obrixTeamGreen','team-green');return}
+ const dadosVerde=['pagar equipe','pagar obras','pagar financeiro'].some(x=>t===x||t.endsWith(' '+x));
+ if(b.id==='cfgSair'||(t==='sair da conta'&&!b.closest?.('#menuMain'))){applyClass(b,'obrixTransparentButton','transparent');return}
+ if(dadosVerde){applyClass(b,'obrixTeamGreen','team-green');return}
  if(b.id==='cfgExcluirConta'||danger(b)){applyClass(b,'obrixDangerButton','danger');return}
  if(b.classList.contains('obrixEyeLiteBtn')||b.closest?.('#obrixAuthAux')){applyClass(b,'obrixTransparentButton','transparent');return}
  if(b.classList.contains('obrix-pessoal-item')){applyClass(b,'obrixTransparentButton','transparent');return}
@@ -72,7 +73,8 @@ html[data-theme="dark"] body button.obrixTeamNeutral.obrixTeamNeutral,body.dark 
 html body #app#app#app #configMain #cfgExcluirConta,html body #configMain #cfgExcluirConta.accountDeleteBtn{background:${DANGER}!important;background-color:${DANGER}!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border:1px solid ${DANGER_BORDER}!important;box-shadow:0 6px 16px rgba(185,28,28,.14)!important}
 html body .accountDeleteModal .excluir{background:${DANGER}!important;background-color:${DANGER}!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:${DANGER_BORDER}!important}
 html body #app#app#app #configMain #cfgTrocarEmail,html body #app#app#app #configMain #cfgTrocarSenha{background:${PETROLEO}!important;background-color:${PETROLEO}!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:${PETROLEO_BORDER}!important}
-html body #app#app#app #configMain #cfgSair{background:${TEAM_GREEN}!important;background-color:${TEAM_GREEN}!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#2A8E50!important;box-shadow:none!important}
+html body #app#app#app #configMain #cfgSair{background:transparent!important;background-color:transparent!important;background-image:none!important;color:#334155!important;-webkit-text-fill-color:#334155!important;border-color:transparent!important;box-shadow:none!important}
+html[data-theme="dark"] body #app#app#app #configMain #cfgSair,body.dark #app#app#app #configMain #cfgSair{color:#eef2f7!important;-webkit-text-fill-color:#eef2f7!important}
 html body #app#app#app #obrixNotifBell{background:transparent!important;background-color:transparent!important;background-image:none!important;border-color:transparent!important;box-shadow:none!important}
 html body #app#app#app .bottom button{background:transparent!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important;border-color:transparent!important;color:#334155!important;-webkit-text-fill-color:#334155!important}
 html body #app#app#app .bottom button.active{background:transparent!important;background-color:transparent!important;color:${PETROLEO}!important;-webkit-text-fill-color:${PETROLEO}!important}
