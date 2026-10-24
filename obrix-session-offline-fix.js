@@ -20,9 +20,7 @@ const unlock=()=>{try{localStorage.removeItem(LOCK_KEY)}catch(_){}};
 const base=()=>{try{return window.OBRIX_OFFLINE_BOOTSTRAP_API?.base?.()||JSON.parse(localStorage.getItem(BASE_KEY)||'null')}catch(_){return null}};
 const netErr=e=>/network|failed to fetch|fetch failed|load failed|networkerror|internet|timeout|tempo.*conex|conex[aã]o.*demor|conectar agora/i.test(String(e?.message||e||''));
 
-function setOnlineOverride(getter){
-  try{Object.defineProperty(navigator,'onLine',{configurable:true,get:getter});return true}catch(_){return false}
-}
+function setOnlineOverride(getter){try{Object.defineProperty(navigator,'onLine',{configurable:true,get:getter});return true}catch(_){return false}}
 function clearOnlineOverride(){try{delete navigator.onLine}catch(_){}}
 function forceOffline(){
   window.__OBRIX_FORCE_OFFLINE=true;
@@ -32,31 +30,35 @@ function forceOffline(){
 function releaseOffline(){
   window.__OBRIX_FORCE_OFFLINE=false;
   clearOnlineOverride();
+  try{window.OBRIX_OFFLINE_V2?.deactivate?.()}catch(_){}
 }
 function holdLoggedOut(){
   if(!locked())return;
   window.__OBRIX_FORCE_OFFLINE=false;
+  try{window.OBRIX_OFFLINE_V2?.deactivate?.()}catch(_){}
   setOnlineOverride(()=>true);
   const login=$('login'),app=$('app');
   app?.classList.add('hidden');login?.classList.remove('hidden');
   document.getElementById('menuMain')?.classList.add('hidden');
   document.documentElement.removeAttribute('data-obrix-offline');
   document.documentElement.removeAttribute('data-obrix-offline-boot');
+  document.documentElement.removeAttribute('data-obrix-offline-v2');
 }
 function showError(e){const b=$('erro');if(!b)return;b.textContent=window.OBRIX_PT_ERROR?.(e)||e?.message||String(e||'Não foi possível entrar.');b.classList.remove('hidden')}
 function hideError(){$('erro')?.classList.add('hidden')}
 
-async function loadOfflineRoute(){
-  try{await limit(Promise.resolve(window.OBRIX_STARTUP_ROUTER?.offline?.()),9000,'Modo offline demorou para carregar.')}catch(_){}
-}
+async function loadOfflineRoute(){try{await limit(Promise.resolve(window.OBRIX_STARTUP_ROUTER?.offline?.()),9000,'Modo offline demorou para carregar.')}catch(_){}}
 async function restoreOffline(reason){
-  unlock();forceOffline();await loadOfflineRoute();
+  unlock();forceOffline();
+  try{window.OBRIX_OFFLINE_V2?.activate?.()}catch(_){}
+  await loadOfflineRoute();
   let ok=false;
   try{ok=!!window.restaurarOfflineCore?.(reason)}catch(_){}
   if(!ok)try{ok=!!window.OBRIX_OFFLINE_BOOTSTRAP_API?.restore?.(reason)}catch(_){}
   if(ok){
-    try{window.OBRIX_OFFLINE_SAFE?.paint?.()}catch(_){}
-    setTimeout(()=>{try{window.OBRIX_OFFLINE_SAFE?.show?.('inicio',0)}catch(_){}},40);
+    document.documentElement.dataset.obrixOffline='1';
+    document.documentElement.dataset.obrixOfflineV2='1';
+    setTimeout(()=>{try{window.OBRIX_OFFLINE_V2_LOADER?.start?.(reason)}catch(_){}},0);
   }
   return ok;
 }
@@ -69,7 +71,7 @@ async function login(){
     if(!nativeOnline()){
       if(!b?.profile?.empresa_id)throw new Error('Modo offline ainda não preparado neste aparelho. Entre uma vez com internet para salvar os dados locais.');
       if(typed&&cached&&typed!==cached)throw new Error('Sem internet, este aparelho só pode abrir a conta salva localmente.');
-      if(!await restoreOffline('login-offline'))throw new Error('Não foi possível abrir a base offline salva neste aparelho.');
+      if(!await restoreOffline('login-offline-v2'))throw new Error('Não foi possível abrir a base offline salva neste aparelho.');
       return;
     }
     const sb=await limit(window.OBRIX_BACKEND.init(),8000,'Não foi possível iniciar a conexão.');
@@ -78,11 +80,12 @@ async function login(){
     releaseOffline();unlock();
     const ok=await limit(Promise.resolve(window.carregar?.()),17000,'A conexão demorou demais ao carregar o aplicativo.');
     if(ok===false)throw new Error(($('erro')?.textContent||'Não foi possível carregar o aplicativo.').trim());
+    setTimeout(()=>window.OBRIX_OFFLINE_V2?.prepare?.(true),1200);
   }catch(e){
     const b=base();
     if(netErr(e)&&b?.profile?.empresa_id){
       const typed=($('email')?.value||'').trim().toLowerCase(),cached=String(b?.profile?.email||'').trim().toLowerCase();
-      if(!typed||!cached||typed===cached){if(await restoreOffline('login-network-fallback'))return}
+      if(!typed||!cached||typed===cached){if(await restoreOffline('login-network-fallback-v2'))return}
     }
     showError(e);
   }finally{
@@ -117,6 +120,7 @@ window.addEventListener('online',()=>{
   if(window.__OBRIX_FORCE_OFFLINE){
     setOnlineOverride(()=>false);
     try{window.OBRIX_STARTUP_ROUTER?.offline?.()}catch(_){}
+    try{window.OBRIX_OFFLINE_V2?.sync?.()}catch(_){}
     return;
   }
 });
@@ -126,5 +130,5 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else if(locked())holdLoggedOut();
 
 window.OBRIX_LOGOUT=logout;
-window.OBRIX_SESSION_OFFLINE_FIX={login,logout,restoreOffline,forceOffline,releaseOffline,locked};
+window.OBRIX_SESSION_OFFLINE_FIX={login,logout,restoreOffline,forceOffline,releaseOffline,locked,nativeOnline};
 })();
