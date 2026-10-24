@@ -5,7 +5,9 @@ const pt=e=>window.OBRIX_PT_ERROR?.(e)||e?.message||String(e||'Não foi possíve
 const S={id:'obrix_efi_cobranca_link_id',url:'obrix_efi_cobranca_link_url',metodo:'obrix_efi_cobranca_link_metodo',plano:'obrix_efi_cobranca_link_plano',owner:'obrix_efi_cobranca_link_owner'};
 let atual={id:'',url:'',metodo:'boleto',plano:'mensal'},refreshSeq=0;
 const $=id=>document.getElementById(id);
-const ownerId=()=>String(window.profile?.id||window.profile?.user_id||'');
+async function ownerId(force=false){
+  try{const user=await window.OBRIX_BACKEND?.currentUser?.(force);return String(user?.id||'')}catch(_){return ''}
+}
 function labelMetodo(m){return m==='cartao'?'Cartão de crédito':'Boleto'}
 function limpar(){Object.values(S).forEach(k=>localStorage.removeItem(k));atual={id:'',url:'',metodo:'boleto',plano:'mensal'}}
 function modal(){
@@ -27,30 +29,38 @@ function modal(){
   return m;
 }
 function status(txt,ok=true){const b=$('assCobEfiStatus');if(!b)return;b.textContent=txt;b.className='status '+(ok?'assOk':'assErr')}
-function abrir(plano,metodo){
+async function abrir(plano,metodo){
   modal();
-  const desejado={id:'',url:'',plano:plano||'mensal',metodo:metodo||'boleto'},owner=ownerId();
+  const desejado={id:'',url:'',plano:plano||'mensal',metodo:metodo||'boleto'};
+  atual=desejado;
+  $('assCobEfiTitulo').textContent=`${atual.plano==='anual'?'Plano Anual':'Plano Mensal'} — ${labelMetodo(atual.metodo)}`;
+  $('assCobEfiTexto').textContent=atual.metodo==='boleto'
+    ?'O boleto será emitido na página segura da Efí. O OBRIX só libera o acesso depois que a Efí confirmar o pagamento.'
+    :'Os dados do cartão serão preenchidos diretamente na página segura da Efí e não ficam armazenados no OBRIX.';
+  $('assCobEfiStatus').classList.add('hidden');
+  $('assCobEfiModal').classList.remove('hidden');
+  const owner=await ownerId(true);
+  if(!owner){
+    const a=$('assCobEfiAbrir');a.removeAttribute('href');a.classList.add('hidden');
+    $('assCobEfiVerificar').classList.add('hidden');
+    $('assCobEfiGerar').textContent='Gerar pagamento';
+    status('Sua sessão não pôde ser confirmada. Feche esta tela e tente novamente.',false);return;
+  }
   const temSalvo=!!(localStorage.getItem(S.id)||localStorage.getItem(S.url));
   if(temSalvo&&localStorage.getItem(S.owner)!==owner)limpar();
   atual=desejado;
   const savedPlan=localStorage.getItem(S.plano)||'',savedMetodo=localStorage.getItem(S.metodo)||'',savedOwner=localStorage.getItem(S.owner)||'';
   if(savedOwner===owner&&savedPlan===atual.plano&&savedMetodo===atual.metodo){atual.id=localStorage.getItem(S.id)||'';atual.url=localStorage.getItem(S.url)||''}
-  $('assCobEfiTitulo').textContent=`${atual.plano==='anual'?'Plano Anual':'Plano Mensal'} — ${labelMetodo(atual.metodo)}`;
-  $('assCobEfiTexto').textContent=atual.metodo==='boleto'
-    ?'O boleto será emitido na página segura da Efí. O OBRIX só libera o acesso depois que a Efí confirmar o pagamento.'
-    :'Os dados do cartão serão preenchidos diretamente na página segura da Efí e não ficam armazenados no OBRIX.';
   $('assCobEfiGerar').textContent=atual.url?'Gerar novo pagamento':'Gerar pagamento';
   const a=$('assCobEfiAbrir');if(atual.url){a.href=atual.url;a.textContent=atual.metodo==='boleto'?'Abrir boleto na Efí':'Abrir pagamento no cartão';a.classList.remove('hidden')}else{a.removeAttribute('href');a.classList.add('hidden')}
   $('assCobEfiVerificar').classList.toggle('hidden',!atual.id);
-  $('assCobEfiStatus').classList.add('hidden');
-  $('assCobEfiModal').classList.remove('hidden');
 }
 async function gerar(){
   const btn=$('assCobEfiGerar');
   try{
     btn.disabled=true;btn.textContent='Gerando...';status('Criando página segura de pagamento na Efí...');
-    const sb=await OBRIX_BACKEND.init(),owner=ownerId();
-    if(!owner)throw new Error('Sessão sem usuário identificado. Entre novamente.');
+    const sb=await OBRIX_BACKEND.init(),owner=await ownerId(true);
+    if(!owner)throw new Error('Sessão não encontrada. Feche esta tela e tente novamente.');
     const reqKey=`obrix_efi_cobranca_req_${owner}_${atual.plano}_${atual.metodo}`;
     let requestId=localStorage.getItem(reqKey)||'';if(!requestId){requestId=crypto.randomUUID();localStorage.setItem(reqKey,requestId)}
     const {data,error}=await sb.functions.invoke('efi-criar-cobranca-link',{body:{plano:atual.plano,metodo:atual.metodo,requestId}});
@@ -66,7 +76,8 @@ async function verificar(opts={}){
   const btn=$('assCobEfiVerificar'),silencioso=!!opts.silencioso;
   try{
     if(btn){btn.disabled=true;btn.textContent='Verificando...'}
-    const owner=ownerId();if(localStorage.getItem(S.owner)&&localStorage.getItem(S.owner)!==owner){limpar();if(!silencioso)throw new Error('Pagamento pertence a outro acesso. Gere uma nova cobrança nesta conta.');return false}
+    const owner=await ownerId(true);if(!owner){if(!silencioso)throw new Error('Sessão não encontrada. Feche esta tela e tente novamente.');return false}
+    if(localStorage.getItem(S.owner)&&localStorage.getItem(S.owner)!==owner){limpar();if(!silencioso)throw new Error('Pagamento pertence a outro acesso. Gere uma nova cobrança nesta conta.');return false}
     const sb=await OBRIX_BACKEND.init();
     const id=atual.id||localStorage.getItem(S.id)||'';if(!id){if(!silencioso)throw new Error('Nenhum pagamento foi gerado ainda.');return false}
     const {data,error}=await sb.functions.invoke('efi-reconciliar-cobranca',{body:{pagamentoId:id}});
@@ -86,9 +97,10 @@ async function verificar(opts={}){
   }catch(e){if(!silencioso)status(pt(e),false);return false}finally{if(btn){btn.disabled=false;btn.textContent='Verificar pagamento'}}
 }
 function assinaturaAberta(){const m=$('assinaturaMain');return !!(m&&!m.classList.contains('hidden'))}
-function atualizarAoRetornar(){
+async function atualizarAoRetornar(){
   if(!assinaturaAberta())return;
-  const owner=ownerId(),savedOwner=localStorage.getItem(S.owner)||'';
+  const owner=await ownerId();if(!owner)return;
+  const savedOwner=localStorage.getItem(S.owner)||'';
   if(savedOwner&&savedOwner!==owner)limpar();
   const seq=++refreshSeq;
   window.OBRIX_ASSINATURA?.load?.();
