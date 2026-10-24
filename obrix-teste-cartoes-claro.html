@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f6f8">
+<title>OBRIX — Teste dos cartões no modo claro</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --app-bg:#f4f6f8;
+  --card-bg:#ffffff;
+  --card-border:#e2e8f0;
+  --text:#0f172a;
+  --muted:#64748b;
+  --red:#dc2626;
+  --green:#15803d;
+  --blue:#1769e0;
+}
+html,body{min-height:100%;margin:0;background:var(--app-bg);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+button,input{font:inherit}button{cursor:pointer}
+.shell{min-height:100vh;padding:14px 14px 110px;background:var(--app-bg)}
+.topbar{position:sticky;top:0;z-index:10;margin:-14px -14px 14px;padding:12px 14px;background:rgba(244,246,248,.92);backdrop-filter:blur(14px);border-bottom:1px solid #e2e8f0}
+.title{display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{font-weight:950;font-size:24px;letter-spacing:-1px}.brand b{color:#ff5a00}.badge{font-size:11px;font-weight:900;letter-spacing:.04em;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 9px;background:#fff}
+.testPanel{background:#fff;border:1px solid #dbe2ea;border-radius:18px;padding:14px;margin-bottom:14px;box-shadow:0 12px 28px rgba(15,23,42,.07)}
+.testPanel h2{font-size:16px;margin:0 0 5px}.testPanel p{font-size:12px;color:#64748b;margin:0 0 12px;line-height:1.45}
+.controls{display:grid;grid-template-columns:60px 1fr;gap:10px;align-items:center}.controls input[type="color"]{width:60px;height:48px;padding:0;border:1px solid #cbd5e1;border-radius:12px;background:transparent}.controls input[type="text"]{height:48px;border:1px solid #cbd5e1;background:#fff;color:#0f172a;border-radius:12px;padding:0 12px;font-weight:850;text-transform:uppercase}
+.readout{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;border:1px solid #dbe2ea;border-radius:12px;background:#f8fafc}.readout span{font-size:12px;color:#64748b}.readout strong{font-size:15px;letter-spacing:.04em}
+.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.preset{min-height:54px;border:1px solid #cbd5e1;border-radius:11px;color:#0f172a;font-weight:850;padding:8px}.preset small{display:block;font-weight:650;opacity:.72;font-size:10px;margin-top:2px}.preset.active{outline:3px solid #1769e0;outline-offset:1px}
+.notice{margin-top:10px;font-size:11px;color:#475569;border-left:3px solid #64748b;padding-left:9px;line-height:1.45}
+.screenTabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px}.tab{border:1px solid #dbe2ea;background:#fff;color:#64748b;border-radius:12px;padding:10px 4px;font-size:11px;font-weight:850}.tab.active{background:#0f172a;color:#fff;border-color:#0f172a}
+.screen{display:none}.screen.active{display:block}.hero{background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:18px;margin-bottom:12px;box-shadow:0 5px 18px rgba(15,23,42,.04)}.hero h1{font-size:22px;margin:0 0 5px}.hero p{margin:0;color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}.card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:17px;padding:15px;min-height:92px;box-shadow:0 5px 18px rgba(15,23,42,.04)}.card small{display:block;color:var(--muted);font-size:12px;font-weight:700;margin-bottom:8px}.card strong{font-size:20px}.green{color:var(--green)}.red{color:var(--red)}.blue{color:var(--blue)}
+.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.action{background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;color:var(--text);padding:14px 10px;font-weight:850;text-align:left;box-shadow:0 5px 18px rgba(15,23,42,.035)}.action span{display:block;color:var(--muted);font-size:11px;font-weight:600;margin-top:4px}
+.list{display:grid;gap:9px}.row{background:var(--card-bg);border:1px solid var(--card-border);border-radius:15px;padding:14px;box-shadow:0 5px 18px rgba(15,23,42,.04)}.rowTop{display:flex;justify-content:space-between;gap:12px}.row h3{margin:0;font-size:15px}.row p{margin:5px 0 0;color:var(--muted);font-size:12px}.row .value{font-weight:900}
+.neutral{margin-top:10px;background:var(--card-bg);color:var(--text);border:1px solid var(--card-border);border-radius:10px;padding:9px 12px;font-weight:850}.delete{margin-top:10px;background:var(--card-bg);color:var(--red);border:1px solid var(--red);border-radius:10px;padding:9px 12px;font-weight:850}
+.bottom{position:fixed;left:10px;right:10px;bottom:10px;z-index:20;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:7px;background:rgba(255,255,255,.96);border:1px solid #dbe2ea;border-radius:17px;box-shadow:0 14px 30px rgba(15,23,42,.15)}.bottom button{border:0;background:transparent;color:#64748b;border-radius:11px;padding:10px 3px;font-size:11px;font-weight:850}.bottom button.active{background:#eef2f7;color:#0f172a}
+.copy{width:100%;margin-top:10px;border:1px solid #cbd5e1;border-radius:11px;background:#0f172a;color:#fff;padding:11px;font-weight:850}
+@media(max-width:420px){.screenTabs{grid-template-columns:repeat(5,minmax(0,1fr))}.tab{font-size:10px;padding:9px 2px}.presets{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar"><div class="title"><div class="brand">OBRI<b>X</b></div><div class="badge">TESTE — CARTÕES CLAROS</div></div></div>
+
+  <section class="testPanel">
+    <h2>Cor dos cartões no modo claro</h2>
+    <p>O fundo geral fica fixo em <b>#F4F6F8</b>. Aqui você altera somente a cor dos cartões para comparar qual fica melhor.</p>
+    <div class="controls">
+      <input id="picker" type="color" value="#ffffff" aria-label="Escolher cor dos cartões">
+      <input id="hex" type="text" value="#FFFFFF" maxlength="7" aria-label="Código hexadecimal da cor">
+    </div>
+    <div class="readout"><span>Cor dos cartões em teste</span><strong id="selectedColor">#FFFFFF</strong></div>
+    <div class="presets" id="presets">
+      <button class="preset active" data-color="#FFFFFF" style="background:#ffffff">Branco<small>#FFFFFF</small></button>
+      <button class="preset" data-color="#FCFDFE" style="background:#fcfdfe">Branco suave<small>#FCFDFE</small></button>
+      <button class="preset" data-color="#F8FAFC" style="background:#f8fafc">Gelo<small>#F8FAFC</small></button>
+      <button class="preset" data-color="#F5F7FA" style="background:#f5f7fa">Cinza suave<small>#F5F7FA</small></button>
+      <button class="preset" data-color="#F4F7FB" style="background:#f4f7fb">Azulado claro<small>#F4F7FB</small></button>
+      <button class="preset" data-color="#F1F5F9" style="background:#f1f5f9">Azul gelo<small>#F1F5F9</small></button>
+      <button class="preset" data-color="#FAFAF9" style="background:#fafaf9">Pérola<small>#FAFAF9</small></button>
+      <button class="preset" data-color="#F7F7F8" style="background:#f7f7f8">Neutro<small>#F7F7F8</small></button>
+    </div>
+    <button class="copy" id="copyColor" type="button">Copiar cor escolhida</button>
+    <div class="notice">Este ambiente é separado e <b>não altera o aplicativo oficial</b>. Escolha a opção que você gostar e me diga o nome ou o código.</div>
+  </section>
+
+  <div class="screenTabs">
+    <button class="tab active" data-screen="inicio">Início</button>
+    <button class="tab" data-screen="obras">Obras</button>
+    <button class="tab" data-screen="equipe">Equipe</button>
+    <button class="tab" data-screen="financeiro">Financeiro</button>
+    <button class="tab" data-screen="menu">Menu</button>
+  </div>
+
+  <main class="screen active" id="screen-inicio">
+    <div class="hero"><h1>Início</h1><p>Compare os cartões com o fundo geral claro.</p></div>
+    <div class="grid"><div class="card"><small>Total contratado</small><strong>R$ 124.500,00</strong></div><div class="card"><small>A receber</small><strong>R$ 38.200,00</strong></div><div class="card"><small>Receitas</small><strong class="green">R$ 86.300,00</strong></div><div class="card"><small>Despesas</small><strong class="red">R$ 54.100,00</strong></div></div>
+    <div class="actions"><button class="action">Obras<span>Cadastro e resumo</span></button><button class="action">Equipe<span>Diárias e pagamentos</span></button><button class="action">Financeiro<span>Receitas e despesas</span></button><button class="action">Estoque<span>Materiais e movimentações</span></button></div>
+  </main>
+
+  <main class="screen" id="screen-obras">
+    <div class="hero"><h1>Obras</h1><p>Visual dos cartões de obras no modo claro.</p></div>
+    <div class="list"><div class="row"><div class="rowTop"><div><h3>Reforma Escola</h3><p>Em andamento · 72%</p></div><div class="value blue">R$ 48.000</div></div><button class="neutral">Checklist</button></div><div class="row"><div class="rowTop"><div><h3>Construção Refeitório</h3><p>Em andamento · 43%</p></div><div class="value blue">R$ 76.500</div></div><button class="delete">Excluir</button></div></div>
+  </main>
+
+  <main class="screen" id="screen-equipe">
+    <div class="hero"><h1>Equipe</h1><p>Cartões, botões neutros e valores.</p></div>
+    <div class="list"><div class="row"><div class="rowTop"><div><h3>Funcionário exemplo</h3><p>Pedreiro · Ativo</p></div><div class="value red">R$ 840,00</div></div><button class="neutral">Vale</button></div><div class="row"><div class="rowTop"><div><h3>Funcionário exemplo 2</h3><p>Servente · Ativo</p></div><div class="value">R$ 620,00</div></div></div></div>
+  </main>
+
+  <main class="screen" id="screen-financeiro">
+    <div class="hero"><h1>Financeiro</h1><p>As cores dos números permanecem separadas da cor dos cartões.</p></div>
+    <div class="grid"><div class="card"><small>Receitas</small><strong class="green">R$ 86.300,00</strong></div><div class="card"><small>Despesas</small><strong class="red">R$ 54.100,00</strong></div><div class="card"><small>Resultado</small><strong class="blue">R$ 32.200,00</strong></div><div class="card"><small>Saldo</small><strong>R$ 32.200,00</strong></div></div>
+  </main>
+
+  <main class="screen" id="screen-menu">
+    <div class="hero"><h1>Menu</h1><p>Veja o mesmo tom nos cartões de acesso.</p></div>
+    <div class="actions"><button class="action">Relatórios<span>Exportações e resumos</span></button><button class="action">Estoque<span>Entradas e saídas</span></button><button class="action">Planos e assinatura<span>Conta e cobrança</span></button><button class="action">Configurações<span>Preferências do app</span></button></div>
+  </main>
+</div>
+
+<nav class="bottom"><button class="active" data-screen="inicio">Início</button><button data-screen="obras">Obras</button><button data-screen="equipe">Equipe</button><button data-screen="financeiro">Financeiro</button><button data-screen="menu">Menu</button></nav>
+<script>
+(()=>{
+ const root=document.documentElement,picker=document.getElementById('picker'),hex=document.getElementById('hex'),selected=document.getElementById('selectedColor'),presets=document.getElementById('presets');
+ const valid=v=>/^#[0-9a-f]{6}$/i.test(v);
+ function apply(v){v=String(v||'').trim().toUpperCase();if(!valid(v))return false;root.style.setProperty('--card-bg',v);picker.value=v.toLowerCase();hex.value=v;selected.textContent=v;presets.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',b.dataset.color.toUpperCase()===v));try{localStorage.setItem('obrix_teste_cartoes_claro',v)}catch(_){}return true}
+ picker.addEventListener('input',()=>apply(picker.value));hex.addEventListener('input',()=>{let v=hex.value.trim();if(v&&!v.startsWith('#'))v='#'+v;if(valid(v))apply(v)});hex.addEventListener('blur',()=>{if(!apply(hex.value))hex.value=selected.textContent});presets.addEventListener('click',e=>{const b=e.target.closest('[data-color]');if(b)apply(b.dataset.color)});
+ document.getElementById('copyColor').addEventListener('click',async e=>{const v=selected.textContent;try{await navigator.clipboard.writeText(v);e.currentTarget.textContent='Cor copiada: '+v}catch(_){e.currentTarget.textContent='Cor escolhida: '+v}setTimeout(()=>e.currentTarget.textContent='Copiar cor escolhida',1500)});
+ function openScreen(name){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id==='screen-'+name));document.querySelectorAll('[data-screen]').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));window.scrollTo({top:0,behavior:'smooth'})}
+ document.addEventListener('click',e=>{const b=e.target.closest('[data-screen]');if(b)openScreen(b.dataset.screen)});
+ try{const saved=localStorage.getItem('obrix_teste_cartoes_claro');if(valid(saved))apply(saved)}catch(_){}
+})();
+</script>
+</body>
+</html>
