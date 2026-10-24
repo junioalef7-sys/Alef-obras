@@ -61,9 +61,15 @@ async function apply(){
     const main=$('suporteMain');if(!main)return;
     const {isAdmin}=await adminState();
     const meus=main.querySelector('[data-sup-tab="meus"]');
-    if(meus)meus.classList.toggle('hidden',!isAdmin);
+    if(meus){
+      meus.classList.remove('hidden');
+      meus.textContent=isAdmin?'Meus atendimentos':'Histórico';
+    }
     const adminTab=main.querySelector('[data-sup-tab="admin"]');
     if(adminTab)adminTab.classList.toggle('hidden',!isAdmin);
+
+    const listaTitulo=$('supListaTitulo');
+    if(listaTitulo&&!isAdmin&&listaTitulo.textContent==='Meus atendimentos')listaTitulo.textContent='Histórico de conversas';
 
     if(!isAdmin){
       main.querySelectorAll('.supAdminActions,[data-status="em_atendimento"],[data-status="fechado"]').forEach(el=>el.remove());
@@ -108,7 +114,7 @@ function install(){
 
 document.addEventListener('click',e=>{
   if(e.target.closest?.('#supEnviar')){if($('supCategoria')?.value==='avaliacao'){sendEvaluation(e);return}}
-  if(e.target.closest?.('[data-obrix-suporte-menu],#obrixNotifBell,[data-sup-tab]'))setTimeout(apply,80);
+  if(e.target.closest?.('[data-obrix-suporte-menu],#obrixNotifBell,[data-sup-tab],[data-ticket]'))setTimeout(apply,80);
 },true);
 window.addEventListener('pageshow',()=>{lastUserId='';setTimeout(apply,120)});
 window.addEventListener('focus',()=>setTimeout(apply,120));
