@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -29,6 +31,10 @@ jobs:
           for f in obrix-*.js; do
             [ -f "$f" ] && node --check "$f"
           done
+      - name: Blindagem completa do modo offline v3
+        run: |
+          set -e
+          node .github/scripts/validate-obrix-offline-v3-lock.mjs
       - name: Blindagem geral contra regressao
         run: |
           set -e
