@@ -2,27 +2,57 @@ import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
 const lockPath='obrix-offline-v3-lock.json';
+const homologationPath='obrix-offline-v3-homologado.json';
 const errors=[];
 const fail=m=>errors.push(m);
 const expect=(c,m)=>{if(!c)fail(m)};
 const read=p=>fs.readFileSync(p,'utf8');
+const blobAt=(commit,path)=>execFileSync('git',['rev-parse',`${commit}:${path}`],{encoding:'utf8'}).trim();
+const blobNow=path=>execFileSync('git',['hash-object',path],{encoding:'utf8'}).trim();
 
 if(!fs.existsSync(lockPath)){
   console.error('ERRO: obrix-offline-v3-lock.json ausente.');
   process.exit(1);
 }
-const lock=JSON.parse(read(lockPath));
-const approved=lock.approved_runtime_commit;
-const paths=Array.isArray(lock.protected_paths)?lock.protected_paths:[];
-expect(typeof approved==='string'&&approved.length>=7,'Commit aprovado do runtime offline v3 não definido.');
-expect(paths.length>=51,'Blindagem incompleta: menos de 51 arquivos protegidos.');
+if(!fs.existsSync(homologationPath)){
+  console.error('ERRO: registro de homologação do offline ausente.');
+  process.exit(1);
+}
 
-for(const path of paths){
-  if(!fs.existsSync(path)){fail(`Arquivo protegido ausente: ${path}`);continue}
-  let expected='';
-  try{expected=execFileSync('git',['rev-parse',`${approved}:${path}`],{encoding:'utf8'}).trim()}catch(_){fail(`Arquivo protegido não existe no commit aprovado: ${path}`);continue}
-  const actual=execFileSync('git',['hash-object',path],{encoding:'utf8'}).trim();
-  if(actual!==expected)fail(`Arquivo offline protegido alterado: ${path}\n  aprovado: ${expected}\n  atual:    ${actual}`);
+const lock=JSON.parse(read(lockPath));
+const homologation=JSON.parse(read(homologationPath));
+const approved=lock.approved_runtime_commit;
+const envApproved=String(process.env.OBRIX_OFFLINE_HOMOLOGATED_COMMIT||'').trim();
+const paths=Array.isArray(lock.protected_paths)?lock.protected_paths:[];
+const guardApproved=String(lock.approved_guard_commit||'').trim();
+const guardPaths=Array.isArray(lock.guard_paths)?lock.guard_paths:[];
+
+expect(typeof approved==='string'&&approved.length>=40,'Commit aprovado do runtime offline v3 não definido.');
+expect(paths.length>=51,'Blindagem incompleta: menos de 51 arquivos do runtime protegidos.');
+expect(lock?.homologation?.status==='approved_by_user','Lock do offline perdeu o status de homologação do usuário.');
+expect(lock?.homologation?.requires_explicit_reapproval_for_runtime_change===true,'Lock deixou de exigir nova homologação para alteração do runtime.');
+expect(homologation?.status==='approved_by_user','Registro externo de homologação não está aprovado.');
+expect(homologation?.policy?.runtime_changes_require_new_user_homologation===true,'Registro de homologação deixou de exigir nova aprovação do usuário.');
+expect(homologation?.policy?.ordinary_updates_must_preserve_this_runtime===true,'Registro de homologação deixou de proteger o runtime contra atualizações comuns.');
+expect(homologation?.runtime_commit===approved,'Commit do registro de homologação difere do commit protegido pelo lock.');
+expect(homologation?.release===lock?.release,'Identificador da release homologada diverge entre os arquivos de blindagem.');
+if(envApproved)expect(approved===envApproved,'Commit homologado no workflow diverge do commit protegido pelo lock.');
+
+function verifyPaths(commit,list,label){
+  for(const path of list){
+    if(!fs.existsSync(path)){fail(`${label} ausente: ${path}`);continue}
+    let expected='';
+    try{expected=blobAt(commit,path)}catch(_){fail(`${label} não existe no commit aprovado: ${path}`);continue}
+    const actual=blobNow(path);
+    if(actual!==expected)fail(`${label} alterado: ${path}\n  aprovado: ${expected}\n  atual:    ${actual}`);
+  }
+}
+verifyPaths(approved,paths,'Arquivo offline protegido');
+
+if(guardApproved||guardPaths.length){
+  expect(guardApproved.length>=40,'Commit aprovado da própria blindagem não definido.');
+  expect(guardPaths.length>=3,'Blindagem da blindagem incompleta.');
+  if(guardApproved.length>=40&&guardPaths.length)verifyPaths(guardApproved,guardPaths,'Arquivo da blindagem protegido');
 }
 
 const html=read('obrix.html');
@@ -32,32 +62,47 @@ const nav=read('obrix-offline-v3-nav.js');
 const guard=read('obrix-offline-v3-guard.js');
 const bootstrap=read('obrix-offline-bootstrap.js');
 const sw=read('obrix-sw.js');
+const offlineBody=(router.match(/async function offline\(\)\{([\s\S]*?)\}\nfunction route/)||[])[1]||'';
 
 expect(html.includes('obrix-offline-v3.js?v=20261024offline-v3-1'),'HTML deixou de carregar o motor offline v3.');
 expect(html.indexOf('obrix-offline-v3.js') < html.indexOf('obrix-offline-bootstrap.js'),'Motor v3 precisa carregar antes das camadas offline antigas.');
-expect(router.includes("async function offline(){await load('./obrix-offline-v3.js"),'Rota offline deixou de entrar diretamente pelo v3.');
-expect(router.includes("obrix-offline-v3-nav.js?v=20261024offline-v3-nav1"),'Rota offline deixou de carregar a barra inferior independente.');
-expect(!router.match(/async function offline\(\)[\s\S]*obrix-offline-visual-parity-v2/),'Rota offline reintroduziu camada visual antiga.');
+expect(offlineBody.includes("./obrix-offline-v3.js?v=20261024offline-v3-1"),'Rota offline deixou de entrar diretamente pelo motor v3 homologado.');
+expect(offlineBody.includes("./obrix-offline-v3-nav.js?v=20261024offline-v3-nav1"),'Rota offline deixou de carregar a barra inferior independente homologada.');
+expect(offlineBody.includes("OBRIX_OFFLINE_V3?.start?.('startup-router-v3')"),'Rota offline deixou de iniciar pelo OBRIX_OFFLINE_V3.');
+expect(!offlineBody.includes('obrix-offline-v2.js'),'Rota offline voltou a depender diretamente do motor v2.');
+expect(!offlineBody.includes('obrix-pos-login-loader.js'),'Rota offline passou a depender do loader online.');
+expect(!offlineBody.includes('obrix-offline-visual-parity-v2'),'Rota offline reintroduziu camada visual antiga.');
+
 expect(engine.includes("const SNAP_PREFIX='obrix_offline_v3_snapshot:'"),'Motor v3 perdeu a base própria de snapshots.');
 expect(engine.includes("const labels=['Início','Financeiro','Equipe','Menu']"),'Motor v3 perdeu os quatro botões inferiores de compatibilidade.');
 expect(engine.includes("route(['inicio','financeiro','equipe','menu'][i]"),'Navegação inferior de compatibilidade foi alterada.');
 expect(engine.includes('persistCompat'),'Motor v3 perdeu compatibilidade de restauração dos dados locais.');
 expect(!engine.includes('MutationObserver'),'Motor v3 não pode usar MutationObserver.');
+expect(!engine.includes('localStorage.clear('),'Motor v3 não pode limpar todo o armazenamento local.');
+expect(!engine.includes('removeItem(SNAP_PREFIX'),'Motor v3 não pode apagar os snapshots homologados.');
+expect(!engine.includes('removeItem(BASE_KEY'),'Motor v3 não pode apagar a base offline homologada.');
+
 expect(nav.includes("const ROUTES=['inicio','financeiro','equipe','menu']"),'Barra offline própria perdeu as quatro rotas aprovadas.');
 expect(nav.includes("const LABELS=['Início','Financeiro','Equipe','Menu']"),'Barra offline própria perdeu os quatro rótulos aprovados.');
-expect(nav.includes("position:fixed!important"),'Barra offline própria deixou de ficar fixa e visível no rodapé.');
+expect(nav.includes('position:fixed!important'),'Barra offline própria deixou de ficar fixa e visível no rodapé.');
 expect(nav.includes("setInterval(()=>{if(offline())ensure()},1500)"),'Barra offline própria perdeu a autorrecuperação caso seja removida.');
+expect(!nav.includes('MutationObserver'),'Barra offline homologada não pode usar MutationObserver.');
+expect(nav.includes("document.addEventListener('click'"),'Barra offline perdeu o manipulador de navegação por clique.');
+
 expect(guard.includes("capture?.('pre-online-logout')"),'Proteção de dados no logout foi removida.');
-expect(bootstrap.includes("obrix-sw.js?v=20261024-offline-v3-nav1"),'Bootstrap deixou de forçar a geração nova do Service Worker.');
+expect(!guard.includes('localStorage.clear('),'Proteção de logout não pode limpar o armazenamento local.');
+expect(bootstrap.includes("obrix-sw.js?v=20261024-offline-v3-nav1"),'Bootstrap deixou de forçar a geração homologada do Service Worker.');
+expect(!bootstrap.includes('localStorage.clear('),'Bootstrap offline não pode limpar o armazenamento local.');
 expect(sw.includes("const CACHE='obrix-offline-v61-v3-nav'"),'Geração aprovada do cache offline v3 foi alterada.');
 expect(sw.includes("'./obrix-offline-v3.js'"),'Service Worker deixou de cachear o motor v3.');
 expect(sw.includes("'./obrix-offline-v3-nav.js'"),'Service Worker deixou de cachear a barra inferior offline independente.');
 expect(sw.includes("'./obrix-offline-v3-guard.js'"),'Service Worker deixou de cachear a proteção do v3.');
 
 if(errors.length){
-  console.error('\nBLINDAGEM OFFLINE V3: PUBLICAÇÃO BLOQUEADA.\n');
+  console.error('\nBLINDAGEM OFFLINE V3 HOMOLOGADO: PUBLICAÇÃO BLOQUEADA.\n');
   for(const e of errors)console.error(`- ${e}`);
-  console.error('\nQualquer mudança no offline exige nova homologação explícita e atualização consciente do baseline.\n');
+  console.error('\nO modo offline desta versão foi homologado em teste real. Qualquer mudança no runtime exige nova aprovação explícita antes de atualizar os baselines.\n');
   process.exit(1);
 }
-console.log(`Blindagem offline v3 aprovada: ${paths.length} arquivos conferidos contra ${approved}.`);
+console.log(`Offline homologado protegido: ${paths.length} arquivos do runtime conferidos contra ${approved}.`);
+if(guardApproved&&guardPaths.length)console.log(`Blindagem também protegida: ${guardPaths.length} arquivos conferidos contra ${guardApproved}.`);
