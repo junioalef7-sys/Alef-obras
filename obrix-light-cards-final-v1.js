@@ -4,7 +4,7 @@ const STYLE_ID='obrixLightCardsFinalV1';
 const CARD='#F5F7FA',TEXT='#111827',WHITE='#FFFFFF';
 const SELECTOR=[
   '#login.card',
-  '#app .card','#app .kpi','#app .mini','#app .hero',
+  '#app .card','#app [class*="card"]','#app [class*="Card"]','#app .kpi','#app .mini','#app .hero',
   '#app .nav button','#app .actions button','#app .menuGrid button',
   '#app #menuMain .opmGrid article','#app #menuMain .opmVersion','#app #menuMain .opmProfile',
   '#app .offFastResumo>div','#app .offFastGrid article',
@@ -28,8 +28,8 @@ html:not([data-theme="dark"]) body:not(.dark) #login.obrixLightKeepDark.obrixLig
 html[data-theme="light"] body #login.obrixLightKeepDark.obrixLightKeepDark{
   color:${WHITE}!important;
 }
-html:not([data-theme="dark"]) body:not(.dark) #app .obrixLightKeepDark :is(h1,h2,h3,h4,strong,b),
-html[data-theme="light"] body #app .obrixLightKeepDark :is(h1,h2,h3,h4,strong,b){
+html:not([data-theme="dark"]) body:not(.dark) #app .obrixLightKeepDark :is(h1,h2,h3,h4,p,span,small,strong,b,label),
+html[data-theme="light"] body #app .obrixLightKeepDark :is(h1,h2,h3,h4,p,span,small,strong,b,label){
   color:${WHITE}!important;
   -webkit-text-fill-color:${WHITE}!important;
 }
