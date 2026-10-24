@@ -40,18 +40,12 @@
       background-image:none!important;
     }
 
-    html[data-theme="dark"] body #app button.btn:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixExcluirAprovado),
-    html[data-theme="dark"] body #app button.obrixApprovedGold:not(.obrixExcluirAprovado),
-    html[data-theme="dark"] body #app button.obrixEquipeAzulClaro:not(.obrixExcluirAprovado),
-    html[data-theme="dark"] body #app #assPlanos button[data-ass-plano],
-    html[data-theme="dark"] body #app #assPlanos button[data-ass-cob-efi],
-    html[data-theme="dark"] body #app #assPlanos button.obrixPayMethod,
-    body.dark #app button.btn:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixExcluirAprovado),
-    body.dark #app button.obrixApprovedGold:not(.obrixExcluirAprovado),
-    body.dark #app button.obrixEquipeAzulClaro:not(.obrixExcluirAprovado),
-    body.dark #app #assPlanos button[data-ass-plano],
-    body.dark #app #assPlanos button[data-ass-cob-efi],
-    body.dark #app #assPlanos button.obrixPayMethod{
+    html[data-theme="dark"] body #app button.btn:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod):not(.obrixPagarSemFundo),
+    html[data-theme="dark"] body #app button.obrixApprovedGold:not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod):not(.obrixPagarSemFundo),
+    html[data-theme="dark"] body #app button.obrixEquipeAzulClaro:not(.obrixExcluirAprovado):not(.obrixPermanentNeutral),
+    body.dark #app button.btn:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod):not(.obrixPagarSemFundo),
+    body.dark #app button.obrixApprovedGold:not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod):not(.obrixPagarSemFundo),
+    body.dark #app button.obrixEquipeAzulClaro:not(.obrixExcluirAprovado):not(.obrixPermanentNeutral){
       background:${CARD_BG}!important;
       background-color:${CARD_BG}!important;
       background-image:none!important;
@@ -73,16 +67,16 @@
       box-shadow:none!important;
     }
 
-    html[data-theme="dark"] body #app button.active:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixExcluirAprovado),
-    html[data-theme="dark"] body #app button.selected:not(.obrixExcluirAprovado),
-    html[data-theme="dark"] body #app button.selecionado:not(.obrixExcluirAprovado),
-    html[data-theme="dark"] body #app button[aria-pressed="true"]:not(.obrixExcluirAprovado),
-    html[data-theme="dark"] body #app button[aria-selected="true"]:not(.obrixExcluirAprovado),
-    body.dark #app button.active:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixExcluirAprovado),
-    body.dark #app button.selected:not(.obrixExcluirAprovado),
-    body.dark #app button.selecionado:not(.obrixExcluirAprovado),
-    body.dark #app button[aria-pressed="true"]:not(.obrixExcluirAprovado),
-    body.dark #app button[aria-selected="true"]:not(.obrixExcluirAprovado){
+    html[data-theme="dark"] body #app button.active:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod),
+    html[data-theme="dark"] body #app button.selected:not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod),
+    html[data-theme="dark"] body #app button.selecionado:not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod),
+    html[data-theme="dark"] body #app button[aria-pressed="true"]:not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod),
+    html[data-theme="dark"] body #app button[aria-selected="true"]:not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod),
+    body.dark #app button.active:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod),
+    body.dark #app button.selected:not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod),
+    body.dark #app button.selecionado:not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod),
+    body.dark #app button[aria-pressed="true"]:not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod),
+    body.dark #app button[aria-selected="true"]:not(.obrixExcluirAprovado):not(.obrixPermanentNeutral):not(.obrixPayMethod){
       background:${CARD_BG}!important;
       background-color:${CARD_BG}!important;
       background-image:none!important;
@@ -92,10 +86,38 @@
       box-shadow:none!important;
     }
 
+    #app #assPlanos button[data-ass-plano],
+    #app #assPlanos button[data-ass-cob-efi],
+    #app #assPlanos button.obrixPayMethod,
+    html[data-theme="dark"] #app #assPlanos button[data-ass-plano],
+    html[data-theme="dark"] #app #assPlanos button[data-ass-cob-efi],
+    html[data-theme="dark"] #app #assPlanos button.obrixPayMethod,
+    body.dark #app #assPlanos button[data-ass-plano],
+    body.dark #app #assPlanos button[data-ass-cob-efi],
+    body.dark #app #assPlanos button.obrixPayMethod{
+      background:transparent!important;
+      background-color:transparent!important;
+      background-image:none!important;
+      box-shadow:none!important;
+      text-shadow:none!important;
+    }
+
+    html[data-theme="dark"] #app #assPlanos button[data-ass-plano],
+    html[data-theme="dark"] #app #assPlanos button[data-ass-cob-efi],
+    html[data-theme="dark"] #app #assPlanos button.obrixPayMethod,
+    body.dark #app #assPlanos button[data-ass-plano],
+    body.dark #app #assPlanos button[data-ass-cob-efi],
+    body.dark #app #assPlanos button.obrixPayMethod{
+      color:${TEXT}!important;
+      -webkit-text-fill-color:${TEXT}!important;
+      border-color:${BORDER}!important;
+    }
+
+    #app button.obrixExcluirAprovado,
     html[data-theme="dark"] body #app button.obrixExcluirAprovado,
     body.dark #app button.obrixExcluirAprovado{
-      background:${CARD_BG}!important;
-      background-color:${CARD_BG}!important;
+      background:transparent!important;
+      background-color:transparent!important;
       background-image:none!important;
       color:${RED}!important;
       -webkit-text-fill-color:${RED}!important;
@@ -119,11 +141,7 @@
 
   function ensureStyle(){
     let style=document.getElementById(STYLE_ID);
-    if(!style){
-      style=document.createElement('style');
-      style.id=STYLE_ID;
-      document.head.appendChild(style);
-    }
+    if(!style){style=document.createElement('style');style.id=STYLE_ID;document.head.appendChild(style)}
     if(style.textContent!==CSS)style.textContent=CSS;
   }
 
@@ -144,18 +162,14 @@
     mark(document.getElementById('fmRecebido'),'obrixValorReceita');
     mark(document.getElementById('fmDespesas'),'obrixValorDespesa');
     mark(document.getElementById('fmResultado'),'obrixValorResultado');
-
     root.querySelectorAll?.('[data-fin-card][data-tipo="receita"] .mini b,[data-fin-card][data-tipo="receita"] .mini strong').forEach(el=>mark(el,'obrixValorReceita'));
     root.querySelectorAll?.('[data-fin-card][data-tipo="despesa"] .mini b,[data-fin-card][data-tipo="despesa"] .mini strong').forEach(el=>mark(el,'obrixValorDespesa'));
-
     root.querySelectorAll?.('small,span,label').forEach(label=>{
-      const t=(label.textContent||'').trim().toLowerCase();
-      if(!t)return;
-      const value=valueNear(label);
-      if(!value)return;
-      if(/^(receita|receitas|recebido|recebidos)$/.test(t)) mark(value,'obrixValorReceita');
-      else if(/^(despesa|despesas)$/.test(t)) mark(value,'obrixValorDespesa');
-      else if(t.startsWith('resultado')) mark(value,'obrixValorResultado');
+      const t=(label.textContent||'').trim().toLowerCase();if(!t)return;
+      const value=valueNear(label);if(!value)return;
+      if(/^(receita|receitas|recebido|recebidos)$/.test(t))mark(value,'obrixValorReceita');
+      else if(/^(despesa|despesas)$/.test(t))mark(value,'obrixValorDespesa');
+      else if(t.startsWith('resultado'))mark(value,'obrixValorResultado');
     });
   }
 
@@ -172,25 +186,13 @@
   }
 
   let timer=0;
-  function schedule(){
-    clearTimeout(timer);
-    timer=setTimeout(()=>{
-      ensureStyle();
-      applyValueColors(document);
-      applyDeleteStyle(document);
-    },80);
-  }
-
+  function schedule(){clearTimeout(timer);timer=setTimeout(()=>{ensureStyle();applyValueColors(document);applyDeleteStyle(document)},80)}
   function start(){
-    ensureStyle();
-    applyValueColors(document);
-    applyDeleteStyle(document);
+    ensureStyle();applyValueColors(document);applyDeleteStyle(document);
     const target=document.getElementById('app')||document.body;
     new MutationObserver(schedule).observe(target,{childList:true,subtree:true,characterData:true});
     window.addEventListener('obrix:theme-changed',schedule);
     ['pageshow','online','offline','obrix:feature-pronto','obrix:modules-ready'].forEach(n=>window.addEventListener(n,schedule));
   }
-
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
-  else start();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
