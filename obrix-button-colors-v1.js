@@ -1,57 +1,19 @@
 (()=>{'use strict';
 if(window.__OBRIX_BUTTON_COLORS_V1)return;window.__OBRIX_BUTTON_COLORS_V1=true;
-const GOLD='#f2b84b',DARK='#15191f';
-const dangerRe=/(excluir|remover|apagar|estornar|deletar|exclusão|exclusao)/i;
-const secondaryRe=/^(fechar|cancelar|voltar|sair|limpar|dispensar|agora não|agora nao)$/i;
-function text(b){return String(b?.textContent||'').replace(/\s+/g,' ').trim()}
-function danger(b){const c=String(b.className||'');return /(^|\s)(danger|perigo|orcPerigo|diarioPerigo)(\s|$)/i.test(c)||dangerRe.test(text(b))}
-function secondary(b){const c=String(b.className||'');return /(^|\s)(secondary|cancelar)(\s|$)/i.test(c)||secondaryRe.test(text(b))||['sair','obrixTheme','docViewerClose'].includes(b.id)}
-function navigation(b){return !!b.closest?.('.nav,.opmSide nav,.opmGrid,#docViewerModal')}
-function selected(b){return b.matches?.('.active,.selected,.selecionado,[aria-pressed="true"],[aria-selected="true"]')}
-function rgb(s){const m=String(s||'').match(/rgba?\(\s*(\d+)\D+(\d+)\D+(\d+)(?:\D+([\d.]+))?/i);return m?[+m[1],+m[2],+m[3],m[4]===undefined?1:+m[4]]:null}
-function nearBlack(b){const x=rgb(getComputedStyle(b).backgroundColor);return !!x&&x[3]>.55&&x[0]<=48&&x[1]<=58&&x[2]<=72}
-function permanentNeutral(b){return b.dataset.obrixPermanentNeutral==='1'||b.classList.contains('obrixPermanentNeutral')}
-function clearGold(b){b.classList.remove('obrixApprovedGold','obrixApprovedSecondary');b.removeAttribute('data-obrix-approved-color')}
-function classify(b){
- if(!(b instanceof HTMLButtonElement)||!b.closest('#app'))return;
- if(b.classList.contains('obrixEquipeAzulClaro')){clearGold(b);b.classList.add('obrixEquipeNoGold');return}
- if(permanentNeutral(b)){clearGold(b);return}
- if(danger(b)){clearGold(b);return}
- if(b.closest('#equipe')){clearGold(b);b.classList.add('obrixEquipeNoGold');return}
- if(b.closest('.bottom')){clearGold(b);return}
- if(secondary(b)){b.classList.remove('obrixApprovedGold');if(nearBlack(b))b.classList.add('obrixApprovedSecondary');return}
- if(navigation(b)||selected(b))return;
- if(b.classList.contains('btn')||nearBlack(b)||b.dataset.obrixApprovedColor==='gold'){
-   b.dataset.obrixApprovedColor='gold';b.classList.add('obrixApprovedGold');b.classList.remove('obrixApprovedSecondary');
- }
+function clean(root=document){
+ const s=document.getElementById('obrixButtonColorsV1');if(s)s.remove();
+ root.querySelectorAll?.('#app button,.modalBack button').forEach(b=>{
+  b.classList.remove('obrixApprovedGold','obrixApprovedSecondary');
+  b.removeAttribute('data-obrix-approved-color');
+ });
+ try{window.OBRIX_OFFLINE_ONLINE_VISUAL?.repaint?.()}catch(_){}
 }
-function scan(root=document){root.querySelectorAll?.('#app button').forEach(classify)}
-const STYLE=`:root{--obrix-approved-gold:${GOLD};--obrix-approved-gold-text:${DARK}}
-#app .btn:not(#sair):not(#obrixTheme):not(.secondary):not(.cancelar):not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
-#app button.obrixApprovedGold:not(.obrixPermanentNeutral):not(.obrixEquipeNoGold){background:var(--obrix-approved-gold)!important;color:var(--obrix-approved-gold-text)!important;-webkit-text-fill-color:var(--obrix-approved-gold-text)!important;border-color:#d8a339!important;box-shadow:0 8px 20px rgba(242,184,75,.18)!important}
-#app button.obrixPermanentNeutral{background:#fff!important;background-image:none!important;color:#334155!important;-webkit-text-fill-color:#334155!important;border:1px solid #cbd5e1!important;box-shadow:none!important;text-shadow:none!important}
-html[data-theme="dark"] #app button.obrixPermanentNeutral{background:#101820!important;background-image:none!important;color:#eef2f7!important;-webkit-text-fill-color:#eef2f7!important;border-color:#2a3948!important;box-shadow:none!important;text-shadow:none!important}
-#app button.obrixPermanentNeutral.obrixPermanentGoldText{color:${GOLD}!important;-webkit-text-fill-color:${GOLD}!important}
-#app .bottom button{background:transparent!important;background-image:none!important;box-shadow:none!important}
-#app .bottom button.active{background:rgba(100,116,139,.12)!important;background-image:none!important;color:#475569!important;-webkit-text-fill-color:#475569!important;box-shadow:inset 0 0 0 1px rgba(100,116,139,.18)!important}
-html[data-theme="dark"] #app .bottom button.active,body.dark #app .bottom button.active{background:rgba(148,163,184,.11)!important;background-image:none!important;color:#f1f5f9!important;-webkit-text-fill-color:#f1f5f9!important;box-shadow:inset 0 0 0 1px rgba(148,163,184,.16)!important}
-#app #equipe button:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixEquipeAzulClaro){background:#fff!important;background-color:#fff!important;background-image:none!important;color:#334155!important;-webkit-text-fill-color:#334155!important;border-color:#cbd5e1!important;box-shadow:none!important;text-shadow:none!important}
-html[data-theme="dark"] #app #equipe button:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixEquipeAzulClaro),body.dark #app #equipe button:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.obrixEquipeAzulClaro){background:#101820!important;background-color:#101820!important;background-image:none!important;color:#eef2f7!important;-webkit-text-fill-color:#eef2f7!important;border-color:#2a3948!important;box-shadow:none!important;text-shadow:none!important}
-#app #equipe button.active:not(.danger):not(.perigo):not(.obrixEquipeAzulClaro),#app #equipe button.selected:not(.danger):not(.perigo):not(.obrixEquipeAzulClaro),#app #equipe button.selecionado:not(.danger):not(.perigo):not(.obrixEquipeAzulClaro),#app #equipe button[aria-pressed="true"]:not(.danger):not(.perigo):not(.obrixEquipeAzulClaro),#app #equipe button[aria-selected="true"]:not(.danger):not(.perigo):not(.obrixEquipeAzulClaro){background:#f1f5f9!important;background-image:none!important;color:#334155!important;border-color:#cbd5e1!important}
-html[data-theme="dark"] #app #equipe button.active:not(.danger):not(.perigo):not(.obrixEquipeAzulClaro),html[data-theme="dark"] #app #equipe button.selected:not(.danger):not(.perigo):not(.obrixEquipeAzulClaro),html[data-theme="dark"] #app #equipe button.selecionado:not(.danger):not(.perigo):not(.obrixEquipeAzulClaro),html[data-theme="dark"] #app #equipe button[aria-pressed="true"]:not(.danger):not(.perigo):not(.obrixEquipeAzulClaro),html[data-theme="dark"] #app #equipe button[aria-selected="true"]:not(.danger):not(.perigo):not(.obrixEquipeAzulClaro),body.dark #app #equipe button.active:not(.danger):not(.perigo):not(.obrixEquipeAzulClaro){background:#17212b!important;background-image:none!important;color:#f8fafc!important;border-color:#334155!important}
-#app button.active:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.nav button):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
-#app button.selected:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),#app button.selecionado:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),#app button[aria-pressed="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),#app button[aria-selected="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold){background:rgba(242,184,75,.16)!important;color:#9a6700!important;border-color:rgba(202,145,34,.30)!important}
-html[data-theme="dark"] #app button.active:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(.nav button):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
-html[data-theme="dark"] #app button.selected:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),html[data-theme="dark"] #app button.selecionado:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),html[data-theme="dark"] #app button[aria-pressed="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),html[data-theme="dark"] #app button[aria-selected="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold){background:rgba(242,184,75,.13)!important;color:${GOLD}!important;border-color:rgba(242,184,75,.18)!important}
-#app .opmSide nav button.active{background:#dbeafe!important;color:#174ea6!important}
-html[data-theme="dark"] #app .opmSide nav button.active{background:#172334!important;color:#eef2f7!important}
-#app button.obrixApprovedSecondary{background:#fff!important;color:#334155!important;-webkit-text-fill-color:#334155!important;border:1px solid #cbd5e1!important;box-shadow:none!important}
-html[data-theme="dark"] #app button.obrixApprovedSecondary{background:#172334!important;color:#eef2f7!important;-webkit-text-fill-color:#eef2f7!important;border-color:#334155!important}
-#app .btn.danger,#app .btn.perigo,#app .btn.orcPerigo,#app .btn.diarioPerigo{background:#b91c1c!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#991b1b!important}`;
-function css(){let s=document.getElementById('obrixButtonColorsV1');if(!s){s=document.createElement('style');s.id='obrixButtonColorsV1';s.textContent=STYLE;document.head.appendChild(s);return}if(s.textContent!==STYLE)s.textContent=STYLE;if(s!==document.head.lastElementChild)document.head.appendChild(s)}
-let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(()=>{css();scan(document)},30)}
-let bodyMo=null,themeMo=null;
-function start(){css();scan(document);if(document.body){bodyMo=new MutationObserver(ms=>{if(ms.some(m=>m.type==='childList'||m.attributeName==='class'||m.attributeName==='aria-pressed'||m.attributeName==='aria-selected'||m.attributeName==='data-obrix-permanent-neutral'))schedule()});bodyMo.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-pressed','aria-selected','data-obrix-permanent-neutral']})}themeMo=new MutationObserver(schedule);themeMo.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','pageshow','focus','online','offline'].forEach(n=>window.addEventListener(n,schedule));document.addEventListener('click',()=>setTimeout(schedule,0),true);setTimeout(schedule,100);setTimeout(schedule,300);setTimeout(schedule,1200)}
+function start(){
+ clean(document);
+ ['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','obrix:theme-changed','pageshow','focus','online'].forEach(n=>window.addEventListener(n,()=>setTimeout(()=>clean(document),40)));
+ document.addEventListener('click',()=>setTimeout(()=>clean(document),90),true);
+ setTimeout(()=>clean(document),250);setTimeout(()=>clean(document),800);setTimeout(()=>clean(document),1600);
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
-window.OBRIX_BUTTON_COLORS={scan:schedule,gold:GOLD};
+window.OBRIX_BUTTON_COLORS={scan:()=>clean(document),gold:null};
 })();
