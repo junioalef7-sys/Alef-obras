@@ -81,11 +81,57 @@ html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #
 html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app button[aria-pressed="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold),
 html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app button[aria-selected="true"]:not(.danger):not(.perigo):not(.obrixPermanentNeutral):not(.obrixEquipeNoGold){background:#111111!important;background-color:#111111!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-color:#111111!important;box-shadow:none!important;text-shadow:none!important}
 html:not([data-obrix-offline-v3="1"])[data-theme="light"] #app button.obrixPermanentNeutral.obrixPermanentGoldText,
-html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app button.obrixPermanentNeutral.obrixPermanentGoldText{color:#111111!important;-webkit-text-fill-color:#111111!important}`;
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app button.obrixPermanentNeutral.obrixPermanentGoldText{color:#111111!important;-webkit-text-fill-color:#111111!important}
+/* Modo claro refinado: Configurações, Menu e barra inferior sem fundos pretos acidentais. */
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .bottom button,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .bottom button,
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .bottom button.active,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .bottom button.active,
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .bottom button:active,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .bottom button:active{background:transparent!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important;border-color:transparent!important;color:#334155!important;-webkit-text-fill-color:#334155!important}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #menuMain .opmSide nav button,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #menuMain .opmSide nav button,
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #menuMain .opmGrid button,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #menuMain .opmGrid button,
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #menuMain #menuSair,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #menuMain #menuSair{background:transparent!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #menuMain .opmSide nav button.active,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #menuMain .opmSide nav button.active,
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #menuMain .opmSide nav button:active,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #menuMain .opmSide nav button:active,
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #menuMain .opmGrid button:active,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #menuMain .opmGrid button:active{background:transparent!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important;border-color:inherit!important}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #menuMain .opmSide nav button.active,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #menuMain .opmSide nav button.active{color:#0057C8!important;-webkit-text-fill-color:#0057C8!important}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #configMain #cfgTrocarEmail,
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #configMain #cfgTrocarSenha,
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #configMain #cfgSair,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #configMain #cfgTrocarEmail,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #configMain #cfgTrocarSenha,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #configMain #cfgSair{background:transparent!important;background-color:transparent!important;background-image:none!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border:1px solid #CBD5E1!important;box-shadow:none!important;text-shadow:none!important}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #configMain #cfgClaro,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #configMain #cfgClaro{background:transparent!important;background-color:transparent!important;background-image:none!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border:1px solid #CBD5E1!important;box-shadow:none!important;outline:none!important}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #configMain #cfgEscuro,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #configMain #cfgEscuro{background:#111111!important;background-color:#111111!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border:1px solid #111111!important;box-shadow:none!important;outline:none!important}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #configMain #cfgEscuro::after,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #configMain #cfgEscuro::after{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:#F2B84B;margin-left:8px;vertical-align:middle;box-shadow:0 0 0 2px rgba(242,184,75,.16)}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .kpi :is(b,strong),
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .mini :is(b,strong),
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .obrix-resumo-grid :is(b,strong),
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .kpi :is(b,strong),
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .mini :is(b,strong),
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .obrix-resumo-grid :is(b,strong){color:#05070A!important;-webkit-text-fill-color:#05070A!important;font-weight:900!important}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .obrixValorReceita,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .obrixValorReceita{color:#00843D!important;-webkit-text-fill-color:#00843D!important;font-weight:900!important}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .obrixValorDespesa,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .obrixValorDespesa{color:#D60000!important;-webkit-text-fill-color:#D60000!important;font-weight:900!important}
+html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app .obrixValorResultado,
+html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app .obrixValorResultado{color:#005FEA!important;-webkit-text-fill-color:#005FEA!important;font-weight:900!important}`;
 function css(){let s=document.getElementById('obrixButtonColorsV1');if(!s){s=document.createElement('style');s.id='obrixButtonColorsV1';s.textContent=STYLE;document.head.appendChild(s);return}if(s.textContent!==STYLE)s.textContent=STYLE;if(s!==document.head.lastElementChild)document.head.appendChild(s)}
 let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(()=>{css();scan(document)},30)}
-let bodyMo=null,themeMo=null;
-function start(){css();scan(document);if(document.body){bodyMo=new MutationObserver(ms=>{if(ms.some(m=>m.type==='childList'||m.attributeName==='class'||m.attributeName==='aria-pressed'||m.attributeName==='aria-selected'||m.attributeName==='data-obrix-permanent-neutral'))schedule()});bodyMo.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-pressed','aria-selected','data-obrix-permanent-neutral']})}themeMo=new MutationObserver(schedule);themeMo.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','pageshow','focus','online','offline'].forEach(n=>window.addEventListener(n,schedule));document.addEventListener('click',()=>setTimeout(schedule,0),true);setTimeout(schedule,100);setTimeout(schedule,300);setTimeout(schedule,1200)}
+let bodyMo=null,themeMo=null,configWarm=false;
+function warmConfig(){if(configWarm||!navigator.onLine||document.documentElement.dataset.obrixOfflineV3==='1')return;const l=window.OBRIX_POS_LOGIN_LOADER;if(!l?.loadFeature)return;configWarm=true;Promise.resolve(l.loadFeature('config')).catch(()=>{configWarm=false})}
+function start(){css();scan(document);if(document.body){bodyMo=new MutationObserver(ms=>{if(ms.some(m=>m.type==='childList'||m.attributeName==='class'||m.attributeName==='aria-pressed'||m.attributeName==='aria-selected'||m.attributeName==='data-obrix-permanent-neutral'))schedule()});bodyMo.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-pressed','aria-selected','data-obrix-permanent-neutral']})}themeMo=new MutationObserver(schedule);themeMo.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','pageshow','focus','online','offline'].forEach(n=>window.addEventListener(n,()=>{schedule();if(n==='obrix:modules-ready'||n==='obrix:modules-online-ready'||n==='online')setTimeout(warmConfig,80)}));document.addEventListener('click',()=>setTimeout(schedule,0),true);setTimeout(schedule,100);setTimeout(schedule,300);setTimeout(schedule,1200);setTimeout(warmConfig,450);setTimeout(warmConfig,1400)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 window.OBRIX_BUTTON_COLORS={scan:schedule,gold:GOLD};
 })();
