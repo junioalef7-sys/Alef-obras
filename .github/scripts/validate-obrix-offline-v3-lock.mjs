@@ -29,7 +29,7 @@ const guardPaths=Array.isArray(lock.guard_paths)?lock.guard_paths:[];
 
 // Baseline visual estável. Mudanças nestes arquivos exigem atualização
 // consciente deste commit de homologação visual.
-const visualApproved='9dc45bd321844cc3ee6218019222a221ce030fed';
+const visualApproved='b734c80924afc0cfb4c758e556f0e1d0bc0ecb8e';
 const visualPaths=[
   'obrix-button-colors-v1.js',
   'obrix-offline-online-visual-v1.js',
@@ -76,10 +76,17 @@ expect(visualPaths.length>=13,'Blindagem visual estável incompleta.');
 
 // Homologação explícita do modo escuro aprovado pelo usuário.
 expect(lock?.dark_mode_homologation?.status==='approved_by_user','Modo escuro perdeu o status de homologação do usuário.');
-expect(lock?.dark_mode_homologation?.baseline_commit===visualApproved,'Baseline homologado do modo escuro diverge do baseline visual protegido.');
+expect(lock?.dark_mode_homologation?.baseline_commit==='9dc45bd321844cc3ee6218019222a221ce030fed','Baseline homologado do modo escuro foi alterado junto com outra camada.');
 expect(lock?.dark_mode_homologation?.gold_buttons_forbidden===true,'Blindagem deixou de proibir botões dourados no modo escuro.');
 expect(lock?.dark_mode_homologation?.gold_flicker_forbidden===true,'Blindagem deixou de proibir o piscar dourado no modo escuro.');
 expect(lock?.dark_mode_homologation?.requires_explicit_reapproval_for_change===true,'Modo escuro deixou de exigir nova homologação para mudança.');
+
+// Homologação explícita do modo claro: botões que eram dourados são pretos.
+expect(lock?.light_mode_homologation?.status==='approved_by_user','Modo claro perdeu o status de homologação do usuário.');
+expect(lock?.light_mode_homologation?.baseline_commit===visualApproved,'Baseline homologado do modo claro diverge do baseline visual protegido.');
+expect(lock?.light_mode_homologation?.gold_buttons_forbidden===true,'Blindagem deixou de proibir botões dourados no modo claro.');
+expect(lock?.light_mode_homologation?.black_replacement_required===true,'Blindagem deixou de exigir substituição dos botões dourados por preto no modo claro.');
+expect(lock?.light_mode_homologation?.requires_explicit_reapproval_for_change===true,'Modo claro deixou de exigir nova homologação para mudança.');
 
 function verifyPaths(commit,list,label){
   for(const path of list){
@@ -92,6 +99,16 @@ function verifyPaths(commit,list,label){
 }
 verifyPaths(approved,paths,'Arquivo offline protegido');
 verifyPaths(visualApproved,visualPaths,'Arquivo visual estável protegido');
+
+// Arquivos que compõem o visual escuro continuam exatamente no baseline já aprovado.
+const darkStablePaths=[
+  'obrix-offline-online-visual-v1.js',
+  'obrix-online-visual-approved-v1.css',
+  'obrix-avatar-dark-fix.js',
+  'obrix-theme-main.js',
+  'obrix-account-delete.js'
+];
+verifyPaths(lock.dark_mode_homologation.baseline_commit,darkStablePaths,'Arquivo do modo escuro homologado');
 
 if(guardApproved||guardPaths.length){
   expect(guardApproved.length>=40,'Commit aprovado da própria blindagem não definido.');
@@ -161,6 +178,14 @@ expect(approvedCss.includes('background:#0F1720!important;background-color:#0F17
 expect(approvedCss.includes('background:#B91C1C!important;background-color:#B91C1C!important'),'CSS aprovado perdeu o vermelho protegido de ações destrutivas.');
 expect(accountDelete.includes('cfgExcluirConta')||accountDelete.includes('accountDelete'),'Módulo de exclusão de conta deixou de expor os controles protegidos.');
 
+// Blindagem semântica específica do modo claro homologado.
+expect(buttonColors.includes('/* Modo claro homologado: qualquer botão que receberia dourado passa a preto'),'Arquivo de cores perdeu a regra homologada que transforma dourado em preto no modo claro.');
+expect(buttonColors.includes('html:not([data-obrix-offline-v3="1"])[data-theme="light"] #app .btn'),'Regra preta do modo claro deixou de estar isolada do offline.');
+expect(buttonColors.includes('background:#111111!important;background-color:#111111!important;background-image:none!important;color:#FFFFFF!important'),'Botões que eram dourados no modo claro deixaram de usar fundo preto/texto branco.');
+expect(buttonColors.includes('[data-theme="light"] #app button.active'),'Estado ativo no modo claro perdeu a substituição preta e pode voltar ao dourado.');
+expect(buttonColors.includes('[data-theme="light"] #app button.selected'),'Estado selecionado no modo claro perdeu a substituição preta e pode voltar ao dourado.');
+expect(buttonColors.includes('body:not(.dark) #app button.obrixPermanentNeutral.obrixPermanentGoldText{color:#111111!important;-webkit-text-fill-color:#111111!important}'),'Texto dourado residual voltou a ser permitido no modo claro.');
+
 expect(guard.includes("capture?.('pre-online-logout')"),'Proteção de dados no logout foi removida.');
 expect(!guard.includes('localStorage.clear('),'Proteção de logout não pode limpar o armazenamento local.');
 expect(bootstrap.includes("obrix-sw.js?v=20261024-offline-v3-nav1"),'Bootstrap deixou de forçar a geração homologada do Service Worker.');
@@ -173,10 +198,11 @@ expect(sw.includes("'./obrix-offline-v3-guard.js'"),'Service Worker deixou de ca
 if(errors.length){
   console.error('\nBLINDAGEM OBRIX: PUBLICAÇÃO BLOQUEADA.\n');
   for(const e of errors)console.error(`- ${e}`);
-  console.error('\nO offline homologado, o núcleo de login/navegação, o visual estável e o modo escuro homologado estão protegidos. Alterações nesses pontos exigem uma mudança consciente da blindagem antes de publicar.\n');
+  console.error('\nO offline homologado, o núcleo de login/navegação e os modos claro/escuro homologados estão protegidos. Alterações nesses pontos exigem uma mudança consciente da blindagem antes de publicar.\n');
   process.exit(1);
 }
 console.log(`Offline homologado protegido: ${paths.length} arquivos do runtime conferidos contra ${approved}.`);
 console.log(`Visual estável protegido: ${visualPaths.length} arquivos conferidos contra ${visualApproved}.`);
 console.log('Modo escuro homologado protegido: dourado e piscar dourado bloqueados por hash + regras semânticas.');
+console.log('Modo claro homologado protegido: botões dourados substituídos por preto e estados ativos/selecionados sem dourado.');
 if(guardApproved&&guardPaths.length)console.log(`Blindagem também protegida: ${guardPaths.length} arquivos conferidos contra ${guardApproved}.`);
