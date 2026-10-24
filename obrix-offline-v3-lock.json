@@ -1,7 +1,8 @@
 {
   "release": "OBRIX-offline-v3-homologado-2026-10-24",
   "approved_runtime_commit": "884b2d8a63a900da7e29aac6f520fa852499313b",
-  "description": "Baseline funcional do modo offline v3 aprovado em teste real pelo usuário em 24/10/2026. Esta versão teve navegação offline e registro de dados da Equipe verificados como corretos. Alterações futuras no caminho offline devem ser bloqueadas até nova homologação explícita.",
+  "approved_guard_commit": "7f40dcc7f9e2174b8111c9cf8b3616623484239e",
+  "description": "Baseline funcional do modo offline v3 aprovado em teste real pelo usuário em 24/10/2026. Esta versão teve navegação offline e registro de dados da Equipe verificados como corretos. O runtime e os próprios arquivos de blindagem ficam protegidos contra alterações acidentais em atualizações futuras.",
   "homologation": {
     "status": "approved_by_user",
     "date": "2026-10-24",
@@ -80,6 +81,11 @@
     "obrix-manifest.webmanifest",
     "obrix-icon.svg"
   ],
+  "guard_paths": [
+    ".github/workflows/publish-login-safe.yml",
+    ".github/scripts/validate-obrix-offline-v3-lock.mjs",
+    "obrix-offline-v3-homologado.json"
+  ],
   "invariants": [
     "O offline ativo entra exclusivamente pelo OBRIX_OFFLINE_V3; loaders visuais offline antigos não participam da rota offline.",
     "A barra inferior offline é própria, independente da barra online, fixa no rodapé e se recria se algum módulo a remover.",
@@ -90,6 +96,7 @@
     "O Service Worker mantém em cache o motor v3, a barra offline própria e todos os arquivos necessários ao runtime offline.",
     "Não há MutationObserver no motor offline v3 nem na barra offline própria.",
     "Nenhuma atualização comum pode alterar arquivos protegidos do offline sem falhar a publicação.",
+    "O workflow, o validador e o registro de homologação também são protegidos contra alteração acidental.",
     "Qualquer mudança no runtime offline exige nova homologação explícita do usuário."
   ]
 }
