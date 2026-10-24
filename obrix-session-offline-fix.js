@@ -113,10 +113,16 @@ function capture(e){
 
 if(locked())holdLoggedOut();
 window.addEventListener('click',capture,true);
-window.addEventListener('online',()=>{if(window.__OBRIX_FORCE_OFFLINE){releaseOffline();try{window.OBRIX_STARTUP_ROUTER?.online?.()}catch(_){}}});
-window.addEventListener('pageshow',()=>{if(locked())holdLoggedOut()});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&locked())holdLoggedOut()});
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{if(locked())holdLoggedOut()},{once:true});
+window.addEventListener('online',()=>{
+  if(window.__OBRIX_FORCE_OFFLINE){
+    setOnlineOverride(()=>false);
+    try{window.OBRIX_STARTUP_ROUTER?.offline?.()}catch(_){}
+    return;
+  }
+});
+window.addEventListener('pageshow',()=>{if(locked())holdLoggedOut();else if(window.__OBRIX_FORCE_OFFLINE)setOnlineOverride(()=>false)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(locked())holdLoggedOut();else if(window.__OBRIX_FORCE_OFFLINE)setOnlineOverride(()=>false)}});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{if(locked())holdLoggedOut();else if(window.__OBRIX_FORCE_OFFLINE)setOnlineOverride(()=>false)},{once:true});
 else if(locked())holdLoggedOut();
 
 window.OBRIX_LOGOUT=logout;
