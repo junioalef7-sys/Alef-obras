@@ -27,4 +27,6 @@ const css=document.createElement('style');css.textContent='.assPlanoTop .assEcon
 let pend=false;new MutationObserver(()=>{if(pend)return;pend=true;requestAnimationFrame(()=>{pend=false;aplicar()})}).observe(document.body,{childList:true,subtree:true});
 document.addEventListener('obrix:feature-pronto',()=>setTimeout(aplicar,50));setTimeout(aplicar,100);setTimeout(aplicar,1000);
 window.OBRIX_ASSINATURAS_ECONOMIA_ANUAL={aplicar};
+function loadLightReference(){if(!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||document.documentElement.dataset.obrixOfflineV3==='1'||window.__OBRIX_LIGHT_REFERENCE_LOADER_V2)return;const s=document.createElement('script');s.src='./obrix-light-reference-loader-v1.js?v=20261025-lightfix2';s.async=false;document.head.appendChild(s)}
+loadLightReference();
 })();
