@@ -2,31 +2,7 @@
 'use strict';
 if(window.__OBRIX_ASSINATURAS_ECONOMIA_ANUAL)return;window.__OBRIX_ASSINATURAS_ECONOMIA_ANUAL=true;
 const parseBRL=txt=>{const s=String(txt||'').replace(/[^0-9,.-]/g,'').replace(/\./g,'').replace(',','.');const n=Number(s);return Number.isFinite(n)?n:0};
-function aplicar(){
-  const box=document.getElementById('assPlanos');if(!box)return;
-  const cards=[...box.querySelectorAll('.assPlano')];if(!cards.length)return;
-  let mensal=null,anual=null;
-  for(const card of cards){
-    const btn=card.querySelector('[data-ass-plano]');const codigo=String(btn?.dataset?.assPlano||'').toLowerCase();
-    const preco=parseBRL(card.querySelector('.assPreco')?.childNodes?.[0]?.textContent||card.querySelector('.assPreco')?.textContent||'');
-    if(codigo==='mensal')mensal={card,preco};
-    if(codigo==='anual')anual={card,preco};
-    card.classList.remove('assDestaque');
-    card.querySelectorAll('.assPlanoTop span').forEach(s=>s.remove());
-  }
-  if(!anual)return;
-  let economia=0;
-  if(mensal?.preco>0&&anual.preco>0)economia=Math.max(0,Math.round((1-(anual.preco/(mensal.preco*12)))*100));
-  if(!economia)economia=17;
-  anual.card.classList.add('assDestaque');
-  const top=anual.card.querySelector('.assPlanoTop');if(!top)return;
-  const badge=document.createElement('span');badge.className='assEconomiaAnual';badge.textContent=`Economize ${economia}%`;
-  top.appendChild(badge);
-}
-const css=document.createElement('style');css.textContent='.assPlanoTop .assEconomiaAnual{background:#dcfce7!important;color:#166534!important;border:1px solid #86efac}';document.head.appendChild(css);
-let pend=false;new MutationObserver(()=>{if(pend)return;pend=true;requestAnimationFrame(()=>{pend=false;aplicar()})}).observe(document.body,{childList:true,subtree:true});
-document.addEventListener('obrix:feature-pronto',()=>setTimeout(aplicar,50));setTimeout(aplicar,100);setTimeout(aplicar,1000);
-window.OBRIX_ASSINATURAS_ECONOMIA_ANUAL={aplicar};
-function loadLightReference(){if(!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||document.documentElement.dataset.obrixOfflineV3==='1'||window.__OBRIX_LIGHT_REFERENCE_LOADER_V2)return;const s=document.createElement('script');s.src='./obrix-light-reference-loader-v1.js?v=20261025-lightfix2';s.async=false;document.head.appendChild(s)}
-loadLightReference();
+function aplicar(){const box=document.getElementById('assPlanos');if(!box)return;const cards=[...box.querySelectorAll('.assPlano')];if(!cards.length)return;let mensal=null,anual=null;for(const card of cards){const btn=card.querySelector('[data-ass-plano]');const codigo=String(btn?.dataset?.assPlano||'').toLowerCase();const preco=parseBRL(card.querySelector('.assPreco')?.childNodes?.[0]?.textContent||card.querySelector('.assPreco')?.textContent||'');if(codigo==='mensal')mensal={card,preco};if(codigo==='anual')anual={card,preco};card.classList.remove('assDestaque');card.querySelectorAll('.assPlanoTop span').forEach(s=>s.remove())}if(!anual)return;let economia=0;if(mensal?.preco>0&&anual.preco>0)economia=Math.max(0,Math.round((1-(anual.preco/(mensal.preco*12)))*100));if(!economia)economia=17;anual.card.classList.add('assDestaque');const top=anual.card.querySelector('.assPlanoTop');if(!top)return;const badge=document.createElement('span');badge.className='assEconomiaAnual';badge.textContent=`Economize ${economia}%`;top.appendChild(badge)}
+const css=document.createElement('style');css.textContent='.assPlanoTop .assEconomiaAnual{background:#dcfce7!important;color:#166534!important;border:1px solid #86efac}';document.head.appendChild(css);let pend=false;new MutationObserver(()=>{if(pend)return;pend=true;requestAnimationFrame(()=>{pend=false;aplicar()})}).observe(document.body,{childList:true,subtree:true});document.addEventListener('obrix:feature-pronto',()=>setTimeout(aplicar,50));setTimeout(aplicar,100);setTimeout(aplicar,1000);window.OBRIX_ASSINATURAS_ECONOMIA_ANUAL={aplicar};
+function loadLightReference(){if(!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||document.documentElement.dataset.obrixOfflineV3==='1'||window.__OBRIX_LIGHT_REFERENCE_LOADER_V3)return;const s=document.createElement('script');s.src='./obrix-light-reference-loader-v1.js?v=20261025-light-general-v3';s.async=false;document.head.appendChild(s)}loadLightReference();
 })();
