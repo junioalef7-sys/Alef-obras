@@ -1,10 +1,10 @@
-const CACHE='obrix-offline-v62-visual-fix';
-const BUILD='20261025-visual-fix1';
+const CACHE='obrix-offline-v61-v3-nav';
+const BUILD='20261024-offline-v3-nav1';
 const CDN_SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1';
 const CDN_HTML2CANVAS='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const CDN_JSPDF='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
 const APP=[
-'./obrix.html','./obrix-startup-router.js','./obrix-pos-login-loader.js','./obrix-no-gold-final.js','./obrix-offline-v3.js','./obrix-offline-v3-nav.js','./obrix-offline-v3-guard.js','./obrix-offline-bootstrap.js','./obrix-session-offline-fix.js','./obrix-offline-v2.js','./obrix-backend-adapter.js','./obrix-core-main.js','./obrix-ui-stability.js','./obrix-login-rescue.js','./obrix-login-eye-lite.js','./obrix-auth-main.js','./obrix-login-profissional.js',
+'./obrix.html','./obrix-startup-router.js','./obrix-offline-v3.js','./obrix-offline-v3-nav.js','./obrix-offline-v3-guard.js','./obrix-offline-bootstrap.js','./obrix-session-offline-fix.js','./obrix-offline-v2.js','./obrix-backend-adapter.js','./obrix-core-main.js','./obrix-ui-stability.js','./obrix-login-rescue.js','./obrix-login-eye-lite.js','./obrix-auth-main.js','./obrix-login-profissional.js',
 './obrix-financeiro-main.js','./obrix-estoque-main.js','./obrix-equipe-main.js','./obrix-obras-main.js','./obrix-menu-main.js','./obrix-nav-active.js','./obrix-home-clean.js','./obrix-theme-main.js','./obrix-light-polish.js','./obrix-brand-main.js','./obrix-ajustes-ui-final.js',
 './obrix-financeiro-resumo-obras.js','./obrix-financeiro-resumo-geral.js','./obrix-financeiro-protecao-estoque.js','./obrix-financeiro-busca.js','./obrix-financeiro-filtros-layout.js','./obrix-financeiro-grafico-receitas.js','./obrix-blindagem-financeiro.js',
 './obrix-equipe-controles-guard.js','./obrix-equipe-total-pago.js','./obrix-equipe-lista-vertical.js','./obrix-equipe-diretorio-pessoal.js','./obrix-equipe-botoes-neutros-v1.js','./obrix-equipe-estoque-fix-v1.js',
@@ -14,7 +14,7 @@ const APP=[
 './obrix-assinaturas-cobrancas-efi.js','./obrix-assinaturas-economia-anual.js','./obrix-suporte-main.js','./obrix-suporte-permissoes-ui.js','./obrix-notificacoes.js','./obrix-suporte-admin-notif.js','./obrix-onboarding.js','./obrix-global-ui-report-fix.js','./obrix-pagamentos-ui-alinhamento.js','./obrix-equipe-checklist-loader.js',
 './obrix-icon.svg','./obrix-manifest.webmanifest',CDN_SUPABASE,CDN_HTML2CANVAS,CDN_JSPDF
 ];
-const FRESH_CRITICAL=['/obrix.html','/obrix-startup-router.js','/obrix-pos-login-loader.js','/obrix-no-gold-final.js','/obrix-offline-v3.js','/obrix-offline-v3-nav.js','/obrix-offline-v3-guard.js','/obrix-offline-bootstrap.js','/obrix-session-offline-fix.js','/obrix-offline-v2.js','/obrix-core-main.js','/obrix-theme-main.js','/obrix-menu-main.js','/obrix-financeiro-main.js','/obrix-equipe-main.js','/obrix-obras-main.js'];
+const FRESH_CRITICAL=['/obrix.html','/obrix-startup-router.js','/obrix-offline-v3.js','/obrix-offline-v3-nav.js','/obrix-offline-v3-guard.js','/obrix-offline-bootstrap.js','/obrix-session-offline-fix.js','/obrix-offline-v2.js','/obrix-core-main.js','/obrix-theme-main.js','/obrix-menu-main.js','/obrix-financeiro-main.js','/obrix-equipe-main.js','/obrix-obras-main.js'];
 function isFreshCritical(p){return FRESH_CRITICAL.some(x=>p.endsWith(x))}
 async function directResponse(r){if(!r||r.type==='opaque'||!r.redirected)return r;try{const b=await r.clone().arrayBuffer(),h=new Headers(r.headers);h.delete('content-encoding');h.delete('content-length');h.delete('transfer-encoding');return new Response(b,{status:r.status,statusText:r.statusText,headers:h})}catch(_){return r}}
 async function cachedDirect(q){const r=await caches.match(q,{ignoreSearch:true});return r?directResponse(r):null}
