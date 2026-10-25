@@ -8,7 +8,7 @@ html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app :is(.card,.p
 html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app :is(.card,.panel,.box,.section,.bloco,.wrap,.forObra,.forCheck,.forKpi,.kpi,.mini,.tile,.menuCard,.menuItem,.assPlano) :is(.card,.panel,.box,.section,.bloco,.forCheck,.forKpi,.kpi,.mini,.tile,.menuCard,.menuItem){background:#F5F7FA!important;background-color:#F5F7FA!important;background-image:none!important;border-color:#D7DEE8!important;color:#111827!important}
 html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app *,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app *::before,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app *::after{transition:none!important;animation:none!important}
 html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgExcluirConta{background:transparent!important;background-color:transparent!important;background-image:none!important;color:#DC2626!important;-webkit-text-fill-color:#DC2626!important;border:1.5px solid #DC2626!important;box-shadow:none!important;text-shadow:none!important;filter:none!important}
-/* Botões que ainda alternavam aparência no modo claro: estado totalmente fixo. */
+/* Botões de pagamento estáveis no claro. */
 html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #assPlanos button,
 html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #assinaturaMain button[data-ass-plano],
 html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #assinaturaMain .obrixPayMethod,
@@ -23,6 +23,10 @@ html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) [data-action="the
 html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) .cfgThemeBtn{background:#111111!important;background-color:#111111!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border:1.5px solid #F2B84B!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;opacity:1!important}
 html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTema:hover,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTema:focus,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTema:active,
 html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTheme:hover,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTheme:focus,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTheme:active{background:#111111!important;background-color:#111111!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-color:#F2B84B!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;opacity:1!important}
+/* Restaura exatamente o visual neutro aprovado do botão Vale no modo escuro. */
+html[data-theme="dark"] #app #equipe button[onclick*="'vale'"],body.dark #app #equipe button[onclick*="'vale'"]{background:#101820!important;background-color:#101820!important;background-image:none!important;color:#EEF2F7!important;-webkit-text-fill-color:#EEF2F7!important;border-color:#2A3948!important;box-shadow:none!important;text-shadow:none!important}
+/* Início: texto do controle Em andamento sempre branco. */
+#app #inicio button[data-status="andamento"],#app #inicio button[data-status="em_andamento"],#app #inicio [data-filter="andamento"],#app #inicio [data-filter="em_andamento"],#app #inicio button[onclick*="andamento"]{color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important}
 `;
 document.head.appendChild(css);
 window.OBRIX_ASSINATURAS_ECONOMIA_ANUAL={aplicar:()=>{},refresh:()=>{}};
