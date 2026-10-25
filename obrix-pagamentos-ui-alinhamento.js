@@ -8,18 +8,112 @@ const ICONS={
   boleto:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2v16H3V4Zm4 0h1v16H7V4Zm3 0h2v16h-2V4Zm4 0h1v16h-1V4Zm3 0h3v16h-3V4Z" fill="currentColor"/></svg>',
   cartao:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 2v2h18V7H3Zm0 5v5h18v-5H3Zm2 2h6v2H5v-2Z" fill="currentColor"/></svg>'
 };
-function decorateButton(btn,type,label){if(!btn||btn.dataset.obrixPayDecorated==='1')return;btn.dataset.obrixPayDecorated='1';btn.classList.add('obrixPayMethod');btn.setAttribute('aria-label',label);btn.innerHTML=`<span class="obrixPayIcon">${ICONS[type]}</span><span class="obrixPayLabel">${label}</span>`}
-function decorateCard(card){if(!card||card.dataset.obrixPayReady==='1')return;const pix=card.querySelector('[data-ass-plano]'),row=card.querySelector('.assCobEfiRow');if(!pix||!row)return;const boleto=row.querySelector('[data-ass-cob-efi$=":boleto"]'),cartao=row.querySelector('[data-ass-cob-efi$=":cartao"]');if(!boleto||!cartao)return;card.dataset.obrixPayReady='1';row.classList.add('obrixPayStack');decorateButton(pix,'pix','Pagar com Pix');decorateButton(boleto,'boleto','Pagar com Boleto');decorateButton(cartao,'cartao','Pagar com Cartão');row.append(pix,boleto,cartao)}
-function scan(){const box=document.getElementById('assPlanos');if(!box)return;box.querySelectorAll('.assPlano').forEach(decorateCard)}
-const css=document.createElement('style');css.id='obrixPagamentosUiAlinhamentoCss';css.textContent=`
-#assPlanos .assCobEfiRow.obrixPayStack{display:flex!important;flex-direction:column!important;gap:10px!important;width:100%!important;margin-top:12px!important;background:transparent!important}
-#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;width:100%!important;min-width:0!important;margin:0!important;padding:13px 16px!important;border:1px solid #d7dee8!important;border-radius:12px!important;background:#f5f7fa!important;color:#111827!important;box-shadow:none!important;text-align:left!important;font-weight:800!important}
-#assPlanos .obrixPayIcon{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 24px!important;width:24px!important;height:24px!important}
-#assPlanos .obrixPayIcon svg{width:22px!important;height:22px!important;display:block!important}#assPlanos .obrixPayLabel{display:block!important;flex:1!important;text-align:left!important}
-#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{background:#f5f7fa!important;color:#111827!important;border-color:#cbd5e1!important}
-html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod,body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod{background:#111827!important;color:#f8fafc!important;border-color:#475569!important}
-html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active,body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{background:#1e293b!important;color:#f8fafc!important;border-color:#64748b!important}
-`;document.head.appendChild(css);
-let scheduled=false;function scheduleScan(){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;scan()})}
-new MutationObserver(scheduleScan).observe(document.body,{childList:true,subtree:true});document.addEventListener('obrix:feature-pronto',scheduleScan);setTimeout(scan,100);setTimeout(scan,500);setTimeout(scan,1200);
+
+function decorateButton(btn,type,label){
+  if(!btn||btn.dataset.obrixPayDecorated==='1')return;
+  btn.dataset.obrixPayDecorated='1';
+  btn.classList.add('obrixPayMethod');
+  btn.setAttribute('aria-label',label);
+  btn.innerHTML=`<span class="obrixPayIcon">${ICONS[type]}</span><span class="obrixPayLabel">${label}</span>`;
+}
+
+function decorateCard(card){
+  if(!card||card.dataset.obrixPayReady==='1')return;
+  const pix=card.querySelector('[data-ass-plano]');
+  const row=card.querySelector('.assCobEfiRow');
+  if(!pix||!row)return;
+  const boleto=row.querySelector('[data-ass-cob-efi$=":boleto"]');
+  const cartao=row.querySelector('[data-ass-cob-efi$=":cartao"]');
+  if(!boleto||!cartao)return;
+
+  card.dataset.obrixPayReady='1';
+  row.classList.add('obrixPayStack');
+  decorateButton(pix,'pix','Pagar com Pix');
+  decorateButton(boleto,'boleto','Pagar com Boleto');
+  decorateButton(cartao,'cartao','Pagar com Cartão');
+  row.append(pix,boleto,cartao);
+}
+
+function scan(){
+  const box=document.getElementById('assPlanos');
+  if(!box)return;
+  box.querySelectorAll('.assPlano').forEach(decorateCard);
+}
+
+const css=document.createElement('style');
+css.id='obrixPagamentosUiAlinhamentoCss';
+css.textContent=`
+#assPlanos .assCobEfiRow.obrixPayStack{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:10px!important;
+  width:100%!important;
+  margin-top:12px!important;
+  background:transparent!important;
+}
+#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:12px!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:13px 16px!important;
+  border:1px solid #cbd5e1!important;
+  border-radius:12px!important;
+  background:#ffffff!important;
+  color:#0f172a!important;
+  box-shadow:none!important;
+  text-align:left!important;
+  font-weight:800!important;
+}
+#assPlanos .obrixPayIcon{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex:0 0 24px!important;
+  width:24px!important;
+  height:24px!important;
+}
+#assPlanos .obrixPayIcon svg{width:22px!important;height:22px!important;display:block!important}
+#assPlanos .obrixPayLabel{display:block!important;flex:1!important;text-align:left!important}
+#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,
+#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,
+#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{
+  background:#f8fafc!important;
+  color:#0f172a!important;
+  border-color:#94a3b8!important;
+}
+html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod,
+body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod{
+  background:#111827!important;
+  color:#f8fafc!important;
+  border-color:#475569!important;
+}
+html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,
+html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,
+html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active,
+body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,
+body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,
+body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{
+  background:#1e293b!important;
+  color:#f8fafc!important;
+  border-color:#64748b!important;
+}
+`;
+document.head.appendChild(css);
+
+let scheduled=false;
+function scheduleScan(){
+  if(scheduled)return;
+  scheduled=true;
+  requestAnimationFrame(()=>{scheduled=false;scan()});
+}
+
+new MutationObserver(scheduleScan).observe(document.body,{childList:true,subtree:true});
+document.addEventListener('obrix:feature-pronto',scheduleScan);
+setTimeout(scan,100);
+setTimeout(scan,500);
+setTimeout(scan,1200);
 })();
