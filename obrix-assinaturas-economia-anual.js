@@ -2,27 +2,19 @@
 'use strict';
 if(window.__OBRIX_ASSINATURAS_ECONOMIA_ANUAL)return;window.__OBRIX_ASSINATURAS_ECONOMIA_ANUAL=true;
 const parseBRL=txt=>{const s=String(txt||'').replace(/[^0-9,.-]/g,'').replace(/\./g,'').replace(',','.');const n=Number(s);return Number.isFinite(n)?n:0};
-const offline=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||document.documentElement.dataset.obrixOfflineV3==='1';
-const claro=()=>!offline()&&document.documentElement.dataset.theme!=='dark';
 function aplicar(){const box=document.getElementById('assPlanos');if(!box)return;const cards=[...box.querySelectorAll('.assPlano')];if(!cards.length)return;let mensal=null,anual=null;for(const card of cards){const btn=card.querySelector('[data-ass-plano]');const codigo=String(btn?.dataset?.assPlano||'').toLowerCase();const preco=parseBRL(card.querySelector('.assPreco')?.childNodes?.[0]?.textContent||card.querySelector('.assPreco')?.textContent||'');if(codigo==='mensal')mensal={card,preco};if(codigo==='anual')anual={card,preco};card.classList.remove('assDestaque')}if(!anual)return;let economia=0;if(mensal?.preco>0&&anual.preco>0)economia=Math.max(0,Math.round((1-(anual.preco/(mensal.preco*12)))*100));if(!economia)economia=17;anual.card.classList.add('assDestaque');const top=anual.card.querySelector('.assPlanoTop');if(!top)return;let badge=top.querySelector('.assEconomiaAnual');if(!badge){badge=document.createElement('span');badge.className='assEconomiaAnual';top.appendChild(badge)}const texto=`Economize ${economia}%`;if(badge.textContent!==texto)badge.textContent=texto}
-const css=document.createElement('style');css.id='obrixEconomiaAnualStable';css.textContent=`
+const css=document.createElement('style');css.id='obrixLightStableNoFlicker';css.textContent=`
 .assPlanoTop .assEconomiaAnual{background:#dcfce7!important;color:#166534!important;border:1px solid #86efac}
-html:not([data-obrix-offline-v3="1"]) body,html:not([data-obrix-offline-v3="1"]) #app{transition:none!important}
-html:not([data-obrix-offline-v3="1"]) #app *,html:not([data-obrix-offline-v3="1"]) #app *::before,html:not([data-obrix-offline-v3="1"]) #app *::after{animation:none!important;transition:none!important}
-/* Modo claro: mesma hierarquia no celular e no computador. */
-html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) body,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app main,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app .page,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app .view,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app .screen{background:#EEF2F6!important;background-color:#EEF2F6!important}
-html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app :is(.card,.panel,.box,.section,.bloco,.wrap,.forObra,.forCheck,.forKpi,.kpi,.mini,.tile,.menuCard,.menuItem,.assPlano){background:#FFFFFF!important;background-color:#FFFFFF!important;background-image:none!important;border-color:#D7DEE8!important}
-html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app :is(.card,.panel,.box,.section,.bloco,.wrap,.forObra,.forCheck,.forKpi,.kpi,.mini,.tile,.menuCard,.menuItem,.assPlano) :is(.card,.panel,.box,.section,.bloco,.forCheck,.forKpi,.kpi,.mini,.tile,.menuCard,.menuItem){background:#F5F7FA!important;background-color:#F5F7FA!important;background-image:none!important;border-color:#D7DEE8!important}
+/* Online claro estático: não reescreve DOM nem estilos durante navegação. */
+html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) body,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app main,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app .page,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app .view,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app .screen{background:#EEF2F6!important;background-color:#EEF2F6!important;color:#111827!important}
+html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app :is(.card,.panel,.box,.section,.bloco,.wrap,.forObra,.forCheck,.forKpi,.kpi,.mini,.tile,.menuCard,.menuItem,.assPlano){background:#FFFFFF!important;background-color:#FFFFFF!important;background-image:none!important;border-color:#D7DEE8!important;color:#111827!important}
+html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app :is(.card,.panel,.box,.section,.bloco,.wrap,.forObra,.forCheck,.forKpi,.kpi,.mini,.tile,.menuCard,.menuItem,.assPlano) :is(.card,.panel,.box,.section,.bloco,.forCheck,.forKpi,.kpi,.mini,.tile,.menuCard,.menuItem){background:#F5F7FA!important;background-color:#F5F7FA!important;background-image:none!important;border-color:#D7DEE8!important;color:#111827!important}
+html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app *,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app *::before,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app *::after{transition:none!important;animation:none!important}
 html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgExcluirConta{background:transparent!important;background-color:transparent!important;background-image:none!important;color:#DC2626!important;-webkit-text-fill-color:#DC2626!important;border:1.5px solid #DC2626!important;box-shadow:none!important;text-shadow:none!important;filter:none!important}
-html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgExcluirConta:hover,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgExcluirConta:active,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgExcluirConta:focus{background:transparent!important;background-color:transparent!important;background-image:none!important;color:#DC2626!important;-webkit-text-fill-color:#DC2626!important;border:1.5px solid #DC2626!important;box-shadow:none!important;text-shadow:none!important;filter:none!important}
-`;document.head.appendChild(css);
-function fixExcluirConta(){if(!claro())return;const b=document.getElementById('cfgExcluirConta');if(!b)return;b.style.setProperty('background','transparent','important');b.style.setProperty('background-color','transparent','important');b.style.setProperty('background-image','none','important');b.style.setProperty('color','#DC2626','important');b.style.setProperty('-webkit-text-fill-color','#DC2626','important');b.style.setProperty('border','1.5px solid #DC2626','important');b.style.setProperty('box-shadow','none','important');b.style.setProperty('text-shadow','none','important');b.style.setProperty('filter','none','important')}
-function refresh(){aplicar();fixExcluirConta()}
+`;
+document.head.appendChild(css);
+function refresh(){aplicar()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refresh,{once:true});else refresh();
-document.addEventListener('obrix:modules-online-ready',refresh);
-document.addEventListener('obrix:feature-pronto',refresh);
-window.addEventListener('pageshow',refresh);
-document.addEventListener('click',e=>{if(e.target?.closest?.('#cfgExcluirConta'))fixExcluirConta()},true);
-new MutationObserver(()=>fixExcluirConta()).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-window.OBRIX_ASSINATURAS_ECONOMIA_ANUAL={aplicar,refresh,fixExcluirConta};
+document.addEventListener('obrix:modules-online-ready',refresh,{once:true});
+window.OBRIX_ASSINATURAS_ECONOMIA_ANUAL={aplicar,refresh};
 })();
