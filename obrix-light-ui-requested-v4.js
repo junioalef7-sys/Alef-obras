@@ -1,22 +1,29 @@
 (()=>{'use strict';
 if(window.__OBRIX_LIGHT_UI_REQUESTED_V4)return;window.__OBRIX_LIGHT_UI_REQUESTED_V4=true;
-const PAGE='#EEF2F6',CARD='#FFFFFF',TEXT='#111827',MUTED='#667085',GREEN='#15803D',BORDER='#D7DEE8',BLACK='#111111',WHITE='#FFFFFF',GOLD='#F2B84B';
+const GRAY='#F5F7FA',TEXT='#111827',GREEN='#15803D',BORDER='#D7DEE8';
 const offline=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||document.documentElement.dataset.obrixOfflineV3==='1';
 const light=()=>!offline()&&document.documentElement.dataset.theme!=='dark'&&!document.body?.classList.contains('dark');
 const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
-const PROPS=['background','background-color','background-image','color','-webkit-text-fill-color','border','border-color','box-shadow','text-shadow','font-weight'];
+const PROPS=['background','background-color','background-image','color','-webkit-text-fill-color','border-color','box-shadow','text-shadow'];
 const imp=(e,p,v)=>e?.style?.setProperty(p,v,'important');
-function mark(e){if(e)e.dataset.obrixLightV4='1'}
-function rgb(e){const m=getComputedStyle(e).backgroundColor.match(/\d+/g);return m?m.slice(0,3).map(Number):[255,255,255]}
-function isBlack(e){const [r,g,b]=rgb(e);return r<55&&g<60&&b<70}
-function page(){const app=document.getElementById('app');if(app){mark(app);imp(app,'background',PAGE);imp(app,'background-color',PAGE)}mark(document.body);imp(document.body,'background',PAGE);imp(document.body,'background-color',PAGE)}
-function cards(){document.querySelectorAll('#app .card,#app .kpi,#app .mini,#app .panel,#app .box,#app .tile').forEach(e=>{mark(e);if(isBlack(e)){imp(e,'color',WHITE);imp(e,'-webkit-text-fill-color',WHITE);return}imp(e,'background',CARD);imp(e,'background-color',CARD);imp(e,'background-image','none');imp(e,'border-color',BORDER);imp(e,'box-shadow','none');imp(e,'color',TEXT);imp(e,'-webkit-text-fill-color',TEXT);e.querySelectorAll('h1,h2,h3,h4,h5,h6,strong,b,.title,.titulo').forEach(x=>{mark(x);imp(x,'color',TEXT);imp(x,'-webkit-text-fill-color',TEXT);imp(x,'font-weight','700')});e.querySelectorAll('p,small,.muted,.sub,.subtitle,.descricao').forEach(x=>{if(isBlack(e))return;mark(x);imp(x,'color',MUTED);imp(x,'-webkit-text-fill-color',MUTED)})})}
-function grayButton(b){if(!b||isBlack(b))return;mark(b);imp(b,'background',CARD);imp(b,'background-color',CARD);imp(b,'background-image','none');imp(b,'color',TEXT);imp(b,'-webkit-text-fill-color',TEXT);imp(b,'border-color',BORDER);imp(b,'text-shadow','none')}
-function textButtons(){const wanted=/^(marcar diaria|falta|ver registro|vale|bonus e extras|bonus|extras|excluir|ativar|desativar|historico de pagamento|historico de pagamentos|funcionario|funcionarios|novo funcionario|\+ funcionario|trocar e-mail|trocar email|trocar senha|sair da conta|apagar obra|apagar equipe|apagar financeiro|pagar com pix|pagar com boleto|pagar com cartao)$/;document.querySelectorAll('#app button').forEach(b=>{if(wanted.test(norm(b.textContent)))grayButton(b)})}
-function statuses(){document.querySelectorAll('#app *').forEach(e=>{if(e.children.length===0&&norm(e.textContent)==='em andamento'){mark(e);imp(e,'color',GREEN);imp(e,'-webkit-text-fill-color',GREEN)}})}
-function critical(){if(!light())return;const dark=document.getElementById('cfgEscuro')||[...document.querySelectorAll('#app button')].find(b=>norm(b.textContent).includes('modo escuro'));if(dark){mark(dark);imp(dark,'background',BLACK);imp(dark,'background-color',BLACK);imp(dark,'background-image','none');imp(dark,'color',WHITE);imp(dark,'-webkit-text-fill-color',WHITE);imp(dark,'border','1px solid '+GOLD);imp(dark,'border-color',GOLD);imp(dark,'box-shadow','none');dark.querySelectorAll('svg,i,.icon,.ico').forEach(x=>{mark(x);imp(x,'color',GOLD);imp(x,'-webkit-text-fill-color',GOLD)})}const del=document.getElementById('cfgExcluirConta')||[...document.querySelectorAll('#app button')].find(b=>norm(b.textContent).includes('excluir conta'));if(del){mark(del);imp(del,'color',WHITE);imp(del,'-webkit-text-fill-color',WHITE);imp(del,'font-weight','800');del.querySelectorAll('*').forEach(x=>{mark(x);imp(x,'color',WHITE);imp(x,'-webkit-text-fill-color',WHITE)})}}
+function gray(e){if(!e)return;e.dataset.obrixLightV4='1';imp(e,'background',GRAY);imp(e,'background-color',GRAY);imp(e,'background-image','none');imp(e,'box-shadow','none');}
+function grayButton(b){gray(b);imp(b,'color',TEXT);imp(b,'-webkit-text-fill-color',TEXT);imp(b,'border-color',BORDER);imp(b,'text-shadow','none')}
+function textButtons(){
+ const wanted=/^(marcar diaria|falta|ver registro|vale|bonus e extras|bonus|extras|excluir|ativar|desativar|historico de pagamento|historico de pagamentos|funcionario|funcionarios|novo funcionario|\+ funcionario|trocar e-mail|trocar email|trocar senha|sair da conta|apagar obra|apagar equipe|apagar financeiro|pagar com pix|pagar com boleto|pagar com cartao)$/;
+ document.querySelectorAll('#app button').forEach(b=>{if(wanted.test(norm(b.textContent)))grayButton(b)});
+}
+function bottomBlock(){
+ const bottom=document.querySelector('#app .bottom');if(!bottom)return;gray(bottom);bottom.querySelectorAll('button').forEach(grayButton);
+}
+function statuses(){
+ document.querySelectorAll('#app *').forEach(e=>{if(e.children.length===0&&norm(e.textContent)==='em andamento'){e.dataset.obrixLightV4='1';imp(e,'color',GREEN);imp(e,'-webkit-text-fill-color',GREEN)}});
+}
 function cleanup(){document.querySelectorAll('[data-obrix-light-v4="1"]').forEach(e=>{PROPS.forEach(p=>e.style.removeProperty(p));delete e.dataset.obrixLightV4})}
-function apply(){if(offline())return;if(!light()){cleanup();return}page();cards();textButtons();statuses();critical()}
+function apply(){if(offline())return;if(!light()){cleanup();return}bottomBlock();textButtons();statuses()}
 function pulse(){[0,60,180,450,900,1800].forEach(ms=>setTimeout(apply,ms))}
-['obrix:grupo-pronto','obrix:feature-pronto','obrix:modules-ready','obrix:modules-online-ready','pageshow','focus'].forEach(n=>window.addEventListener(n,pulse));document.addEventListener('click',pulse,true);window.addEventListener('online',pulse);new MutationObserver(apply).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',pulse,{once:true});else pulse();window.OBRIX_LIGHT_UI_REQUESTED_V4={apply,pulse,cleanup};
+['obrix:grupo-pronto','obrix:feature-pronto','obrix:modules-ready','obrix:modules-online-ready','pageshow','focus'].forEach(n=>window.addEventListener(n,pulse));
+document.addEventListener('click',pulse,true);window.addEventListener('online',pulse);
+new MutationObserver(apply).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',pulse,{once:true});else pulse();
+window.OBRIX_LIGHT_UI_REQUESTED_V4={apply,pulse,cleanup};
 })();
