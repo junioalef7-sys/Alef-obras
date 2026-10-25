@@ -25,9 +25,20 @@ html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTema:hover,ht
 html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTheme:hover,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTheme:focus,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTheme:active{background:#111111!important;background-color:#111111!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-color:#F2B84B!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;opacity:1!important}
 /* Restaura exatamente o visual neutro aprovado do botão Vale no modo escuro. */
 html[data-theme="dark"] #app #equipe button[onclick*="'vale'"],body.dark #app #equipe button[onclick*="'vale'"]{background:#101820!important;background-color:#101820!important;background-image:none!important;color:#EEF2F7!important;-webkit-text-fill-color:#EEF2F7!important;border-color:#2A3948!important;box-shadow:none!important;text-shadow:none!important}
-/* Início: texto do controle Em andamento sempre branco. */
-#app #inicio button[data-status="andamento"],#app #inicio button[data-status="em_andamento"],#app #inicio [data-filter="andamento"],#app #inicio [data-filter="em_andamento"],#app #inicio button[onclick*="andamento"]{color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important}
 `;
 document.head.appendChild(css);
-window.OBRIX_ASSINATURAS_ECONOMIA_ANUAL={aplicar:()=>{},refresh:()=>{}};
+function brancoEmAndamento(){
+ if(!document.documentElement.matches('[data-theme="dark"]')&&!document.body.classList.contains('dark'))return;
+ const inicio=document.getElementById('inicio');if(!inicio)return;
+ inicio.querySelectorAll('*').forEach(el=>{
+  if(el.children.length===0&&String(el.textContent||'').trim().toLowerCase()==='em andamento'){
+   el.style.setProperty('color','#fff','important');
+   el.style.setProperty('-webkit-text-fill-color','#fff','important');
+  }
+ });
+}
+const observar=()=>{brancoEmAndamento();const inicio=document.getElementById('inicio');if(inicio)new MutationObserver(brancoEmAndamento).observe(inicio,{childList:true,subtree:true,characterData:true});};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',observar,{once:true});else observar();
+document.addEventListener('click',()=>setTimeout(brancoEmAndamento,0),true);
+window.OBRIX_ASSINATURAS_ECONOMIA_ANUAL={aplicar:brancoEmAndamento,refresh:brancoEmAndamento};
 })();
