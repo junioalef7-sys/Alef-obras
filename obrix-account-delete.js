@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const $=s=>document.querySelector(s);
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
 function fechar(){document.querySelector('.accountDeleteBack')?.remove()}
 function abrirConfirmacao(){
   fechar();
@@ -55,10 +55,7 @@ function instalar(){
   card.appendChild(info);card.appendChild(btn);return true;
 }
 const css=document.createElement('style');css.textContent=`
-.accountDeleteInfo{margin:16px 0 8px}
-.accountDeleteBtn{background:#b91c1c!important;color:#fff!important;border:1px solid #b91c1c!important}.accountDeleteBtn:hover{filter:brightness(.96)}
-html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) .accountDeleteBtn{background:transparent!important;background-color:transparent!important;background-image:none!important;color:#DC2626!important;-webkit-text-fill-color:#DC2626!important;border:1.5px solid #DC2626!important;box-shadow:none!important;text-shadow:none!important;filter:none!important}
-html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) .accountDeleteBtn:hover,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) .accountDeleteBtn:active,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) .accountDeleteBtn:focus{background:transparent!important;background-color:transparent!important;background-image:none!important;color:#DC2626!important;-webkit-text-fill-color:#DC2626!important;border:1.5px solid #DC2626!important;box-shadow:none!important;text-shadow:none!important;filter:none!important}
+.accountDeleteInfo{margin:16px 0 8px}.accountDeleteBtn{background:#b91c1c!important;color:#fff!important;border:1px solid #b91c1c!important}.accountDeleteBtn:hover{filter:brightness(.96)}
 .accountDeleteModal{max-width:520px}.accountDeleteModal h2{margin-top:0}.accountDeleteWarn{color:#991b1b;background:#fff1f2;border:1px solid #fecaca;border-radius:11px;padding:10px 12px}.accountDeleteText{width:100%;padding:13px;border:1px solid var(--border,#cbd5e1);border-radius:11px;font-size:16px;margin:8px 0 10px}.accountDeleteError{min-height:20px;color:#b91c1c;font-weight:800;font-size:13px;margin-bottom:8px}.accountDeleteModal .excluir{background:#b91c1c!important}.accountDeleteModal .excluir:disabled{opacity:.55}
 html[data-theme="dark"] .accountDeleteWarn{background:#2b1217;color:#fecdd3;border-color:#7f1d1d}
 `;document.head.appendChild(css);
