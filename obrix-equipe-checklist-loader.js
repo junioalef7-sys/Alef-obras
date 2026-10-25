@@ -38,10 +38,12 @@ if(window.__OBRIX_LIGHT_UI_BOOT_V2)return;window.__OBRIX_LIGHT_UI_BOOT_V2=true;
 const offlineV3=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||document.documentElement.dataset.obrixOfflineV3==='1';
 function hasLightUi(){return !!window.__OBRIX_LIGHT_UI_FINAL_V2||[...document.scripts].some(s=>/obrix-light-ui-final-v2\.js(?:\?|$)/.test(String(s.src||'')))}
 function hasLightUiV3(){return !!window.__OBRIX_LIGHT_UI_FINAL_V3||[...document.scripts].some(s=>/obrix-light-ui-final-v3\.js(?:\?|$)/.test(String(s.src||'')))}
+function hasLightUiV4(){return !!window.__OBRIX_LIGHT_UI_REQUESTED_V4||[...document.scripts].some(s=>/obrix-light-ui-requested-v4\.js(?:\?|$)/.test(String(s.src||'')))}
 function loadLightUi(){if(offlineV3()||hasLightUi())return;const s=document.createElement('script');s.src='./obrix-light-ui-final-v2.js?v=20261024lightui-final3';s.async=false;s.dataset.obrixLightUiFinal='1';document.body.appendChild(s)}
 function loadLightUiV3(){if(offlineV3()||hasLightUiV3())return;const s=document.createElement('script');s.src='./obrix-light-ui-final-v3.js?v=20261024lightui-final5';s.async=false;s.dataset.obrixLightUiFinalV3='1';document.body.appendChild(s)}
+function loadLightUiV4(){if(offlineV3()||hasLightUiV4())return;const s=document.createElement('script');s.src='./obrix-light-ui-requested-v4.js?v=20261024lightui-v4-1';s.async=false;s.dataset.obrixLightUiV4='1';document.body.appendChild(s)}
 function preloadConfig(){if(offlineV3())return;const l=window.OBRIX_POS_LOGIN_LOADER;if(l?.loadFeature)setTimeout(()=>l.loadFeature('config').catch?.(()=>{}),650)}
-function boot(){loadLightUi();loadLightUiV3();preloadConfig()}
+function boot(){loadLightUi();loadLightUiV3();loadLightUiV4();preloadConfig()}
 window.addEventListener('online',()=>setTimeout(boot,120));window.addEventListener('pageshow',()=>setTimeout(boot,120));window.addEventListener('obrix:modules-ready',()=>setTimeout(boot,120));
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,120),{once:true});else setTimeout(boot,120);
 })();
