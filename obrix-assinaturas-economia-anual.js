@@ -25,6 +25,14 @@ html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTema:hover,ht
 html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTheme:hover,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTheme:focus,html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #cfgTheme:active{background:#111111!important;background-color:#111111!important;background-image:none!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-color:#F2B84B!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;opacity:1!important}
 /* Restaura exatamente o visual neutro aprovado do botão Vale no modo escuro. */
 html[data-theme="dark"] #app #equipe button[onclick*="'vale'"],body.dark #app #equipe button[onclick*="'vale'"]{background:#101820!important;background-color:#101820!important;background-image:none!important;color:#EEF2F7!important;-webkit-text-fill-color:#EEF2F7!important;border-color:#2A3948!important;box-shadow:none!important;text-shadow:none!important}
+/* Remove qualquer fundo dourado dos botões online e volta ao visual neutro aprovado. */
+html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app button.obrixApprovedGold,
+html:not([data-theme="dark"]):not([data-obrix-offline-v3="1"]) #app .btn:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo):not(#cfgTema):not(#cfgTheme):not(.cfgThemeBtn){background:#FFFFFF!important;background-color:#FFFFFF!important;background-image:none!important;color:#334155!important;-webkit-text-fill-color:#334155!important;border-color:#CBD5E1!important;box-shadow:none!important;text-shadow:none!important}
+html[data-theme="dark"]:not([data-obrix-offline-v3="1"]) #app button.obrixApprovedGold,
+html[data-theme="dark"]:not([data-obrix-offline-v3="1"]) #app .btn:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo),
+body.dark #app button.obrixApprovedGold,body.dark #app .btn:not(.danger):not(.perigo):not(.orcPerigo):not(.diarioPerigo){background:#101820!important;background-color:#101820!important;background-image:none!important;color:#EEF2F7!important;-webkit-text-fill-color:#EEF2F7!important;border-color:#2A3948!important;box-shadow:none!important;text-shadow:none!important}
+/* Excluir/Apagar/Remover: fundo original transparente, borda e letras vermelhas. */
+#app button.danger,#app button.perigo,#app button.orcPerigo,#app button.diarioPerigo,#app .btn.danger,#app .btn.perigo,#app .btn.orcPerigo,#app .btn.diarioPerigo{background:transparent!important;background-color:transparent!important;background-image:none!important;color:#DC2626!important;-webkit-text-fill-color:#DC2626!important;border:1.5px solid #DC2626!important;box-shadow:none!important;text-shadow:none!important;filter:none!important}
 `;
 document.head.appendChild(css);
 function brancoEmAndamento(){
