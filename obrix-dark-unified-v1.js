@@ -1,0 +1,21 @@
+(()=>{'use strict';if(window.__OBRIX_DARK_UNIFIED_V1)return;window.__OBRIX_DARK_UNIFIED_V1=true;
+const ID='obrix-dark-unified-v1-style';
+const css=`
+html[data-theme="dark"] body,body.dark{background:#07111b!important;color:#fff!important}
+html[data-theme="dark"] #app,body.dark #app{background:#07111b!important;color:#fff!important}
+html[data-theme="dark"] #app .card,html[data-theme="dark"] #app .kpi,html[data-theme="dark"] #app .mini,html[data-theme="dark"] #app article,html[data-theme="dark"] #app section,html[data-theme="dark"] #app .panel,html[data-theme="dark"] #app .box,html[data-theme="dark"] .modalBack>div,html[data-theme="dark"] .modalBack .card,body.dark #app .card,body.dark #app .kpi,body.dark #app .mini,body.dark #app article{background:#0d1722!important;background-color:#0d1722!important;background-image:none!important;border-color:#293b4d!important;box-shadow:none!important}
+html[data-theme="dark"] #app button,html[data-theme="dark"] #app [role="button"],html[data-theme="dark"] .modalBack button,body.dark #app button{background:#0d1722!important;background-color:#0d1722!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#293b4d!important;box-shadow:none!important;text-shadow:none!important;animation:none!important;transition:none!important}
+html[data-theme="dark"] #app input,html[data-theme="dark"] #app select,html[data-theme="dark"] #app textarea,html[data-theme="dark"] .modalBack input,html[data-theme="dark"] .modalBack select,html[data-theme="dark"] .modalBack textarea{background:#0d1722!important;background-color:#0d1722!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#293b4d!important;box-shadow:none!important}
+html[data-theme="dark"] #app h1,html[data-theme="dark"] #app h2,html[data-theme="dark"] #app h3,html[data-theme="dark"] #app h4,html[data-theme="dark"] #app strong,html[data-theme="dark"] #app b,html[data-theme="dark"] #app label{color:#fff!important;-webkit-text-fill-color:#fff!important}
+html[data-theme="dark"] #app p,html[data-theme="dark"] #app small,html[data-theme="dark"] #app .muted{color:#cbd5e1!important}
+html[data-theme="dark"] #app .obrixDarkDanger,html[data-theme="dark"] #app .obrixDarkDanger *,html[data-theme="dark"] .modalBack .obrixDarkDanger,html[data-theme="dark"] .modalBack .obrixDarkDanger *{background:#0d1722!important;background-color:#0d1722!important;background-image:none!important;border-color:#ef4444!important;color:#fff!important;-webkit-text-fill-color:#fff!important;box-shadow:none!important}
+html[data-theme="dark"] #app .obrixDarkRunning,html[data-theme="dark"] #app .obrixDarkRunning *{color:#fff!important;-webkit-text-fill-color:#fff!important}
+`;
+function style(){let s=document.getElementById(ID);if(!s){s=document.createElement('style');s.id=ID;s.textContent=css;(document.head||document.documentElement).appendChild(s)}}
+function classify(root=document){root.querySelectorAll?.('#app button,#app [role="button"],.modalBack button').forEach(b=>{const t=String(b.textContent||'').replace(/\s+/g,' ').trim();b.classList.toggle('obrixDarkDanger',/\b(apagar|excluir|remover|deletar)\b/i.test(t)||b.matches('.danger,.perigo,.orcPerigo,.diarioPerigo,.excluir,.accountDeleteBtn,[data-check-del],#cfgExcluirConta'));b.classList.toggle('obrixDarkRunning',/em andamento/i.test(t))})}
+let q=false;function apply(){q=false;style();classify()}function queue(){if(q)return;q=true;requestAnimationFrame(apply)}
+style();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
+const app=document.getElementById('app');if(app)new MutationObserver(queue).observe(app,{childList:true,subtree:true});
+new MutationObserver(queue).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','class']});
+window.addEventListener('obrix:modules-ready',queue);window.addEventListener('obrix:modules-online-ready',queue);window.addEventListener('obrix:grupo-pronto',queue);window.addEventListener('obrix:feature-pronto',queue);window.addEventListener('pageshow',queue);
+})();
