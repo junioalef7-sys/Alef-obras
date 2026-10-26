@@ -1,0 +1,60 @@
+name: Validar Faxina Visual OBRIX
+
+on:
+  push:
+    branches: [teste-faxina-visual]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: obrix-faxina-visual
+  cancel-in-progress: true
+
+jobs:
+  validar:
+    name: Validar branch de teste sem publicar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar JavaScript OBRIX
+        run: |
+          set -e
+          for f in obrix-*.js; do
+            [ -f "$f" ] && node --check "$f"
+          done
+      - name: Blindagem completa do modo offline v3 homologado
+        env:
+          OBRIX_OFFLINE_HOMOLOGATED_COMMIT: 884b2d8a63a900da7e29aac6f520fa852499313b
+        run: |
+          set -e
+          node .github/scripts/validate-obrix-offline-v3-lock.mjs
+      - name: Blindagem geral contra regressao
+        run: |
+          set -e
+          test -f obrix-release-lock.json
+          grep -q "pointerdown" obrix-estoque-saida-obra.js
+          grep -q "e.isTrusted" obrix-estoque-saida-obra.js
+          grep -q "Carregando dados" obrix-estoque-saida-obra.js
+          grep -q "obrixPermanentNeutral" obrix-equipe-botoes-neutros-v1.js
+          grep -q "data-extra=\\\"vale\\\"" obrix-equipe-botoes-neutros-v1.js
+          grep -q "f==='ativos'&&ativo(x)" obrix-equipe-estoque-fix-v1.js
+          grep -q "f==='inativos'&&!ativo(x)" obrix-equipe-estoque-fix-v1.js
+          grep -q "obrix-equipe-botoes-neutros-v1.js" obrix-sw.js
+          grep -q "obrix-equipe-estoque-fix-v1.js" obrix-sw.js
+          grep -q "obrix-estoque-saida-obra.js" obrix-sw.js
+      - name: Validar arquivos principais
+        run: |
+          set -e
+          grep -q 'OBRIX — Gestão de Obras' obrix.html
+          grep -q 'gnvclctqnwxnjxydzhwc.supabase.co' obrix-backend-adapter.js
+          grep -q 'OBRIX' obrix-manifest.webmanifest
+      - name: Confirmar que este fluxo nao publica
+        run: |
+          echo 'Branch de teste validada. Nenhum deploy e executado por este workflow.'
