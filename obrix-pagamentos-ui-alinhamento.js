@@ -9,111 +9,25 @@ const ICONS={
   cartao:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 2v2h18V7H3Zm0 5v5h18v-5H3Zm2 2h6v2H5v-2Z" fill="currentColor"/></svg>'
 };
 
-function decorateButton(btn,type,label){
-  if(!btn||btn.dataset.obrixPayDecorated==='1')return;
-  btn.dataset.obrixPayDecorated='1';
-  btn.classList.add('obrixPayMethod');
-  btn.setAttribute('aria-label',label);
-  btn.innerHTML=`<span class="obrixPayIcon">${ICONS[type]}</span><span class="obrixPayLabel">${label}</span>`;
+function decorateButton(btn,type,label){if(!btn||btn.dataset.obrixPayDecorated==='1')return;btn.dataset.obrixPayDecorated='1';btn.classList.add('obrixPayMethod');btn.setAttribute('aria-label',label);btn.innerHTML=`<span class="obrixPayIcon">${ICONS[type]}</span><span class="obrixPayLabel">${label}</span>`}
+function decorateCard(card){if(!card||card.dataset.obrixPayReady==='1')return;const pix=card.querySelector('[data-ass-plano]'),row=card.querySelector('.assCobEfiRow');if(!pix||!row)return;const boleto=row.querySelector('[data-ass-cob-efi$=":boleto"]'),cartao=row.querySelector('[data-ass-cob-efi$=":cartao"]');if(!boleto||!cartao)return;card.dataset.obrixPayReady='1';row.classList.add('obrixPayStack');decorateButton(pix,'pix','Pagar com Pix');decorateButton(boleto,'boleto','Pagar com Boleto');decorateButton(cartao,'cartao','Pagar com Cartão');row.append(pix,boleto,cartao)}
+async function enviarCard(card,titulo){const texto=String(card?.innerText||'').replace(/\b(Editar|Imprimir|Apagar|Enviar|Excluir)\b/g,'').replace(/\n{3,}/g,'\n\n').trim();try{if(navigator.share){await navigator.share({title:titulo,text:texto});return}await navigator.clipboard.writeText(texto);alert('Informações copiadas para você enviar.')}catch(e){if(e?.name!=='AbortError')alert('Não foi possível abrir o compartilhamento agora.')}}
+function prepararAcoes(){
+  document.querySelectorAll('#listaObras .item').forEach(card=>{const a=card.querySelector('.actions');if(!a)return;const apagar=[...a.querySelectorAll('button')].find(b=>/^excluir$/i.test(b.textContent.trim())||/^apagar$/i.test(b.textContent.trim()));if(apagar){apagar.textContent='Apagar';apagar.classList.add('obrixWhiteAction')}if(!a.querySelector('.obrixEnviarObra')){const b=document.createElement('button');b.type='button';b.className='obrixWhiteAction obrixEnviarObra';b.textContent='Enviar';b.onclick=()=>enviarCard(card,'Obra — OBRIX');apagar?a.insertBefore(b,apagar):a.appendChild(b)}});
+  document.querySelectorAll('#orcLista .orcCard').forEach(card=>{const a=card.querySelector('.orcActions');if(!a)return;const apagar=a.querySelector('.excluir')||[...a.querySelectorAll('button')].find(b=>/^excluir$/i.test(b.textContent.trim())||/^apagar$/i.test(b.textContent.trim()));if(apagar){apagar.textContent='Apagar';apagar.classList.add('obrixWhiteAction')}if(!a.querySelector('.obrixEnviarOrcamento')){const b=document.createElement('button');b.type='button';b.className='btn obrixWhiteAction obrixEnviarOrcamento';b.textContent='Enviar';b.onclick=()=>enviarCard(card,'Orçamento — OBRIX');apagar?a.insertBefore(b,apagar):a.appendChild(b)}});
 }
+function scan(){const box=document.getElementById('assPlanos');if(box)box.querySelectorAll('.assPlano').forEach(decorateCard);prepararAcoes()}
 
-function decorateCard(card){
-  if(!card||card.dataset.obrixPayReady==='1')return;
-  const pix=card.querySelector('[data-ass-plano]');
-  const row=card.querySelector('.assCobEfiRow');
-  if(!pix||!row)return;
-  const boleto=row.querySelector('[data-ass-cob-efi$=":boleto"]');
-  const cartao=row.querySelector('[data-ass-cob-efi$=":cartao"]');
-  if(!boleto||!cartao)return;
-
-  card.dataset.obrixPayReady='1';
-  row.classList.add('obrixPayStack');
-  decorateButton(pix,'pix','Pagar com Pix');
-  decorateButton(boleto,'boleto','Pagar com Boleto');
-  decorateButton(cartao,'cartao','Pagar com Cartão');
-  row.append(pix,boleto,cartao);
-}
-
-function scan(){
-  const box=document.getElementById('assPlanos');
-  if(!box)return;
-  box.querySelectorAll('.assPlano').forEach(decorateCard);
-}
-
-const css=document.createElement('style');
-css.id='obrixPagamentosUiAlinhamentoCss';
-css.textContent=`
-#assPlanos .assCobEfiRow.obrixPayStack{
-  display:flex!important;
-  flex-direction:column!important;
-  gap:10px!important;
-  width:100%!important;
-  margin-top:12px!important;
-  background:transparent!important;
-}
-#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:flex-start!important;
-  gap:12px!important;
-  width:100%!important;
-  min-width:0!important;
-  margin:0!important;
-  padding:13px 16px!important;
-  border:1px solid #cbd5e1!important;
-  border-radius:12px!important;
-  background:#ffffff!important;
-  color:#0f172a!important;
-  box-shadow:none!important;
-  text-align:left!important;
-  font-weight:800!important;
-}
-#assPlanos .obrixPayIcon{
-  display:inline-flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  flex:0 0 24px!important;
-  width:24px!important;
-  height:24px!important;
-}
-#assPlanos .obrixPayIcon svg{width:22px!important;height:22px!important;display:block!important}
-#assPlanos .obrixPayLabel{display:block!important;flex:1!important;text-align:left!important}
-#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,
-#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,
-#assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{
-  background:#f8fafc!important;
-  color:#0f172a!important;
-  border-color:#94a3b8!important;
-}
-html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod,
-body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod{
-  background:#111827!important;
-  color:#f8fafc!important;
-  border-color:#475569!important;
-}
-html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,
-html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,
-html[data-theme="dark"] #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active,
-body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,
-body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,
-body.dark #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{
-  background:#1e293b!important;
-  color:#f8fafc!important;
-  border-color:#64748b!important;
-}
+const css=document.createElement('style');css.id='obrixPagamentosUiAlinhamentoCss';css.textContent=`
+#assPlanos .assCobEfiRow.obrixPayStack{display:flex!important;flex-direction:column!important;gap:10px!important;width:100%!important;margin-top:12px!important;background:transparent!important;background-color:transparent!important}
+#app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod,#app #assPlanos button.obrixPayMethod{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;width:100%!important;min-width:0!important;margin:0!important;padding:13px 16px!important;border:1px solid #cbd5e1!important;border-radius:12px!important;background:#fff!important;background-color:#fff!important;background-image:none!important;color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;opacity:1!important;transform:none!important;transition:none!important;animation:none!important;appearance:none!important;-webkit-appearance:none!important;text-align:left!important;font-weight:800!important}
+#app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,#app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,#app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{background:#fff!important;background-color:#fff!important;color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;border-color:#cbd5e1!important;box-shadow:none!important;filter:none!important;opacity:1!important;transform:none!important}
+#assPlanos .obrixPayIcon{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 24px!important;width:24px!important;height:24px!important}#assPlanos .obrixPayIcon svg{width:22px!important;height:22px!important;display:block!important}#assPlanos .obrixPayLabel{display:block!important;flex:1!important;text-align:left!important}
+html[data-theme="dark"] #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod,html[data-theme="dark"] #app #assPlanos button.obrixPayMethod,body.dark #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod,body.dark #app #assPlanos button.obrixPayMethod{background:#0d1722!important;background-color:#0d1722!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#293b4d!important;box-shadow:none!important;filter:none!important;opacity:1!important;transform:none!important;transition:none!important;animation:none!important}
+html[data-theme="dark"] #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,html[data-theme="dark"] #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,html[data-theme="dark"] #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active,body.dark #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:hover,body.dark #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:focus,body.dark #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod:active{background:#0d1722!important;background-color:#0d1722!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#293b4d!important;box-shadow:none!important;filter:none!important;opacity:1!important;transform:none!important}
+#app #listaObras button.obrixWhiteAction,#app #orcLista button.obrixWhiteAction,html[data-theme="dark"] #app #listaObras button.obrixWhiteAction,html[data-theme="dark"] #app #orcLista button.obrixWhiteAction,body.dark #app #listaObras button.obrixWhiteAction,body.dark #app #orcLista button.obrixWhiteAction{background:#fff!important;background-color:#fff!important;background-image:none!important;color:#000!important;-webkit-text-fill-color:#000!important;border:1px solid #cbd5e1!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;opacity:1!important;transition:none!important;animation:none!important}
 `;
 document.head.appendChild(css);
-
-let scheduled=false;
-function scheduleScan(){
-  if(scheduled)return;
-  scheduled=true;
-  requestAnimationFrame(()=>{scheduled=false;scan()});
-}
-
-new MutationObserver(scheduleScan).observe(document.body,{childList:true,subtree:true});
-document.addEventListener('obrix:feature-pronto',scheduleScan);
-setTimeout(scan,100);
-setTimeout(scan,500);
-setTimeout(scan,1200);
+let scheduled=false;function scheduleScan(){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;scan()})}
+new MutationObserver(scheduleScan).observe(document.body,{childList:true,subtree:true});document.addEventListener('obrix:feature-pronto',scheduleScan);window.addEventListener('obrix:modules-ready',scheduleScan);setTimeout(scan,100);setTimeout(scan,500);setTimeout(scan,1200);
 })();
