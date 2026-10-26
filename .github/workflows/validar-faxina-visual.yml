@@ -55,6 +55,19 @@ jobs:
           grep -q 'OBRIX — Gestão de Obras' obrix.html
           grep -q 'gnvclctqnwxnjxydzhwc.supabase.co' obrix-backend-adapter.js
           grep -q 'OBRIX' obrix-manifest.webmanifest
+      - name: Preparar pacote de preview
+        run: |
+          set -e
+          rm -rf .preview
+          mkdir .preview
+          cp index.html privacidade.html .preview/
+          cp obrix* .preview/
+      - name: Salvar preview para teste
+        uses: actions/upload-artifact@v4
+        with:
+          name: obrix-faxina-visual-preview
+          path: .preview
+          retention-days: 7
       - name: Confirmar que este fluxo nao publica
         run: |
-          echo 'Branch de teste validada. Nenhum deploy e executado por este workflow.'
+          echo 'Branch de teste validada e pacote de preview gerado. Nenhum deploy e executado por este workflow.'
