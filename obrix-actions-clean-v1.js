@@ -10,8 +10,16 @@ function clean(){
     old.classList.add('obrixApagarRegistro');
   });
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',clean,{once:true});else clean();
-['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto'].forEach(n=>window.addEventListener(n,()=>setTimeout(clean,0)));
-document.addEventListener('click',e=>{const h=e.target.closest?.('#diarioMain .diarioItemHead,#orcamentosMain .orcCardHead');if(h)setTimeout(clean,0)},true);
-window.OBRIX_ACTIONS_CLEAN_V1={apply:clean};
+function ajudaGelo(){
+  if(!document.getElementById('obrix-ajuda-gelo-style')){
+    const s=document.createElement('style');s.id='obrix-ajuda-gelo-style';s.textContent=`html[data-theme="light"] #suporteMain,html[data-theme="light"] #suporteMain .hero,html[data-theme="light"] #suporteMain .card,html[data-theme="light"] #suporteMain .sectionHead,html[data-theme="light"] #suporteMain .supResumo>div,html[data-theme="light"] #suporteMain .supTicket,html[data-theme="light"] #suporteMain .supMsg,html[data-theme="light"] #suporteMain .supAdminActions button,html[data-theme="light"] #suporteMain .supTabs button,html[data-theme="light"] #suporteMain input,html[data-theme="light"] #suporteMain select,html[data-theme="light"] #suporteMain textarea{background:#eef2f6!important;background-color:#eef2f6!important;background-image:none!important;color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;border-color:#cbd5df!important;box-shadow:none!important}html[data-theme="light"] #suporteMain .supTabs button.active{background:#e5eaf0!important;background-color:#e5eaf0!important;color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;border-color:#cbd5df!important}#suporteMain #supVoltar{display:none!important}`;document.head.appendChild(s);
+  }
+  document.getElementById('supVoltar')?.remove();
+}
+function apply(){clean();ajudaGelo()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
+['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','pageshow'].forEach(n=>window.addEventListener(n,()=>setTimeout(apply,0)));
+document.addEventListener('click',e=>{const h=e.target.closest?.('#diarioMain .diarioItemHead,#orcamentosMain .orcCardHead');if(h)setTimeout(clean,0);setTimeout(ajudaGelo,0)},true);
+new MutationObserver(()=>ajudaGelo()).observe(document.body,{childList:true,subtree:true});
+window.OBRIX_ACTIONS_CLEAN_V1={apply};
 })();
