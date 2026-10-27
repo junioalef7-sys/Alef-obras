@@ -5,19 +5,26 @@ function aplicar(){
  const main=document.getElementById('financeiroMain');if(!main)return;
  const rec=document.getElementById('fmRecebido'),des=document.getElementById('fmDespesas'),res=document.getElementById('fmResultado');
  if(rec)rec.classList.add('obxFinRecebido');if(des)des.classList.add('obxFinDespesa');if(res)res.classList.add('obxFinResultado');
+ const br=document.getElementById('fmReceita'),bd=document.getElementById('fmDespesa');if(br)br.classList.add('obxFinBtnReceita');if(bd)bd.classList.add('obxFinBtnDespesa');
  main.querySelectorAll('[data-fin-card="1"]').forEach(card=>{
-   const tipo=card.dataset.tipo;
-   const valor=card.querySelector('.mini b');
+   const tipo=card.dataset.tipo;const valor=card.querySelector('.mini b');
    if(valor){valor.classList.toggle('obxFinValorDespesa',tipo==='despesa');valor.classList.toggle('obxFinValorReceita',tipo==='receita')}
    const btn=card.querySelector('[data-fin="excluir"]');if(btn){btn.textContent='Apagar';btn.classList.add('obxFinApagar')}
+ });
+ main.querySelectorAll('[id*="check" i],[class*="check" i]').forEach(box=>{
+   box.querySelectorAll('[data-tipo="receita"] b,.receita b,[class*="receita"] strong,[class*="receita"] b').forEach(el=>el.classList.add('obxFinValorReceita'));
+   box.querySelectorAll('[data-tipo="despesa"] b,.despesa b,[class*="despesa"] strong,[class*="despesa"] b').forEach(el=>el.classList.add('obxFinValorDespesa'));
+   box.querySelectorAll('[class*="resultado"] strong,[class*="resultado"] b,[class*="saldo"] strong,[class*="saldo"] b').forEach(el=>el.classList.add('obxFinValorResultado'));
  });
 }
 const css=document.createElement('style');css.id='obrix-financeiro-visual-style';css.textContent=`
 #financeiroMain #fmRecebido.obxFinRecebido{color:#35c759!important;-webkit-text-fill-color:#35c759!important}
 #financeiroMain #fmDespesas.obxFinDespesa{color:#ff3b30!important;-webkit-text-fill-color:#ff3b30!important}
-#financeiroMain #fmResultado.obxFinResultado{color:#3b82f6!important;-webkit-text-fill-color:#3b82f6!important}
+#financeiroMain #fmResultado.obxFinResultado,.obxFinValorResultado{color:#3b82f6!important;-webkit-text-fill-color:#3b82f6!important}
 #financeiroMain [data-fin-card="1"][data-tipo="despesa"] .mini b,.obxFinValorDespesa{color:#ff3b30!important;-webkit-text-fill-color:#ff3b30!important}
 #financeiroMain [data-fin-card="1"][data-tipo="receita"] .mini b,.obxFinValorReceita{color:#35c759!important;-webkit-text-fill-color:#35c759!important}
+#financeiroMain #fmReceita.obxFinBtnReceita{background:#16a34a!important;border-color:#16a34a!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
+#financeiroMain #fmDespesa.obxFinBtnDespesa{background:#dc2626!important;border-color:#dc2626!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
 #financeiroMain .actions .obxFinApagar{background:transparent!important;color:#ff3b30!important;-webkit-text-fill-color:#ff3b30!important;border:1.5px solid #ff3b30!important;box-shadow:none!important}
 `;
 document.head.appendChild(css);
