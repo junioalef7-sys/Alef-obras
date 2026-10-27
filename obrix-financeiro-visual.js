@@ -28,13 +28,13 @@ const css=document.createElement('style');css.id='obrix-financeiro-visual-style'
 #financeiroMain [data-fin-card="1"][data-tipo="receita"] .mini b,.obxFinValorReceita{color:#35c759!important;-webkit-text-fill-color:#35c759!important}
 #financeiroMain #fmReceita.obxFinBtnReceita{background:#16a34a!important;border-color:#16a34a!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
 #financeiroMain #fmDespesa.obxFinBtnDespesa{background:#dc2626!important;border-color:#dc2626!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
-#financeiroMain .actions .obxFinApagar{background:transparent!important;color:#ff3b30!important;-webkit-text-fill-color:#ff3b30!important;border:1.5px solid #ff3b30!important;box-shadow:none!important}
+#financeiroMain .actions .obxFinApagar{background:transparent!important;color:#ff3b30!important;-webkit-text-fill-color:#ff3b30!important;border:0!important;outline:0!important;box-shadow:none!important}
 #financeiroMain .obxFinHeroLimpo{margin-bottom:10px!important;padding-bottom:0!important}
 #financeiroMain .obxFinHeroLimpo h1{margin-bottom:0!important}
 #financeiroMain .kpis{gap:8px!important}
 #financeiroMain .kpi{padding:12px!important;min-height:76px!important;border-radius:12px!important}
 #financeiroMain .kpi small{font-size:11px!important;line-height:1.2!important}
-#financeiroMain .kpi strong{font-size:17px!important;line-height:1.2!important;margin-top:4px!important}
+#financeiroMain .kpi strong{font-size:19px!important;line-height:1.2!important;margin-top:4px!important}
 #financeiroMain .obxFinSectionHead{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;margin-top:10px!important}
 #financeiroMain .obxFinSectionHead>strong{order:2!important;display:block!important;width:100%!important}
 #financeiroMain .obxFinAcoes{order:1!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px!important;width:100%!important}
@@ -48,7 +48,7 @@ const css=document.createElement('style');css.id='obrix-financeiro-visual-style'
 #financeiroMain .obxFinCardCompacto .mini b{font-size:16px!important}
 #financeiroMain .obxFinCardCompacto .actions{margin-top:8px!important;gap:6px!important}
 #financeiroMain .obxFinCardCompacto .actions button{min-height:38px!important;padding:7px 11px!important}
-@media(max-width:640px){#financeiroMain .kpi{padding:10px!important;min-height:70px!important}#financeiroMain .kpi strong{font-size:16px!important}#financeiroMain .obxFinCardCompacto{padding:10px!important}#financeiroMain .obxFinAcoes{gap:7px!important}}
+@media(max-width:640px){#financeiroMain .kpi{padding:10px!important;min-height:70px!important}#financeiroMain .kpi strong{font-size:18px!important}#financeiroMain .obxFinCardCompacto{padding:10px!important}#financeiroMain .obxFinAcoes{gap:7px!important}}
 `;
 document.head.appendChild(css);
 const init=()=>{aplicar();const main=document.getElementById('financeiroMain');if(main&&!main.__obxFinVisual){main.__obxFinVisual=true;new MutationObserver(()=>requestAnimationFrame(aplicar)).observe(main,{childList:true,subtree:true})}[100,400,900,1800].forEach(ms=>setTimeout(aplicar,ms))};
