@@ -28,7 +28,7 @@ const css=document.createElement('style');css.id='obrix-financeiro-visual-style'
 #financeiroMain [data-fin-card="1"][data-tipo="receita"] .mini b,.obxFinValorReceita{color:#35c759!important;-webkit-text-fill-color:#35c759!important}
 #financeiroMain #fmReceita.obxFinBtnReceita{background:#16a34a!important;border-color:#16a34a!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
 #financeiroMain #fmDespesa.obxFinBtnDespesa{background:#dc2626!important;border-color:#dc2626!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
-#financeiroMain .actions .obxFinApagar{background:transparent!important;color:#ff3b30!important;-webkit-text-fill-color:#ff3b30!important;border:0!important;outline:0!important;box-shadow:none!important}
+#financeiroMain .actions .obxFinApagar{background:transparent!important;color:#ff3b30!important;-webkit-text-fill-color:#ff3b30!important;border:1.5px solid #ff3b30!important;outline:0!important;box-shadow:none!important}
 #financeiroMain .obxFinHeroLimpo{margin-bottom:10px!important;padding-bottom:0!important}
 #financeiroMain .obxFinHeroLimpo h1{margin-bottom:0!important}
 #financeiroMain .kpis{gap:8px!important}
