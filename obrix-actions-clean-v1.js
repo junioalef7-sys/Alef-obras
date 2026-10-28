@@ -16,10 +16,33 @@ function ajudaGelo(){
   }
   document.getElementById('supVoltar')?.remove();
 }
-function apply(){clean();ajudaGelo()}
+function configPerigo(){
+  if(!document.getElementById('obrix-config-perigo-style')){
+    const s=document.createElement('style');s.id='obrix-config-perigo-style';s.textContent=`
+#configMain .obrixConfigPerigo,.obrixConfigPerigo{background:var(--ob-surface-2)!important;background-color:var(--ob-surface-2)!important;background-image:none!important;color:#dc2626!important;-webkit-text-fill-color:#dc2626!important;border:2px solid #dc2626!important;box-shadow:none!important}
+html[data-theme="dark"] #configMain .obrixConfigModoClaro,html[data-theme="dark"] .obrixConfigModoClaro{background:#f8fafc!important;background-color:#f8fafc!important;background-image:none!important;color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;border-color:#cbd5df!important;box-shadow:none!important}
+html[data-theme="dark"] #configMain .obrixConfigModoClaro *,html[data-theme="dark"] .obrixConfigModoClaro *{color:#0f172a!important;-webkit-text-fill-color:#0f172a!important}
+html[data-theme="dark"] #configMain .obrixConfigModoClaro .obrixSol,html[data-theme="dark"] .obrixConfigModoClaro .obrixSol{color:#d4a017!important;-webkit-text-fill-color:#d4a017!important}
+`;
+    document.head.appendChild(s);
+  }
+  const perigos=new Set(['apagar equipe','apagar obras','apagar financeiro','apagar tudo','excluir conta','excluir conta definitivamente']);
+  document.querySelectorAll('#configMain button,#configMain .btn,#configMain [role="button"],.modalBack button,.modal button,[role="dialog"] button').forEach(b=>{
+    const t=String(b.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+    b.classList.toggle('obrixConfigPerigo',perigos.has(t));
+    const modoClaro=t==='modo claro'||t.includes('modo claro');
+    b.classList.toggle('obrixConfigModoClaro',modoClaro);
+    if(modoClaro){
+      const sol=[...b.querySelectorAll('span,i,svg')].find(e=>/☀|sol|sun/i.test(String(e.textContent||'')+' '+String(e.className?.baseVal||e.className||'')+' '+String(e.getAttribute?.('aria-label')||'')));
+      if(sol)sol.classList.add('obrixSol');
+    }
+  });
+}
+function apply(){clean();ajudaGelo();configPerigo()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
 ['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','pageshow'].forEach(n=>window.addEventListener(n,()=>setTimeout(apply,0)));
-document.addEventListener('click',e=>{const h=e.target.closest?.('#diarioMain .diarioItemHead,#orcamentosMain .orcCardHead');if(h)setTimeout(clean,0);setTimeout(ajudaGelo,0)},true);
-new MutationObserver(()=>ajudaGelo()).observe(document.body,{childList:true,subtree:true});
+document.addEventListener('click',e=>{const h=e.target.closest?.('#diarioMain .diarioItemHead,#orcamentosMain .orcCardHead');if(h)setTimeout(clean,0);setTimeout(()=>{ajudaGelo();configPerigo()},0)},true);
+new MutationObserver(()=>{ajudaGelo();configPerigo()}).observe(document.body,{childList:true,subtree:true});
+new MutationObserver(()=>configPerigo()).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 window.OBRIX_ACTIONS_CLEAN_V1={apply};
 })();
