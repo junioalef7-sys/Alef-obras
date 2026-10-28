@@ -16,9 +16,10 @@ function configPerigo(){
     }
   });
 }
-function apply(){clean();ajudaGelo();configPerigo()}
+function financeiroCores(){const root=document.getElementById('financeiroMain');if(!root)return;root.querySelectorAll('button,.btn,[role="button"]').forEach(b=>{const t=String(b.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();if(t.includes('receita')){b.classList.add('obrixFinReceita');imp(b,'background','#16a34a');imp(b,'background-color','#16a34a');imp(b,'background-image','none');imp(b,'color','#fff');imp(b,'-webkit-text-fill-color','#fff');imp(b,'border-color','#16a34a')}else if(t.includes('despesa')){b.classList.add('obrixFinDespesa');imp(b,'background','#dc2626');imp(b,'background-color','#dc2626');imp(b,'background-image','none');imp(b,'color','#fff');imp(b,'-webkit-text-fill-color','#fff');imp(b,'border-color','#dc2626')}})}
+function apply(){clean();ajudaGelo();configPerigo();financeiroCores()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
 ['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','pageshow','obrix:theme-applied'].forEach(n=>window.addEventListener(n,()=>setTimeout(apply,0)));
-document.addEventListener('click',e=>{const h=e.target.closest?.('#diarioMain .diarioItemHead,#orcamentosMain .orcCardHead');if(h)setTimeout(clean,0);setTimeout(()=>{ajudaGelo();configPerigo()},0);setTimeout(configPerigo,150)},true);
-new MutationObserver(()=>{ajudaGelo();configPerigo()}).observe(document.body,{childList:true,subtree:true});new MutationObserver(()=>setTimeout(configPerigo,0)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});window.OBRIX_ACTIONS_CLEAN_V1={apply};
+document.addEventListener('click',e=>{const h=e.target.closest?.('#diarioMain .diarioItemHead,#orcamentosMain .orcCardHead');if(h)setTimeout(clean,0);setTimeout(()=>{ajudaGelo();configPerigo();financeiroCores()},0);setTimeout(()=>{configPerigo();financeiroCores()},150)},true);
+new MutationObserver(()=>{ajudaGelo();configPerigo();financeiroCores()}).observe(document.body,{childList:true,subtree:true});new MutationObserver(()=>setTimeout(()=>{configPerigo();financeiroCores()},0)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});window.OBRIX_ACTIONS_CLEAN_V1={apply};
 })();
