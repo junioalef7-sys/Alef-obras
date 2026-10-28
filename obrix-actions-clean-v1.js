@@ -16,10 +16,17 @@ function configPerigo(){
     }
   });
 }
+function ajustesPontuais(){
+  const dark=document.documentElement.dataset.theme==='dark';
+  const claro=document.getElementById('cfgClaro');
+  if(claro&&dark){imp(claro,'background','#f8fafc');imp(claro,'background-color','#f8fafc');imp(claro,'background-image','none');imp(claro,'color','#0f172a');imp(claro,'-webkit-text-fill-color','#0f172a');imp(claro,'border-color','#cbd5df');claro.querySelectorAll('*').forEach(e=>{imp(e,'color','#0f172a');imp(e,'-webkit-text-fill-color','#0f172a')})}
+  const avatar=document.getElementById('menuAvatar');
+  if(avatar&&dark){imp(avatar,'background','#26384d');imp(avatar,'background-color','#26384d');imp(avatar,'background-image','none');imp(avatar,'color','#f8fafc');imp(avatar,'-webkit-text-fill-color','#f8fafc')}
+}
 function financeiroCores(){const root=document.getElementById('financeiroMain');if(!root)return;root.querySelectorAll('button,.btn,[role="button"]').forEach(b=>{const t=String(b.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();if(t.includes('receita')){b.classList.add('obrixFinReceita');imp(b,'background','#16a34a');imp(b,'background-color','#16a34a');imp(b,'background-image','none');imp(b,'color','#fff');imp(b,'-webkit-text-fill-color','#fff');imp(b,'border-color','#16a34a')}else if(t.includes('despesa')){b.classList.add('obrixFinDespesa');imp(b,'background','#dc2626');imp(b,'background-color','#dc2626');imp(b,'background-image','none');imp(b,'color','#fff');imp(b,'-webkit-text-fill-color','#fff');imp(b,'border-color','#dc2626')}})}
-function apply(){clean();ajudaGelo();configPerigo();financeiroCores()}
+function apply(){clean();ajudaGelo();configPerigo();ajustesPontuais();financeiroCores()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
 ['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','pageshow','obrix:theme-applied'].forEach(n=>window.addEventListener(n,()=>setTimeout(apply,0)));
-document.addEventListener('click',e=>{const h=e.target.closest?.('#diarioMain .diarioItemHead,#orcamentosMain .orcCardHead');if(h)setTimeout(clean,0);setTimeout(()=>{ajudaGelo();configPerigo();financeiroCores()},0);setTimeout(()=>{configPerigo();financeiroCores()},150)},true);
-new MutationObserver(()=>{ajudaGelo();configPerigo();financeiroCores()}).observe(document.body,{childList:true,subtree:true});new MutationObserver(()=>setTimeout(()=>{configPerigo();financeiroCores()},0)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});window.OBRIX_ACTIONS_CLEAN_V1={apply};
+document.addEventListener('click',e=>{const h=e.target.closest?.('#diarioMain .diarioItemHead,#orcamentosMain .orcCardHead');if(h)setTimeout(clean,0);setTimeout(()=>{ajudaGelo();configPerigo();ajustesPontuais();financeiroCores()},0);setTimeout(()=>{configPerigo();ajustesPontuais();financeiroCores()},150)},true);
+new MutationObserver(()=>{ajudaGelo();configPerigo();ajustesPontuais();financeiroCores()}).observe(document.body,{childList:true,subtree:true});new MutationObserver(()=>setTimeout(()=>{configPerigo();ajustesPontuais();financeiroCores()},0)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});window.OBRIX_ACTIONS_CLEAN_V1={apply};
 })();
