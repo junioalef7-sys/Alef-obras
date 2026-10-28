@@ -1,5 +1,5 @@
-const CACHE='obrix-offline-v61-v3-nav';
-const BUILD='20261024-offline-v3-nav1';
+const CACHE='obrix-offline-v62-ios-recovery';
+const BUILD='20261028-ios-recovery1';
 const CDN_SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1';
 const CDN_HTML2CANVAS='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const CDN_JSPDF='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
