@@ -13,14 +13,11 @@ html[data-theme="light"] #configMain .obrixApagarCongelado{background:#fff!impor
 `;
 document.head.appendChild(css);
 function marcarAndamento(){const root=document.getElementById('inicio');if(!root)return;root.querySelectorAll('span,strong,small,div,button').forEach(el=>{const t=norm(el.textContent);if(t==='em andamento'||t==='andamento')el.classList.add('obrixAndamentoCongelado')})}
-function removerFechar(id){const root=document.getElementById(id);if(!root)return;root.querySelectorAll('button,.btn,[role="button"]').forEach(b=>{if(norm(b.textContent)==='fechar'&&!b.closest('.modal,.modalBack,[role="dialog"]'))b.remove()})}
-function removerVoltarAjuda(){const root=document.getElementById('suporteMain');if(!root)return;root.querySelectorAll('.hero button,.card button,.hero .btn,.card .btn').forEach(b=>{if(norm(b.textContent)==='voltar')b.remove()})}
-function configPerigo(){const root=document.getElementById('configMain');if(!root)return;root.querySelectorAll('button,.btn,[role="button"]').forEach(b=>{const t=norm(b.textContent);b.classList.toggle('obrixApagarCongelado',t==='apagar equipe'||t==='apagar financeiro')})}
-function financeiroBusca(){if(document.getElementById('financeiroMain')&&!window.OBRIX_FIN_BUSCA&&window.OBRIX_POS_LOGIN_LOADER?.loadGroup){window.OBRIX_POS_LOGIN_LOADER.loadGroup('financeiro').then(()=>{window.OBRIX_FIN_BUSCA?.refreshOptions?.();window.OBRIX_FIN_BUSCA?.aplicar?.()}).catch(()=>{})}else window.OBRIX_FIN_BUSCA?.refreshOptions?.()}
-function run(){marcarAndamento();removerFechar('financeiroMain');removerFechar('equipe');removerFechar('diarioMain');removerVoltarAjuda();configPerigo();financeiroBusca()}
-let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(run,60)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(run,300),{once:true});else setTimeout(run,300);
-['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','obrix:theme-applied'].forEach(e=>window.addEventListener(e,schedule));
-window.addEventListener('pageshow',schedule);document.addEventListener('click',()=>setTimeout(run,120),true);
+function removerFechar(id){const root=document.getElementById(id);if(!root)return;root.querySelectorAll('button,.btn,[role="button"]').forEach(b=>{if(norm(b.textContent)==='fechar'&&!b.closest('.modal,.modalBack,[role="dialog"]'))b.style.display='none'})}
+function removerVoltarAjuda(){const root=document.getElementById('suporteMain');if(!root)return;root.querySelectorAll('.hero button,.card button,.hero .btn,.card .btn').forEach(b=>{if(norm(b.textContent)==='voltar')b.style.display='none'})}
+function configPerigo(){const root=document.getElementById('configMain');if(!root)return;root.querySelectorAll('button,.btn,[role="button"]').forEach(b=>{const t=norm(b.textContent);if(t==='apagar equipe'||t==='apagar financeiro')b.classList.add('obrixApagarCongelado')})}
+function run(){marcarAndamento();removerFechar('financeiroMain');removerFechar('equipe');removerFechar('diarioMain');removerVoltarAjuda();configPerigo();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(run,400),{once:true});else setTimeout(run,400);
+window.addEventListener('pageshow',()=>setTimeout(run,150));
 window.OBRIX_AJUSTES_SOLICITADOS_TESTE={refresh:run};
 })();
