@@ -3,7 +3,7 @@
 if(window.__OBRIX_FIN_VISUAL)return;window.__OBRIX_FIN_VISUAL=true;
 function aplicar(){
  const main=document.getElementById('financeiroMain');if(!main)return;
- const hero=main.querySelector('.hero');if(hero){hero.querySelectorAll('p').forEach(p=>p.remove());hero.classList.add('obxFinHeroLimpo')}
+ const hero=main.querySelector('.hero');if(hero){hero.querySelectorAll('p').forEach(p=>p.remove());hero.classList.add('obxFinHeroLimpo');hero.querySelectorAll('button,.btn,[role="button"],a').forEach(b=>{const t=String(b.textContent||'').replace(/\s+/g,'').trim(),a=String(b.getAttribute('aria-label')||'').toLowerCase(),ti=String(b.getAttribute('title')||'').toLowerCase();if(t==='←'||t==='‹'||t==='⬅'||t==='↩'||a.includes('voltar')||ti.includes('voltar'))b.remove()})}
  const rec=document.getElementById('fmRecebido'),des=document.getElementById('fmDespesas'),res=document.getElementById('fmResultado');
  if(rec)rec.classList.add('obxFinRecebido');if(des)des.classList.add('obxFinDespesa');if(res)res.classList.add('obxFinResultado');
  const br=document.getElementById('fmReceita'),bd=document.getElementById('fmDespesa');if(br)br.classList.add('obxFinBtnReceita');if(bd)bd.classList.add('obxFinBtnDespesa');
