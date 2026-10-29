@@ -1,5 +1,5 @@
 (()=>{'use strict';if(window.__OBRIX_EQUIPE_VISUAL_FINAL)return;window.__OBRIX_EQUIPE_VISUAL_FINAL=true;const css=document.createElement('style');css.id='obrix-equipe-visual-final-style';css.textContent=`
-#equipe>.hero>p{display:none!important}
+#equipe>.hero{display:none!important}
 #equipe{background:var(--ob-bg)!important;color:var(--ob-text)!important}
 #equipe .hero,#equipe #listaEquipe>.card,#equipe .obrix-modelo-card{background:var(--ob-surface)!important;background-color:var(--ob-surface)!important;color:var(--ob-text)!important;border-color:var(--ob-border)!important;box-shadow:none!important}
 #equipe .obrix-modelo-pagamento,#equipe .obrix-modelo-pilulas,#equipe .obrix-modelo-pilulas span,#equipe .obrix-modelo-metrica{background:var(--ob-surface-2)!important;background-color:var(--ob-surface-2)!important;color:var(--ob-text)!important;border-color:var(--ob-border)!important;box-shadow:none!important}
