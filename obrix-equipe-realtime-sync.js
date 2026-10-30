@@ -69,7 +69,7 @@ window.addEventListener('online',()=>{setTimeout(iniciar,80);setTimeout(atualiza
 window.addEventListener('focus',()=>{if(visivel()){void iniciar();atualizarAgora()}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&visivel()){void iniciar();atualizarAgora()}});
 ['obrix:modules-ready','obrix:modules-online-ready','obrix:session-shell'].forEach(n=>window.addEventListener(n,()=>setTimeout(iniciar,80)));
-document.addEventListener('click',e=>{const b=e.target.closest?.('#bEquipe,.bottom button');if(!b)return;const t=(b.textContent||'').trim();if(b.id==='bEquipe'||/Equipe/i.test(t)){setTimeout(iniciar,20);setTimeout(pintar,40)}},true);
+document.addEventListener('click',e=>{const b=e.target.closest?.('#bEquipe,.bottom button');if(!b)return;const t=(b.textContent||'').trim();if(b.id==='bEquipe'||/Equipe/i.test(t)){setTimeout(iniciar,20)}},true);
 setTimeout(iniciar,250);setTimeout(iniciar,900);
 window.OBRIX_EQUIPE_REALTIME_SYNC={start:iniciar,refresh:atualizarAgora,status:()=>({ativo:!!canal,iniciando,visivel:visivel(),online:navigator.onLine})};
 })();
