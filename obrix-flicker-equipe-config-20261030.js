@@ -1,0 +1,6 @@
+(()=>{'use strict';if(window.__OBRIX_FLICKER_EQUIPE_CONFIG_20261030)return;window.__OBRIX_FLICKER_EQUIPE_CONFIG_20261030=true;
+const s=document.createElement('style');s.id='obrix-flicker-equipe-config-20261030';s.textContent=`#equipe,#equipeMain,#configMain,#configuracoesMain{animation:none!important;transition:none!important}#equipe *,#equipeMain *,#configMain *,#configuracoesMain *{transition-property:none!important}`;document.head.appendChild(s);
+let raf=0;const stabilize=()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const el=document.querySelector('#equipe:not(.hidden),#equipeMain:not(.hidden),#configMain:not(.hidden),#configuracoesMain:not(.hidden)');if(el){el.style.visibility='visible';el.style.opacity='1'}})};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',stabilize,{once:true});else stabilize();
+const root=document.getElementById('app')||document.body;new MutationObserver(stabilize).observe(root,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});window.addEventListener('obrix:modules-ready',stabilize);window.addEventListener('obrix:modules-online-ready',stabilize);
+})();
