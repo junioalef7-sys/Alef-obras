@@ -1,13 +1,13 @@
 (()=>{
 'use strict';
 if(window.__OBRIX_OBRAS_FIEL)return;window.__OBRIX_OBRAS_FIEL=true;
-const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 let rendering=false,filtro='todas',busca='',detalhe=null;
 const dados=o=>{const extras=window.extras||[],fin=(window.financeiro||[]).filter(x=>(!x.status_lancamento||x.status_lancamento==='ativo')&&String(x.obra_id)===String(o.id)),ex=extras.filter(x=>String(x.obra_id)===String(o.id)).reduce((s,x)=>s+Number(x.valor||0),0),rec=fin.filter(x=>x.tipo==='receita').reduce((s,x)=>s+Number(x.valor||0),0),ds=fin.filter(x=>x.tipo==='despesa'),desp=ds.reduce((s,x)=>s+Number(x.valor||0),0),tot=Number(o.valor_contrato||0)+ex,res=tot-desp,lucro=rec-desp,receber=Math.max(0,tot-rec),margem=tot?res/tot*100:0;return{ex,rec,desp,tot,res,lucro,receber,margem}};
 const status=o=>String(o.status||'planejada').toLowerCase();
 const statusTxt=s=>s==='andamento'?'Em andamento':s==='pausada'?'Pausada':s==='concluida'||s==='concluída'?'Concluída':'Planejada';
 const progresso=o=>Math.max(0,Math.min(100,Number(o.progresso||o.percentual||o.percentual_conclusao||(status(o)==='concluida'?100:0))||0));
-function fotos(id){if(window.OBRIX_REL_FOTO?.open)return window.OBRIX_REL_FOTO.open(id);alert('Relatório fotográfico carregando. Tente novamente em instantes.')}
+async function fotos(id){if(window.OBRIX_REL_FOTO?.open)return window.OBRIX_REL_FOTO.open(id);try{await window.OBRIX_POS_LOGIN_LOADER?.loadGroup?.('obras')}catch(_){}if(window.OBRIX_REL_FOTO?.open)return window.OBRIX_REL_FOTO.open(id);alert('Relatório fotográfico indisponível no momento.')}
 function checklist(id){if(window.OBRIX_CHECKLIST?.open)return window.OBRIX_CHECKLIST.open(id);if(window.OBRIX_CHECKLIST?.abrir)return window.OBRIX_CHECKLIST.abrir(id);window.OBRIX_OBRAS?.abrirChecklist?.(id)}
 function pagamentos(id){if(window.OBRIX_OBRAS_PAGAMENTOS?.open)return window.OBRIX_OBRAS_PAGAMENTOS.open(id);window.OBRIX_OBRAS?.abrirPagamentos?.(id)}
 function acao(icon,titulo,sub,onclick,cor='azul'){return `<button class="obxAcao ${cor}" onclick="${onclick}"><span class="obxIcone">${icon}</span><span><b>${titulo}</b><small>${sub}</small></span><i>›</i></button>`}
