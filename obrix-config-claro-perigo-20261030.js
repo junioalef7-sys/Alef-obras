@@ -4,35 +4,11 @@ if(window.__OBRIX_TESTE_AJUSTES_GERAIS_3110)return;window.__OBRIX_TESTE_AJUSTES_
 const $=s=>document.querySelector(s);
 const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const temaClaro=()=>document.documentElement.dataset.theme==='light';
 
 function voltarMenu(main){
   main?.classList.add('hidden');
   if(window.OBRIX_MENU?.open)return window.OBRIX_MENU.open();
   return window.abrir?.('inicio');
-}
-
-function aplicarConfig(){
-  if(!temaClaro())return;
-  const root=document.getElementById('configMain');if(!root)return;
-  root.querySelectorAll('[data-del="equipe"],[data-del="financeiro"]').forEach(b=>{
-    b.style.setProperty('background','#f8fafc','important');
-    b.style.setProperty('background-color','#f8fafc','important');
-    b.style.setProperty('background-image','none','important');
-    b.style.setProperty('color','#dc2626','important');
-    b.style.setProperty('-webkit-text-fill-color','#dc2626','important');
-    b.style.setProperty('border','2px solid #dc2626','important');
-    b.style.setProperty('box-shadow','none','important');
-  });
-  root.querySelectorAll('[data-del="obras"],[data-del="tudo"]').forEach(b=>{
-    b.style.setProperty('background','#e5eaf0','important');
-    b.style.setProperty('background-color','#e5eaf0','important');
-    b.style.setProperty('background-image','none','important');
-    b.style.setProperty('color','#0f172a','important');
-    b.style.setProperty('-webkit-text-fill-color','#0f172a','important');
-    b.style.setProperty('border','1px solid #cbd5df','important');
-    b.style.setProperty('box-shadow','none','important');
-  });
 }
 
 function prepararSeta(id){
@@ -97,11 +73,14 @@ function abrirNovoFuncionario(){
 
 function prepararEstruturas(){
   prepararSeta('notasFechar');prepararSeta('backupFechar');prepararSeta('offlineCentralFechar');prepararSeta('offFastClose');
-  prepararAssinatura();prepararOrcamentos();aplicarConfig();protegerRenderObrasFinanceiro();
+  prepararAssinatura();prepararOrcamentos();protegerRenderObrasFinanceiro();
 }
 
 const css=document.createElement('style');css.id='obrixTesteAjustesGerais3110';css.textContent=`
 #obras .obxBusca{display:none!important}
+#obras .obxMais{display:none!important}
+html[data-theme="light"] body #configMain [data-del="equipe"],html[data-theme="light"] body #configMain [data-del="financeiro"]{background:#f8fafc!important;background-color:#f8fafc!important;background-image:none!important;color:#dc2626!important;-webkit-text-fill-color:#dc2626!important;border:2px solid #dc2626!important;box-shadow:none!important;transition:none!important}
+html[data-theme="light"] body #configMain [data-del="obras"],html[data-theme="light"] body #configMain [data-del="tudo"]{background:#e5eaf0!important;background-color:#e5eaf0!important;background-image:none!important;color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;border:1px solid #cbd5df!important;box-shadow:none!important;transition:none!important}
 html[data-theme="light"] #obras{--obx-bg:#eef2f6!important;--obx-panel:#ffffff!important;--obx-border:#cbd5e1!important;--obx-text:#0f172a!important;color:#0f172a!important;-webkit-text-fill-color:initial!important}
 html[data-theme="light"] #obras>.hero,html[data-theme="light"] #obras .obxDetalhe{color:#0f172a!important}
 html[data-theme="light"] #obras .obxFiltros button{background:#fff!important;color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;border-color:#cbd5e1!important}
@@ -131,12 +110,11 @@ html[data-theme="dark"] #orcamentosMain .orcCardBody{border-color:#334155!import
 document.head.appendChild(css);
 
 const app=document.getElementById('app');if(app)new MutationObserver(m=>{if(m.some(x=>x.addedNodes.length))queueMicrotask(prepararEstruturas)}).observe(app,{childList:true});
-new MutationObserver(()=>queueMicrotask(()=>{aplicarConfig();prepararEstruturas()})).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 document.addEventListener('click',e=>{
   protegerRenderObrasFinanceiro();
   const novo=e.target.closest?.('#equipe [data-cmd="novo"]');
   if(novo){e.preventDefault();e.stopImmediatePropagation();abrirNovoFuncionario();return}
-  setTimeout(prepararEstruturas,0);setTimeout(prepararEstruturas,250);
+  requestAnimationFrame(prepararEstruturas);
 },true);
 window.addEventListener('pageshow',prepararEstruturas);
 window.addEventListener('obrix:modules-ready',prepararEstruturas);
