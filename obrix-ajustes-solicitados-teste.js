@@ -29,9 +29,10 @@ function apagarNeutro(){['orcamentosMain','diarioMain'].forEach(id=>{const root=
 function financeiroDoisMeses(){const dash=document.querySelector('#financeiroMain .obxDash');if(!dash)return;const titulo=[...dash.querySelectorAll('.obxT')].find(x=>norm(x.textContent).includes('receitas x despesas'));if(titulo)titulo.innerHTML=titulo.innerHTML.replace(/últimos\s*3\s*meses/gi,'últimos 2 meses').replace(/ultimos\s*3\s*meses/gi,'últimos 2 meses');const barras=titulo?.parentElement?.querySelector('.obxBars')||dash.querySelector('.obxBars');if(!barras)return;const grupos=[...barras.querySelectorAll(':scope > .obxM')];while(grupos.length>2){grupos.shift()?.remove()}barras.style.setProperty('grid-template-columns','repeat(2,1fr)','important')}
 function run(){headers();removerSetaInternaAssinatura();removerSetasInternasNotasBackup();seta();dedupeObras();configPerigo();apagarNeutro();financeiroDoisMeses();if(!tela('configMain'))window.OBRIX_FIN_RESUMO_OBRAS?.refresh?.()}
 let scheduled=false;function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;run()})}
+function eventoLeve(e){return !!(e.target.closest?.('#configMain,#equipe')||(tela('equipe')&&e.target.closest?.('.modalBack')))}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(schedule,350),{once:true});else setTimeout(schedule,350);
 ['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','obrix:theme-applied'].forEach(e=>window.addEventListener(e,schedule));
 window.addEventListener('pageshow',schedule);
-document.addEventListener('click',e=>{if(e.target.closest?.('#configMain'))return;setTimeout(schedule,80)},true);
-document.addEventListener('change',e=>{if(e.target.closest?.('#configMain'))return;setTimeout(schedule,80)},true);
+document.addEventListener('click',e=>{if(eventoLeve(e))return;setTimeout(schedule,80)},true);
+document.addEventListener('change',e=>{if(eventoLeve(e))return;setTimeout(schedule,80)},true);
 window.OBRIX_AJUSTES_SOLICITADOS_TESTE={refresh:schedule};})();
