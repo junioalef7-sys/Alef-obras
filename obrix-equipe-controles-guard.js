@@ -125,8 +125,9 @@ function sincronizarFuncao(){
     const sub=card.querySelector('.obrix-modelo-subnome');
     if(!sub)return;
     const cargo=String(f?.cargo||f?.funcao||'').trim();
-    sub.textContent=cargo||'Função não informada';
-    sub.setAttribute('data-obrix-funcao','1');
+    const label=cargo||'Função não informada';
+    if(sub.textContent!==label)sub.textContent=label;
+    if(sub.getAttribute('data-obrix-funcao')!=='1')sub.setAttribute('data-obrix-funcao','1');
   });
 }
 function ensure(){
@@ -146,11 +147,12 @@ function ensure(){
 let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(ensure,0)}
 function start(){
   ensure();
-  if(document.body)new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});
+  const sec=document.getElementById('equipe');
+  if(sec)new MutationObserver(schedule).observe(sec,{childList:true,subtree:true});
   new MutationObserver(schedule).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  if(document.head)new MutationObserver(ms=>{if(ms.some(m=>[...m.addedNodes].some(n=>n.nodeType===1&&n.id!=='obrixEquipeVisualDiscretoFinal'&&(n.tagName==='STYLE'||n.tagName==='LINK'))))schedule()}).observe(document.head,{childList:true});
   ['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','pageshow','focus','online','offline'].forEach(n=>window.addEventListener(n,schedule));
-  document.addEventListener('click',()=>setTimeout(schedule,0),true);
-  setInterval(ensure,700);
+  document.addEventListener('click',e=>{if(e.target.closest?.('#equipe'))setTimeout(schedule,0)},true);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 window.OBRIX_EQUIPE_CONTROLES_GUARD={ensure,sincronizarFuncao};
