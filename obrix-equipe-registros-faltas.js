@@ -16,22 +16,30 @@ function linhasLocais(id){
  const rows=[];
  lista('diarias').filter(x=>String(x.funcionario_id)===String(id)).forEach(x=>rows.push({kind:'diaria',id:x.id,data:x.data,tipo:Number(x.quantidade||1)<1?'Meia diária':'Diária',obra:nomeObra(x.obra_id),valor:Number(x.valor_total||0),status:x.paga?'Quitada':'Em aberto',paga:!!x.paga}));
  lista('vales').filter(x=>String(x.funcionario_id)===String(id)).forEach(x=>rows.push({kind:'vale',id:x.id,data:x.data,tipo:'Vale',obra:nomeObra(x.obra_id),valor:-Number(x.valor||0),status:x.quitado?'Quitado':'Em aberto'}));
- lista('bonus').filter(x=>String(x.funcionario_id)===String(id)).forEach(x=>rows.push({kind:'bonus',id:x.id,data:x.data,tipo:x.tipo==='extra'?'Extra':'Bônus',obra:nomeObra(x.obra_id),valor:Number(x.valor||0),status:x.pago?'Pago':'Em aberto'}));
+ lista('bonus').filter(x=>String(x.funcionario_id)===String(id)).forEach(x=>rows.push({kind:'bonus',id:x.id,data:x.data,tipo:x.tipo==='extra'?'Extra':'Bônus',obra:nomeObra(x.obra_id),valor:Number(x.valor||0),status:x.pago?'Pago':'Em aberto',pago:!!x.pago}));
  return rows;
 }
 function linhaHtml(x){
  const data=x.data?new Date(x.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
  if(x.kind==='falta')return `<div class="obrix-registro-linha obrix-registro-falta" data-falta-row="${esc(x.id)}"><div><b>${data}</b><span>Falta · ${esc(x.obra)}</span>${x.motivo?`<small>Motivo: ${esc(x.motivo)}</small>`:''}${x.observacoes?`<small>${esc(x.observacoes)}</small>`:''}</div><div class="obrix-registro-valor"><b>${x.justificada?'Justificada':'Injustificada'}</b><button type="button" class="obrix-excluir-registro" data-excluir-falta="${esc(x.id)}">Excluir</button></div></div>`;
  if(x.kind==='diaria')return `<div class="obrix-registro-linha" data-diaria-row="${esc(x.id)}"><div><b>${data}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span></div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small>${x.paga?'':`<button type="button" class="obrix-excluir-registro" data-excluir-diaria="${esc(x.id)}">Excluir</button>`}</div></div>`;
+ if(x.kind==='bonus')return `<div class="obrix-registro-linha" data-bonus-row="${esc(x.id)}"><div><b>${data}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span></div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small>${x.pago?'':`<button type="button" class="obrix-excluir-registro" data-excluir-bonus="${esc(x.id)}">Excluir</button>`}</div></div>`;
  return `<div class="obrix-registro-linha"><div><b>${data}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span></div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small></div></div>`;
 }
 async function excluirLinha(table,idRegistro,funcionarioId,back){
- if(!confirm(table==='diarias'?'Excluir esta diária em aberto?':'Excluir esta falta?'))return;
+ const msg=table==='diarias'?'Excluir esta diária em aberto?':table==='bonus_extras'?'Excluir este Bônus/Extra em aberto?':'Excluir esta falta?';
+ if(!confirm(msg))return;
  try{
   const sb=await window.OBRIX_BACKEND.init(),p=await window.OBRIX_BACKEND.profile();
   let q=sb.from(table).delete().eq('id',idRegistro).eq('empresa_id',p.empresa_id).eq('funcionario_id',funcionarioId);
   if(table==='diarias')q=q.eq('paga',false);
-  const {data,error}=await q.select('id');if(error)throw error;if(!data?.length)throw new Error(table==='diarias'?'A diária não está mais em aberto ou já foi removida.':'A falta não foi encontrada.');
+  if(table==='bonus_extras')q=q.eq('pago',false);
+  const {data,error}=await q.select('id');if(error)throw error;
+  if(!data?.length){
+    if(table==='diarias')throw new Error('A diária não está mais em aberto ou já foi removida.');
+    if(table==='bonus_extras')throw new Error('O Bônus/Extra não está mais em aberto ou já foi removido.');
+    throw new Error('A falta não foi encontrada.');
+  }
   await window.OBRIX_EQUIPE?.refresh?.();window.OBRIX_EQUIPE_REALTIME_SYNC?.refresh?.();await carregar(funcionarioId,back);
  }catch(e){alert(e.message||'Não foi possível excluir o registro.')}
 }
@@ -44,6 +52,7 @@ async function carregar(id,back){
   const rows=linhasLocais(id);(data||[]).forEach(x=>rows.push({kind:'falta',id:x.id,data:x.data,obra:nomeObra(x.obra_id),justificada:!!x.justificada,motivo:x.motivo||'',observacoes:x.observacoes||''}));rows.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
   corpo.innerHTML=`<div class="obrix-registros-lista">${rows.length?rows.map(linhaHtml).join(''):'<p class="muted">Nenhum registro encontrado.</p>'}</div>`;
   corpo.querySelectorAll('[data-excluir-diaria]').forEach(btn=>btn.onclick=()=>excluirLinha('diarias',btn.dataset.excluirDiaria,id,back));
+  corpo.querySelectorAll('[data-excluir-bonus]').forEach(btn=>btn.onclick=()=>excluirLinha('bonus_extras',btn.dataset.excluirBonus,id,back));
   corpo.querySelectorAll('[data-excluir-falta]').forEach(btn=>btn.onclick=()=>excluirLinha('faltas',btn.dataset.excluirFalta,id,back));
  }catch(e){corpo.innerHTML=`<div class="status">${esc(e.message||'Não foi possível carregar os registros.')}</div>`}
 }
