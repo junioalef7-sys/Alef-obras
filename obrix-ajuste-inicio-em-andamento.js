@@ -24,3 +24,34 @@ function fundoEscuro(){if(document.documentElement.dataset.theme!=='dark')return
 let q=false;function run(){q=false;cabecalhos();voltarFinanceiro();removerDuplicadosObras();fundoEscuro();}function ag(){if(q)return;q=true;requestAnimationFrame(run);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run();new MutationObserver(m=>{if(m.some(x=>x.type==='childList'||x.attributeName==='class'))ag();}).observe(document.getElementById('app')||document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});new MutationObserver(ag).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto'].forEach(x=>window.addEventListener(x,ag));
 })();
+
+/* Financeiro mobile — cartões 2x2 maiores e cores somente nos números */
+(()=>{'use strict';
+if(window.__OBRIX_FIN_MOBILE_NUMEROS_3110)return;window.__OBRIX_FIN_MOBILE_NUMEROS_3110=true;
+const mobile=()=>matchMedia('(max-width:620px)').matches;
+function aplicar(){
+  if(!mobile())return;
+  const root=document.querySelector('#financeiroMain .obxMobileCompactView');if(!root)return;
+  const topo=root.querySelector('.obmTopo');
+  if(topo){
+    topo.style.setProperty('grid-template-columns','repeat(2,minmax(0,1fr))','important');
+    topo.style.setProperty('gap','8px','important');
+  }
+  root.querySelectorAll('.obmK').forEach(k=>{
+    k.style.setProperty('padding','14px 12px','important');
+    k.style.setProperty('min-height','82px','important');
+    k.style.setProperty('border-radius','12px','important');
+    const s=k.querySelector('small'),b=k.querySelector('b');
+    if(s){s.style.setProperty('font-size','11px','important');s.style.setProperty('font-weight','900','important');s.style.setProperty('color','var(--ob-text,#0f172a)','important');s.style.setProperty('-webkit-text-fill-color','var(--ob-text,#0f172a)','important');}
+    if(b){b.style.setProperty('font-size','18px','important');b.style.setProperty('font-weight','900','important');}
+  });
+  root.querySelectorAll('.obmK.rec b,.obmResumoBloco.recebido b').forEach(b=>{b.style.setProperty('color','#0aa950','important');b.style.setProperty('-webkit-text-fill-color','#0aa950','important');});
+  root.querySelectorAll('.obmK.des b,.obmResumoBloco.despesas b').forEach(b=>{b.style.setProperty('color','#ef332b','important');b.style.setProperty('-webkit-text-fill-color','#ef332b','important');});
+  root.querySelectorAll('.obmK.res b,.obmResumoBloco.lucro b,.obmResumoBloco.prejuizo b').forEach(b=>{b.style.setProperty('color','#1688ff','important');b.style.setProperty('-webkit-text-fill-color','#1688ff','important');});
+  root.querySelectorAll('.obmK.mar b,.obmResumoBloco.servico b').forEach(b=>{b.style.setProperty('color','var(--ob-text,#0f172a)','important');b.style.setProperty('-webkit-text-fill-color','var(--ob-text,#0f172a)','important');});
+}
+let q=false;function ag(){if(q)return;q=true;requestAnimationFrame(()=>{q=false;aplicar()});}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{ag();setTimeout(ag,300);setTimeout(ag,900)},{once:true});else{ag();setTimeout(ag,300);setTimeout(ag,900)}
+new MutationObserver(m=>{if(m.some(x=>[...x.addedNodes].some(n=>n.nodeType===1&&(n.matches?.('.obxMobileCompactView,.obmTopo,.obmK,.obmResumoBloco')||n.querySelector?.('.obxMobileCompactView,.obmTopo,.obmK,.obmResumoBloco')))))ag();}).observe(document.getElementById('app')||document.body,{childList:true,subtree:true});
+window.addEventListener('resize',ag);window.addEventListener('pageshow',ag);['obrix:modules-ready','obrix:feature-pronto','obrix:theme-applied'].forEach(x=>window.addEventListener(x,ag));
+})();
