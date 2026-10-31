@@ -24,3 +24,25 @@ function fundoEscuro(){if(document.documentElement.dataset.theme!=='dark')return
 let q=false;function run(){q=false;cabecalhos();voltarFinanceiro();removerDuplicadosObras();fundoEscuro();}function ag(){if(q)return;q=true;requestAnimationFrame(run);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run();new MutationObserver(m=>{if(m.some(x=>x.type==='childList'||x.attributeName==='class'))ag();}).observe(document.getElementById('app')||document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});new MutationObserver(ag).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto'].forEach(x=>window.addEventListener(x,ag));
 })();
+
+/* Financeiro mobile — ajuste visual seguro, sem alterar lógica */
+(()=>{'use strict';
+if(document.getElementById('obrix-fin-mobile-visual-3110'))return;
+const st=document.createElement('style');st.id='obrix-fin-mobile-visual-3110';st.textContent=`
+@media(max-width:620px){
+#financeiroMain .obxMobileCompactView .obmTopo{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+#financeiroMain .obxMobileCompactView .obmK{padding:14px 12px!important;min-height:82px!important;border-radius:12px!important}
+#financeiroMain .obxMobileCompactView .obmK small{font-size:11px!important;font-weight:900!important;color:var(--ob-text,#0f172a)!important;-webkit-text-fill-color:var(--ob-text,#0f172a)!important}
+#financeiroMain .obxMobileCompactView .obmK b{font-size:18px!important;font-weight:900!important}
+#financeiroMain .obxMobileCompactView .obmK.rec b,
+#financeiroMain .obxMobileCompactView .obmResumoBloco.recebido b{color:#0aa950!important;-webkit-text-fill-color:#0aa950!important}
+#financeiroMain .obxMobileCompactView .obmK.des b,
+#financeiroMain .obxMobileCompactView .obmResumoBloco.despesas b{color:#ef332b!important;-webkit-text-fill-color:#ef332b!important}
+#financeiroMain .obxMobileCompactView .obmK.res b,
+#financeiroMain .obxMobileCompactView .obmResumoBloco.lucro b,
+#financeiroMain .obxMobileCompactView .obmResumoBloco.prejuizo b{color:#1688ff!important;-webkit-text-fill-color:#1688ff!important}
+#financeiroMain .obxMobileCompactView .obmK.mar b,
+#financeiroMain .obxMobileCompactView .obmResumoBloco.servico b{color:var(--ob-text,#0f172a)!important;-webkit-text-fill-color:var(--ob-text,#0f172a)!important}
+}
+`;document.head.appendChild(st);
+})();
