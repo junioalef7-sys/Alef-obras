@@ -116,6 +116,28 @@
     }catch(e){back.querySelector('.obrix-carregando').innerHTML=`<div class="status">${esc(e.message||'Não foi possível carregar.')}</div>`}
   }
 
+  function excluirBonusExtras(id,registrosBack){
+    const abertos=bonusList().filter(x=>String(x.funcionario_id)===String(id)&&!x.pago);
+    if(!abertos.length)return alert('Não há Bônus/Extras em aberto para excluir.');
+    const opts=abertos.slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||''))).map(x=>`<option value="${esc(x.id)}">${esc(x.tipo==='extra'?'Extra':'Bônus')} · ${x.data?new Date(x.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'} · ${money(x.valor)} · ${esc(nomeObra(x.obra_id))}</option>`).join('');
+    const back=abrirModal('Excluir Bônus/Extras',`<label>Selecione o registro</label><select class="bonusExcluir">${opts}</select><div class="modalActions"><button class="btn cancelar" type="button">Cancelar</button><button class="btn confirmar" type="button">Excluir Bônus/Extra</button></div>`,'obrix-modelo-modal');
+    back.querySelector('.cancelar').onclick=()=>back.remove();
+    back.querySelector('.confirmar').onclick=async()=>{
+      const bonusId=back.querySelector('.bonusExcluir').value;
+      const item=abertos.find(x=>String(x.id)===String(bonusId));if(!item)return;
+      if(!confirm(`Excluir este ${item.tipo==='extra'?'Extra':'Bônus'} de ${money(item.valor)}?`))return;
+      const btn=back.querySelector('.confirmar');btn.disabled=true;
+      try{
+        const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();
+        const atual=await sb.from('bonus_extras').select('id,pago').eq('id',item.id).eq('empresa_id',p.empresa_id).maybeSingle();
+        if(atual.error)throw atual.error;if(!atual.data)throw new Error('Registro não encontrado.');if(atual.data.pago)throw new Error('Este Bônus/Extra já foi pago e não pode ser excluído.');
+        const r=await sb.from('bonus_extras').delete().eq('id',item.id).eq('empresa_id',p.empresa_id).eq('funcionario_id',id).eq('pago',false).select('id');
+        if(r.error)throw r.error;if(!r.data?.length)throw new Error('A exclusão não foi confirmada.');
+        back.remove();registrosBack?.remove();await window.OBRIX_EQUIPE?.refresh?.();verRegistros(id);
+      }catch(e){alert(e.message||'Não foi possível excluir o Bônus/Extra.')}finally{btn.disabled=false}
+    };
+  }
+
   function verRegistros(id){
     const f=acharFunc(id);if(!f)return;
     const rows=[];
@@ -123,9 +145,13 @@
     valesList().filter(x=>String(x.funcionario_id)===String(id)).forEach(x=>rows.push({data:x.data,tipo:'Vale',obra:nomeObra(x.obra_id),valor:-Number(x.valor||0),status:x.quitado?'Quitado':'Em aberto'}));
     bonusList().filter(x=>String(x.funcionario_id)===String(id)).forEach(x=>rows.push({data:x.data,tipo:x.tipo==='extra'?'Extra':'Bônus',obra:nomeObra(x.obra_id),valor:Number(x.valor||0),status:x.pago?'Pago':'Em aberto'}));
     rows.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
-    const html=`<p class="muted"><b>${esc(f.nome)}</b></p><div class="obrix-registros-lista">${rows.length?rows.map(x=>`<div class="obrix-registro-linha"><div><b>${x.data?new Date(x.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span></div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small></div></div>`).join(''):'<p class="muted">Nenhum registro encontrado.</p>'}</div><div class="obrix-registros-acoes"><button type="button" data-extra="vale">Vale</button><button type="button" data-extra="bonus">Bônus e Extras</button><button type="button" class="pagar" data-extra="pagar">Pagar</button></div>`;
+    const html=`<p class="muted"><b>${esc(f.nome)}</b></p><div class="obrix-registros-lista">${rows.length?rows.map(x=>`<div class="obrix-registro-linha"><div><b>${x.data?new Date(x.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span></div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small></div></div>`).join(''):'<p class="muted">Nenhum registro encontrado.</p>'}</div><div class="obrix-registros-acoes"><button type="button" data-extra="vale">Vale</button><button type="button" data-extra="bonus">Bônus e Extras</button><button type="button" class="pagar" data-extra="pagar">Pagar</button><button type="button" class="excluirBonusExtras" data-extra="excluir-bonus">Excluir Bônus/Extras</button></div>`;
     const back=abrirModal('Registros do funcionário',html,'obrix-modelo-modal');
-    back.querySelectorAll('[data-extra]').forEach(btn=>btn.onclick=()=>{back.remove();window.equipeAcao?.(String(id),btn.dataset.extra)});
+    back.querySelectorAll('[data-extra]').forEach(btn=>btn.onclick=()=>{
+      const tipo=btn.dataset.extra;
+      if(tipo==='excluir-bonus')return excluirBonusExtras(id,back);
+      back.remove();window.equipeAcao?.(String(id),tipo)
+    });
   }
 
   function editarCadastro(id){
@@ -236,13 +262,14 @@
     #equipe #listaEquipe .obrix-modelo-acoes [data-acao="vale"]{order:4!important;grid-column:span 3!important}
     #equipe #listaEquipe .obrix-modelo-acoes [data-acao="bonus"]{order:5!important;grid-column:span 3!important}
     #equipe #listaEquipe .obrix-modelo-acoes button{min-width:0!important;width:100%!important;min-height:48px!important;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#334155;font-weight:900;padding:7px 4px!important;font-size:12px!important;line-height:1.05!important;white-space:nowrap!important;word-break:normal!important;overflow-wrap:normal!important}
-    .obrix-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.obrix-modal-head h2{margin:0}.obrix-modal-x{border:0;background:transparent;color:inherit;font-size:30px;line-height:1;padding:2px 8px}.obrix-modelo-modal label{display:block;font-weight:800;margin-top:8px}.obrix-modelo-modal input,.obrix-modelo-modal select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;margin:5px 0 9px;font:inherit}.obrix-registros-lista,.obrix-carregando{display:grid;gap:8px}.obrix-registro-linha{display:flex;justify-content:space-between;gap:12px;border:1px solid #e2e8f0;border-radius:12px;padding:12px}.obrix-registro-linha span,.obrix-registro-linha small{display:block;color:#64748b;margin-top:3px}.obrix-registro-valor{text-align:right}.obrix-registros-acoes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.obrix-registros-acoes button{border:1px solid #cbd5e1;background:#fff;border-radius:10px;padding:11px;font-weight:900}.obrix-registros-acoes .pagar{background:#0f172a;color:#fff;border-color:#0f172a}
+    .obrix-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.obrix-modal-head h2{margin:0}.obrix-modal-x{border:0;background:transparent;color:inherit;font-size:30px;line-height:1;padding:2px 8px}.obrix-modelo-modal label{display:block;font-weight:800;margin-top:8px}.obrix-modelo-modal input,.obrix-modelo-modal select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;margin:5px 0 9px;font:inherit}.obrix-registros-lista,.obrix-carregando{display:grid;gap:8px}.obrix-registro-linha{display:flex;justify-content:space-between;gap:12px;border:1px solid #e2e8f0;border-radius:12px;padding:12px}.obrix-registro-linha span,.obrix-registro-linha small{display:block;color:#64748b;margin-top:3px}.obrix-registro-valor{text-align:right}.obrix-registros-acoes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.obrix-registros-acoes button{border:1px solid #cbd5e1;background:#fff;border-radius:10px;padding:11px;font-weight:900}.obrix-registros-acoes .pagar{background:#0f172a;color:#fff;border-color:#0f172a}.obrix-registros-acoes .excluirBonusExtras{grid-column:1/-1;border-color:#dc2626;color:#dc2626}
     html[data-theme="dark"] .obrix-cmd,body.dark .obrix-cmd,html[data-theme="dark"] .obrix-filtro-equipe,body.dark .obrix-filtro-equipe{background:#111827;color:#f8fafc;border-color:#334155}
     html[data-theme="dark"] #listaEquipe .obrix-modelo-card,body.dark #listaEquipe .obrix-modelo-card{background:#0f172a;color:#f8fafc;border-color:#334155}
     html[data-theme="dark"] .obrix-modelo-subnome,body.dark .obrix-modelo-subnome,html[data-theme="dark"] .obrix-modelo-pagamento small,body.dark .obrix-modelo-pagamento small,html[data-theme="dark"] .obrix-modelo-pagamento span,body.dark .obrix-modelo-pagamento span,html[data-theme="dark"] .obrix-modelo-metrica small,body.dark .obrix-modelo-metrica small,html[data-theme="dark"] .obrix-modelo-metrica span,body.dark .obrix-modelo-metrica span{color:#94a3b8}
     html[data-theme="dark"] .obrix-modelo-pagamento,body.dark .obrix-modelo-pagamento,html[data-theme="dark"] .obrix-modelo-pilulas span,body.dark .obrix-modelo-pilulas span,html[data-theme="dark"] .obrix-modelo-metrica,body.dark .obrix-modelo-metrica{background:#111827;border-color:#273449}
     html[data-theme="dark"] .obrix-modelo-metrica.liquido,body.dark .obrix-modelo-metrica.liquido{background:#231b27;border-color:#3d2934}
     html[data-theme="dark"] .obrix-modelo-acoes button,body.dark .obrix-modelo-acoes button,html[data-theme="dark"] .obrix-registros-acoes button,body.dark .obrix-registros-acoes button{background:#161d25;color:#f8fafc;border-color:#334155}
+    html[data-theme="dark"] .obrix-registros-acoes .excluirBonusExtras,body.dark .obrix-registros-acoes .excluirBonusExtras{color:#fca5a5;border-color:#ef4444}
     html[data-theme="dark"] #equipe #listaEquipe .obrix-modelo-acoes [data-acao="vale"],body.dark #equipe #listaEquipe .obrix-modelo-acoes [data-acao="vale"]{background:#60a5fa!important;background-color:#60a5fa!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#3b82f6!important;animation:none!important;transition:none!important;transform:none!important}
     html[data-theme="dark"] #equipe #listaEquipe .obrix-modelo-acoes [data-acao="bonus"],body.dark #equipe #listaEquipe .obrix-modelo-acoes [data-acao="bonus"]{border-color:#f2b84b!important;box-shadow:none!important}
     html[data-theme="dark"] .obrix-registros-acoes .pagar,body.dark .obrix-registros-acoes .pagar{background:#2563eb;border-color:#2563eb}
