@@ -14,3 +14,4 @@ document.addEventListener('click',e=>{const b=e.target.closest?.('button');if(!b
 })();
 (()=>{if(window.__OBRIX_OBRAS_BOTOES_FIX_LOADER)return;window.__OBRIX_OBRAS_BOTOES_FIX_LOADER=true;const s=document.createElement('script');s.src='./obrix-obras-botoes-fix.js?v=20261030fix1';s.defer=true;document.head.appendChild(s)})();
 (()=>{if(window.__OBRIX_FIN_APROVADO_LOADER)return;window.__OBRIX_FIN_APROVADO_LOADER=true;const s=document.createElement('script');s.src='./obrix-financeiro-dashboard-aprovado.js?v=20261031approved1';s.defer=true;document.head.appendChild(s)})();
+(()=>{if(window.__OBRIX_FIN_DASH_CORRECOES_LOADER)return;window.__OBRIX_FIN_DASH_CORRECOES_LOADER=true;const s=document.createElement('script');s.src='./obrix-financeiro-dashboard-correcoes.js?v=20261031fix2';s.defer=true;document.head.appendChild(s)})();
