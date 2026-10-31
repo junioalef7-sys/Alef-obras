@@ -11,11 +11,14 @@ const ICONS={
 
 function decorateButton(btn,type,label){if(!btn||btn.dataset.obrixPayDecorated==='1')return;btn.dataset.obrixPayDecorated='1';btn.classList.add('obrixPayMethod');btn.setAttribute('aria-label',label);btn.innerHTML=`<span class="obrixPayIcon">${ICONS[type]}</span><span class="obrixPayLabel">${label}</span>`}
 function decorateCard(card){if(!card||card.dataset.obrixPayReady==='1')return;const pix=card.querySelector('[data-ass-plano]'),row=card.querySelector('.assCobEfiRow');if(!pix||!row)return;const boleto=row.querySelector('[data-ass-cob-efi$=":boleto"]'),cartao=row.querySelector('[data-ass-cob-efi$=":cartao"]');if(!boleto||!cartao)return;card.dataset.obrixPayReady='1';row.classList.add('obrixPayStack');decorateButton(pix,'pix','Pagar com Pix');decorateButton(boleto,'boleto','Pagar com Boleto');decorateButton(cartao,'cartao','Pagar com Cartão');row.append(pix,boleto,cartao)}
-function prepararAcoes(){
-  document.querySelectorAll('#listaObras .item').forEach(card=>{const a=card.querySelector('.actions');if(!a)return;const apagar=[...a.querySelectorAll('button')].find(b=>/^excluir$/i.test(b.textContent.trim())||/^apagar$/i.test(b.textContent.trim()));if(apagar){apagar.textContent='Apagar';apagar.classList.add('obrixWhiteAction')}a.querySelector('.obrixEnviarObra')?.remove()});
-  document.querySelectorAll('#orcLista .orcCard').forEach(card=>{const a=card.querySelector('.orcActions');if(!a)return;const apagar=a.querySelector('.excluir')||[...a.querySelectorAll('button')].find(b=>/^excluir$/i.test(b.textContent.trim())||/^apagar$/i.test(b.textContent.trim()));if(apagar){apagar.textContent='Apagar';apagar.classList.add('obrixWhiteAction')}a.querySelector('.obrixEnviarOrcamento')?.remove()});
+function prepararObra(card){if(!card)return;const a=card.querySelector('.actions');if(!a)return;const apagar=[...a.querySelectorAll('button')].find(b=>/^excluir$/i.test(b.textContent.trim())||/^apagar$/i.test(b.textContent.trim()));if(apagar){apagar.textContent='Apagar';apagar.classList.add('obrixWhiteAction')}a.querySelector('.obrixEnviarObra')?.remove()}
+function prepararOrcamento(card){if(!card)return;const a=card.querySelector('.orcActions');if(!a)return;const apagar=a.querySelector('.excluir')||[...a.querySelectorAll('button')].find(b=>/^excluir$/i.test(b.textContent.trim())||/^apagar$/i.test(b.textContent.trim()));if(apagar){apagar.textContent='Apagar';apagar.classList.add('obrixWhiteAction')}a.querySelector('.obrixEnviarOrcamento')?.remove()}
+function scan(root=document){
+  if(root?.matches?.('#assPlanos .assPlano'))decorateCard(root);root?.querySelectorAll?.('#assPlanos .assPlano').forEach(decorateCard);
+  if(root?.matches?.('#listaObras .item'))prepararObra(root);root?.querySelectorAll?.('#listaObras .item').forEach(prepararObra);
+  if(root?.matches?.('#orcLista .orcCard'))prepararOrcamento(root);root?.querySelectorAll?.('#orcLista .orcCard').forEach(prepararOrcamento)
 }
-function scan(){const box=document.getElementById('assPlanos');if(box)box.querySelectorAll('.assPlano').forEach(decorateCard);prepararAcoes()}
+function relevante(n){return n?.nodeType===1&&(n.matches?.('#assPlanos,#assPlanos .assPlano,#listaObras,#listaObras .item,#orcLista,#orcLista .orcCard')||n.querySelector?.('#assPlanos .assPlano,#listaObras .item,#orcLista .orcCard'))}
 
 const css=document.createElement('style');css.id='obrixPagamentosUiAlinhamentoCss';css.textContent=`
 #assPlanos .assCobEfiRow.obrixPayStack{display:flex!important;flex-direction:column!important;gap:10px!important;width:100%!important;margin-top:12px!important;background:transparent!important}
@@ -23,6 +26,8 @@ const css=document.createElement('style');css.id='obrixPagamentosUiAlinhamentoCs
 #assPlanos .obrixPayIcon{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 24px!important;width:24px!important;height:24px!important}#assPlanos .obrixPayIcon svg{width:22px!important;height:22px!important;display:block!important}#assPlanos .obrixPayLabel{display:block!important;flex:1!important;text-align:left!important}
 `;
 document.head.appendChild(css);
-let scheduled=false;function scheduleScan(){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;scan()})}
-new MutationObserver(scheduleScan).observe(document.body,{childList:true,subtree:true});document.addEventListener('obrix:feature-pronto',scheduleScan);window.addEventListener('obrix:modules-ready',scheduleScan);setTimeout(scan,100);setTimeout(scan,500);setTimeout(scan,1200);
+let queued=new Set(),scheduled=false;function scheduleRoot(root){if(root)queued.add(root);if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;const roots=[...queued];queued.clear();roots.forEach(scan)})}
+const obs=new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes||[])if(relevante(n))scheduleRoot(n)});if(document.body)obs.observe(document.body,{childList:true,subtree:true});
+document.addEventListener('obrix:feature-pronto',()=>scheduleRoot(document));window.addEventListener('obrix:modules-ready',()=>scheduleRoot(document));
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>scan(document),{once:true});else scan(document);
 })();
