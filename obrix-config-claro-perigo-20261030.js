@@ -15,16 +15,7 @@ function voltarMenu(main){
 function aplicarConfig(){
   if(!temaClaro())return;
   const root=document.getElementById('configMain');if(!root)return;
-  root.querySelectorAll('[data-del="equipe"],[data-del="financeiro"]').forEach(b=>{
-    b.style.setProperty('background','#f8fafc','important');
-    b.style.setProperty('background-color','#f8fafc','important');
-    b.style.setProperty('background-image','none','important');
-    b.style.setProperty('color','#dc2626','important');
-    b.style.setProperty('-webkit-text-fill-color','#dc2626','important');
-    b.style.setProperty('border','2px solid #dc2626','important');
-    b.style.setProperty('box-shadow','none','important');
-  });
-  root.querySelectorAll('[data-del="obras"],[data-del="tudo"]').forEach(b=>{
+  root.querySelectorAll('[data-del="equipe"],[data-del="financeiro"],[data-del="obras"],[data-del="tudo"],#cfgExcluirConta').forEach(b=>{
     b.style.setProperty('background','#e5eaf0','important');
     b.style.setProperty('background-color','#e5eaf0','important');
     b.style.setProperty('background-image','none','important');
@@ -96,8 +87,7 @@ function abrirNovoFuncionario(){
 }
 
 function prepararEstruturas(){
-  prepararSeta('notasFechar');prepararSeta('backupFechar');prepararSeta('offlineCentralFechar');prepararSeta('offFastClose');
-  prepararAssinatura();prepararOrcamentos();aplicarConfig();protegerRenderObrasFinanceiro();
+  prepararOrcamentos();aplicarConfig();protegerRenderObrasFinanceiro();
 }
 
 const css=document.createElement('style');css.id='obrixTesteAjustesGerais3110';css.textContent=`
@@ -127,6 +117,7 @@ html[data-theme="dark"] #orcamentosMain .orcCardBody{border-color:#334155!import
 .obrixHeroComVoltar{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:12px!important}
 .obrixNovoFuncionarioModal{width:min(560px,100%)!important;max-height:92vh!important;overflow:auto!important;background:var(--ob-surface,#f8fafc)!important;color:var(--ob-text,#0f172a)!important}
 .obrixNovoFuncionarioHead{display:flex;align-items:center;justify-content:space-between;gap:12px}.obrixNovoFuncionarioHead h2{margin:0}.obrixNovoFuncionarioX{border:0;background:transparent;color:inherit;font-size:32px;line-height:1;padding:4px 8px}.obrixNovoFuncionarioModal label{display:block;font-weight:800;margin-top:8px}.obrixNovoFuncionarioModal input,.obrixNovoFuncionarioModal select,.obrixNovoFuncionarioModal textarea{width:100%;padding:12px;border:1px solid var(--ob-border,#cbd5e1);border-radius:10px;margin:5px 0 9px;font:inherit;background:var(--ob-surface-2,#e5eaf0);color:var(--ob-text,#0f172a)}
+@media(max-width:620px){#obras #obxNovaObra.obxMais,#notasFechar,#backupFechar,#offlineCentralFechar,#offFastClose,#assVoltarTeste{display:none!important}}
 `;
 document.head.appendChild(css);
 
