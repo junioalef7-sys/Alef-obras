@@ -93,4 +93,12 @@ if(app){
 }
 window.addEventListener('pageshow',agendar);
 setTimeout(()=>{if(appAberto())agendar()},120);
+
+if(!document.getElementById('obrix-ajustes-desktop-20261101-loader')){
+  const s=document.createElement('script');
+  s.id='obrix-ajustes-desktop-20261101-loader';
+  s.src='./obrix-ajustes-desktop-20261101.js?v=20261101-1';
+  s.async=false;
+  document.body.appendChild(s);
+}
 })();
