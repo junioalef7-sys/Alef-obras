@@ -10,8 +10,11 @@
     #fmFiltrosPanel .fmFiltrosGrid select,
     #fmFiltrosPanel .fmFiltrosGrid input[type="date"]{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important}
     #fmFiltrosPanel .fmFiltrosGrid label:has(#fmFiltroDataInicio),
-    #fmFiltrosPanel .fmFiltrosGrid label:has(#fmFiltroDataFim){min-width:0!important;max-width:100%!important;overflow:hidden!important}
-    #fmFiltroDataInicio,#fmFiltroDataFim{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;inline-size:100%!important;max-inline-size:100%!important;min-inline-size:0!important;box-sizing:border-box!important}
+    #fmFiltrosPanel .fmFiltrosGrid label:has(#fmFiltroDataFim){width:100%!important;min-width:0!important;max-width:100%!important;overflow:hidden!important}
+    #fmFiltroDataInicio,#fmFiltroDataFim{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;inline-size:100%!important;max-inline-size:100%!important;min-inline-size:0!important;box-sizing:border-box!important;overflow:hidden!important}
+    #fmFiltroDataInicio::-webkit-date-and-time-value,#fmFiltroDataFim::-webkit-date-and-time-value{min-width:0!important;text-align:left!important}
+    #fmFiltroDataInicio::-webkit-datetime-edit,#fmFiltroDataFim::-webkit-datetime-edit{min-width:0!important;padding:0!important}
+    #fmFiltroDataInicio::-webkit-calendar-picker-indicator,#fmFiltroDataFim::-webkit-calendar-picker-indicator{margin:0!important;padding:0!important}
     @media(max-width:760px){
       #fmFiltrosPanel .fmFiltrosGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;max-width:100%!important;overflow:hidden!important}
       #fmFiltrosPanel .fmFiltrosHead{display:flex!important;align-items:flex-start!important}
@@ -23,7 +26,7 @@
       #fmFiltrosPanel .fmFiltrosGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
       #fmFiltrosPanel .fmFiltrosGrid label{font-size:11px!important}
       #fmFiltrosPanel .fmFiltrosGrid select{font-size:12px!important;padding:0 6px!important;min-height:43px!important}
-      #fmFiltroDataInicio,#fmFiltroDataFim{font-size:11px!important;padding-left:3px!important;padding-right:3px!important;min-height:43px!important}
+      #fmFiltroDataInicio,#fmFiltroDataFim{font-size:11px!important;padding-left:2px!important;padding-right:2px!important;min-height:43px!important}
       #fmFiltrosPanel .fmFiltrosHead{display:block!important}
       #fmFiltrosPanel .fmFiltrosHead button{width:100%!important;margin-top:8px!important}
     }
