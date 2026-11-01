@@ -130,3 +130,42 @@ document.addEventListener('click',()=>{
   setTimeout(aplicar,180);
 });
 })();
+
+/* OBRIX — Equipe: somente cores por ação; layout, textos e funções permanecem intactos. */
+(()=>{
+'use strict';
+if(window.__OBRIX_EQUIPE_CORES_ACOES_20261101)return;
+window.__OBRIX_EQUIPE_CORES_ACOES_20261101=true;
+const s=document.createElement('style');
+s.id='obrix-equipe-cores-acoes-20261101';
+s.textContent=`
+/* MODO CLARO */
+html[data-theme="light"] body #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-acao="diaria"]{background:#eff6ff!important;background-color:#eff6ff!important;color:#1d4ed8!important;-webkit-text-fill-color:#1d4ed8!important;border-color:#bfdbfe!important}
+html[data-theme="light"] body #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-equipe-extra-card="vale"]{background:#fff7ed!important;background-color:#fff7ed!important;color:#c2410c!important;-webkit-text-fill-color:#c2410c!important;border-color:#fed7aa!important}
+html[data-theme="light"] body #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-equipe-extra-card="bonus"]{background:#f0fdf4!important;background-color:#f0fdf4!important;color:#15803d!important;-webkit-text-fill-color:#15803d!important;border-color:#bbf7d0!important}
+html[data-theme="light"] body #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-acao="falta"]{background:#fff1f2!important;background-color:#fff1f2!important;color:#be123c!important;-webkit-text-fill-color:#be123c!important;border-color:#fecdd3!important}
+html[data-theme="light"] body #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-acao="registros"]{background:#f5f3ff!important;background-color:#f5f3ff!important;color:#6d28d9!important;-webkit-text-fill-color:#6d28d9!important;border-color:#ddd6fe!important}
+html[data-theme="light"] body #app#app #equipe#equipe .obrix-equipe-controles .obrix-pagar-equipe-topo{background:#ecfdf5!important;background-color:#ecfdf5!important;color:#047857!important;-webkit-text-fill-color:#047857!important;border-color:#a7f3d0!important}
+html[data-theme="light"] body #app#app #equipe#equipe .obrix-equipe-controles .obrix-historico-pagamentos-topo{background:#eef2ff!important;background-color:#eef2ff!important;color:#4338ca!important;-webkit-text-fill-color:#4338ca!important;border-color:#c7d2fe!important}
+html[data-theme="light"] body #app#app #equipe#equipe .obrix-equipe-controles button.obrix-cmd[data-cmd="toggle"]{background:#f0fdfa!important;background-color:#f0fdfa!important;color:#0f766e!important;-webkit-text-fill-color:#0f766e!important;border-color:#99f6e4!important}
+html[data-theme="light"] body #app#app #equipe#equipe .obrix-equipe-controles .obrix-filtro-equipe{background:#fffbeb!important;background-color:#fffbeb!important;color:#a16207!important;-webkit-text-fill-color:#a16207!important;border-color:#fde68a!important}
+html[data-theme="light"] body #app#app #equipe#equipe .obrix-equipe-controles button.obrix-cmd[data-cmd="novo"]{background:#f0f9ff!important;background-color:#f0f9ff!important;color:#0369a1!important;-webkit-text-fill-color:#0369a1!important;border-color:#bae6fd!important}
+html[data-theme="light"] body #app#app #equipe#equipe .obrix-equipe-controles button.obrix-cmd[data-cmd="lista"]{background:#ecfeff!important;background-color:#ecfeff!important;color:#0e7490!important;-webkit-text-fill-color:#0e7490!important;border-color:#a5f3fc!important}
+html[data-theme="light"] body #app#app #equipe#equipe .obrix-equipe-controles button.obrix-cmd[data-cmd="excluir"]{background:#f8fafc!important;background-color:#f8fafc!important;color:#475569!important;-webkit-text-fill-color:#475569!important;border-color:#cbd5e1!important}
+
+/* MODO ESCURO */
+html[data-theme="dark"] body #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-acao="diaria"],body.dark #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-acao="diaria"]{background:#0c2748!important;background-color:#0c2748!important;color:#bfdbfe!important;-webkit-text-fill-color:#bfdbfe!important;border-color:#1d4ed8!important}
+html[data-theme="dark"] body #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-equipe-extra-card="vale"],body.dark #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-equipe-extra-card="vale"]{background:#3a2110!important;background-color:#3a2110!important;color:#fed7aa!important;-webkit-text-fill-color:#fed7aa!important;border-color:#9a3412!important}
+html[data-theme="dark"] body #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-equipe-extra-card="bonus"],body.dark #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-equipe-extra-card="bonus"]{background:#12321e!important;background-color:#12321e!important;color:#bbf7d0!important;-webkit-text-fill-color:#bbf7d0!important;border-color:#15803d!important}
+html[data-theme="dark"] body #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-acao="falta"],body.dark #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-acao="falta"]{background:#3a1823!important;background-color:#3a1823!important;color:#fecdd3!important;-webkit-text-fill-color:#fecdd3!important;border-color:#be123c!important}
+html[data-theme="dark"] body #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-acao="registros"],body.dark #app#app #equipe#equipe #listaEquipe .obrix-modelo-acoes button[data-acao="registros"]{background:#2a1f47!important;background-color:#2a1f47!important;color:#ddd6fe!important;-webkit-text-fill-color:#ddd6fe!important;border-color:#6d28d9!important}
+html[data-theme="dark"] body #app#app #equipe#equipe .obrix-equipe-controles .obrix-pagar-equipe-topo,body.dark #app#app #equipe#equipe .obrix-equipe-controles .obrix-pagar-equipe-topo{background:#0f3028!important;background-color:#0f3028!important;color:#a7f3d0!important;-webkit-text-fill-color:#a7f3d0!important;border-color:#047857!important}
+html[data-theme="dark"] body #app#app #equipe#equipe .obrix-equipe-controles .obrix-historico-pagamentos-topo,body.dark #app#app #equipe#equipe .obrix-equipe-controles .obrix-historico-pagamentos-topo{background:#1e2550!important;background-color:#1e2550!important;color:#c7d2fe!important;-webkit-text-fill-color:#c7d2fe!important;border-color:#4f46e5!important}
+html[data-theme="dark"] body #app#app #equipe#equipe .obrix-equipe-controles button.obrix-cmd[data-cmd="toggle"],body.dark #app#app #equipe#equipe .obrix-equipe-controles button.obrix-cmd[data-cmd="toggle"]{background:#103431!important;background-color:#103431!important;color:#99f6e4!important;-webkit-text-fill-color:#99f6e4!important;border-color:#0f766e!important}
+html[data-theme="dark"] body #app#app #equipe#equipe .obrix-equipe-controles .obrix-filtro-equipe,body.dark #app#app #equipe#equipe .obrix-equipe-controles .obrix-filtro-equipe{background:#372b0e!important;background-color:#372b0e!important;color:#fde68a!important;-webkit-text-fill-color:#fde68a!important;border-color:#a16207!important}
+html[data-theme="dark"] body #app#app #equipe#equipe .obrix-equipe-controles button.obrix-cmd[data-cmd="novo"],body.dark #app#app #equipe#equipe .obrix-equipe-controles button.obrix-cmd[data-cmd="novo"]{background:#0d2d3e!important;background-color:#0d2d3e!important;color:#bae6fd!important;-webkit-text-fill-color:#bae6fd!important;border-color:#0369a1!important}
+html[data-theme="dark"] body #app#app #equipe#equipe .obrix-equipe-controles button.obrix-cmd[data-cmd="lista"],body.dark #app#app #equipe#equipe .obrix-equipe-controles button.obrix-cmd[data-cmd="lista"]{background:#0e3038!important;background-color:#0e3038!important;color:#a5f3fc!important;-webkit-text-fill-color:#a5f3fc!important;border-color:#0e7490!important}
+html[data-theme="dark"] body #app#app #equipe#equipe .obrix-equipe-controles button.obrix-cmd[data-cmd="excluir"],body.dark #app#app #equipe#equipe .obrix-equipe-controles button.obrix-cmd[data-cmd="excluir"]{background:#1e293b!important;background-color:#1e293b!important;color:#e2e8f0!important;-webkit-text-fill-color:#e2e8f0!important;border-color:#475569!important}
+`;
+document.head.appendChild(s);
+})();
