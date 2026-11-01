@@ -80,9 +80,17 @@ html[data-theme="dark"] .obxOnboardFooter{
 `;
 document.head.appendChild(style);
 
+function corVermelha(valor){
+  const m=String(valor||'').match(/rgba?\((\d+)\D+(\d+)\D+(\d+)/i);
+  if(!m)return false;
+  const r=Number(m[1]),g=Number(m[2]),b=Number(m[3]);
+  return r>150&&r>g*1.25&&r>b*1.2;
+}
+
 function neutralizarExcluirConta(){
   if(document.documentElement.dataset.theme!=='light')return;
-  document.querySelectorAll('#cfgExcluirConta,.accountDeleteBtn,.accountDeleteModal .excluir').forEach(b=>{
+  const root=document.getElementById('configMain')||document;
+  root.querySelectorAll('#cfgExcluirConta,.accountDeleteBtn,.accountDeleteModal .excluir').forEach(b=>{
     b.style.setProperty('background','var(--ob-surface-2,#e5eaf0)','important');
     b.style.setProperty('background-color','var(--ob-surface-2,#e5eaf0)','important');
     b.style.setProperty('background-image','none','important');
@@ -92,6 +100,23 @@ function neutralizarExcluirConta(){
     b.style.setProperty('outline','0','important');
     b.style.setProperty('box-shadow','none','important');
     b.style.setProperty('filter','none','important');
+
+    let p=b.parentElement;
+    let nivel=0;
+    while(p&&p!==root&&nivel<4){
+      const cs=getComputedStyle(p);
+      const classe=String(p.className||'').toLowerCase();
+      const ehAreaPerigo=/danger|dangerous|perigo|delete|excluir/.test(classe);
+      if(ehAreaPerigo||corVermelha(cs.backgroundColor)||corVermelha(cs.borderTopColor)||corVermelha(cs.borderColor)){
+        p.style.setProperty('background','var(--ob-surface,#f8fafc)','important');
+        p.style.setProperty('background-color','var(--ob-surface,#f8fafc)','important');
+        p.style.setProperty('background-image','none','important');
+        p.style.setProperty('border-color','transparent','important');
+        p.style.setProperty('box-shadow','none','important');
+      }
+      p=p.parentElement;
+      nivel++;
+    }
   });
 }
 
