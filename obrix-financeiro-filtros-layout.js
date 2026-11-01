@@ -19,6 +19,11 @@
       #fmFiltrosPanel .fmFiltrosHead button{width:auto!important;margin-top:0!important}
       #fmFiltroDataInicio,#fmFiltroDataFim{font-size:13px!important;padding-left:6px!important;padding-right:6px!important}
     }
+    @media(max-width:560px){
+      #fmFiltrosPanel .fmFiltrosGrid label:has(#fmFiltroDataInicio),
+      #fmFiltrosPanel .fmFiltrosGrid label:has(#fmFiltroDataFim){grid-column:1/-1!important;width:100%!important;max-width:100%!important;overflow:hidden!important}
+      #fmFiltroDataInicio,#fmFiltroDataFim{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important}
+    }
     @media(max-width:390px){
       #fmFiltrosPanel{padding:12px!important}
       #fmFiltrosPanel .fmFiltrosGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
