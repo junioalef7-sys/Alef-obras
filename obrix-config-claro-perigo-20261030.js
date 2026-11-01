@@ -2,7 +2,7 @@
 const carregarPatch=()=>{
   if(document.querySelector('script[data-obrix-ajustes-visuais]'))return;
   const a=document.createElement('script');
-  a.src='./obrix-ajustes-visuais-pontuais-20261031.js?v=20261031visual2';
+  a.src='./obrix-ajustes-visuais-pontuais-20261031.js?v=20261031visual3';
   a.async=false;
   a.dataset.obrixAjustesVisuais='1';
   document.head.appendChild(a)
