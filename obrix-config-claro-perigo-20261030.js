@@ -3,7 +3,7 @@ if(window.__OBRIX_TESTE_AJUSTES_GERAIS_3110)return;window.__OBRIX_TESTE_AJUSTES_
 
 const $=s=>document.querySelector(s);
 const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 
 function voltarMenu(main){
   main?.classList.add('hidden');
@@ -123,3 +123,4 @@ window.addEventListener('obrix:feature-pronto',prepararEstruturas);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{prepararEstruturas();setTimeout(prepararEstruturas,500)},{once:true});else{prepararEstruturas();setTimeout(prepararEstruturas,500)}
 window.OBRIX_TESTE_AJUSTES_GERAIS_3110={refresh:prepararEstruturas,novoFuncionario:abrirNovoFuncionario};
 })();
+(()=>{'use strict';if(document.querySelector('script[data-obrix-ajustes-visuais]'))return;const s=document.createElement('script');s.src='./obrix-ajustes-visuais-pontuais-20261031.js?v=20261031visual1';s.async=false;s.dataset.obrixAjustesVisuais='1';document.head.appendChild(s)})();
