@@ -11,6 +11,7 @@ let aquecido=false;
 let bootAgendado=false;
 let ultimaAtualizacao=Number(window.__OBRIX_CORE_LAST_LOAD||Date.now());
 
+const mobile=()=>window.matchMedia?window.matchMedia('(max-width:620px)').matches:window.innerWidth<=620;
 const appAberto=()=>{
   const app=document.getElementById('app'),login=document.getElementById('login');
   return !!(app&&!app.classList.contains('hidden')&&(!login||login.classList.contains('hidden')));
@@ -50,6 +51,7 @@ function instalarRotaRapida(){
 }
 
 async function aquecerEquipe(){
+  if(mobile())return false;
   if(aquecido)return true;
   const loader=window.OBRIX_POS_LOGIN_LOADER;
   if(!loader?.loadGroup)return false;
@@ -75,6 +77,7 @@ function preparar(tentativa=0){
   }
   ultimaAtualizacao=Number(window.__OBRIX_CORE_LAST_LOAD||Date.now());
   instalarRotaRapida();
+  if(mobile()){bootAgendado=false;return}
   const iniciar=()=>aquecerEquipe();
   if('requestIdleCallback'in window)requestIdleCallback(iniciar,{timeout:1200});
   else setTimeout(iniciar,350);
