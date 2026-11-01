@@ -7,7 +7,6 @@ if(!abrirCore)return;
 
 let abrirCompleto=null;
 let instalado=false;
-let aquecido=false;
 let bootAgendado=false;
 let ultimaAtualizacao=Number(window.__OBRIX_CORE_LAST_LOAD||Date.now());
 
@@ -24,7 +23,7 @@ function atualizarEmSegundoPlano(){
     const api=window.OBRIX_EQUIPE;
     if(!api?.refresh)return;
     Promise.resolve(api.refresh()).then(()=>{ultimaAtualizacao=Date.now()}).catch(e=>console.warn('Equipe: atualização em segundo plano indisponível',e));
-  },800);
+  },200);
 }
 
 function abrirOtimizado(id){
@@ -49,21 +48,6 @@ function instalarRotaRapida(){
   return true;
 }
 
-async function aquecerEquipe(){
-  if(aquecido)return true;
-  const loader=window.OBRIX_POS_LOGIN_LOADER;
-  if(!loader?.loadGroup)return false;
-  aquecido=true;
-  try{
-    await loader.loadGroup('equipe');
-    return true;
-  }catch(e){
-    aquecido=false;
-    console.warn('Equipe: pré-carga indisponível',e);
-    return false;
-  }
-}
-
 function preparar(tentativa=0){
   if(!appAberto()){bootAgendado=false;return}
   const loader=window.OBRIX_POS_LOGIN_LOADER;
@@ -75,15 +59,13 @@ function preparar(tentativa=0){
   }
   ultimaAtualizacao=Number(window.__OBRIX_CORE_LAST_LOAD||Date.now());
   instalarRotaRapida();
-  const iniciar=()=>aquecerEquipe();
-  if('requestIdleCallback'in window)requestIdleCallback(iniciar,{timeout:1200});
-  else setTimeout(iniciar,350);
+  bootAgendado=false;
 }
 
 function agendar(){
   if(bootAgendado)return;
   bootAgendado=true;
-  setTimeout(()=>preparar(0),80);
+  setTimeout(()=>preparar(0),60);
 }
 
 const app=document.getElementById('app');
@@ -97,7 +79,7 @@ setTimeout(()=>{if(appAberto())agendar()},120);
 if(!document.getElementById('obrix-ajustes-desktop-20261101-loader')){
   const s=document.createElement('script');
   s.id='obrix-ajustes-desktop-20261101-loader';
-  s.src='./obrix-ajustes-desktop-20261101.js?v=20261101-1';
+  s.src='./obrix-ajustes-desktop-20261101.js?v=20261101-2';
   s.async=false;
   document.body.appendChild(s);
 }
