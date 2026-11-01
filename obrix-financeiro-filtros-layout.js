@@ -12,6 +12,9 @@
     #fmFiltroDataInicio,#fmFiltroDataFim{display:block!important;inline-size:100%!important;max-inline-size:100%!important;min-inline-size:0!important}
     @media(max-width:760px){
       #fmFiltrosPanel .fmFiltrosGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;max-width:100%!important;overflow:hidden!important}
+      #fmFiltrosPanel .fmFiltrosGrid label:nth-child(3){grid-column:1/-1!important}
+      #fmFiltrosPanel .fmFiltrosGrid label:nth-child(4){grid-column:1!important}
+      #fmFiltrosPanel .fmFiltrosGrid label:nth-child(5){grid-column:2!important}
       #fmFiltrosPanel .fmFiltrosHead{display:flex!important;align-items:flex-start!important}
       #fmFiltrosPanel .fmFiltrosHead button{width:auto!important;margin-top:0!important}
       #fmFiltroDataInicio,#fmFiltroDataFim{font-size:13px!important;padding-left:7px!important;padding-right:7px!important}
