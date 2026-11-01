@@ -3,6 +3,8 @@
 if(window.__OBRIX_AJUSTES_DESKTOP_20261101)return;
 window.__OBRIX_AJUSTES_DESKTOP_20261101=true;
 
+const desktop=()=>window.matchMedia?window.matchMedia('(min-width:621px)').matches:window.innerWidth>620;
+
 function aplicar(){
   if(document.getElementById('obrix-ajustes-desktop-20261101-style'))return;
   const s=document.createElement('style');
@@ -15,6 +17,19 @@ function aplicar(){
   .obxOnboardFooter{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;flex:0 0 auto!important;position:sticky!important;bottom:0!important;z-index:50!important;min-height:68px!important;padding:12px 18px!important;background:#fff!important;border-top:1px solid #e2e8f0!important}
   .obxOnboardButtons{display:flex!important;align-items:center!important;gap:10px!important;flex:0 0 auto!important}
   #obxOnboardPrev,#obxOnboardNext{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:44px!important;min-width:110px!important;padding:10px 16px!important;visibility:visible!important;opacity:1!important;white-space:nowrap!important}
+
+  .obrixSetaVoltar,
+  #app button[aria-label="Voltar"],
+  #app a[aria-label="Voltar"]{font-size:0!important;position:relative!important}
+  .obrixSetaVoltar::before,
+  #app button[aria-label="Voltar"]::before,
+  #app a[aria-label="Voltar"]::before{
+    content:""!important;
+    width:29px!important;height:29px!important;display:block!important;flex:0 0 29px!important;
+    background:currentColor!important;
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M19%207%2010%2016l9%209M10%2016h13' fill='none' stroke='black' stroke-width='3.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat!important;
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M19%207%2010%2016l9%209M10%2016h13' fill='none' stroke='black' stroke-width='3.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat!important;
+  }
 }
 @media (min-width:621px) and (max-height:760px){
   #obxOnboardBody{padding:14px 22px 8px!important}
@@ -29,6 +44,19 @@ function aplicar(){
   .obxOnboardFooter{min-height:62px!important;padding:9px 18px!important}
 }
 html[data-theme="dark"] .obxOnboardFooter{background:#0d1722!important;border-top-color:#293b4d!important}
+
+#orcamentosMain .orcPerigo,
+#orcamentosMain .obrixApagarRegistro,
+#diarioMain .diarioPerigo,
+#diarioMain .obrixApagarRegistro{
+  background:var(--ob-surface-2,#e5eaf0)!important;
+  background-color:var(--ob-surface-2,#e5eaf0)!important;
+  background-image:none!important;
+  color:var(--ob-text,#0f172a)!important;
+  -webkit-text-fill-color:var(--ob-text,#0f172a)!important;
+  border:1px solid var(--ob-border,#cbd5df)!important;
+  box-shadow:none!important;
+}
 
 html[data-theme="light"] #cfgExcluirConta,
 html[data-theme="light"] button#cfgExcluirConta,
@@ -61,6 +89,48 @@ html[data-theme="light"] .accountDeleteModal .excluir:is(:hover,:focus,:active){
   document.head.appendChild(s);
 }
 
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',aplicar,{once:true});
-else aplicar();
+let finPromise=null;
+function carregarResumoFinanceiroDesktop(){
+  if(!desktop())return Promise.resolve(false);
+  const loader=window.OBRIX_POS_LOGIN_LOADER;
+  if(!loader?.loadGroup)return Promise.resolve(false);
+  if(finPromise)return finPromise;
+  finPromise=Promise.resolve(loader.loadGroup('financeiro')).then(ok=>{
+    if(ok!==false)window.dispatchEvent(new Event('obrix-financeiro-atualizado'));
+    return ok;
+  }).catch(()=>false).finally(()=>{finPromise=null});
+  return finPromise;
+}
+
+function ligarFinanceiro(){
+  const api=window.OBRIX_FIN;
+  if(!api?.open||api.open.__obrixResumoDesktop)return false;
+  const original=api.open.bind(api);
+  const fn=function(){
+    const r=original(...arguments);
+    if(desktop())setTimeout(carregarResumoFinanceiroDesktop,0);
+    return r;
+  };
+  fn.__obrixResumoDesktop=true;
+  api.open=fn;
+  return true;
+}
+
+function preparar(){aplicar();ligarFinanceiro()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',preparar,{once:true});
+else preparar();
+
+['pageshow','obrix:modules-ready','obrix:modules-online-ready'].forEach(n=>window.addEventListener(n,()=>setTimeout(ligarFinanceiro,0)));
+[250,700,1400,2800].forEach(ms=>setTimeout(ligarFinanceiro,ms));
+
+document.addEventListener('click',e=>{
+  if(!desktop())return;
+  const b=e.target?.closest?.('button,a');if(!b)return;
+  const code=b.getAttribute?.('onclick')||'';
+  const texto=String(b.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+  if(code.includes('OBRIX_FIN')||texto==='financeiro'){
+    ligarFinanceiro();
+    setTimeout(carregarResumoFinanceiroDesktop,0);
+  }
+},true);
 })();
