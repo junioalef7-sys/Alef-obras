@@ -141,4 +141,5 @@ const carregar=(src,id)=>{
 };
 carregar('./obrix-refresh-direto-20261101.js?v=20261101-direto1','obrix-refresh-direto-20261101-loader');
 carregar('./obrix-equipe-bonus.js?v=20261101-direto1','obrix-equipe-bonus-direto-loader');
+carregar('./obrix-financeiro-lucro-estavel.js?v=20261102-lucro1','obrix-financeiro-lucro-estavel-loader');
 })();
