@@ -130,3 +130,15 @@ document.addEventListener('click',()=>{
   setTimeout(aplicar,180);
 });
 })();
+(()=>{'use strict';
+const carregar=(src,id)=>{
+  if(document.getElementById(id))return;
+  const s=document.createElement('script');
+  s.id=id;
+  s.src=src;
+  s.async=false;
+  document.body.appendChild(s);
+};
+carregar('./obrix-refresh-direto-20261101.js?v=20261101-direto1','obrix-refresh-direto-20261101-loader');
+carregar('./obrix-equipe-bonus.js?v=20261101-direto1','obrix-equipe-bonus-direto-loader');
+})();
