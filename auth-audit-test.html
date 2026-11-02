@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>OBRIX — Auditoria de Cadastro</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#111827;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}main{max-width:520px;margin:0 auto;padding:24px 16px 40px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;box-shadow:0 8px 28px rgba(15,23,42,.08)}h1{font-size:24px;margin:0 0 8px}p{line-height:1.45;color:#475569}label{display:block;font-weight:700;margin-top:14px}input{width:100%;font-size:16px;padding:13px;border:1px solid #cbd5e1;border-radius:11px;margin-top:6px;background:#fff;color:#111827}button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:11px;background:#111827;color:#fff;font-size:16px;font-weight:800}button:disabled{opacity:.55}pre{white-space:pre-wrap;word-break:break-word;background:#f8fafc;border:1px solid #e2e8f0;padding:14px;border-radius:12px;margin-top:16px;min-height:96px}.ok{color:#166534}.bad{color:#991b1b}.note{font-size:13px}
+</style>
+</head>
+<body>
+<main><div class="card"><h1>OBRIX — Auditoria de Cadastro</h1><p>Ambiente isolado. Este teste usa somente o projeto Supabase de auditoria e não acessa o banco oficial do OBRIX.</p><label for="email">E-mail</label><input id="email" type="email" autocomplete="email" placeholder="seu@email.com"><label for="password">Senha</label><input id="password" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo de 8 caracteres"><button id="signup" type="button">Testar cadastro</button><pre id="out">Aguardando teste.</pre><p class="note">Resultado esperado: usuário criado, sem sessão imediata e aguardando confirmação de e-mail.</p></div></main>
+<script>
+const SUPABASE_URL='https://mjzlwnuklfopdmgcvdcs.supabase.co';
+const SUPABASE_KEY='sb_publishable_y9Zcco35Ci7grw9DIvcFJw_ZK3uc_CG';
+const emailEl=document.getElementById('email'),passEl=document.getElementById('password'),btn=document.getElementById('signup'),out=document.getElementById('out');
+function show(obj,ok){out.className=ok?'ok':'bad';out.textContent=JSON.stringify(obj,null,2)}
+btn.addEventListener('click',async()=>{const email=emailEl.value.trim(),password=passEl.value;if(!email)return show({ok:false,error:'Digite um e-mail válido.'},false);if(password.length<8)return show({ok:false,error:'A senha precisa ter pelo menos 8 caracteres.'},false);btn.disabled=true;btn.textContent='Testando...';out.className='';out.textContent='Enviando cadastro para o Supabase de auditoria...';const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),20000);try{const resp=await fetch(SUPABASE_URL+'/auth/v1/signup',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify({email,password,data:{nome:'Auditoria OBRIX'}}),signal:controller.signal});const data=await resp.json().catch(()=>({}));const user=data.user||null,session=data.session||null;show({http_status:resp.status,ok:resp.ok,error:data.msg||data.message||data.error_description||data.error||null,user_created:!!user,session_returned:!!session,email_confirmed_at:user?.email_confirmed_at||null,confirmation_sent_at:user?.confirmation_sent_at||null},resp.ok&&!!user&&!session)}catch(e){show({ok:false,error:e?.name==='AbortError'?'Tempo limite de 20 segundos atingido. A requisição não concluiu.':'Falha de conexão com o projeto de auditoria.',detalhe:String(e?.message||e)},false)}finally{clearTimeout(timer);btn.disabled=false;btn.textContent='Testar cadastro'}});
+</script>
+</body></html>
