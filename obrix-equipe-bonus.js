@@ -3,6 +3,7 @@ if(window.__OBRIX_BONUS_CHECKLIST_DIRETO)return;
 window.__OBRIX_BONUS_CHECKLIST_DIRETO=true;
 
 const hoje=()=>new Date().toISOString().slice(0,10);
+let ultimoRegistroId='';
 
 async function contexto(){
   const p=await OBRIX_BACKEND.profile();
@@ -89,21 +90,40 @@ async function abrirBonus(f){
   };
 }
 
-function idBonusDoBotao(btn){
-  const attr=btn?.getAttribute?.('onclick')||'';
+function idDoBotaoBonus(btn){
+  if(!btn)return '';
+  const acao=String(btn.dataset?.acao||'').toLowerCase();
+  if(acao==='bonus')return String(btn.dataset?.id||btn.closest?.('[data-id]')?.dataset?.id||'');
+  const extraCard=String(btn.dataset?.equipeExtraCard||'').toLowerCase();
+  if(extraCard==='bonus')return String(btn.dataset?.id||btn.closest?.('[data-id]')?.dataset?.id||'');
+  const attr=btn.getAttribute?.('onclick')||'';
   const m=attr.match(/equipeAcao\(\s*['"]([^'"]+)['"]\s*,\s*['"]bonus['"]\s*\)/i);
   return m?.[1]||'';
+}
+
+function abrirPorId(id){
+  const f=(window.funcionarios||[]).find(x=>String(x.id)===String(id));
+  if(!f)return alert('Funcionário não encontrado.');
+  return abrirBonus(f).catch(err=>alert(err?.message||'Não foi possível abrir Bônus e Extras.'));
 }
 
 document.addEventListener('click',e=>{
   const btn=e.target.closest?.('button');
   if(!btn)return;
-  const id=idBonusDoBotao(btn);
+
+  if(String(btn.dataset?.acao||'').toLowerCase()==='registros'&&btn.dataset?.id){
+    ultimoRegistroId=String(btn.dataset.id);
+    return;
+  }
+
+  const extra=String(btn.dataset?.extra||'').toLowerCase();
+  const id=extra==='bonus'&&ultimoRegistroId?ultimoRegistroId:idDoBotaoBonus(btn);
   if(!id)return;
+
   e.preventDefault();
   e.stopImmediatePropagation();
-  const f=(window.funcionarios||[]).find(x=>String(x.id)===String(id));
-  if(!f)return alert('Funcionário não encontrado.');
-  abrirBonus(f).catch(err=>alert(err?.message||'Não foi possível abrir Bônus e Extras.'));
+  abrirPorId(id);
 },true);
+
+window.OBRIX_BONUS_CHECKLIST={open:abrirPorId};
 })();
