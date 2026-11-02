@@ -26,7 +26,7 @@ function lerBaseOffline(){try{const viaBoot=window.OBRIX_OFFLINE_BOOTSTRAP_API?.
 function atualizarInicio(){const total=obras.reduce((s,o)=>s+Number(o.valor_contrato||0),0)+extras.reduce((s,x)=>s+Number(x.valor||0),0),recebido=financeiro.filter(x=>x.tipo==='receita'&&(!x.status_lancamento||x.status_lancamento==='ativo')).reduce((s,x)=>s+Number(x.valor||0),0);if($('contratado'))$('contratado').textContent=money(total);if($('receber'))$('receber').textContent=money(Math.max(0,total-recebido));if($('ativas'))$('ativas').textContent=String(obras.filter(o=>['andamento','em_andamento'].includes(String(o.status||'').toLowerCase())).length);if($('funcs'))$('funcs').textContent=String(funcionarios.filter(f=>f.ativo!==false).length)}
 function timeout(p,ms,msg){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg||'Tempo de conexão esgotado.')),ms))])}
 function mostrarApp(){if($('login'))$('login').classList.add('hidden');if($('app'))$('app').classList.remove('hidden')}
-function mostrarErro(e){if($('erro')){$('erro').textContent=e?.message||'Não foi possível entrar.';$('erro').classList.remove('hidden')}}
+function mostrarErro(e){const msg=(e?.message||String(e||'')).trim();if(/sess[aã]o não encontrada\.?\s*entre novamente\.?/i.test(msg)){if($('erro')){$('erro').textContent='';$('erro').classList.add('hidden')}return}if($('erro')){$('erro').textContent=msg||'Não foi possível entrar.';$('erro').classList.remove('hidden')}}
 function restaurarOfflineCore(reason='core'){
   if(navigator.onLine)return false;
   let ok=window.OBRIX_OFFLINE_EARLY?.restore?.(reason)||window.OBRIX_OFFLINE_DIARIO?.restoreBase?.()||window.OBRIX_OFFLINE_BOOTSTRAP_API?.restore?.(reason);
