@@ -1,4 +1,5 @@
 (()=>{'use strict';
+/* OBRIX refresh direto v18 */
 if(window.__OBRIX_REFRESH_DIRETO_20261101)return;
 window.__OBRIX_REFRESH_DIRETO_20261101=true;
 
