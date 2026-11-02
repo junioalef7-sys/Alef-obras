@@ -1,3 +1,4 @@
+(()=>{if(window.__OBRIX_RESUMO_VISUAL_FINAL_LOADER)return;window.__OBRIX_RESUMO_VISUAL_FINAL_LOADER=true;const s=document.createElement('script');s.src='./obrix-resumo-visual-final.js?v=20261102-1';s.defer=true;document.head.appendChild(s)})();
 (()=>{
 'use strict';
 if(window.__OBRIX_RESUMO_GERAL_INTEGRACAO_V2)return;window.__OBRIX_RESUMO_GERAL_INTEGRACAO_V2=true;
