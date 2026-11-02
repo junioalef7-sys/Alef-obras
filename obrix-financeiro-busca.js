@@ -4,17 +4,17 @@ if(window.__OBRIX_FIN_BUSCA)return;
 window.__OBRIX_FIN_BUSCA=true;
 
 const estado={busca:''};
-const STOP=new Set(['a','o','as','os','um','uma','uns','umas','de','da','do','das','dos','em','no','na','nos','nas','com','e','para','por','valor','valores','lancamento','lancamentos','financeiro','financeira','r','real','reais']);
+const STOP=new Set(['a','o','as','os','um','uma','uns','umas','de','da','do','das','dos','em','no','na','nos','nas','com','e','para','por','que','foi','foram','me','mostre','mostra','mostrar','quero','ver','procure','procura','buscar','busca','encontre','encontra','achar','ache','todos','todas','somente','so','apenas','valor','valores','lancamento','lancamentos','financeiro','financeira','r','real','reais']);
 const CAT={
-  entrada:'entrada receita recebimento recebido parcela sinal medicao servico extra reembolso',
-  material:'material materiais cimento argamassa areia brita bloco blocos tijolo tijolos ferragem aco madeira hidraulica eletrica pintura acabamento',
-  mao_de_obra:'mao de obra equipe funcionario funcionarios trabalhador trabalhadores diaria diarias salario salarios semana quinzena mensal empreitada',
-  servico_terceirizado:'servico terceirizado terceirizados terceiro terceiros eletrica hidraulica serralheria gesso pintura limpeza',
-  ferramentas_equipamentos:'ferramentas equipamentos ferramenta equipamento compra manutencao reposicao epi',
-  locacao:'locacao aluguel equipamento cacamba andaime imovel',
-  transporte:'transporte frete entrega deslocamento',
-  combustivel:'combustivel gasolina etanol diesel',
-  outros:'outros outras alimentacao hospedagem taxas impostos telefone internet'
+  entrada:'entrada receita recebimento recebido',
+  material:'material materiais',
+  mao_de_obra:'mao de obra equipe funcionario funcionarios trabalhador trabalhadores',
+  servico_terceirizado:'servico terceirizado terceirizados terceiro terceiros',
+  ferramentas_equipamentos:'ferramenta ferramentas equipamento equipamentos',
+  locacao:'locacao aluguel alugueis',
+  transporte:'transporte frete',
+  combustivel:'combustivel combustiveis',
+  outros:'outros outras'
 };
 
 const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[_-]+/g,' ').replace(/[^a-z0-9.,/\s]/g,' ').replace(/\s+/g,' ').trim();
@@ -68,7 +68,7 @@ function obraFor(x){
 function indexes(card){
   const x=recordFor(card),o=obraFor(x);
   const extras=[];
-  if(x?.tipo==='despesa')extras.push('despesa despesas gasto gastos saida saidas custo custos pagamento pagamentos');
+  if(x?.tipo==='despesa')extras.push('despesa despesas gasto gastos saida saidas custo custos');
   if(x?.tipo==='receita')extras.push('receita receitas entrada entradas recebimento recebimentos recebido recebidos');
   if(x?.categoria&&CAT[x.categoria])extras.push(CAT[x.categoria]);
   const txt=[card.textContent,x?.descricao,x?.tipo,x?.categoria,x?.subcategoria,x?.origem,x?.status_lancamento,o?.nome,o?.cliente,o?.local,o?.status,...extras,...dateForms(x?.data),...moneyForms(x?.valor)].filter(Boolean).join(' ');
