@@ -61,7 +61,16 @@
     if(userCache&&!force)return userCache;
     if(userPromise&&!force)return userPromise;
     userPromise=(async()=>{
-      const sb=await init(),{data,error}=await sb.auth.getUser();
+      const sb=await init();
+      const sessao=await sb.auth.getSession();
+      if(sessao?.data?.session?.user){userCache=sessao.data.session.user;return userCache}
+      let {data,error}=await sb.auth.getUser();
+      if(error||!data?.user){
+        await new Promise(r=>setTimeout(r,180));
+        const tentativa=await sb.auth.getSession();
+        if(tentativa?.data?.session?.user){userCache=tentativa.data.session.user;return userCache}
+        const nova=await sb.auth.getUser();data=nova.data;error=nova.error;
+      }
       if(error||!data?.user)throw new Error('Sessão não encontrada. Entre novamente.');
       userCache=data.user;return userCache;
     })();
