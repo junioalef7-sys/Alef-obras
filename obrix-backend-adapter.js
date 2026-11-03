@@ -85,6 +85,8 @@
       const {data,error}=await sb.from('perfis').select('id,empresa_id,nome,email,papel').eq('id',user.id).maybeSingle();
       if(error)throw error;
       if(!data)throw new Error('Perfil OBRIX não encontrado.');
+      const {error:trialError}=await sb.rpc('obrix_iniciar_trial_primeiro_acesso');
+      if(trialError)throw trialError;
       profileCache=data;return profileCache;
     })();
     try{return await profilePromise}finally{profilePromise=null}
