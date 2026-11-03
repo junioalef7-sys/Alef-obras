@@ -37,7 +37,6 @@
   function ativar(){if(!appAtivo())return;paint();void realtime();if(Date.now()-lastFetch>30000)void sync(false)}
   document.addEventListener('click',e=>{const b=e.target.closest?.('.bottom button,#bInicio');if(!b)return;if(b.id==='bInicio'||(b.textContent||'').trim()==='Início')setTimeout(ativar,0)},true);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')ativar()});window.addEventListener('focus',ativar);window.addEventListener('pageshow',ativar);
-  setInterval(()=>{const inicio=$('inicio');if(inicio&&!inicio.classList.contains('hidden')&&appAtivo())void sync(false)},60000);
   setTimeout(ativar,1200);
   window.OBRIX_DASH={sync,paint};
 })();
