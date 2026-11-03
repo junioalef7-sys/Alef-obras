@@ -1,3 +1,4 @@
+/* Publicação OBRIX: busca de fotos aprovada, tentativa Cloudflare 2026-11-03. */
 (()=>{
 'use strict';
 if(window.__OBRIX_REL_FOTO)return;window.__OBRIX_REL_FOTO=true;
