@@ -1,6 +1,6 @@
 (()=>{'use strict';
 if(window.__OBRIX_LOGIN_RESCUE_V2)return;window.__OBRIX_LOGIN_RESCUE_V2=true;
-const $=id=>document.getElementById(id);let running=false,lastAttempt=0,unsub=null;
+const $=id=>document.getElementById(id),RECOVERY_URL='https://alef-obras-obrix3.vercel.app/obrix.html';let running=false,lastAttempt=0,unsub=null;
 function loginVisible(){const l=$('login');return !!(l&&!l.classList.contains('hidden'))}
 function timeout(p,ms,msg){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg||'Tempo esgotado.')),ms))])}
 function showShell(reason='session'){
@@ -58,7 +58,7 @@ function openRecoveryScreen(){
     if(!email){box.textContent='Digite o seu e-mail.';box.classList.add('show');return}
     btn.disabled=true;btn.textContent='Enviando...';
     try{
-      const sb=await OBRIX_BACKEND.init(),{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://obrix.junioalef7.workers.dev/obrix.html'});if(error)throw error;
+      const sb=await OBRIX_BACKEND.init(),{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:RECOVERY_URL});if(error)throw error;
       screen.querySelector('.obrixRecoveryCard').innerHTML=`<h2>Verifique seu e-mail</h2><div class="obrixRecoverySuccess">Se esse e-mail estiver cadastrado, enviamos o link para criar uma nova senha.</div><div class="obrixRecoveryActions" style="grid-template-columns:1fr"><button type="button" class="obrixRecoveryBack">Voltar para entrar</button></div>`;
       screen.querySelector('.obrixRecoveryBack').onclick=closeRecovery;
     }catch(e){btn.disabled=false;btn.textContent='Enviar link';box.textContent=recoveryMessage(e);box.classList.add('show')}
@@ -73,12 +73,27 @@ function upgradeAuthScreens(){
     if(t==='criar nova senha'||t==='recuperar senha'||t==='criar conta'){
       back.classList.add('obrixRecoveryUpgraded');
       const cancel=back.querySelector('.cancelar');if(cancel&&/cancelar/i.test(cancel.textContent||''))cancel.textContent='Voltar';
+      if(t==='criar nova senha'){
+        const campos=[...back.querySelectorAll('input[type="password"]')];
+        campos.forEach(i=>{i.minLength=8;i.setAttribute('minlength','8')});
+        if(campos[0])campos[0].placeholder='Mínimo de 8 caracteres';
+      }
     }
   });
 }
 function captureAuthButtons(e){
   const b=e.target?.closest?.('#obrixAuthAux .esqueci');if(!b)return;
   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();openRecoveryScreen();
+}
+function captureRecoveryPassword(e){
+  const btn=e.target?.closest?.('.modalBack .confirmar');if(!btn)return;
+  const back=btn.closest('.modalBack'),h=back?.querySelector('.authModal h2,.modal h2');
+  if(String(h?.textContent||'').trim().toLowerCase()!=='criar nova senha')return;
+  const campos=[...back.querySelectorAll('input[type="password"]')],senha=campos[0]?.value||'',confirmacao=campos[1]?.value||'';
+  if(senha.length>=8&&senha===confirmacao)return;
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+  let box=back.querySelector('.authError,.obrixRecoveryError');if(!box){box=document.createElement('div');box.className='authError';btn.parentElement?.insertAdjacentElement('beforebegin',box)}
+  box.textContent=senha.length<8?'A nova senha precisa ter pelo menos 8 caracteres.':'As senhas não conferem.';box.classList.add('show');
 }
 async function installAuthListener(){
   try{
@@ -93,7 +108,7 @@ async function installAuthListener(){
   }catch(e){console.warn('OBRIX login listener indisponível',e)}
 }
 function bindButton(){const btn=$('entrar');if(!btn||btn.dataset.obrixRescueV2==='1')return;btn.dataset.obrixRescueV2='1';btn.addEventListener('click',()=>setTimeout(()=>recover('after-click'),350),false)}
-function boot(){recoveryStyle();bindButton();installAuthListener();document.addEventListener('click',captureAuthButtons,true);if(document.body)new MutationObserver(()=>{bindButton();upgradeAuthScreens()}).observe(document.body,{childList:true,subtree:true});upgradeAuthScreens();setTimeout(()=>recover('startup'),250);setTimeout(()=>recover('startup-2'),1200)}
+function boot(){recoveryStyle();bindButton();installAuthListener();document.addEventListener('click',captureAuthButtons,true);document.addEventListener('click',captureRecoveryPassword,true);if(document.body)new MutationObserver(()=>{bindButton();upgradeAuthScreens()}).observe(document.body,{childList:true,subtree:true});upgradeAuthScreens();setTimeout(()=>recover('startup'),250);setTimeout(()=>recover('startup-2'),1200)}
 window.addEventListener('pageshow',()=>{bindButton();upgradeAuthScreens();setTimeout(()=>recover('pageshow'),150)});window.addEventListener('online',()=>setTimeout(()=>recover('online'),200));
 setInterval(()=>{if(loginVisible())recover('watchdog')},4000);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
