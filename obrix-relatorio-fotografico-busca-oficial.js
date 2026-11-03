@@ -44,7 +44,7 @@ async function search(st,page=0,append=false){
 async function loadStages(st){
  try{const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();const r=await sb.from('checklist_itens').select('id,nome,ordem').eq('empresa_id',p.empresa_id).eq('obra_id',st.obraId).order('ordem');if(r.error||!st.back.isConnected)return;st.panel.querySelector('.obrix-rf-busca-etapa').insertAdjacentHTML('beforeend',(r.data||[]).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.nome||'Etapa')+'</option>').join(''))}catch(_){}}
 function install(back){
- if(!back||back.dataset.buscaFotosOficial||!back.dataset.obraId)return;
+ if(!back||back.dataset.buscaFotosOficial||!back.dataset.obraId||back.querySelector('.obrix-rf-filtros')||back.querySelector('.obrix-rf-busca'))return;
  const area=back.querySelector('.obrix-rf-lista'),title=[...back.querySelectorAll('h3')].find(x=>(x.textContent||'').toLowerCase().includes('fotos da obra'));
  if(!area||!title)return;
  back.dataset.buscaFotosOficial='1';
