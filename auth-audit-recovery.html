@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>OBRIX — Auditoria de Recuperação</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#111827;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}main{max-width:520px;margin:0 auto;padding:24px 16px 40px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;box-shadow:0 8px 28px rgba(15,23,42,.08)}h1{font-size:24px;margin:0 0 8px}p{line-height:1.45;color:#475569}label{display:block;font-weight:700;margin-top:14px}input{width:100%;font-size:16px;padding:13px;border:1px solid #cbd5e1;border-radius:11px;margin-top:6px;background:#fff;color:#111827}button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:11px;background:#111827;color:#fff;font-size:16px;font-weight:800}button:disabled{opacity:.55}pre{white-space:pre-wrap;word-break:break-word;background:#f8fafc;border:1px solid #e2e8f0;padding:14px;border-radius:12px;margin-top:16px;min-height:96px}.ok{color:#166534}.bad{color:#991b1b}.note{font-size:13px}.hidden{display:none}.success{padding:12px;border-radius:11px;background:#f0fdf4;color:#166534;font-weight:700;margin-top:16px}
+</style>
+</head>
+<body>
+<main><div class="card">
+<h1>OBRIX — Recuperação de Senha</h1>
+<p>Ambiente isolado. Este teste usa somente o projeto Supabase de auditoria e não acessa o banco oficial do OBRIX.</p>
+<section id="requestPanel">
+<label for="email">E-mail confirmado</label>
+<input id="email" type="email" autocomplete="email" value="sesconstrucoes2021@hotmail.com">
+<button id="send" type="button">Enviar recuperação</button>
+<pre id="sendOut">Aguardando envio.</pre>
+<p class="note">Será enviado um e-mail de recuperação. O link deve voltar para esta mesma página.</p>
+</section>
+<section id="resetPanel" class="hidden">
+<div class="success">Link de recuperação reconhecido. Defina uma nova senha.</div>
+<label for="newPass">Nova senha</label>
+<input id="newPass" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo de 8 caracteres">
+<label for="confirmPass">Confirmar nova senha</label>
+<input id="confirmPass" type="password" autocomplete="new-password" minlength="8" placeholder="Repita a nova senha">
+<button id="update" type="button">Salvar nova senha</button>
+<pre id="updateOut">Aguardando nova senha.</pre>
+</section>
+</div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://mjzlwnuklfopdmgcvdcs.supabase.co';
+const SUPABASE_KEY='sb_publishable_y9Zcco35Ci7grw9DIvcFJw_ZK3uc_CG';
+const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+const requestPanel=document.getElementById('requestPanel'),resetPanel=document.getElementById('resetPanel');
+const send=document.getElementById('send'),sendOut=document.getElementById('sendOut');
+const update=document.getElementById('update'),updateOut=document.getElementById('updateOut');
+const emailEl=document.getElementById('email'),newPass=document.getElementById('newPass'),confirmPass=document.getElementById('confirmPass');
+function show(el,obj,ok){el.className=ok?'ok':'bad';el.textContent=JSON.stringify(obj,null,2)}
+const hp=new URLSearchParams(location.hash.startsWith('#')?location.hash.slice(1):'');
+const accessToken=hp.get('access_token'),refreshToken=hp.get('refresh_token'),flowType=hp.get('type');
+if(flowType==='recovery'&&accessToken&&refreshToken){requestPanel.classList.add('hidden');resetPanel.classList.remove('hidden')}
+send.addEventListener('click',async()=>{
+ const email=emailEl.value.trim();if(!email)return show(sendOut,{ok:false,error:'Digite o e-mail.'},false);
+ send.disabled=true;send.textContent='Enviando...';
+ try{
+  const redirectTo=location.origin+location.pathname;
+  const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo});
+  if(error)show(sendOut,{ok:false,error:error.message,redirect_to:redirectTo},false);
+  else show(sendOut,{ok:true,email_sent:true,redirect_to:redirectTo,mensagem:'E-mail de recuperação solicitado. Abra sua caixa de entrada.'},true);
+ }catch(e){show(sendOut,{ok:false,error:String(e?.message||e)},false)}finally{send.disabled=false;send.textContent='Enviar recuperação'}
+});
+update.addEventListener('click',async()=>{
+ const p1=newPass.value,p2=confirmPass.value;if(p1.length<8)return show(updateOut,{ok:false,error:'A nova senha precisa ter pelo menos 8 caracteres.'},false);if(p1!==p2)return show(updateOut,{ok:false,error:'As senhas não conferem.'},false);
+ update.disabled=true;update.textContent='Salvando...';
+ try{
+  const s=await client.auth.setSession({access_token:accessToken,refresh_token:refreshToken});
+  if(s.error)return show(updateOut,{ok:false,error:'Não foi possível validar a sessão de recuperação: '+s.error.message},false);
+  const {data,error}=await client.auth.updateUser({password:p1});
+  if(error)show(updateOut,{ok:false,error:error.message},false);
+  else {show(updateOut,{ok:true,password_updated:true,user_returned:!!data?.user},true);history.replaceState(null,'',location.pathname)}
+ }catch(e){show(updateOut,{ok:false,error:String(e?.message||e)},false)}finally{update.disabled=false;update.textContent='Salvar nova senha'}
+});
+</script>
+</body></html>
