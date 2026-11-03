@@ -1,5 +1,5 @@
-const CACHE='obrix-offline-v62-ios-recovery';
-const BUILD='20261028-ios-recovery1';
+const CACHE='obrix-offline-v63-fotos-busca';
+const BUILD='20261103-fotos-busca1';
 const CDN_SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1';
 const CDN_HTML2CANVAS='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const CDN_JSPDF='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
@@ -8,7 +8,7 @@ const APP=[
 './obrix-financeiro-main.js','./obrix-estoque-main.js','./obrix-equipe-main.js','./obrix-obras-main.js','./obrix-menu-main.js','./obrix-nav-active.js','./obrix-home-clean.js','./obrix-theme-main.js','./obrix-light-polish.js','./obrix-brand-main.js','./obrix-ajustes-ui-final.js',
 './obrix-financeiro-resumo-obras.js','./obrix-financeiro-resumo-geral.js','./obrix-financeiro-protecao-estoque.js','./obrix-financeiro-busca.js','./obrix-financeiro-filtros-layout.js','./obrix-financeiro-grafico-receitas.js','./obrix-blindagem-financeiro.js',
 './obrix-equipe-controles-guard.js','./obrix-equipe-total-pago.js','./obrix-equipe-lista-vertical.js','./obrix-equipe-diretorio-pessoal.js','./obrix-equipe-botoes-neutros-v1.js','./obrix-equipe-estoque-fix-v1.js',
-'./obrix-estoque-saida-obra.js','./obrix-estoque-operacoes-main.js','./obrix-estoque-estorno-final.js','./obrix-obras-busca.js','./obrix-obras-pagamentos.js','./obrix-checklist-v2.js',
+'./obrix-estoque-saida-obra.js','./obrix-estoque-operacoes-main.js','./obrix-estoque-estorno-final.js','./obrix-obras-busca.js','./obrix-obras-pagamentos.js','./obrix-relatorio-fotografico.js','./obrix-relatorio-fotografico-realtime.js','./obrix-checklist-v2.js',
 './obrix-diario-main.js','./obrix-diario-equipe.js','./obrix-orcamentos-main.js','./obrix-orcamentos-itens-topo.js','./obrix-orcamentos-rascunho-print.js','./obrix-relatorios-v2.js','./obrix-relatorios-mobile-fix.js','./obrix-relatorios-complementos.js','./obrix-relatorio-financeiro-obra.js','./obrix-relatorio-diario.js','./obrix-documentos-main.js','./obrix-documentos-direto.js','./obrix-notas-main.js','./obrix-backup-v2.js','./obrix-backup-import-run.js','./obrix-backup-completo.js','./obrix-config-main.js',
 './obrix-erros-ptbr.js','./obrix-avatar-dark-fix.js','./obrix-audit-fixes-v1.js','./obrix-button-colors-v1.js','./obrix-ui-cleanup-v5.js','./obrix-equipe-realtime-sync.js','./obrix-equipe-registros-faltas.js','./obrix-equipe-ajustes-20261023.js','./obrix-offline-prefetch.js',
 './obrix-assinaturas-cobrancas-efi.js','./obrix-assinaturas-economia-anual.js','./obrix-suporte-main.js','./obrix-suporte-permissoes-ui.js','./obrix-notificacoes.js','./obrix-suporte-admin-notif.js','./obrix-onboarding.js','./obrix-global-ui-report-fix.js','./obrix-pagamentos-ui-alinhamento.js','./obrix-equipe-checklist-loader.js',
