@@ -8,6 +8,7 @@ export default async function handler(req,res){
     '/obrix-pos-login-loader.js',
     '/obrix-relatorio-fotografico-realtime.js',
     '/obrix-relatorio-fotografico-busca-oficial.js',
+    '/obrix-relatorio-fotografico-busca-oficial.js',
     '/obrix-sw.js'
   ];
   const variants=files.flatMap(path=>[path,path+'?v=20261103busca-oficial1',path+'?v=20261103busca-oficial1&diag=2']);
@@ -17,7 +18,7 @@ export default async function handler(req,res){
       const r=await fetch(origin+item,{cache:'no-store',signal:AbortSignal.timeout(10000),headers:{'accept':'text/plain, text/html, application/javascript, */*'}});
       const t=await r.text();
       return {path,query:qs||'',status:r.status,type:r.headers.get('content-type'),cache:r.headers.get('cache-control'),cfCache:r.headers.get('cf-cache-status'),age:r.headers.get('age'),etag:r.headers.get('etag'),lastModified:r.headers.get('last-modified'),length:t.length,sha256:crypto.createHash('sha256').update(t).digest('hex').slice(0,20),
-        hasSearchField:t.includes('obrix-rf-busca'),
+        hasSearchField:t.includes('obrix-rf-busca'),hasStandaloneOverlay:t.includes('__OBRIX_BUSCA_FOTOS_OFICIAL'),hasOverlayScriptCall:t.includes('obrix-relatorio-fotografico-busca-oficial.js'),
         hasSearchHandler:t.includes("listar(obraId,page,filtros)"),
         hasPhotoModule:t.includes('obrix-relatorio-fotografico.js'),
         hasCacheVersion63:t.includes('obrix-offline-v63-fotos-busca'),
