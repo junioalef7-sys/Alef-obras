@@ -1,4 +1,4 @@
-(()=>{if(window.__OBRIX_RESUMO_VISUAL_FINAL_LOADER)return;window.__OBRIX_RESUMO_VISUAL_FINAL_LOADER=true;const s=document.createElement('script');s.src='./obrix-resumo-visual-final.js?v=20261102-1';s.defer=true;document.head.appendChild(s)})();
+(()=>{if(window.__OBRIX_RESUMO_VISUAL_FINAL_LOADER)return;window.__OBRIX_RESUMO_VISUAL_FINAL_LOADER=true;const s=document.createElement('script');s.src='./obrix-resumo-visual-final.js?v=20261104arrow3';s.defer=true;document.head.appendChild(s)})();
 (()=>{
 'use strict';
 if(window.__OBRIX_RESUMO_GERAL_INTEGRACAO_V2)return;window.__OBRIX_RESUMO_GERAL_INTEGRACAO_V2=true;
@@ -14,7 +14,7 @@ function status(){try{return window.OBRIX_RESUMO_GERAL?.status?.()||{}}catch(_){
 function setaOriginal(){
   if(!resumoVisivel())return;
   const b=$('obrixHeaderVoltar');if(!b)return;
-  b.classList.remove('hidden');b.textContent='←';b.setAttribute('aria-label','Voltar');b.setAttribute('title','Voltar');
+  b.classList.remove('hidden');if(!b.querySelector('svg[data-obrix-back-icon]'))b.innerHTML="<svg data-obrix-back-icon=\"1\" viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M19 12H5m7 7-7-7 7-7\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>";b.setAttribute('aria-label','Voltar');b.setAttribute('title','Voltar');
   b.onclick=e=>{e?.preventDefault?.();e?.stopPropagation?.();const st=status();if(st.view==='obra'){const interno=$('rgVoltarGeral');if(interno){interno.click();return}window.OBRIX_RESUMO_GERAL?.open?.();return}$('resumoGeralMain')?.classList.add('hidden');window.OBRIX_MENU?.open?.()};
 }
 function classesStatus(){document.querySelectorAll('#resumoGeralMain .rgStatus').forEach(el=>{const t=norm(el.textContent);el.classList.toggle('andamento',t.includes('andamento'));el.classList.toggle('concluida',t.includes('conclu'))})}
