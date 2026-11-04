@@ -131,8 +131,8 @@ async function sync(){
   if(closedFor===current){remove();return}
   injectCSS();
   if(endOfPresentation){
-    remove();
-    card($('obxOnboardBody'));
+    const holder=$('obxOnboardBody');
+    if(holder&&!holder.querySelector('.obrixAndroidInstallCard')){remove();card(holder)}
   }else if(introVisible()){
     remove(); // A apresentação mostra o botão somente na última etapa.
   }else if(activeType==='reinstall'&&homeVisible()){
