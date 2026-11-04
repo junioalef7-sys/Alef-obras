@@ -1,0 +1,1 @@
+(()=>{'use strict';if(window.__OBRIX_NO_GOLD_FINAL)return;window.__OBRIX_NO_GOLD_FINAL=true;window.OBRIX_NO_GOLD_FINAL={apply:()=>window.OBRIX_THEME?.refresh?.()};})();

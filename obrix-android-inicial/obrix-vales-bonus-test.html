@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OBRIX — Teste Vale, Bônus e Líquido</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#f4f6f8;color:#111827}.hidden{display:none!important}.wrap{max-width:980px;margin:auto;padding:16px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 8px 28px rgba(0,0,0,.05)}.notice{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-weight:800}.brand{font-size:27px;font-weight:900}.muted{color:#667085}.login{max-width:460px;margin:30px auto}.login label,.form label{display:block;font-weight:800;margin:12px 0 6px}.login input,.form input,.form select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:11px;font-size:16px}.btn,.login button{border:0;border-radius:11px;padding:12px 15px;font-weight:800;cursor:pointer;background:#111827;color:#fff}.login button{width:100%;margin-top:15px}.light{background:#e5e7eb;color:#111827}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.kpi{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:15px}.kpi small{display:block;color:#667085;font-weight:700}.kpi strong{display:block;font-size:24px;margin-top:5px}.status{padding:11px 12px;border-radius:10px;margin-top:12px;background:#eef2f7;white-space:pre-wrap}.ok{background:#dcfce7;color:#166534}.err{background:#fee2e2;color:#991b1b}.row{padding:12px 0;border-top:1px solid #e5e7eb}.row:first-child{border-top:0}.rowline{display:flex;align-items:flex-start;gap:10px}.rowline input{margin-top:4px;transform:scale(1.2)}.amount{font-weight:900}.paybar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb}.sectionTitle{margin:0 0 4px}@media(max-width:760px){.grid,.grid2{grid-template-columns:1fr}.top,.paybar{align-items:flex-start;flex-direction:column}.top>div:last-child{display:flex;gap:8px;width:100%}.top .btn{flex:1}.paybar .btn{width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card notice">AMBIENTE DE TESTE — valide: Diárias + Bônus/Extras − Vales = Líquido. Cenário principal: R$ 800,00 − R$ 660,00 = R$ 140,00.</div>
+  <section id="loginView" class="card login">
+    <div class="brand">OBRIX</div><p class="muted">Teste de Vale, Bônus/Extras e Líquido</p>
+    <label>E-mail</label><input id="email" type="email" autocomplete="username">
+    <label>Senha</label><input id="password" type="password" autocomplete="current-password">
+    <button id="loginBtn">Entrar</button><div id="loginStatus" class="status hidden"></div>
+  </section>
+
+  <section id="appView" class="hidden">
+    <div class="card top"><div><div class="brand">Vale + Bônus/Extras</div><div id="userLine" class="muted"></div></div><div><button id="refreshBtn" class="btn light">Atualizar</button><button id="logoutBtn" class="btn light">Sair</button></div></div>
+
+    <div class="card form">
+      <div class="grid2"><div><label>Funcionário</label><select id="funcionario"></select></div><div><label>Obra</label><select id="obra"></select></div></div>
+      <div class="grid">
+        <div><label>Diária</label><input id="diariaValor" type="number" min="0.01" step="0.01" value="800"><button id="addDiaria" class="btn" style="margin-top:8px;width:100%">Registrar diária</button></div>
+        <div><label>Vale</label><input id="valeValor" type="number" min="0.01" step="0.01" value="500"><button id="addVale" class="btn" style="margin-top:8px;width:100%">Registrar vale</button></div>
+        <div><label>Bônus/Extra</label><input id="bonusValor" type="number" min="0.01" step="0.01"><select id="bonusTipo" style="margin-top:8px"><option value="bonus">Bônus</option><option value="extra">Extra</option></select><button id="addBonus" class="btn" style="margin-top:8px;width:100%">Registrar bônus/extra</button></div>
+      </div>
+      <div id="regStatus" class="status hidden"></div>
+    </div>
+
+    <div class="grid" style="margin-bottom:14px">
+      <div class="kpi"><small>Diárias selecionadas</small><strong id="kDiarias">R$ 0,00</strong></div>
+      <div class="kpi"><small>Bônus/Extras selecionados</small><strong id="kBonus">R$ 0,00</strong></div>
+      <div class="kpi"><small>Vales selecionados</small><strong id="kVales">R$ 0,00</strong></div>
+    </div>
+    <div class="grid" style="margin-bottom:14px">
+      <div class="kpi"><small>Bruto</small><strong id="kBruto">R$ 0,00</strong></div>
+      <div class="kpi"><small>Líquido a pagar</small><strong id="kLiquido">R$ 0,00</strong></div>
+      <div class="kpi"><small>Regra</small><strong style="font-size:16px">Diárias + Bônus − Vales</strong></div>
+    </div>
+
+    <div class="card"><h2 class="sectionTitle">Diárias em aberto</h2><div id="diarias"></div></div>
+    <div class="card"><h2 class="sectionTitle">Vales em aberto</h2><div id="vales"></div></div>
+    <div class="card"><h2 class="sectionTitle">Bônus e Extras em aberto</h2><div id="bonus"></div></div>
+
+    <div class="card">
+      <div class="paybar"><div><strong>Líquido calculado:</strong> <span id="payLiquido">R$ 0,00</span><div class="muted">Após pagar, os itens selecionados devem sair do aberto e não podem ser descontados/somados novamente.</div></div><button id="pagarBtn" class="btn">Pagar selecionados</button></div>
+      <div id="payStatus" class="status hidden"></div>
+    </div>
+
+    <div class="card"><h2 class="sectionTitle">Últimos pagamentos</h2><div id="pagamentos"></div></div>
+  </section>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
+<script src="./obrix-backend-adapter.js"></script>
+<script>
+const $=id=>document.getElementById(id);const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});let profile=null,funcionarios=[],obras=[],diarias=[],vales=[],bonus=[],pagamentos=[];
+function show(el,text,ok=true){el.textContent=text;el.className='status '+(ok?'ok':'err');el.classList.remove('hidden')}
+function fillSelects(){const f=$('funcionario'),o=$('obra'),fv=f.value,ov=o.value;f.innerHTML='';o.innerHTML='';funcionarios.filter(x=>x.ativo).forEach(x=>{const op=document.createElement('option');op.value=x.id;op.textContent=x.nome;f.appendChild(op)});obras.forEach(x=>{const op=document.createElement('option');op.value=x.id;op.textContent=x.nome;o.appendChild(op)});if([...f.options].some(x=>x.value===fv))f.value=fv;if([...o.options].some(x=>x.value===ov))o.value=ov}
+function fid(){return $('funcionario').value}function oid(){return $('obra').value}
+function rowCheck(cls,id,title,meta,value){const el=document.createElement('label');el.className='row rowline';el.innerHTML='<input type="checkbox"><div><strong></strong><div class="muted meta"></div><div class="amount"></div></div>';const c=el.querySelector('input');c.className=cls;c.value=id;c.dataset.valor=value;c.onchange=calc;el.querySelector('strong').textContent=title;el.querySelector('.meta').textContent=meta;el.querySelector('.amount').textContent=money(value);return el}
+function renderOpen(){
+ const f=fid();const dh=$('diarias'),vh=$('vales'),bh=$('bonus');dh.innerHTML='';vh.innerHTML='';bh.innerHTML='';
+ const dr=diarias.filter(x=>!x.paga&&x.funcionario_id===f),vr=vales.filter(x=>!x.quitado&&x.funcionario_id===f),br=bonus.filter(x=>!x.pago&&x.funcionario_id===f);
+ if(!dr.length)dh.innerHTML='<div class="row muted">Nenhuma diária em aberto.</div>';dr.forEach(x=>dh.appendChild(rowCheck('chkDiaria',x.id,(obras.find(o=>o.id===x.obra_id)?.nome||'Obra'),x.data+' • diária',x.valor_total)));
+ if(!vr.length)vh.innerHTML='<div class="row muted">Nenhum vale em aberto.</div>';vr.forEach(x=>vh.appendChild(rowCheck('chkVale',x.id,(obras.find(o=>o.id===x.obra_id)?.nome||'Obra'),x.data+' • vale',x.valor)));
+ if(!br.length)bh.innerHTML='<div class="row muted">Nenhum bônus/extra em aberto.</div>';br.forEach(x=>bh.appendChild(rowCheck('chkBonus',x.id,(obras.find(o=>o.id===x.obra_id)?.nome||'Obra'),x.data+' • '+x.tipo,x.valor)));
+ calc();
+}
+function sum(cls){return [...document.querySelectorAll('.'+cls+':checked')].reduce((s,x)=>s+Number(x.dataset.valor||0),0)}
+function calc(){const d=sum('chkDiaria'),b=sum('chkBonus'),v=sum('chkVale'),br=d+b,l=br-v;$('kDiarias').textContent=money(d);$('kBonus').textContent=money(b);$('kVales').textContent=money(v);$('kBruto').textContent=money(br);$('kLiquido').textContent=money(l);$('payLiquido').textContent=money(l)}
+function renderPagamentos(){const h=$('pagamentos');h.innerHTML='';const rows=pagamentos.filter(x=>x.funcionario_id===fid()).slice(0,10);if(!rows.length){h.innerHTML='<div class="row muted">Nenhum pagamento ainda.</div>';return}rows.forEach(x=>{const el=document.createElement('div');el.className='row';el.innerHTML='<strong></strong><div class="muted"></div><div class="amount"></div>';el.querySelector('strong').textContent='Pagamento '+x.data_pagamento;el.querySelector('.muted').textContent='Diárias '+money(x.valor_diarias)+' • Bônus/Extras '+money(x.valor_bonus_extras)+' • Vales '+money(x.valor_vales);el.querySelector('.amount').textContent='Líquido: '+money(x.valor_liquido);h.appendChild(el)})}
+async function loadAll(){profile=await OBRIX_BACKEND.profile();[funcionarios,obras,diarias,vales,bonus,pagamentos]=await Promise.all([OBRIX_BACKEND.readTable('funcionarios','criado_em'),OBRIX_BACKEND.readTable('obras','criado_em'),OBRIX_BACKEND.readTable('diarias','data'),OBRIX_BACKEND.readTable('vales','data'),OBRIX_BACKEND.readTable('bonus_extras','data'),OBRIX_BACKEND.readTable('pagamentos_equipe','data_pagamento')]);$('userLine').textContent=profile?.nome||profile?.email||'Usuário';fillSelects();renderOpen();renderPagamentos()}
+async function add(table,value,payloadExtra={}){const valor=Number(value);if(!fid()||!oid()||valor<=0){show($('regStatus'),'Selecione funcionário, obra e informe valor maior que zero.',false);return}try{const sb=await OBRIX_BACKEND.init();let payload={empresa_id:profile.empresa_id,funcionario_id:fid(),obra_id:oid(),valor,data:new Date().toISOString().slice(0,10),...payloadExtra};if(table==='diarias')payload={empresa_id:profile.empresa_id,funcionario_id:fid(),obra_id:oid(),data:new Date().toISOString().slice(0,10),quantidade:1,valor_unitario:valor,valor_total:valor,paga:false};const {error}=await sb.from(table).insert(payload);if(error)throw error;show($('regStatus'),'Registro criado com sucesso.');await loadAll()}catch(e){show($('regStatus'),'Erro: '+e.message,false)}}
+async function pagar(){const diaria_ids=[...document.querySelectorAll('.chkDiaria:checked')].map(x=>x.value),vale_ids=[...document.querySelectorAll('.chkVale:checked')].map(x=>x.value),bonus_ids=[...document.querySelectorAll('.chkBonus:checked')].map(x=>x.value);if(!diaria_ids.length&&!vale_ids.length&&!bonus_ids.length){show($('payStatus'),'Selecione ao menos um item.',false);return}const b=$('pagarBtn');b.disabled=true;try{const sb=await OBRIX_BACKEND.init();const {data,error}=await sb.rpc('obrix_pagar_equipe_completo',{p_funcionario_id:fid(),p_diaria_ids:diaria_ids,p_vale_ids:vale_ids,p_bonus_ids:bonus_ids});if(error)throw error;show($('payStatus'),'Pagamento concluído. Bruto '+money(data.bruto)+' • Vales '+money(data.vales)+' • Líquido '+money(data.liquido)+'. Confira que os itens saíram do aberto.');await loadAll()}catch(e){show($('payStatus'),'Erro ao pagar: '+e.message,false)}finally{b.disabled=false}}
+async function enter(){await loadAll();$('loginView').classList.add('hidden');$('appView').classList.remove('hidden')}
+$('loginBtn').onclick=async()=>{const b=$('loginBtn');b.disabled=true;show($('loginStatus'),'Entrando...');try{const sb=await OBRIX_BACKEND.init();const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error||!data?.session)throw error||new Error('Sessão não criada.');await enter()}catch(e){show($('loginStatus'),'Erro: '+e.message,false)}finally{b.disabled=false}};
+$('logoutBtn').onclick=async()=>{const sb=await OBRIX_BACKEND.init();await sb.auth.signOut();$('appView').classList.add('hidden');$('loginView').classList.remove('hidden')};$('refreshBtn').onclick=loadAll;$('funcionario').onchange=()=>{renderOpen();renderPagamentos()};$('addDiaria').onclick=()=>add('diarias',$('diariaValor').value);$('addVale').onclick=()=>add('vales',$('valeValor').value,{quitado:false});$('addBonus').onclick=()=>add('bonus_extras',$('bonusValor').value,{tipo:$('bonusTipo').value,descricao:'Teste bônus/extra',pago:false});$('pagarBtn').onclick=pagar;
+(async()=>{try{const sb=await OBRIX_BACKEND.init();const {data}=await sb.auth.getSession();if(data?.session)await enter()}catch(_){}})();window.loadAll=loadAll;
+</script>
+<script src="./obrix-realtime-sync.js?v=146"></script>
+</body></html>

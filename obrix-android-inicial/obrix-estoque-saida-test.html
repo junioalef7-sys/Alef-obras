@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>OBRIX — Saída de Estoque</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;background:#f5f7fa;color:#111}
+    .wrap{max-width:900px;margin:auto;padding:14px}
+    .card{background:#fff;border:1px solid #ddd;border-radius:14px;padding:14px;margin-bottom:12px}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .kpi{background:#fafafa;border:1px solid #e2e2e2;border-radius:12px;padding:12px;margin-top:10px}
+    .kpi b{font-size:24px}
+    input,select,textarea,button{width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #bbb;font-size:16px}
+    textarea{min-height:80px;resize:vertical}
+    button{background:#111;color:#fff;font-weight:700}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .muted{color:#666}
+    .hidden{display:none!important}
+    .row{padding:10px 0;border-bottom:1px solid #eee}
+    .row:last-child{border-bottom:0}
+    .warn{color:#9f1d20;font-weight:700}
+    @media(max-width:680px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" id="login">
+      <h2>OBRIX — Saída de estoque</h2>
+      <p class="muted">Teste isolado de retirada de material.</p>
+      <input id="email" type="email" placeholder="E-mail" autocomplete="email"><br><br>
+      <input id="senha" type="password" placeholder="Senha" autocomplete="current-password"><br><br>
+      <button id="entrar" type="button">Entrar</button>
+      <p id="loginStatus"></p>
+    </div>
+
+    <div id="app" class="hidden">
+      <div class="card">
+        <h2>Registrar saída</h2>
+        <div class="grid">
+          <div><label>Material</label><select id="material"></select></div>
+          <div><label>Local de estoque</label><select id="estoque"></select></div>
+          <div><label>Quantidade</label><input id="quantidade" inputmode="decimal" placeholder="Ex.: 5"></div>
+          <div><label>Data</label><input id="data" type="date"></div>
+          <div><label>Documento / requisição</label><input id="documento" placeholder="Opcional"></div>
+        </div>
+        <br>
+        <label>Observações</label>
+        <textarea id="observacoes" placeholder="Opcional"></textarea>
+        <br><br>
+        <button id="registrar" type="button">Registrar saída</button>
+        <p id="status"></p>
+        <div class="kpi">
+          <span>Saldo disponível selecionado</span><br>
+          <b id="saldoAtual">0</b>
+          <div id="saldoAviso" class="warn"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Saldos atuais</h3>
+        <div id="saldos"></div>
+      </div>
+
+      <div class="card">
+        <h3>Últimas saídas</h3>
+        <div id="movimentos"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./obrix-backend-adapter.js?v=208"></script>
+  <script src="./obrix-estoque-saida-test.js?v=208"></script>
+</body>
+</html>

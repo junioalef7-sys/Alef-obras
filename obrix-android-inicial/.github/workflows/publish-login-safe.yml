@@ -1,0 +1,81 @@
+name: Publicar OBRIX
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: obrix-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Validar e preparar OBRIX
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar JavaScript OBRIX
+        run: |
+          set -e
+          for f in obrix-*.js; do
+            [ -f "$f" ] && node --check "$f"
+          done
+      - name: Blindagem completa do modo offline v3 homologado
+        env:
+          OBRIX_OFFLINE_HOMOLOGATED_COMMIT: 884b2d8a63a900da7e29aac6f520fa852499313b
+        run: |
+          set -e
+          node .github/scripts/validate-obrix-offline-v3-lock.mjs
+      - name: Blindagem geral contra regressao
+        run: |
+          set -e
+          test -f obrix-release-lock.json
+          grep -q "pointerdown" obrix-estoque-saida-obra.js
+          grep -q "e.isTrusted" obrix-estoque-saida-obra.js
+          grep -q "Carregando dados" obrix-estoque-saida-obra.js
+          grep -q "obrixPermanentNeutral" obrix-equipe-botoes-neutros-v1.js
+          grep -q "data-extra=\\\"vale\\\"" obrix-equipe-botoes-neutros-v1.js
+          grep -q "f==='ativos'&&ativo(x)" obrix-equipe-estoque-fix-v1.js
+          grep -q "f==='inativos'&&!ativo(x)" obrix-equipe-estoque-fix-v1.js
+          grep -q "obrix-equipe-botoes-neutros-v1.js" obrix-sw.js
+          grep -q "obrix-equipe-estoque-fix-v1.js" obrix-sw.js
+          grep -q "obrix-estoque-saida-obra.js" obrix-sw.js
+          test -f obrix-equipe-botoes-neutros-v1.js
+          test -f obrix-equipe-estoque-fix-v1.js
+      - name: Validar arquivos principais
+        run: |
+          grep -q 'OBRIX — Gestão de Obras' obrix.html
+          grep -q 'gnvclctqnwxnjxydzhwc.supabase.co' obrix-backend-adapter.js
+          grep -q 'OBRIX' obrix-manifest.webmanifest
+      - name: Preparar site público somente OBRIX
+        run: |
+          rm -rf .pages
+          mkdir .pages
+          cp index.html privacidade.html .pages/
+          cp obrix* .pages/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .pages
+
+  deploy:
+    name: Publicar OBRIX
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,1 @@
+(()=>{'use strict';/* Navegação de Obras centralizada em obrix-obras-v2.js. */})();

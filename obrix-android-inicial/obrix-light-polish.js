@@ -1,0 +1,1 @@
+(()=>{'use strict';window.OBRIX_THEME?.refresh?.();})();

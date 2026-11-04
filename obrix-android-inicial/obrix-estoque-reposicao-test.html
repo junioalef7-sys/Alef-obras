@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OBRIX — Reposição de Estoque</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.wrap{max-width:920px;margin:auto;padding:14px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;margin-bottom:14px}.brand{font-size:28px;font-weight:900}.muted{color:#667085}.hidden{display:none!important}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{display:block;font-weight:800;margin:12px 0 6px}input,select,textarea,button{width:100%;padding:12px;border-radius:10px;border:1px solid #cbd5e1;font-size:16px;background:#fff;color:#111827}textarea{min-height:80px;resize:vertical}button{background:#111827;color:#fff;font-weight:800;cursor:pointer}.status{margin-top:12px;padding:10px;border-radius:10px;background:#f1f5f9;white-space:pre-wrap}.ok{background:#ecfdf5;color:#166534}.err{background:#fef2f2;color:#991b1b}.warn{background:#fff7ed;border:1px solid #fdba74;border-radius:12px;padding:12px;margin:8px 0}.row{padding:10px 0;border-bottom:1px solid #eee}.row:last-child{border-bottom:0}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.kpi{background:#fafafa;border:1px solid #e5e7eb;border-radius:12px;padding:14px}.kpi small{display:block;color:#667085;font-weight:700}.kpi strong{display:block;font-size:24px;margin-top:6px}@media(max-width:650px){.grid,.kpis{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="loginView">
+    <div class="brand">OBRIX</div>
+    <p class="muted">Reposição de estoque e lista de compras</p>
+    <label>E-mail</label><input id="email" type="email" autocomplete="username">
+    <label>Senha</label><input id="password" type="password" autocomplete="current-password">
+    <br><br><button id="loginBtn">Entrar</button>
+    <div id="loginStatus" class="status hidden"></div>
+  </div>
+
+  <div id="appView" class="hidden">
+    <div class="card">
+      <div class="brand">Reposição / Lista de Compras</div>
+      <p class="muted">Gere um pedido em rascunho a partir dos materiais abaixo do estoque mínimo. O estoque só será alterado quando a compra for recebida.</p>
+      <div class="kpis">
+        <div class="kpi"><small>Itens em alerta</small><strong id="kAlertas">0</strong></div>
+        <div class="kpi"><small>Pedidos em rascunho</small><strong id="kRascunhos">0</strong></div>
+        <div class="kpi"><small>Fornecedores</small><strong id="kFornecedores">0</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Gerar reposição</h3>
+      <div class="grid">
+        <div><label>Material em alerta</label><select id="material"></select></div>
+        <div><label>Quantidade sugerida</label><input id="quantidade" type="number" min="0.001" step="0.001"></div>
+        <div><label>Fornecedor cadastrado</label><select id="fornecedor"></select></div>
+        <div><label>Novo fornecedor</label><input id="novoFornecedor" placeholder="Use se ainda não estiver cadastrado"></div>
+        <div><label>Valor unitário</label><input id="valorUnitario" type="number" min="0" step="0.01" inputmode="decimal"></div>
+      </div>
+      <label>Observações</label><textarea id="observacoes" placeholder="Opcional"></textarea>
+      <br><button id="gerarBtn">Gerar pedido de reposição</button>
+      <div id="status" class="status hidden"></div>
+    </div>
+
+    <div class="card"><h3>Materiais para comprar</h3><div id="alertas"></div></div>
+    <div class="card"><h3>Pedidos recentes</h3><div id="pedidos"></div></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./obrix-backend-adapter.js?v=215"></script>
+<script src="./obrix-estoque-reposicao-test.js?v=215"></script>
+</body>
+</html>

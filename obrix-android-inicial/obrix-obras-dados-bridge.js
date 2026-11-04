@@ -1,0 +1,1 @@
+(()=>{'use strict';/* Dados e checklist agora são atualizados pelo controlador único de Obras. */})();

@@ -1,0 +1,1 @@
+(()=>{'use strict';if(window.__OBRIX_UI_STABLE_BUTTONS_V1)return;window.__OBRIX_UI_STABLE_BUTTONS_V1=true;window.OBRIX_THEME?.refresh?.();})();

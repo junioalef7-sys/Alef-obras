@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OBRIX — Pagamento de Compra</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.wrap{max-width:920px;margin:auto;padding:14px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;margin-bottom:14px}.brand{font-size:28px;font-weight:900}.muted{color:#667085}.hidden{display:none!important}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{display:block;font-weight:800;margin:12px 0 6px}input,select,button{width:100%;padding:12px;border-radius:10px;border:1px solid #cbd5e1;font-size:16px;background:#fff;color:#111827}button{background:#111827;color:#fff;font-weight:800;cursor:pointer}.status{margin-top:12px;padding:10px;border-radius:10px;background:#f1f5f9;white-space:pre-wrap}.ok{background:#ecfdf5;color:#166534}.err{background:#fef2f2;color:#991b1b}.row{padding:10px 0;border-bottom:1px solid #eee}.row:last-child{border-bottom:0}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.kpi{background:#fafafa;border:1px solid #e5e7eb;border-radius:12px;padding:14px}.kpi small{display:block;color:#667085;font-weight:700}.kpi strong{display:block;font-size:24px;margin-top:6px}.pedido{border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin:8px 0}@media(max-width:650px){.grid,.kpis{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="loginView">
+    <div class="brand">OBRIX</div>
+    <p class="muted">Pagamento de compra</p>
+    <label>E-mail</label><input id="email" type="email" autocomplete="username">
+    <label>Senha</label><input id="password" type="password" autocomplete="current-password">
+    <br><br><button id="loginBtn">Entrar</button>
+    <div id="loginStatus" class="status hidden"></div>
+  </div>
+
+  <div id="appView" class="hidden">
+    <div class="card">
+      <div class="brand">Pagamento de Compra</div>
+      <p class="muted">Baixe somente compras já recebidas. O pagamento gera a despesa automaticamente no Financeiro e não altera o estoque novamente.</p>
+      <div class="kpis">
+        <div class="kpi"><small>Aguardando pagamento</small><strong id="kPendentes">0</strong></div>
+        <div class="kpi"><small>Total pendente</small><strong id="kTotal">R$ 0,00</strong></div>
+        <div class="kpi"><small>Pagas</small><strong id="kPagas">0</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Registrar pagamento</h3>
+      <div class="grid">
+        <div><label>Compra recebida</label><select id="compra"></select></div>
+        <div><label>Forma de pagamento</label><select id="forma"><option value="pix">Pix</option><option value="cartao_credito">Cartão de crédito</option><option value="cartao_debito">Cartão de débito</option><option value="boleto">Boleto</option><option value="dinheiro">Dinheiro</option><option value="transferencia">Transferência</option><option value="outro">Outro</option></select></div>
+        <div><label>Data do pagamento</label><input id="dataPagamento" type="date"></div>
+        <div><label>Documento / referência</label><input id="documento" placeholder="Opcional"></div>
+      </div>
+      <div id="detalhes" class="status"></div>
+      <br><button id="pagarBtn">Confirmar pagamento</button>
+      <div id="status" class="status hidden"></div>
+    </div>
+
+    <div class="card"><h3>Compras aguardando pagamento</h3><div id="pendentes"></div></div>
+    <div class="card"><h3>Últimas compras pagas</h3><div id="pagas"></div></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./obrix-backend-adapter.js?v=217"></script>
+<script src="./obrix-estoque-pagamento-test.js?v=217"></script>
+</body>
+</html>
