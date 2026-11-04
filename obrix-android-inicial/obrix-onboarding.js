@@ -2,7 +2,7 @@
 'use strict';
 if(window.__OBRIX_ONBOARDING)return;window.__OBRIX_ONBOARDING=true;
 
-const VERSION='v1';
+const VERSION='v2-android-apresentacao-20261104';
 const $=id=>document.getElementById(id);
 let overlay=null,index=0,currentUser=null,opening=false,menuObserver=null;
 
@@ -170,6 +170,18 @@ const slides=[
       ['Conta e segurança','Altere e-mail ou senha e gerencie suas preferências.'],
       ['Aparência','Escolha entre modo claro e modo escuro.']
     ]
+  },
+  {
+    icon:'📲',
+    title:'Instalar o OBRIX no Android',
+    subtitle:'Use o OBRIX como aplicativo instalado no celular, não apenas como um atalho.',
+    items:[
+      ['Google Chrome','Abra o OBRIX no Google Chrome para instalar como aplicativo.'],
+      ['Botão Instalar aplicativo','Toque no botão que aparece abaixo quando o Chrome oferecer a instalação. Confirme na janela do próprio navegador.'],
+      ['Samsung Internet','Se estiver no Samsung Internet, use “Abrir no Chrome para instalar”. Não desative o Google Play Protect.'],
+      ['Quando aparecer só Adicionar à tela inicial','Essa opção pode criar apenas um atalho. Verifique se o OBRIX aparece em Configurações → Aplicativos após a instalação.'],
+      ['Precisa consultar novamente?','Abra Menu → Como instalar o OBRIX para rever estas instruções e tentar instalar quando necessário.']
+    ]
   }
 ];
 
@@ -225,22 +237,22 @@ function render(){
   $('obxOnboardStep').textContent=`Etapa ${index+1} de ${slides.length}`;
   $('obxOnboardProgressBar').style.width=`${((index+1)/slides.length)*100}%`;
   const prevBtn=$('obxOnboardPrev'),nextBtn=$('obxOnboardNext');prevBtn.disabled=index===0;
-  const last=index===slides.length-1;nextBtn.textContent=last?'Criar minha primeira obra':'Próximo';nextBtn.classList.toggle('finish',last);
+  const last=index===slides.length-1;nextBtn.textContent=last?'Concluir apresentação':'Próximo';nextBtn.classList.toggle('finish',last);
   body.scrollTop=0;
+  if(last)window.OBRIX_ANDROID_INSTALL?.check?.();
 }
 
 async function user(){
-  if(currentUser?.id)return currentUser;
-  try{currentUser=await window.OBRIX_BACKEND?.currentUser?.();return currentUser}catch{return null}
+  try{currentUser=await window.OBRIX_BACKEND?.currentUser?.()||null;return currentUser}catch{return currentUser}
 }
 
-async function open(force=false){
+async function open(force=false,onlyInstall=false){
   if(opening)return;opening=true;
   try{
     if(!appReady()&&!force)return false;
     const u=await user();if(!u?.id)return false;
     if(!force&&done(u.id))return false;
-    ensure();index=0;render();overlay.classList.remove('hidden');document.body.style.overflow='hidden';overlay.tabIndex=-1;overlay.focus({preventScroll:true});return true;
+    ensure();index=onlyInstall?slides.length-1:0;render();overlay.classList.remove('hidden');document.body.style.overflow='hidden';overlay.tabIndex=-1;overlay.focus({preventScroll:true});window.OBRIX_ANDROID_INSTALL?.check?.();return true;
   }finally{opening=false}
 }
 
@@ -250,7 +262,7 @@ function close(complete=false){
 function prev(){if(index<=0)return;index--;render()}
 function next(){
   if(index<slides.length-1){index++;render();return}
-  markDone();close(false);goCreateObra();
+  markDone();close(false);
 }
 function goCreateObra(){
   try{window.abrir?.('obras')}catch{}
@@ -259,9 +271,14 @@ function goCreateObra(){
 
 function injectMenu(){
   const m=$('menuMain');if(!m)return false;
-  if(m.querySelector('[data-onboarding-replay]'))return true;
   const account=m.querySelector('.opmGrid .account')||m.querySelector('.opmGrid article:last-child');if(!account)return false;
-  const b=document.createElement('button');b.type='button';b.dataset.onboardingReplay='1';b.className='obxReplay';b.innerHTML='<b>Conheça o OBRIX</b><small>Veja tudo que o aplicativo oferece</small>';b.onclick=()=>open(true);account.appendChild(b);return true;
+  if(!m.querySelector('[data-onboarding-replay]')){
+    const b=document.createElement('button');b.type='button';b.dataset.onboardingReplay='1';b.className='obxReplay';b.innerHTML='<b>Conheça o OBRIX</b><small>Veja tudo que o aplicativo oferece</small>';b.onclick=()=>open(true);account.appendChild(b);
+  }
+  if(!m.querySelector('[data-obrix-install-help]')){
+    const help=document.createElement('button');help.type='button';help.dataset.obrixInstallHelp='1';help.className='obxReplay';help.innerHTML='<b>Como instalar o OBRIX</b><small>Passo a passo e botão de instalação</small>';help.onclick=()=>open(true,true);account.appendChild(help);
+  }
+  return true;
 }
 function watchMenu(){
   if(injectMenu())return;
@@ -274,5 +291,5 @@ window.addEventListener('pageshow',()=>setTimeout(auto,700));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(()=>{watchMenu();if(appReady())open(false)},700)});
 setTimeout(()=>{watchMenu();auto()},900);setTimeout(()=>{watchMenu();auto()},2200);
 
-window.OBRIX_ONBOARDING={open,close,next,prev,status:()=>({version:VERSION,index,total:slides.length,user:currentUser?.id||null,complete:currentUser?.id?done(currentUser.id):false})};
+window.OBRIX_ONBOARDING={open,openInstall:()=>open(true,true),close,next,prev,status:()=>({version:VERSION,index,total:slides.length,user:currentUser?.id||null,complete:currentUser?.id?done(currentUser.id):false})};
 })();
