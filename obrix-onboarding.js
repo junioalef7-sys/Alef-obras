@@ -196,11 +196,11 @@ function detectDevice(){
 const INSTALL_GUIDES={
   android:{
     title:'Android — Google Chrome',
-    steps:['Abra o OBRIX no Google Chrome.','Toque no menu de três pontinhos (⋮).','Escolha “Instalar app” ou “Adicionar à tela inicial”.','Confirme e abra o ícone OBRIX na tela inicial.']
+    steps:['Abra o OBRIX no Google Chrome, com internet.','Toque em “Instalar OBRIX” quando o Chrome oferecer a instalação ou use o menu de três pontos (⋮) e escolha “Instalar app”.','Confirme a instalação. Se aparecer apenas “Adicionar à tela inicial”, não confunda com instalar: atualize o Chrome e abra a página novamente.','Abra o OBRIX pelo ícone instalado. O aplicativo deve abrir em sua própria janela, sem a barra do Chrome.']
   },
   iphone:{
     title:'iPhone — Safari',
-    steps:['Abra o OBRIX no Safari.','Toque em Compartilhar (quadrado com seta para cima).','Selecione “Adicionar à Tela de Início”.','Ative “Abrir como App da Web”, se aparecer, e toque em Adicionar.']
+    steps:['Abra o OBRIX no Safari do iPhone.','Toque no menu da página ou em Compartilhar e escolha “Adicionar à Tela de Início”.','Mantenha “Abrir como App da Web” ATIVADO. Desativar essa opção cria apenas um atalho do navegador.','Toque em Adicionar. Abra o OBRIX pelo novo ícone: ele abrirá como aplicativo web, sem a interface do Safari.']
   },
   desktop:{
     title:'Computador — Google Chrome',
@@ -214,8 +214,8 @@ function renderInstall(){
   const tabs=devices.map(d=>'<button type="button" data-obx-device="'+d[0]+'" aria-pressed="'+String(d[0]===selectedDevice)+'" class="'+(d[0]===selectedDevice?'active':'')+'">'+d[1]+'</button>').join('');
   const steps=active.steps.map((step,i)=>'<li><span class="obxInstallNumber">'+(i+1)+'</span><span>'+esc(step)+'</span></li>').join('');
   const installed=installComplete||window.matchMedia?.('(display-mode: standalone)')?.matches||navigator.standalone===true;
-  const directButton=!installed?'<button type="button" id="obxInstallAction">'+(selectedDevice!=='iphone'&&installPrompt?'Instalar OBRIX agora':'Como instalar o OBRIX')+'</button>':'';
-  const status=installed?'<p class="obxInstallStatus">O OBRIX já está instalado neste dispositivo.</p>':'<p class="obxInstallHint">Se a opção de instalação não aparecer, confira as opções do navegador.</p>';
+  const directButton=!installed&&selectedDevice!=='iphone'&&installPrompt?'<button type="button" id="obxInstallAction">Instalar OBRIX como aplicativo</button>':'';
+  const status=installed?'<p class="obxInstallStatus">O OBRIX já está aberto como aplicativo neste dispositivo.</p>':selectedDevice==='iphone'?'<p class="obxInstallHint">No iPhone, a instalação do aplicativo web é concluída pelo Safari com “Abrir como App da Web” ativado. O site não pode abrir uma instalação automática.</p>':!installPrompt?'<p class="obxInstallHint">A opção de instalação automática ainda não está disponível neste navegador. Use a opção “Instalar app” do Chrome quando aparecer; somente “Adicionar à tela inicial” pode criar apenas um atalho.</p>':'<p class="obxInstallHint">Toque em “Instalar OBRIX como aplicativo” para abrir a instalação oficial do navegador.</p>';
   host.innerHTML='<section class="obxInstallPanel"><div class="obxInstallTabs" aria-label="Escolha seu dispositivo">'+tabs+'</div><div class="obxInstallContent"><h2>'+esc(active.title)+'</h2><ol class="obxInstallSteps">'+steps+'</ol>'+directButton+status+'</div></section>';
   host.querySelectorAll('[data-obx-device]').forEach(b=>b.onclick=()=>{selectedDevice=b.dataset.obxDevice;renderInstall()});
   const action=$('obxInstallAction');if(action)action.onclick=async()=>{
