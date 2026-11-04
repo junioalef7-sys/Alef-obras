@@ -1,6 +1,97 @@
 <!doctype html>
 <html lang="pt-BR" data-theme="light">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#eef2f6"><script>(function(){try{if(/iPad|iPhone|iPod/i.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))document.documentElement.classList.add('obrixIosLaunchReady');setTimeout(function(){document.documentElement.classList.remove('obrixIosLaunchReady')},8500)}catch(e){}})();</script><style id="obrixIosSplashStyle">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#eef2f6"><style id="obrixAndroidLifecycleCss">
+html.obrixAndroidSessionCheck #login,
+html.obrixAndroidLeaving #login {visibility:hidden!important;pointer-events:none!important}
+</style><script id="obrixAndroidLifecycleFix">(function(){
+  'use strict';
+  try{
+    if(!/Android/i.test(navigator.userAgent||''))return;
+    var isInstalled=window.matchMedia&&(
+      matchMedia('(display-mode: standalone)').matches||
+      matchMedia('(display-mode: fullscreen)').matches||
+      matchMedia('(display-mode: minimal-ui)').matches);
+    if(!isInstalled)return;
+    var root=document.documentElement;
+    root.classList.add('obrixAndroidSessionCheck');
+    var active=false,loggedOut=false,ready=false,app=null,login=null;
+    var releaseTimer=0;
+    function appOpen(){
+      return !!(app&&!app.classList.contains('hidden'));
+    }
+    function unlockLogin(){
+      if(ready)return;
+      ready=true;
+      root.classList.remove('obrixAndroidSessionCheck');
+    }
+    function markActive(){
+      if(!appOpen())return;
+      active=true;
+      unlockLogin();
+      if(!document.hidden)root.classList.remove('obrixAndroidLeaving');
+    }
+    function clearLeaving(){
+      clearTimeout(releaseTimer);
+      releaseTimer=setTimeout(function(){
+        if(document.hidden)return;
+        if(appOpen()){markActive();root.classList.remove('obrixAndroidLeaving');return}
+        root.classList.remove('obrixAndroidLeaving');
+        unlockLogin();
+      },500);
+    }
+    function enteringBackground(){
+      if(active||appOpen()){
+        active=true;
+        root.classList.add('obrixAndroidLeaving');
+      }
+    }
+    function timeLimit(promise,ms){
+      return Promise.race([Promise.resolve(promise),
+        new Promise(function(_,reject){setTimeout(function(){reject(new Error('session timeout'))},ms)})]);
+    }
+    document.addEventListener('DOMContentLoaded',function(){
+      app=document.getElementById('app');
+      login=document.getElementById('login');
+      if(!app||!login){unlockLogin();return}
+      new MutationObserver(markActive).observe(app,{attributes:true,attributeFilter:['class']});
+      try{
+        if(localStorage.getItem('obrix_logout_lock_v1')==='1'){
+          loggedOut=true;unlockLogin();return;
+        }
+      }catch(_){}
+      markActive();
+      if(active)return;
+      // A conta sem sessão sempre poderá acessar o login após a verificação.
+      setTimeout(unlockLogin,8500);
+      (async function(){
+        try{
+          var sb=await timeLimit(window.OBRIX_BACKEND.init(),5000);
+          var session=await timeLimit(sb.auth.getSession(),5000);
+          if(!session?.data?.session){
+            // Dar tempo ao modo offline já existente para restaurar a sessão local.
+            if(!navigator.onLine)setTimeout(unlockLogin,800);
+            else unlockLogin();
+          }
+        }catch(_){unlockLogin()}
+      })();
+    },{once:true});
+    window.addEventListener('obrix:session-shell',function(){active=true;unlockLogin()});
+    window.addEventListener('obrix:offline-bootstrap',function(){active=true;unlockLogin()});
+    window.addEventListener('obrix:offline-v3-ready',function(){active=true;unlockLogin()});
+    document.addEventListener('click',function(event){
+      if(event.target&&event.target.closest&&event.target.closest('#sair,#menuSair')){
+        loggedOut=true;active=false;root.classList.remove('obrixAndroidLeaving');unlockLogin();
+      }
+    },true);
+    document.addEventListener('visibilitychange',function(){
+      if(document.hidden)enteringBackground();else clearLeaving();
+    });
+    window.addEventListener('pagehide',enteringBackground);
+    window.addEventListener('blur',enteringBackground);
+    window.addEventListener('pageshow',clearLeaving);
+    window.addEventListener('focus',clearLeaving);
+  }catch(_){document.documentElement.classList.remove('obrixAndroidSessionCheck','obrixAndroidLeaving')}
+})();</script><script>(function(){try{if(/iPad|iPhone|iPod/i.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))document.documentElement.classList.add('obrixIosLaunchReady');setTimeout(function(){document.documentElement.classList.remove('obrixIosLaunchReady')},8500)}catch(e){}})();</script><style id="obrixIosSplashStyle">
 #obrixIosLaunch{display:none}
 html.obrixIosLaunchReady #obrixIosLaunch{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:2147483500;color:#101820;background:radial-gradient(ellipse at 50% 40%,#fff 0%,#f7f8fa 70%,#edf1f5 100%);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 #obrixIosLaunch .iosCornerTop{position:absolute;left:-15vw;top:-14vw;width:65vw;height:31vw;transform:rotate(-45deg);border-radius:0 0 9vw 0;background:#ff5a00;border-bottom:3vw solid #ffdbc4}
