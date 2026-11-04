@@ -234,41 +234,30 @@ function isInstalledHere(){
     window.matchMedia?.('(display-mode: standalone)')?.matches||
     window.matchMedia?.('(display-mode: fullscreen)')?.matches);
 }
-function registrationInstallButton(){
-  const login=$('login');if(!login)return;
-  if(isInstalledHere()){
-    $('obxLoginInstallButton')?.remove();
-    $('obxLoginInstallInstructions')?.remove();
-    return;
-  }
-  let button=$('obxLoginInstallButton');
-  if(button)return;
-  if(!$('obxLoginInstallButtonStyle')){
-    const style=document.createElement('style');
-    style.id='obxLoginInstallButtonStyle';
-    style.textContent='#login #obxLoginInstallButton{width:100%;min-height:46px;margin-top:10px;border:1px solid var(--ob-border,#64748b);border-radius:12px;background:var(--ob-surface-2,#e5eaf0);color:var(--ob-text,#0f172a);-webkit-text-fill-color:var(--ob-text,#0f172a);font-size:15px;font-weight:750;cursor:pointer}#login #obxLoginInstallInstructions{margin-top:10px;padding:12px 14px;border:1px solid var(--ob-border,#cbd5e1);border-radius:12px;background:var(--ob-surface,#fff);color:var(--ob-text,#0f172a);font-size:13px;line-height:1.45}#login #obxLoginInstallInstructions b{display:block;margin-bottom:6px}#login #obxLoginInstallInstructions ol{margin:0;padding-left:21px}#login #obxLoginInstallInstructions li{margin-bottom:5px}';
-    document.head.appendChild(style);
-  }
-  button=document.createElement('button');
-  button.type='button';button.id='obxLoginInstallButton';button.textContent='Instalar aplicativo';
-  button.onclick=async()=>{
-    if(installPrompt&&detectDevice()!=='iphone'){
-      const prompt=installPrompt;installPrompt=null;
-      try{await prompt.prompt();await prompt.userChoice}catch(_){}
-      if(isInstalledHere()){registrationInstallButton();return}
-    }
-    let tip=$('obxLoginInstallInstructions');
-    if(tip){tip.remove();return}
-    tip=document.createElement('div');tip.id='obxLoginInstallInstructions';tip.setAttribute('role','status');
-    const guide=INSTALL_GUIDES[detectDevice()]||INSTALL_GUIDES.android;
-    tip.innerHTML='<b>'+esc(guide.title)+'</b><ol>'+guide.steps.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>';
-    button.insertAdjacentElement('afterend',tip);
-  };
-  login.appendChild(button);
-}
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;if($('obxInstallGuide'))renderInstall()});
-window.addEventListener('appinstalled',()=>{installPrompt=null;installComplete=true;if($('obxInstallGuide'))renderInstall();registrationInstallButton()});
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;reinstallEvent=true;if($('obxInstallGuide'))renderInstall();setTimeout(maybeOfferReinstallation,600)});
+window.addEventListener('appinstalled',()=>{installPrompt=null;installComplete=true;if($('obxInstallGuide'))renderInstall();void recordInstallation()});
 
+
+const installHistoryKey=uid=>'obrix_install_history_v1_'+uid;
+const reinstallOfferKey=uid=>'obrix_reinstall_offer_v1_'+uid;
+let reinstallEvent=false,reinstallOfferInProgress=false;
+async function recordInstallation(){
+  const u=await user();if(!u?.id)return;
+  try{
+    localStorage.setItem(installHistoryKey(u.id),'1');
+    localStorage.removeItem(reinstallOfferKey(u.id));
+  }catch(_){}
+}
+async function maybeOfferReinstallation(){
+  if(reinstallOfferInProgress||!reinstallEvent||!appReady()||isInstalledHere())return;
+  const u=await user();if(!u?.id||!done(u.id))return;
+  try{
+    if(localStorage.getItem(installHistoryKey(u.id))!=='1'||localStorage.getItem(reinstallOfferKey(u.id))==='1')return;
+    localStorage.setItem(reinstallOfferKey(u.id),'1');
+  }catch(_){return}
+  reinstallOfferInProgress=true;
+  try{await open(true,true)}finally{reinstallOfferInProgress=false}
+}
 function ensure(){
   if(overlay)return overlay;
   overlay=document.createElement('div');
@@ -350,7 +339,7 @@ function render(){
   const body=$('obxOnboardBody');
   const header='<div class="obxSlideHead"><div class="obxSlideIcon" aria-hidden="true">'+s.icon+'</div><div><h1>'+esc(s.title)+'</h1><p>'+esc(s.subtitle)+'</p></div></div>';
   const features='<div class="obxFeatureGrid">'+s.items.map(item=>'<article class="obxFeature"><b>'+esc(item[0])+'</b><span>'+esc(item[1])+'</span></article>').join('')+'</div>';
-  body.innerHTML=header+(s.kind==='install'?'<div id="obxInstallGuide"></div>':features)+(!installOnly&&index===0&&!isInstalledHere()?'<button type="button" id="obxWelcomeInstallButton">Instalar aplicativo</button>':'');
+  body.innerHTML=header+(s.kind==='install'?'<div id="obxInstallGuide"></div>':features)+(!installOnly&&index===0&&!done(currentUser?.id)&&!isInstalledHere()?'<button type="button" id="obxWelcomeInstallButton">Instalar aplicativo</button>':'');
   if(s.kind==='install')renderInstall();
   const welcomeInstall=$('obxWelcomeInstallButton');
   if(welcomeInstall)welcomeInstall.onclick=()=>{
@@ -422,13 +411,13 @@ function watchMenu(){
   if(injectMenu())return;
   if(menuObserver)return;menuObserver=new MutationObserver(()=>injectMenu());menuObserver.observe(document.body,{childList:true,subtree:true});
 }
-async function auto(){if(!appReady())return;watchMenu();await open(false)}
+async function auto(){if(!appReady())return;watchMenu();await open(false);if(isInstalledHere())await recordInstallation();else await maybeOfferReinstallation()}
 
 const app=$('app');if(app)new MutationObserver(()=>{if(appReady())setTimeout(auto,500)}).observe(app,{attributes:true,attributeFilter:['class']});
 window.addEventListener('pageshow',()=>setTimeout(auto,700));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(()=>{watchMenu();if(appReady())open(false)},700)});
 setTimeout(()=>{watchMenu();auto()},900);setTimeout(()=>{watchMenu();auto()},2200);
-registrationInstallButton();window.addEventListener('pageshow',registrationInstallButton);
+
 
 window.OBRIX_ONBOARDING={open,openInstall:()=>open(true,true),close,next,prev,status:()=>({version:VERSION,index,total:slides.length,user:currentUser?.id||null,complete:currentUser?.id?done(currentUser.id):false})};
 })();
