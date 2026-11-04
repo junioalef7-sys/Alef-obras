@@ -9,6 +9,17 @@ html.obrixAndroidLeaving #login {visibility:hidden!important;pointer-events:none
     if(!/Android/i.test(navigator.userAgent||''))return;
     // Aplica também ao Chrome, não só ao ícone PWA instalado.
     var root=document.documentElement;
+    var launchStarted=Date.now(),launchFinishTimer=0;
+    function finishAndroidLaunch(){
+      if(launchFinishTimer)return;
+      // A mesma abertura já aprovada no iPhone, somente na criação da página.
+      // Nunca reativar na saída ou quando o navegador volta do segundo plano.
+      launchFinishTimer=setTimeout(function(){
+        root.classList.remove('obrixIosLaunchReady');
+        var splash=document.getElementById('obrixIosLaunch');
+        if(splash){splash.setAttribute('aria-hidden','true');splash.remove()}
+      },Math.max(0,1100-(Date.now()-launchStarted)));
+    }
     root.classList.add('obrixAndroidSessionCheck');
     var active=false,loggedOut=false,ready=false,app=null,login=null;
     var releaseTimer=0;
@@ -19,6 +30,7 @@ html.obrixAndroidLeaving #login {visibility:hidden!important;pointer-events:none
       if(ready)return;
       ready=true;
       root.classList.remove('obrixAndroidSessionCheck');
+      finishAndroidLaunch();
     }
     function markActive(){
       if(!appOpen())return;
@@ -86,8 +98,8 @@ html.obrixAndroidLeaving #login {visibility:hidden!important;pointer-events:none
     window.addEventListener('blur',enteringBackground);
     window.addEventListener('pageshow',clearLeaving);
     window.addEventListener('focus',clearLeaving);
-  }catch(_){document.documentElement.classList.remove('obrixAndroidSessionCheck','obrixAndroidLeaving')}
-})();</script><script>(function(){try{if(/iPad|iPhone|iPod/i.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))document.documentElement.classList.add('obrixIosLaunchReady');setTimeout(function(){document.documentElement.classList.remove('obrixIosLaunchReady')},8500)}catch(e){}})();</script><style id="obrixIosSplashStyle">
+  }catch(_){document.documentElement.classList.remove('obrixAndroidSessionCheck','obrixAndroidLeaving','obrixIosLaunchReady')}
+})();</script><script>(function(){try{if(/iPad|iPhone|iPod|Android/i.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))document.documentElement.classList.add('obrixIosLaunchReady');setTimeout(function(){document.documentElement.classList.remove('obrixIosLaunchReady')},8500)}catch(e){}})();</script><style id="obrixIosSplashStyle">
 #obrixIosLaunch{display:none}
 html.obrixIosLaunchReady #obrixIosLaunch{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:2147483500;color:#101820;background:radial-gradient(ellipse at 50% 40%,#fff 0%,#f7f8fa 70%,#edf1f5 100%);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 #obrixIosLaunch .iosCornerTop{position:absolute;left:-15vw;top:-14vw;width:65vw;height:31vw;transform:rotate(-45deg);border-radius:0 0 9vw 0;background:#ff5a00;border-bottom:3vw solid #ffdbc4}
