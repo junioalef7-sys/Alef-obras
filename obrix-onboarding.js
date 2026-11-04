@@ -339,7 +339,7 @@ function render(){
   const body=$('obxOnboardBody');
   const header='<div class="obxSlideHead"><div class="obxSlideIcon" aria-hidden="true">'+s.icon+'</div><div><h1>'+esc(s.title)+'</h1><p>'+esc(s.subtitle)+'</p></div></div>';
   const features='<div class="obxFeatureGrid">'+s.items.map(item=>'<article class="obxFeature"><b>'+esc(item[0])+'</b><span>'+esc(item[1])+'</span></article>').join('')+'</div>';
-  body.innerHTML=header+(s.kind==='install'?'<div id="obxInstallGuide"></div>':features)+(!installOnly&&index===0&&!done(currentUser?.id)&&!isInstalledHere()?'<button type="button" id="obxWelcomeInstallButton">Instalar aplicativo</button>':'');
+  body.innerHTML=header+(s.kind==='install'?'<div id="obxInstallGuide"></div>':features)+(!installOnly&&index===0&&(!done(currentUser?.id)||window.__OBRIX_TEST_FIRST_LOGIN===true)&&!isInstalledHere()?'<button type="button" id="obxWelcomeInstallButton">Instalar aplicativo</button>':'');
   if(s.kind==='install')renderInstall();
   const welcomeInstall=$('obxWelcomeInstallButton');
   if(welcomeInstall)welcomeInstall.onclick=()=>{
