@@ -112,10 +112,17 @@ function boot(){
  injectCSS();
  const app=$('app');
  if(app)new MutationObserver(schedule).observe(app,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
- const intro=$('obrixOnboarding');
- if(intro)new MutationObserver(schedule).observe(intro,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
- const bodyObserver=new MutationObserver(()=>{if($('obrixOnboarding')){bodyObserver.disconnect();schedule()}});
- if(!$('obrixOnboarding'))bodyObserver.observe(document.body,{childList:true,subtree:true});
+ function watchIntroduction(){
+   const intro=$('obrixOnboarding');if(!intro)return false;
+   new MutationObserver(schedule).observe(intro,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
+   return true;
+ }
+ if(!watchIntroduction()){
+   const bodyObserver=new MutationObserver(()=>{
+     if($('obrixOnboarding')){bodyObserver.disconnect();watchIntroduction();schedule()}
+   });
+   bodyObserver.observe(document.body,{childList:true,subtree:true});
+ }
  schedule();
  window.addEventListener('pageshow',schedule);
  window.addEventListener('focus',schedule);
