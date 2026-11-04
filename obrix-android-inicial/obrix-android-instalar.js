@@ -3,6 +3,15 @@
 if(!/Android/i.test(navigator.userAgent||'')||window.__OBRIX_ANDROID_INSTALACAO)return;
 window.__OBRIX_ANDROID_INSTALACAO=true;
 const KEY='obrix_android_install_', $=id=>document.getElementById(id);
+const samsung=/SamsungBrowser\//i.test(navigator.userAgent||'');
+const handedFromSamsung=(()=>{try{return new URLSearchParams(location.search).get('obrix_install_from')==='samsung'}catch(_){return false}})();
+function openInChrome(){
+  const dest=new URL('./obrix.html',location.href);
+  dest.searchParams.set('obrix_install_from','samsung');
+  const intent='intent://'+dest.host+dest.pathname+dest.search+'#Intent;scheme=https;package=com.android.chrome;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url='+encodeURIComponent(dest.href)+';end';
+  // Somente por clique do usuário; nunca tenta instalar pelo Samsung Internet.
+  location.href=intent;
+}
 let deferred=null, installed=false, activeUid='', activeType='', closedFor='', lastUid='', busy=false, scheduled=false;
 const read=k=>{try{return localStorage.getItem(KEY+k)==='1'}catch(_){return false}};
 const write=(k,v=true)=>{try{v?localStorage.setItem(KEY+k,'1'):localStorage.removeItem(KEY+k)}catch(_){}};
@@ -15,7 +24,9 @@ function schedule(){
  setTimeout(()=>{scheduled=false;void sync()},130);
 }
 window.addEventListener('beforeinstallprompt',e=>{
- e.preventDefault();deferred=e;closedFor='';schedule();
+ e.preventDefault();
+ if(samsung){deferred=null;schedule();return}
+ deferred=e;closedFor='';schedule();
 });
 window.addEventListener('appinstalled',()=>{
  installed=true;deferred=null;
@@ -42,13 +53,20 @@ function card(target){
  const box=document.createElement('section');box.className='obrixAndroidInstallCard';
  box.setAttribute('role','group');box.setAttribute('aria-label','Instalar OBRIX');
  const title=document.createElement('strong');title.textContent='OBRIX no seu Android';
- const desc=document.createElement('span');desc.textContent='Instale como aplicativo e abra sem a barra do navegador.';
+ const desc=document.createElement('span');desc.textContent=samsung?'O Samsung Internet está gerando uma instalação bloqueada pelo Play Protect. Abra o OBRIX no Google Chrome para instalar com segurança.':'Instale como aplicativo e abra sem a barra do navegador.';
  const actions=document.createElement('div');actions.className='obrixAndroidInstallActions';
- const install=document.createElement('button');install.type='button';install.className='obrixAndroidInstallStart';install.textContent='Instalar aplicativo';
+ const install=document.createElement('button');install.type='button';install.className='obrixAndroidInstallStart';install.textContent=samsung?'Abrir no Chrome para instalar':'Instalar aplicativo';
  const close=document.createElement('button');close.type='button';close.className='obrixAndroidInstallDismiss';close.textContent='Agora não';
  const info=document.createElement('p');info.className='obrixAndroidInstallHelp';info.hidden=true;
  install.onclick=async()=>{
    if(standalone()){remove();return}
+   if(samsung){
+     if(activeUid)write('samsungChromeFixShown_'+activeUid);
+     info.hidden=false;
+     info.textContent='Abrindo o Chrome. Caso o celular pergunte qual navegador usar, selecione Google Chrome. Se não abrir, copie o endereço oficial do OBRIX e cole no Chrome. NÃO desative o Play Protect.';
+     openInChrome();
+     return;
+   }
    if(!deferred){
      info.hidden=false;
      info.textContent='Para instalar como aplicativo, abra o endereço oficial no Google Chrome e escolha ⋮ → Instalar app. Se aparecer somente “Adicionar à tela inicial”, isso pode criar apenas um atalho. A instalação direta depende da opção oferecida pelo navegador.';
@@ -64,7 +82,7 @@ function card(target){
      info.hidden=false;info.textContent='O navegador não conseguiu abrir a instalação. No Chrome, abra ⋮ e procure “Instalar app”.';
    }finally{install.disabled=false}
  };
- close.onclick=()=>{closedFor=activeUid;remove()};
+ close.onclick=()=>{if(samsung&&activeUid)write('samsungChromeFixShown_'+activeUid);closedFor=activeUid;remove()};
  actions.append(install,close);box.append(title,desc,actions,info);
  target.prepend(box);
 }
@@ -92,18 +110,23 @@ async function sync(){
   lastUid=current;
   const first=!read('seen_'+current);
   const reinstall=read('installed_'+current)&&!!deferred&&!read('reinstallSeen_'+current);
+  // O aviso de compatibilidade no Samsung Internet requer um novo convite
+  // mesmo para quem já viu o botão de instalação em versões anteriores.
+  const samsungFix=samsung&&!read('samsungChromeFixShown_'+current);
+  const chromeHandoff=!samsung&&handedFromSamsung&&!read('chromeHandoffSeen_'+current);
   if(!activeUid){
-    if(closedFor===current||(!first&&!reinstall))return;
+    if(closedFor===current||(!first&&!reinstall&&!samsungFix&&!chromeHandoff))return;
     if(!homeVisible()&&!introFirst())return;
-    activeUid=current;activeType=first?'first':'reinstall';
+    activeUid=current;activeType=samsungFix?'samsung-chrome':chromeHandoff?'chrome-install':first?'first':'reinstall';
     if(first)write('seen_'+current);
-    else write('reinstallSeen_'+current);
+    if(reinstall&&!first)write('reinstallSeen_'+current);
+    if(chromeHandoff)write('chromeHandoffSeen_'+current);
   }
   if(closedFor===current){remove();return}
   injectCSS();
   const home=$('inicio');
-  if(homeVisible())card(home);
   if(introFirst())card($('obxOnboardBody'));
+  else if(homeVisible())card(home);
   if(!introFirst())$('obxOnboardBody')?.querySelector('.obrixAndroidInstallCard')?.remove();
  }finally{busy=false}
 }
