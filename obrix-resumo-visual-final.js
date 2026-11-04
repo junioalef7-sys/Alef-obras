@@ -13,8 +13,8 @@ function corRotulo(label,valor=0){const t=norm(label);if(t.includes('despesa')||
 function garantirSeta(){
   const resumo=$('resumoGeralMain'),ativo=vis(resumo);document.documentElement.classList.toggle('obrixResumoAtivo',ativo);if(!ativo)return false;
   const top=document.querySelector('#app>.top');if(!top)return false;let b=$('obrixHeaderVoltar');
-  if(!b){b=document.createElement('button');b.id='obrixHeaderVoltar';b.type='button';b.className='btn obrixHeaderVoltar';b.setAttribute('aria-label','Voltar');b.setAttribute('title','Voltar');b.textContent='←';top.insertBefore(b,top.firstElementChild)}
-  b.classList.remove('hidden');b.textContent='←';
+  if(!b){b=document.createElement('button');b.id='obrixHeaderVoltar';b.type='button';b.className='btn obrixHeaderVoltar';b.setAttribute('aria-label','Voltar');b.setAttribute('title','Voltar');top.insertBefore(b,top.firstElementChild)}
+  b.classList.remove('hidden');if(!b.querySelector('svg[data-obrix-back-icon]'))b.innerHTML="<svg data-obrix-back-icon=\"1\" viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M19 12H5m7 7-7-7 7-7\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>";
   b.onclick=e=>{e?.preventDefault?.();e?.stopPropagation?.();const st=window.OBRIX_RESUMO_GERAL?.status?.()||{};if(st.view==='obra'){const interno=$('rgVoltarGeral');if(interno){interno.click();return}window.OBRIX_RESUMO_GERAL?.open?.();return}resumo.classList.add('hidden');document.documentElement.classList.remove('obrixResumoAtivo');window.OBRIX_MENU?.open?.()};
   return true;
 }
