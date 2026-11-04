@@ -221,7 +221,7 @@ function renderInstall(){
   const tabs=devices.map(d=>'<button type="button" data-obx-device="'+d[0]+'" aria-pressed="'+String(d[0]===selectedDevice)+'" class="'+(d[0]===selectedDevice?'active':'')+'">'+d[1]+'</button>').join('');
   const steps=active.steps.map((step,i)=>'<li><span class="obxInstallNumber">'+(i+1)+'</span><span>'+esc(step)+'</span></li>').join('');
   const installed=installComplete||window.matchMedia?.('(display-mode: standalone)')?.matches||navigator.standalone===true;
-  const directButton=!installed?'<button type="button" id="obxInstallAction">'+(samsung?'Abrir no Chrome para instalar':installPrompt?'Instalar aplicativo':'Como instalar o OBRIX')+'</button>':'';
+  const directButton=!installed?'<button type="button" id="obxInstallAction">'+(samsung?'Abrir no Chrome para instalar':'Instalar aplicativo')+'</button>':'';
   const status=installed?'<p class="obxInstallStatus">O OBRIX já está instalado neste dispositivo.</p>':'<p class="obxInstallHint">Se a opção de instalação não aparecer, confira as opções do navegador.</p>';
   host.innerHTML='<section class="obxInstallPanel"><div class="obxInstallTabs" aria-label="Escolha seu dispositivo">'+tabs+'</div><div class="obxInstallContent"><h2>'+esc(active.title)+'</h2><ol class="obxInstallSteps">'+steps+'</ol>'+directButton+status+'</div></section>';
   host.querySelectorAll('[data-obx-device]').forEach(b=>b.onclick=()=>{selectedDevice=b.dataset.obxDevice;renderInstall()});
