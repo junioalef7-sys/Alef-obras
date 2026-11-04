@@ -21,8 +21,18 @@ html.obrixAndroidLaunchReady #obrixIosLaunch{position:fixed;inset:0;display:flex
  'use strict';
  if(!/Android/i.test(navigator.userAgent||''))return;
  var html=document.documentElement;
- var start=Date.now(),finished=false,loggedOut=false,releaseTimer=0;
- html.classList.add('obrixAndroidLaunchReady','obrixAndroidInitial');
+ var finished=false,loggedOut=false,releaseTimer=0;
+ var exitKey='obrix_android_last_exit_splash_guard_v1',lastExit=0,navType='',showLaunch=true;
+ try{
+   lastExit=Number(sessionStorage.getItem(exitKey)||0);
+   navType=performance.getEntriesByType('navigation')?.[0]?.type||'';
+ }catch(_){}
+ // Não repetir a abertura ao voltar do segundo plano nem após logout/reload.
+ if(navType==='back_forward'||navType==='reload'||(lastExit>0&&Date.now()-lastExit<120000))showLaunch=false;
+ if(showLaunch)html.classList.add('obrixAndroidLaunchReady');
+ html.classList.add('obrixAndroidInitial');
+ function recordExit(){try{sessionStorage.setItem(exitKey,String(Date.now()))}catch(_){}}
+
  function appVisible(){var el=document.getElementById('app');return !!(el&&!el.classList.contains('hidden'))}
  function releaseBackground(){
    clearTimeout(releaseTimer);
@@ -43,15 +53,15 @@ html.obrixAndroidLaunchReady #obrixIosLaunch{position:fixed;inset:0;display:flex
    var app=document.getElementById('app');
    if(app)new MutationObserver(function(){if(appVisible()&&!document.hidden){html.classList.remove('obrixAndroidInitial');releaseBackground()}}).observe(app,{attributes:true,attributeFilter:['class']});
    var exit=document.getElementById('sair');
-   if(exit)exit.addEventListener('click',function(){loggedOut=true;html.classList.remove('obrixAndroidBackgrounded','obrixAndroidInitial')},{capture:true});
+   if(exit)exit.addEventListener('click',function(){loggedOut=true;recordExit();finishSplash();html.classList.remove('obrixAndroidBackgrounded','obrixAndroidInitial')},{capture:true});
  }
  document.addEventListener('visibilitychange',function(){
-   if(document.hidden){if(appVisible()&&!loggedOut)html.classList.add('obrixAndroidBackgrounded')}
+   if(document.hidden){recordExit();finishSplash();if(appVisible()&&!loggedOut)html.classList.add('obrixAndroidBackgrounded')}
    else releaseBackground();
  });
- window.addEventListener('pagehide',function(){if(appVisible()&&!loggedOut)html.classList.add('obrixAndroidBackgrounded')});
- window.addEventListener('blur',function(){if(appVisible()&&!loggedOut)html.classList.add('obrixAndroidBackgrounded')});
- window.addEventListener('pageshow',releaseBackground);
+ window.addEventListener('pagehide',function(){recordExit();finishSplash();if(appVisible()&&!loggedOut)html.classList.add('obrixAndroidBackgrounded')});
+ window.addEventListener('blur',function(){recordExit();finishSplash();if(appVisible()&&!loggedOut)html.classList.add('obrixAndroidBackgrounded')});
+ window.addEventListener('pageshow',function(e){if(e?.persisted){recordExit();finishSplash()}releaseBackground()});
  window.addEventListener('focus',releaseBackground);
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready,{once:true});else ready();
  setTimeout(finishSplash,8000);
