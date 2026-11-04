@@ -98,10 +98,37 @@ async function route(name){if(!active&&!isOffline())return false;await runtime()
 function offlineLogin(){clearError();const s=assemble();if(!s?.profile?.empresa_id){showError('Modo offline ainda não preparado neste aparelho. Entre uma vez com internet para salvar os dados.');return false}const typed=(document.getElementById('email')?.value||'').trim().toLowerCase(),cached=String(s.profile.email||'').trim().toLowerCase();if(typed&&cached&&typed!==cached){showError('Sem internet, este aparelho só pode abrir a conta salva localmente.');return false}setLoggedOut(false);active=true;current=s;persistCompat(s);openShell(s,'login-offline-v3');runtime().then(()=>route('inicio'));return true}
 function offlineLogout(){setLoggedOut(true);capture('offline-logout');active=false;document.documentElement.removeAttribute('data-obrix-offline-v3');document.getElementById('app')?.classList.add('hidden');document.getElementById('login')?.classList.remove('hidden');const p=document.getElementById('senha');if(p)p.value='';clearError()}
 function clickCapture(e){if(!isOffline())return;const el=e.target?.closest?.('button,a,[data-offv3-go],[data-go]');if(!el)return;if(el.id==='entrar'){e.preventDefault();e.stopImmediatePropagation();offlineLogin();return}if(el.id==='sair'||el.id==='menuSair'){e.preventDefault();e.stopImmediatePropagation();offlineLogout();return}const b=el.closest?.('#app>.bottom button');if(b){const i=[...document.querySelectorAll('#app>.bottom button')].indexOf(b);e.preventDefault();e.stopImmediatePropagation();route(['inicio','financeiro','equipe','menu'][i]||'inicio');return}const go=el.dataset?.offv3Go;if(go){e.preventDefault();e.stopImmediatePropagation();route(go)}}
+function authenticatedShellVisible(){
+ const app=document.getElementById('app'),login=document.getElementById('login');
+ return !!(app&&!app.classList.contains('hidden')&&login?.classList.contains('hidden'));
+}
 async function start(reason='offline-v3'){
  if(!isOffline()){active=false;capture('online-start');return false}
- active=true;document.documentElement.dataset.obrixOfflineV3='1';if(loggedOut()){document.getElementById('app')?.classList.add('hidden');document.getElementById('login')?.classList.remove('hidden');return true}
- if(!activateData(reason)){document.getElementById('app')?.classList.add('hidden');document.getElementById('login')?.classList.remove('hidden');showError('Modo offline ainda não preparado neste aparelho. Entre uma vez com internet.');return false}
+ const showingApp=authenticatedShellVisible();
+ // Uma perda de rede enquanto o navegador vai para segundo plano não é logout.
+ // Preserve a tela atual até o usuário voltar, sem abrir o login na animação de saída.
+ if(showingApp && document.hidden)return true;
+ // Uma sessão autenticada atualmente visível prevalece sobre um bloqueio offline antigo.
+ // O logout explícito continua ocultando o app antes de marcar esse bloqueio.
+ if(showingApp&&loggedOut())setLoggedOut(false);
+ active=true;document.documentElement.dataset.obrixOfflineV3='1';
+ if(loggedOut()){
+   document.getElementById('app')?.classList.add('hidden');
+   document.getElementById('login')?.classList.remove('hidden');
+   return true;
+ }
+ if(!activateData(reason)){
+   // Na perda transitória de conexão, não transformar uma sessão aberta em tela de login.
+   if(showingApp){
+     active=false;
+     document.documentElement.removeAttribute('data-obrix-offline-v3');
+     return false;
+   }
+   document.getElementById('app')?.classList.add('hidden');
+   document.getElementById('login')?.classList.remove('hidden');
+   showError('Modo offline ainda não preparado neste aparelho. Entre uma vez com internet.');
+   return false;
+ }
  await runtime();await route('inicio');return true
 }
 function owns(){return isOffline()||active}
