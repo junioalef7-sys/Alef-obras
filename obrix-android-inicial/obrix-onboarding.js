@@ -252,7 +252,7 @@ async function open(force=false,onlyInstall=false){
     if(!appReady()&&!force)return false;
     const u=await user();if(!u?.id)return false;
     if(!force&&done(u.id))return false;
-    ensure();index=onlyInstall?slides.length-1:0;render();overlay.classList.remove('hidden');document.body.style.overflow='hidden';overlay.tabIndex=-1;overlay.focus({preventScroll:true});window.OBRIX_ANDROID_INSTALL?.check?.();return true;
+    ensure();index=onlyInstall?slides.length-1:0;render();overlay.classList.remove('hidden');document.body.style.overflow='hidden';overlay.tabIndex=-1;overlay.focus({preventScroll:true});if(onlyInstall)window.OBRIX_ANDROID_INSTALL?.reopen?.();else window.OBRIX_ANDROID_INSTALL?.check?.();return true;
   }finally{opening=false}
 }
 
