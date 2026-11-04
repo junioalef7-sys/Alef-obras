@@ -40,9 +40,13 @@ async function uid(){
 function homeVisible(){
  const el=$('inicio');return !!(el&&!el.classList.contains('hidden')&&el.style.display!=='none');
 }
-function introFirst(){
- const ov=$('obrixOnboarding'),step=$('obxOnboardStep');
- return !!(ov&&!ov.classList.contains('hidden')&&/^Etapa 1 de /.test(step?.textContent||''));
+function introVisible(){
+ const ov=$('obrixOnboarding');return !!(ov&&!ov.classList.contains('hidden'));
+}
+function introLast(){
+ if(!introVisible())return false;
+ const value=$('obxOnboardStep')?.textContent||'',parts=value.match(/^Etapa (\d+) de (\d+)/);
+ return !!(parts&&Number(parts[1])===Number(parts[2]));
 }
 function eligible(){
  return !!($('app')&&!$('app').classList.contains('hidden')&&$('login')?.classList.contains('hidden')&&!standalone());
@@ -114,20 +118,28 @@ async function sync(){
   // mesmo para quem já viu o botão de instalação em versões anteriores.
   const samsungFix=samsung&&!read('samsungChromeFixShown_'+current);
   const chromeHandoff=!samsung&&handedFromSamsung&&!read('chromeHandoffSeen_'+current);
+  const endOfPresentation=introLast();
   if(!activeUid){
-    if(closedFor===current||(!first&&!reinstall&&!samsungFix&&!chromeHandoff))return;
-    if(!homeVisible()&&!introFirst())return;
-    activeUid=current;activeType=samsungFix?'samsung-chrome':chromeHandoff?'chrome-install':first?'first':'reinstall';
+    if(closedFor===current&&!endOfPresentation)return;
+    if(!first&&!reinstall&&!samsungFix&&!chromeHandoff&&!endOfPresentation)return;
+    if(!homeVisible()&&!endOfPresentation)return;
+    activeUid=current;activeType=samsungFix?'samsung-chrome':chromeHandoff?'chrome-install':first?'first':reinstall?'reinstall':'manual';
     if(first)write('seen_'+current);
     if(reinstall&&!first)write('reinstallSeen_'+current);
     if(chromeHandoff)write('chromeHandoffSeen_'+current);
   }
   if(closedFor===current){remove();return}
   injectCSS();
-  const home=$('inicio');
-  if(introFirst())card($('obxOnboardBody'));
-  else if(homeVisible())card(home);
-  if(!introFirst())$('obxOnboardBody')?.querySelector('.obrixAndroidInstallCard')?.remove();
+  if(endOfPresentation){
+    remove();
+    card($('obxOnboardBody'));
+  }else if(introVisible()){
+    remove(); // A apresentação mostra o botão somente na última etapa.
+  }else if(activeType==='reinstall'&&homeVisible()){
+    card($('inicio'));
+  }else{
+    remove();
+  }
  }finally{busy=false}
 }
 function boot(){
@@ -151,5 +163,5 @@ function boot(){
  window.addEventListener('focus',schedule);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.OBRIX_ANDROID_INSTALL={check:schedule,isInstalled:standalone,status:()=>({promptAvailable:!!deferred,installed:standalone(),account:lastUid?'logged-in':'unknown'})};
+window.OBRIX_ANDROID_INSTALL={check:schedule,reopen:()=>{closedFor='';schedule()},isInstalled:standalone,status:()=>({promptAvailable:!!deferred,installed:standalone(),account:lastUid?'logged-in':'unknown'})};
 })();
