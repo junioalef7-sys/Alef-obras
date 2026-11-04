@@ -214,18 +214,60 @@ function renderInstall(){
   const tabs=devices.map(d=>'<button type="button" data-obx-device="'+d[0]+'" aria-pressed="'+String(d[0]===selectedDevice)+'" class="'+(d[0]===selectedDevice?'active':'')+'">'+d[1]+'</button>').join('');
   const steps=active.steps.map((step,i)=>'<li><span class="obxInstallNumber">'+(i+1)+'</span><span>'+esc(step)+'</span></li>').join('');
   const installed=installComplete||window.matchMedia?.('(display-mode: standalone)')?.matches||navigator.standalone===true;
-  const directButton=!installed&&selectedDevice!=='iphone'&&installPrompt?'<button type="button" id="obxInstallAction">Instalar OBRIX agora</button>':'';
+  const directButton=!installed?'<button type="button" id="obxInstallAction">'+(selectedDevice!=='iphone'&&installPrompt?'Instalar OBRIX agora':'Como instalar o OBRIX')+'</button>':'';
   const status=installed?'<p class="obxInstallStatus">O OBRIX já está instalado neste dispositivo.</p>':'<p class="obxInstallHint">Se a opção de instalação não aparecer, confira as opções do navegador.</p>';
   host.innerHTML='<section class="obxInstallPanel"><div class="obxInstallTabs" aria-label="Escolha seu dispositivo">'+tabs+'</div><div class="obxInstallContent"><h2>'+esc(active.title)+'</h2><ol class="obxInstallSteps">'+steps+'</ol>'+directButton+status+'</div></section>';
   host.querySelectorAll('[data-obx-device]').forEach(b=>b.onclick=()=>{selectedDevice=b.dataset.obxDevice;renderInstall()});
   const action=$('obxInstallAction');if(action)action.onclick=async()=>{
-    if(!installPrompt)return;const prompt=installPrompt;installPrompt=null;action.disabled=true;
+    if(!installPrompt||selectedDevice==='iphone'){
+      const list=host.querySelector('.obxInstallSteps');
+      list?.scrollIntoView?.({behavior:'smooth',block:'nearest'});
+      return;
+    }
+    const prompt=installPrompt;installPrompt=null;action.disabled=true;
     try{await prompt.prompt();await prompt.userChoice}catch(_){}
     renderInstall();
   };
 }
+function isInstalledHere(){
+  return !!(installComplete||navigator.standalone===true||
+    window.matchMedia?.('(display-mode: standalone)')?.matches||
+    window.matchMedia?.('(display-mode: fullscreen)')?.matches);
+}
+function registrationInstallButton(){
+  const login=$('login');if(!login)return;
+  if(isInstalledHere()){
+    $('obxLoginInstallButton')?.remove();
+    $('obxLoginInstallInstructions')?.remove();
+    return;
+  }
+  let button=$('obxLoginInstallButton');
+  if(button)return;
+  if(!$('obxLoginInstallButtonStyle')){
+    const style=document.createElement('style');
+    style.id='obxLoginInstallButtonStyle';
+    style.textContent='#login #obxLoginInstallButton{width:100%;min-height:46px;margin-top:10px;border:1px solid var(--ob-border,#64748b);border-radius:12px;background:var(--ob-surface-2,#e5eaf0);color:var(--ob-text,#0f172a);-webkit-text-fill-color:var(--ob-text,#0f172a);font-size:15px;font-weight:750;cursor:pointer}#login #obxLoginInstallInstructions{margin-top:10px;padding:12px 14px;border:1px solid var(--ob-border,#cbd5e1);border-radius:12px;background:var(--ob-surface,#fff);color:var(--ob-text,#0f172a);font-size:13px;line-height:1.45}#login #obxLoginInstallInstructions b{display:block;margin-bottom:6px}#login #obxLoginInstallInstructions ol{margin:0;padding-left:21px}#login #obxLoginInstallInstructions li{margin-bottom:5px}';
+    document.head.appendChild(style);
+  }
+  button=document.createElement('button');
+  button.type='button';button.id='obxLoginInstallButton';button.textContent='Instalar aplicativo';
+  button.onclick=async()=>{
+    if(installPrompt&&detectDevice()!=='iphone'){
+      const prompt=installPrompt;installPrompt=null;
+      try{await prompt.prompt();await prompt.userChoice}catch(_){}
+      if(isInstalledHere()){registrationInstallButton();return}
+    }
+    let tip=$('obxLoginInstallInstructions');
+    if(tip){tip.remove();return}
+    tip=document.createElement('div');tip.id='obxLoginInstallInstructions';tip.setAttribute('role','status');
+    const guide=INSTALL_GUIDES[detectDevice()]||INSTALL_GUIDES.android;
+    tip.innerHTML='<b>'+esc(guide.title)+'</b><ol>'+guide.steps.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>';
+    button.insertAdjacentElement('afterend',tip);
+  };
+  login.appendChild(button);
+}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;if($('obxInstallGuide'))renderInstall()});
-window.addEventListener('appinstalled',()=>{installPrompt=null;installComplete=true;if($('obxInstallGuide'))renderInstall()});
+window.addEventListener('appinstalled',()=>{installPrompt=null;installComplete=true;if($('obxInstallGuide'))renderInstall();registrationInstallButton()});
 
 function ensure(){
   if(overlay)return overlay;
@@ -255,7 +297,7 @@ function ensure(){
   const style=document.createElement('style');style.id='obrixOnboardingStyle';style.textContent=`
     .obxOnboarding{position:fixed;inset:0;z-index:15000;background:rgba(2,6,23,.72);display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(5px)}
     .obxOnboardCard{width:min(860px,100%);max-height:min(94vh,920px);background:#f8fafc;color:#0f172a;border-radius:24px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.38);display:flex;flex-direction:column}
-    .obxOnboardTop{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 22px 14px;background:#0f172a;color:#fff}.obxOnboardBrand{display:flex;align-items:baseline;font-size:24px;font-weight:950;letter-spacing:-1.5px}.obxOnboardBrand>b{color:#ff5a00}.obxOnboardBrand small{font-size:8px;letter-spacing:2px;margin-left:12px;color:#cbd5e1}.obxOnboardTop>button{border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.09);color:#fff;border-radius:10px;padding:9px 13px;font-weight:850}
+    .obxOnboardCard #obxWelcomeInstallButton{width:100%;min-height:46px;margin-top:16px;border-radius:12px;border:1px solid #f97316;background:#ff5a00;color:#fff;font-size:15px;font-weight:800;cursor:pointer}.obxOnboardTop{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 22px 14px;background:#0f172a;color:#fff}.obxOnboardBrand{display:flex;align-items:baseline;font-size:24px;font-weight:950;letter-spacing:-1.5px}.obxOnboardBrand>b{color:#ff5a00}.obxOnboardBrand small{font-size:8px;letter-spacing:2px;margin-left:12px;color:#cbd5e1}.obxOnboardTop>button{border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.09);color:#fff;border-radius:10px;padding:9px 13px;font-weight:850}
     .obxOnboardProgress{height:5px;background:#e2e8f0}.obxOnboardProgress>div{height:100%;background:#ff5a00;transition:width .24s ease}
     #obxOnboardBody{padding:25px 28px 20px;overflow:auto}.obxSlideHead{display:grid;grid-template-columns:70px minmax(0,1fr);gap:16px;align-items:center;margin-bottom:18px}.obxSlideIcon{width:70px;height:70px;border-radius:20px;background:#eaf2ff;display:grid;place-items:center;font-size:35px}.obxSlideHead h1{font-size:28px;line-height:1.1;margin:0 0 7px}.obxSlideHead p{margin:0;color:#64748b;font-size:15px;line-height:1.45}
     .obxFeatureGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.obxFeature{background:#fff;border:1px solid #dbe2ea;border-radius:14px;padding:13px 14px;min-height:92px}.obxFeature b{display:block;margin-bottom:5px;font-size:14px}.obxFeature span{display:block;color:#475569;font-size:13px;line-height:1.4}
@@ -308,8 +350,17 @@ function render(){
   const body=$('obxOnboardBody');
   const header='<div class="obxSlideHead"><div class="obxSlideIcon" aria-hidden="true">'+s.icon+'</div><div><h1>'+esc(s.title)+'</h1><p>'+esc(s.subtitle)+'</p></div></div>';
   const features='<div class="obxFeatureGrid">'+s.items.map(item=>'<article class="obxFeature"><b>'+esc(item[0])+'</b><span>'+esc(item[1])+'</span></article>').join('')+'</div>';
-  body.innerHTML=header+(s.kind==='install'?'<div id="obxInstallGuide"></div>':features);
+  body.innerHTML=header+(s.kind==='install'?'<div id="obxInstallGuide"></div>':features)+(!installOnly&&index===0&&!isInstalledHere()?'<button type="button" id="obxWelcomeInstallButton">Instalar aplicativo</button>':'');
   if(s.kind==='install')renderInstall();
+  const welcomeInstall=$('obxWelcomeInstallButton');
+  if(welcomeInstall)welcomeInstall.onclick=()=>{
+    const existing=$('obxInstallGuide');
+    if(existing){existing.remove();return}
+    const guide=document.createElement('div');guide.id='obxInstallGuide';
+    welcomeInstall.insertAdjacentElement('afterend',guide);
+    renderInstall();
+    body.scrollTop=body.scrollHeight;
+  };
   $('obxOnboardStep').textContent=installOnly?'Como instalar':'Etapa '+(index+1)+' de '+slides.length;
   $('obxOnboardProgressBar').style.width=installOnly?'100%':String(((index+1)/slides.length)*100)+'%';
   const prevBtn=$('obxOnboardPrev'),nextBtn=$('obxOnboardNext');prevBtn.disabled=index===0||installOnly;
@@ -377,6 +428,7 @@ const app=$('app');if(app)new MutationObserver(()=>{if(appReady())setTimeout(aut
 window.addEventListener('pageshow',()=>setTimeout(auto,700));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(()=>{watchMenu();if(appReady())open(false)},700)});
 setTimeout(()=>{watchMenu();auto()},900);setTimeout(()=>{watchMenu();auto()},2200);
+registrationInstallButton();window.addEventListener('pageshow',registrationInstallButton);
 
 window.OBRIX_ONBOARDING={open,openInstall:()=>open(true,true),close,next,prev,status:()=>({version:VERSION,index,total:slides.length,user:currentUser?.id||null,complete:currentUser?.id?done(currentUser.id):false})};
 })();
