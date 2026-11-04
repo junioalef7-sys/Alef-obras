@@ -4,7 +4,7 @@
 if(window.__OBRIX_PREVIEW_INICIO_EQUIPE_20261104)return;
 window.__OBRIX_PREVIEW_INICIO_EQUIPE_20261104=true;
 const $=id=>document.getElementById(id);
-const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dinheiro=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const lista=(k)=>Array.isArray(window[k])?window[k]:[];
 const obras=()=>lista('obras'),funcs=()=>lista('funcionarios');
@@ -16,7 +16,7 @@ const dataHora=v=>{if(!v)return 0;let t=Date.parse(v);if(!Number.isFinite(t)&&/^
 const formatarData=v=>{const t=dataHora(v);return t?new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Sem data'};
 const statusObra=o=>String(o.status||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\s-]+/g,'_');
 const emAndamento=o=>['andamento','em_andamento','em_execucao'].includes(statusObra(o));
-const progresso=o=>{const v=Number(o.progresso??o.percentual??o.percentual_conclusao);return Number.isFinite(v)?Math.max(0,Math.min(100,Math.round(v))):null};
+const progresso=o=>{const p=window.OBRIX_PROGRESS_CORE?.status?.().medias?.[String(o.id)];const v=Number(p??o.progresso??o.percentual??o.percentual_conclusao);return Number.isFinite(v)?Math.max(0,Math.min(100,Math.round(v))):null};
 let eventosRemotos=[],eventosAtualizados=0,buscandoEventos=false,selecionado='',filtro='todos',buscaEquipe='',aba='resumo',modalAberto=false,agendado=false;
 function primeiroNome(){
   let raw='';
@@ -135,6 +135,7 @@ function renderEquipe(){
   detalhe.innerHTML='<button type="button" class="obp-back" data-team-back>‹ Funcionários</button><div class="obp-detail-top"><span class="obp-avatar large">'+esc(String(f.nome||'?').trim().slice(0,1).toUpperCase())+'</span><div><h2>'+esc(f.nome||'Funcionário')+'</h2><p>'+esc(f.cargo||f.funcao||'Função não informada')+' · '+esc(nomeObra(f.obra_id))+'</p></div><span class="obp-pill'+(f.ativo===false?' off':'')+'">'+(f.ativo===false?'Inativo':'Ativo')+'</span></div><div class="obp-tabs">'+abas.map(x=>'<button type="button" data-team-tab="'+x[0]+'" class="'+(aba===x[0]?'active':'')+'">'+x[1]+'</button>').join('')+'</div><div id="obpConteudoAba">'+conteudoAba(f,r)+'</div><div class="obp-team-actions"><button type="button" data-team-action="diaria">Registrar diária</button><button type="button" data-team-action="vale">Vale</button><button type="button" data-team-action="bonus">Bônus</button><button type="button" data-team-action="pagar">Pagar</button></div><div class="obp-team-footer"><button type="button" data-team-action="editar">Editar cadastro</button><button type="button" data-team-action="status">Ativar / Desativar</button><button type="button" data-team-action="excluir">Excluir</button></div>';
 }
 async function equipeAcaoPreview(id,tipo){
+  if(!window.equipeAcao&&window.OBRIX_POS_LOGIN_LOADER?.loadGroup)try{await window.OBRIX_POS_LOGIN_LOADER.loadGroup('equipe')}catch(_){}
   if(tipo==='diaria'||tipo==='vale'||tipo==='bonus'||tipo==='pagar'){window.equipeAcao?.(id,tipo);return}
   if(tipo==='historico'){
     const target=[...document.querySelectorAll('#listaEquipe [data-acao="registros"]')].find(x=>String(x.dataset.id)===String(id));
@@ -145,7 +146,7 @@ async function equipeAcaoPreview(id,tipo){
 }
 function cliqueEquipe(e){
   const t=e.target.closest('button');if(!t)return;
-  if(t.id==='obpNovo'){document.querySelector('#equipe .obrix-equipe-controles [data-cmd="novo"]')?.click();return}
+  if(t.id==='obpNovo'){const abrir=()=>document.querySelector('#equipe .obrix-equipe-controles [data-cmd="novo"]')?.click();if(document.querySelector('#equipe .obrix-equipe-controles [data-cmd="novo"]'))abrir();else window.OBRIX_POS_LOGIN_LOADER?.loadGroup?.('equipe').then(abrir);return}
   if(t.dataset.teamFilter){filtro=t.dataset.teamFilter;selecionado='';renderEquipe();return}
   if(t.dataset.teamId){selecionado=t.dataset.teamId;aba='resumo';renderEquipe();return}
   if(t.hasAttribute('data-team-back')){selecionado='';renderEquipe();return}
