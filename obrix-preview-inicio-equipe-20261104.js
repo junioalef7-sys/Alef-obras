@@ -41,7 +41,7 @@ function renderInicio(){
   const root=$('inicio');if(!root)return;
   if(!$('obpHome')){
     root.innerHTML='<div id="obpHome"><div class="obp-greeting"><h1 id="obpOla">Olá</h1><span class="obp-greeting-mark"></span></div><div class="obp-shortcuts"><button type="button" data-short="nova"><span>＋</span>Nova obra</button><button type="button" data-short="equipe"><span>♙</span>Equipe</button><button type="button" data-short="checklist"><span>☑</span>Checklist</button><button type="button" data-short="foto"><span>▧</span>Foto</button></div><div class="obp-heading"><h2>Obras em andamento</h2><button type="button" data-home-all="obras">Ver todas <span>›</span></button></div><div id="obpObras"></div><div class="obp-heading"><h2>Últimas atualizações</h2><button type="button" data-home-all="atividades">Ver todas <span>›</span></button></div><div id="obpAtividades"></div></div>';
-    root.addEventListener('click',cliqueInicio);
+    if(root.dataset.obpClickBound!=='1'){root.addEventListener('click',cliqueInicio);root.dataset.obpClickBound='1'}
   }
   $('obpOla').textContent='Olá'+(primeiroNome()?', '+primeiroNome():'');
   const recentes=obras().filter(emAndamento).slice().sort((a,b)=>dataHora(b.atualizado_em||b.criado_em)-dataHora(a.atualizado_em||a.criado_em)).slice(0,3);
@@ -50,7 +50,7 @@ function renderInicio(){
   $('obpAtividades').innerHTML=at.length?at.map(atividadeHTML).join(''):'<div class="obp-empty">As atualizações das suas obras aparecerão aqui.</div>';
 }
 function abrirObras(id){
-  if(typeof window.abrir==='function')window.abrir('obras');
+  if(typeof window.abrir==='function')window.abrir('obras');if(id)window.OBRIX_POS_LOGIN_LOADER?.loadGroup?.('obras').catch?.(()=>{});
   if(!id){setTimeout(()=>$('obxVoltarObras')?.click(),200);return}
   let tentativas=0;
   const ir=()=>{
@@ -86,9 +86,9 @@ async function buscarEventos(){
   buscandoEventos=true;eventosAtualizados=Date.now();
   try{
     const sb=await window.OBRIX_BACKEND?.init?.();const p=await window.OBRIX_BACKEND?.profile?.();if(!sb||!p?.empresa_id)return;
-    const fontes=[['relatorio_fotos','Foto adicionada','▧'],['diarios_obra','Diário de obra atualizado','▤'],['checklist_itens','Checklist atualizado','☑']];
-    const rows=await Promise.all(fontes.map(async ([t,titulo,icon])=>{
-      try{const r=await sb.from(t).select('*').eq('empresa_id',p.empresa_id).limit(20);if(r.error)return[];return (r.data||[]).map(x=>({key:t+':'+x.id,txt:titulo+' · '+nomeObra(x.obra_id),date:x.atualizado_em||x.criado_em||x.created_at||x.data,icon}))}catch(_){return[]}
+    const fontes=[['relatorio_fotos','Foto adicionada','▧','id,obra_id,criado_em','criado_em'],['diarios_obra','Diário de obra atualizado','▤','id,obra_id,data','data'],['checklist_itens','Checklist atualizado','☑','id,obra_id,atualizado_em','atualizado_em']];
+    const rows=await Promise.all(fontes.map(async ([t,titulo,icon,campos,ordem])=>{
+      try{const r=await sb.from(t).select(campos).eq('empresa_id',p.empresa_id).order(ordem,{ascending:false}).limit(20);if(r.error)return[];return (r.data||[]).map(x=>({key:t+':'+x.id,txt:titulo+' · '+nomeObra(x.obra_id),date:x.atualizado_em||x.criado_em||x.created_at||x.data,icon}))}catch(_){return[]}
     }));
     eventosRemotos=rows.flat();renderInicio();
   }catch(_){}finally{buscandoEventos=false}
@@ -246,7 +246,7 @@ function iniciar(){
   if(app)new MutationObserver(atualizar).observe(app,{attributes:true,attributeFilter:['class']});
   ['obrix:offline-base-atualizada','obrix:offline-core-restaurado','obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto'].forEach(x=>window.addEventListener(x,atualizar));
   window.addEventListener('pageshow',atualizar);
-  setTimeout(atualizar,1200);setTimeout(atualizar,3200);
+  setTimeout(atualizar,1200);setTimeout(atualizar,3200);let ultimoProgresso='';setInterval(()=>{const home=$('inicio');if(!home||home.classList.contains('hidden'))return;const atual=obras().map(o=>String(o.id)+':'+String(progresso(o))).join('|');if(atual!==ultimoProgresso){ultimoProgresso=atual;renderInicio()}},5000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',iniciar,{once:true});else iniciar();
 window.OBRIX_PREVIEW={refresh:atualizar,openActivity:abrirAtualizacoes};
