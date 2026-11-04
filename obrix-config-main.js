@@ -17,7 +17,108 @@ $('cfgClaro').onclick=()=>{window.OBRIX_THEME?.apply?.('light');atualizaTema()};
 $('cfgTrocarEmail').onclick=trocarEmail;$('cfgTrocarSenha').onclick=trocarSenha;$('cfgSair').onclick=()=>document.getElementById('sair')?.click();
 m.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>apagarModulo(b.dataset.del));atualizaTema();carregarUsuario()}
 async function trocarEmail(){const atual=$('cfgEmail')?.textContent||'';const b=modal('Trocar e-mail',`<p class="muted">E-mail atual: <b>${esc(atual)}</b></p><label>Novo e-mail</label><input class="novoEmail" type="email" autocomplete="email" placeholder="novo@email.com"><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Trocar e-mail</button></div>`);b.querySelector('.salvar').onclick=async()=>{const email=b.querySelector('.novoEmail').value.trim().toLowerCase();if(!email||!email.includes('@'))return alert('Informe um e-mail válido.');const btn=b.querySelector('.salvar');btn.disabled=true;try{const sb=await OBRIX_BACKEND.init(),{data,error}=await sb.auth.updateUser({email});if(error)throw error;const pending=data?.user?.new_email&&String(data.user.email||'').toLowerCase()!==email;if(!pending){const p=await OBRIX_BACKEND.profile();await sb.from('perfis').update({email}).eq('id',p.id)}b.remove();$('cfgContaStatus').textContent=pending?'Solicitação enviada. Confirme o novo e-mail para concluir a troca.':'E-mail atualizado com sucesso.';await carregarUsuario()}catch(e){alert(e?.message||'Não foi possível trocar o e-mail.');btn.disabled=false}}}
-async function trocarSenha(){const b=modal('Trocar senha',`<label>Nova senha</label><input class="senha1" type="password" autocomplete="new-password" placeholder="Mínimo de 8 caracteres"><label>Confirmar nova senha</label><input class="senha2" type="password" autocomplete="new-password"><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Trocar senha</button></div>`);b.querySelector('.salvar').onclick=async()=>{const s1=b.querySelector('.senha1').value,s2=b.querySelector('.senha2').value;if(s1.length<8)return alert('A senha deve ter pelo menos 8 caracteres.');if(s1!==s2)return alert('As senhas não conferem.');const btn=b.querySelector('.salvar');btn.disabled=true;try{const sb=await OBRIX_BACKEND.init(),{error}=await sb.auth.updateUser({password:s1});if(error)throw error;b.remove();$('cfgContaStatus').textContent='Senha atualizada com sucesso.'}catch(e){alert(e?.message||'Não foi possível trocar a senha.');btn.disabled=false}}}
+
+const RECOVERY_URL='https://alef-obras-obrix3.vercel.app/obrix.html';
+function cfgSessionError(e){return /auth session missing|sess[aã]o n[aã]o encontrada|invalid.*token|refresh.*token|jwt.*(expired|invalid)|session.*(expired|missing)|not authenticated|user not found/i.test(String(e?.message||e||''))}
+function cfgModalInner(back,content){
+  const card=back.querySelector('.cfgModal');
+  if(!card)return null;
+  card.innerHTML='<h2>Trocar senha</h2>'+content;
+  card.querySelector('.cancelar')?.addEventListener('click',()=>back.remove());
+  return card;
+}
+function cfgEntrarNovamente(back){
+  const login=$('login'),app=$('app');
+  back.remove();
+  if(!login||!app){location.assign('./obrix.html');return}
+  try{OBRIX_BACKEND.clearCache?.()}catch(_){}
+  app.classList.add('hidden');
+  login.classList.remove('hidden');
+  $('erro')?.classList.add('hidden');
+  const email=String($('cfgEmail')?.textContent||'').trim();
+  if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)&&$('email'))$('email').value=email;
+  window.scrollTo({top:0,behavior:'auto'});
+}
+function cfgRecuperarSenha(back){
+  const saved=String($('cfgEmail')?.textContent||$('email')?.value||'').trim();
+  const card=cfgModalInner(back,
+    '<p class="muted">Sua sessão de acesso não está disponível. Entre novamente para trocar a senha ou solicite um link de recuperação por e-mail.</p>'+
+    '<p class="muted">Seus dados de obras e registros locais não serão apagados.</p>'+
+    '<label>E-mail da conta</label><input type="email" class="cfgRecuperarEmail" autocomplete="email" placeholder="seu@email.com">'+
+    '<div class="cfgPasswordStatus" role="status" aria-live="polite"></div>'+
+    '<div class="modalActions"><button type="button" class="btn cancelar">Cancelar</button><button type="button" class="btn cfgEntrar">Entrar novamente</button></div>'+
+    '<button type="button" class="btn cfgEnviarLink" style="width:100%;margin-top:10px">Enviar link para recuperar senha</button>'
+  );
+  if(!card)return;
+  if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(saved))card.querySelector('.cfgRecuperarEmail').value=saved;
+  card.querySelector('.cfgEntrar').onclick=()=>cfgEntrarNovamente(back);
+  card.querySelector('.cfgEnviarLink').onclick=async()=>{
+    const email=String(card.querySelector('.cfgRecuperarEmail').value||'').trim().toLowerCase(),st=card.querySelector('.cfgPasswordStatus'),btn=card.querySelector('.cfgEnviarLink');
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){st.textContent='Informe um e-mail válido.';return}
+    if(!navigator.onLine){st.textContent='Conecte-se à internet para receber o link.';return}
+    btn.disabled=true;btn.textContent='Enviando...';st.textContent='';
+    try{
+      const sb=await OBRIX_BACKEND.init();
+      const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:RECOVERY_URL});
+      if(error)throw error;
+      st.textContent='Se o e-mail estiver cadastrado, enviaremos um link para criar uma nova senha. Verifique também a caixa de spam.';
+      btn.textContent='Link solicitado';
+    }catch(e){st.textContent='Não foi possível enviar o link agora. Verifique sua conexão e tente novamente.';btn.disabled=false;btn.textContent='Enviar link para recuperar senha'}
+  };
+}
+function cfgVerificacaoIndisponivel(back,e){
+  const offline=!navigator.onLine||document.documentElement.dataset.obrixOffline==='1'||window.__OBRIX_FORCE_OFFLINE;
+  const detail=offline?'Conecte-se à internet para trocar sua senha.':'Não foi possível verificar sua sessão agora. Confira a conexão e tente novamente.';
+  const card=cfgModalInner(back,
+    '<p class="muted">'+detail+'</p>'+
+    '<div class="modalActions"><button type="button" class="btn cancelar">Cancelar</button><button type="button" class="btn cfgRetry">Tentar novamente</button></div>'
+  );
+  card?.querySelector('.cfgRetry')?.addEventListener('click',()=>trocarSenha());
+  if(e)console.warn('OBRIX: verificação de senha indisponível',e?.name||'Erro de conexão');
+}
+async function trocarSenha(){
+  const back=modal('Trocar senha','<p class="muted">Verificando sua sessão de acesso...</p><div class="modalActions"><button type="button" class="btn cancelar">Cancelar</button></div>');
+  if(!navigator.onLine||document.documentElement.dataset.obrixOffline==='1'||window.__OBRIX_FORCE_OFFLINE){cfgVerificacaoIndisponivel(back);return}
+  try{
+    const sb=await OBRIX_BACKEND.init();
+    const {data:sessionData,error:sessionError}=await sb.auth.getSession();
+    if(sessionError&&!cfgSessionError(sessionError))throw sessionError;
+    if(!sessionData?.session?.access_token){cfgRecuperarSenha(back);return}
+    const {data:userData,error:userError}=await sb.auth.getUser();
+    if(userError){
+      if(cfgSessionError(userError)){cfgRecuperarSenha(back);return}
+      throw userError;
+    }
+    if(!userData?.user){cfgRecuperarSenha(back);return}
+    const card=cfgModalInner(back,
+      '<label>Nova senha</label><input class="senha1" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo de 8 caracteres">'+
+      '<label>Confirmar nova senha</label><input class="senha2" type="password" autocomplete="new-password" minlength="8" placeholder="Repita a senha">'+
+      '<div class="cfgPasswordStatus" role="status" aria-live="polite"></div>'+
+      '<div class="modalActions"><button type="button" class="btn cancelar">Cancelar</button><button type="button" class="btn salvar">Trocar senha</button></div>'
+    );
+    if(!card)return;
+    card.querySelector('.salvar').onclick=async()=>{
+      const s1=card.querySelector('.senha1').value,s2=card.querySelector('.senha2').value,st=card.querySelector('.cfgPasswordStatus');
+      st.textContent='';
+      if(s1.length<8){st.textContent='A senha deve ter pelo menos 8 caracteres.';return}
+      if(s1!==s2){st.textContent='As senhas não conferem.';return}
+      const btn=card.querySelector('.salvar');btn.disabled=true;btn.textContent='Salvando...';
+      try{
+        const {error}=await sb.auth.updateUser({password:s1});
+        if(error)throw error;
+        back.remove();
+        const status=$('cfgContaStatus');if(status)status.textContent='Senha atualizada com sucesso.';
+      }catch(e){
+        if(cfgSessionError(e)){cfgRecuperarSenha(back);return}
+        st.textContent=String(e?.message||'Não foi possível trocar a senha.');
+        btn.disabled=false;btn.textContent='Trocar senha';
+      }
+    };
+  }catch(e){
+    if(cfgSessionError(e))cfgRecuperarSenha(back);
+    else cfgVerificacaoIndisponivel(back,e);
+  }
+}
 async function delAll(sb,t,eid){const r=await sb.from(t).delete().eq('empresa_id',eid);if(r.error)throw new Error(`${t}: ${r.error.message}`)}
 async function prepararFinanceiro(sb,eid,origem=null,obraIds=null){let q=sb.from('financeiro').update({status_lancamento:'estornado'}).eq('empresa_id',eid).neq('origem','manual').eq('status_lancamento','ativo');if(origem)q=q.eq('origem',origem);if(obraIds?.length)q=q.in('obra_id',obraIds);const r=await q;if(r.error)throw new Error(`financeiro: ${r.error.message}`)}
 async function apagarEquipe(sb,eid,st){st.textContent='Preparando lançamentos da equipe...';await prepararFinanceiro(sb,eid,'pagamento_equipe');let r=await sb.from('financeiro').delete().eq('empresa_id',eid).eq('origem','pagamento_equipe');if(r.error)throw r.error;r=await sb.from('diario_equipe').delete().eq('empresa_id',eid);if(r.error)throw r.error;r=await sb.from('pagamento_bonus_extras').delete().eq('empresa_id',eid);if(r.error)throw r.error;r=await sb.from('pagamento_diarias').delete().eq('empresa_id',eid);if(r.error)throw r.error;r=await sb.from('pagamento_vales').delete().eq('empresa_id',eid);if(r.error)throw r.error;r=await sb.from('pagamentos_equipe').delete().eq('empresa_id',eid);if(r.error)throw r.error;r=await sb.from('funcionarios').delete().eq('empresa_id',eid);if(r.error)throw r.error}
