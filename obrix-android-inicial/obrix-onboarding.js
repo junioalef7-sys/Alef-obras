@@ -2,7 +2,7 @@
 'use strict';
 if(window.__OBRIX_ONBOARDING)return;window.__OBRIX_ONBOARDING=true;
 
-const VERSION='v2-android-apresentacao-20261104';
+const VERSION='v3-android-apresentacao-instalacao-20261105';
 const $=id=>document.getElementById(id);
 let overlay=null,index=0,currentUser=null,opening=false,menuObserver=null;
 
@@ -215,7 +215,7 @@ function ensure(){
   $('obxOnboardSkip').onclick=()=>close(true);
   $('obxOnboardPrev').onclick=prev;
   $('obxOnboardNext').onclick=next;
-  overlay.addEventListener('keydown',e=>{if(e.key==='Escape')close(false);if(e.key==='ArrowRight')next();if(e.key==='ArrowLeft')prev()});
+  overlay.addEventListener('keydown',e=>{if(e.key==='Escape')close(true);if(e.key==='ArrowRight')next();if(e.key==='ArrowLeft')prev()});
   const style=document.createElement('style');style.id='obrixOnboardingStyle';style.textContent=`
     .obxOnboarding{position:fixed;inset:0;z-index:15000;background:rgba(2,6,23,.72);display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(5px)}
     .obxOnboardCard{width:min(860px,100%);max-height:min(94vh,920px);background:#f8fafc;color:#0f172a;border-radius:24px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.38);display:flex;flex-direction:column}
@@ -249,11 +249,23 @@ function render(){
 }
 
 async function user(){
-  try{currentUser=await window.OBRIX_BACKEND?.currentUser?.()||null;return currentUser}catch{return currentUser}
+  // Never open a previous employee's walkthrough after a manual sign-out.
+  try{if(localStorage.getItem('obrix_logout_lock_v1')==='1')return null}catch(_){}
+  try{
+    currentUser=await window.OBRIX_BACKEND?.currentUser?.()||null;
+    if(currentUser?.id)return currentUser;
+    const sb=await window.OBRIX_BACKEND?.init?.();
+    const s=await sb?.auth?.getSession?.();
+    currentUser=s?.data?.session?.user||null;
+    return currentUser;
+  }catch(_){return null}
 }
 
 async function open(force=false,onlyInstall=false){
-  if(opening)return;opening=true;
+  if(opening)return false;
+  // A delayed session event must never reset the slideshow mid-presentation.
+  if(overlay&&!overlay.classList.contains('hidden'))return true;
+  opening=true;
   try{
     if(!appReady()&&!force)return false;
     const u=await user();if(!u?.id)return false;
@@ -277,7 +289,9 @@ function goCreateObra(){
 
 function injectMenu(){
   const m=$('menuMain');if(!m)return false;
-  const account=m.querySelector('.opmGrid .account')||m.querySelector('.opmGrid article:last-child');if(!account)return false;
+  const account=m.querySelector('.opmGrid .account')||m.querySelector('.opmGrid article:last-child')||
+    m.querySelector('.opmGrid')||m;
+  if(!account)return false;
   if(!m.querySelector('[data-onboarding-replay]')){
     const b=document.createElement('button');b.type='button';b.dataset.onboardingReplay='1';b.className='obxReplay';b.innerHTML='<b>Conheça o OBRIX</b><small>Veja tudo que o aplicativo oferece</small>';b.onclick=()=>open(true);account.appendChild(b);
   }
@@ -287,15 +301,25 @@ function injectMenu(){
   return true;
 }
 function watchMenu(){
-  if(injectMenu())return;
-  if(menuObserver)return;menuObserver=new MutationObserver(()=>injectMenu());menuObserver.observe(document.body,{childList:true,subtree:true});
+  injectMenu();
+  // Menu can be recreated after asynchronous navigation. Keep its replay
+  // controls available without changing the existing menu sections.
+  if(menuObserver)return;
+  menuObserver=new MutationObserver(()=>injectMenu());
+  menuObserver.observe(document.body,{childList:true,subtree:true});
 }
 async function auto(){if(!appReady())return;watchMenu();await open(false)}
 
 const app=$('app');if(app)new MutationObserver(()=>{if(appReady())setTimeout(auto,500)}).observe(app,{attributes:true,attributeFilter:['class']});
+['obrix:session-shell','obrix:modules-ready','obrix:modules-online-ready'].forEach(ev=>
+  window.addEventListener(ev,()=>setTimeout(auto,650))
+);
 window.addEventListener('pageshow',()=>setTimeout(auto,700));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(()=>{watchMenu();if(appReady())open(false)},700)});
-setTimeout(()=>{watchMenu();auto()},900);setTimeout(()=>{watchMenu();auto()},2200);
+setTimeout(()=>{watchMenu();auto()},900);
+setTimeout(()=>{watchMenu();auto()},2200);
+setTimeout(()=>{watchMenu();auto()},5000);
+setTimeout(()=>{watchMenu();auto()},9500);
 
 window.OBRIX_ONBOARDING={open,openInstall:()=>open(true,true),close,next,prev,status:()=>({version:VERSION,index,total:slides.length,user:currentUser?.id||null,complete:currentUser?.id?done(currentUser.id):false})};
 })();
