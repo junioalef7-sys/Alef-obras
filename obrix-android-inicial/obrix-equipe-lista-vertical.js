@@ -126,9 +126,35 @@
     bonusList().filter(x=>String(x.funcionario_id)===String(id))
       .forEach(x=>rows.push({data:x.data,tipo:x.tipo==='extra'?'Extra':'Bônus',obra:nomeObra(x.obra_id),valor:Number(x.valor||0),status:x.pago?'Pago':'Em aberto',bonusId:String(x.id),pago:!!x.pago,descricao:x.descricao||''}));
     rows.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
-    const html=`<p class="muted"><b>${esc(f.nome)}</b></p><div class="obrix-registros-lista">${rows.length?rows.map(x=>`<div class="obrix-registro-linha"><div><b>${x.data?new Date(x.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span>${x.descricao?'<small>'+esc(x.descricao)+'</small>':''}</div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small>${x.bonusId&&!x.pago?'<button type="button" class="obrix-registro-excluir" data-bonus-id="'+esc(x.bonusId)+'" style="display:block;margin-top:8px;padding:7px 10px;border:1px solid #dc2626;border-radius:9px;color:#b91c1c;background:#fff;font-size:13px;font-weight:800">Excluir</button>':''}</div></div>`).join(''):'<p class="muted">Nenhum registro encontrado.</p>'}</div><div class="obrix-registros-acoes"><button type="button" data-extra="vale">Vale</button><button type="button" data-extra="bonus">Bônus e Extras</button><button type="button" class="pagar" data-extra="pagar">Pagar</button></div>`;
+    const html=`<p class="muted"><b>${esc(f.nome)}</b></p><div class="obrix-registros-lista">${rows.length?rows.map(x=>`<div class="obrix-registro-linha"><div><b>${x.data?new Date(x.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span>${x.descricao?'<small>'+esc(x.descricao)+'</small>':''}</div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small>${x.bonusId&&!x.pago?'<button type="button" class="obrix-registro-excluir" data-bonus-id="'+esc(x.bonusId)+'" style="display:block;margin-top:8px;padding:7px 10px;border:1px solid #dc2626;border-radius:9px;color:#b91c1c;background:#fff;font-size:13px;font-weight:800">Excluir</button>':''}</div></div>`).join(''):'<p class="muted">Nenhum registro encontrado.</p>'}</div><div class="obrix-registros-acoes"><button type="button" data-extra="vale">Vale</button><button type="button" data-extra="bonus">Bônus e Extras</button><button type="button" class="pagar" data-extra="pagar">Pagar</button><button type="button" class="obrix-excluir-bonus-acao" style="grid-column:1/-1;display:block;width:100%;min-height:48px;background:#fff4f4!important;border:2px solid #b91c1c!important;color:#991b1b!important;-webkit-text-fill-color:#991b1b!important;font-weight:900;font-size:15px" aria-label="Excluir bônus ou extra">Excluir bônus / extra</button></div>`;
     const back=abrirModal('Registros do funcionário',html,'obrix-modelo-modal');
     back.querySelectorAll('[data-extra]').forEach(btn=>btn.onclick=()=>{back.remove();window.equipeAcao?.(String(id),btn.dataset.extra)});
+    // Fixed action, visible even when no bonus row is currently displayed.
+    back.querySelector('.obrix-excluir-bonus-acao').onclick=()=>{
+      const pendentes=bonusList().filter(x=>String(x.funcionario_id)===String(id)&&!x.pago);
+      if(!pendentes.length){
+        alert('Não há bônus ou extras em aberto para excluir. Lançamentos já pagos ficam protegidos.');
+        return;
+      }
+      const opcoes=pendentes.map(x=>
+        '<option value="'+esc(x.id)+'">'+esc((x.tipo==='extra'?'Extra':'Bônus')+' · '+(x.descricao||'Sem descrição')+' · '+money(x.valor))+'</option>'
+      ).join('');
+      const escolha=abrirModal('Excluir bônus / extra',
+        '<p class="muted">Escolha o lançamento em aberto que deseja excluir.</p>'+
+        '<label>Registro</label><select class="obrix-exclusao-bonus-select" style="width:100%;padding:12px;font-size:16px">'+opcoes+'</select>'+
+        '<p class="muted">Esta ação exige confirmação. Lançamentos pagos não podem ser excluídos.</p>'+
+        '<div class="modalActions"><button type="button" class="btn cancelar">Cancelar</button>'+
+        '<button type="button" class="btn confirmar" style="background:#b91c1c;color:white;border-color:#b91c1c">Excluir selecionado</button></div>',
+        'obrix-modelo-modal');
+      escolha.querySelector('.cancelar').onclick=()=>escolha.remove();
+      escolha.querySelector('.confirmar').onclick=()=>{
+        const sel=escolha.querySelector('.obrix-exclusao-bonus-select').value;
+        escolha.remove();
+        const btn=[...back.querySelectorAll('[data-bonus-id]')].find(b=>b.dataset.bonusId===sel);
+        if(btn)btn.click();
+        else alert('Registro indisponível. Feche e abra novamente Ver registros.');
+      };
+    };
     back.querySelectorAll('[data-bonus-id]').forEach(btn=>btn.onclick=async()=>{
       const bonusId=btn.dataset.bonusId;
       const item=bonusList().find(x=>String(x.id)===bonusId&&String(x.funcionario_id)===String(id));
