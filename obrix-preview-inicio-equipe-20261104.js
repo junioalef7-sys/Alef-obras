@@ -40,12 +40,12 @@ function atividadeHTML(e){return '<div class="obp-activity"><span class="obp-act
 function renderInicio(){
   const root=$('inicio');if(!root)return;
   if(!$('obpHome')){
-    root.innerHTML='<div id="obpHome"><div class="obp-greeting"><h1 id="obpOla">Olá</h1><span class="obp-greeting-mark"></span></div><div class="obp-shortcuts"><button type="button" data-short="nova"><span>＋</span>Nova obra</button><button type="button" data-short="equipe"><span>♙</span>Equipe</button><button type="button" data-short="checklist"><span>☑</span>Checklist</button><button type="button" data-short="foto"><span>▧</span>Foto</button></div><div class="obp-heading"><h2>Obras em andamento</h2><button type="button" data-home-all="obras">Ver todas <span>›</span></button></div><div id="obpObras"></div><div class="obp-heading"><h2>Últimas atualizações</h2><button type="button" data-home-all="atividades">Ver todas <span>›</span></button></div><div id="obpAtividades"></div></div>';
+    root.innerHTML='<div id="obpHome"><div class="obp-greeting"><h1 id="obpOla">Olá</h1><span class="obp-greeting-mark"></span></div><div class="obp-shortcuts"><button type="button" data-short="nova"><span>＋</span>Nova obra</button><button type="button" data-short="equipe"><span>♙</span>Equipe</button><button type="button" data-short="checklist"><span>☑</span>Checklist</button><button type="button" data-short="foto"><span>▧</span>Foto</button></div><div class="obp-heading"><h2>Obras</h2><button type="button" data-home-all="obras">Ver todas <span>›</span></button></div><div id="obpObras"></div><div class="obp-heading"><h2>Últimas atualizações</h2><button type="button" data-home-all="atividades">Ver todas <span>›</span></button></div><div id="obpAtividades"></div></div>';
     if(root.dataset.obpClickBound!=='1'){root.addEventListener('click',cliqueInicio);root.dataset.obpClickBound='1'}
   }
   $('obpOla').textContent='Olá'+(primeiroNome()?', '+primeiroNome():'');
   const recentes=obras().filter(emAndamento).slice().sort((a,b)=>dataHora(b.atualizado_em||b.criado_em)-dataHora(a.atualizado_em||a.criado_em)).slice(0,3);
-  $('obpObras').innerHTML=recentes.length?recentes.map(o=>{const p=progresso(o);return '<button type="button" class="obp-work" data-home-obra="'+esc(o.id)+'"><span class="obp-work-icon">▥</span><span class="obp-work-main"><strong>'+esc(o.nome||'Obra')+'</strong><span class="obp-work-status">Em andamento</span><span class="obp-progress"><i style="width:'+(p??0)+'%"></i></span></span><span class="obp-work-pct">'+(p===null?'—':p+'%')+'</span><span class="obp-work-arrow">›</span></button>'}).join(''):'<div class="obp-empty">Nenhuma obra em andamento.</div>';
+  $('obpObras').innerHTML=recentes.length?recentes.map(o=>{const p=progresso(o);return '<button type="button" class="obp-work" data-home-obra="'+esc(o.id)+'"><span class="obp-work-icon">▥</span><span class="obp-work-main"><strong>'+esc(o.nome||'Obra')+'</strong><span class="obp-progress"><i style="width:'+(p??0)+'%"></i></span></span><span class="obp-work-pct">'+(p===null?'—':p+'%')+'</span><span class="obp-work-arrow">›</span></button>'}).join(''):'<div class="obp-empty">Nenhuma obra em andamento.</div>';
   const at=atividades().slice(0,4);
   $('obpAtividades').innerHTML=at.length?at.map(atividadeHTML).join(''):'<div class="obp-empty">As atualizações das suas obras aparecerão aqui.</div>';
 }
@@ -95,11 +95,42 @@ async function buscarEventos(){
 }
 function arrEquipe(tipo,id){return lista(tipo).filter(x=>String(x.funcionario_id)===String(id))}
 function resumoEquipe(f){
-  const ds=arrEquipe('diarias',f.id).filter(x=>!x.paga),vs=arrEquipe('vales',f.id).filter(x=>!x.quitado),bs=arrEquipe('bonus',f.id).filter(x=>!x.pago);
-  const valorD=ds.reduce((s,x)=>s+Number(x.valor_total||0),0),valorV=vs.reduce((s,x)=>s+Number(x.valor||0),0),valorB=bs.reduce((s,x)=>s+Number(x.valor||0),0);
-  const totalPago=window.OBRIX_EQUIPE_TOTAL_PAGO?.get?.(f.id);
-  return {ds,vs,bs,bruto:valorD+valorB,vale:valorV,liquido:valorD+valorB-valorV,pago:totalPago,bonus:arrEquipe('bonus',f.id).reduce((s,x)=>s+Number(x.valor||0),0),quantidade:ds.reduce((s,x)=>s+Number(x.quantidade??1),0)};
+  const ds=arrEquipe('diarias',f.id).filter(x=>!x.paga);
+  const vs=arrEquipe('vales',f.id).filter(x=>!x.quitado);
+  const bs=arrEquipe('bonus',f.id).filter(x=>!x.pago);
+  const diariasValor=ds.reduce((s,x)=>s+Number(x.valor_total||0),0);
+  const vale=vs.reduce((s,x)=>s+Number(x.valor||0),0);
+  const bonus=bs.reduce((s,x)=>s+Number(x.valor||0),0);
+  const bruto=diariasValor+bonus,abate=Math.min(vale,Math.max(0,bruto));
+  return {ds,vs,bs,diariasValor,vale,bonus,bruto,abate,liquido:Math.max(0,bruto-abate),
+    completas:ds.filter(x=>Number(x.quantidade||1)>=1).length,
+    meias:ds.filter(x=>Number(x.quantidade||0)>0&&Number(x.quantidade||0)<1).length};
 }
+function tipoPagamento(f){
+  return ({diaria:'Por diária',semana:'Por semana',quinzena:'Por quinzena',mes:'Por mês'})[String(f.tipo_pagamento||'diaria')]||'Por diária';
+}
+function resumoTotal(){
+  const fs=funcs(),totais=fs.map(resumoEquipe);
+  return {ativos:fs.filter(f=>f.ativo!==false).length,diarias:totais.reduce((s,r)=>s+r.diariasValor,0),
+    bruto:totais.reduce((s,r)=>s+r.bruto,0),vales:totais.reduce((s,r)=>s+r.vale,0),
+    bonus:totais.reduce((s,r)=>s+r.bonus,0),liquido:totais.reduce((s,r)=>s+r.liquido,0),
+    pago:fs.reduce((s,f)=>s+Number(window.OBRIX_EQUIPE_TOTAL_PAGO?.get?.(f.id)||0),0)};
+}
+function indicador(t,v,classe=''){return '<div class="obp-indicador '+classe+'"><small>'+esc(t)+'</small><b>'+esc(v)+'</b></div>';}
+let resumoExpandido=false,gerenciarAberto=false;
+function antigo(caminho){return document.querySelector(caminho)}
+async function esperarEquipe(){
+  if(antigo('#equipe .obrix-equipe-controles [data-cmd="novo"]'))return true;
+  try{await window.OBRIX_POS_LOGIN_LOADER?.loadGroup?.('equipe')}catch(_){}
+  return !!antigo('#equipe .obrix-equipe-controles');
+}
+async function clicarAntigo(selector){
+  await esperarEquipe();
+  const el=antigo(selector);
+  if(el){el.click();return true}
+  return false;
+}
+
 function metrica(t,v,highlight){return '<div class="obp-metric'+(highlight?' highlight':'')+'"><small>'+esc(t)+'</small><strong>'+esc(v)+'</strong></div>'}
 function listaRegistros(rows,titulo,valor){
   if(!rows.length)return '<div class="obp-empty">Nenhum registro em aberto.</div>';
@@ -115,44 +146,72 @@ function conteudoAba(f,r){
 }
 function renderEquipe(){
   const sec=$('equipe');if(!sec)return;
-  if(!$('obpEquipe')){
-    const box=document.createElement('div');box.id='obpEquipe';
-    box.innerHTML='<header class="obp-team-header"><h1>Equipe</h1><button type="button" id="obpNovo">＋ Novo</button></header><label class="obp-team-search"><span>⌕</span><input type="search" id="obpBuscarFunc" placeholder="Buscar funcionário..." autocomplete="off"></label><nav id="obpFiltros" class="obp-filters" aria-label="Filtrar funcionários"></nav><div class="obp-team-layout"><div id="obpFuncionarios" class="obp-team-list"></div><div id="obpDetalhe" class="obp-team-detail"></div></div>';
+  let box=$('obpEquipe');
+  if(!box){
+    box=document.createElement('div');box.id='obpEquipe';
+    box.innerHTML='<div id="obpTeamDirectory"><header class="obp-team-header"><h1>Equipe</h1><button type="button" id="obpNovo">＋ Novo</button></header><label class="obp-team-search"><span>⌕</span><input type="search" id="obpBuscarFunc" placeholder="Buscar funcionário..." autocomplete="off"></label><nav id="obpFiltros" class="obp-filters" aria-label="Filtrar funcionários"></nav><section class="obp-group-summary"><h2>Gestão da equipe</h2><div id="obpIndicadores" class="obp-indicadores"></div><button type="button" id="obpExpandir">Ver resumo completo ›</button></section><div class="obp-group-actions"><button type="button" id="obpPagarEquipe">▤ Pagar equipe</button><button type="button" id="obpHistoricoPag">▣ Histórico</button></div><div class="obp-list-header"><h2 id="obpTotalPessoas">Funcionários</h2><button id="obpGerenciar" type="button" aria-expanded="false">⚙ Gerenciar⌄</button></div><div id="obpGerenciarMenu" class="obp-manager-menu" hidden><button type="button" data-manager="toggle">Ativar / Desativar</button><button type="button" data-manager="excluir">Excluir funcionário</button><button type="button" data-manager="lista">Funcionários</button></div><div id="obpFuncionarios" class="obp-team-list"></div></div><div id="obpDetalhe" class="obp-team-detail" hidden></div>';
     sec.insertBefore(box,sec.querySelector('#listaEquipe')||null);
     box.addEventListener('click',cliqueEquipe);
     $('obpBuscarFunc').addEventListener('input',e=>{buscaEquipe=e.target.value;renderEquipe()});
   }
-  const fs=funcs(),q=buscaEquipe.trim().toLocaleLowerCase('pt-BR'),filtrados=fs.filter(f=>(filtro==='todos'||(filtro==='ativos'&&f.ativo!==false)||(filtro==='inativos'&&f.ativo===false))&&(!q||String(f.nome||'').toLocaleLowerCase('pt-BR').includes(q)||String(f.cargo||f.funcao||'').toLocaleLowerCase('pt-BR').includes(q)));
-  $('obpFiltros').innerHTML=[['todos','Todos',fs.length],['ativos','Ativos',fs.filter(f=>f.ativo!==false).length],['inativos','Inativos',fs.filter(f=>f.ativo===false).length]].map(a=>'<button type="button" data-team-filter="'+a[0]+'" class="'+(filtro===a[0]?'active':'')+'">'+a[1]+' ('+a[2]+')</button>').join('');
-  $('obpFuncionarios').innerHTML=filtrados.length?filtrados.map(f=>'<button type="button" class="obp-person'+(String(selecionado)===String(f.id)?' selected':'')+'" data-team-id="'+esc(f.id)+'"><span class="obp-avatar">'+esc(String(f.nome||'?').trim().slice(0,1).toUpperCase())+'</span><span class="obp-person-text"><strong>'+esc(f.nome||'Funcionário')+'</strong><small>'+esc(f.cargo||f.funcao||'Função não informada')+' · '+esc(nomeObra(f.obra_id))+'</small></span><span class="obp-pill'+(f.ativo===false?' off':'')+'">'+(f.ativo===false?'Inativo':'Ativo')+'</span><span class="obp-chevron">›</span></button>').join(''):'<div class="obp-empty">Nenhum funcionário encontrado.</div>';
-  if(selecionado&&!acharFunc(selecionado))selecionado='';
-  if(!selecionado&&window.innerWidth>720&&filtrados.length)selecionado=String(filtrados[0].id);
+  const fs=funcs(),q=buscaEquipe.trim().toLocaleLowerCase('pt-BR');
+  const filtrados=fs.filter(f=>(filtro==='todos'||(filtro==='ativos'&&f.ativo!==false)||(filtro==='inativos'&&f.ativo===false))&&(!q||String(f.nome||'').toLocaleLowerCase('pt-BR').includes(q)||String(f.cargo||f.funcao||'').toLocaleLowerCase('pt-BR').includes(q)));
+  const total=resumoTotal();
+  $('obpFiltros').innerHTML=[['todos','Todos',fs.length],['ativos','Ativos',fs.filter(f=>f.ativo!==false).length],['inativos','Inativos',fs.filter(f=>f.ativo===false).length]]
+    .map(a=>'<button type="button" data-team-filter="'+a[0]+'" class="'+(filtro===a[0]?'active':'')+'">'+a[1]+' ('+a[2]+')</button>').join('');
+  $('obpIndicadores').innerHTML=indicador('Funcionários ativos',total.ativos)+indicador('Diárias em aberto',dinheiro(total.diarias))+indicador('Líquido a pagar',dinheiro(total.liquido),'destaque')+(resumoExpandido?indicador('Vales em aberto',dinheiro(total.vales))+indicador('Bônus e extras',dinheiro(total.bonus))+indicador('Bruto da folha',dinheiro(total.bruto))+indicador('Total pago (histórico)',dinheiro(total.pago)):'');
+  $('obpExpandir').textContent=resumoExpandido?'Ocultar resumo ›':'Ver resumo completo ›';
+  $('obpTotalPessoas').textContent='Funcionários ('+filtrados.length+')';
+  $('obpGerenciarMenu').hidden=!gerenciarAberto;
+  $('obpGerenciar').setAttribute('aria-expanded',String(gerenciarAberto));
+  $('obpFuncionarios').innerHTML=filtrados.length?filtrados.map(f=>'<button type="button" class="obp-person" data-team-id="'+esc(f.id)+'"><span class="obp-avatar">♟</span><span class="obp-person-text"><strong>'+esc(f.nome||'Funcionário')+'</strong><small>'+esc(f.cargo||f.funcao||'Função não informada')+'</small></span><span class="obp-chevron">›</span></button>').join(''):'<div class="obp-empty">Nenhum funcionário encontrado.</div>';
   const f=acharFunc(selecionado);
-  const detalhe=$('obpDetalhe');
-  if(!f){detalhe.innerHTML='<div class="obp-empty obp-select-help">Selecione um funcionário para visualizar os detalhes.</div>';sec.classList.remove('obp-team-selected');return}
-  sec.classList.add('obp-team-selected');
-  const r=resumoEquipe(f),abas=[['resumo','Resumo'],['diarias','Diárias'],['vales','Vales'],['bonus','Bônus'],['pagamentos','Pagamentos'],['historico','Histórico']];
-  detalhe.innerHTML='<button type="button" class="obp-back" data-team-back>‹ Funcionários</button><div class="obp-detail-top"><span class="obp-avatar large">'+esc(String(f.nome||'?').trim().slice(0,1).toUpperCase())+'</span><div><h2>'+esc(f.nome||'Funcionário')+'</h2><p>'+esc(f.cargo||f.funcao||'Função não informada')+' · '+esc(nomeObra(f.obra_id))+'</p></div><span class="obp-pill'+(f.ativo===false?' off':'')+'">'+(f.ativo===false?'Inativo':'Ativo')+'</span></div><div class="obp-tabs">'+abas.map(x=>'<button type="button" data-team-tab="'+x[0]+'" class="'+(aba===x[0]?'active':'')+'">'+x[1]+'</button>').join('')+'</div><div id="obpConteudoAba">'+conteudoAba(f,r)+'</div><div class="obp-team-actions"><button type="button" data-team-action="diaria">Registrar diária</button><button type="button" data-team-action="vale">Vale</button><button type="button" data-team-action="bonus">Bônus</button><button type="button" data-team-action="pagar">Pagar</button></div><div class="obp-team-footer"><button type="button" data-team-action="editar">Editar cadastro</button><button type="button" data-team-action="status">Ativar / Desativar</button><button type="button" data-team-action="excluir">Excluir</button></div>';
+  const detalhe=$('obpDetalhe'),diretorio=$('obpTeamDirectory');
+  if(!f){diretorio.hidden=false;detalhe.hidden=true;detalhe.innerHTML='';sec.classList.remove('obp-team-selected');return}
+  diretorio.hidden=true;detalhe.hidden=false;sec.classList.add('obp-team-selected');
+  const r=resumoEquipe(f);
+  const base=String(f.tipo_pagamento)==='mes'?Number(f.salario_mensal||0):Number(f.valor_diaria||0);
+  detalhe.innerHTML='<div class="obp-detail-bar"><button type="button" data-team-back aria-label="Voltar à lista">‹</button><span>Funcionário</span></div>'+
+    '<h2 class="obp-full-name">'+esc(f.nome||'Funcionário')+'</h2><div class="obp-role">'+esc(f.cargo||f.funcao||'Função não informada')+'</div>'+
+    '<div class="obp-pay"><small>Forma de pagamento</small><strong>'+esc(tipoPagamento(f))+'</strong><span>'+esc(nomeObra(f.obra_id))+'</span><b>'+esc(dinheiro(base))+'</b></div>'+
+    '<div class="obp-pills"><span>'+r.completas+' diária'+(r.completas===1?'':'s')+' completa'+(r.completas===1?'':'s')+' em aberto</span><span>'+r.meias+' meia'+(r.meias===1?'':'s')+' diária'+(r.meias===1?'':'s')+' em aberto</span></div>'+
+    '<div class="obp-person-metrics">'+
+      '<div><small>Total bruto em aberto</small><b>'+esc(dinheiro(r.bruto))+'</b></div>'+
+      '<div><small>Vales em aberto</small><b>'+esc(dinheiro(r.vale))+'</b><span>Abate nesta folha: '+esc(dinheiro(r.abate))+'</span></div>'+
+      '<div><small>Bônus e extras em aberto</small><b>'+esc(dinheiro(r.bonus))+'</b></div>'+
+      '<div><small>Líquido a pagar</small><b>'+esc(dinheiro(r.liquido))+'</b></div>'+
+    '</div><div class="obp-person-actions"><button type="button" class="obp-diaria" data-team-action="diaria">Marcar diária</button><button type="button" class="obp-falta" data-team-action="falta">Falta</button><button type="button" class="obp-registros" data-team-action="historico">Ver registros</button><button type="button" class="obp-vale" data-team-action="vale">Vale</button><button type="button" class="obp-bonus" data-team-action="bonus">Bônus e Extras</button></div>';
 }
+
 async function equipeAcaoPreview(id,tipo){
-  if(!window.equipeAcao&&window.OBRIX_POS_LOGIN_LOADER?.loadGroup)try{await window.OBRIX_POS_LOGIN_LOADER.loadGroup('equipe')}catch(_){}
-  if(tipo==='diaria'||tipo==='vale'||tipo==='bonus'||tipo==='pagar'){window.equipeAcao?.(id,tipo);return}
-  if(tipo==='historico'){
-    const target=[...document.querySelectorAll('#listaEquipe [data-acao="registros"]')].find(x=>String(x.dataset.id)===String(id));
-    if(target)target.click();else window.OBRIX_FUNCIONARIOS_PESSOAL?.openDetail?.(acharFunc(id));return;
+  if(tipo==='diaria'||tipo==='vale'||tipo==='bonus'||tipo==='pagar'){
+    await esperarEquipe();
+    if(window.equipeAcao)return window.equipeAcao(String(id),tipo);
+    return alert('A função ainda está carregando. Tente novamente.');
   }
-  if(tipo==='editar'){if(window.OBRIX_FUNCIONARIOS_PESSOAL?.edit)window.OBRIX_FUNCIONARIOS_PESSOAL.edit(acharFunc(id));else window.OBRIX_FUNCIONARIOS_PESSOAL?.open?.();return}
-  if(tipo==='status'||tipo==='excluir'){const cmd=tipo==='status'?'toggle':'excluir';document.querySelector('#equipe .obrix-equipe-controles [data-cmd="'+cmd+'"]')?.click()}
+  if(tipo==='falta'||tipo==='historico'){
+    await esperarEquipe();
+    const acao=tipo==='falta'?'falta':'registros';
+    const btn=[...document.querySelectorAll('#listaEquipe [data-acao="'+acao+'"]')].find(b=>String(b.dataset.id)===String(id));
+    if(btn)return btn.click();
+    return alert('O registro ainda está carregando. Tente novamente.');
+  }
 }
-function cliqueEquipe(e){
+
+async function cliqueEquipe(e){
   const t=e.target.closest('button');if(!t)return;
-  if(t.id==='obpNovo'){const abrir=()=>document.querySelector('#equipe .obrix-equipe-controles [data-cmd="novo"]')?.click();if(document.querySelector('#equipe .obrix-equipe-controles [data-cmd="novo"]'))abrir();else window.OBRIX_POS_LOGIN_LOADER?.loadGroup?.('equipe').then(abrir);return}
-  if(t.dataset.teamFilter){filtro=t.dataset.teamFilter;selecionado='';renderEquipe();return}
-  if(t.dataset.teamId){selecionado=t.dataset.teamId;aba='resumo';renderEquipe();return}
-  if(t.hasAttribute('data-team-back')){selecionado='';renderEquipe();return}
-  if(t.dataset.teamTab){aba=t.dataset.teamTab;renderEquipe();return}
-  if(t.dataset.teamAction&&selecionado)equipeAcaoPreview(selecionado,t.dataset.teamAction);
+  if(t.id==='obpNovo')return clicarAntigo('#equipe .obrix-equipe-controles [data-cmd="novo"]');
+  if(t.id==='obpExpandir'){resumoExpandido=!resumoExpandido;renderEquipe();return}
+  if(t.id==='obpPagarEquipe')return clicarAntigo('#equipe .obrix-pagar-equipe-topo');
+  if(t.id==='obpHistoricoPag')return clicarAntigo('#equipe .obrix-historico-pagamentos-topo');
+  if(t.id==='obpGerenciar'){gerenciarAberto=!gerenciarAberto;renderEquipe();return}
+  if(t.dataset.manager){const sel={'toggle':'[data-cmd="toggle"]','excluir':'[data-cmd="excluir"]','lista':'[data-cmd="lista"]'}[t.dataset.manager];gerenciarAberto=false;renderEquipe();if(sel)return clicarAntigo('#equipe .obrix-equipe-controles '+sel);return}
+  if(t.dataset.teamFilter){filtro=t.dataset.teamFilter;selecionado='';gerenciarAberto=false;renderEquipe();return}
+  if(t.dataset.teamId){selecionado=t.dataset.teamId;renderEquipe();scrollTo({top:0,behavior:'smooth'});return}
+  if(t.hasAttribute('data-team-back')){selecionado='';renderEquipe();scrollTo({top:0,behavior:'smooth'});return}
+  if(t.dataset.teamAction&&selecionado)return equipeAcaoPreview(selecionado,t.dataset.teamAction);
 }
+
 const css=document.createElement('style');css.id='obpPreviewCss';
 css.textContent=[
 '#inicio,#equipe{background:#fff!important;color:#16212c!important;}',
