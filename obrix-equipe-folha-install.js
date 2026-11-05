@@ -35,7 +35,7 @@
     return {ativos:fs.filter(f=>f.ativo!==false).length,diariasAberto,valesAberto,bonusAberto,bruto:diariasAberto+bonusAberto,liquido};
   }
 
-  function garantirResumo(){const sec=document.getElementById('equipe'),controles=sec?.querySelector('.obrix-equipe-controles');if(!sec||!controles)return null;let box=sec.querySelector('#obrixGestaoResumo');if(!box){box=document.createElement('section');box.id='obrixGestaoResumo';box.className='card obrix-gestao-resumo';controles.insertAdjacentElement('afterend',box)}return box}
+  function garantirResumo(){if(window.__OBRIX_PREVIEW_INICIO_EQUIPE_20261104||document.getElementById('obpEquipe')){document.getElementById('obrixGestaoResumo')?.remove();return null;}const sec=document.getElementById('equipe'),controles=sec?.querySelector('.obrix-equipe-controles');if(!sec||!controles)return null;let box=sec.querySelector('#obrixGestaoResumo');if(!box){box=document.createElement('section');box.id='obrixGestaoResumo';box.className='card obrix-gestao-resumo';controles.insertAdjacentElement('afterend',box)}return box}
 
   const PAGAMENTO_CACHE_MS=300000;
   let pagamentoCache={valor:null,ts:0,carregando:false};
