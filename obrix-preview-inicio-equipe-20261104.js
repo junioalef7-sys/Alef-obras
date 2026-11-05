@@ -232,15 +232,88 @@ function renderEquipe(){
   }
 }
 
+/* Employee records are rendered by the premium interface itself.
+   Previously the action proxied a hidden legacy card and could show a stale modal. */
+function abrirRegistrosEquipePremium(id){
+  const func=acharFunc(id);
+  if(!func)return alert('Funcionário não encontrado. Atualize a equipe.');
+  document.querySelectorAll('.obp-registros-premium-modal').forEach(m=>m.remove());
+  const ds=arrEquipe('diarias',id).map(x=>({id:x.id,tipo:Number(x.quantidade||1)<1?'Meia diária':'Diária',obra:x.obra_id,data:x.data,valor:Number(x.valor_total||0),status:x.paga?'Quitada':'Em aberto',pago:!!x.paga}));
+  const vs=arrEquipe('vales',id).map(x=>({id:x.id,tipo:'Vale',obra:x.obra_id,data:x.data,valor:-Number(x.valor||0),status:x.quitado?'Quitado':'Em aberto',pago:!!x.quitado}));
+  const bs=arrEquipe('bonus',id).map(x=>({id:x.id,tipo:x.tipo==='extra'?'Extra':'Bônus',obra:x.obra_id,data:x.data,valor:Number(x.valor||0),status:x.pago?'Pago':'Em aberto',pago:!!x.pago,descricao:x.descricao||'',bonus:true}));
+  const pendentes=bs.filter(x=>!x.pago);
+  const linhas=[...ds,...vs,...bs].sort((a,b)=>dataHora(b.data)-dataHora(a.data));
+  const back=document.createElement('div');back.className='modalBack obp-registros-premium-modal';
+  const itens=linhas.length?linhas.map(x=>
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #e2e8f0">'+
+      '<div style="min-width:0"><b>'+esc(x.tipo)+'</b><small style="display:block;color:#475569">'+esc(nomeObra(x.obra))+' · '+esc(String(x.data||''))+'</small>'+
+      (x.descricao?'<small style="display:block;color:#475569">'+esc(x.descricao)+'</small>':'')+
+      '<small style="display:block;color:#475569">'+esc(x.status)+'</small></div>'+
+      '<div style="text-align:right;flex-shrink:0"><strong>'+esc(dinheiro(x.valor))+'</strong>'+
+        (x.bonus&&!x.pago?'<button type="button" data-obp-excluir-bonus="'+esc(x.id)+'" style="display:block;margin-top:7px;padding:8px 12px;background:#fff0f0;border:1px solid #b91c1c;color:#991b1b;font-weight:800;border-radius:9px">Excluir</button>':'')+
+      '</div></div>').join(''):'<p>Nenhum registro encontrado.</p>';
+  back.innerHTML='<div class="modal" style="max-width:570px;background:#fff;color:#111827;max-height:88vh;overflow:auto;padding:20px;border-radius:16px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 style="margin:0;font-size:21px">Ver registros</h2><button type="button" data-obp-fechar style="min-width:44px;min-height:44px;font-size:27px;background:transparent;border:0;color:#111827" aria-label="Fechar">×</button></div>'+
+    '<p style="margin:9px 0;color:#475569">'+esc(func.nome)+'</p>'+
+    '<button type="button" data-obp-escolher-bonus style="display:block;width:100%;min-height:48px;padding:12px;margin:12px 0;background:#b91c1c;color:#fff;-webkit-text-fill-color:#fff;border:1px solid #991b1b;border-radius:12px;font-size:15px;font-weight:900">Excluir bônus / extra</button>'+
+    '<div data-obp-exclusao-escolha hidden style="padding:12px;margin:10px 0;border:1px solid #fecaca;border-radius:12px;background:#fff7f7">'+
+      '<label style="display:block;font-weight:700;margin-bottom:6px">Lançamento em aberto</label><select data-obp-bonus-id style="width:100%;min-height:46px;padding:9px;border:1px solid #cbd5e1;border-radius:9px">'+
+      pendentes.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.tipo+' · '+(x.descricao||nomeObra(x.obra))+' · '+dinheiro(x.valor))+'</option>').join('')+'</select>'+
+      '<button type="button" data-obp-confirmar-bonus style="display:block;margin-top:10px;padding:12px;width:100%;min-height:46px;border:0;border-radius:9px;background:#b91c1c;color:#fff;-webkit-text-fill-color:#fff;font-weight:800">Confirmar exclusão</button></div>'+
+    '<div style="margin-top:10px">'+itens+'</div></div>';
+  document.body.appendChild(back);
+  back.querySelector('[data-obp-fechar]').onclick=()=>back.remove();
+  back.addEventListener('click',e=>{if(e.target===back)back.remove()});
+  back.querySelector('[data-obp-escolher-bonus]').onclick=()=>{
+    if(!pendentes.length)return alert('Não há bônus ou extras em aberto para excluir. Os já pagos são preservados.');
+    const campo=back.querySelector('[data-obp-exclusao-escolha]');
+    campo.hidden=!campo.hidden;
+  };
+  async function excluir(idBonus,btn){
+    const item=arrEquipe('bonus',id).find(x=>String(x.id)===String(idBonus));
+    if(!item||item.pago)return alert('Este lançamento já foi pago ou não está disponível para exclusão.');
+    if(!confirm('Excluir '+(item.tipo==='extra'?'este extra':'este bônus')+' de '+func.nome+' no valor de '+dinheiro(item.valor)+'?'))return;
+    btn.disabled=true;
+    const original=btn.textContent;btn.textContent='Excluindo...';
+    let excluido=false;
+    try{
+      if(!navigator.onLine)throw Error('Conecte-se à internet para excluir com segurança.');
+      const backend=window.OBRIX_BACKEND;
+      if(!backend)throw Error('Conexão com o banco indisponível.');
+      const p=await backend.profile();if(!p?.empresa_id)throw Error('Conta não identificada.');
+      const sb=await backend.init();
+      const link=await sb.from('pagamento_bonus_extras').select('id').eq('empresa_id',p.empresa_id).eq('bonus_extra_id',idBonus).limit(1);
+      if(link.error)throw link.error;
+      if(link.data?.length)throw Error('O lançamento está associado a um pagamento e não pode ser excluído.');
+      const del=await sb.from('bonus_extras').delete().eq('id',idBonus).eq('empresa_id',p.empresa_id).eq('funcionario_id',id).eq('pago',false).select('id');
+      if(del.error)throw del.error;
+      if(!del.data?.length)throw Error('O lançamento já foi pago, excluído ou não pode ser alterado.');
+      excluido=true;
+      back.remove();
+      try{await window.OBRIX_EQUIPE?.refresh?.()}catch(e){console.warn('Equipe: atualização após exclusão',e)}
+      renderEquipe();
+      abrirRegistrosEquipePremium(id);
+    }catch(e){
+      alert((excluido?'Excluído, mas não foi possível atualizar os registros. ':'')+(e?.message||'Não foi possível excluir este bônus/extra.'));
+    }finally{if(btn.isConnected){btn.disabled=false;btn.textContent=original}}
+  }
+  back.querySelector('[data-obp-confirmar-bonus]').onclick=e=>excluir(back.querySelector('[data-obp-bonus-id]').value,e.currentTarget);
+  back.querySelectorAll('[data-obp-excluir-bonus]').forEach(btn=>btn.onclick=()=>excluir(btn.dataset.obpExcluirBonus,btn));
+}
+
 async function equipeAcaoPreview(id,tipo){
   if(tipo==='diaria'||tipo==='vale'||tipo==='bonus'||tipo==='pagar'){
     await esperarEquipe();
     if(window.equipeAcao)return window.equipeAcao(String(id),tipo);
     return alert('A função ainda está carregando. Tente novamente.');
   }
-  if(tipo==='falta'||tipo==='historico'){
+  if(tipo==='historico'){
     await esperarEquipe();
-    const acao=tipo==='falta'?'falta':'registros';
+    return abrirRegistrosEquipePremium(String(id));
+  }
+  if(tipo==='falta'){
+    await esperarEquipe();
+    const acao='falta';
     const btn=[...document.querySelectorAll('#listaEquipe [data-acao="'+acao+'"]')].find(b=>String(b.dataset.id)===String(id));
     if(btn)return btn.click();
     return alert('O registro ainda está carregando. Tente novamente.');
