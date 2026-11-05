@@ -316,7 +316,7 @@ function abrirRegistrosEquipePremium(id){
   async function excluir(idBonus,btn){
     const item=arrEquipe('bonus',id).find(x=>String(x.id)===String(idBonus));
     if(!item||item.pago)return alert('Este lançamento já foi pago ou não está disponível para exclusão.');
-    if(!confirm('Excluir '+(item.tipo==='extra'?'este extra':'este bônus')+' de '+func.nome+' no valor de '+dinheiro(item.valor)+'?'))return;
+    if(!await window.OBRIX_CONFIRMAR_EXCLUSAO({titulo:'Excluir bônus / extra',mensagem:'Excluir '+(item.tipo==='extra'?'este extra':'este bônus')+' de '+func.nome+' no valor de '+dinheiro(item.valor)+'?',confirmar:'Excluir'}))return;
     btn.disabled=true;
     const original=btn.textContent;btn.textContent='Excluindo...';
     let excluido=false;
@@ -354,7 +354,7 @@ function abrirRegistrosEquipePremium(id){
     const item=arrEquipe('diarias',id).find(x=>String(x.id)===String(diariaId));
     if(!item||item.paga)return alert('Esta diária já foi quitada ou não está disponível para exclusão.');
     const tipo=Number(item.quantidade||1)<1?'meia diária':'diária';
-    if(!confirm('Excluir esta '+tipo+' de '+func.nome+' no valor de '+dinheiro(item.valor_total)+'? Esta ação não pode ser desfeita.'))return;
+    if(!await window.OBRIX_CONFIRMAR_EXCLUSAO({titulo:'Excluir diária',mensagem:'Excluir esta '+tipo+' de '+func.nome+' no valor de '+dinheiro(item.valor_total)+'? Esta ação não pode ser desfeita.',confirmar:'Excluir'}))return;
     btn.disabled=true;
     const original=btn.textContent;btn.textContent='Excluindo...';
     let excluido=false;
