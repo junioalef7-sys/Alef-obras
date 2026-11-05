@@ -2,8 +2,10 @@
 if(window.__OBRIX_LOGIN_RESCUE_V2)return;window.__OBRIX_LOGIN_RESCUE_V2=true;
 const $=id=>document.getElementById(id),RECOVERY_URL='https://alef-obras-obrix3.vercel.app/obrix.html';let running=false,lastAttempt=0,unsub=null;
 function loginVisible(){const l=$('login');return !!(l&&!l.classList.contains('hidden'))}
+function logoutLocked(){try{return localStorage.getItem('obrix_logout_lock_v1')==='1'}catch(_){return false}}
 function timeout(p,ms,msg){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg||'Tempo esgotado.')),ms))])}
 function showShell(reason='session'){
+  if(logoutLocked())return false;
   const l=$('login'),a=$('app'),e=$('erro');
   l?.classList.add('hidden');a?.classList.remove('hidden');e?.classList.add('hidden');
   document.documentElement.dataset.obrixSessionReady='1';
@@ -12,6 +14,7 @@ function showShell(reason='session'){
   return !!a;
 }
 async function startCoreLoad(reason){
+  if(logoutLocked())return false;
   try{
     if(typeof window.carregar==='function'){
       const r=await timeout(Promise.resolve(window.carregar()),22000,'Dados principais demoraram para carregar.');
@@ -21,13 +24,13 @@ async function startCoreLoad(reason){
   return false;
 }
 async function recover(reason='watchdog'){
-  if(running||!loginVisible()||!navigator.onLine||!window.OBRIX_BACKEND)return false;
+  if(logoutLocked()||running||!loginVisible()||!navigator.onLine||!window.OBRIX_BACKEND)return false;
   const now=Date.now();if(now-lastAttempt<1000)return false;lastAttempt=now;running=true;
   try{
     const sb=await timeout(window.OBRIX_BACKEND.init(),8000,'Não foi possível iniciar a conexão.');
     const {data,error}=await timeout(sb.auth.getSession(),8000,'Não foi possível conferir sua sessão.');
     if(error)throw error;
-    if(!data?.session)return false;
+    if(logoutLocked()||!data?.session)return false;
     showShell(reason+'-session');
     void startCoreLoad(reason);
     return true;
@@ -99,7 +102,7 @@ async function installAuthListener(){
   try{
     const sb=await timeout(window.OBRIX_BACKEND.init(),8000);
     const sub=sb.auth.onAuthStateChange((event,session)=>{
-      if(session&&['INITIAL_SESSION','SIGNED_IN','TOKEN_REFRESHED','USER_UPDATED'].includes(event)){
+      if(!logoutLocked()&&session&&['INITIAL_SESSION','SIGNED_IN','TOKEN_REFRESHED','USER_UPDATED'].includes(event)){
         showShell('auth-'+event);
         setTimeout(()=>startCoreLoad('auth-'+event),0);
       }
