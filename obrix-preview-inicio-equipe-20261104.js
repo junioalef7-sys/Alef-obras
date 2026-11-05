@@ -122,7 +122,7 @@ function resumoTotal(){
     bonus:totais.reduce((s,r)=>s+r.bonus,0),liquido:totais.reduce((s,r)=>s+r.liquido,0),
     pago:fs.reduce((s,f)=>s+Number(window.OBRIX_EQUIPE_TOTAL_PAGO?.get?.(f.id)||0),0)};
 }
-function indicador(t,v,classe=''){return '<div class="obp-indicador '+classe+'"><small>'+esc(t)+'</small><b>'+esc(v)+'</b></div>';}
+function indicador(t,v,classe='',ico=''){return '<div class="obp-indicador '+classe+'">'+(ico?'<span class="obp-ind-ico" aria-hidden="true">'+esc(ico)+'</span>':'')+'<span class="obp-ind-text"><small>'+esc(t)+'</small><b>'+esc(v)+'</b></span></div>';}
 let resumoExpandido=false,gerenciarAberto=false;
 function antigo(caminho){return document.querySelector(caminho)}
 async function esperarEquipe(){
@@ -155,7 +155,7 @@ function renderEquipe(){
   let box=$('obpEquipe');
   if(!box){
     box=document.createElement('div');box.id='obpEquipe';
-    box.innerHTML='<div id="obpTeamDirectory"><header class="obp-team-header"><h1>Equipe</h1><button type="button" id="obpNovo">＋ Novo</button></header><label class="obp-team-search"><span>⌕</span><input type="search" id="obpBuscarFunc" placeholder="Buscar funcionário..." autocomplete="off"></label><nav id="obpFiltros" class="obp-filters" aria-label="Filtrar funcionários"></nav><section class="obp-group-summary"><h2>Gestão da equipe</h2><div id="obpIndicadores" class="obp-indicadores"></div><button type="button" id="obpExpandir">Ver resumo completo ›</button></section><div class="obp-group-actions"><button type="button" id="obpPagarEquipe">▤ Pagar equipe</button><button type="button" id="obpHistoricoPag">▣ Histórico</button></div><div class="obp-list-header"><h2 id="obpTotalPessoas">Funcionários</h2><button id="obpGerenciar" type="button" aria-expanded="false">⚙ Gerenciar⌄</button></div><div id="obpGerenciarMenu" class="obp-manager-menu" hidden><button type="button" data-manager="toggle">Ativar / Desativar</button><button type="button" data-manager="excluir">Excluir funcionário</button><button type="button" data-manager="lista">Funcionários</button></div><div id="obpFuncionarios" class="obp-team-list"></div></div><div id="obpDetalhe" class="obp-team-detail" hidden></div>';
+    box.innerHTML='<div id="obpTeamDirectory"><header class="obp-team-header"><h1>Equipe</h1><button type="button" id="obpNovo">＋ Novo</button></header><label class="obp-team-search"><span>⌕</span><input type="search" id="obpBuscarFunc" placeholder="Buscar funcionário..." autocomplete="off"></label><nav id="obpFiltros" class="obp-filters" aria-label="Filtrar funcionários"></nav><section class="obp-group-summary"><h2>Gestão da equipe</h2><div id="obpIndicadores" class="obp-indicadores obp-indicadores-principais"></div><button type="button" id="obpExpandir" aria-expanded="false" aria-controls="obpResumoExtras">Ver resumo ▾</button><div id="obpResumoExtras" class="obp-indicadores obp-indicadores-extras" hidden></div></section><div class="obp-group-actions"><button type="button" id="obpPagarEquipe">▤ Pagar equipe</button><button type="button" id="obpHistoricoPag">▣ Histórico</button></div><div class="obp-list-header"><h2 id="obpTotalPessoas">Funcionários</h2><button id="obpGerenciar" type="button" aria-expanded="false">⚙ Gerenciar⌄</button></div><div id="obpGerenciarMenu" class="obp-manager-menu" hidden><button type="button" data-manager="toggle">Ativar / Desativar</button><button type="button" data-manager="excluir">Excluir funcionário</button><button type="button" data-manager="lista">Funcionários</button></div><div id="obpFuncionarios" class="obp-team-list"></div></div><div id="obpDetalhe" class="obp-team-detail" hidden></div>';
     sec.insertBefore(box,sec.querySelector('#listaEquipe')||null);
     box.addEventListener('click',cliqueEquipe);
     $('obpBuscarFunc').addEventListener('input',e=>{buscaEquipe=e.target.value;renderEquipe()});
@@ -165,8 +165,12 @@ function renderEquipe(){
   const total=resumoTotal();
   $('obpFiltros').innerHTML=[['todos','Todos',fs.length],['ativos','Ativos',fs.filter(f=>f.ativo!==false).length],['inativos','Inativos',fs.filter(f=>f.ativo===false).length]]
     .map(a=>'<button type="button" data-team-filter="'+a[0]+'" class="'+(filtro===a[0]?'active':'')+'">'+a[1]+' ('+a[2]+')</button>').join('');
-  $('obpIndicadores').innerHTML=indicador('Funcionários ativos',total.ativos)+indicador('Diárias em aberto',dinheiro(total.diarias))+indicador('Líquido a pagar',dinheiro(total.liquido),'destaque')+(resumoExpandido?indicador('Vales em aberto',dinheiro(total.vales))+indicador('Bônus e extras',dinheiro(total.bonus))+indicador('Bruto da folha',dinheiro(total.bruto))+indicador('Total pago (histórico)',dinheiro(total.pago)):'');
-  $('obpExpandir').textContent=resumoExpandido?'Ocultar resumo ›':'Ver resumo completo ›';
+  $('obpIndicadores').innerHTML=indicador('Bruto da folha',dinheiro(total.bruto),'obp-bruto','▤')+indicador('Líquido a pagar',dinheiro(total.liquido),'obp-liquido','✓');
+  const extras=$('obpResumoExtras');
+  extras.hidden=!resumoExpandido;
+  extras.innerHTML=resumoExpandido?indicador('Funcionários ativos',total.ativos,'obp-ativos','♟')+indicador('Diárias em aberto',dinheiro(total.diarias),'obp-diarias','▣')+indicador('Vales em aberto',dinheiro(total.vales),'obp-vales','▰')+indicador('Bônus e extras',dinheiro(total.bonus),'obp-bonus','✦')+indicador('Total pago (histórico)',dinheiro(total.pago),'obp-pago','✓'):'';
+  $('obpExpandir').textContent=resumoExpandido?'Ocultar resumo ▴':'Ver resumo ▾';
+  $('obpExpandir').setAttribute('aria-expanded',String(resumoExpandido));
   $('obpTotalPessoas').textContent='Funcionários ('+filtrados.length+')';
   $('obpGerenciarMenu').hidden=!gerenciarAberto;
   $('obpGerenciar').setAttribute('aria-expanded',String(gerenciarAberto));
