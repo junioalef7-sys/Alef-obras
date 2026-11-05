@@ -238,10 +238,11 @@ function abrirRegistrosEquipePremium(id){
   const func=acharFunc(id);
   if(!func)return alert('Funcionário não encontrado. Atualize a equipe.');
   document.querySelectorAll('.obp-registros-premium-modal').forEach(m=>m.remove());
-  const ds=arrEquipe('diarias',id).map(x=>({id:x.id,tipo:Number(x.quantidade||1)<1?'Meia diária':'Diária',obra:x.obra_id,data:x.data,valor:Number(x.valor_total||0),status:x.paga?'Quitada':'Em aberto',pago:!!x.paga}));
+  const ds=arrEquipe('diarias',id).map(x=>({id:x.id,tipo:Number(x.quantidade||1)<1?'Meia diária':'Diária',obra:x.obra_id,data:x.data,valor:Number(x.valor_total||0),status:x.paga?'Quitada':'Em aberto',pago:!!x.paga,diaria:true}));
   const vs=arrEquipe('vales',id).map(x=>({id:x.id,tipo:'Vale',obra:x.obra_id,data:x.data,valor:-Number(x.valor||0),status:x.quitado?'Quitado':'Em aberto',pago:!!x.quitado}));
   const bs=arrEquipe('bonus',id).map(x=>({id:x.id,tipo:x.tipo==='extra'?'Extra':'Bônus',obra:x.obra_id,data:x.data,valor:Number(x.valor||0),status:x.pago?'Pago':'Em aberto',pago:!!x.pago,descricao:x.descricao||'',bonus:true}));
   const pendentes=bs.filter(x=>!x.pago);
+  const diariasPendentes=ds.filter(x=>!x.pago);
   const linhas=[...ds,...vs,...bs].sort((a,b)=>dataHora(b.data)-dataHora(a.data));
   const back=document.createElement('div');back.className='modalBack obp-registros-premium-modal';
   const itens=linhas.length?linhas.map(x=>
@@ -251,15 +252,21 @@ function abrirRegistrosEquipePremium(id){
       '<small style="display:block;color:#475569">'+esc(x.status)+'</small></div>'+
       '<div style="text-align:right;flex-shrink:0"><strong>'+esc(dinheiro(x.valor))+'</strong>'+
         (x.bonus&&!x.pago?'<button type="button" data-obp-excluir-bonus="'+esc(x.id)+'" style="display:block;margin-top:7px;padding:8px 12px;background:#fff0f0;border:1px solid #b91c1c;color:#991b1b;font-weight:800;border-radius:9px">Excluir</button>':'')+
+        (x.diaria&&!x.pago?'<button type="button" data-obp-excluir-diaria="'+esc(x.id)+'" style="display:block;margin-top:7px;padding:8px 12px;background:#fff0f0;border:1px solid #b91c1c;color:#991b1b;font-weight:800;border-radius:9px">Excluir diária</button>':'')+
       '</div></div>').join(''):'<p>Nenhum registro encontrado.</p>';
   back.innerHTML='<div class="modal" style="max-width:570px;background:#fff;color:#111827;max-height:88vh;overflow:auto;padding:20px;border-radius:16px">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 style="margin:0;font-size:21px">Ver registros</h2><button type="button" data-obp-fechar style="min-width:44px;min-height:44px;font-size:27px;background:transparent;border:0;color:#111827" aria-label="Fechar">×</button></div>'+
     '<p style="margin:9px 0;color:#475569">'+esc(func.nome)+'</p>'+
     '<button type="button" data-obp-escolher-bonus style="display:block;width:100%;min-height:48px;padding:12px;margin:12px 0;background:#b91c1c;color:#fff;-webkit-text-fill-color:#fff;border:1px solid #991b1b;border-radius:12px;font-size:15px;font-weight:900">Excluir bônus / extra</button>'+
+    '<button type="button" data-obp-escolher-diaria style="display:block;width:100%;min-height:48px;padding:12px;margin:12px 0;background:#fff1f2;color:#9f1239;-webkit-text-fill-color:#9f1239;border:2px solid #be123c;border-radius:12px;font-size:15px;font-weight:900">Excluir diária em aberto</button>'+
     '<div data-obp-exclusao-escolha hidden style="padding:12px;margin:10px 0;border:1px solid #fecaca;border-radius:12px;background:#fff7f7">'+
       '<label style="display:block;font-weight:700;margin-bottom:6px">Lançamento em aberto</label><select data-obp-bonus-id style="width:100%;min-height:46px;padding:9px;border:1px solid #cbd5e1;border-radius:9px">'+
       pendentes.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.tipo+' · '+(x.descricao||nomeObra(x.obra))+' · '+dinheiro(x.valor))+'</option>').join('')+'</select>'+
       '<button type="button" data-obp-confirmar-bonus style="display:block;margin-top:10px;padding:12px;width:100%;min-height:46px;border:0;border-radius:9px;background:#b91c1c;color:#fff;-webkit-text-fill-color:#fff;font-weight:800">Confirmar exclusão</button></div>'+
+    '<div data-obp-exclusao-diaria hidden style="padding:12px;margin:10px 0;border:1px solid #fecaca;border-radius:12px;background:#fff7f7">'+
+      '<label style="display:block;font-weight:700;margin-bottom:6px">Diária em aberto</label><select data-obp-diaria-id style="width:100%;min-height:46px;padding:9px;border:1px solid #cbd5e1;border-radius:9px">'+
+      diariasPendentes.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.tipo+' · '+nomeObra(x.obra)+' · '+(x.data||'Sem data')+' · '+dinheiro(x.valor))+'</option>').join('')+'</select>'+
+      '<button type="button" data-obp-confirmar-diaria style="display:block;margin-top:10px;padding:12px;width:100%;min-height:46px;border:0;border-radius:9px;background:#b91c1c;color:#fff;-webkit-text-fill-color:#fff;font-weight:800">Confirmar exclusão da diária</button></div>'+
     '<div style="margin-top:10px">'+itens+'</div></div>';
   document.body.appendChild(back);
   back.querySelector('[data-obp-fechar]').onclick=()=>back.remove();
@@ -267,6 +274,11 @@ function abrirRegistrosEquipePremium(id){
   back.querySelector('[data-obp-escolher-bonus]').onclick=()=>{
     if(!pendentes.length)return alert('Não há bônus ou extras em aberto para excluir. Os já pagos são preservados.');
     const campo=back.querySelector('[data-obp-exclusao-escolha]');
+    campo.hidden=!campo.hidden;
+  };
+  back.querySelector('[data-obp-escolher-diaria]').onclick=()=>{
+    if(!diariasPendentes.length)return alert('Não há diárias em aberto para excluir. As diárias quitadas ficam protegidas.');
+    const campo=back.querySelector('[data-obp-exclusao-diaria]');
     campo.hidden=!campo.hidden;
   };
   async function excluir(idBonus,btn){
@@ -299,6 +311,38 @@ function abrirRegistrosEquipePremium(id){
   }
   back.querySelector('[data-obp-confirmar-bonus]').onclick=e=>excluir(back.querySelector('[data-obp-bonus-id]').value,e.currentTarget);
   back.querySelectorAll('[data-obp-excluir-bonus]').forEach(btn=>btn.onclick=()=>excluir(btn.dataset.obpExcluirBonus,btn));
+  async function excluirDiaria(diariaId,btn){
+    const item=arrEquipe('diarias',id).find(x=>String(x.id)===String(diariaId));
+    if(!item||item.paga)return alert('Esta diária já foi quitada ou não está disponível para exclusão.');
+    const tipo=Number(item.quantidade||1)<1?'meia diária':'diária';
+    if(!confirm('Excluir esta '+tipo+' de '+func.nome+' no valor de '+dinheiro(item.valor_total)+'? Esta ação não pode ser desfeita.'))return;
+    btn.disabled=true;
+    const original=btn.textContent;btn.textContent='Excluindo...';
+    let excluido=false;
+    try{
+      if(!navigator.onLine)throw Error('Conecte-se à internet para excluir a diária com segurança.');
+      const backend=window.OBRIX_BACKEND;
+      if(!backend)throw Error('Conexão com o banco indisponível.');
+      const p=await backend.profile();
+      if(!p?.empresa_id)throw Error('Conta não identificada.');
+      const sb=await backend.init();
+      const link=await sb.from('pagamento_diarias').select('id').eq('empresa_id',p.empresa_id).eq('diaria_id',diariaId).limit(1);
+      if(link.error)throw link.error;
+      if(link.data?.length)throw Error('Esta diária está vinculada a um pagamento e não pode ser excluída.');
+      const del=await sb.from('diarias').delete().eq('id',diariaId).eq('empresa_id',p.empresa_id).eq('funcionario_id',id).eq('paga',false).select('id');
+      if(del.error)throw del.error;
+      if(!del.data?.length)throw Error('Esta diária foi quitada, excluída ou não pode ser alterada.');
+      excluido=true;
+      back.remove();
+      try{await window.OBRIX_EQUIPE?.refresh?.()}catch(e){console.warn('Equipe: atualização após exclusão de diária',e)}
+      renderEquipe();
+      abrirRegistrosEquipePremium(id);
+    }catch(e){
+      alert((excluido?'Diária excluída, mas não foi possível atualizar os registros. ':'')+(e?.message||'Não foi possível excluir a diária.'));
+    }finally{if(btn.isConnected){btn.disabled=false;btn.textContent=original}}
+  }
+  back.querySelector('[data-obp-confirmar-diaria]').onclick=e=>excluirDiaria(back.querySelector('[data-obp-diaria-id]').value,e.currentTarget);
+  back.querySelectorAll('[data-obp-excluir-diaria]').forEach(btn=>btn.onclick=()=>excluirDiaria(btn.dataset.obpExcluirDiaria,btn));
 }
 
 async function equipeAcaoPreview(id,tipo){
