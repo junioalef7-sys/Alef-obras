@@ -3,8 +3,14 @@
 <head><script id="obrixAndroidOriginalRestore">(function(){
   try{
     if(!/Android/i.test(navigator.userAgent||''))return;
-    // Executado antes do app moderno: Android usa a primeira versao aprovada.
+    // Some already-installed Android PWAs still open the previous root URL.
+    // Hide that transitional document before the redirect so it cannot paint
+    // an obsolete opening screen. iPhone and desktop are unaffected.
+    var html=document.documentElement;
+    html.style.setProperty('opacity','0','important');
     location.replace('./obrix-android-inicial/obrix.html');
+    // Fail-safe if navigation is blocked by the browser.
+    setTimeout(function(){html.style.removeProperty('opacity')},3500);
   }catch(_){}
 })();</script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#eef2f6"><style id="obrixAndroidLifecycleCss">
 html.obrixAndroidSessionCheck #login,
