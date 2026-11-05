@@ -126,6 +126,37 @@
     sincronizarLegado();atualizarResumoDistribuicao();
   }
 
+  // Source the work selector directly from Supabase. On first login the global
+  // work list may not have loaded yet, causing "Sem obra vinculada" only.
+  async function carregarObrasParaLancamento(select,obraOriginal=''){
+    if(!select||!select.isConnected)return;
+    const initial=String(obraOriginal||'');
+    select.dataset.obrixObrasStatus='carregando';
+    try{
+      const [sb,p]=await Promise.all([OBRIX_BACKEND.init(),OBRIX_BACKEND.profile()]);
+      if(!p?.empresa_id)throw Error('Empresa não identificada.');
+      const q=await sb.from('obras').select('id,nome').eq('empresa_id',p.empresa_id).order('nome',{ascending:true});
+      if(q.error)throw q.error;
+      if(!select.isConnected||$('fmObra')!==select)return;
+      const was=String(select.value||initial),items=(q.data||[]).filter(o=>o.id);
+      const options=[new Option('Sem obra vinculada','')];
+      for(const o of items)options.push(new Option(String(o.nome||'Obra'),String(o.id)));
+      select.replaceChildren(...options);
+      select.value=options.some(o=>o.value===was)?was:'';
+      select.dataset.obrixObrasStatus='pronto';
+      select.disabled=false;
+      atualizarChecklistForm(null);
+    }catch(e){
+      if(!select.isConnected||$('fmObra')!==select)return;
+      select.dataset.obrixObrasStatus='erro';
+      select.disabled=false;
+      console.warn('Financeiro: não foi possível carregar obras para o lançamento',e);
+      if(select.options.length<=1){
+        const opt=new Option('Não foi possível carregar obras — toque para tentar novamente','');
+        opt.disabled=true;select.add(opt);
+      }
+    }
+  }
   function form(tipo,x){
     ensure();salvando=false;
     const cats=tipo==='receita'?[['entrada','Entrada']]:Object.entries(labels).filter(([k])=>k!=='entrada'),box=$('fmForm');
@@ -142,6 +173,9 @@
     atualizarSubSugestoes();atualizarChecklistForm(x||null);
     $('fmCat').onchange=atualizarSubSugestoes;
     $('fmObra').onchange=()=>atualizarChecklistForm(null);
+    const escolhaObra=$('fmObra');
+    escolhaObra?.addEventListener('focus',()=>{if(escolhaObra.dataset.obrixObrasStatus==='erro')void carregarObrasParaLancamento(escolhaObra,x?.obra_id||'')});
+    void carregarObrasParaLancamento(escolhaObra,x?.obra_id||'');
     $('fmValor').addEventListener('input',()=>{const sem=$('fmSemChecklist'),semInp=$('fmSemChecklistValor'),algum=idsSelecionados().length>0;if(sem?.checked&&!algum&&semInp)semInp.value=Number($('fmValor').value||0)>0?Number($('fmValor').value).toFixed(2):'';atualizarResumoDistribuicao()});
     $('fmCancelar').onclick=()=>{if(!salvando)box.classList.add('hidden')};
     $('fmSalvar').onclick=()=>save(tipo,x?.id);
