@@ -165,9 +165,39 @@
     }catch(e){alert(e.message||'Erro ao salvar lançamento')}finally{salvando=false;if(btn){btn.disabled=false;btn.textContent='Salvar'}}
   }
 
+  function confirmarExclusaoFinanceiro(){
+    return new Promise(resolve=>{
+      const overlay=document.createElement('div');
+      overlay.className='obrixFinExcluirOverlay';
+      overlay.style.cssText='position:fixed;inset:0;z-index:2147483500;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(4,12,22,.62);box-sizing:border-box';
+      overlay.innerHTML='<div role="dialog" aria-modal="true" aria-labelledby="obrixFinExcluirTitulo" style="width:min(100%,410px);border:1px solid var(--ob-border,#cbd5e1);border-radius:18px;padding:22px;background:var(--ob-surface,#fff);color:var(--ob-text,#111827);box-shadow:0 16px 55px rgba(0,0,0,.25)">'+
+        '<h2 id="obrixFinExcluirTitulo" style="font-size:21px;line-height:1.3;margin:0 0 10px">Excluir este lançamento?</h2>'+
+        '<p style="margin:0 0 20px;line-height:1.5;color:var(--ob-muted,#526173)">Esta ação não pode ser desfeita.</p>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+        '<button type="button" data-cancelar style="min-height:47px;padding:11px;border:1px solid var(--ob-border,#cbd5e1);border-radius:11px;background:var(--ob-surface-2,#e5eaf0);color:var(--ob-text,#111827);font-size:15px;font-weight:800">Cancelar</button>'+
+        '<button type="button" data-confirmar style="min-height:47px;padding:11px;border:1px solid #b91c1c;border-radius:11px;background:#b91c1c;color:#fff;-webkit-text-fill-color:#fff;font-size:15px;font-weight:800">Excluir</button></div></div>';
+      const prior=document.activeElement;
+      let done=false;
+      const finish=value=>{
+        if(done)return;
+        done=true;
+        document.removeEventListener('keydown',onKey);
+        overlay.remove();
+        if(prior&&typeof prior.focus==='function'&&prior.isConnected)prior.focus();
+        resolve(value);
+      };
+      const onKey=e=>{if(e.key==='Escape'){e.preventDefault();finish(false)}};
+      overlay.addEventListener('click',e=>{if(e.target===overlay)finish(false)});
+      overlay.querySelector('[data-cancelar]').onclick=()=>finish(false);
+      overlay.querySelector('[data-confirmar]').onclick=()=>finish(true);
+      document.body.appendChild(overlay);
+      document.addEventListener('keydown',onKey);
+      overlay.querySelector('[data-cancelar]').focus();
+    });
+  }
   async function excluir(id){
     const x=(window.financeiro||[]).find(z=>String(z.id)===String(id));if(!x||!podeExcluir(x))return alert('Este lançamento não pode ser excluído por aqui.');
-    const origem=x.pagamento_equipe_id?'lançamento financeiro do pagamento da equipe':x.compra_id?'lançamento financeiro da compra do estoque':'lançamento';if(!confirm(`Excluir este ${origem}?`))return;
+    if(!await confirmarExclusaoFinanceiro())return;
     try{const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile(),q=await sb.from('financeiro').delete().eq('id',id).eq('empresa_id',p.empresa_id);if(q.error)throw q.error;window.financeiro=(window.financeiro||[]).filter(z=>String(z.id)!==String(id));renderLocal();window.OBRIX_DASH?.paint?.()}catch(e){alert(e.message||'Erro ao excluir lançamento')}
   }
   function editar(id){const x=(window.financeiro||[]).find(z=>String(z.id)===String(id));if(!x)return alert('Lançamento não encontrado. Atualize o Financeiro e tente novamente.');form(x.tipo,x)}
