@@ -160,7 +160,7 @@
       const item=bonusList().find(x=>String(x.id)===bonusId&&String(x.funcionario_id)===String(id));
       if(!item)return alert('Registro não encontrado. Atualize a equipe.');
       if(item.pago)return alert('Bônus/extras já pagos não podem ser excluídos. Consulte o pagamento.');
-      if(!confirm('Excluir este '+(item.tipo==='extra'?'extra':'bônus')+' de '+f.nome+' no valor de '+money(item.valor)+'? Esta ação não pode ser desfeita.'))return;
+      if(!await window.OBRIX_CONFIRMAR_EXCLUSAO({titulo:'Excluir bônus / extra',mensagem:'Excluir este '+(item.tipo==='extra'?'extra':'bônus')+' de '+f.nome+' no valor de '+money(item.valor)+'? Esta ação não pode ser desfeita.',confirmar:'Excluir'}))return;
       btn.disabled=true;btn.textContent='Excluindo...';
       try{
         if(!navigator.onLine)throw new Error('Conecte-se à internet para excluir este lançamento com segurança.');
@@ -220,7 +220,7 @@
     back.querySelector('.cancelar').onclick=()=>back.remove();
     back.querySelector('.continuar').onclick=async()=>{
       const f=acharFunc(back.querySelector('.func').value);if(!f)return;
-      if(tipo==='delete'&&!confirm(`Excluir o funcionário “${f.nome}”?`))return;
+      if(tipo==='delete'&&!await window.OBRIX_CONFIRMAR_EXCLUSAO({titulo:'Excluir funcionário',mensagem:`Excluir o funcionário “${f.nome}”?`,confirmar:'Excluir'}))return;
       const btn=back.querySelector('.continuar');btn.disabled=true;
       try{
         const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();
