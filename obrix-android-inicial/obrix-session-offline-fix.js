@@ -94,8 +94,30 @@ async function login(){
 }
 
 let leaving=false;
+function coverLogout(){
+  // This runs at window capture BEFORE any click handler in the Android page.
+  // The previous document-level listener never ran because capture() stopped propagation.
+  document.documentElement.classList.add('obrixAndroidLogoutTransition');
+  try{
+    sessionStorage.setItem('obrix_android_last_exit_splash_guard_v1',String(Date.now()));
+    sessionStorage.setItem('obrix_android_logout_pending_v2','1');
+  }catch(_){}
+  if(!document.body||document.getElementById('obrixAndroidSignoutCover'))return;
+  const cover=document.createElement('div');
+  cover.id='obrixAndroidSignoutCover';
+  cover.setAttribute('role','status');
+  cover.setAttribute('aria-live','polite');
+  cover.innerHTML='<span class="obrixAndroidSignoutMark">OBRIX</span><span>Saindo com segurança...</span>';
+  cover.style.cssText='position:fixed!important;inset:0!important;z-index:2147483640!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:15px!important;background:#eef2f6!important;color:#111827!important;font:700 17px/1.4 system-ui,-apple-system,sans-serif!important;text-align:center!important';
+  cover.firstElementChild.style.cssText='font:900 42px/1 system-ui,-apple-system,sans-serif!important;letter-spacing:-2px!important';
+  document.body.appendChild(cover);
+}
 async function logout(){
-  if(leaving)return;leaving=true;lock();holdLoggedOut();
+  if(leaving)return;
+  leaving=true;
+  coverLogout();
+  lock();
+  holdLoggedOut();
   const senha=$('senha');if(senha)senha.value='';
   try{
     const sb=await limit(window.OBRIX_BACKEND?.init?.(),1200);
