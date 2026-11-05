@@ -3,7 +3,7 @@ if(window.__OBRIX_EQUIPE_CHECKLIST_LOADER)return;window.__OBRIX_EQUIPE_CHECKLIST
 let promise=null;
 const pathOf=src=>{try{return new URL(src,location.href).pathname}catch{return src}};
 function hasPath(path){return [...document.scripts].some(s=>s.src&&pathOf(s.src)===path)}
-function dadosLoaded(){return hasPath('/obrix-equipe-checklist-dados.js')||!!window.equipeAcao?.__checklistDados}
+function dadosLoaded(){return [...document.scripts].some(s=>/\/obrix-equipe-checklist-dados\.js(?:\?|$)/.test(s.src||''))||!!window.equipeAcao?.__checklistDados}
 function patchLoaded(){return !!window.__OBRIX_EQUIPE_CHECKLIST_DIARIA_V2}
 function loadScript(src,flag,force=false){return new Promise(resolve=>{if(!force&&hasPath(pathOf(src)))return resolve(true);const s=document.createElement('script');s.src=src;s.async=false;if(flag)s.dataset[flag]='1';s.onload=()=>resolve(true);s.onerror=()=>{console.warn('OBRIX: módulo não carregou.',src);resolve(false)};document.body.appendChild(s)})}
 async function ensureOfflineSafe(){if(navigator.onLine||window.__OBRIX_OFFLINE_SAFE_LOADER)return true;return await loadScript('./obrix-offline-safe-loader.js?v=20261022offlinesuite1','obrixOfflineSafe')}
@@ -15,7 +15,7 @@ async function load(){
   promise=(async()=>{
     let ok=true;
     if(!dadosLoaded())ok=await loadScript('./obrix-equipe-checklist-dados.js?v=20261022restore2','obrixEquipeChecklistDados')&&ok;
-    if(!patchLoaded())ok=await loadScript('./obrix-equipe-checklist-diaria.js?v=20261022checkdiaria2','obrixEquipeChecklistDiaria',true)&&ok;
+    if(!patchLoaded())ok=await loadScript('./obrix-equipe-checklist-diaria.js?v=20261105-checklist-none-v1','obrixEquipeChecklistDiaria',true)&&ok;
     return ok;
   })();
   try{return await promise}finally{promise=null}
