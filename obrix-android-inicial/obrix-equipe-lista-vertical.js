@@ -119,13 +119,39 @@
   function verRegistros(id){
     const f=acharFunc(id);if(!f)return;
     const rows=[];
-    diariasList().filter(x=>String(x.funcionario_id)===String(id)).forEach(x=>rows.push({data:x.data,tipo:Number(x.quantidade||1)<1?'Meia diária':'Diária',obra:nomeObra(x.obra_id),valor:Number(x.valor_total||0),status:x.paga?'Quitada':'Em aberto'}));
-    valesList().filter(x=>String(x.funcionario_id)===String(id)).forEach(x=>rows.push({data:x.data,tipo:'Vale',obra:nomeObra(x.obra_id),valor:-Number(x.valor||0),status:x.quitado?'Quitado':'Em aberto'}));
-    bonusList().filter(x=>String(x.funcionario_id)===String(id)).forEach(x=>rows.push({data:x.data,tipo:x.tipo==='extra'?'Extra':'Bônus',obra:nomeObra(x.obra_id),valor:Number(x.valor||0),status:x.pago?'Pago':'Em aberto'}));
+    diariasList().filter(x=>String(x.funcionario_id)===String(id))
+      .forEach(x=>rows.push({data:x.data,tipo:Number(x.quantidade||1)<1?'Meia diária':'Diária',obra:nomeObra(x.obra_id),valor:Number(x.valor_total||0),status:x.paga?'Quitada':'Em aberto'}));
+    valesList().filter(x=>String(x.funcionario_id)===String(id))
+      .forEach(x=>rows.push({data:x.data,tipo:'Vale',obra:nomeObra(x.obra_id),valor:-Number(x.valor||0),status:x.quitado?'Quitado':'Em aberto'}));
+    bonusList().filter(x=>String(x.funcionario_id)===String(id))
+      .forEach(x=>rows.push({data:x.data,tipo:x.tipo==='extra'?'Extra':'Bônus',obra:nomeObra(x.obra_id),valor:Number(x.valor||0),status:x.pago?'Pago':'Em aberto',bonusId:String(x.id),pago:!!x.pago,descricao:x.descricao||''}));
     rows.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
-    const html=`<p class="muted"><b>${esc(f.nome)}</b></p><div class="obrix-registros-lista">${rows.length?rows.map(x=>`<div class="obrix-registro-linha"><div><b>${x.data?new Date(x.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span></div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small></div></div>`).join(''):'<p class="muted">Nenhum registro encontrado.</p>'}</div><div class="obrix-registros-acoes"><button type="button" data-extra="vale">Vale</button><button type="button" data-extra="bonus">Bônus e Extras</button><button type="button" class="pagar" data-extra="pagar">Pagar</button></div>`;
+    const html=`<p class="muted"><b>${esc(f.nome)}</b></p><div class="obrix-registros-lista">${rows.length?rows.map(x=>`<div class="obrix-registro-linha"><div><b>${x.data?new Date(x.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span>${x.descricao?'<small>'+esc(x.descricao)+'</small>':''}</div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small>${x.bonusId&&!x.pago?'<button type="button" class="obrix-registro-excluir" data-bonus-id="'+esc(x.bonusId)+'" style="display:block;margin-top:8px;padding:7px 10px;border:1px solid #dc2626;border-radius:9px;color:#b91c1c;background:#fff;font-size:13px;font-weight:800">Excluir</button>':''}</div></div>`).join(''):'<p class="muted">Nenhum registro encontrado.</p>'}</div><div class="obrix-registros-acoes"><button type="button" data-extra="vale">Vale</button><button type="button" data-extra="bonus">Bônus e Extras</button><button type="button" class="pagar" data-extra="pagar">Pagar</button></div>`;
     const back=abrirModal('Registros do funcionário',html,'obrix-modelo-modal');
     back.querySelectorAll('[data-extra]').forEach(btn=>btn.onclick=()=>{back.remove();window.equipeAcao?.(String(id),btn.dataset.extra)});
+    back.querySelectorAll('[data-bonus-id]').forEach(btn=>btn.onclick=async()=>{
+      const bonusId=btn.dataset.bonusId;
+      const item=bonusList().find(x=>String(x.id)===bonusId&&String(x.funcionario_id)===String(id));
+      if(!item)return alert('Registro não encontrado. Atualize a equipe.');
+      if(item.pago)return alert('Bônus/extras já pagos não podem ser excluídos. Consulte o pagamento.');
+      if(!confirm('Excluir este '+(item.tipo==='extra'?'extra':'bônus')+' de '+f.nome+' no valor de '+money(item.valor)+'? Esta ação não pode ser desfeita.'))return;
+      btn.disabled=true;btn.textContent='Excluindo...';
+      try{
+        if(!navigator.onLine)throw new Error('Conecte-se à internet para excluir este lançamento com segurança.');
+        const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();
+        if(!p?.empresa_id)throw new Error('Conta não identificada.');
+        // Never remove entries already linked to a payment, even if a stale client says unpaid.
+        const vinculo=await sb.from('pagamento_bonus_extras').select('id').eq('empresa_id',p.empresa_id).eq('bonus_extra_id',bonusId).limit(1);
+        if(vinculo.error)throw vinculo.error;
+        if(vinculo.data?.length)throw new Error('Este lançamento já participa de um pagamento e não pode ser excluído.');
+        const del=await sb.from('bonus_extras').delete().eq('id',bonusId).eq('empresa_id',p.empresa_id).eq('funcionario_id',id).eq('pago',false).select('id');
+        if(del.error)throw del.error;
+        if(!del.data?.length)throw new Error('Não foi possível excluir: o registro já foi pago, removido ou você não possui permissão.');
+        back.remove();
+        await window.OBRIX_EQUIPE?.refresh?.();
+        verRegistros(id);
+      }catch(e){if(btn.isConnected){btn.disabled=false;btn.textContent='Excluir'}alert(e?.message||'Não foi possível excluir o bônus/extra.')}
+    });
   }
 
   function editarCadastro(id){
