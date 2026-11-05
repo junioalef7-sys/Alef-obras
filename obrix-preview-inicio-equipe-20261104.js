@@ -267,15 +267,16 @@ function abrirRegistrosEquipePremium(id){
   const diariasPendentes=ds.filter(x=>!x.pago);
   const linhas=[...ds,...vs,...bs].sort((a,b)=>dataHora(b.data)-dataHora(a.data));
   const back=document.createElement('div');back.className='modalBack obp-registros-premium-modal';
-  const itens=linhas.length?linhas.map(x=>
-    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #e2e8f0">'+
-      '<div style="min-width:0"><b>'+esc(x.tipo)+'</b><small style="display:block;color:#475569">'+esc(nomeObra(x.obra))+' · '+esc(String(x.data||''))+'</small>'+
-      (x.descricao?'<small style="display:block;color:#475569">'+esc(x.descricao)+'</small>':'')+
-      '<small style="display:block;color:#475569">'+esc(x.status)+'</small></div>'+
+  const montarLinha=x=>
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--ob-border,#e2e8f0)">'+
+      '<div style="min-width:0"><b>'+esc(x.tipo)+'</b><small style="display:block;color:var(--ob-muted,#64748b)">'+esc(nomeObra(x.obra))+' · '+esc(String(x.data||''))+'</small>'+
+      (x.descricao?'<small style="display:block;color:var(--ob-muted,#64748b)">'+esc(x.descricao)+'</small>':'')+
+      '<small style="display:block;color:var(--ob-muted,#64748b)">'+esc(x.status)+'</small></div>'+
       '<div style="text-align:right;flex-shrink:0"><strong>'+esc(dinheiro(x.valor))+'</strong>'+
         (x.bonus&&!x.pago?'<button type="button" data-obp-excluir-bonus="'+esc(x.id)+'" style="display:block;margin-top:7px;padding:8px 12px;background:#fff0f0;border:1px solid #b91c1c;color:#991b1b;font-weight:800;border-radius:9px">Excluir</button>':'')+
         (x.diaria&&!x.pago?'<button type="button" data-obp-excluir-diaria="'+esc(x.id)+'" style="display:block;margin-top:7px;padding:8px 12px;background:#fff0f0;border:1px solid #b91c1c;color:#991b1b;font-weight:800;border-radius:9px">Excluir diária</button>':'')+
-      '</div></div>').join(''):'<p>Nenhum registro encontrado.</p>';
+      '</div></div>';
+  const itens=linhas.length?linhas.slice(0,60).map(montarLinha).join(''):'<p>Nenhum registro encontrado.</p>';
   back.innerHTML='<div class="modal" style="max-width:570px;background:var(--ob-surface,#fff);color:var(--ob-text,#111827);max-height:88vh;overflow:auto;padding:20px;border-radius:16px">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 style="margin:0;font-size:21px">Ver registros</h2><button type="button" data-obp-fechar style="min-width:44px;min-height:44px;font-size:27px;background:transparent;border:0;color:inherit" aria-label="Fechar">×</button></div>'+
     '<p style="margin:9px 0;color:var(--ob-muted,#64748b)">'+esc(func.nome)+'</p>'+
@@ -289,7 +290,8 @@ function abrirRegistrosEquipePremium(id){
       '<label style="display:block;font-weight:700;margin-bottom:6px">Diária em aberto</label><select data-obp-diaria-id style="width:100%;min-height:46px;padding:9px;border:1px solid var(--ob-border,#cbd5e1);border-radius:9px;background:var(--ob-surface,#fff);color:var(--ob-text,#111827)">'+
       diariasPendentes.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.tipo+' · '+nomeObra(x.obra)+' · '+(x.data||'Sem data')+' · '+dinheiro(x.valor))+'</option>').join('')+'</select>'+
       '<button type="button" data-obp-confirmar-diaria style="display:block;margin-top:10px;padding:12px;width:100%;min-height:46px;border:0;border-radius:9px;background:#b91c1c;color:#fff;-webkit-text-fill-color:#fff;font-weight:800">Confirmar exclusão da diária</button></div>'+
-    '<div style="margin-top:10px">'+itens+'</div></div>';
+    '<div data-obp-lista-itens style="margin-top:10px">'+itens+'</div>'+
+    (linhas.length>60?'<button type="button" data-obp-mais data-offset="60" style="display:block;width:100%;min-height:44px;padding:10px;margin-top:12px;border:1px solid var(--ob-border,#cbd5e1);border-radius:10px;background:var(--ob-surface,#fff);color:var(--ob-text,#111827)">Mostrar mais registros</button>':'')+'</div>';
   document.body.appendChild(back);
   back.querySelector('[data-obp-fechar]').onclick=()=>back.remove();
   back.addEventListener('click',e=>{if(e.target===back)back.remove()});
@@ -332,7 +334,14 @@ function abrirRegistrosEquipePremium(id){
     }finally{if(btn.isConnected){btn.disabled=false;btn.textContent=original}}
   }
   back.querySelector('[data-obp-confirmar-bonus]').onclick=e=>excluir(back.querySelector('[data-obp-bonus-id]').value,e.currentTarget);
-  back.querySelectorAll('[data-obp-excluir-bonus]').forEach(btn=>btn.onclick=()=>excluir(btn.dataset.obpExcluirBonus,btn));
+  const mais=back.querySelector('[data-obp-mais]');
+  if(mais)mais.onclick=()=>{
+    const inicio=Math.min(linhas.length,Number(mais.dataset.offset)||60);
+    const fim=Math.min(linhas.length,inicio+60);
+    back.querySelector('[data-obp-lista-itens]').insertAdjacentHTML('beforeend',linhas.slice(inicio,fim).map(montarLinha).join(''));
+    mais.dataset.offset=String(fim);
+    if(fim>=linhas.length)mais.remove();
+  };
   async function excluirDiaria(diariaId,btn){
     const item=arrEquipe('diarias',id).find(x=>String(x.id)===String(diariaId));
     if(!item||item.paga)return alert('Esta diária já foi quitada ou não está disponível para exclusão.');
@@ -364,7 +373,13 @@ function abrirRegistrosEquipePremium(id){
     }finally{if(btn.isConnected){btn.disabled=false;btn.textContent=original}}
   }
   back.querySelector('[data-obp-confirmar-diaria]').onclick=e=>excluirDiaria(back.querySelector('[data-obp-diaria-id]').value,e.currentTarget);
-  back.querySelectorAll('[data-obp-excluir-diaria]').forEach(btn=>btn.onclick=()=>excluirDiaria(btn.dataset.obpExcluirDiaria,btn));
+  // Event delegation keeps Excluir working for newly paginated rows.
+  back.addEventListener('click',e=>{
+    const bonusBtn=e.target.closest('[data-obp-excluir-bonus]');
+    if(bonusBtn){void excluir(bonusBtn.dataset.obpExcluirBonus,bonusBtn);return}
+    const diaBtn=e.target.closest('[data-obp-excluir-diaria]');
+    if(diaBtn)void excluirDiaria(diaBtn.dataset.obpExcluirDiaria,diaBtn);
+  });
 }
 
 async function equipeAcaoPreview(id,tipo){
