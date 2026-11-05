@@ -150,6 +150,15 @@ function conteudoAba(f,r){
   if(aba==='pagamentos')return '<div class="obp-metrics">'+metrica('Total pago',r.pago==null?'—':dinheiro(r.pago))+metrica('Líquido a pagar',dinheiro(r.liquido),true)+'</div><button type="button" class="obp-secondary" data-team-action="pagar">Abrir pagamento</button>';
   return '<div class="obp-history"><p>Consulte o histórico de diárias, faltas e outros registros deste funcionário.</p><button type="button" class="obp-secondary" data-team-action="historico">Ver registros</button></div>';
 }
+/* The action buttons are born with their final colors, before first paint.
+   Delegated click handlers are maintained by the surrounding team component. */
+function botaoAcaoEquipe(tipo,acao,rotulo,fundo,texto='#ffffff'){
+  const estilo='background:'+fundo+' !important;background-color:'+fundo+' !important;'+
+    'background-image:none !important;border-color:'+fundo+' !important;'+
+    'color:'+texto+' !important;-webkit-text-fill-color:'+texto+' !important;'+
+    'opacity:1 !important;filter:none !important;transition:none !important;animation:none !important';
+  return '<button type="button" class="'+tipo+'" data-team-action="'+acao+'" style="'+estilo+'">'+esc(rotulo)+'</button>';
+}
 function renderEquipe(){
   const sec=$('equipe');if(!sec)return;
   // O título da tela já existe no cartão superior original.
@@ -200,11 +209,25 @@ function renderEquipe(){
       '<div><small>Vales em aberto</small><b>'+esc(dinheiro(r.vale))+'</b><span>Abate nesta folha: '+esc(dinheiro(r.abate))+'</span></div>'+
       '<div><small>Bônus e extras em aberto</small><b>'+esc(dinheiro(r.bonus))+'</b></div>'+
       '<div><small>Líquido a pagar</small><b>'+esc(dinheiro(r.liquido))+'</b></div>'+
-    '</div><div class="obp-person-actions"><button type="button" class="obp-diaria" data-team-action="diaria">Marcar diária</button><button type="button" class="obp-falta" data-team-action="falta">Falta</button><button type="button" class="obp-registros" data-team-action="historico">Ver registros</button><button type="button" class="obp-vale" data-team-action="vale">Vale</button><button type="button" class="obp-bonus" data-team-action="bonus">Bônus e Extras</button></div>';
-  // Evita recriar os botões em cada atualização de dados ou observador visual.
-  // A recriação frequente fazia as cores piscar no Safari/iPhone.
+    '</div><div class="obp-person-actions">'+
+      botaoAcaoEquipe('obp-diaria','diaria','Marcar diária','#1169d8')+
+      botaoAcaoEquipe('obp-falta','falta','Falta','#e53935')+
+      botaoAcaoEquipe('obp-registros','historico','Ver registros','#8126b5')+
+      botaoAcaoEquipe('obp-vale','vale','Vale','#139e37')+
+      botaoAcaoEquipe('obp-bonus','bonus','Bônus e Extras','#eba200','#172331')+'</div>';
+  // Never recreate the five buttons for the same employee when monetary
+  // values or the team data are refreshed. Retain their nodes and inline colors.
   if(detalhe.__obpLastHtml!==detalheHtml||!detalhe.querySelector('.obp-person-actions')){
-    detalhe.innerHTML=detalheHtml;
+    const antigos=detalhe.__obpEmployeeId===String(f.id)?detalhe.querySelector('.obp-person-actions'):null;
+    if(antigos){
+      const novo=document.createElement('div');
+      novo.innerHTML=detalheHtml;
+      novo.querySelector('.obp-person-actions')?.replaceWith(antigos);
+      detalhe.replaceChildren(...novo.childNodes);
+    }else{
+      detalhe.innerHTML=detalheHtml;
+    }
+    detalhe.__obpEmployeeId=String(f.id);
     detalhe.__obpLastHtml=detalheHtml;
   }
 }
