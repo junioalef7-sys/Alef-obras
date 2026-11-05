@@ -49,7 +49,7 @@ function introLast(){
  return !!(parts&&Number(parts[1])===Number(parts[2]));
 }
 function eligible(){
- return !!($('app')&&!$('app').classList.contains('hidden')&&$('login')?.classList.contains('hidden')&&!standalone());
+ return !!($('app')&&!$('app').classList.contains('hidden')&&$('login')?.classList.contains('hidden'));
 }
 function card(target){
  if(!target)return;
@@ -57,9 +57,13 @@ function card(target){
  const box=document.createElement('section');box.className='obrixAndroidInstallCard';
  box.setAttribute('role','group');box.setAttribute('aria-label','Instalar OBRIX');
  const title=document.createElement('strong');title.textContent='OBRIX no seu Android';
- const desc=document.createElement('span');desc.textContent=samsung?'O Samsung Internet está gerando uma instalação bloqueada pelo Play Protect. Abra o OBRIX no Google Chrome para instalar com segurança.':'Instale como aplicativo e abra sem a barra do navegador.';
+ const desc=document.createElement('span');
+ desc.textContent=standalone()?'O OBRIX já está instalado neste aparelho. Você pode abrir pelo ícone do aplicativo.':samsung?'No Samsung Internet, abra no Google Chrome para instalar com segurança, sem desativar o Play Protect.':'Instale o OBRIX como aplicativo no Chrome e abra sem a barra do navegador.';
  const actions=document.createElement('div');actions.className='obrixAndroidInstallActions';
- const install=document.createElement('button');install.type='button';install.className='obrixAndroidInstallStart';install.textContent=samsung?'Abrir no Chrome para instalar':'Instalar aplicativo';
+ const install=document.createElement('button');install.type='button';install.className='obrixAndroidInstallStart';
+ install.textContent=standalone()?'OBRIX já instalado':samsung?'Abrir no Chrome para instalar':'Instalar aplicativo';
+ install.disabled=standalone();
+ if(standalone())install.setAttribute('aria-label','OBRIX já está instalado');
  const close=document.createElement('button');close.type='button';close.className='obrixAndroidInstallDismiss';close.textContent='Agora não';
  const info=document.createElement('p');info.className='obrixAndroidInstallHelp';info.hidden=true;
  install.onclick=async()=>{
@@ -143,7 +147,9 @@ async function sync(){
  }finally{busy=false}
 }
 function boot(){
- if(standalone()){installed=true;return}
+ // Even installed PWAs can revisit the final installation explanation.
+ // Only the actual browser installation action should be disabled.
+ if(standalone())installed=true;
  injectCSS();
  const app=$('app');
  if(app)new MutationObserver(schedule).observe(app,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
