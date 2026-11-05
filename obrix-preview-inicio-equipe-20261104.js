@@ -152,10 +152,20 @@ function conteudoAba(f,r){
 }
 function renderEquipe(){
   const sec=$('equipe');if(!sec)return;
+  // O título da tela já existe no cartão superior original.
+  // O botão de cadastro é posicionado ali, sem criar outro cartão Equipe.
+  const tituloSuperior=sec.querySelector(':scope > .hero');
+  if(tituloSuperior&&!tituloSuperior.querySelector('#obpNovo')){
+    const novo=document.createElement('button');
+    novo.type='button';novo.id='obpNovo';novo.className='obp-novo-superior';
+    novo.textContent='＋ Novo';novo.setAttribute('aria-label','Novo funcionário');
+    novo.addEventListener('click',()=>clicarAntigo('#equipe .obrix-equipe-controles [data-cmd="novo"]'));
+    tituloSuperior.appendChild(novo);
+  }
   let box=$('obpEquipe');
   if(!box){
     box=document.createElement('div');box.id='obpEquipe';
-    box.innerHTML='<div id="obpTeamDirectory"><header class="obp-team-header"><h1>Equipe</h1><button type="button" id="obpNovo">＋ Novo</button></header><label class="obp-team-search"><span>⌕</span><input type="search" id="obpBuscarFunc" placeholder="Buscar funcionário..." autocomplete="off"></label><nav id="obpFiltros" class="obp-filters" aria-label="Filtrar funcionários"></nav><section class="obp-group-summary"><h2>Gestão da equipe</h2><div id="obpIndicadores" class="obp-indicadores obp-indicadores-principais"></div><button type="button" id="obpExpandir" aria-expanded="false" aria-controls="obpResumoExtras">Ver resumo ▾</button><div id="obpResumoExtras" class="obp-indicadores obp-indicadores-extras" hidden></div></section><div class="obp-group-actions"><button type="button" id="obpPagarEquipe">▤ Pagar equipe</button><button type="button" id="obpHistoricoPag">▣ Histórico</button></div><div class="obp-list-header"><h2 id="obpTotalPessoas">Funcionários</h2><button id="obpGerenciar" type="button" aria-expanded="false">⚙ Gerenciar⌄</button></div><div id="obpGerenciarMenu" class="obp-manager-menu" hidden><button type="button" data-manager="toggle">Ativar / Desativar</button><button type="button" data-manager="excluir">Excluir funcionário</button><button type="button" data-manager="lista">Funcionários</button></div><div id="obpFuncionarios" class="obp-team-list"></div></div><div id="obpDetalhe" class="obp-team-detail" hidden></div>';
+    box.innerHTML='<div id="obpTeamDirectory"><label class="obp-team-search"><span>⌕</span><input type="search" id="obpBuscarFunc" placeholder="Buscar funcionário..." autocomplete="off"></label><nav id="obpFiltros" class="obp-filters" aria-label="Filtrar funcionários"></nav><section class="obp-group-summary"><h2>Gestão da equipe</h2><div id="obpIndicadores" class="obp-indicadores obp-indicadores-principais"></div><button type="button" id="obpExpandir" aria-expanded="false" aria-controls="obpResumoExtras">Ver resumo ▾</button><div id="obpResumoExtras" class="obp-indicadores obp-indicadores-extras" hidden></div></section><div class="obp-group-actions"><button type="button" id="obpPagarEquipe">▤ Pagar equipe</button><button type="button" id="obpHistoricoPag">▣ Histórico</button></div><div class="obp-list-header"><h2 id="obpTotalPessoas">Funcionários</h2><button id="obpGerenciar" type="button" aria-expanded="false">⚙ Gerenciar⌄</button></div><div id="obpGerenciarMenu" class="obp-manager-menu" hidden><button type="button" data-manager="toggle">Ativar / Desativar</button><button type="button" data-manager="excluir">Excluir funcionário</button><button type="button" data-manager="lista">Funcionários</button></div><div id="obpFuncionarios" class="obp-team-list"></div></div><div id="obpDetalhe" class="obp-team-detail" hidden></div>';
     sec.insertBefore(box,sec.querySelector('#listaEquipe')||null);
     box.addEventListener('click',cliqueEquipe);
     $('obpBuscarFunc').addEventListener('input',e=>{buscaEquipe=e.target.value;renderEquipe()});
@@ -181,7 +191,7 @@ function renderEquipe(){
   diretorio.hidden=true;detalhe.hidden=false;sec.classList.add('obp-team-selected');
   const r=resumoEquipe(f);
   const base=String(f.tipo_pagamento)==='mes'?Number(f.salario_mensal||0):Number(f.valor_diaria||0);
-  detalhe.innerHTML='<div class="obp-detail-bar"><button type="button" data-team-back aria-label="Voltar à lista">‹</button><span>Funcionário</span></div>'+
+  const detalheHtml='<div class="obp-detail-bar"><button type="button" data-team-back aria-label="Voltar à lista">‹</button><span>Funcionário</span></div>'+
     '<h2 class="obp-full-name">'+esc(f.nome||'Funcionário')+'</h2><div class="obp-role">'+esc(f.cargo||f.funcao||'Função não informada')+'</div>'+
     '<div class="obp-pay"><small>Forma de pagamento</small><strong>'+esc(tipoPagamento(f))+'</strong><span>'+esc(nomeObra(f.obra_id))+'</span><b>'+esc(dinheiro(base))+'</b></div>'+
     '<div class="obp-pills"><span>'+r.completas+' diária'+(r.completas===1?'':'s')+' completa'+(r.completas===1?'':'s')+' em aberto</span><span>'+r.meias+' meia'+(r.meias===1?'':'s')+' diária'+(r.meias===1?'':'s')+' em aberto</span></div>'+
@@ -191,6 +201,12 @@ function renderEquipe(){
       '<div><small>Bônus e extras em aberto</small><b>'+esc(dinheiro(r.bonus))+'</b></div>'+
       '<div><small>Líquido a pagar</small><b>'+esc(dinheiro(r.liquido))+'</b></div>'+
     '</div><div class="obp-person-actions"><button type="button" class="obp-diaria" data-team-action="diaria">Marcar diária</button><button type="button" class="obp-falta" data-team-action="falta">Falta</button><button type="button" class="obp-registros" data-team-action="historico">Ver registros</button><button type="button" class="obp-vale" data-team-action="vale">Vale</button><button type="button" class="obp-bonus" data-team-action="bonus">Bônus e Extras</button></div>';
+  // Evita recriar os botões em cada atualização de dados ou observador visual.
+  // A recriação frequente fazia as cores piscar no Safari/iPhone.
+  if(detalhe.__obpLastHtml!==detalheHtml||!detalhe.querySelector('.obp-person-actions')){
+    detalhe.innerHTML=detalheHtml;
+    detalhe.__obpLastHtml=detalheHtml;
+  }
 }
 
 async function equipeAcaoPreview(id,tipo){
