@@ -11,24 +11,9 @@ function visibleTeam(){
   return !!(e&&!e.classList.contains('hidden')&&getComputedStyle(e).display!=='none');
 }
 function ensureHeader(){
-  const top=$('#app>.top');
-  if(!top||$('#obrixPreviewTeamTop'))return;
-  const bar=document.createElement('div');
-  bar.id='obrixPreviewTeamTop';
-  bar.innerHTML='<span class="obx-inline-title">Equipe</span><button type="button" class="obx-inline-new" aria-label="Novo funcionário">＋ Novo</button>';
-  bar.querySelector('button').addEventListener('click',async()=>{
-    const target='#equipe .obrix-equipe-controles [data-cmd="novo"]';
-    let b=$(target);
-    if(!b&&window.OBRIX_POS_LOGIN_LOADER?.loadGroup){
-      try{await window.OBRIX_POS_LOGIN_LOADER.loadGroup('equipe')}catch(_){}
-    }
-    b=$(target);
-    if(b)b.click();
-    else alert('Não foi possível abrir o cadastro. Atualize a página e tente novamente.');
-  });
-  const actions=top.querySelector('.obrixTopActions');
-  if(actions)top.insertBefore(bar,actions);
-  else top.appendChild(bar);
+  // O título e o botão de cadastro pertencem ao cartão dentro da tela Equipe,
+  // não ao cabeçalho global do aplicativo.
+  document.getElementById('obrixPreviewTeamTop')?.remove();
 }
 function uniquePageTitles(section){
   if(!section||section.classList.contains('hidden'))return;
@@ -52,9 +37,10 @@ function apply(){
   ensureHeader();
   const team=visibleTeam();
   document.documentElement.classList.toggle('obrix-preview-team-active',team);
+  const home=$('#inicio');
+  document.documentElement.classList.toggle('obrix-preview-home-active',!!(home&&!home.classList.contains('hidden')&&getComputedStyle(home).display!=='none'));
   document.documentElement.classList.toggle('obrix-preview-team-detail',team&&!!$('#equipe')?.classList.contains('obp-team-selected'));
-  const top=$('#obrixPreviewTeamTop');
-  if(top)top.hidden=!team;
+  document.getElementById('obrixPreviewTeamTop')?.remove();
   document.querySelectorAll('#app main,#app section[id$="Main"]').forEach(uniquePageTitles);
 }
 function queue(){
@@ -67,7 +53,7 @@ function boot(){
   const app=$('#app'),team=$('#equipe'),top=$('#app>.top');
   if(app)new MutationObserver(queue).observe(app,{attributes:true,attributeFilter:['class']});
   if(team)new MutationObserver(queue).observe(team,{attributes:true,attributeFilter:['class']});
-  if(top)new MutationObserver(()=>{if(!$('#obrixPreviewTeamTop'))queue()}).observe(top,{childList:true});
+  // O cabeçalho global não deve recriar o título da Equipe.
   document.addEventListener('click',e=>{
     if(e.target.closest('button,a,[data-go],[data-page]')){
       queue();setTimeout(queue,200);
