@@ -29,4 +29,21 @@
     back.onclick=e=>{if(e.target===back)finish(false)};
     document.body.appendChild(back);document.addEventListener('keydown',esc,true);cancel.focus();
   });
+  // Non-destructive in-app notice. Used also when deletion is blocked by linked
+  // records; avoids browser-native "vercel.app diz" alert headers.
+  window.OBRIX_AVISO=(mensagem,titulo='Atenção')=>new Promise(resolve=>{
+    ensureStyle();
+    const overlay=document.createElement('div');overlay.className='obrixConfirmOverlay';
+    overlay.innerHTML='<div class="obrixConfirmBox" role="alertdialog" aria-modal="true" aria-labelledby="obrixAvisoTitulo"><h2 id="obrixAvisoTitulo"></h2><p></p><div class="obrixConfirmActions" style="grid-template-columns:1fr!important"><button type="button" class="obrixConfirmCancel">OK</button></div></div>';
+    overlay.querySelector('h2').textContent=String(titulo);
+    overlay.querySelector('p').textContent=String(mensagem);
+    let done=false;
+    const key=e=>{if(e.key==='Escape'||e.key==='Enter'){e.preventDefault();close()}};
+    function close(){if(done)return;done=true;document.removeEventListener('keydown',key,true);overlay.remove();resolve()}
+    overlay.querySelector('button').onclick=close;
+    overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+    document.body.appendChild(overlay);document.addEventListener('keydown',key,true);
+    overlay.querySelector('button').focus();
+  });
+
 })();
