@@ -3,10 +3,15 @@
 if(!/Android/i.test(navigator.userAgent||'')||window.__OBRIX_ANDROID_INSTALACAO)return;
 window.__OBRIX_ANDROID_INSTALACAO=true;
 const KEY='obrix_android_install_', $=id=>document.getElementById(id);
+const OFFICIAL_ORIGIN='https://alef-obras-obrix3.vercel.app';
+const OFFICIAL_PATH='/obrix-android-inicial/obrix.html';
+const installUrl=()=>new URL(OFFICIAL_PATH,OFFICIAL_ORIGIN);
+const isOfficial=()=>location.origin===OFFICIAL_ORIGIN||location.origin==='https://alef-obras.vercel.app';
+const isPreview=()=>!isOfficial();
 const samsung=/SamsungBrowser\//i.test(navigator.userAgent||'');
-const handedFromSamsung=(()=>{try{return new URLSearchParams(location.search).get('obrix_install_from')==='samsung'}catch(_){return false}})();
+const handedFromSamsung=(()=>{try{return ['samsung','preview'].includes(new URLSearchParams(location.search).get('obrix_install_from'))}catch(_){return false}})();
 function openInChrome(){
-  const dest=new URL('./obrix.html',location.href);
+  const dest=installUrl();
   dest.searchParams.set('obrix_install_from','samsung');
   const intent='intent://'+dest.host+dest.pathname+dest.search+'#Intent;scheme=https;package=com.android.chrome;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url='+encodeURIComponent(dest.href)+';end';
   // Somente por clique do usuário; nunca tenta instalar pelo Samsung Internet.
@@ -58,10 +63,10 @@ function card(target){
  box.setAttribute('role','group');box.setAttribute('aria-label','Instalar OBRIX');
  const title=document.createElement('strong');title.textContent='OBRIX no seu Android';
  const desc=document.createElement('span');
- desc.textContent=standalone()?'O OBRIX já está instalado neste aparelho. Você pode abrir pelo ícone do aplicativo.':samsung?'No Samsung Internet, abra no Google Chrome para instalar com segurança, sem desativar o Play Protect.':'Instale o OBRIX como aplicativo no Chrome e abra sem a barra do navegador.';
+ desc.textContent=standalone()?'O OBRIX já está instalado neste aparelho. Você pode abrir pelo ícone do aplicativo.':samsung?'A instalação é feita pelo Chrome no endereço OFICIAL do OBRIX, não na prévia da Vercel.':isPreview()?'Esta é uma versão de teste. Abra o OBRIX oficial no Chrome para instalar.':'Instale o OBRIX como aplicativo no Chrome e abra sem a barra do navegador.';
  const actions=document.createElement('div');actions.className='obrixAndroidInstallActions';
  const install=document.createElement('button');install.type='button';install.className='obrixAndroidInstallStart';
- install.textContent=standalone()?'OBRIX já instalado':samsung?'Abrir no Chrome para instalar':'Instalar aplicativo';
+ install.textContent=standalone()?'OBRIX já instalado':samsung?'Abrir OBRIX oficial no Chrome':isPreview()?'Abrir OBRIX oficial para instalar':'Instalar aplicativo';
  install.disabled=standalone();
  if(standalone())install.setAttribute('aria-label','OBRIX já está instalado');
  const close=document.createElement('button');close.type='button';close.className='obrixAndroidInstallDismiss';close.textContent='Agora não';
@@ -71,8 +76,15 @@ function card(target){
    if(samsung){
      if(activeUid)write('samsungChromeFixShown_'+activeUid);
      info.hidden=false;
-     info.textContent='Abrindo o Chrome. Caso o celular pergunte qual navegador usar, selecione Google Chrome. Se não abrir, copie o endereço oficial do OBRIX e cole no Chrome. NÃO desative o Play Protect.';
+     info.textContent='Abrindo o OBRIX oficial no Chrome. Se não aparecer a instalação, toque em ⋮ → Instalar app no Chrome. Não desative o Play Protect.';
      openInChrome();
+     return;
+   }
+   if(isPreview()){
+     info.hidden=false;
+     info.textContent='Abrindo o site oficial do OBRIX, sem a tela de proteção da Vercel. No Chrome, use ⋮ → Instalar app se necessário.';
+     const target=installUrl();target.searchParams.set('obrix_install_from','preview');
+     location.assign(target.href);
      return;
    }
    if(!deferred){
