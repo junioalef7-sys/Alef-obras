@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>OBRIX — Conferência dos arquivos de backup</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;max-width:100%;overflow-x:hidden}
+body{background:#f5f7fa;color:#192331;font:16px/1.5 system-ui,-apple-system,Arial,sans-serif;padding:calc(18px + env(safe-area-inset-top)) 14px calc(25px + env(safe-area-inset-bottom))}
+main{width:min(100%,650px);margin:auto}
+header{display:flex;align-items:center;gap:12px;margin:0 0 20px}
+.brand{font-weight:950;font-size:26px;letter-spacing:-1px}.brand strong{color:#d89d24}
+small{font-size:13px;color:#64748b}h1{font-size:22px;line-height:1.25;margin:8px 0 12px}h2{font-size:17px;margin:0 0 12px}
+p{margin:7px 0 14px}.card{background:white;border:1px solid #dce3ea;border-radius:16px;padding:19px;margin:14px 0}
+label{display:block;font-weight:750;margin:0 0 8px}
+input{font:inherit;font-size:16px;width:100%;max-width:100%;padding:13px;border:1px solid #b8c5d4;border-radius:11px;background:#fff}
+button{font:inherit;font-weight:800;width:100%;margin:14px 0 0;padding:13px;border:0;border-radius:11px;background:#162132;color:white}
+button:disabled{opacity:.55}.muted{font-size:14px;color:#526173}.result{margin-top:12px;padding:14px;border-radius:12px;background:#eef3f8;border:1px solid #cbd5e1;white-space:pre-wrap;overflow-wrap:anywhere}
+.result.ok{background:#eaf7ee;border-color:#83b89a}.result.err{background:#fff1f2;border-color:#f3a8b1}.list{font-size:14px}
+footer{color:#64748b;font-size:13px;padding:9px 4px}
+</style>
+</head>
+<body>
+<main>
+<header><div class="brand">OBRI<strong>X</strong></div><small>Validação local de backup</small></header>
+<section class="card">
+<h1>Conferir fotos e documentos salvos</h1>
+<p>Selecione <b>todas as partes ZIP</b> baixadas do OBRIX e, se tiver, o arquivo <b>OBRIX_INVENTARIO_STORAGE…json</b>.</p>
+<p class="muted">Esta conferência acontece somente no seu aparelho. Os arquivos não são enviados para a internet nem são restaurados no banco de dados.</p>
+<label for="arquivos">Selecionar ZIPs e inventário</label>
+<input type="file" id="arquivos" accept=".zip,.json" multiple>
+<button id="verificar" type="button">Verificar integridade dos arquivos</button>
+<div class="result" id="resultado" role="status" aria-live="polite">Nenhum arquivo verificado.</div>
+</section>
+<section class="card">
+<h2>O que esta verificação confirma</h2>
+<p class="muted">A leitura de todos os ZIPs, a presença de todas as partes, a integridade CRC32 de cada arquivo, a assinatura SHA-256 declarada no manifesto, a quantidade de arquivos e a empresa à qual pertencem.</p>
+<p class="muted">Esta etapa <b>não testa ainda uma restauração real</b>. A recuperação completa deverá ser homologada em ambiente isolado.</p>
+</section>
+<footer>OBRIX · Ferramenta de teste independente · Nenhuma alteração nos dados oficiais.</footer>
+</main>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const MAX_ZIP=120*1024*1024;
+const out=$('resultado');
+const utf8=new TextDecoder('utf-8',{fatal:true});
+const encoder=new TextEncoder();
+const crcTable=Array.from({length:256},(_,i)=>{let c=i;for(let j=0;j<8;j++)c=(c&1)?0xedb88320^(c>>>1):c>>>1;return c>>>0;});
+function crc32(bytes){let c=0xffffffff;for(let i=0;i<bytes.length;i++)c=crcTable[(c^bytes[i])&255]^(c>>>8);return(c^0xffffffff)>>>0;}
+function status(s,kind=''){out.className='result '+kind;out.textContent=s;}
+function checkPath(s){
+ if(!s||s[0]==='/'||s.includes('\\')||s.split('/').some(c=>!c||c==='.'||c==='..'))throw Error('Nome de arquivo inválido no ZIP.');
+ return s;
+}
+function fromJson(data,label){try{return JSON.parse(utf8.decode(data))}catch{throw Error('JSON inválido: '+label);}}
+function readZip(buffer,label){
+ const bytes=new Uint8Array(buffer),v=new DataView(buffer),len=bytes.length;
+ if(len<22)throw Error('ZIP muito curto: '+label);
+ let end=-1;
+ for(let pos=len-22;pos>=Math.max(0,len-22-65535);pos--){
+   if(v.getUint32(pos,true)===0x06054b50 && pos+22+v.getUint16(pos+20,true)===len){end=pos;break;}
+ }
+ if(end<0)throw Error('Estrutura ZIP inválida: '+label);
+ if(v.getUint16(end+4,true)!==0||v.getUint16(end+6,true)!==0)throw Error('ZIP dividido não suportado.');
+ const count=v.getUint16(end+10,true),bytesCentral=v.getUint32(end+12,true),centralOff=v.getUint32(end+16,true);
+ if(count>1200||centralOff+bytesCentral>end)throw Error('Diretório ZIP inválido.');
+ const entries=[];let p=centralOff;
+ for(let n=0;n<count;n++){
+   if(p+46>len||v.getUint32(p,true)!==0x02014b50)throw Error('Entrada ZIP inválida.');
+   const flags=v.getUint16(p+8,true),method=v.getUint16(p+10,true);
+   const crc=v.getUint32(p+16,true),comp=v.getUint32(p+20,true),plain=v.getUint32(p+24,true);
+   const nameLength=v.getUint16(p+28,true),extra=v.getUint16(p+30,true),comment=v.getUint16(p+32,true);
+   const localOff=v.getUint32(p+42,true);
+   if(!(flags&0x0800)||method!==0||plain!==comp)throw Error('ZIP fora do formato OBRIX esperado.');
+   if(p+46+nameLength+extra+comment>len||localOff+30>len||v.getUint32(localOff,true)!==0x04034b50)throw Error('Índices ZIP corrompidos.');
+   const name=checkPath(utf8.decode(bytes.subarray(p+46,p+46+nameLength)));
+   const start=localOff+30+v.getUint16(localOff+26,true)+v.getUint16(localOff+28,true);
+   if(start+comp>centralOff)throw Error('Conteúdo ZIP ultrapassa o limite esperado.');
+   const data=bytes.subarray(start,start+comp);
+   if(crc32(data)!==crc)throw Error('CRC32 divergente: '+name);
+   entries.push({name,data,crc,bytes:plain});
+   p+=46+nameLength+extra+comment;
+ }
+ if(p!==centralOff+bytesCentral)throw Error('Tamanho do índice ZIP divergente.');
+ return entries;
+}
+async function digest(bytes){
+ const ab=await crypto.subtle.digest('SHA-256',bytes);
+ return Array.from(new Uint8Array(ab),v=>v.toString(16).padStart(2,'0')).join('');
+}
+async function readPart(file){
+ if(file.size>MAX_ZIP)throw Error('Parte excede 120 MB; use partes menores para evitar travamentos no celular.');
+ const entries=readZip(await file.arrayBuffer(),file.name);
+ const mf=entries.filter(e=>e.name==='OBRIX_MANIFESTO_PARTE.json');
+ if(mf.length!==1)throw Error('Manifesto ausente ou duplicado em '+file.name);
+ const meta=fromJson(mf[0].data,file.name);
+ if(meta.obrix_storage_zip!==1||!meta.empresa_id||!Array.isArray(meta.arquivos)||!(meta.parte>=1)||!(meta.total_partes>=meta.parte))
+   throw Error('Manifesto incompatível em '+file.name);
+ const content=entries.filter(e=>e.name!=='OBRIX_MANIFESTO_PARTE.json');
+ if(content.length!==meta.arquivos.length)throw Error('Quantidade de arquivos não confere em '+file.name);
+ const byName=new Map(content.map(e=>[e.name,e]));
+ if(byName.size!==content.length)throw Error('Arquivos repetidos em '+file.name);
+ for(const row of meta.arquivos){
+   const full=checkPath(row.bucket+'/'+row.path),entry=byName.get(full);
+   if(!entry||row.bytes!==entry.bytes)throw Error('Arquivo ou tamanho divergente: '+full);
+   if(!String(row.path).startsWith(meta.empresa_id+'/'))throw Error('Empresa do arquivo não corresponde à do manifesto.');
+   const sha=await digest(entry.data);
+   if(sha!==row.sha256)throw Error('SHA-256 diferente: '+full);
+ }
+ return {name:file.name,meta,content};
+}
+async function verify(){
+ const files=[...$('arquivos').files],zips=files.filter(f=>f.name.toLowerCase().endsWith('.zip')),
+       jsons=files.filter(f=>f.name.toLowerCase().endsWith('.json'));
+ if(!zips.length){status('Selecione todos os arquivos ZIP baixados.','err');return;}
+ if(jsons.length>1){status('Selecione no máximo um inventário JSON.','err');return;}
+ const btn=$('verificar');btn.disabled=true;
+ try{
+   const inventory=jsons.length?JSON.parse(await jsons[0].text()):null;
+   if(inventory&&inventory.obrix_storage_manifest!==1)throw Error('O JSON selecionado não é um inventário do Storage.');
+   const parts=new Map(),names=new Set();let owner=null,stamp=null,total=0;
+   for(let i=0;i<zips.length;i++){
+     status('Conferindo parte '+(i+1)+' de '+zips.length+': '+zips[i].name+'…');
+     const checked=await readPart(zips[i]),meta=checked.meta;
+     if(owner===null){owner=meta.empresa_id;stamp=meta.gerado_em;}
+     if(meta.empresa_id!==owner||meta.gerado_em!==stamp)throw Error('Os ZIPs pertencem a backups ou empresas diferentes.');
+     if(parts.has(meta.parte))throw Error('Parte '+meta.parte+' está duplicada.');
+     parts.set(meta.parte,checked);
+     for(const e of meta.arquivos){
+       const key=e.bucket+'/'+e.path;
+       if(names.has(key))throw Error('Mesmo arquivo presente em dois ZIPs: '+key);
+       names.add(key);total++;
+     }
+   }
+   const expected=parts.values().next().value.meta.total_partes;
+   for(const p of parts.values())if(p.meta.total_partes!==expected)throw Error('Número total de partes divergente.');
+   const missing=[];for(let i=1;i<=expected;i++)if(!parts.has(i))missing.push(i);
+   if(missing.length)throw Error('Faltam as partes: '+missing.join(', ')+'. Selecione todos os ZIPs.');
+   let inventoryMessage='Inventário JSON não selecionado; integridade e completude dos ZIPs verificadas.';
+   if(inventory){
+     if(inventory.empresa_id!==owner||inventory.total_partes!==expected||inventory.quantidade!==total||
+        !Array.isArray(inventory.files)||inventory.files.length!==total)throw Error('Inventário não corresponde aos ZIPs.');
+     const expectedFiles=new Map(inventory.files.map(f=>[f.bucket+'/'+f.path,f]));
+     if(expectedFiles.size!==total)throw Error('Inventário contém IDs de arquivos duplicados.');
+     for(const [number,part] of parts){
+       for(const e of part.meta.arquivos){
+         const v=expectedFiles.get(e.bucket+'/'+e.path);
+         if(!v||v.bytes!==e.bytes||v.parte!==number)throw Error('Inventário divergente em '+e.path);
+       }
+     }
+     inventoryMessage='Inventário conferido: todas as partes e arquivos correspondem ao JSON.';
+   }
+   status('VERIFICAÇÃO CONCLUÍDA\n\n'+parts.size+' de '+expected+' partes ZIP conferidas.\n'+total+
+     ' arquivos íntegros: CRC32 e SHA-256 confirmados.\n'+inventoryMessage+
+     '\n\nNenhum arquivo foi enviado, restaurado ou alterado.','ok');
+ }catch(e){status('VERIFICAÇÃO NÃO CONCLUÍDA\n\n'+String(e.message||e)+'\n\nNenhum arquivo foi alterado.','err');}
+ finally{btn.disabled=false;}
+}
+$('verificar').addEventListener('click',verify);
+})();
+</script>
+</body></html>
