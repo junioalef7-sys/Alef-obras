@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>OBRIX — Backup leve de fotografias</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;max-width:100%;overflow-x:hidden}
+body{font:16px/1.45 system-ui,-apple-system,Arial,sans-serif;color:#152337;background:#f4f7fa;padding:calc(22px + env(safe-area-inset-top)) 13px calc(24px + env(safe-area-inset-bottom))}
+main{max-width:600px;margin:auto}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:16px;font-weight:900;font-size:22px}
+.brand b{color:#bc861c}.brand small{font-size:12px;color:#607085;font-weight:700}
+.card{border:1px solid #dbe3ea;border-radius:16px;background:#fff;padding:18px;margin-bottom:14px}
+h1{font-size:23px;margin:0 0 8px;line-height:1.2}h2{font-size:19px;margin:0 0 10px}h3{font-size:18px;margin:0 0 8px}
+p{margin:8px 0 12px}.muted{font-size:14px;color:#556579}
+label{display:block;font-weight:700;margin:8px 0 4px}
+input{width:100%;max-width:100%;font:inherit;font-size:16px;padding:12px;border:1px solid #bdc9d5;border-radius:10px}
+.btn{font:inherit;font-weight:800;border:0;border-radius:11px;padding:13px 14px;color:#fff;background:#172638;min-height:47px;cursor:pointer;max-width:100%}
+button:disabled{opacity:.6}.status{background:#f0f5fc;border:1px solid #bccbe0;border-radius:10px;padding:12px;margin-top:12px;color:#213c57;white-space:pre-wrap;overflow-wrap:anywhere}
+#loginCard .btn,#storageBackupCard .btn{width:100%;margin-top:10px}
+#storageBackupParts .backupResultado{display:grid;gap:5px;padding:13px;border:1px solid #bcd8c7;border-radius:12px;background:#ecf8ef}
+#storageBackupPartDummy{display:none}
+.backupAviso{border-left:4px solid #152337}
+#obrixLoginErr{color:#b42318;font-weight:750}
+a{color:#174e89}
+</style>
+</head><body><main>
+<header class="brand"><div>OBRI<b>X</b></div><small>BACKUP LEVE · MODO DE TESTE</small></header>
+<section class="card" id="intro"><h1>Salvar fotos sem travar o aplicativo</h1>
+<p>Esta ferramenta abre separadamente do OBRIX e carrega somente a conexão com os arquivos. Nenhuma tela de Obras, Equipe ou Financeiro é iniciada.</p>
+<p class="muted">Os arquivos pertencentes à sua empresa são apenas lidos. Nenhum arquivo é excluído ou alterado.</p>
+<div id="statusInicial" class="status">Verificando a sessão…</div></section>
+<section class="card" id="loginCard" hidden><h2>Entrar na conta OBRIX</h2>
+<label for="email">E-mail</label><input id="email" type="email" autocomplete="email" placeholder="seu@email.com">
+<label for="password">Senha</label><input id="password" type="password" autocomplete="current-password">
+<button type="button" id="entrar" class="btn">Entrar</button><p id="obrixLoginErr" role="alert"></p>
+<p class="muted">Utilize a mesma conta cadastrada no aplicativo OBRIX.</p></section>
+<section id="backupMain" hidden>
+<div class="card"><h2>Backup dos arquivos</h2>
+<p>Primeiro confira a quantidade de fotografias e documentos. Para cada ZIP, toque em <b>Preparar ZIP</b> e depois em <b>Salvar ZIP</b>.</p>
+<p class="muted">No iPhone, use o Safari e escolha “Salvar em Arquivos”. Se o menu de compartilhamento falhar, use “Download alternativo”.</p>
+<p class="muted">Salve todas as partes da mesma conferência. Um pacote isolado não constitui backup completo.</p></div>
+<div class="backupAviso card"><strong>Importante</strong><p class="muted">Esta ferramenta exporta somente as fotos e documentos do Storage. Para o backup dos registros financeiros e de equipe, use também o backup JSON do OBRIX.</p></div>
+</section>
+<footer class="muted">OBRIX · Somente leitura · Versão de teste · <a href="./obrix.html">Voltar ao aplicativo</a></footer>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+let sb=null,profile=null;
+const configUrl='https://gnvclctqnwxnjxydzhwc.supabase.co/functions/v1/obrix-public-config';
+function say(msg){$('statusInicial').textContent=msg}
+function showLogin(){ $('loginCard').hidden=false; $('backupMain').hidden=true;say('Entre com a sua conta OBRIX para acessar apenas seus arquivos.')}
+async function init(){
+ if(sb)return sb;
+ if(!window.supabase?.createClient)throw new Error('Não foi possível carregar a conexão. Abra este link no Safari com internet.');
+ const response=await fetch(configUrl,{cache:'no-store'});
+ if(!response.ok)throw new Error('Servidor de configuração indisponível.');
+ const data=await response.json();
+ if(!data?.url||!data?.publishableKey)throw new Error('Configuração incompleta.');
+ sb=window.supabase.createClient(data.url,data.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ return sb;
+}
+async function currentProfile(){
+ const client=await init();
+ const r=await client.auth.getUser();
+ if(r.error||!r.data?.user)throw new Error('Sessão inválida. Entre novamente.');
+ if(profile&&profile.uid===r.data.user.id)return profile;
+ const db=await client.from('perfis').select('empresa_id').eq('id',r.data.user.id).maybeSingle();
+ if(db.error||!db.data?.empresa_id)throw new Error('A conta não possui uma empresa vinculada.');
+ profile={uid:r.data.user.id,empresa_id:db.data.empresa_id};
+ return profile;
+}
+window.OBRIX_BACKEND={
+ init,
+ profile:async()=>currentProfile()
+};
+async function ready(){
+ try{
+  await currentProfile();
+  $('loginCard').hidden=true;$('backupMain').hidden=false;
+  say('Conta conectada. Toque em “Conferir arquivos da conta” abaixo.');
+ }catch(e){profile=null;showLogin();}
+}
+$('entrar').onclick=async()=>{
+ const btn=$('entrar');btn.disabled=true;$('obrixLoginErr').textContent='';
+ try{
+  const client=await init();
+  const email=$('email').value.trim(),password=$('password').value;
+  if(!email||!password)throw new Error('Informe e-mail e senha.');
+  const r=await client.auth.signInWithPassword({email,password});
+  if(r.error)throw new Error('Não foi possível entrar. Verifique seu e-mail e senha.');
+  $('password').value='';
+  await ready();
+ }catch(e){$('obrixLoginErr').textContent=String(e.message||e);}finally{btn.disabled=false;}
+};
+ready().catch(e=>say('Falha na conexão: '+String(e.message||e)));
+})();
+</script>
+<script src="./obrix-backup-arquivos-storage-20261106.js?v=20261106-zip2-share-fix"></script>
+</body></html>
