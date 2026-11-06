@@ -443,7 +443,7 @@ function renderEquipe(){
       '<div class="obp-attendance-card"><span aria-hidden="true">▣</span><div><small>Diárias em aberto</small><strong>Inteiras: '+r.completas+'</strong><strong>Meias: '+r.meias+'</strong></div></div>'+
       '<div class="obp-attendance-card obp-attendance-absence"><span aria-hidden="true">⊗</span><div><small>Faltas</small><strong>Total: <b id="obpFaltasTotal">—</b></strong></div></div>'+
     '</div>'+
-    '<button type="button" class="obp-registros-principal" data-team-action="historico">☷ <span>Ver registros (Histórico)</span><b>›</b></button>'+
+    '<button type="button" class="obp-registros-principal" data-team-action="historico" style="background:#103e7b!important;background-color:#103e7b!important;background-image:none!important;border-color:#103e7b!important;color:#fff!important;-webkit-text-fill-color:#fff!important;opacity:1!important;filter:none!important">☷ <span>Ver registros (Histórico)</span><b>›</b></button>'+
     '<div class="obp-person-actions">'+
       botaoAcaoEquipe('obp-diaria','diaria','Registrar diária','#1169d8')+
       botaoAcaoEquipe('obp-falta','falta','Registrar falta','#e53935')+
