@@ -57,15 +57,20 @@ function atividadeHTML(e){
 }
 function renderInicio(){
   const root=$('inicio');if(!root)return;
-  if(!$('obpHome')){
+  if(!$('obpHome')||$('obpHome')?.querySelectorAll('.obp-shortcuts [data-short]').length!==4){
     root.innerHTML='<div id="obpHome"><div class="obp-greeting"><h1 id="obpOla">Olá</h1><span class="obp-greeting-mark"></span></div><div class="obp-shortcuts"><button type="button" data-short="nova"><span>＋</span>Nova obra</button><button type="button" data-short="notas"><span>✎</span>Notas</button><button type="button" data-short="relatorios"><span>▤</span>Relatórios</button><button type="button" data-short="foto"><span>▧</span>Foto</button></div><div class="obp-heading"><h2>Obras</h2><button type="button" data-home-all="obras">Ver todas <span>›</span></button></div><div id="obpObras"></div><div class="obp-heading"><h2>Últimas atualizações</h2><button type="button" data-home-all="atividades">Ver todas <span>›</span></button></div><div id="obpAtividades"></div></div>';
     if(root.dataset.obpClickBound!=='1'){root.addEventListener('click',cliqueInicio);root.dataset.obpClickBound='1'}
   }
   $('obpOla').textContent='Olá'+(primeiroNome()?', '+primeiroNome():'');
   const recentes=obras().filter(emAndamento).slice().sort((a,b)=>dataHora(b.atualizado_em||b.criado_em)-dataHora(a.atualizado_em||a.criado_em)).slice(0,3);
-  $('obpObras').innerHTML=recentes.length?recentes.map(o=>{const p=progresso(o);return '<button type="button" class="obp-work" data-home-obra="'+esc(o.id)+'"><span class="obp-work-icon">▥</span><span class="obp-work-main"><strong>'+esc(o.nome||'Obra')+'</strong><span class="obp-progress"><i style="width:'+(p??0)+'%"></i></span></span><span class="obp-work-pct">'+(p===null?'—':p+'%')+'</span><span class="obp-work-arrow">›</span></button>'}).join(''):'<div class="obp-empty">Nenhuma obra em andamento.</div>';
+  // Preserve identical markup and touch handlers across repeated sync/page events.
+  const obrasHtml=recentes.length?recentes.map(o=>{const p=progresso(o);return '<button type="button" class="obp-work" data-home-obra="'+esc(o.id)+'"><span class="obp-work-icon">▥</span><span class="obp-work-main"><strong>'+esc(o.nome||'Obra')+'</strong><span class="obp-progress"><i style="width:'+(p??0)+'%"></i></span></span><span class="obp-work-pct">'+(p===null?'—':p+'%')+'</span><span class="obp-work-arrow">›</span></button>'}).join(''):'<div class="obp-empty">Nenhuma obra em andamento.</div>';
+  const obrasBox=$('obpObras');
+  if(obrasBox&&obrasBox.__obpMarkup!==obrasHtml){obrasBox.innerHTML=obrasHtml;obrasBox.__obpMarkup=obrasHtml}
   const at=atividades().slice(0,4);
-  $('obpAtividades').innerHTML=at.length?at.map(atividadeHTML).join(''):'<div class="obp-empty">Sem atualizações nos últimos 30 dias.</div>';
+  const atividadesHtml=at.length?at.map(atividadeHTML).join(''):'<div class="obp-empty">Sem atualizações nos últimos 30 dias.</div>';
+  const atividadesBox=$('obpAtividades');
+  if(atividadesBox&&atividadesBox.__obpMarkup!==atividadesHtml){atividadesBox.innerHTML=atividadesHtml;atividadesBox.__obpMarkup=atividadesHtml}
 }
 function abrirObras(id){
   if(typeof window.abrir==='function')window.abrir('obras');if(id)window.OBRIX_POS_LOGIN_LOADER?.loadGroup?.('obras').catch?.(()=>{});
@@ -449,24 +454,35 @@ async function abrirRegistrosEquipePremium(id){
     aviso.textContent='Faltas não carregadas: '+(error?.message||'erro de conexão')+'. Outros registros disponíveis.';
     renderizar();
   }
+  const pendentesExclusao=new Set();
   back.addEventListener('click',async e=>{
     const btn=e.target.closest('[data-obp-excluir-tipo]');if(!btn||btn.disabled)return;
     const tipo=btn.dataset.obpExcluirTipo,registroId=btn.dataset.obpExcluirId;
     if(!['falta','diaria','bonus'].includes(tipo))return;
     const x=linhas.find(y=>y.tipoRegistro===tipo&&String(y.id)===String(registroId));
     if(!x||(tipo!=='falta'&&x.pago))return;
+    const chaveExclusao=tipo+':'+String(registroId);
+    if(pendentesExclusao.has(chaveExclusao))return;
+    pendentesExclusao.add(chaveExclusao);
+    btn.disabled=true;
     const rotulo=tipo==='falta'?'falta':tipo==='diaria'?(x.tipo==='Meia diária'?'meia diária':'diária'):x.tipo.toLowerCase();
     if(typeof window.OBRIX_CONFIRMAR_EXCLUSAO!=='function'){
       if(window.OBRIX_AVISO)await window.OBRIX_AVISO('Confirmação segura indisponível. Recarregue o OBRIX.');
+      pendentesExclusao.delete(chaveExclusao);btn.disabled=false;
       return;
     }
-    const ok=await window.OBRIX_CONFIRMAR_EXCLUSAO({
+    let ok=false;
+    try{ok=await window.OBRIX_CONFIRMAR_EXCLUSAO({
       titulo:'Excluir '+rotulo,
       mensagem:'Excluir '+rotulo+' de '+func.nome+' em '+dataPtBR(x.data)+'? Esta ação não pode ser desfeita.',
       confirmar:'Excluir'
-    });
-    if(!ok||!back.isConnected)return;
-    btn.disabled=true;const texto=btn.textContent;btn.textContent='Excluindo...';
+    })}catch(err){
+      pendentesExclusao.delete(chaveExclusao);btn.disabled=false;
+      if(window.OBRIX_AVISO)await window.OBRIX_AVISO(err?.message||'Erro na confirmação.','Equipe');
+      return;
+    }
+    if(!ok||!back.isConnected){pendentesExclusao.delete(chaveExclusao);btn.disabled=false;return}
+    const texto=btn.textContent;btn.textContent='Excluindo...';
     let excluido=false;
     try{
       if(!navigator.onLine)throw Error('Conecte-se à internet para excluir com segurança.');
@@ -501,7 +517,7 @@ async function abrirRegistrosEquipePremium(id){
         (error?.message||'Não foi possível excluir.');
       if(window.OBRIX_AVISO)await window.OBRIX_AVISO(mensagem,'Exclusão de registro');
       else alert(mensagem);
-    }finally{if(btn.isConnected){btn.disabled=false;btn.textContent=texto}}
+    }finally{pendentesExclusao.delete(chaveExclusao);if(btn.isConnected){btn.disabled=false;btn.textContent=texto}}
   });
 }
 
