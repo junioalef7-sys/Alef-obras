@@ -1,0 +1,71 @@
+name: Validar foco e busca sem zoom lateral
+on:
+  push:
+    branches:
+      - fix/todos-campos-busca-foco-estavel-20261106
+permissions:
+  contents: read
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Sintaxe, escopo e simulacao de foco
+        run: |
+          node --check obrix-foco-busca-estavel-20261106.js
+          node --check obrix-preview-inicio-equipe-20261104.js
+          node --check obrix-ios-experience.js
+          node <<'NODE'
+          'use strict';
+          const fs=require('fs'),assert=require('assert'),vm=require('vm'),cp=require('child_process');
+          const css=fs.readFileSync('obrix-estabilidade-viewport-20261106.css','utf8');
+          const js=fs.readFileSync('obrix-foco-busca-estavel-20261106.js','utf8');
+          const equipe=fs.readFileSync('obrix-preview-inicio-equipe-20261104.js','utf8');
+          assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length,'CSS com chaves invalidas');
+          for(const sel of ['input[type="search"]','#obpBuscarFunc','#fmFiltroBusca','#obrixBuscaObraInput','#rgBusca','textarea','[contenteditable="true"]']){
+            assert(css.includes(sel),'Sem cobertura para '+sel);
+          }
+          assert(css.includes('font-size: max(16px, 1rem) !important'));
+          assert(css.includes('min-inline-size: 0 !important'));
+          assert(css.includes('overflow-x: clip !important'));
+          assert(equipe.includes('font-size:16px;font-weight:500;width:100%;min-width:0'));
+          for(const [file,prefix] of [['obrix.html','./'],['obrix-android-inicial/obrix.html','../']]){
+            const html=fs.readFileSync(file,'utf8');
+            assert(html.includes(prefix+'obrix-foco-busca-estavel-20261106.js?v=20261106-xmobile2'),file+': script ausente');
+            assert(html.includes('obrix-estabilidade-viewport-20261106.css?v=20261106-buscas-global16b'),file+': CSS stale');
+            assert(html.includes('obrix-preview-inicio-equipe-20261104.js?v=20261106-busca16a'),file+': Equipe stale');
+            for(const [i,match] of [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].entries()){
+              if(match[1])new vm.Script(match[1],{filename:file+':inline-'+i});
+            }
+          }
+          const listeners={};
+          const viewport={scale:1,addEventListener(name,cb){listeners['vv:'+name]=cb}};
+          const input={isConnected:true,matches(){return true}};
+          const page={scrollLeft:32};
+          const body={scrollLeft:12};
+          const doc={scrollingElement:page,documentElement:page,body,activeElement:input,
+            addEventListener(name,cb){listeners[name]=cb}};
+          let left=15,top=240;
+          const win={visualViewport:viewport,matchMedia(){return {matches:true}},scrollX:left,scrollY:top,
+            addEventListener(){},scrollTo(x,y){left=x;top=y;this.scrollX=x;this.scrollY=y}};
+          const context={window:win,document:doc,requestAnimationFrame(fn){fn()},
+            setTimeout(){return 1},clearTimeout(){}};
+          vm.runInNewContext(js,context);
+          listeners.focusin({target:input});
+          assert.equal(page.scrollLeft,0);assert.equal(body.scrollLeft,0);
+          assert.equal(win.scrollX,0);assert.equal(top,240,'Rolagem vertical mudou');
+          viewport.scale=1.4;win.scrollX=20;page.scrollLeft=20;
+          listeners.input({target:input});
+          assert.equal(win.scrollX,20,'Zoom deliberado nao preservado');
+          assert.equal(page.scrollLeft,20,'Pan do zoom manual alterado');
+          const changed=cp.execFileSync('git',['diff','--name-only','90a5341e620c295c490614496e34030cdf576701','HEAD'],{encoding:'utf8'}).trim().split('\n');
+          const allow=new Set(['obrix-estabilidade-viewport-20261106.css',
+            'obrix-preview-inicio-equipe-20261104.js','obrix-foco-busca-estavel-20261106.js',
+            'obrix.html','obrix-android-inicial/obrix.html',
+            '.github/workflows/validar-todos-campos-busca-20261106.yml']);
+          for(const file of changed)assert(allow.has(file),'Fora do escopo: '+file);
+          console.log('PASS: buscas Obras, Resumo, Equipe, Financeiro, demais campos e teclado mobile');
+          NODE
