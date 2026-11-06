@@ -16,6 +16,29 @@
     if(!el||!el.matches)return false;
     return el.matches('textarea, [contenteditable="true"], input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"])');
   }
+  // Ajustar antes do foco (pointerdown/touchstart) impede o autozoom do WebKit.
+  // Guardar e repor qualquer fonte inline original para preservar o visual.
+  var fontesOriginais=new WeakMap();
+  function protegerFonte(el){
+    if(!mobile.matches||!campoDigitavel(el)||!window.getComputedStyle||!el.style)return;
+    if(fontesOriginais.has(el))return;
+    var px=parseFloat(window.getComputedStyle(el).fontSize)||0;
+    if(px>=16)return;
+    fontesOriginais.set(el,{
+      valor:el.style.getPropertyValue('font-size'),
+      prioridade:el.style.getPropertyPriority('font-size')
+    });
+    el.style.setProperty('font-size','16px','important');
+  }
+  function restaurarFonte(el){
+    var original=el&&fontesOriginais.get(el);
+    if(!original)return;
+    if(original.valor)el.style.setProperty('font-size',original.valor,original.prioridade);
+    else el.style.removeProperty('font-size');
+    fontesOriginais.delete(el);
+  }
+  document.addEventListener('pointerdown',function(e){protegerFonte(e.target)},true);
+  document.addEventListener('touchstart',function(e){protegerFonte(e.target)},{capture:true,passive:true});
   function restaurarEixoX(){
     pending=false;
     if(!mobile.matches||!focused||!focused.isConnected||document.activeElement!==focused)return;
@@ -38,6 +61,7 @@
   }
   document.addEventListener('focusin',function(e){
     if(!mobile.matches||!campoDigitavel(e.target))return;
+    protegerFonte(e.target);
     focused=e.target;
     cancelarTempos();
     agendar();
@@ -48,6 +72,7 @@
   document.addEventListener('focusout',function(e){
     if(e.target!==focused)return;
     focused=null;
+    restaurarFonte(e.target);
     cancelarTempos();
   },true);
   document.addEventListener('input',function(e){
