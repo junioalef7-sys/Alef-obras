@@ -12,7 +12,15 @@ const TIT=['obras','diário de obras','diario de obras','financeiro','equipe','f
 function neutro(b){if(!b)return;
 // Na prévia, não neutralizar novamente as cinco ações do funcionário nem o botão Novo.
 // Estilos inline !important causavam oscilação entre a cor aprovada e o cinza.
-if(b.matches?.('#equipe #obpEquipe .obp-person-actions button,#equipe #obpNovo'))return;
+if(b.matches?.('#equipe #obpEquipe .obp-person-actions button,#equipe #obpNovo,#inicio #obpHome .obp-shortcuts button'))return;
+// Idempotent: avoid repeated inline writes that trigger DOM observers and reflows.
+const st=b.style;
+if(st.getPropertyValue('background')==='var(--ob-surface-2)'&&
+   st.getPropertyPriority('background')==='important'&&
+   st.getPropertyValue('color')==='var(--ob-text)'&&
+   st.getPropertyValue('-webkit-text-fill-color')==='var(--ob-text)'&&
+   st.getPropertyValue('border-color')==='var(--ob-border)'&&
+   st.getPropertyValue('background-image')==='none')return;
 b.style.setProperty('background','var(--ob-surface-2)','important');b.style.setProperty('background-color','var(--ob-surface-2)','important');b.style.setProperty('background-image','none','important');b.style.setProperty('color','var(--ob-text)','important');b.style.setProperty('-webkit-text-fill-color','var(--ob-text)','important');b.style.setProperty('border-color','var(--ob-border)','important');b.style.setProperty('box-shadow','none','important')}function titulo(root){const h=root?.querySelector(':scope>h1,:scope>h2,:scope>.hero h1,:scope>.hero h2,:scope>.sectionHead strong,:scope header h1,:scope header h2,:scope>.rgHead h1,:scope>.rgHead h2');const t=n(h?.textContent);return !!t&&TIT.some(x=>t===x||t.startsWith(x))}function telaAtual(){return [...document.querySelectorAll('#app main,#app section,#app .panel,#app .card')].filter(vis).find(titulo)||null}
 function diario(){const main=document.getElementById('diarioMain');if(!main)return;main.querySelectorAll('.diarioAtualizar').forEach(b=>b.remove());main.querySelectorAll('.diarioPerigo,.diarioPerigo.excluir,button.danger,button.delete,button.apagar,button[data-acao="apagar"],button[data-action="delete"]').forEach(neutro);neutro(document.getElementById('diarioSalvar'));const velho=document.getElementById('diarioNovoOrcamento');if(velho)velho.remove();let b=document.getElementById('diarioNovoDiario');if(!b){const form=main.querySelector('.diarioForm');if(!form)return;b=document.createElement('button');b.id='diarioNovoDiario';b.type='button';b.className='btn card';b.onclick=()=>{try{form.reset?.();form.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}};form.parentNode.insertBefore(b,form)}b.textContent='+ Novo diário'}
 function botoesNeutros(){document.querySelectorAll('#app button,#app .btn,#app input[type="button"],#app input[type="submit"],#app input[type="reset"],#app [role="button"],.modalBack button,.modalBack .btn,.modal button,.modal .btn,[role="dialog"] button,[role="dialog"] .btn').forEach(b=>{if(b.classList.contains('obrixConfigPerigo'))return;neutro(b)})}
