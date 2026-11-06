@@ -97,6 +97,22 @@ function match(card,info){
   return termosOk&&numsOk;
 }
 
+// No teclado móvel, o filtro reordena a altura da lista. Mantém somente o eixo X da página em zero.
+function conterDeslocamentoBusca(){
+  if(!window.matchMedia('(max-width:900px)').matches)return;
+  window.requestAnimationFrame(()=>{
+    if(document.activeElement?.id!=='fmFiltroBusca')return;
+    const page=document.scrollingElement||document.documentElement;
+    if(page&&page.scrollLeft!==0)page.scrollLeft=0;
+    if(document.body&&document.body.scrollLeft!==0)document.body.scrollLeft=0;
+  });
+}
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',()=>{
+    if(document.activeElement?.id==='fmFiltroBusca')conterDeslocamentoBusca();
+  },{passive:true});
+}
+
 function ensure(){
   const main=document.getElementById('financeiroMain');
   if(!main)return false;
@@ -114,8 +130,9 @@ function ensure(){
   if(busca&&!busca.dataset.obrixBuscaLigada){
     busca.dataset.obrixBuscaLigada='1';
     busca.value=estado.busca;
-    busca.addEventListener('input',()=>{estado.busca=busca.value;aplicar()});
-    busca.addEventListener('search',()=>{estado.busca=busca.value;aplicar()});
+    busca.addEventListener('focus',conterDeslocamentoBusca);
+    busca.addEventListener('input',()=>{estado.busca=busca.value;aplicar();conterDeslocamentoBusca()});
+    busca.addEventListener('search',()=>{estado.busca=busca.value;aplicar();conterDeslocamentoBusca()});
   }
   return true;
 }
