@@ -170,6 +170,47 @@ async function buscarEventos(){
   }catch(_){}finally{buscandoEventos=false}
 }
 function arrEquipe(tipo,id){return lista(tipo).filter(x=>String(x.funcionario_id)===String(id))}
+
+const obpFaltasCache=new Map();
+async function obpBuscarFaltas(id,force=false){
+  const chave=String(id),cache=obpFaltasCache.get(chave);
+  if(cache?.promise)return cache.promise;
+  if(!force&&cache?.updated&&Date.now()-cache.updated<12000){
+    if(cache.error)throw cache.error;
+    return cache.rows||[];
+  }
+  const promise=(async()=>{
+    if(!navigator.onLine)throw Error('Sem conexão para consultar as faltas.');
+    const backend=window.OBRIX_BACKEND;
+    if(!backend)throw Error('Conexão indisponível.');
+    const p=await backend.profile(),sb=await backend.init();
+    if(!p?.empresa_id)throw Error('Conta não identificada.');
+    const r=await sb.from('faltas').select('id,obra_id,data,justificada,motivo,observacoes')
+      .eq('empresa_id',p.empresa_id).eq('funcionario_id',chave).order('data',{ascending:false});
+    if(r.error)throw r.error;
+    return r.data||[];
+  })();
+  obpFaltasCache.set(chave,{...cache,promise,updated:Date.now()});
+  try{
+    const rows=await promise;obpFaltasCache.set(chave,{rows,updated:Date.now()});return rows;
+  }catch(error){
+    obpFaltasCache.set(chave,{rows:cache?.rows,error,updated:Date.now()});throw error;
+  }
+}
+function obpAtualizarFaltas(id){
+  const el=document.getElementById('obpFaltasTotal');
+  if(!el||String(id)!==String(selecionado))return;
+  const cache=obpFaltasCache.get(String(id));
+  el.textContent=cache?.rows?String(cache.rows.length):'—';
+  void obpBuscarFaltas(id).then(rows=>{
+    const atual=document.getElementById('obpFaltasTotal');
+    if(atual&&String(id)===String(selecionado))atual.textContent=String(rows.length);
+  }).catch(()=>{
+    const atual=document.getElementById('obpFaltasTotal');
+    if(atual&&String(id)===String(selecionado)&&!obpFaltasCache.get(String(id))?.rows)atual.textContent='—';
+  });
+}
+
 function resumoEquipe(f){
   const ds=arrEquipe('diarias',f.id).filter(x=>!x.paga);
   const vs=arrEquipe('vales',f.id).filter(x=>!x.quitado);
@@ -272,21 +313,30 @@ function renderEquipe(){
   diretorio.hidden=true;detalhe.hidden=false;sec.classList.add('obp-team-selected');
   const r=resumoEquipe(f);
   const base=String(f.tipo_pagamento)==='mes'?Number(f.salario_mensal||0):Number(f.valor_diaria||0);
+  const totalPago=window.OBRIX_EQUIPE_TOTAL_PAGO?.get?.(f.id);
+  const equivalentes=String(r.completas+r.meias/2).replace('.',',');
   const detalheHtml='<div class="obp-detail-bar"><button type="button" data-team-back aria-label="Voltar à lista">‹</button><span>Funcionário</span></div>'+
-    '<h2 class="obp-full-name">'+esc(f.nome||'Funcionário')+'</h2><div class="obp-role">'+esc(f.cargo||f.funcao||'Função não informada')+'</div>'+
-    '<div class="obp-pay"><small>Forma de pagamento</small><strong>'+esc(tipoPagamento(f))+'</strong><span>'+esc(nomeObra(f.obra_id))+'</span><b>'+esc(dinheiro(base))+'</b></div>'+
-    '<div class="obp-pills"><span>'+r.completas+' diária'+(r.completas===1?'':'s')+' completa'+(r.completas===1?'':'s')+' em aberto</span><span>'+r.meias+' meia'+(r.meias===1?'':'s')+' diária'+(r.meias===1?'':'s')+' em aberto</span></div>'+
-    '<div class="obp-person-metrics">'+
-      '<div><small>Total bruto em aberto</small><b>'+esc(dinheiro(r.bruto))+'</b></div>'+
-      '<div><small>Vales em aberto</small><b>'+esc(dinheiro(r.vale))+'</b><span>Abate nesta folha: '+esc(dinheiro(r.abate))+'</span></div>'+
-      '<div><small>Bônus e extras em aberto</small><b>'+esc(dinheiro(r.bonus))+'</b></div>'+
+    '<div class="obp-perfil-topo"><span class="obp-perfil-avatar" aria-hidden="true">♟</span><div class="obp-perfil-texto"><h2 class="obp-full-name">'+esc(f.nome||'Funcionário')+'</h2><div class="obp-role">'+esc(f.cargo||f.funcao||'Função não informada')+'</div></div><span class="obp-perfil-situacao">'+(f.ativo===false?'Inativo':'Ativo')+'</span></div>'+
+    '<div class="obp-perfil-pagamento"><small>'+esc(tipoPagamento(f))+' · '+esc(nomeObra(f.obra_id))+'</small><strong>'+esc(dinheiro(base))+'</strong></div>'+
+    '<div class="obp-person-metrics obp-detail-finance">'+
+      '<div><small>Total bruto</small><b>'+esc(dinheiro(r.bruto))+'</b></div>'+
+      '<div><small>Vale em aberto</small><b>'+esc(dinheiro(r.vale))+'</b></div>'+
       '<div><small>Líquido a pagar</small><b>'+esc(dinheiro(r.liquido))+'</b></div>'+
-    '</div><div class="obp-person-actions">'+
-      botaoAcaoEquipe('obp-diaria','diaria','Marcar diária','#1169d8')+
-      botaoAcaoEquipe('obp-falta','falta','Falta','#e53935')+
-      botaoAcaoEquipe('obp-registros','historico','Ver registros','#8126b5')+
-      botaoAcaoEquipe('obp-vale','vale','Vale','#139e37')+
-      botaoAcaoEquipe('obp-bonus','bonus','Bônus e Extras','#eba200','#172331')+'</div>';
+      '<div><small>Total pago</small><b>'+esc(totalPago==null?'—':dinheiro(totalPago))+'</b></div>'+
+      '<div><small>Bônus / Extras em aberto</small><b>'+esc(dinheiro(r.bonus))+'</b></div>'+
+      '<div><small>Diárias em aberto</small><b>'+esc(equivalentes)+'</b></div>'+
+    '</div>'+
+    '<div class="obp-attendance-cards">'+
+      '<div class="obp-attendance-card"><span aria-hidden="true">▣</span><div><small>Diárias em aberto</small><strong>Inteiras: '+r.completas+'</strong><strong>Meias: '+r.meias+'</strong></div></div>'+
+      '<div class="obp-attendance-card obp-attendance-absence"><span aria-hidden="true">⊗</span><div><small>Faltas</small><strong>Total: <b id="obpFaltasTotal">—</b></strong></div></div>'+
+    '</div>'+
+    '<button type="button" class="obp-registros-principal" data-team-action="historico">☷ <span>Ver registros (Histórico)</span><b>›</b></button>'+
+    '<div class="obp-person-actions">'+
+      botaoAcaoEquipe('obp-diaria','diaria','Registrar diária','#1169d8')+
+      botaoAcaoEquipe('obp-falta','falta','Registrar falta','#e53935')+
+      botaoAcaoEquipe('obp-vale','vale','Registrar vale','#139e37')+
+      botaoAcaoEquipe('obp-bonus','bonus','Bônus / Extras','#eba200','#172331')+
+      botaoAcaoEquipe('obp-pagar','pagar','Pagar','#123c74')+'</div>';
   // Never recreate the five buttons for the same employee when monetary
   // values or the team data are refreshed. Retain their nodes and inline colors.
   if(detalhe.__obpLastHtml!==detalheHtml||!detalhe.querySelector('.obp-person-actions')){
@@ -302,6 +352,7 @@ function renderEquipe(){
     detalhe.__obpEmployeeId=String(f.id);
     detalhe.__obpLastHtml=detalheHtml;
   }
+  obpAtualizarFaltas(f.id);
 }
 
 /* Employee records are rendered by the premium interface itself.
