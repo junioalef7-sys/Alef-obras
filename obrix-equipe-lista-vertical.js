@@ -219,14 +219,53 @@
     const back=abrirModal(titulo,`<label>Funcionário</label><select class="func">${fs.map(f=>`<option value="${esc(f.id)}">${esc(f.nome)} — ${f.ativo===false?'Inativo':'Ativo'}</option>`).join('')}</select><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn continuar">Continuar</button></div>`,'obrix-modelo-modal');
     back.querySelector('.cancelar').onclick=()=>back.remove();
     back.querySelector('.continuar').onclick=async()=>{
-      const f=acharFunc(back.querySelector('.func').value);if(!f)return;
-      if(tipo==='delete'&&!await window.OBRIX_CONFIRMAR_EXCLUSAO({titulo:'Excluir funcionário',mensagem:`Excluir o funcionário “${f.nome}”?`,confirmar:'Excluir'}))return;
-      const btn=back.querySelector('.continuar');btn.disabled=true;
+      const btn=back.querySelector('.continuar');
+      if(btn.disabled)return;
+      const f=acharFunc(back.querySelector('.func').value);
+      if(!f)return;
+      // Hold the action while the confirmation is shown, preventing stacked dialogs.
+      btn.disabled=true;
+      let updated=false;
       try{
+        if(tipo==='delete'){
+          if(typeof window.OBRIX_CONFIRMAR_EXCLUSAO!=='function')throw Error('Confirmação indisponível. Atualize o aplicativo.');
+          if(!await window.OBRIX_CONFIRMAR_EXCLUSAO({
+            titulo:'Excluir funcionário',mensagem:'Excluir o funcionário “'+f.nome+'”?',confirmar:'Excluir'
+          }))return;
+        }
+        if(!navigator.onLine)throw Error('Conecte-se à internet para concluir com segurança.');
         const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();
-        const r=tipo==='toggle'?await sb.from('funcionarios').update({ativo:f.ativo===false,atualizado_em:new Date().toISOString()}).eq('id',f.id).eq('empresa_id',p.empresa_id):await sb.from('funcionarios').delete().eq('id',f.id).eq('empresa_id',p.empresa_id);
-        if(r.error)throw r.error;back.remove();await window.OBRIX_EQUIPE?.refresh?.();
-      }catch(e){alert(e.message||'Não foi possível concluir.')}finally{btn.disabled=false}
+        if(!p?.empresa_id)throw Error('Conta não identificada.');
+        if(tipo==='delete'){
+          // Database relationships would cascade delete daily work, absences, vales and bonuses.
+          // Keep payroll/history intact; staff with records must be inactivated instead.
+          const tabelas=['diarias','faltas','vales','bonus_extras','pagamentos_equipe','diario_equipe'];
+          const checagens=await Promise.all(tabelas.map(t=>sb.from(t).select('id')
+            .eq('empresa_id',p.empresa_id).eq('funcionario_id',f.id).limit(1)));
+          const falha=checagens.find(r=>r.error);
+          if(falha)throw falha.error;
+          if(checagens.some(r=>r.data?.length))throw Error(
+            'Funcionário com histórico de registros ou pagamentos. Para preservar os dados, utilize Ativar / Desativar e deixe-o inativo.'
+          );
+        }
+        const q=sb.from('funcionarios');
+        const resultado=tipo==='toggle'
+          ?await q.update({ativo:f.ativo===false,atualizado_em:new Date().toISOString()})
+              .eq('id',f.id).eq('empresa_id',p.empresa_id).select('id')
+          :await q.delete().eq('id',f.id).eq('empresa_id',p.empresa_id).select('id');
+        if(resultado.error)throw resultado.error;
+        if(!resultado.data?.length)throw Error('Funcionário não encontrado ou alteração não autorizada.');
+        updated=true;back.remove();
+        try{await window.OBRIX_EQUIPE?.refresh?.()}catch(err){
+          console.warn('Equipe: exclusão salva, mas atualização indisponível',err);
+          window.OBRIX_PREVIEW?.refresh?.();
+        }
+      }catch(err){
+        const msg=(updated?'Operação concluída, mas a tela não atualizou. ': '')+
+          (err?.message||'Não foi possível concluir.');
+        if(window.OBRIX_AVISO)await window.OBRIX_AVISO(msg,'Equipe');
+        else alert(msg);
+      }finally{if(btn.isConnected)btn.disabled=false}
     };
   }
 
