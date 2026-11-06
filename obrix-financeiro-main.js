@@ -174,7 +174,7 @@
     const dataCampo=$('fmData'),dataTexto=$('fmDataTexto');
     const atualizarTextoData=()=>{
       if(!dataTexto)return;
-      const partes=/^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(dataCampo?.value||'');
+      const partes=/^(\d{4})-(\d{2})-(\d{2})$/.exec(dataCampo?.value||'');
       dataTexto.textContent=partes
         ?new Date(Number(partes[1]),Number(partes[2])-1,Number(partes[3])).toLocaleDateString('pt-BR',{day:'numeric',month:'short',year:'numeric'})
         :'Selecione uma data';
