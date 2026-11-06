@@ -722,6 +722,13 @@ function iniciar(){
   },15000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',iniciar,{once:true});else iniciar();
+window.addEventListener('obrix:equipe-registro',event=>{
+  if(event?.detail?.table!=='faltas')return;
+  const id=event.detail.funcionarioId;
+  if(id)obpFaltasCache.delete(String(id));
+  else obpFaltasCache.clear();
+  if(secaoVisivel('equipe'))atualizar();
+});
 window.OBRIX_PREVIEW={refresh:atualizar,openActivity:abrirAtualizacoes};
 
 const estilosRegistros=document.createElement('style');
