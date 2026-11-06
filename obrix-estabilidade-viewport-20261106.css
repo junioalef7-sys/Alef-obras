@@ -163,3 +163,54 @@
     outline-offset: 2px;
   }
 }
+
+
+/* Protecao global contra deslocamento horizontal e zoom de foco.
+   Apenas navegacao touch; preserva pinch-zoom deliberado e a rolagem vertical.
+   Nao altera metricas, cores ou disposicao dos cartoes aprovados. */
+@media (max-width: 1024px) and (pointer: coarse) {
+  html, body {
+    box-sizing: border-box !important;
+    inline-size: 100% !important;
+    min-inline-size: 0 !important;
+    max-inline-size: 100% !important;
+    overflow-x: hidden !important;
+    overscroll-behavior-x: none !important;
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body > .wrap,
+  #app, #login {
+    box-sizing: border-box !important;
+    min-inline-size: 0 !important;
+    max-inline-size: 100% !important;
+    overflow-x: hidden !important;
+  }
+  #app > *, #app :is(.card, .panel, .grid, .row, .obp-person-metrics, .obp-attendance-cards, .obp-person-actions),
+  #login > * {
+    box-sizing: border-box;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+  body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="hidden"]), textarea, select) {
+    box-sizing: border-box !important;
+    min-inline-size: 0 !important;
+    max-inline-size: 100% !important;
+    font-size: max(16px, 1em) !important;
+  }
+  body :is(button, a, [role="button"], [type="submit"]) {
+    touch-action: manipulation;
+  }
+  body :is(.modalBack, .obp-registros-premium-modal, dialog) {
+    box-sizing: border-box;
+    max-inline-size: 100vw;
+  }
+}
+@supports (overflow: clip) {
+  @media (max-width: 1024px) and (pointer: coarse) {
+    html, body, body > .wrap, #app, #login {
+      overflow-x: clip !important;
+    }
+  }
+}
