@@ -11,7 +11,7 @@ function calcular(rows){medias.clear();const grupos=new Map();for(const x of row
 function aplicarObjetos(){for(const o of window.obras||[]){const id=String(o.id||'');if(medias.has(id))o.progresso=medias.get(id);else if(String(o.status||'').toLowerCase()==='concluida'||String(o.status||'').toLowerCase()==='concluída')o.progresso=100;else o.progresso=0}}
 function texto(v){return Number.isInteger(v)?String(v):String(v).replace('.',',')}
 function pintar(){aplicarObjetos();document.querySelectorAll('#listaObras .obxObraCard').forEach(card=>{const id=String(card.dataset.id||card.dataset.obraId||'');if(!id)return;const p=medias.has(id)?medias.get(id):0;const linha=card.querySelector('.obxStatusLinha,.obxObraProgress');if(linha){const bar=linha.querySelector('.obxBar i,.obxTrack span');if(bar)bar.style.width=p+'%';const bs=[...linha.querySelectorAll('b,strong')];const alvo=bs.find(x=>/%/.test(x.textContent||''))||bs[bs.length-1];if(alvo)alvo.textContent=texto(p)+'%'}});const det=document.querySelector('#listaObras .obxDetalhe');if(det){let id=detailId;if(!id){const nome=det.querySelector('.obxDetalheHead h2')?.textContent?.trim()||'';const candidatos=(window.obras||[]).filter(o=>String(o.nome||'').trim()===nome);if(candidatos.length===1)id=String(candidatos[0].id)}if(id){const p=medias.has(id)?medias.get(id):0;const prog=det.querySelector('.obxProg');if(prog){const bar=prog.querySelector('.obxBar i');if(bar)bar.style.width=p+'%';const b=prog.querySelector('b');if(b)b.textContent=texto(p)+'%'}}}}
-async function buscar(){if(buscando||!navigator.onLine)return;buscando=true;try{const c=await contexto();if(!c)return;const r=await c.sb.from('checklist_itens').select('obra_id,progresso,atualizado_em').eq('empresa_id',c.eid);if(r.error)throw r.error;calcular(r.data||[]);aplicarObjetos();pintar()}catch(e){console.warn('OBRIX: não foi possível calcular o progresso do checklist',e)}finally{buscando=false}}
+async function buscar(){if(buscando||!navigator.onLine)return;buscando=true;try{const c=await contexto();if(!c)return;const r=await c.sb.from('checklist_itens').select('obra_id,progresso,atualizado_em').eq('empresa_id',c.eid);if(r.error)throw r.error;calcular(r.data||[]);aplicarObjetos();pintar();window.dispatchEvent(new Event('obrix:progresso-atualizado'))}catch(e){console.warn('OBRIX: não foi possível calcular o progresso do checklist',e)}finally{buscando=false}}
 function agendar(ms=100){clearTimeout(timer);timer=setTimeout(buscar,ms)}
 function mediaModal(){const rs=[...document.querySelectorAll('.checkModalBack [data-check-range]')];if(!rs.length)return null;return arred(rs.reduce((s,r)=>s+limitar(r.value),0)/rs.length)}
 function aplicarModal(){const id=checklistObraId||detailId;if(!id)return;const p=mediaModal();if(p==null)return;medias.set(String(id),p);const o=(window.obras||[]).find(x=>String(x.id)===String(id));if(o)o.progresso=p;pintar()}
@@ -23,7 +23,16 @@ const obs=new MutationObserver(()=>requestAnimationFrame(pintar));
 function observar(){const box=document.getElementById('listaObras');if(box&&!box.__obrixProgressObserved){box.__obrixProgressObserved=1;obs.observe(box,{childList:true,subtree:true})}pintar()}
 async function realtime(){try{const c=await contexto();if(!c||canal)return;canal=c.sb.channel('obrix-progress-source-'+c.eid).on('postgres_changes',{event:'*',schema:'public',table:'checklist_itens',filter:`empresa_id=eq.${c.eid}`},()=>agendar(80)).subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){try{c.sb.removeChannel(canal)}catch(_){}canal=null;setTimeout(realtime,1200)}})}catch(e){console.warn('OBRIX: realtime do progresso indisponível',e)}}
 window.addEventListener('pageshow',()=>{observar();agendar(0)});window.addEventListener('focus',()=>agendar(50));document.addEventListener('visibilitychange',()=>{if(!document.hidden)agendar(50)});
-setInterval(()=>{observar();if(document.getElementById('obras')&&!document.getElementById('obras').classList.contains('hidden'))agendar(0)},4000);
+let ultimaHomeRefresh=0;
+setInterval(()=>{
+  observar();
+  const obrasEl=document.getElementById('obras'),inicioEl=document.getElementById('inicio');
+  if(obrasEl&&!obrasEl.classList.contains('hidden'))agendar(0);
+  else if(inicioEl&&!inicioEl.classList.contains('hidden')&&Date.now()-ultimaHomeRefresh>=60000){
+    ultimaHomeRefresh=Date.now();
+    agendar(0);
+  }
+},4000);
 setTimeout(()=>{observar();buscar();realtime()},120);setTimeout(()=>{observar();buscar()},700);
 window.OBRIX_PROGRESS_CORE={refresh:buscar,paint:pintar,status:()=>({empresaId,detailId,checklistObraId,medias:Object.fromEntries(medias)})};
 })();

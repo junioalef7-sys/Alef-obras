@@ -55,6 +55,31 @@ function atividadeHTML(e){
   const detail=split>0?raw.slice(split+(split===colon?2:3)):'';
   return '<article class="obp-activity"><span class="obp-activity-ico" aria-hidden="true">'+esc(e.icon)+'</span><div class="obp-activity-body"><strong class="obp-activity-name">'+esc(title)+'</strong>'+(detail?'<span class="obp-activity-detail">'+esc(detail)+'</span>':'')+'<time>'+esc(formatarData(e.date))+'</time></div></article>';
 }
+function obrasMaisMovimentadas(){
+  // Atividade real dos últimos 30 dias: quantidade de diárias + lançamentos de despesas.
+  // Apenas obras em andamento podem entrar nos três atalhos.
+  const hoje=Date.now(),inicio=hoje-JANELA_ATUALIZACOES_MS;
+  const grupos=obras().filter(emAndamento).map(obra=>({obra,quantidade:0,ultima:0}));
+  const indice=new Map(grupos.map(grupo=>[String(grupo.obra.id),grupo]));
+  const registrar=linha=>{
+    const grupo=indice.get(String(linha?.obra_id||''));
+    if(!grupo)return;
+    const data=dataHora(linha?.data||linha?.criado_em||linha?.created_at);
+    if(data<inicio||data>hoje+60000)return;
+    grupo.quantidade++;
+    grupo.ultima=Math.max(grupo.ultima,data);
+  };
+  lista('diarias').forEach(d=>{if(!d?.cancelada&&!d?.estornada)registrar(d)});
+  lista('financeiro').forEach(f=>{
+    if(f?.tipo!=='despesa')return;
+    if(f.status_lancamento&&f.status_lancamento!=='ativo')return;
+    registrar(f);
+  });
+  grupos.sort((a,b)=>b.quantidade-a.quantidade||b.ultima-a.ultima
+    ||dataHora(b.obra.atualizado_em||b.obra.criado_em)-dataHora(a.obra.atualizado_em||a.obra.criado_em)
+    ||String(a.obra.nome||'').localeCompare(String(b.obra.nome||''),'pt-BR'));
+  return grupos.slice(0,3).map(item=>item.obra);
+}
 function renderInicio(){
   const root=$('inicio');if(!root)return;
   if(!$('obpHome')||$('obpHome')?.querySelectorAll('.obp-shortcuts [data-short]').length!==4){
@@ -62,7 +87,7 @@ function renderInicio(){
     if(root.dataset.obpClickBound!=='1'){root.addEventListener('click',cliqueInicio);root.dataset.obpClickBound='1'}
   }
   $('obpOla').textContent='Olá'+(primeiroNome()?', '+primeiroNome():'');
-  const recentes=obras().filter(emAndamento).slice().sort((a,b)=>dataHora(b.atualizado_em||b.criado_em)-dataHora(a.atualizado_em||a.criado_em)).slice(0,3);
+  const recentes=obrasMaisMovimentadas();
   // Preserve identical markup and touch handlers across repeated sync/page events.
   const obrasHtml=recentes.length?recentes.map(o=>{const p=progresso(o);return '<button type="button" class="obp-work" data-home-obra="'+esc(o.id)+'"><span class="obp-work-icon">▥</span><span class="obp-work-main"><strong>'+esc(o.nome||'Obra')+'</strong><span class="obp-progress"><i style="width:'+(p??0)+'%"></i></span></span><span class="obp-work-pct">'+(p===null?'—':p+'%')+'</span><span class="obp-work-arrow">›</span></button>'}).join(''):'<div class="obp-empty">Nenhuma obra em andamento.</div>';
   const obrasBox=$('obpObras');
@@ -685,15 +710,16 @@ function iniciar(){
   if(app)new MutationObserver(atualizar).observe(app,{attributes:true,attributeFilter:['class']});
   // Navigation may only change the page's own class, not #app.
   for(const section of [ini,team])if(section)new MutationObserver(atualizar).observe(section,{attributes:true,attributeFilter:['class','hidden','style']});
-  ['obrix:offline-base-atualizada','obrix:offline-core-restaurado','obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto'].forEach(x=>window.addEventListener(x,atualizar));
+  ['obrix:offline-base-atualizada','obrix:offline-core-restaurado','obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:progresso-atualizado'].forEach(x=>window.addEventListener(x,atualizar));
   window.addEventListener('pageshow',atualizar);
   setTimeout(atualizar,1200);setTimeout(atualizar,3200);
-  let ultimoProgresso='';
+  let ultimaAssinaturaInicio='';
   setInterval(()=>{
     if(!secaoVisivel('inicio'))return;
-    const atual=obras().map(o=>String(o.id)+':'+String(progresso(o))).join('|');
-    if(atual!==ultimoProgresso){ultimoProgresso=atual;renderInicio()}
-  },30000);
+    const atual=obras().map(o=>String(o.id)+':'+String(progresso(o))).join('|')
+      +' / '+obrasMaisMovimentadas().map(o=>String(o.id)).join('|');
+    if(atual!==ultimaAssinaturaInicio){ultimaAssinaturaInicio=atual;renderInicio()}
+  },15000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',iniciar,{once:true});else iniciar();
 window.OBRIX_PREVIEW={refresh:atualizar,openActivity:abrirAtualizacoes};

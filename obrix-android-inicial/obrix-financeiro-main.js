@@ -167,9 +167,21 @@
       <label>Descrição</label><input id="fmDesc" placeholder="Descrição" value="${esc(x?.descricao||'')}">
       <label>Valor total do lançamento</label><input id="fmValor" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Valor" value="${x?.valor||''}">
       <label>Checklist / etapa — distribua o valor entre um ou mais</label><select id="fmChecklist" class="hidden" aria-hidden="true"><option value="">Sem checklist</option></select><div id="fmChecklistMulti" class="fmChecklistMulti"></div><div id="fmChecklistTotal" class="fmChecklistTotal"></div>
-      <label for="fmData">Data</label><div class="fmDateFrame"><input id="fmData" type="date" value="${x?.data||new Date().toISOString().slice(0,10)}"></div>
+      <label for="fmData">Data</label><div class="fmDateFrame"><span id="fmDataTexto" class="fmDateTexto" aria-hidden="true"></span><input id="fmData" type="date" aria-label="Data do lançamento" value="${x?.data||new Date().toISOString().slice(0,10)}"></div>
       <div class="formActions"><button type="button" class="btn" id="fmSalvar">Salvar</button><button type="button" class="btn" id="fmCancelar">Cancelar</button></div>`;
     box.classList.remove('hidden');
+    // Apresentação independente do WebKit; o input nativo continua recebendo os toques.
+    const dataCampo=$('fmData'),dataTexto=$('fmDataTexto');
+    const atualizarTextoData=()=>{
+      if(!dataTexto)return;
+      const partes=/^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(dataCampo?.value||'');
+      dataTexto.textContent=partes
+        ?new Date(Number(partes[1]),Number(partes[2])-1,Number(partes[3])).toLocaleDateString('pt-BR',{day:'numeric',month:'short',year:'numeric'})
+        :'Selecione uma data';
+    };
+    dataCampo?.addEventListener('input',atualizarTextoData);
+    dataCampo?.addEventListener('change',atualizarTextoData);
+    atualizarTextoData();
     atualizarSubSugestoes();atualizarChecklistForm(x||null);
     $('fmCat').onchange=atualizarSubSugestoes;
     $('fmObra').onchange=()=>atualizarChecklistForm(null);
