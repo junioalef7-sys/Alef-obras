@@ -112,32 +112,95 @@ async function manifest(){
  'OBRIX_INVENTARIO_STORAGE_'+new Date().toISOString().slice(0,10)+'.json','application/json');
  msg(ok?'Inventário salvo. Ele não contém as imagens; baixe todos os ZIPs.':'Compartilhamento cancelado.');
 }
-async function downloadPart(i){
- if(busy||!snapshot?.parts[i])return;busy=true;
- const btn=$('storageBackupPart'+i);btn.disabled=true;
+
+function downloadDirect(blob,name){
+ // O clique original deve executar a criação do link (Safari / PWA).
+ const url=URL.createObjectURL(blob),link=document.createElement('a');
+ link.href=url;link.download=name;link.style.display='none';
+ document.body.appendChild(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),120000);
+}
+function resetButtons(preparado){
+ for(let k=0;k<(snapshot?.parts.length||0);k++){
+   const btn=$('storageBackupPart'+k),direct=$('storageBackupDirect'+k);
+   if(!btn)continue;
+   const ativo=preparado?.index===k;
+   btn.disabled=false;
+   btn.textContent=ativo?'Salvar ZIP '+(k+1)+'/'+snapshot.parts.length:
+     'Preparar ZIP '+(k+1)+'/'+snapshot.parts.length+' ('+snapshot.parts[k].length+' arquivos)';
+   btn.onclick=ativo?()=>savePart(k):()=>preparePart(k);
+   if(direct)direct.hidden=!ativo;
+ }
+}
+async function preparePart(i){
+ if(busy||!snapshot?.parts[i])return;
+ busy=true;
+ const btn=$('storageBackupPart'+i);
+ btn.disabled=true;
+ const s=snapshot;
+ // Só uma parte ZIP reside na memória do navegador por vez.
+ s.prepared=null;
  try{
-  const s=snapshot,p=await OBRIX_BACKEND.profile(),sb=await OBRIX_BACKEND.init();
+  const p=await OBRIX_BACKEND.profile(),sb=await OBRIX_BACKEND.init();
   if(String(p?.empresa_id)!==s.owner)throw Error('A conta mudou. Confira novamente.');
   const files=s.parts[i],entries=[],metadata=[];
   for(let k=0;k<files.length;k++){
-   const f=files[k];msg('Parte '+(i+1)+'/'+s.parts.length+': arquivo '+(k+1)+'/'+files.length+'...');
+   const f=files[k];
+   msg('Preparando ZIP '+(i+1)+'/'+s.parts.length+': arquivo '+(k+1)+' de '+files.length+'. Não feche o aplicativo.');
    if(!f.path.startsWith(s.owner+'/'))throw Error('Arquivo de outra empresa.');
-   const r=await sb.storage.from(f.bucket).download(f.path);
-   if(r.error||!r.data)throw Error('Falha no arquivo '+(k+1)+': '+String(r.error?.message||'download não concluído'));
-   const bytes=new Uint8Array(await r.data.arrayBuffer());
-   if(f.bytes!==null&&bytes.length!==f.bytes)throw Error('Tamanho do arquivo '+(k+1)+' mudou desde a conferência.');
+   let timer;
+   const result=await Promise.race([
+      sb.storage.from(f.bucket).download(f.path),
+      new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Download do arquivo '+(k+1)+' excedeu 90 segundos. Verifique a conexão e tente novamente.')),90000)})
+   ]).finally(()=>clearTimeout(timer));
+   if(result.error||!result.data)throw Error('Falha no arquivo '+(k+1)+': '+String(result.error?.message||'Download não concluído'));
+   const bytes=new Uint8Array(await result.data.arrayBuffer());
+   if(f.bytes!==null&&bytes.length!==f.bytes)throw Error('Tamanho divergente no arquivo '+(k+1)+'.');
    metadata.push({bucket:f.bucket,path:f.path,bytes:bytes.length,sha256:await hash(bytes)});
    entries.push({name:f.bucket+'/'+f.path,bytes});
+   // Permite renderizar progresso e receber eventos de toque.
+   await new Promise(resolve=>setTimeout(resolve,0));
   }
   const meta={obrix_storage_zip:1,empresa_id:s.owner,parte:i+1,total_partes:s.parts.length,gerado_em:s.time,arquivos:metadata};
   entries.push({name:'OBRIX_MANIFESTO_PARTE.json',bytes:new TextEncoder().encode(JSON.stringify(meta,null,2))});
+  msg('Finalizando ZIP '+(i+1)+'/'+s.parts.length+'...');
   const blob=zip(entries),two=n=>String(n).padStart(2,'0');
-  msg('Pacote pronto. Salve a parte '+(i+1)+' no aparelho.');
-  const ok=await save(blob,'OBRIX_ARQUIVOS_'+new Date().toISOString().slice(0,10)+'_PARTE_'+two(i+1)+'_DE_'+two(s.parts.length)+'.zip','application/zip');
-  if(ok){s.downloaded.add(i);btn.textContent='Salvar novamente ZIP '+(i+1);msg('Parte '+(i+1)+' enviada para salvar. Guarde todas as '+s.parts.length+' partes.');updateCount();}
-  else msg('Compartilhamento cancelado. Nenhum arquivo foi alterado.');
- }catch(e){msg('Falha na parte '+(i+1)+': '+String(e.message||e));}
- finally{busy=false;btn.disabled=false;}
+  const name='OBRIX_ARQUIVOS_'+new Date().toISOString().slice(0,10)+'_PARTE_'+two(i+1)+'_DE_'+two(s.parts.length)+'.zip';
+  s.prepared={index:i,blob,name};
+  msg('ZIP '+(i+1)+'/'+s.parts.length+' preparado ('+(blob.size/1048576).toFixed(1)+' MB). Agora toque em SALVAR ZIP para abrir o compartilhamento. Se não abrir, use “Download alternativo”.');
+ }catch(e){
+  msg('Falha ao preparar ZIP '+(i+1)+': '+String(e.message||e)+'. Nenhum dado foi alterado.');
+  s.prepared=null;
+ }finally{
+  busy=false;resetButtons(s.prepared);
+ }
+}
+function savePart(i){
+ // É obrigatório invocar navigator.share diretamente neste segundo toque,
+ // sem awaits de rede: exigência da ativação de usuário no Safari/WebKit.
+ const s=snapshot,prepared=s?.prepared;
+ if(!prepared||prepared.index!==i||busy)return;
+ const btn=$('storageBackupPart'+i);
+ btn.disabled=true;
+ msg('Abrindo opções de salvamento do ZIP '+(i+1)+'. No iPhone selecione “Salvar em Arquivos”.');
+ // save() inicia navigator.share síncrono até o primeiro await.
+ save(prepared.blob,prepared.name,'application/zip').then(ok=>{
+  if(ok){
+   s.downloaded.add(i);updateCount();
+   msg('ZIP '+(i+1)+' enviado ao sistema de salvamento. Verifique no app Arquivos antes de preparar o próximo pacote.');
+  }else msg('Salvamento cancelado. Toque novamente em “Salvar ZIP” ou use “Download alternativo”.');
+ }).catch(e=>{
+  msg('O compartilhamento não abriu: '+String(e.message||e)+'. Use o botão “Download alternativo” logo abaixo.');
+ }).finally(()=>{btn.disabled=false;});
+}
+function directPart(i){
+ const prepared=snapshot?.prepared;
+ if(!prepared||prepared.index!==i)return;
+ try{
+  downloadDirect(prepared.blob,prepared.name);
+  snapshot.downloaded.add(i);updateCount();
+  msg('Download alternativo do ZIP '+(i+1)+' iniciado. Confira o arquivo em Downloads/Arquivos antes de continuar.');
+ }catch(e){msg('Não foi possível iniciar o download alternativo: '+String(e.message||e));}
 }
 function updateCount(){const e=$('storageBackupCount');if(e&&snapshot)e.textContent=snapshot.downloaded.size+' de '+snapshot.parts.length+' partes enviadas ao salvamento.';}
 function show(){
@@ -148,14 +211,17 @@ function show(){
   ' bytes · '+fmt(s.parts.length)+' parte(s)</span></div>'+
   '<p class="muted">Inclui também arquivos antigos presentes na sua pasta, mesmo sem registro na tabela atual. A conferência e o download não alteram o Supabase.</p>'+
   '<button type="button" class="btn" id="storageBackupInventory">Salvar inventário JSON</button>'+
-  '<p class="muted">O inventário NÃO substitui o backup dos arquivos. Baixe todos os pacotes ZIP.</p>'+
+  '<p class="muted">O inventário NÃO substitui o backup dos arquivos. Para cada parte: PREPARAR, depois SALVAR. Se travar, use Download alternativo. Salve todas as partes da mesma conferência.</p>'+
   '<div id="storageBackupCount" class="muted"></div><div id="storageBackupZipButtons"></div>';
  $('storageBackupInventory').onclick=manifest;
  const box=$('storageBackupZipButtons');
  for(let i=0;i<s.parts.length;i++){
   const b=document.createElement('button');b.type='button';b.id='storageBackupPart'+i;b.className='btn storageZipButton';
-  b.textContent='Baixar ZIP '+(i+1)+'/'+s.parts.length+' ('+s.parts[i].length+' arquivos)';
-  b.onclick=()=>downloadPart(i);box.appendChild(b);
+  b.textContent='Preparar ZIP '+(i+1)+'/'+s.parts.length+' ('+s.parts[i].length+' arquivos)';
+  b.onclick=()=>preparePart(i);box.appendChild(b);
+  const fallback=document.createElement('button');fallback.type='button';fallback.id='storageBackupDirect'+i;
+  fallback.className='btn storageZipAlternative';fallback.textContent='Download alternativo — ZIP '+(i+1);
+  fallback.hidden=true;fallback.onclick=()=>directPart(i);box.appendChild(fallback);
  }
  updateCount();
 }
@@ -169,7 +235,7 @@ function install(){
  '<div id="storageBackupParts" style="margin-top:12px"></div>';
  main.insertBefore(card,main.querySelector('.backupAviso'));
  $('storageBackupScan').onclick=scan;
- const st=document.createElement('style');st.textContent='#storageBackupCard .storageZipButton{display:block;width:100%;margin:8px 0;white-space:normal}#storageBackupCard .backupResultado{line-height:1.5}';
+ const st=document.createElement('style');st.textContent='#storageBackupCard .storageZipButton{display:block;width:100%;margin:8px 0;white-space:normal}#storageBackupCard .storageZipAlternative{display:block;width:100%;margin:3px 0 12px;background:var(--ob-surface-2,#f2f5f9);border:1px solid var(--ob-border,#ced6e0);color:var(--ob-text,#15202b)}#storageBackupCard [hidden]{display:none!important}#storageBackupCard .backupResultado{line-height:1.5}';
  document.head.appendChild(st);return true;
 }
 if(window.OBRIX_BACKUP?.open){
