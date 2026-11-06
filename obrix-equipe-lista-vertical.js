@@ -99,7 +99,7 @@
       try{
         const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();
         const {error}=await sb.from('faltas').insert({empresa_id:p.empresa_id,funcionario_id:f.id,obra_id:back.querySelector('.obra').value||null,data,justificada:back.querySelector('.tipo').value==='true',motivo:back.querySelector('.motivo').value.trim()||null,observacoes:back.querySelector('.obs').value.trim()||null});
-        if(error)throw error;back.remove();alert('Falta registrada.');
+        if(error)throw error;back.remove();window.dispatchEvent(new CustomEvent('obrix:equipe-registro',{detail:{table:'faltas',funcionarioId:f.id}}));alert('Falta registrada.');
       }catch(e){alert(e.message||'Não foi possível registrar a falta.')}finally{btn.disabled=false}
     };
   }
