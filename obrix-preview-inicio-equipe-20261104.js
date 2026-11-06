@@ -372,17 +372,26 @@ function renderEquipe(){
   const fs=funcs(),q=buscaEquipe.trim().toLocaleLowerCase('pt-BR');
   const filtrados=fs.filter(f=>(filtro==='todos'||(filtro==='ativos'&&f.ativo!==false)||(filtro==='inativos'&&f.ativo===false))&&(!q||String(f.nome||'').toLocaleLowerCase('pt-BR').includes(q)||String(f.cargo||f.funcao||'').toLocaleLowerCase('pt-BR').includes(q)));
   const total=resumoTotal();
-  $('obpFiltros').innerHTML=[['todos','Todos',fs.length],['ativos','Ativos',fs.filter(f=>f.ativo!==false).length],['inativos','Inativos',fs.filter(f=>f.ativo===false).length]]
+  const filtrosHtml=[['todos','Todos',fs.length],['ativos','Ativos',fs.filter(f=>f.ativo!==false).length],['inativos','Inativos',fs.filter(f=>f.ativo===false).length]]
     .map(a=>'<button type="button" data-team-filter="'+a[0]+'" class="'+(filtro===a[0]?'active':'')+'">'+a[1]+' ('+a[2]+')</button>').join('');
-  $('obpIndicadores').innerHTML=indicador('Bruto da folha',dinheiro(total.bruto),'obp-bruto','▤')+indicador('Líquido a pagar',dinheiro(total.liquido),'obp-liquido','✓');
+  const filtrosEl=$('obpFiltros');
+  if(filtrosEl.__obpMarkup!==filtrosHtml){filtrosEl.innerHTML=filtrosHtml;filtrosEl.__obpMarkup=filtrosHtml}
+  const kpiHtml=indicador('Bruto da folha',dinheiro(total.bruto),'obp-bruto','▤')+indicador('Líquido a pagar',dinheiro(total.liquido),'obp-liquido','✓');
+  const kpiEl=$('obpIndicadores');
+  if(kpiEl.__obpMarkup!==kpiHtml){kpiEl.innerHTML=kpiHtml;kpiEl.__obpMarkup=kpiHtml}
   const extras=$('obpResumoExtras');
-  extras.hidden=!resumoExpandido;
-  extras.innerHTML=resumoExpandido?indicador('Funcionários ativos',total.ativos,'obp-ativos','♟')+indicador('Diárias em aberto',dinheiro(total.diarias),'obp-diarias','▣')+indicador('Vales em aberto',dinheiro(total.vales),'obp-vales','▰')+indicador('Bônus e extras',dinheiro(total.bonus),'obp-bonus','✦')+indicador('Total pago (histórico)',dinheiro(total.pago),'obp-pago','✓'):'';
-  $('obpExpandir').textContent=resumoExpandido?'Ocultar resumo ▴':'Ver resumo ▾';
-  $('obpExpandir').setAttribute('aria-expanded',String(resumoExpandido));
-  $('obpTotalPessoas').textContent='Funcionários ('+filtrados.length+')';
-  $('obpGerenciarMenu').hidden=!gerenciarAberto;
-  $('obpGerenciar').setAttribute('aria-expanded',String(gerenciarAberto));
+  if(extras.hidden===resumoExpandido)extras.hidden=!resumoExpandido;
+  const extrasHtml=resumoExpandido?indicador('Funcionários ativos',total.ativos,'obp-ativos','♟')+indicador('Diárias em aberto',dinheiro(total.diarias),'obp-diarias','▣')+indicador('Vales em aberto',dinheiro(total.vales),'obp-vales','▰')+indicador('Bônus e extras',dinheiro(total.bonus),'obp-bonus','✦')+indicador('Total pago (histórico)',dinheiro(total.pago),'obp-pago','✓'):'';
+  if(extras.__obpMarkup!==extrasHtml){extras.innerHTML=extrasHtml;extras.__obpMarkup=extrasHtml}
+  const btnExpandir=$('obpExpandir'),expandirLabel=resumoExpandido?'Ocultar resumo ▴':'Ver resumo ▾';
+  if(btnExpandir.textContent!==expandirLabel)btnExpandir.textContent=expandirLabel;
+  if(btnExpandir.getAttribute('aria-expanded')!==String(resumoExpandido))btnExpandir.setAttribute('aria-expanded',String(resumoExpandido));
+  const totalPessoas=$('obpTotalPessoas'),pessoasLabel='Funcionários ('+filtrados.length+')';
+  if(totalPessoas.textContent!==pessoasLabel)totalPessoas.textContent=pessoasLabel;
+  const menuGestao=$('obpGerenciarMenu');
+  if(menuGestao.hidden===gerenciarAberto)menuGestao.hidden=!gerenciarAberto;
+  const btnGerenciar=$('obpGerenciar');
+  if(btnGerenciar.getAttribute('aria-expanded')!==String(gerenciarAberto))btnGerenciar.setAttribute('aria-expanded',String(gerenciarAberto));
   const funcionariosHtml=filtrados.length?filtrados.map(f=>'<button type="button" class="obp-person" data-team-id="'+esc(f.id)+'"><span class="obp-avatar">♟</span><span class="obp-person-text"><strong>'+esc(f.nome||'Funcionário')+'</strong><small>'+esc(f.cargo||f.funcao||'Função não informada')+'</small></span><span class="obp-chevron">›</span></button>').join(''):'<div class="obp-empty">Nenhum funcionário encontrado.</div>';
   const listaFuncionarios=$('obpFuncionarios');
   if(listaFuncionarios.__obpUltimoHtml!==funcionariosHtml){listaFuncionarios.innerHTML=funcionariosHtml;listaFuncionarios.__obpUltimoHtml=funcionariosHtml}
