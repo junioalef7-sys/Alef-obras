@@ -167,7 +167,7 @@
       <label>Descrição</label><input id="fmDesc" placeholder="Descrição" value="${esc(x?.descricao||'')}">
       <label>Valor total do lançamento</label><input id="fmValor" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Valor" value="${x?.valor||''}">
       <label>Checklist / etapa — distribua o valor entre um ou mais</label><select id="fmChecklist" class="hidden" aria-hidden="true"><option value="">Sem checklist</option></select><div id="fmChecklistMulti" class="fmChecklistMulti"></div><div id="fmChecklistTotal" class="fmChecklistTotal"></div>
-      <label>Data</label><input id="fmData" type="date" value="${x?.data||new Date().toISOString().slice(0,10)}">
+      <label for="fmData">Data</label><div class="fmDateFrame"><input id="fmData" type="date" value="${x?.data||new Date().toISOString().slice(0,10)}"></div>
       <div class="formActions"><button type="button" class="btn" id="fmSalvar">Salvar</button><button type="button" class="btn" id="fmCancelar">Cancelar</button></div>`;
     box.classList.remove('hidden');
     atualizarSubSugestoes();atualizarChecklistForm(x||null);
