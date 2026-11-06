@@ -190,7 +190,7 @@ async function obpBuscarFaltas(id,force=false){
     if(!backend)throw Error('Conexão indisponível.');
     const p=await backend.profile(),sb=await backend.init();
     if(!p?.empresa_id)throw Error('Conta não identificada.');
-    const r=await sb.from('faltas').select('id,obra_id,data,justificada,motivo,observacoes')
+    const r=await sb.from('faltas').select('id,obra_id,data,justificada,motivo,observacoes,criado_em')
       .eq('empresa_id',p.empresa_id).eq('funcionario_id',chave).order('data',{ascending:false});
     if(r.error)throw r.error;
     return r.data||[];
@@ -202,18 +202,92 @@ async function obpBuscarFaltas(id,force=false){
     obpFaltasCache.set(chave,{rows:cache?.rows,error,updated:Date.now()});throw error;
   }
 }
+// Faltas não são liquidadas no banco: o histórico conserva todas as linhas.
+// Somente o contador considera o ciclo aberto, encerrado pelo último pagamento.
+const obpUltimoPagamentoCache=new Map();
+const obpDiariasAbertasCache=new Map();
+let obpFaltasVisualSeq=0;
+async function obpUltimoPagamento(id,force=false){
+  const chave=String(id),cache=obpUltimoPagamentoCache.get(chave);
+  if(cache?.promise)return cache.promise;
+  if(!force&&cache&&Date.now()-cache.updated<20000){
+    if(cache.error)throw cache.error;
+    return cache.item;
+  }
+  const promise=(async()=>{
+    if(!navigator.onLine)throw Error('Sem conexão para consultar pagamentos.');
+    const backend=window.OBRIX_BACKEND;
+    if(!backend)throw Error('Conexão com o banco indisponível.');
+    const p=await backend.profile(),sb=await backend.init();
+    if(!p?.empresa_id)throw Error('Conta não identificada.');
+    const r=await sb.from('pagamentos_equipe')
+      .select('id,data_pagamento,criado_em')
+      .eq('empresa_id',p.empresa_id).eq('funcionario_id',chave)
+      .is('estornado_em',null).order('criado_em',{ascending:false}).limit(1);
+    if(r.error)throw r.error;
+    return r.data?.[0]||null;
+  })();
+  obpUltimoPagamentoCache.set(chave,{item:cache?.item,promise,updated:Date.now()});
+  try{
+    const item=await promise;
+    obpUltimoPagamentoCache.set(chave,{item,updated:Date.now()});
+    return item;
+  }catch(error){
+    obpUltimoPagamentoCache.set(chave,{error,updated:Date.now()});
+    throw error;
+  }
+}
+function obpContarFaltasPeriodo(id,faltas,pagamento){
+  // Zero diárias abertas significa zero faltas no cartão, mesmo com histórico.
+  if(!arrEquipe('diarias',id).some(d=>!d.paga))return 0;
+  const dataFechamento=String(pagamento?.data_pagamento||'').slice(0,10);
+  const instanteFechamento=Date.parse(pagamento?.criado_em||'');
+  return (faltas||[]).filter(f=>{
+    const data=String(f.data||'').slice(0,10);
+    if(!data)return false;
+    if(!pagamento)return true;
+    // Excluir faltas de períodos já quitados, inclusive retroativos.
+    if(dataFechamento&&data<dataFechamento)return false;
+    const criadaEm=Date.parse(f.criado_em||'');
+    if(Number.isFinite(instanteFechamento)&&Number.isFinite(criadaEm))
+      return criadaEm>instanteFechamento;
+    return !!dataFechamento&&data>dataFechamento;
+  }).length;
+}
+async function obpFaltasPeriodo(id,linhas){
+  if(!arrEquipe('diarias',id).some(d=>!d.paga))return 0;
+  const pagamento=await obpUltimoPagamento(id);
+  return obpContarFaltasPeriodo(id,linhas,pagamento);
+}
 function obpAtualizarFaltas(id){
-  const el=document.getElementById('obpFaltasTotal');
-  if(!el||String(id)!==String(selecionado))return;
-  const cache=obpFaltasCache.get(String(id));
-  el.textContent=cache?.rows?String(cache.rows.length):'—';
-  void obpBuscarFaltas(id).then(rows=>{
-    const atual=document.getElementById('obpFaltasTotal');
-    if(atual&&String(id)===String(selecionado))atual.textContent=String(rows.length);
-  }).catch(()=>{
-    const atual=document.getElementById('obpFaltasTotal');
-    if(atual&&String(id)===String(selecionado)&&!obpFaltasCache.get(String(id))?.rows)atual.textContent='—';
-  });
+  const chave=String(id),el=document.getElementById('obpFaltasTotal');
+  if(!el||chave!==String(selecionado))return;
+  const abertas=arrEquipe('diarias',id).filter(d=>!d.paga)
+    .map(d=>String(d.id)).sort().join('|');
+  const anterior=obpDiariasAbertasCache.get(chave);
+  if(anterior!==abertas){
+    obpDiariasAbertasCache.set(chave,abertas);
+    // Após pagar/reabrir diárias, não reutilizar faltas nem pagamentos antigos.
+    obpUltimoPagamentoCache.delete(chave);
+    obpFaltasCache.delete(chave);
+  }
+  const sequencia=++obpFaltasVisualSeq;
+  if(!abertas){el.textContent='0';return}
+  const cache=obpFaltasCache.get(chave),pagCache=obpUltimoPagamentoCache.get(chave);
+  el.textContent=cache?.rows&&pagCache&&!pagCache.error&&!pagCache.promise
+    ?String(obpContarFaltasPeriodo(id,cache.rows,pagCache.item)):'—';
+  void Promise.all([obpBuscarFaltas(id),obpUltimoPagamento(id)])
+    .then(([faltas,pagamento])=>{
+      const atual=document.getElementById('obpFaltasTotal');
+      if(atual&&chave===String(selecionado)&&sequencia===obpFaltasVisualSeq)
+        atual.textContent=String(obpContarFaltasPeriodo(id,faltas,pagamento));
+    }).catch(error=>{
+      const atual=document.getElementById('obpFaltasTotal');
+      if(atual&&chave===String(selecionado)&&sequencia===obpFaltasVisualSeq){
+        atual.textContent='—';
+        console.warn('Faltas do período: consulta indisponível',error);
+      }
+    });
 }
 
 function resumoEquipe(f){
@@ -444,10 +518,19 @@ async function abrirRegistrosEquipePremium(id){
       status:x.justificada?'Justificada':'Sem justificativa',pago:false,valor:0
     })));
     linhas.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
-    back.querySelector('[data-obp-total-faltas]').textContent=String(faltas.length);
-    const indicador=document.getElementById('obpFaltasTotal');
-    if(indicador&&String(selecionado)===String(id))indicador.textContent=String(faltas.length);
+    // As linhas do histórico são todas preservadas, mesmo depois do pagamento.
     renderizar();
+    const indicadorPeriodo=back.querySelector('[data-obp-total-faltas]');
+    try{
+      const totalEmAberto=await obpFaltasPeriodo(id,faltas);
+      if(!back.isConnected)return;
+      if(indicadorPeriodo)indicadorPeriodo.textContent=String(totalEmAberto);
+      const indicador=document.getElementById('obpFaltasTotal');
+      if(indicador&&String(selecionado)===String(id))indicador.textContent=String(totalEmAberto);
+    }catch(error){
+      if(indicadorPeriodo)indicadorPeriodo.textContent='—';
+      console.warn('Cálculo das faltas em aberto indisponível',error);
+    }
   }catch(error){
     if(!back.isConnected)return;
     const aviso=back.querySelector('[data-obp-aviso]');aviso.hidden=false;
