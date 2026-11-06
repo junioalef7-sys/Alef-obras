@@ -315,7 +315,7 @@ function renderEquipe(){
   const base=String(f.tipo_pagamento)==='mes'?Number(f.salario_mensal||0):Number(f.valor_diaria||0);
   const totalPago=window.OBRIX_EQUIPE_TOTAL_PAGO?.get?.(f.id);
   const equivalentes=String(r.completas+r.meias/2).replace('.',',');
-  const detalheHtml='<div class="obp-detail-bar"><button type="button" data-team-back aria-label="Voltar à lista">‹</button><span>Funcionário</span></div>'+
+  const detalheHtml='<div class="obp-detail-bar"><button type="button" data-team-back aria-label="Voltar à lista">‹</button><span>'+esc(f.nome||'Funcionário')+'</span><button type="button" data-team-action="editar" aria-label="Editar funcionário">✎</button></div>'+
     '<div class="obp-perfil-topo"><span class="obp-perfil-avatar" aria-hidden="true">♟</span><div class="obp-perfil-texto"><h2 class="obp-full-name">'+esc(f.nome||'Funcionário')+'</h2><div class="obp-role">'+esc(f.cargo||f.funcao||'Função não informada')+'</div></div><span class="obp-perfil-situacao">'+(f.ativo===false?'Inativo':'Ativo')+'</span></div>'+
     '<div class="obp-perfil-pagamento"><small>'+esc(tipoPagamento(f))+' · '+esc(nomeObra(f.obra_id))+'</small><strong>'+esc(dinheiro(base))+'</strong></div>'+
     '<div class="obp-person-metrics obp-detail-finance">'+
@@ -363,7 +363,7 @@ async function abrirRegistrosEquipePremium(id){
   document.querySelectorAll('.obp-registros-premium-modal').forEach(m=>m.remove());
   const back=document.createElement('div');back.className='modalBack obp-registros-premium-modal';
   back.innerHTML='<div class="modal obp-registros-tela" role="dialog" aria-modal="true" aria-labelledby="obpRegistroTitulo">'+
-    '<header class="obp-registros-topo"><h2 id="obpRegistroTitulo">Registros de '+esc(func.nome||'Funcionário')+'</h2><button type="button" aria-label="Fechar" data-obp-fechar>×</button></header>'+
+    '<header class="obp-registros-topo"><button type="button" aria-label="Voltar ao funcionário" data-obp-fechar>‹</button><h2 id="obpRegistroTitulo">Registros de '+esc(func.nome||'Funcionário')+'</h2><span aria-hidden="true"></span></header>'+
     '<nav class="obp-registros-tabs" aria-label="Filtrar registros">'+
     '<button type="button" data-obp-tab="historico" class="active">Histórico</button>'+
     '<button type="button" data-obp-tab="diarias">Diárias</button>'+
@@ -506,6 +506,21 @@ async function abrirRegistrosEquipePremium(id){
 }
 
 async function equipeAcaoPreview(id,tipo){
+  if(tipo==='editar'){
+    await esperarEquipe();
+    const cadastro=window.OBRIX_FUNCIONARIOS_PESSOAL;
+    if(!cadastro?.open){
+      if(window.OBRIX_AVISO)await window.OBRIX_AVISO('Cadastro do funcionário indisponível no momento.');
+      return;
+    }
+    await cadastro.open();
+    setTimeout(()=>{
+      const row=[...document.querySelectorAll('.obrix-pessoal-item')]
+        .find(x=>String(x.dataset.id)===String(id));
+      row?.querySelector('.obrix-pessoal-editar-btn')?.click();
+    },100);
+    return;
+  }
   if(tipo==='diaria'||tipo==='vale'||tipo==='bonus'||tipo==='pagar'){
     await esperarEquipe();
     if(window.equipeAcao)return window.equipeAcao(String(id),tipo);
