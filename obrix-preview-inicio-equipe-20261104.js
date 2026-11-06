@@ -58,7 +58,7 @@ function atividadeHTML(e){
 function renderInicio(){
   const root=$('inicio');if(!root)return;
   if(!$('obpHome')){
-    root.innerHTML='<div id="obpHome"><div class="obp-greeting"><h1 id="obpOla">Olá</h1><span class="obp-greeting-mark"></span></div><div class="obp-shortcuts"><button type="button" data-short="nova"><span>＋</span>Nova obra</button><button type="button" data-short="notas"><span>✎</span>Notas</button><button type="button" data-short="relatorios"><span>▤</span>Relatórios</button><button type="button" data-short="diario"><span>▣</span>Diário de obras</button></div><div class="obp-heading"><h2>Obras</h2><button type="button" data-home-all="obras">Ver todas <span>›</span></button></div><div id="obpObras"></div><div class="obp-heading"><h2>Últimas atualizações</h2><button type="button" data-home-all="atividades">Ver todas <span>›</span></button></div><div id="obpAtividades"></div></div>';
+    root.innerHTML='<div id="obpHome"><div class="obp-greeting"><h1 id="obpOla">Olá</h1><span class="obp-greeting-mark"></span></div><div class="obp-shortcuts"><button type="button" data-short="nova"><span>＋</span>Nova obra</button><button type="button" data-short="notas"><span>✎</span>Notas</button><button type="button" data-short="relatorios"><span>▤</span>Relatórios</button><button type="button" data-short="foto"><span>▧</span>Foto</button></div><div class="obp-heading"><h2>Obras</h2><button type="button" data-home-all="obras">Ver todas <span>›</span></button></div><div id="obpObras"></div><div class="obp-heading"><h2>Últimas atualizações</h2><button type="button" data-home-all="atividades">Ver todas <span>›</span></button></div><div id="obpAtividades"></div></div>';
     if(root.dataset.obpClickBound!=='1'){root.addEventListener('click',cliqueInicio);root.dataset.obpClickBound='1'}
   }
   $('obpOla').textContent='Olá'+(primeiroNome()?', '+primeiroNome():'');
@@ -79,7 +79,49 @@ function abrirObras(id){
   };
   setTimeout(ir,110);
 }
+async function abrirFotoAtalho(){
+  // Relatorio fotografico exige uma obra; o atalho nao deve abrir um relatorio vazio.
+  document.querySelector('.obp-foto-atalho')?.remove();
+  const todas=obras().slice().sort((a,b)=>Number(emAndamento(b))-Number(emAndamento(a))||String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR'));
+  if(!todas.length){
+    if(window.OBRIX_AVISO)await window.OBRIX_AVISO('Cadastre uma obra para adicionar ou consultar fotos.','Fotos das obras');
+    else abrirObras();
+    return;
+  }
+  const back=document.createElement('div');
+  back.className='modalBack obp-foto-atalho';
+  back.innerHTML='<div class="modal obp-modal" role="dialog" aria-modal="true" aria-labelledby="obpFotoTitulo">'+
+    '<div class="obp-modal-head"><h2 id="obpFotoTitulo">Foto</h2><button type="button" aria-label="Fechar" data-obp-foto-fechar>×</button></div>'+
+    '<div class="obp-modal-body" style="display:grid;gap:12px;padding:15px">'+
+    '<label for="obpFotoObra" style="font-weight:750">Selecione a obra</label>'+
+    '<select id="obpFotoObra" style="box-sizing:border-box;width:100%;min-height:48px;padding:10px;border-radius:10px;border:1px solid var(--ob-border,#cbd5df);background:var(--ob-surface,#fff);color:var(--ob-text,#111827);font:inherit">'+
+    todas.map(o=>'<option value="'+esc(o.id)+'">'+esc(o.nome||'Obra sem nome')+'</option>').join('')+
+    '</select><button type="button" class="btn" data-obp-foto-abrir style="min-height:48px">Abrir fotos da obra</button></div></div>';
+  document.body.appendChild(back);
+  const fechar=()=>{document.removeEventListener('keydown',escaparFoto);back.remove()};
+  const escaparFoto=e=>{if(e.key==='Escape')fechar()};
+  document.addEventListener('keydown',escaparFoto);
+  back.querySelector('[data-obp-foto-fechar]').onclick=fechar;
+  back.addEventListener('click',e=>{if(e.target===back)fechar()});
+  back.querySelector('[data-obp-foto-abrir]').onclick=async e=>{
+    const id=back.querySelector('#obpFotoObra').value;
+    const btn=e.currentTarget;
+    btn.disabled=true;btn.textContent='Abrindo fotos...';
+    try{
+      if(!window.OBRIX_REL_FOTO?.open)await window.OBRIX_POS_LOGIN_LOADER?.loadGroup?.('obras');
+      if(!window.OBRIX_REL_FOTO?.open)throw new Error('O relatório fotográfico não está disponível no momento.');
+      fechar();
+      await window.OBRIX_REL_FOTO.open(id);
+    }catch(err){
+      console.warn('Atalho Foto:',err);
+      btn.disabled=false;btn.textContent='Abrir fotos da obra';
+      if(window.OBRIX_AVISO)await window.OBRIX_AVISO(err?.message||'Não foi possível abrir as fotos.','Foto');
+      else alert(err?.message||'Não foi possível abrir as fotos.');
+    }
+  };
+}
 async function acaoRapida(tipo){
+  if(tipo==='foto'){await abrirFotoAtalho();return}
   if(tipo==='nova'){abrirObras();try{await window.OBRIX_POS_LOGIN_LOADER?.loadGroup?.('obras')}catch(_){}setTimeout(()=>window.OBRIX_OBRAS?.nova?.(),150);return}
   if(['notas','relatorios','diario'].includes(tipo)){
     // Use the same lazy-loading route as the app menu; opening a shortcut
