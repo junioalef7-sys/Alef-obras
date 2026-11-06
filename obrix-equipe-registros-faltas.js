@@ -25,15 +25,40 @@ function linhaHtml(x){
  if(x.kind==='diaria')return `<div class="obrix-registro-linha" data-diaria-row="${esc(x.id)}"><div><b>${data}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span></div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small>${x.paga?'':`<button type="button" class="obrix-excluir-registro" data-excluir-diaria="${esc(x.id)}">Excluir</button>`}</div></div>`;
  return `<div class="obrix-registro-linha"><div><b>${data}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span></div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small></div></div>`;
 }
+const excluindoRegistros=new Set();
 async function excluirLinha(table,idRegistro,funcionarioId,back){
- if(!confirm(table==='diarias'?'Excluir esta diária em aberto?':'Excluir esta falta?'))return;
+ const chave=table+':'+idRegistro;
+ if(excluindoRegistros.has(chave))return;
+ excluindoRegistros.add(chave);
  try{
+  if(typeof window.OBRIX_CONFIRMAR_EXCLUSAO!=='function')throw Error('Confirmação indisponível. Atualize o OBRIX.');
+  if(!await window.OBRIX_CONFIRMAR_EXCLUSAO({
+    titulo:table==='diarias'?'Excluir diária':'Excluir falta',
+    mensagem:table==='diarias'?'Excluir esta diária em aberto?':'Excluir esta falta?',
+    confirmar:'Excluir'
+  }))return;
+  if(!navigator.onLine)throw Error('Conecte-se à internet para excluir.');
   const sb=await window.OBRIX_BACKEND.init(),p=await window.OBRIX_BACKEND.profile();
-  let q=sb.from(table).delete().eq('id',idRegistro).eq('empresa_id',p.empresa_id).eq('funcionario_id',funcionarioId);
+  if(!p?.empresa_id)throw Error('Conta não identificada.');
+  if(table==='diarias'){
+    const vinculo=await sb.from('pagamento_diarias').select('id')
+      .eq('empresa_id',p.empresa_id).eq('diaria_id',idRegistro).limit(1);
+    if(vinculo.error)throw vinculo.error;
+    if(vinculo.data?.length)throw Error('Diária vinculada a pagamento. Exclusão bloqueada.');
+  }
+  let q=sb.from(table).delete().eq('id',idRegistro)
+    .eq('empresa_id',p.empresa_id).eq('funcionario_id',funcionarioId);
   if(table==='diarias')q=q.eq('paga',false);
-  const {data,error}=await q.select('id');if(error)throw error;if(!data?.length)throw new Error(table==='diarias'?'A diária não está mais em aberto ou já foi removida.':'A falta não foi encontrada.');
-  await window.OBRIX_EQUIPE?.refresh?.();window.OBRIX_EQUIPE_REALTIME_SYNC?.refresh?.();await carregar(funcionarioId,back);
- }catch(e){alert(e.message||'Não foi possível excluir o registro.')}
+  const {data,error}=await q.select('id');
+  if(error)throw error;
+  if(!data?.length)throw Error(table==='diarias'?'Diária já quitada, removida ou bloqueada.':'Falta já excluída ou não localizada.');
+  try{await window.OBRIX_EQUIPE?.refresh?.()}catch(err){console.warn('Equipe: atualização pós-exclusão',err)}
+  window.OBRIX_EQUIPE_REALTIME_SYNC?.refresh?.();
+  await carregar(funcionarioId,back);
+ }catch(e){
+  if(window.OBRIX_AVISO)await window.OBRIX_AVISO(e?.message||'Não foi possível excluir.','Equipe');
+  else alert(e?.message||'Não foi possível excluir.');
+ }finally{excluindoRegistros.delete(chave)}
 }
 async function carregar(id,back){
  if(!back?.isConnected)return;
