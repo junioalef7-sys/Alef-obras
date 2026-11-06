@@ -4,7 +4,7 @@
     if(document.getElementById('obrixConfirmDialogStyle'))return;
     const s=document.createElement('style');s.id='obrixConfirmDialogStyle';
     s.textContent=`
-      .obrixConfirmOverlay{position:fixed!important;inset:0!important;z-index:2147482700!important;background:rgba(5,14,26,.68)!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:20px!important;box-sizing:border-box!important}
+      .obrixConfirmOverlay{position:fixed!important;inset:0!important;z-index:2147483646!important;background:rgba(5,14,26,.68)!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:20px!important;box-sizing:border-box!important}
       .obrixConfirmBox{width:min(100%,430px)!important;background:var(--ob-surface,#fff)!important;color:var(--ob-text,#111827)!important;border:1px solid var(--ob-border,#cbd5e1)!important;border-radius:17px!important;padding:22px!important;box-shadow:0 16px 50px rgba(0,0,0,.3)!important;font-family:inherit!important}
       .obrixConfirmBox h2{font-size:20px!important;line-height:1.2!important;margin:0 0 12px!important;font-weight:850!important;color:inherit!important}
       .obrixConfirmBox p{font-size:15px!important;line-height:1.5!important;color:inherit!important;margin:0 0 18px!important;white-space:pre-wrap!important;overflow-wrap:break-word!important}
