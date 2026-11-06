@@ -43,17 +43,24 @@ jobs:
           }
           const listeners={};
           const viewport={scale:1,addEventListener(name,cb){listeners['vv:'+name]=cb}};
-          const input={isConnected:true,matches(){return true}};
+          const inline={value:'14px',priority:'important',
+            getPropertyValue(){return this.value},getPropertyPriority(){return this.priority},
+            setProperty(name,value,priority){this.value=value;this.priority=priority},
+            removeProperty(){this.value='';this.priority=''}};
+          const input={isConnected:true,matches(){return true},style:inline};
           const page={scrollLeft:32};
           const body={scrollLeft:12};
           const doc={scrollingElement:page,documentElement:page,body,activeElement:input,
             addEventListener(name,cb){listeners[name]=cb}};
           let left=15,top=240;
-          const win={visualViewport:viewport,matchMedia(){return {matches:true}},scrollX:left,scrollY:top,
+          const win={visualViewport:viewport,matchMedia(){return {matches:true}},getComputedStyle(el){return {fontSize:el.style.value}},scrollX:left,scrollY:top,
             addEventListener(){},scrollTo(x,y){left=x;top=y;this.scrollX=x;this.scrollY=y}};
           const context={window:win,document:doc,requestAnimationFrame(fn){fn()},
             setTimeout(){return 1},clearTimeout(){}};
           vm.runInNewContext(js,context);
+          listeners.pointerdown({target:input});
+          assert.equal(inline.value,'16px','Fonte pequena deve ser corrigida ANTES do foco');
+          assert.equal(inline.priority,'important');
           listeners.focusin({target:input});
           assert.equal(page.scrollLeft,0);assert.equal(body.scrollLeft,0);
           assert.equal(win.scrollX,0);assert.equal(top,240,'Rolagem vertical mudou');
@@ -61,6 +68,8 @@ jobs:
           listeners.input({target:input});
           assert.equal(win.scrollX,20,'Zoom deliberado nao preservado');
           assert.equal(page.scrollLeft,20,'Pan do zoom manual alterado');
+          listeners.focusout({target:input});
+          assert.equal(inline.value,'14px','Fonte inline deve ser restaurada apos foco');
           const changed=cp.execFileSync('git',['diff','--name-only','90a5341e620c295c490614496e34030cdf576701','HEAD'],{encoding:'utf8'}).trim().split('\n');
           const allow=new Set(['obrix-estabilidade-viewport-20261106.css',
             'obrix-preview-inicio-equipe-20261104.js','obrix-foco-busca-estavel-20261106.js',
