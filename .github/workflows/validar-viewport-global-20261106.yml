@@ -1,0 +1,46 @@
+name: Validar viewport global e abertura 1120ms
+on:
+  push:
+    branches:
+      - fix/viewport-global-splash1120-20261106
+permissions:
+  contents: read
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verificar JavaScript, escopo visual e timers
+        run: |
+          node --check obrix-ios-experience.js
+          node <<'NODE'
+          const fs=require('fs'),vm=require('vm'),assert=require('assert'),cp=require('child_process');
+          const css=fs.readFileSync('obrix-estabilidade-viewport-20261106.css','utf8');
+          const ios=fs.readFileSync('obrix-ios-experience.js','utf8');
+          const root=fs.readFileSync('obrix.html','utf8');
+          const android=fs.readFileSync('obrix-android-inicial/obrix.html','utf8');
+          assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length,'CSS desbalanceado');
+          assert.match(css,/@media \(max-width: 1024px\) and \(pointer: coarse\)/);
+          assert.match(css,/overflow-x: clip !important/);
+          assert.match(css,/font-size: max\(16px, 1em\) !important/);
+          assert.match(css,/touch-action: manipulation/);
+          assert.match(ios,/setTimeout\(hideSplash,1120\)/);
+          assert.ok(!ios.includes('setTimeout(hideSplash,1800)'),'Timer antigo iPhone');
+          assert.match(root,/obrix-ios-experience\.js\?v=20261106-splash1120/);
+          assert.match(root,/obrix-estabilidade-viewport-20261106\.css\?v=20261106-global-touch1120/);
+          assert.match(android,/Math\.max\(0,1120-\(Date\.now\(\)-launchStartedAt\)\)/);
+          assert.match(android,/obrix-estabilidade-viewport-20261106\.css\?v=20261106-global-touch1120/);
+          assert.match(android,/!nativeInstalled\)showLaunch=true/);
+          assert.match(android,/visibility:visible!important/);
+          for(const [file,html] of [['obrix.html',root],['obrix-android-inicial/obrix.html',android]]){
+            const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(x=>x[1]).filter(Boolean);
+            for(let i=0;i<scripts.length;i++)new vm.Script(scripts[i],{filename:file+':inline-'+i});
+          }
+          const changed=cp.execFileSync('git',['diff','--name-only','872a68d473d6e5821e95f5e5b297cba39b4fab0d','HEAD'],{encoding:'utf8'}).trim().split('\n');
+          const allow=new Set(['obrix-estabilidade-viewport-20261106.css','obrix-ios-experience.js','obrix.html','obrix-android-inicial/obrix.html','.github/workflows/validar-viewport-global-20261106.yml']);
+          for(const file of changed)assert.ok(allow.has(file),'Mudança não autorizada: '+file);
+          console.log('PASS: viewport, CSS, scripts, splash 1120ms, Android PWA e escopo visual');
+          NODE
