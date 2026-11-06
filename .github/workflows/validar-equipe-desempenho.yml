@@ -1,0 +1,35 @@
+name: Validar performance Equipe OBRIX (somente testes)
+
+on:
+  push:
+    branches:
+      - fix/equipe-atualizacao-rapida-20261106
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar sintaxe JavaScript iPhone e Android
+        run: |
+          set -eu
+          for f in obrix-equipe-main.js obrix-equipe-lista-vertical.js obrix-correcoes-reais-20261102.js obrix-preview-inicio-equipe-20261104.js obrix-pos-login-loader.js obrix-android-inicial/obrix-equipe-main.js obrix-android-inicial/obrix-equipe-lista-vertical.js obrix-android-inicial/obrix-correcoes-reais-20261102.js obrix-android-inicial/obrix-pos-login-loader.js; do
+            node --check "$f"
+          done
+      - name: Verificar que não houve alteração visual ou de pagamentos
+        run: |
+          set -eu
+          git diff --name-only d23d607f40ad40411010f0dd0ba0e00ea4f37321 HEAD | grep -v '^\.github/workflows/validar-equipe-desempenho.yml$' > /tmp/alterados
+          if grep -E '(^obrix-(equipes?-pagamento|checkout|theme|visual)|\.css$)' /tmp/alterados; then
+            echo 'Arquivos protegidos alterados'; exit 1
+          fi
+          grep -q 'refresh({force:true,financeiro:true})' obrix-equipe-main.js
+          grep -q 'obrix:equipe-registro' obrix-preview-inicio-equipe-20261104.js
+          grep -q 'obrix-equipe-main.js?v=20261106-sync-rapida1' obrix-android-inicial/obrix-pos-login-loader.js
+          echo 'Validação estática concluída sem publicação.'
