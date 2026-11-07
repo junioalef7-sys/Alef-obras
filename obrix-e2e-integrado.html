@@ -53,7 +53,7 @@ Reative a confirmação ao encerrar os testes. Para enviar confirmações normal
 <div class="buttons"><button data-act="upload">Enviar fotografia</button></div><div id="photos"></div></section>
 <section class="card"><h2>7. Isolamento entre empresas</h2>
 <p class="small">Para verificar o RLS de duas contas reais de teste, entre com um segundo e-mail em outro navegador, crie outra empresa fictícia e copie o ID dela.</p>
-<label>ID da outra empresa</label><input id="foreignCompany" placeholder="UUID da outra conta de auditoria">
+<label>ID da outra empresa (não é e-mail)</label><input id="foreignCompany" placeholder="Ex.: 00000000-0000-4000-8000-000000000000"><p class="small">Para cadastrar um funcionário, use a seção 3. Este campo serve apenas para testar o isolamento entre duas empresas fictícias.</p>
 <div class="buttons"><button data-act="isolation">Verificar leitura e gravação cruzadas</button></div></section>
 <section class="card"><h2>8. Remover dados fictícios</h2>
 <p class="small">Apaga os registros da empresa de teste após remover todas as fotos. A conta de autenticação permanece no projeto de auditoria.</p><div class="buttons"><button class="danger" data-act="deleteCompany">Excluir empresa fictícia</button></div></section>
@@ -160,7 +160,7 @@ async function act(action,id){
    const r=await s.storage.from(BUCKET).remove([photo.caminho]);check(r.error);
    const z=await s.from(P+'fotos').delete().eq('id',photo.id);check(z.error);notice('Arquivo e metadados removidos.');
   }
-  else if(action==='isolation'){const other=validateId(v('foreignCompany'));if(other===eid)throw Error('Informe o ID de outra empresa fictícia.');
+  else if(action==='isolation'){const valorOutraEmpresa=v('foreignCompany');if(valorOutraEmpresa.includes('@'))throw Error('Este campo não aceita e-mail. Insira o ID (UUID) da outra empresa fictícia. Para cadastrar funcionário, use a seção 3.');const other=validateId(valorOutraEmpresa);if(other===eid)throw Error('Informe o ID de OUTRA empresa fictícia, não o ID da sua.');
    const r=await s.from(P+'obras').select('id').eq('empresa_id',other);check(r.error);
    const w=await s.from(P+'obras').insert({empresa_id:other,nome:'Acesso cruzado proibido'}).select('id');
    if(r.data.length!==0||!w.error)throw Error('Falha no isolamento; interrompa o teste.');
