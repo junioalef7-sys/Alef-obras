@@ -1,0 +1,176 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; connect-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'none'; object-src 'none'; worker-src 'none';"><meta name="robots" content="noindex,nofollow"><title>OBRIX | Laboratório de interface seguro</title><style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#16243b;color-scheme:light;background:#f6f8fb}
+*{box-sizing:border-box}html,body{margin:0;padding:0;width:100%;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%}
+body{min-height:100vh}main{max-width:890px;margin:0 auto;padding:20px 15px 70px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.mark{width:44px;height:44px;background:#172238;color:#d6b67c;border-radius:12px;font-size:27px;display:grid;place-items:center;font-weight:800}
+.brand{font-size:18px;font-weight:800;letter-spacing:.09em}.sub{font-size:12px;color:#5c6a7d;margin-top:2px}
+h1{font-size:clamp(22px,5vw,30px);line-height:1.15;margin:22px 0 8px}h2{font-size:18px;margin:0 0 10px}h3{font-size:15px;margin:12px 0 8px}
+p{line-height:1.55;font-size:14px;margin:8px 0}.muted{color:#5d6a7b}
+.notice{padding:11px 13px;border-left:3px solid #bb923c;background:#fff9ef;border-radius:7px;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.kpi{padding:12px 10px;background:white;border:1px solid #e3e7ef;border-radius:13px}.num{font-size:22px;font-weight:800}.label{font-size:12px;color:#53647a}
+section{background:#fff;padding:16px;margin:14px 0;border:1px solid #e3e7ef;border-radius:16px;box-shadow:0 3px 16px #17223808}
+.tabs,.buttons{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+button{min-height:42px;max-width:100%;padding:10px 13px;border:1px solid #ccd6e3;border-radius:10px;background:#f7f9fc;color:#102745;font-size:14px;font-weight:650;cursor:pointer;touch-action:manipulation}
+button.primary{background:#18324e;color:#fff;border-color:#18324e}
+button.active{border:2px solid #a97d32;background:#fffaf0}
+button:disabled{opacity:.5;cursor:not-allowed}button:focus-visible{outline:3px solid #dcb462;outline-offset:2px}
+.row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid #edf0f5;font-size:14px}
+.row:last-child{border:0}strong,b{font-weight:750}
+.small{font-size:12px}.ok{color:#176248;font-weight:750}.err{color:#a3373a;font-weight:750}
+#mensagem{min-height:30px;padding:9px 11px;border-radius:9px;background:#f3f5f9;font-size:13px}
+#testeResultado{white-space:pre-wrap;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;max-height:320px;overflow-y:auto;overflow-x:auto;background:#f8fafc;padding:10px;border-radius:9px}
+#historico{max-height:160px;overflow:auto;padding-left:18px;font-size:12px;line-height:1.6}
+footer{font-size:12px;color:#5b687c;margin-top:18px}
+@media(max-width:560px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}section{padding:14px}button{flex:1 1 135px}main{padding:16px 12px 60px}}
+</style></head><body><main>
+<header><div class="mark">O</div><div><div class="brand">OBRIX</div><div class="sub">LABORATÓRIO DE INTERFACE — DADOS FICTÍCIOS</div></div></header>
+<h1>Teste seguro de equipe e pagamentos</h1>
+<div class="notice"><strong>Simulação local, não é o aplicativo oficial.</strong> Esta página não possui login, banco de dados ou conexão de rede. Os botões modificam apenas informações fictícias mantidas nesta aba. As regras foram modeladas com base nos fluxos avaliados no laboratório SQL; o teste não substitui uma homologação real com Supabase, Storage e autenticação.</div>
+<section><h2>Empresa fictícia ativa</h2><div class="tabs"><button data-action="empresaA" id="tabA" class="active">Empresa Alfa</button><button data-action="empresaB" id="tabB">Empresa Beta</button></div><p class="muted" id="descricaoEmpresa"></p><div class="grid"><div class="kpi"><div class="num" id="nObras">0</div><div class="label">Obras</div></div><div class="kpi"><div class="num" id="nEquipe">0</div><div class="label">Funcionários</div></div><div class="kpi"><div class="num" id="nDiarias">0</div><div class="label">Diárias</div></div><div class="kpi"><div class="num" id="nPagar">R$ 0</div><div class="label">Em aberto</div></div><div class="kpi"><div class="num" id="nPago">R$ 0</div><div class="label">Pagamentos ativos</div></div><div class="kpi"><div class="num" id="nFinanceiro">R$ 0</div><div class="label">Despesas ativas</div></div></div></section>
+<section><h2>Registrar e pagar</h2><p class="muted">Empresa Alfa: 1 diária de R$ 200 na obra A1, ½ diária de R$ 100 na obra A2, vale de R$ 50 e bônus de R$ 30.</p><div class="buttons"><button data-action="inteira">Diária inteira</button><button data-action="meia">Meia diária</button><button data-action="vale">Vale R$ 50</button><button data-action="bonus">Bônus R$ 30</button><button class="primary" data-action="pagar">Pagar valores abertos</button><button data-action="estornar">Estornar último pagamento</button></div><h3>Financeiro por obra</h3><div id="despesas"></div></section>
+<section><h2>Proteção de funcionários e assinatura</h2><div class="buttons"><button data-action="inativar">Inativar funcionário</button><button data-action="excluirFuncionario">Excluir funcionário</button><button data-action="cruzarEmpresa">Tentar vínculo entre empresas</button><button data-action="expirar">Simular plano vencido</button><button data-action="novaObra">Criar obra</button><button data-action="novoFuncionario">Criar funcionário</button><button data-action="excluirConta">Excluir empresa fictícia ativa</button></div></section>
+<section><h2>Verificação automatizada</h2><p>O teste automático reinicia os dados apenas internamente, sem modificar seu cenário manual.</p><div class="buttons"><button class="primary" data-action="testes">Executar testes automáticos</button><button data-action="reiniciar">Reiniciar cenário</button></div><p id="testeStatus" class="muted">Nenhum teste executado.</p><div id="testeResultado" aria-live="polite"></div></section>
+<section><h2>Resultado da última ação</h2><div id="mensagem" role="status" aria-live="polite">Pronto para simular.</div><h3>Histórico desta aba</h3><ol id="historico"></ol></section>
+<footer>Ambiente de demonstração isolado. Sem acesso ao OBRIX oficial, sem dados pessoais reais, sem exportação ou recuperação de arquivos físicos do Storage.</footer>
+</main><script>
+"use strict";
+const criarModelo=function criarModelo(){
+ let seq=0,selecionada="A",log=[];
+ const empresas={
+  A:{id:"A",nome:"Construtora Alfa (fictícia)",plano:"ativo",obras:[{id:"A1",nome:"Obra A1"},{id:"A2",nome:"Obra A2"}],equipe:[{id:"FA",nome:"Funcionário fictício Alfa",diaria:200,ativo:true}],diarias:[],vales:[],bonus:[],pagamentos:[],financeiro:[]},
+  B:{id:"B",nome:"Construtora Beta (fictícia)",plano:"ativo",obras:[{id:"B1",nome:"Obra B1"}],equipe:[{id:"FB",nome:"Funcionário fictício Beta",diaria:180,ativo:true}],diarias:[],vales:[],bonus:[],pagamentos:[],financeiro:[]}
+ };
+ function novaId(prefix){seq++;return prefix+seq}
+ function empresa(){if(!empresas[selecionada])throw Error("Conta de teste indisponível");return empresas[selecionada]}
+ function funcionario(id){const f=empresa().equipe.find(x=>x.id===id);if(!f)throw Error("Funcionário de outra empresa ou inexistente");return f}
+ function obra(id){const x=empresa().obras.find(o=>o.id===id);if(!x)throw Error("Obra de outra empresa ou inexistente");return x}
+ function dinheiro(n){return Math.round(n*100)/100}
+ function registrarDiaria(fid,oid,qtd){const f=funcionario(fid);obra(oid);if(!f.ativo)throw Error("Funcionário inativo: diária bloqueada");if(![0.5,1].includes(qtd))throw Error("Quantidade de diária inválida");const d={id:novaId("D"),funcionarioId:fid,obraId:oid,qtd,valor:dinheiro(f.diaria*qtd),paga:false,pagoEm:null};empresa().diarias.push(d);log.unshift("Diária "+qtd+" em "+oid+": R$ "+d.valor.toFixed(2));return d}
+ function vale(fid,oid,valor){funcionario(fid);obra(oid);if(!(valor>0))throw Error("Valor de vale inválido");const x={id:novaId("V"),funcionarioId:fid,obraId:oid,valor:dinheiro(valor),quitado:false};empresa().vales.push(x);log.unshift("Vale de R$ "+x.valor.toFixed(2)+" em "+oid);return x}
+ function bonus(fid,oid,valor){funcionario(fid);obra(oid);if(!(valor>0))throw Error("Valor de bônus inválido");const x={id:novaId("X"),funcionarioId:fid,obraId:oid,valor:dinheiro(valor),pago:false};empresa().bonus.push(x);log.unshift("Bônus de R$ "+x.valor.toFixed(2)+" em "+oid);return x}
+ function pagar(fid){
+  funcionario(fid);const e=empresa();
+  const ds=e.diarias.filter(x=>x.funcionarioId===fid&&!x.paga);
+  const vs=e.vales.filter(x=>x.funcionarioId===fid&&!x.quitado);
+  const bs=e.bonus.filter(x=>x.funcionarioId===fid&&!x.pago);
+  if(!ds.length&&!vs.length&&!bs.length)throw Error("Pagamento duplicado ou sem valores em aberto");
+  const bruto=dinheiro(ds.reduce((s,x)=>s+x.valor,0)+bs.reduce((s,x)=>s+x.valor,0));
+  const totalVales=dinheiro(vs.reduce((s,x)=>s+x.valor,0));
+  const liquido=dinheiro(bruto-totalVales);
+  if(liquido<0)throw Error("Líquido negativo");
+  const dist={};
+  function somar(o,v){dist[o]=dinheiro((dist[o]||0)+v)}
+  ds.forEach(x=>somar(x.obraId,x.valor));
+  bs.forEach(x=>somar(x.obraId,x.valor));
+  vs.forEach(x=>somar(x.obraId,-x.valor));
+  if(Object.values(dist).some(x=>x<0))throw Error("Obra com saldo negativo");
+  const pagamento={id:novaId("P"),fid,bruto,vales:totalVales,liquido,diariaIds:ds.map(x=>x.id),valeIds:vs.map(x=>x.id),bonusIds:bs.map(x=>x.id),vinculosDiarias:ds.map(x=>({diariaId:x.id,obraId:x.obraId,valor:x.valor,ativo:true})),estornado:false};
+  ds.forEach(x=>{x.paga=true;x.pagoEm="teste"});vs.forEach(x=>x.quitado=true);bs.forEach(x=>x.pago=true);
+  for(const [obraId,valor] of Object.entries(dist)){if(valor>0)e.financeiro.push({id:novaId("F"),pagamentoId:pagamento.id,obraId,valor,status:"ativo",origem:"pagamento_equipe"})}
+  e.pagamentos.push(pagamento);log.unshift("Pagamento "+pagamento.id+": R$ "+liquido.toFixed(2));return pagamento;
+ }
+ function estornar(pid){
+  const e=empresa(),p=e.pagamentos.find(x=>x.id===pid);
+  if(!p)throw Error("Pagamento de outra empresa ou inexistente");
+  if(p.estornado)return {jaEstornado:true};
+  e.diarias.filter(x=>p.diariaIds.includes(x.id)).forEach(x=>{x.paga=false;x.pagoEm=null});
+  e.vales.filter(x=>p.valeIds.includes(x.id)).forEach(x=>x.quitado=false);
+  e.bonus.filter(x=>p.bonusIds.includes(x.id)).forEach(x=>x.pago=false);
+  p.vinculosDiarias.forEach(x=>x.ativo=false);
+  e.financeiro.filter(x=>x.pagamentoId===pid).forEach(x=>x.status="estornado");
+  p.estornado=true;log.unshift("Estorno "+pid+" confirmado");return {jaEstornado:false};
+ }
+ function inativar(fid){const f=funcionario(fid);f.ativo=false;log.unshift("Funcionário inativado");return f}
+ function excluirFuncionario(fid){funcionario(fid);const e=empresa();if(e.diarias.some(x=>x.funcionarioId===fid)||e.vales.some(x=>x.funcionarioId===fid)||e.bonus.some(x=>x.funcionarioId===fid)||e.pagamentos.some(x=>x.fid===fid))throw Error("Funcionário com histórico. Utilize Inativar");e.equipe=e.equipe.filter(x=>x.id!==fid);log.unshift("Funcionário sem histórico excluído")}
+ function expirarPlano(){empresa().plano="limitado";log.unshift("Plano de teste limitado a uma obra e um funcionário")}
+ function criarObra(nome){const e=empresa();if(e.plano!=="ativo"&&e.obras.length>=1)throw Error("Plano limitado: permitido no máximo 1 obra");const o={id:novaId("OB"),nome};e.obras.push(o);return o}
+ function criarFuncionario(nome){const e=empresa();if(e.plano!=="ativo"&&e.equipe.length>=1)throw Error("Plano limitado: permitido no máximo 1 funcionário");const f={id:novaId("FU"),nome,diaria:150,ativo:true};e.equipe.push(f);return f}
+ function excluirEmpresa(){const x=selecionada;delete empresas[x];selecionada=empresas.A?"A":empresas.B?"B":"";log.unshift("Empresa fictícia "+x+" excluída deste laboratório")}
+ function selecionarEmpresa(id){if(!empresas[id])throw Error("Conta inexistente");selecionada=id}
+ function snapshot(){return {selecionada,empresas,log:[...log]}}
+ return {snapshot,empresa,selecionarEmpresa,funcionario,registrarDiaria,vale,bonus,pagar,estornar,inativar,excluirFuncionario,expirarPlano,criarObra,criarFuncionario,excluirEmpresa};
+};
+const executarTestes=function executarTestes(){
+ const m=criarModelo();const out=[];const ok=(n,cond)=>{if(!cond)throw Error("Falhou: "+n);out.push(n)};
+ const bloqueia=(n,fn)=>{let b=false;try{fn()}catch(_){b=true}ok(n,b)};
+ ok("Separação inicial A/B",m.snapshot().empresas.A.obras.length===2&&m.snapshot().empresas.B.obras.length===1);
+ bloqueia("Funcionario de B invisível a A",()=>m.funcionario("FB"));
+ bloqueia("Obra de B bloqueada para A",()=>m.registrarDiaria("FA","B1",1));
+ const d1=m.registrarDiaria("FA","A1",1);ok("Diária inteira exata",d1.valor===200);
+ const d2=m.registrarDiaria("FA","A2",0.5);ok("Meia diária exata",d2.valor===100);
+ m.vale("FA","A1",50);m.bonus("FA","A2",30);
+ const p=m.pagar("FA"),e=m.empresa();
+ ok("Bruto, vale e líquido",p.bruto===330&&p.vales===50&&p.liquido===280);
+ ok("Vínculos de diárias não rateados",p.vinculosDiarias.length===2&&p.vinculosDiarias[0].valor===200&&p.vinculosDiarias[1].valor===100);
+ ok("Despesas da obra A1/A2",e.financeiro.find(x=>x.obraId==="A1").valor===150&&e.financeiro.find(x=>x.obraId==="A2").valor===130);
+ ok("Diárias, bônus e vale pagos",e.diarias.every(x=>x.paga)&&e.vales.every(x=>x.quitado)&&e.bonus.every(x=>x.pago));
+ bloqueia("Pagamento repetido bloqueado",()=>m.pagar("FA"));
+ const rev=m.estornar(p.id);
+ ok("Estorno reabre itens",!rev.jaEstornado&&e.diarias.every(x=>!x.paga)&&e.vales.every(x=>!x.quitado)&&e.bonus.every(x=>!x.pago));
+ ok("Financeiro estornado, vínculos desativados",e.financeiro.every(x=>x.status==="estornado")&&p.vinculosDiarias.every(x=>!x.ativo));
+ ok("Estorno repetido idempotente",m.estornar(p.id).jaEstornado===true);
+ const novo=m.pagar("FA");
+ ok("Pagamento pós-estorno íntegro",novo.liquido===280&&e.financeiro.filter(x=>x.status==="ativo").length===2&&e.financeiro.filter(x=>x.status==="estornado").length===2);
+ bloqueia("Exclusão com histórico bloqueada",()=>m.excluirFuncionario("FA"));
+ m.inativar("FA");bloqueia("Inativo não recebe nova diária",()=>m.registrarDiaria("FA","A1",1));
+ ok("Histórico mantido após inativação",e.diarias.length===2&&e.pagamentos.length===2);
+ m.selecionarEmpresa("B");m.expirarPlano();
+ bloqueia("Plano limitado bloqueia segunda obra",()=>m.criarObra("Obra extra"));
+ bloqueia("Plano limitado bloqueia segundo funcionário",()=>m.criarFuncionario("Colaborador extra"));
+ ok("Conta B isolada",m.empresa().financeiro.length===0&&m.empresa().diarias.length===0);
+ m.excluirFuncionario("FB");ok("Exclusão sem histórico permitida",m.empresa().equipe.length===0);
+ m.excluirEmpresa();
+ ok("Exclusão de B não apaga A",!!m.snapshot().empresas.A&&!m.snapshot().empresas.B&&m.snapshot().empresas.A.diarias.length===2);
+ return out;
+};
+let modelo=criarModelo();
+const el=id=>document.getElementById(id);
+const brl=n=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:2}).format(n);
+const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function render(){
+ const state=modelo.snapshot(),e=state.empresas[state.selecionada];
+ el('tabA').disabled=!state.empresas.A;el('tabB').disabled=!state.empresas.B;
+ el('tabA').classList.toggle('active',state.selecionada==='A');el('tabB').classList.toggle('active',state.selecionada==='B');
+ if(!e){el('descricaoEmpresa').textContent='Todas as empresas fictícias foram excluídas. Reinicie o cenário.';return}
+ el('descricaoEmpresa').textContent=e.nome+' • Plano '+(e.plano==='ativo'?'ativo':'limitado')+' • Nenhum dado externo';
+ el('nObras').textContent=e.obras.length;el('nEquipe').textContent=e.equipe.length;
+ el('nDiarias').textContent=e.diarias.length;
+ let pend=e.diarias.filter(x=>!x.paga).reduce((s,x)=>s+x.valor,0)+e.bonus.filter(x=>!x.pago).reduce((s,x)=>s+x.valor,0)-e.vales.filter(x=>!x.quitado).reduce((s,x)=>s+x.valor,0);
+ el('nPagar').textContent=brl(pend);
+ el('nPago').textContent=brl(e.pagamentos.filter(x=>!x.estornado).reduce((s,x)=>s+x.liquido,0));
+ el('nFinanceiro').textContent=brl(e.financeiro.filter(x=>x.status==='ativo').reduce((s,x)=>s+x.valor,0));
+ el('despesas').innerHTML=e.financeiro.length?e.financeiro.map(x=>'<div class="row"><span>'+escapeHTML(x.obraId)+' • '+escapeHTML(x.status)+'</span><strong>'+brl(x.valor)+'</strong></div>').join(''):'<p class="muted">Nenhuma despesa de pagamento registrada.</p>';
+ el('historico').innerHTML=state.log.slice(0,18).map(x=>'<li>'+escapeHTML(x)+'</li>').join('');
+}
+function notificacao(msg,erro=false){el('mensagem').textContent=msg;el('mensagem').className=erro?'err':'ok'}
+function acao(cmd){
+ const e=modelo.snapshot().selecionada;
+ const fid=e==='A'?'FA':'FB';
+ const oid=e==='A'?'A1':'B1';
+ switch(cmd){
+  case 'empresaA':modelo.selecionarEmpresa('A');break;
+  case 'empresaB':modelo.selecionarEmpresa('B');break;
+  case 'inteira':modelo.registrarDiaria(fid,oid,1);break;
+  case 'meia':modelo.registrarDiaria(fid,e==='A'?'A2':oid,0.5);break;
+  case 'vale':modelo.vale(fid,oid,50);break;
+  case 'bonus':modelo.bonus(fid,e==='A'?'A2':oid,30);break;
+  case 'pagar':{const p=modelo.pagar(fid);notificacao('Pagamento '+p.id+' realizado: '+brl(p.liquido));return;}
+  case 'estornar':{const pagos=modelo.empresa().pagamentos;const ultimo=[...pagos].reverse().find(x=>!x.estornado);if(!ultimo)throw Error('Nenhum pagamento ativo para estornar');modelo.estornar(ultimo.id);break;}
+  case 'inativar':modelo.inativar(fid);break;
+  case 'excluirFuncionario':modelo.excluirFuncionario(fid);break;
+  case 'cruzarEmpresa':modelo.registrarDiaria(fid,e==='A'?'B1':'A1',1);break;
+  case 'expirar':modelo.expirarPlano();break;
+  case 'novaObra':modelo.criarObra('Nova obra fictícia');break;
+  case 'novoFuncionario':modelo.criarFuncionario('Novo funcionário fictício');break;
+  case 'excluirConta':modelo.excluirEmpresa();break;
+  case 'reiniciar':modelo=criarModelo();el('testeStatus').textContent='Cenário reiniciado.';el('testeResultado').textContent='';break;
+  case 'testes':{const res=executarTestes();el('testeStatus').textContent=res.length+' testes passaram.';el('testeStatus').className='ok';el('testeResultado').textContent=res.map((x,i)=>(i+1)+'. OK — '+x).join('\n');notificacao('Testes automáticos concluídos.');return;}
+  default:throw Error('Comando desconhecido');
+ }
+ notificacao('Operação simulada concluída.');
+}
+document.addEventListener('click',ev=>{const b=ev.target.closest('button[data-action]');if(!b)return;try{acao(b.dataset.action)}catch(e){notificacao(e.message||String(e),true)}finally{render()}});
+try{const t=executarTestes();el('testeStatus').textContent='Autoverificação inicial: '+t.length+' testes aprovados.';el('testeStatus').className='ok'}catch(e){el('testeStatus').textContent='Falha na autoverificação: '+e.message;el('testeStatus').className='err'}
+render();
+</script></body></html>
