@@ -17,7 +17,7 @@ label{display:block;font-weight:750;margin:0 0 8px}
 input{font:inherit;font-size:16px;width:100%;max-width:100%;padding:13px;border:1px solid #b8c5d4;border-radius:11px;background:#fff}
 button{font:inherit;font-weight:800;width:100%;margin:14px 0 0;padding:13px;border:0;border-radius:11px;background:#162132;color:white}
 button:disabled{opacity:.55}.muted{font-size:14px;color:#526173}.result{margin-top:12px;padding:14px;border-radius:12px;background:#eef3f8;border:1px solid #cbd5e1;white-space:pre-wrap;overflow-wrap:anywhere}
-.result.ok{background:#eaf7ee;border-color:#83b89a}.result.err{background:#fff1f2;border-color:#f3a8b1}.list{font-size:14px}
+.result.ok{background:#eaf7ee;border-color:#83b89a}.result.warn{background:#fff8e7;border-color:#d6b66e}.result.err{background:#fff1f2;border-color:#f3a8b1}.list{font-size:14px}
 footer{color:#64748b;font-size:13px;padding:9px 4px}
 </style>
 </head>
@@ -110,7 +110,8 @@ async function readPart(file){
    const sha=await digest(entry.data);
    if(sha!==row.sha256)throw Error('SHA-256 diferente: '+full);
  }
- return {name:file.name,meta,content};
+ // A integridade já foi conferida: não retenha os bytes dos ZIPs na memória do iPhone.
+ return {name:file.name,meta};
 }
 async function verify(){
  const files=[...$('arquivos').files],zips=files.filter(f=>f.name.toLowerCase().endsWith('.zip')),
@@ -121,43 +122,69 @@ async function verify(){
  try{
    const inventory=jsons.length?JSON.parse(await jsons[0].text()):null;
    if(inventory&&inventory.obrix_storage_manifest!==1)throw Error('O JSON selecionado não é um inventário do Storage.');
-   const parts=new Map(),names=new Set();let owner=null,stamp=null,total=0;
+   const parts=new Map(),names=new Set(),geracoes=new Set();
+   let owner=null,total=0,declaredTotal=null,expectedParts=null;
    for(let i=0;i<zips.length;i++){
-     status('Conferindo parte '+(i+1)+' de '+zips.length+': '+zips[i].name+'…');
+     status('Verificando integridade do ZIP '+(i+1)+' de '+zips.length+': '+zips[i].name+'…');
      const checked=await readPart(zips[i]),meta=checked.meta;
-     if(owner===null){owner=meta.empresa_id;stamp=meta.gerado_em;}
-     if(meta.empresa_id!==owner||meta.gerado_em!==stamp)throw Error('Os ZIPs pertencem a backups ou empresas diferentes.');
-     if(parts.has(meta.parte))throw Error('Parte '+meta.parte+' está duplicada.');
-     parts.set(meta.parte,checked);
+     if(owner===null)owner=meta.empresa_id;
+     if(meta.empresa_id!==owner)
+       throw Error('Arquivos de empresas diferentes foram selecionados. Separe os ZIPs de cada conta e verifique um conjunto por vez. Nenhum arquivo foi alterado.');
+     if(!Number.isSafeInteger(meta.parte)||!Number.isSafeInteger(meta.total_partes)||
+        !Number.isSafeInteger(meta.total_arquivos)||meta.total_arquivos<0)
+       throw Error('Numeração ou quantidade de arquivos inválida no manifesto.');
+     if(expectedParts===null){expectedParts=meta.total_partes;declaredTotal=meta.total_arquivos;}
+     if(meta.total_partes!==expectedParts)
+       throw Error('Foram selecionados ZIPs com quantidades de partes diferentes ('+expectedParts+' e '+meta.total_partes+'). São conjuntos incompatíveis.');
+     if(meta.total_arquivos!==declaredTotal)
+       throw Error('A quantidade de arquivos da conta mudou entre os backups ('+declaredTotal+' e '+meta.total_arquivos+'). Para garantir um backup completo, baixe as partes de uma mesma conferência.');
+     if(parts.has(meta.parte))
+       throw Error('A parte '+meta.parte+' aparece duas vezes. Deixe apenas um ZIP de cada número, de 1 a '+expectedParts+'.');
+     parts.set(meta.parte,{name:checked.name,meta});
+     geracoes.add(String(meta.gerado_em||'sem data'));
      for(const e of meta.arquivos){
        const key=e.bucket+'/'+e.path;
-       if(names.has(key))throw Error('Mesmo arquivo presente em dois ZIPs: '+key);
+       if(names.has(key))
+         throw Error('O mesmo arquivo está em duas partes. Pode ter havido alteração entre os backups: '+key+'.');
        names.add(key);total++;
      }
    }
-   const expected=parts.values().next().value.meta.total_partes;
-   for(const p of parts.values())if(p.meta.total_partes!==expected)throw Error('Número total de partes divergente.');
-   const missing=[];for(let i=1;i<=expected;i++)if(!parts.has(i))missing.push(i);
-   if(missing.length)throw Error('Faltam as partes: '+missing.join(', ')+'. Selecione todos os ZIPs.');
-   let inventoryMessage='Inventário JSON não selecionado; integridade e completude dos ZIPs verificadas.';
+   const missing=[];for(let i=1;i<=expectedParts;i++)if(!parts.has(i))missing.push(i);
+   if(missing.length)throw Error('Faltam as partes: '+missing.join(', ')+'. Selecione todos os ZIPs da conta.');
+   if(total!==declaredTotal)
+     throw Error('Foram encontrados '+total+' arquivos, mas os manifestos esperam '+declaredTotal+'. Não é possível confirmar backup completo.');
+   let inventoryOk=false,inventoryMessage='';
    if(inventory){
-     if(inventory.empresa_id!==owner||inventory.total_partes!==expected||inventory.quantidade!==total||
-        !Array.isArray(inventory.files)||inventory.files.length!==total)throw Error('Inventário não corresponde aos ZIPs.');
+     if(inventory.empresa_id!==owner||inventory.total_partes!==expectedParts||inventory.quantidade!==total||
+        !Array.isArray(inventory.files)||inventory.files.length!==total)
+       throw Error('O inventário JSON não corresponde aos ZIPs selecionados.');
      const expectedFiles=new Map(inventory.files.map(f=>[f.bucket+'/'+f.path,f]));
-     if(expectedFiles.size!==total)throw Error('Inventário contém IDs de arquivos duplicados.');
+     if(expectedFiles.size!==total)throw Error('O inventário possui arquivos duplicados.');
      for(const [number,part] of parts){
        for(const e of part.meta.arquivos){
          const v=expectedFiles.get(e.bucket+'/'+e.path);
-         if(!v||v.bytes!==e.bytes||v.parte!==number)throw Error('Inventário divergente em '+e.path);
+         if(!v||v.bytes!==e.bytes||v.parte!==number)
+           throw Error('O inventário não corresponde ao arquivo '+e.path+'. Confirme se pertence ao mesmo conjunto.');
        }
      }
-     inventoryMessage='Inventário conferido: todas as partes e arquivos correspondem ao JSON.';
+     inventoryOk=true;
+     inventoryMessage='Inventário JSON: todos os caminhos, tamanhos e números de parte conferidos.';
    }
-   status('VERIFICAÇÃO CONCLUÍDA\n\n'+parts.size+' de '+expected+' partes ZIP conferidas.\n'+total+
-     ' arquivos íntegros: CRC32 e SHA-256 confirmados.\n'+inventoryMessage+
-     '\n\nNenhum arquivo foi enviado, restaurado ou alterado.','ok');
- }catch(e){status('VERIFICAÇÃO NÃO CONCLUÍDA\n\n'+String(e.message||e)+'\n\nNenhum arquivo foi alterado.','err');}
- finally{btn.disabled=false;}
+   const misturouGeracoes=geracoes.size>1;
+   const titulo=misturouGeracoes&&!inventoryOk?'INTEGRIDADE CONFIRMADA — CONJUNTOS DIFERENTES':'VERIFICAÇÃO CONCLUÍDA';
+   const aviso=misturouGeracoes
+     ? (inventoryOk
+        ? 'As partes foram geradas em '+geracoes.size+' conferências diferentes, mas o inventário confirma que o conjunto de arquivos corresponde integralmente ao esperado.'
+        : 'Atenção: as partes pertencem à mesma empresa, mas foram criadas em '+geracoes.size+' conferências diferentes. Todos os arquivos estão íntegros e as contagens fecham; sem inventário JSON, não é possível garantir que formam um retrato completo de uma única data.')
+     : 'Todas as partes foram geradas na mesma conferência.';
+   status(titulo+'\n\n'+parts.size+' de '+expectedParts+' partes ZIP verificadas.\n'+total+
+     ' arquivos íntegros: CRC32 e SHA-256 confirmados.\n'+aviso+
+     (inventoryMessage?'\n'+inventoryMessage:'')+
+     '\n\nNenhum arquivo foi enviado, restaurado ou alterado.',
+     misturouGeracoes&&!inventoryOk?'warn':'ok');
+ }catch(e){
+   status('VERIFICAÇÃO NÃO CONCLUÍDA\n\n'+String(e.message||e)+'\n\nNenhum arquivo foi alterado.','err');
+ }finally{btn.disabled=false;}
 }
 $('verificar').addEventListener('click',verify);
 })();
