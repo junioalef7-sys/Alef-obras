@@ -131,13 +131,20 @@ async function verify(){
      if(meta.empresa_id!==owner)
        throw Error('Arquivos de empresas diferentes foram selecionados. Separe os ZIPs de cada conta e verifique um conjunto por vez. Nenhum arquivo foi alterado.');
      if(!Number.isSafeInteger(meta.parte)||!Number.isSafeInteger(meta.total_partes)||
-        !Number.isSafeInteger(meta.total_arquivos)||meta.total_arquivos<0)
-       throw Error('Numeração ou quantidade de arquivos inválida no manifesto.');
-     if(expectedParts===null){expectedParts=meta.total_partes;declaredTotal=meta.total_arquivos;}
+        meta.parte<1||meta.total_partes<1||meta.parte>meta.total_partes)
+       throw Error('Numeração de partes inválida no manifesto.');
+     // Backups originais do OBRIX não têm o campo total_arquivos.
+     // Quando existe em versões novas, ainda deve ser verificado.
+     const hasTotal=Object.prototype.hasOwnProperty.call(meta,'total_arquivos');
+     const thisTotal=hasTotal?meta.total_arquivos:null;
+     if(hasTotal&&(!Number.isSafeInteger(thisTotal)||thisTotal<0))
+       throw Error('Quantidade total de arquivos inválida no manifesto.');
+     if(expectedParts===null){expectedParts=meta.total_partes;declaredTotal=thisTotal;}
      if(meta.total_partes!==expectedParts)
        throw Error('Foram selecionados ZIPs com quantidades de partes diferentes ('+expectedParts+' e '+meta.total_partes+'). São conjuntos incompatíveis.');
-     if(meta.total_arquivos!==declaredTotal)
-       throw Error('A quantidade de arquivos da conta mudou entre os backups ('+declaredTotal+' e '+meta.total_arquivos+'). Para garantir um backup completo, baixe as partes de uma mesma conferência.');
+     if(thisTotal!==null&&declaredTotal!==null&&thisTotal!==declaredTotal)
+       throw Error('A quantidade de arquivos da conta mudou entre os backups ('+declaredTotal+' e '+thisTotal+'). Para garantir um backup completo, baixe as partes de uma mesma conferência.');
+     if(declaredTotal===null&&thisTotal!==null)declaredTotal=thisTotal;
      if(parts.has(meta.parte))
        throw Error('A parte '+meta.parte+' aparece duas vezes. Deixe apenas um ZIP de cada número, de 1 a '+expectedParts+'.');
      parts.set(meta.parte,{name:checked.name,meta});
@@ -151,7 +158,7 @@ async function verify(){
    }
    const missing=[];for(let i=1;i<=expectedParts;i++)if(!parts.has(i))missing.push(i);
    if(missing.length)throw Error('Faltam as partes: '+missing.join(', ')+'. Selecione todos os ZIPs da conta.');
-   if(total!==declaredTotal)
+   if(declaredTotal!==null&&total!==declaredTotal)
      throw Error('Foram encontrados '+total+' arquivos, mas os manifestos esperam '+declaredTotal+'. Não é possível confirmar backup completo.');
    let inventoryOk=false,inventoryMessage='';
    if(inventory){
