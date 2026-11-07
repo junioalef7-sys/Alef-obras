@@ -163,10 +163,10 @@ async function prepare(){
  tamanho_bytes:blob.size,mime_type:'image/png',sha256:await digest(blob),gerado_em:new Date().toISOString()};
  validateManifest(m);
  const archive=await pack(m,blob);ensure(archive.size>blob.size,'Falha ao montar backup ZIP.');
- step('01 • PNG fictício criado ('+blob.size+' bytes).');
- await uploadAndLink(m,blob);step('02 • Storage + registro vinculados; download autenticado e SHA-256 conferidos.');
  const data=await unpack(archive);ensure(data.manifest.sha256===m.sha256,'ZIP gerado não confere.');
- step('03 • ZIP verificado: foto.png + manifest.json + SHA-256.');
+ step('01 • PNG fictício criado ('+blob.size+' bytes) e ZIP validado previamente.');
+ await uploadAndLink(m,blob);step('02 • Storage + registro vinculados; download autenticado e SHA-256 conferidos.');
+ step('03 • ZIP pronto: foto.png + manifest.json + SHA-256.');
  if(state.archiveURL)URL.revokeObjectURL(state.archiveURL);
  state.archiveURL=URL.createObjectURL(archive);state.test=m;state.archive=archive;state.restored=null;
  $('download').href=state.archiveURL;$('download').download='obrix-foto-teste-'+fileId.slice(0,8)+'.zip';$('download').classList.remove('hidden');
