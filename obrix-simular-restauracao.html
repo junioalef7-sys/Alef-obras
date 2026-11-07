@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>OBRIX — Simulação isolada de recuperação</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;max-width:100%;overflow-x:hidden}
+body{font:16px/1.5 system-ui,-apple-system,Arial,sans-serif;background:#f5f7fa;color:#19283a;padding:calc(18px + env(safe-area-inset-top)) 13px calc(24px + env(safe-area-inset-bottom))}
+main{max-width:730px;margin:auto}.brand{font-size:23px;font-weight:950;letter-spacing:-.6px;margin-bottom:18px}.brand b{color:#c7952f}.brand small{font-size:12px;font-weight:750;letter-spacing:0;color:#516478;margin-left:10px}
+.card{background:#fff;border:1px solid #dbe3ed;border-radius:16px;padding:18px;margin:0 0 15px}
+h1{font-size:23px;margin:0 0 10px;line-height:1.3}h2{font-size:19px;margin:0 0 12px}p{margin:8px 0 12px}
+label{display:block;font-weight:750;margin:12px 0 5px}
+input[type=file]{font:inherit;font-size:16px;width:100%;border:1px solid #c6d2de;border-radius:12px;padding:12px;background:#fff;max-width:100%}
+button{display:block;background:#1b2a40;color:#fff;border:0;border-radius:12px;font:inherit;font-weight:850;padding:14px;width:100%;margin:15px 0 2px;cursor:pointer;min-height:49px}
+button:disabled{opacity:.6}.muted{color:#586b80;font-size:14px}.result{margin:12px 0;background:#eef3f8;border:1px solid #b8c9de;padding:14px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.result.ok{background:#eaf7ef;border-color:#9ac8aa}.result.warn{background:#fff8e7;border-color:#e1c276}.result.err{background:#fff0f1;border-color:#ee9da7}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{border-bottom:1px solid #e3e8ef;padding:8px 5px;text-align:left}th:last-child,td:last-child{text-align:right}
+.scroller{overflow-x:auto}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.metric{border:1px solid #dbe3ec;background:#f8fafc;border-radius:11px;padding:10px}.metric strong{display:block;font-size:18px}.metric small{font-size:12px;color:#607086}
+summary{font-weight:750;cursor:pointer}details{margin-top:12px}.note{font-size:13px;color:#607086}
+@media(max-width:430px){.brand small{display:block;margin:0}.grid{grid-template-columns:1fr 1fr}}
+</style>
+</head><body><main>
+<div class="brand">OBRI<b>X</b> <small>RECUPERAÇÃO · SIMULAÇÃO LOCAL</small></div>
+<section class="card"><h1>Simular recuperação dos dados</h1>
+<p>Esta ferramenta lê o backup JSON e reconstrói seus registros <b>somente na memória deste aparelho</b>. Ela não se conecta ao Supabase, não cria empresas e não altera obras, pagamentos ou fotografias.</p>
+<label for="backupFile">1. Backup completo dos dados (.json)</label>
+<input id="backupFile" type="file" accept=".json,application/json">
+<p class="muted">No aplicativo de teste do OBRIX, abra Menu → Backup → Gerar backup completo. Se já tiver um arquivo <b>OBRIX_BACKUP_COMPLETO_....json</b>, selecione-o aqui.</p>
+<label for="inventoryFile">2. Inventário das fotografias (.json) — opcional</label>
+<input id="inventoryFile" type="file" accept=".json,application/json">
+<p class="muted">O inventário ajuda a cruzar os registros das fotos com os caminhos salvos. Os 10 ZIPs já verificados não precisam ser carregados novamente.</p>
+<button id="simulate" type="button">Simular restauração sem alterar dados</button>
+<div id="result" class="result" role="status" aria-live="polite">Selecione o arquivo JSON do backup para iniciar.</div>
+</section>
+<section class="card" id="details" hidden>
+<h2>Relatório da simulação</h2>
+<div id="metrics" class="grid"></div>
+<details open><summary>Registros por módulo</summary><div class="scroller"><table><thead><tr><th>Módulo</th><th>Registros</th></tr></thead><tbody id="counts"></tbody></table></div></details>
+<details open><summary>Conferências e pendências</summary><div id="issues"></div></details>
+</section>
+<section class="card"><h2>Limites desta etapa</h2>
+<p class="muted">Este teste avalia estrutura, contagens, vínculos e valores do JSON. Mesmo com resultado positivo, ele <b>não equivale a uma restauração executada no PostgreSQL</b>. As contas de acesso, assinaturas e arquivos físicos do Storage exigem procedimentos próprios.</p>
+<p class="muted">O teste real de restauração deverá ocorrer posteriormente em um projeto Supabase separado, com confirmação do custo e sem apontar para a produção.</p>
+</section>
+<p class="note">OBRIX · Teste isolado · Os arquivos selecionados não são enviados para nenhum servidor.</p>
+</main>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const TABLES=['obras','clientes','fornecedores','funcionarios','servicos_extras','checklist_itens','diarios_obra','diario_atividades','diario_equipe','notas','diarias','faltas','vales','bonus_extras','pagamentos_equipe','pagamento_diarias','pagamento_vales','pagamento_bonus_extras','financeiro','materiais','estoques','estoque_saldos','estoque_movimentacoes','compras','compra_itens','orcamentos','orcamento_itens','documentos','relatorios','relatorios_fotograficos','fotos_obra','relatorio_fotos'];
+const LINKS={
+ obras:{cliente_id:'clientes'},
+ funcionarios:{obra_id:'obras'},
+ servicos_extras:{obra_id:'obras'},
+ checklist_itens:{obra_id:'obras'},
+ diarios_obra:{obra_id:'obras'},
+ diario_atividades:{diario_id:'diarios_obra'},
+ diario_equipe:{diario_id:'diarios_obra',funcionario_id:'funcionarios'},
+ notas:{obra_id:'obras'},
+ diarias:{funcionario_id:'funcionarios',obra_id:'obras',checklist_id:'checklist_itens'},
+ faltas:{funcionario_id:'funcionarios',obra_id:'obras'},
+ vales:{funcionario_id:'funcionarios',obra_id:'obras',checklist_id:'checklist_itens'},
+ bonus_extras:{funcionario_id:'funcionarios',obra_id:'obras',checklist_id:'checklist_itens'},
+ pagamentos_equipe:{funcionario_id:'funcionarios'},
+ pagamento_diarias:{pagamento_id:'pagamentos_equipe',diaria_id:'diarias',obra_id:'obras'},
+ pagamento_vales:{pagamento_id:'pagamentos_equipe',vale_id:'vales'},
+ pagamento_bonus_extras:{pagamento_id:'pagamentos_equipe',bonus_extra_id:'bonus_extras'},
+ financeiro:{obra_id:'obras',checklist_id:'checklist_itens',pagamento_equipe_id:'pagamentos_equipe',compra_id:'compras',estoque_movimentacao_id:'estoque_movimentacoes'},
+ estoques:{obra_id:'obras'},
+ estoque_saldos:{estoque_id:'estoques',material_id:'materiais'},
+ estoque_movimentacoes:{material_id:'materiais',obra_id:'obras',estoque_origem_id:'estoques',estoque_destino_id:'estoques',compra_id:'compras',estorno_de_id:'estoque_movimentacoes'},
+ compras:{obra_id:'obras',fornecedor_id:'fornecedores'},
+ compra_itens:{compra_id:'compras',material_id:'materiais'},
+ orcamentos:{obra_id:'obras',cliente_id:'clientes'},
+ orcamento_itens:{orcamento_id:'orcamentos'},
+ documentos:{obra_id:'obras',cliente_id:'clientes',funcionario_id:'funcionarios'},
+ relatorios:{cliente_id:'clientes'},
+ relatorios_fotograficos:{obra_id:'obras'},
+ fotos_obra:{obra_id:'obras',relatorio_id:'relatorios_fotograficos'},
+ relatorio_fotos:{obra_id:'obras',checklist_id:'checklist_itens',diario_id:'diarios_obra'}
+};
+const REQUIRED={
+ diarias:['funcionario_id','obra_id'],
+ checklist_itens:['obra_id'],
+ servicos_extras:['obra_id'],
+ pagamentos_equipe:['funcionario_id'],
+ pagamento_diarias:['pagamento_id','diaria_id','obra_id'],
+ pagamento_vales:['pagamento_id','vale_id'],
+ pagamento_bonus_extras:['pagamento_id','bonus_extra_id'],
+ relatorio_fotos:['obra_id','storage_path']
+};
+const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const fmt=n=>Number(n||0).toLocaleString('pt-BR');
+const money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+function status(s,t=''){const e=$('result');e.className='result '+t;e.textContent=s}
+function cents(n){const v=Number(n||0);if(!Number.isFinite(v))throw Error('Valor monetário inválido.');return Math.round((v+Number.EPSILON)*100)}
+function sumC(rows,col,filter){return rows.reduce((n,r)=>n+(!filter||filter(r)?cents(r[col]):0),0)}
+function m(c){return money(c/100)}
+function metric(label,value){
+ const el=document.createElement('div');el.className='metric';
+ const small=document.createElement('small');small.textContent=label;
+ const strong=document.createElement('strong');strong.textContent=value;
+ el.append(small,strong);$('metrics').append(el);
+}
+function issue(container,label,description){
+ const p=document.createElement('p');const b=document.createElement('strong');
+ b.textContent=label+' · ';p.append(b,document.createTextNode(description));
+ container.appendChild(p);
+}
+function localRestore(b,inventory){
+ const errors=[],warnings=[],infos=[];
+ const er=s=>{if(errors.length<60)errors.push(s)};
+ const warn=s=>{if(warnings.length<60)warnings.push(s)};
+ if(!b||b.obrix_backup!==2||b.completo!==true||b.app!=='OBRIX')
+   throw Error('Selecione um backup completo OBRIX versão 2. Arquivos antigos ou backups parciais não podem ser homologados por esta ferramenta.');
+ if(!uuid.test(String(b.empresa_id||'')))throw Error('Empresa do arquivo inválida.');
+ const expected=b.integridade?.contagens;
+ if(!expected||!Number.isSafeInteger(b.integridade.total_registros)||!Array.isArray(b.integridade.tabelas))
+   throw Error('O backup não contém o controle de integridade completo.');
+ const db=new Map();let total=0;
+ for(const t of TABLES){
+   const rows=b.dados?.[t];
+   if(!Array.isArray(rows))throw Error('Tabela ausente ou inválida: '+t);
+   const ids=new Map();
+   for(const row of rows){
+     if(!row||typeof row!=='object'||!uuid.test(String(row.id||''))){er(t+': registro com ID inválido');continue}
+     if(String(row.empresa_id||'')!==String(b.empresa_id)){er(t+': registro de outra empresa');continue}
+     if(ids.has(row.id))er(t+': identificador duplicado no arquivo');
+     else ids.set(row.id,row);
+   }
+   if(Number(expected[t])!==rows.length)er(t+': contagem declarada '+expected[t]+' difere da encontrada '+rows.length);
+   db.set(t,ids);
+   total+=rows.length;
+ }
+ if(total!==b.integridade.total_registros)er('Soma total de registros difere da contagem declarada no arquivo.');
+ if(TABLES.some(t=>!b.integridade.tabelas.includes(t)))er('A relação de módulos do arquivo não inclui todas as 32 tabelas.');
+ let linkCount=0;
+ for(const [table,rules] of Object.entries(LINKS)){
+   for(const row of db.get(table)?.values()||[]){
+     for(const [column,target] of Object.entries(rules)){
+       const key=row[column];
+       if(key===undefined||key===null||key==='')continue;
+       linkCount++;
+       if(!db.get(target)?.has(String(key)))er(table+': vínculo '+column+' não encontrado em '+target);
+     }
+   }
+ }
+ for(const [table,columns] of Object.entries(REQUIRED)){
+   for(const row of db.get(table)?.values()||[]){
+     for(const col of columns)if(row[col]===undefined||row[col]===null||row[col]==='')er(table+': campo obrigatório '+col+' ausente');
+   }
+ }
+ const rows=t=>[...(db.get(t)?.values()||[])];
+ const fin=rows('financeiro'),ativos=r=>r.status_lancamento===null||r.status_lancamento===undefined||r.status_lancamento==='ativo';
+ const receita=sumC(fin,'valor',r=>ativos(r)&&r.tipo==='receita');
+ const despesa=sumC(fin,'valor',r=>ativos(r)&&r.tipo==='despesa');
+ const contrato=sumC(rows('obras'),'valor_contrato')+sumC(rows('servicos_extras'),'valor');
+ const vales=sumC(rows('vales'),'valor'),bonus=sumC(rows('bonus_extras'),'valor');
+ const pagamentos=rows('pagamentos_equipe');
+ const pago=sumC(pagamentos,'valor_liquido',r=>!r.estornado_em);
+ let pagamentosDivergentes=0;
+ for(const r of pagamentos){
+   const br=cents(r.valor_diarias)+cents(r.valor_bonus_extras),liquid=br-cents(r.valor_vales);
+   if(Math.abs(br-cents(r.valor_bruto))>1||Math.abs(liquid-cents(r.valor_liquido))>1)pagamentosDivergentes++;
+ }
+ if(pagamentosDivergentes)warn(pagamentosDivergentes+' pagamentos têm divergência entre diárias, bônus, vales e líquido.');
+ if(inventory){
+   if(inventory.obrix_storage_manifest!==1||!Array.isArray(inventory.files))
+     throw Error('O inventário de fotos não corresponde ao formato exportado pelo OBRIX.');
+   if(String(inventory.empresa_id)!==String(b.empresa_id))
+     er('O inventário das fotografias pertence a outra empresa.');
+   else{
+     const names=new Set(inventory.files.map(f=>String(f.bucket)+'/'+String(f.path)));
+     let miss=0,matched=0;
+     for(const photo of rows('relatorio_fotos')){
+       if(names.has('relatorio-fotografico/'+String(photo.storage_path)))matched++;
+       else miss++;
+     }
+     if(miss)er(miss+' registros do relatório fotográfico não aparecem no inventário dos arquivos.');
+     infos.push(matched+' fotos vinculadas ao inventário; '+(names.size-matched)+' arquivos adicionais ou históricos disponíveis.');
+     if(inventory.files.length!==Number(inventory.quantidade))er('A contagem de arquivos do inventário não corresponde à sua lista.');
+   }
+ }else{
+   warn('Inventário JSON não selecionado: vínculos entre metadados e arquivos de fotos não foram conferidos nesta simulação.');
+ }
+ const stats={total,tables:TABLES.length,links:linkCount,obras:rows('obras').length,func:rows('funcionarios').length,diarias:rows('diarias').length,
+ fin:fin.length,photos:rows('relatorio_fotos').length,contrato,receita,despesa,pago,vales,bonus};
+ infos.push('A recuperação foi reconstruída em 32 mapas de memória; nenhum registro foi enviado ou gravado.');
+ infos.push('Contas de acesso, assinaturas e arquivos físicos não estão dentro do JSON de dados.');
+ return {errors,warnings,infos,stats,db};
+}
+async function simulate(){
+ const btn=$('simulate');btn.disabled=true;
+ $('details').hidden=true;
+ status('Lendo os arquivos e reconstruindo os registros localmente…');
+ try{
+   const dataFile=$('backupFile').files?.[0],invFile=$('inventoryFile').files?.[0];
+   if(!dataFile)throw Error('Selecione o JSON do backup completo do OBRIX.');
+   if(dataFile.size>50*1024*1024)throw Error('O backup JSON ultrapassa 50 MB. Faça o teste em um computador para evitar travamento no iPhone.');
+   if(invFile&&invFile.size>10*1024*1024)throw Error('O inventário é muito grande para esta ferramenta.');
+   const backup=JSON.parse((await dataFile.text()).replace(/^\uFEFF/,''));
+   const inventory=invFile?JSON.parse((await invFile.text()).replace(/^\uFEFF/,'')):null;
+   const result=localRestore(backup,inventory);
+   const {errors,warnings,infos,stats,db}=result;
+   const bad=errors.length>0;
+   status((bad?'SIMULAÇÃO COM PENDÊNCIAS':warnings.length?'SIMULAÇÃO CONCLUÍDA COM ALERTAS':'SIMULAÇÃO LOCAL CONCLUÍDA')+
+       '\n\n'+fmt(stats.total)+' registros reconstruídos em memória.\n'+fmt(stats.links)+' vínculos conferidos.'+
+       '\n'+errors.length+' problemas estruturais; '+warnings.length+' alertas.'+
+       '\n\nNenhum dado do OBRIX foi alterado.',
+       bad?'err':warnings.length?'warn':'ok');
+   $('details').hidden=false;
+   $('metrics').replaceChildren();$('counts').replaceChildren();$('issues').replaceChildren();
+   metric('Obras',fmt(stats.obras));metric('Funcionários',fmt(stats.func));
+   metric('Diárias',fmt(stats.diarias));metric('Financeiro',fmt(stats.fin));
+   metric('Contrato + serviços extras',m(stats.contrato));metric('Receitas',m(stats.receita));
+   metric('Despesas',m(stats.despesa));metric('Resultado',m(stats.receita-stats.despesa));
+   metric('Pago à equipe',m(stats.pago));metric('Vales',m(stats.vales));
+   metric('Bônus',m(stats.bonus));metric('Fotos registradas',fmt(stats.photos));
+   for(const t of TABLES){
+      const tr=document.createElement('tr'),name=document.createElement('td'),count=document.createElement('td');
+      name.textContent=t;count.textContent=fmt(db.get(t)?.size);
+      tr.append(name,count);$('counts').appendChild(tr);
+   }
+   for(const e of errors)issue($('issues'),'Problema',e);
+   for(const w of warnings)issue($('issues'),'Atenção',w);
+   for(const i of infos)issue($('issues'),'Conferência',i);
+   if(!bad)issue($('issues'),'Resultado','A estrutura reconstruída passou na validação local. Ainda falta testar gravação e recuperação real em ambiente isolado.');
+ }catch(e){
+   status('SIMULAÇÃO INTERROMPIDA\n\n'+String(e?.message||e)+
+   '\n\nNenhum dado foi enviado ou alterado.','err');
+ }finally{btn.disabled=false;}
+}
+$('simulate').addEventListener('click',simulate);
+})();
+</script>
+</body></html>
