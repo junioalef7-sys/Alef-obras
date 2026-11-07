@@ -29,7 +29,13 @@ footer{color:#5c6c7e;font-size:12px;margin-top:30px}
 <section class="card"><h2>1. Conta de teste</h2>
 <div class="group"><div><label>E-mail</label><input id="email" type="email" autocomplete="username"></div><div><label>Senha do laboratório</label><input id="password" type="password" autocomplete="current-password"></div></div>
 <div class="buttons"><button class="primary" data-act="login">Entrar</button><button data-act="signup">Criar acesso de teste</button><button data-act="logout">Sair</button></div>
-<p class="small" id="authInfo">Verificando autenticação.</p></section>
+<p class="small" id="authInfo">Verificando autenticação.</p><div class="notice" id="ajudaEmailLab" style="margin-top:14px"><strong>Atenção: envio de confirmação bloqueado neste laboratório.</strong>
+O SMTP de testes está usando o Resend, que ainda aceita mensagens apenas para o destinatário autorizado pelo próprio serviço.
+Para permitir cadastros sem e-mail <em>somente neste projeto de auditoria</em>, o administrador pode abrir
+<a href="https://supabase.com/dashboard/project/mjzlwnuklfopdmgcvdcs/auth/providers" target="_blank" rel="noopener noreferrer">Supabase AUDITORIA → Auth → Providers → Email</a>
+e desativar temporariamente <strong>Confirm email</strong>. Depois, tente criar o acesso de teste novamente.
+Reative a confirmação ao encerrar os testes. Para enviar confirmações normalmente, é necessário verificar um domínio no Resend e configurar um remetente válido no SMTP.
+<strong>Não altere a autenticação do OBRIX oficial.</strong></div></section>
 <div id="private" class="hidden">
 <section class="card"><h2>2. Empresa fictícia</h2><p class="small" id="companyInfo"></p>
 <div id="createCompany"><label>Nome da empresa fictícia</label><input id="companyName" value="Empresa Alfa — Teste"><div class="buttons"><button data-act="createCompany" class="primary">Criar empresa de testes</button></div></div>
@@ -105,7 +111,11 @@ async function act(action,id){
   if(action==='login'||action==='signup'){
    const email=v('email'),password=v('password');
    if(!email||password.length<6)throw Error('Informe e-mail e senha exclusivos de teste (mínimo 6 caracteres).');
-   const r=action==='login'?await s.auth.signInWithPassword({email,password}):await s.auth.signUp({email,password});check(r.error);
+   const r=action==='login'?await s.auth.signInWithPassword({email,password}):await s.auth.signUp({email,password});
+   if(r.error && action==='signup' && /error sending confirmation email|email confirmation|failed to send email|smtp/i.test(r.error.message||'')){
+     throw Error('O servidor de e-mail de TESTE (Resend) recusou a confirmação. Isto não é erro da senha. Abra as instruções acima: configure domínio/remetente SMTP ou desative temporariamente Confirm email apenas no Supabase AUDITORIA.');
+   }
+   check(r.error);
    notice(action==='login'?'Login realizado.':r.data?.session?'Cadastro concluído.':'Cadastro solicitado: confirme o e-mail, se necessário, e retorne para entrar.');
    await session();return;
   }
