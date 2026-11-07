@@ -122,7 +122,7 @@ async function verify(){
  try{
    const inventory=jsons.length?JSON.parse(await jsons[0].text()):null;
    if(inventory&&inventory.obrix_storage_manifest!==1)throw Error('O JSON selecionado não é um inventário do Storage.');
-   const parts=new Map(),names=new Set(),geracoes=new Set();
+   const parts=new Map(),names=new Set(),geracoes=new Set(),duplicadas=new Map();
    let owner=null,total=0,declaredTotal=null,expectedParts=null;
    for(let i=0;i<zips.length;i++){
      status('Verificando integridade do ZIP '+(i+1)+' de '+zips.length+': '+zips[i].name+'…');
@@ -145,8 +145,14 @@ async function verify(){
      if(thisTotal!==null&&declaredTotal!==null&&thisTotal!==declaredTotal)
        throw Error('A quantidade de arquivos da conta mudou entre os backups ('+declaredTotal+' e '+thisTotal+'). Para garantir um backup completo, baixe as partes de uma mesma conferência.');
      if(declaredTotal===null&&thisTotal!==null)declaredTotal=thisTotal;
-     if(parts.has(meta.parte))
-       throw Error('A parte '+meta.parte+' aparece duas vezes. Deixe apenas um ZIP de cada número, de 1 a '+expectedParts+'.');
+     if(parts.has(meta.parte)){
+       const nomes=duplicadas.get(meta.parte)||[parts.get(meta.parte).name];
+       nomes.push(checked.name);
+       duplicadas.set(meta.parte,nomes);
+       // O ZIP repetido já passou por CRC32/SHA-256 individualmente.
+       // Não incluímos seus arquivos duas vezes na contagem do conjunto.
+       continue;
+     }
      parts.set(meta.parte,{name:checked.name,meta});
      geracoes.add(String(meta.gerado_em||'sem data'));
      for(const e of meta.arquivos){
@@ -157,7 +163,19 @@ async function verify(){
      }
    }
    const missing=[];for(let i=1;i<=expectedParts;i++)if(!parts.has(i))missing.push(i);
-   if(missing.length)throw Error('Faltam as partes: '+missing.join(', ')+'. Selecione todos os ZIPs da conta.');
+   if(duplicadas.size||missing.length){
+     const presentes=[...parts.keys()].sort((a,b)=>a-b);
+     const repetidas=[...duplicadas.entries()].sort((a,b)=>a[0]-b[0]).map(([n,arquivos])=>
+       'Parte '+n+': '+arquivos.join(' | '));
+     const mensagens=[
+       'Você selecionou '+zips.length+' ZIPs, mas são apenas '+parts.size+' partes diferentes de '+expectedParts+'.',
+       'Partes encontradas: '+presentes.join(', ')+'.',
+       missing.length?'PARTES QUE FALTAM: '+missing.join(', ')+'.':'Nenhuma parte faltando.',
+       repetidas.length?'PARTES REPETIDAS:\n'+repetidas.join('\n'):'Nenhuma parte repetida.',
+       'Use apenas uma cópia de cada parte e baixe somente as partes faltantes. Não precisa baixar tudo novamente.'
+     ];
+     throw Error(mensagens.join('\n\n'));
+   }
    if(declaredTotal!==null&&total!==declaredTotal)
      throw Error('Foram encontrados '+total+' arquivos, mas os manifestos esperam '+declaredTotal+'. Não é possível confirmar backup completo.');
    let inventoryOk=false,inventoryMessage='';
