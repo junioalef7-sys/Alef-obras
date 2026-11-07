@@ -1,0 +1,170 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src https://cdn.jsdelivr.net 'unsafe-inline'; connect-src https://mjzlwnuklfopdmgcvdcs.supabase.co; img-src 'self' data: blob: https://mjzlwnuklfopdmgcvdcs.supabase.co; style-src 'unsafe-inline'; form-action 'none'; object-src 'none'; base-uri 'none'">
+<title>OBRIX — Teste integrado isolado</title>
+<style>
+:root{font-family:system-ui,-apple-system,Arial,sans-serif;background:#f6f8fb;color:#15233b;color-scheme:light}
+*{box-sizing:border-box}html,body{margin:0;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%}
+main{max-width:950px;margin:auto;padding:20px 15px 60px}
+h1{font-size:27px;margin:14px 0}h2{font-size:18px;margin:0 0 10px}
+p{font-size:14px;line-height:1.5}.small{font-size:12px;color:#516076}
+.card{background:white;border:1px solid #e0e7ef;border-radius:15px;padding:17px;margin:14px 0}
+.notice{border-left:4px solid #c19649;background:#fffaee;padding:13px;border-radius:9px}
+.group{display:flex;flex-wrap:wrap;gap:10px;align-items:end}.group>*{flex:1 1 185px;min-width:0}
+label{display:block;font-size:13px;font-weight:700;margin:9px 0 5px}
+input,select{font-size:16px;width:100%;min-height:42px;padding:8px;border:1px solid #bac7d6;border-radius:9px;background:white;color:#14233c}
+button{font-size:14px;min-height:42px;border:1px solid #c5cfdd;background:#f5f7fb;border-radius:10px;padding:9px 13px;font-weight:700;color:#132d4b;cursor:pointer;touch-action:manipulation}
+.primary{background:#203a59;color:white;border-color:#203a59}.danger{color:#a11b1b;background:#fff8f8;border-color:#d6b0b0}
+.buttons{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.buttons button{flex:1 1 148px}
+.row{padding:9px 0;border-bottom:1px solid #ebeff5;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+.row:last-child{border-bottom:0}.hidden{display:none!important}.muted{color:#56677d}
+#status{white-space:pre-wrap;min-height:38px;padding:12px;border-radius:10px;background:#eaf0f8;font-size:13px}
+.good{color:#13634a}.error{color:#af2020}
+footer{color:#5c6c7e;font-size:12px;margin-top:30px}
+</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/dist/umd/supabase.min.js"></script></head>
+<body><main>
+<header><strong style="font-size:21px">OBRIX</strong> <span class="small">LABORATÓRIO INTEGRADO — AMBIENTE ISOLADO</span></header>
+<h1>Autenticação, Equipe e Storage</h1>
+<div class="notice"><strong>Não é o aplicativo oficial.</strong> Esta página utiliza somente o projeto Supabase de auditoria. Não informe sua senha oficial nem envie fotos ou documentos reais. Utilize e-mail e senha exclusivos de teste. O cadastro pode exigir confirmação por e-mail.</div>
+<section class="card"><h2>1. Conta de teste</h2>
+<div class="group"><div><label>E-mail</label><input id="email" type="email" autocomplete="username"></div><div><label>Senha do laboratório</label><input id="password" type="password" autocomplete="current-password"></div></div>
+<div class="buttons"><button class="primary" data-act="login">Entrar</button><button data-act="signup">Criar acesso de teste</button><button data-act="logout">Sair</button></div>
+<p class="small" id="authInfo">Verificando autenticação.</p></section>
+<div id="private" class="hidden">
+<section class="card"><h2>2. Empresa fictícia</h2><p class="small" id="companyInfo"></p>
+<div id="createCompany"><label>Nome da empresa fictícia</label><input id="companyName" value="Empresa Alfa — Teste"><div class="buttons"><button data-act="createCompany" class="primary">Criar empresa de testes</button></div></div>
+<div id="hasCompany" class="hidden"><div class="buttons"><button data-act="reload">Atualizar</button><button data-act="limited">Simular plano limitado</button><button data-act="active">Reativar plano</button></div></div></section>
+<div id="operations" class="hidden">
+<section class="card"><h2>3. Obras e funcionários</h2><label>Nome da obra</label><input id="workName" value="Obra Alfa"><div class="buttons"><button data-act="work">Cadastrar obra</button></div><div id="works"></div>
+<div class="group"><div><label>Nome do funcionário</label><input id="empName" value="Trabalhador Fictício"></div><div><label>Valor da diária</label><input id="dailyValue" type="number" value="200" min="1" step="0.01"></div><div><label>Obra</label><select id="employeeWork"></select></div></div>
+<div class="buttons"><button data-act="employee">Cadastrar funcionário</button></div><div id="employees"></div></section>
+<section class="card"><h2>4. Registrar diárias, vales e bônus</h2>
+<div class="group"><div><label>Funcionário</label><select id="recordEmployee"></select></div><div><label>Obra</label><select id="recordWork"></select></div><div><label>Diária</label><select id="quantity"><option value="1">Inteira</option><option value="0.5">Meia diária</option></select></div><div><label>Valor do vale/bônus</label><input id="extraValue" type="number" min="0.01" step="0.01" value="50"></div></div>
+<div class="buttons"><button data-act="daily">Registrar diária</button><button data-act="advance">Registrar vale</button><button data-act="bonus">Registrar bônus</button></div><div id="records"></div></section>
+<section class="card"><h2>5. Pagamento e estorno</h2><label>Funcionário</label><select id="payEmployee"></select><div class="buttons"><button class="primary" data-act="pay">Pagar valores em aberto</button></div><div id="payments"></div><h2>Despesas por obra</h2><div id="finances"></div></section>
+<section class="card"><h2>6. Fotos no Storage privado</h2><p class="small">Envie somente imagens descartáveis para teste, em JPEG, PNG ou WEBP de até 5 MB.</p>
+<div class="group"><div><label>Obra</label><select id="photoWork"></select></div><div><label>Imagem de teste</label><input type="file" id="photoFile" accept="image/jpeg,image/png,image/webp"></div></div>
+<div class="buttons"><button data-act="upload">Enviar fotografia</button></div><div id="photos"></div></section>
+<section class="card"><h2>7. Isolamento entre empresas</h2>
+<p class="small">Para verificar o RLS de duas contas reais de teste, entre com um segundo e-mail em outro navegador, crie outra empresa fictícia e copie o ID dela.</p>
+<label>ID da outra empresa</label><input id="foreignCompany" placeholder="UUID da outra conta de auditoria">
+<div class="buttons"><button data-act="isolation">Verificar leitura e gravação cruzadas</button></div></section>
+<section class="card"><h2>8. Remover dados fictícios</h2>
+<p class="small">Apaga os registros da empresa de teste após remover todas as fotos. A conta de autenticação permanece no projeto de auditoria.</p><div class="buttons"><button class="danger" data-act="deleteCompany">Excluir empresa fictícia</button></div></section>
+</div></div>
+<section class="card"><h2>Resultado</h2><div id="status" role="status" aria-live="polite">Pronto.</div></section>
+<footer>Somente o Supabase AUDITORIA. Não contém conexão com a produção, dados reais, checkout ou serviços de cobrança. Esta página é uma interface de homologação separada do OBRIX oficial.</footer>
+</main>
+<script>
+'use strict';
+const API="https://mjzlwnuklfopdmgcvdcs.supabase.co",KEY="sb_publishable_y9Zcco35Ci7grw9DIvcFJw_ZK3uc_CG",BUCKET='obrix-e2e-fotos-20261107',P='obrix_e2e_';
+const $=id=>document.getElementById(id),s=window.supabase?.createClient(API,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+let company=null,userId=null,cache={},busy=false;
+const money=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(v)||0);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const v=id=>$(id).value.trim(),check=e=>{if(e)throw Error(e.message||String(e))};
+const notice=(msg,bad=false)=>{$('status').textContent=msg;$('status').className=bad?'error':'good'};
+function validateId(x){if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x))throw Error('Selecione um registro válido.');return x}
+function positive(id){const x=Number(v(id));if(!(x>0&&Number.isFinite(x)))throw Error('Informe um valor válido em '+id);return x}
+function options(rows){return rows.length?rows.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.nome)+'</option>').join(''):'<option value="">Cadastre primeiro</option>'}
+function lines(rows){return rows.join('')||'<p class="small muted">Nenhum registro.</p>'}
+async function session(){
+ if(!s)throw Error('Biblioteca Supabase indisponível.');
+ const r=await s.auth.getUser();userId=r.data?.user?.id||null;
+ $('authInfo').textContent=userId?'Autenticado no projeto de auditoria.':'Não autenticado.';
+ $('private').classList.toggle('hidden',!userId);
+ if(!userId){company=null;return;}
+ await loadCompany();
+}
+async function loadCompany(){
+ const r=await s.from(P+'membros').select('empresa_id').eq('usuario_id',userId).maybeSingle();check(r.error);
+ if(!r.data){company=null;$('createCompany').classList.remove('hidden');$('hasCompany').classList.add('hidden');$('operations').classList.add('hidden');$('companyInfo').textContent='Crie uma empresa fictícia.';return;}
+ const z=await s.from(P+'empresas').select('*').eq('id',r.data.empresa_id).single();check(z.error);company=z.data;
+ $('createCompany').classList.add('hidden');$('hasCompany').classList.remove('hidden');$('operations').classList.remove('hidden');
+ $('companyInfo').textContent=company.nome+' | Plano '+company.plano+' | ID '+company.id;
+ await reload();
+}
+async function list(t){const r=await s.from(P+t).select('*').eq('empresa_id',company.id).limit(1000);check(r.error);return r.data||[]}
+async function reload(){
+ const names=['obras','funcionarios','diarias','vales','bonus','pagamentos','financeiro','fotos','pagamento_diarias'];
+ const res=await Promise.all(names.map(list));
+ cache=Object.fromEntries(names.map((name,i)=>[name,res[i]]));
+ for(const id of ['employeeWork','recordWork','photoWork']){const previous=v(id);$(id).innerHTML=options(cache.obras);if(cache.obras.some(x=>x.id===previous))$(id).value=previous;}
+ for(const id of ['recordEmployee','payEmployee']){const previous=v(id);$(id).innerHTML=options(cache.funcionarios);if(cache.funcionarios.some(x=>x.id===previous))$(id).value=previous;}
+ $('works').innerHTML=lines(cache.obras.map(x=>'<div class="row">'+esc(x.nome)+'<span class="small">'+esc(x.id.slice(0,8))+'</span></div>'));
+ $('employees').innerHTML=lines(cache.funcionarios.map(x=>'<div class="row"><span>'+esc(x.nome)+' • '+money(x.valor_diaria)+' • '+(x.ativo?'Ativo':'Inativo')+'</span><span><button data-act="inactive" data-id="'+esc(x.id)+'">Inativar</button><button data-act="deleteEmployee" data-id="'+esc(x.id)+'">Excluir</button></span></div>'));
+ const items=[...cache.diarias.map(x=>['Diária '+x.quantidade,x.valor_total,x.paga]),...cache.vales.map(x=>['Vale',x.valor,x.quitado]),...cache.bonus.map(x=>['Bônus',x.valor,x.pago])];
+ $('records').innerHTML=lines(items.map(x=>'<div class="row"><span>'+esc(x[0])+' — '+money(x[1])+'</span><b>'+(x[2]?'Quitado':'Aberto')+'</b></div>'));
+ $('payments').innerHTML=lines(cache.pagamentos.map(x=>'<div class="row"><span>'+money(x.valor_liquido)+' • '+(x.estornado_em?'Estornado':'Pago')+'</span>'+(x.estornado_em?'':'<button data-act="undo" data-id="'+esc(x.id)+'">Estornar</button>')+'</div>'));
+ $('finances').innerHTML=lines(cache.financeiro.map(x=>'<div class="row"><span>'+esc(cache.obras.find(o=>o.id===x.obra_id)?.nome||'Obra')+' • '+esc(x.status)+'</span><b>'+money(x.valor)+'</b></div>'));
+ $('photos').innerHTML=lines(cache.fotos.map(x=>'<div class="row"><span>Foto '+esc(x.id.slice(0,8))+' ('+Math.round(x.tamanho_bytes/1024)+' KB)</span><span><button data-act="openPhoto" data-id="'+esc(x.id)+'">Abrir</button><button data-act="removePhoto" data-id="'+esc(x.id)+'">Remover</button></span></div>'));
+}
+async function act(action,id){
+ if(busy)return;busy=true;
+ try{
+  if(action==='login'||action==='signup'){
+   const email=v('email'),password=v('password');
+   if(!email||password.length<6)throw Error('Informe e-mail e senha exclusivos de teste (mínimo 6 caracteres).');
+   const r=action==='login'?await s.auth.signInWithPassword({email,password}):await s.auth.signUp({email,password});check(r.error);
+   notice(action==='login'?'Login realizado.':r.data?.session?'Cadastro concluído.':'Cadastro solicitado: confirme o e-mail, se necessário, e retorne para entrar.');
+   await session();return;
+  }
+  if(action==='logout'){const r=await s.auth.signOut();check(r.error);await session();notice('Sessão de teste encerrada.');return;}
+  if(!userId)throw Error('Faça login no Supabase de auditoria.');
+  if(action==='createCompany'){const r=await s.rpc('obrix_e2e_criar_empresa',{p_nome:v('companyName')});check(r.error);await loadCompany();notice('Empresa fictícia criada.');return;}
+  if(!company)throw Error('Crie uma empresa fictícia antes.');
+  const eid=company.id;
+  if(action==='reload'){await loadCompany();notice('Dados atualizados.');return;}
+  if(action==='work'){const r=await s.from(P+'obras').insert({empresa_id:eid,nome:v('workName')}).select('id').single();check(r.error);notice('Obra fictícia cadastrada.');}
+  else if(action==='employee'){const r=await s.from(P+'funcionarios').insert({empresa_id:eid,nome:v('empName'),valor_diaria:positive('dailyValue'),obra_id:validateId(v('employeeWork'))}).select('id').single();check(r.error);notice('Funcionário fictício cadastrado.');}
+  else if(['daily','advance','bonus'].includes(action)){
+   const f=validateId(v('recordEmployee')),o=validateId(v('recordWork'));
+   const data=action==='daily'?{empresa_id:eid,funcionario_id:f,obra_id:o,quantidade:Number(v('quantity'))}:{empresa_id:eid,funcionario_id:f,obra_id:o,valor:positive('extraValue')};
+   const t=action==='daily'?'diarias':action==='advance'?'vales':'bonus';
+   const r=await s.from(P+t).insert(data).select('id').single();check(r.error);notice('Registro salvo no PostgreSQL de auditoria.');
+  }
+  else if(action==='pay'){const r=await s.rpc('obrix_e2e_pagar',{p_funcionario:validateId(v('payEmployee'))});check(r.error);notice('Pagamento transacional de '+money(r.data.liquido)+' gravado no laboratório.');}
+  else if(action==='undo'){const r=await s.rpc('obrix_e2e_estornar',{p_pagamento:validateId(id)});check(r.error);notice(r.data.ja_estornado?'Já estornado.':'Pagamento e despesas estornados.');}
+  else if(action==='inactive'||action==='deleteEmployee'){
+   if(action==='deleteEmployee'&&!confirm('Excluir funcionário FICTÍCIO sem histórico?'))return;
+   const rpc=action==='inactive'?'obrix_e2e_inativar':'obrix_e2e_excluir_funcionario';
+   const r=await s.rpc(rpc,{p_funcionario:validateId(id)});check(r.error);notice(action==='inactive'?'Funcionário inativado; histórico preservado.':'Funcionário sem histórico removido.');
+  }
+  else if(action==='limited'||action==='active'){const r=await s.rpc('obrix_e2e_alterar_plano',{p_plano:action==='limited'?'limitado':'ativo'});check(r.error);await loadCompany();notice('Plano fictício atualizado.');return;}
+  else if(action==='upload'){
+   const f=$('photoFile').files?.[0],work=validateId(v('photoWork'));
+   if(!f)throw Error('Selecione uma imagem descartável de teste.');
+   if(!['image/png','image/jpeg','image/webp'].includes(f.type)||f.size>5242880)throw Error('Arquivo não permitido; limite de 5 MB.');
+   const ext=f.type==='image/png'?'png':f.type==='image/webp'?'webp':'jpg';
+   const path=eid+'/'+work+'/'+crypto.randomUUID()+'.'+ext;
+   const z=await s.storage.from(BUCKET).upload(path,f,{upsert:false,contentType:f.type});check(z.error);
+   const r=await s.from(P+'fotos').insert({empresa_id:eid,obra_id:work,caminho:path,tamanho_bytes:f.size});
+   if(r.error){await s.storage.from(BUCKET).remove([path]);check(r.error);}
+   $('photoFile').value='';notice('Fotografia enviada ao bucket privado de auditoria.');
+  }
+  else if(action==='openPhoto'){const photo=cache.fotos.find(x=>x.id===id);if(!photo)throw Error('Foto não localizada.');
+   const r=await s.storage.from(BUCKET).createSignedUrl(photo.caminho,60);check(r.error);
+   const link=document.createElement('a');link.href=r.data.signedUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Abrir foto de teste (link válido por 60 segundos)';$('status').textContent='';$('status').appendChild(link);return;
+  }
+  else if(action==='removePhoto'){const photo=cache.fotos.find(x=>x.id===id);if(!photo)throw Error('Foto não localizada.');
+   const r=await s.storage.from(BUCKET).remove([photo.caminho]);check(r.error);
+   const z=await s.from(P+'fotos').delete().eq('id',photo.id);check(z.error);notice('Arquivo e metadados removidos.');
+  }
+  else if(action==='isolation'){const other=validateId(v('foreignCompany'));if(other===eid)throw Error('Informe o ID de outra empresa fictícia.');
+   const r=await s.from(P+'obras').select('id').eq('empresa_id',other);check(r.error);
+   const w=await s.from(P+'obras').insert({empresa_id:other,nome:'Acesso cruzado proibido'}).select('id');
+   if(r.data.length!==0||!w.error)throw Error('Falha no isolamento; interrompa o teste.');
+   notice('Isolamento confirmado: leitura de outra empresa vazia e gravação bloqueada.');
+  }
+  else if(action==='deleteCompany'){if(!confirm('Excluir todos os dados da empresa FICTÍCIA? Remova primeiro as fotografias.'))return;
+   const r=await s.rpc('obrix_e2e_excluir_empresa');check(r.error);await loadCompany();notice('Empresa fictícia excluída do banco de auditoria.');return;
+  }
+  else throw Error('Operação desconhecida.');
+  await reload();
+ }catch(e){notice('Operação não concluída: '+(e.message||String(e)),true);}
+ finally{busy=false;}
+}
+document.addEventListener('click',e=>{const b=e.target.closest('button[data-act]');if(b){e.preventDefault();act(b.dataset.act,b.dataset.id);}});
+if(!s)notice('Não foi possível carregar a biblioteca Supabase.',true);
+else{s.auth.onAuthStateChange(()=>setTimeout(()=>session().catch(e=>notice(e.message,true)),140));session().catch(e=>notice(e.message,true));}
+</script></body></html>
