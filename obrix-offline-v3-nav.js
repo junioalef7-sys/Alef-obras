@@ -3,7 +3,13 @@ if(window.__OBRIX_OFFLINE_V3_NAV)return;window.__OBRIX_OFFLINE_V3_NAV=true;
 const STYLE_ID='obrixOfflineV3NavStyle',NAV_ID='obrixOfflineV3Bottom';
 const ROUTES=['inicio','financeiro','equipe','menu'];
 const LABELS=['Início','Financeiro','Equipe','Menu'];
-const offline=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||document.documentElement.dataset.obrixOfflineV3==='1';
+const offline=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true;
+function limparOnline(){
+ if(offline())return;
+ document.documentElement.removeAttribute('data-obrix-offline-v3');
+ document.getElementById(NAV_ID)?.remove();
+ document.getElementById(STYLE_ID)?.remove();
+}
 function style(){
  let s=document.getElementById(STYLE_ID);if(s)return s;
  s=document.createElement('style');s.id=STYLE_ID;s.textContent=`
@@ -23,7 +29,7 @@ html[data-theme="dark"][data-obrix-offline-v3="1"] #${NAV_ID} button.active{back
 }
 function setActive(route){const i=Math.max(0,ROUTES.indexOf(route));document.querySelectorAll(`#${NAV_ID} button`).forEach((b,j)=>b.classList.toggle('active',j===i));}
 function ensure(){
- if(!offline())return null;
+ if(!offline()){limparOnline();return null;}
  style();document.documentElement.dataset.obrixOfflineV3='1';
  const app=document.getElementById('app');if(!app)return null;
  let box=document.getElementById(NAV_ID);
@@ -41,9 +47,9 @@ function go(route){ensure();setActive(route);try{const p=window.OBRIX_OFFLINE_V3
 document.addEventListener('click',e=>{const b=e.target?.closest?.(`#${NAV_ID} button`);if(!b||!offline())return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();go(b.dataset.offlineV3Route||'inicio')},true);
 ['obrix:offline-v3-ready','obrix:offline-bootstrap','obrix:offline-core-restaurado','pageshow','focus'].forEach(n=>window.addEventListener(n,()=>{if(offline()){ensure();setTimeout(ensure,120);setTimeout(ensure,700)}}));
 window.addEventListener('offline',()=>{setTimeout(ensure,0);setTimeout(ensure,300)});
-window.addEventListener('online',()=>{document.getElementById(NAV_ID)?.remove();document.getElementById(STYLE_ID)?.remove()});
+window.addEventListener('online',limparOnline);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&offline())setTimeout(ensure,0)});
-setTimeout(()=>{if(offline())ensure()},50);setTimeout(()=>{if(offline())ensure()},400);setTimeout(()=>{if(offline())ensure()},1200);
-setInterval(()=>{if(offline())ensure()},1500);
+setTimeout(ensure,50);setTimeout(ensure,400);setTimeout(ensure,1200);
+setInterval(()=>{if(offline())ensure();else limparOnline()},1500);
 window.OBRIX_OFFLINE_V3_NAV={ensure,go,setActive};
 })();
