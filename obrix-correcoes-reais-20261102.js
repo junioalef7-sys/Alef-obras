@@ -1,6 +1,6 @@
 (()=>{'use strict';
 if(window.__OBRIX_CORRECOES_REAIS_20261102)return;window.__OBRIX_CORRECOES_REAIS_20261102=true;
-let obraChecklistId='',filaVisual=false,saveTimer=null,refreshTimer=null,canal=null,retryTimer=null,ctxCache=null,finObs=null;
+let obraChecklistId='',filaVisual=false,saveTimer=null,refreshTimer=null,canal=null,canalCliente=null,realtimeIniciando=false,retryTimer=null,ctxCache=null,finObs=null;
 const estilo=document.createElement('style');estilo.id='obrix-correcoes-reais-20261102-style';estilo.textContent=`@media(max-width:760px){#fmFiltrosPanel .fmFiltrosGrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px!important}#fmFiltrosPanel .fmFiltrosGrid label.obrixDataCompact{grid-column:auto!important;min-width:0!important;width:100%!important;max-width:100%!important}#fmFiltroDataInicio,#fmFiltroDataFim{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;height:40px!important;box-sizing:border-box!important;font-size:12px!important;padding:7px 5px!important;letter-spacing:-.2px!important}}`;
 function estiloPorUltimo(){if(estilo.parentNode!==document.head)document.head.appendChild(estilo)}
 function brancoAndamento(){document.querySelectorAll('#obras .obxStatus.andamento,#listaObras .obxStatus.andamento').forEach(el=>{el.style.setProperty('color','#fff','important');el.style.setProperty('-webkit-text-fill-color','#fff','important')})}
@@ -67,8 +67,16 @@ async function salvarProgresso(forcarRemoto=false){detectarObraModal();const id=
 function agendarSalvar(ms=260,forcarRemoto=false){clearTimeout(saveTimer);saveTimer=setTimeout(()=>salvarProgresso(forcarRemoto),ms)}
 async function sincronizarObraAberta(){detectarObraModal();if(!obraChecklistId)return;const p=mediaAtual();if(p!=null)aplicarProgressoLocal(obraChecklistId,p);agendarSalvar(120,true)}
 function acompanharFinanceiro(){const form=document.getElementById('fmForm');if(!form||finObs)return;finObs=new MutationObserver(()=>{if(!form.classList.contains('hidden'))return;finObs.disconnect();finObs=null;agendarDados(80)});finObs.observe(form,{attributes:true,attributeFilter:['class']});setTimeout(()=>{if(finObs){finObs.disconnect();finObs=null}},8000)}
-function pararCanal(){clearTimeout(retryTimer);retryTimer=null;if(canal){try{canal.unsubscribe?.()}catch(_){}canal=null}}
-async function realtime(){if(canal||!navigator.onLine)return;try{const c=await contexto();if(!c){clearTimeout(retryTimer);retryTimer=setTimeout(realtime,1500);return}let ch=c.sb.channel('obrix-sync-real-'+c.eid);
+function pararCanal(){
+  clearTimeout(retryTimer);retryTimer=null;
+  const antigo=canal,cliente=canalCliente;
+  canal=null;canalCliente=null;
+  if(antigo)try{
+    if(cliente?.removeChannel)void cliente.removeChannel(antigo).catch?.(()=>{});
+    else antigo.unsubscribe?.();
+  }catch(_){try{antigo.unsubscribe?.()}catch(__){}}
+}
+async function realtime(){if(canal||realtimeIniciando||!navigator.onLine)return;realtimeIniciando=true;try{const c=await contexto();if(!c||!navigator.onLine){clearTimeout(retryTimer);if(navigator.onLine)retryTimer=setTimeout(realtime,1500);return}let ch=c.sb.channel('obrix-sync-real-'+c.eid);
 ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'obras',filter:`empresa_id=eq.${c.eid}`},()=>{agendarObrasRemotas(100);window.dispatchEvent(new Event('obrix:atividade-externa'))});
 ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'servicos_extras',filter:`empresa_id=eq.${c.eid}`},()=>{agendarObrasRemotas(120);window.dispatchEvent(new Event('obrix:atividade-externa'))});
 for(const tabela of ['financeiro'])ch=ch.on('postgres_changes',{event:'*',schema:'public',table:tabela,filter:`empresa_id=eq.${c.eid}`},()=>{agendarDados(320);window.dispatchEvent(new Event('obrix:atividade-externa'))});
@@ -77,7 +85,19 @@ ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'faltas',filter:`em
   window.dispatchEvent(new CustomEvent('obrix:equipe-registro',{detail:{table:'faltas',funcionarioId:payload?.new?.funcionario_id||payload?.old?.funcionario_id||null}}));window.dispatchEvent(new Event('obrix:atividade-externa'));
 });
 ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'checklist_itens',filter:`empresa_id=eq.${c.eid}`},payload=>{window.dispatchEvent(new Event('obrix:atividade-externa'));const id=String(payload?.new?.obra_id||payload?.old?.obra_id||obraChecklistId||'');if(id&&(!obraChecklistId||String(obraChecklistId)===id)){obraChecklistId=id;agendarSalvar(180,true)}});
-canal=ch.subscribe(status=>{if(status==='SUBSCRIBED')agendarObrasRemotas(160);if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){pararCanal();retryTimer=setTimeout(realtime,1500)}})}catch(e){console.warn('OBRIX: realtime indisponível',e);pararCanal();retryTimer=setTimeout(realtime,1800)}}
+canalCliente=c.sb;
+canal=ch.subscribe(status=>{
+  // Um canal encerrado não pode destruir um canal novo.
+  if(canal!==ch)return;
+  if(status==='SUBSCRIBED')agendarObrasRemotas(160);
+  if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+    pararCanal();retryTimer=setTimeout(realtime,1500);
+  }
+});
+}catch(e){
+  console.warn('OBRIX: realtime indisponível',e);
+  pararCanal();retryTimer=setTimeout(realtime,1800);
+}finally{realtimeIniciando=false}}
 document.addEventListener('click',e=>{capturarObraChecklist(e.target);if(e.target.closest?.('#fmSalvar'))acompanharFinanceiro();if(e.target.closest?.('.checkClose'))agendarSalvar(0,true);setTimeout(agendarVisuais,0);setTimeout(agendarVisuais,160);if(e.target.closest?.('.obxChecklist,[data-check-open]'))setTimeout(sincronizarObraAberta,350)},true);
 document.addEventListener('input',e=>{if(!e.target.closest?.('[data-check-range]'))return;detectarObraModal();const p=mediaAtual();if(obraChecklistId&&p!=null){aplicarProgressoLocal(obraChecklistId,p);agendarSalvar(220,false)}},true);
 document.addEventListener('change',e=>{if(!e.target.closest?.('[data-check-range]'))return;detectarObraModal();const p=mediaAtual();if(obraChecklistId&&p!=null)aplicarProgressoLocal(obraChecklistId,p);agendarSalvar(80,true)},true);
