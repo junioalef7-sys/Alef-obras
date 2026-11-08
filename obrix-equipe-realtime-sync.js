@@ -43,6 +43,7 @@ function reconciliar(){
   },650);
 }
 function mudou(table,payload){
+  window.dispatchEvent(new Event('obrix:atividade-externa'));
   const aplicado=aplicarPayload(table,payload);
   if(aplicado&&visivel())requestAnimationFrame(pintar);
   else if(visivel()&&!['faltas','pagamentos_equipe'].includes(table))requestAnimationFrame(pintar);
