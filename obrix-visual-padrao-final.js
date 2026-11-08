@@ -12,7 +12,7 @@ const TIT=['obras','diário de obras','diario de obras','financeiro','equipe','f
 function neutro(b){if(!b)return;
 // Na prévia, não neutralizar novamente as cinco ações do funcionário nem o botão Novo.
 // Estilos inline !important causavam oscilação entre a cor aprovada e o cinza.
-if(b.matches?.('#equipe #obpEquipe .obp-person-actions button,#equipe #obpNovo,#inicio #obpHome .obp-shortcuts button'))return;
+if(b.matches?.('#equipe #obpEquipe .obp-person-actions button,#equipe #obpEquipe .obp-registros-principal,#equipe #obpEquipe .obp-excluir-da-lista,#equipe #obpNovo,#inicio #obpHome .obp-shortcuts button'))return;
 // Idempotent: avoid repeated inline writes that trigger DOM observers and reflows.
 const st=b.style;
 if(st.getPropertyValue('background')==='var(--ob-surface-2)'&&
