@@ -14,7 +14,7 @@ const MODULOS={
   relatorios:'relatorios'
 };
 const ELEMENTOS={orcamentos:'orcamentosMain',notas:'notasMain',documentos:'documentosMain',
-  estoque:'estoqueMain',diario:'diarioMain',relatorios:'relatoriosMain'};
+  estoque:'estoqueMain',diario:'diarioMain',relatorios:'relatoriosMain',equipe:'equipe'};
 let canal=null,empresa='',iniciando=false,tentativa=0,retryTimer=0,atividadeTimer=0;
 const timers=new Map(),emCarga=new Set(),pendente=new Set(),ultimaConsulta=new Map();
 const secao=mod=>document.getElementById(ELEMENTOS[mod]||'');
