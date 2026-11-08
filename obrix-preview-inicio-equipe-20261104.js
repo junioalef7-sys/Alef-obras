@@ -78,7 +78,7 @@ function obrasMaisMovimentadas(){
   grupos.sort((a,b)=>b.quantidade-a.quantidade||b.ultima-a.ultima
     ||dataHora(b.obra.atualizado_em||b.obra.criado_em)-dataHora(a.obra.atualizado_em||a.obra.criado_em)
     ||String(a.obra.nome||'').localeCompare(String(b.obra.nome||''),'pt-BR'));
-  return grupos.slice(0,3).map(item=>item.obra);
+  return grupos.map(item=>item.obra);
 }
 function renderInicio(){
   const root=$('inicio');if(!root)return;
@@ -92,22 +92,28 @@ function renderInicio(){
   const obrasHtml=recentes.length?recentes.map(o=>{const p=progresso(o);return '<button type="button" class="obp-work" data-home-obra="'+esc(o.id)+'"><span class="obp-work-icon">▥</span><span class="obp-work-main"><strong>'+esc(o.nome||'Obra')+'</strong><span class="obp-progress"><i style="width:'+(p??0)+'%"></i></span></span><span class="obp-work-pct">'+(p===null?'—':p+'%')+'</span><span class="obp-work-arrow">›</span></button>'}).join(''):'<div class="obp-empty">Nenhuma obra em andamento.</div>';
   const obrasBox=$('obpObras');
   if(obrasBox&&obrasBox.__obpMarkup!==obrasHtml){obrasBox.innerHTML=obrasHtml;obrasBox.__obpMarkup=obrasHtml}
-  const at=atividades().slice(0,4);
+  const at=atividades().slice(0,10);
   const atividadesHtml=at.length?at.map(atividadeHTML).join(''):'<div class="obp-empty">Sem atualizações nos últimos 30 dias.</div>';
   const atividadesBox=$('obpAtividades');
   if(atividadesBox&&atividadesBox.__obpMarkup!==atividadesHtml){atividadesBox.innerHTML=atividadesHtml;atividadesBox.__obpMarkup=atividadesHtml}
 }
-function abrirObras(id){
-  if(typeof window.abrir==='function')window.abrir('obras');if(id)window.OBRIX_POS_LOGIN_LOADER?.loadGroup?.('obras').catch?.(()=>{});
-  if(!id){setTimeout(()=>$('obxVoltarObras')?.click(),200);return}
-  let tentativas=0;
-  const ir=()=>{
-    const voltar=$('obxVoltarObras');if(voltar)voltar.click();
-    const btn=[...document.querySelectorAll('#listaObras [data-abrir]')].find(b=>String(b.dataset.abrir)===String(id));
-    if(btn){btn.click();return}
-    if(tentativas++<35)setTimeout(ir,150);
+async function abrirObras(id){
+  // Carrega o modulo antes da navegacao: o cartao ja abre os detalhes, nao a central.
+  if(id)try{await window.OBRIX_POS_LOGIN_LOADER?.loadGroup?.('obras')}catch(e){console.warn('Obras: carregamento pendente',e)}
+  if(typeof window.abrir==='function')window.abrir('obras');
+  if(!id){window.OBRIX_OBRAS_FIEL?.list?.();return}
+  const abrirDetalhe=()=>{
+    if(window.OBRIX_OBRAS_FIEL?.open?.(id))return true;
+    const btn=[...document.querySelectorAll('#listaObras [data-abrir]')]
+      .find(b=>String(b.dataset.abrir)===String(id));
+    if(btn){btn.click();return true}
+    return false;
   };
-  setTimeout(ir,110);
+  if(abrirDetalhe())return;
+  // Fallback unico quando outro modulo ainda termina de montar a lista.
+  requestAnimationFrame(()=>{
+    if(!abrirDetalhe())console.warn('OBRIX: obra nao encontrada para abrir',id)
+  });
 }
 async function abrirFotoAtalho(){
   // Relatorio fotografico exige uma obra; o atalho nao deve abrir um relatorio vazio.
