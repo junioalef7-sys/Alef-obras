@@ -1,6 +1,9 @@
 (()=>{
 'use strict';
-if(window.OBRIX_FOTOS_RECUPERADAS)return;
+if(window.OBRIX_FOTOS_RECUPERADAS?.version==='lab-sha256-20261108-clickfix')return;
+try{window.OBRIX_FOTOS_RECUPERADAS?.close?.()}catch(_){}
+const oldRoot=document.getElementById('obrFrRoot');if(oldRoot)oldRoot.remove();
+const oldStyle=document.getElementById('obrFrStyle');if(oldStyle)oldStyle.remove();
 const COMPANY='ec70a79d-42ce-47af-8831-986a01b152c5',PAGE_SIZE=6;
 const LAB_API='https://mjzlwnuklfopdmgcvdcs.supabase.co/functions/v1/obrix-fotos-lab-galeria-readonly';
 const LAB_PUBLIC_KEY="sb_publishable_y9Zcco35Ci7grw9DIvcFJw_ZK3uc_CG";
@@ -162,5 +165,5 @@ function open(){
  status('Validando sessão e conferindo arquivos...');
  root.scrollTop=0;void load();return true;
 }
-window.OBRIX_FOTOS_RECUPERADAS={open,close,version:'lab-sha256-20261108'};
+window.OBRIX_FOTOS_RECUPERADAS={open,close,version:'lab-sha256-20261108-clickfix'};
 })();
