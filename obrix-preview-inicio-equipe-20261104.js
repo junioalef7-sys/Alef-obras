@@ -32,7 +32,7 @@ function atividades(){
   const a=[],agora=Date.now();
   const push=(key,txt,date,icon)=>{
     const t=dataHora(date);
-    // Apply the 30-day cutoff to local and remote records, not only the display.
+    // Unificar registros locais e remotos, independentemente do periodo.
     if(t>0&&t<=agora+60000)a.push({key,txt,date,t,icon});
   };
   const nomes=new Map(funcs().map(f=>[String(f.id),f.nome||'Funcionário']));
@@ -45,6 +45,7 @@ function atividades(){
     push('diaria:'+d.id,'Diária registrada: '+(nomes.get(String(d.funcionario_id))||'Funcionário')+' · '+(nomesObra.get(String(d.obra_id))||'Sem obra vinculada'),data,'◷');
   });
   eventosRemotos.forEach(e=>push(e.key,e.txt,e.date,e.icon));
+  eventosLocais().forEach(e=>push(e.key,e.txt,e.date,e.icon));
   const uniq=new Map();a.sort((x,y)=>y.t-x.t).forEach(x=>{if(!uniq.has(x.key))uniq.set(x.key,x)});
   return [...uniq.values()].slice(0,80);
 }
@@ -185,23 +186,56 @@ function abrirAtualizacoes(){
   document.body.appendChild(back);back.querySelector('[data-close]').onclick=()=>back.remove();
   back.addEventListener('click',e=>{if(e.target===back)back.remove()});
 }
-async function buscarEventos(){
-  if(buscandoEventos||!navigator.onLine||Date.now()-eventosAtualizados<60000||!$('app')||$('app').classList.contains('hidden'))return;
-  buscandoEventos=true;eventosAtualizados=Date.now();
+const ATIVIDADES_LOCAL_PREFIX='obrix_atividades_locais_v1_';
+let feedTimer=0;
+function eventosLocais(){
   try{
-    const sb=await window.OBRIX_BACKEND?.init?.();const p=await window.OBRIX_BACKEND?.profile?.();if(!sb||!p?.empresa_id)return;
-    const fontes=[['relatorio_fotos','Foto adicionada','▧','id,obra_id,criado_em','criado_em'],['diarios_obra','Diário de obra atualizado','▤','id,obra_id,data','data'],['checklist_itens','Checklist atualizado','☑','id,obra_id,atualizado_em','atualizado_em']];
-    const rows=await Promise.all(fontes.map(async ([t,titulo,icon,campos,ordem])=>{
-      try{
-        const r=await sb.from(t).select(campos).eq('empresa_id',p.empresa_id)
-          .order(ordem,{ascending:false}).limit(15);
-        if(r.error)return[];
-        return (r.data||[]).map(x=>({key:t+':'+x.id,txt:titulo+' · '+nomeObra(x.obra_id),date:x.atualizado_em||x.criado_em||x.created_at||x.data,icon}));
-      }catch(_){return[]}
-    }));
-    eventosRemotos=rows.flat();
-    if(!$('inicio')?.classList.contains('hidden'))renderInicio();
-  }catch(_){}finally{buscandoEventos=false}
+    const eid=(JSON.parse(localStorage.getItem('obrix_offline_identity_v1')||'null')||{}).empresa_id||'';
+    if(!eid)return[];
+    const arr=JSON.parse(localStorage.getItem(ATIVIDADES_LOCAL_PREFIX+eid)||'[]');
+    return Array.isArray(arr)?arr.slice(0,30):[];
+  }catch(_){return[]}
+}
+function registrarAtividadeLocal(texto,tipo='backup',empresa=''){
+  try{
+    const eid=empresa||JSON.parse(localStorage.getItem('obrix_offline_identity_v1')||'null')?.empresa_id;
+    if(!eid)return false;
+    const chave=ATIVIDADES_LOCAL_PREFIX+eid;
+    const arr=JSON.parse(localStorage.getItem(chave)||'[]');
+    const ev={key:'local:'+Date.now()+':'+Math.random().toString(36).slice(2,7),
+      txt:String(texto||'Atividade do aplicativo').slice(0,180),
+      date:new Date().toISOString(),icon:tipo==='backup'?'▣':'▤'};
+    localStorage.setItem(chave,JSON.stringify([ev,...(Array.isArray(arr)?arr:[])].slice(0,30)));
+    if(secaoVisivel('inicio'))renderInicio();
+    return true;
+  }catch(e){console.warn('Atividade local nao salva',e);return false}
+}
+window.OBRIX_ATIVIDADES_LOCAL={registrar:registrarAtividadeLocal};
+async function buscarEventos(force=false){
+  if(buscandoEventos||!navigator.onLine||!$('app')||$('app').classList.contains('hidden'))return;
+  const minimo=force?8000:60000;
+  if(Date.now()-eventosAtualizados<minimo)return;
+  buscandoEventos=true;
+  const agora=Date.now();
+  try{
+    const sb=await window.OBRIX_BACKEND?.init?.();
+    const p=await window.OBRIX_BACKEND?.profile?.();
+    if(!sb||!p?.empresa_id)return;
+    const r=await sb.rpc('obrix_feed_geral',{p_limite:40});
+    if(r.error)throw r.error;
+    eventosRemotos=(r.data||[]).map(e=>({
+      key:String(e.chave||''),
+      txt:String(e.texto||'Atualizacao do aplicativo'),
+      date:e.data_evento,icon:e.icone||'▤'
+    })).map(e=>({...e,key:e.key.startsWith('obras:')?'obra:'+e.key.slice(6):
+        e.key.startsWith('diarias:')?'diaria:'+e.key.slice(8):e.key}));
+    eventosAtualizados=agora;
+    if(secaoVisivel('inicio'))renderInicio();
+  }catch(e){
+    console.warn('Historico geral: consulta adiada',e);
+    // Nao apagar eventos ja obtidos em caso de falha temporaria.
+    eventosAtualizados=agora-50000;
+  }finally{buscandoEventos=false}
 }
 function arrEquipe(tipo,id){return lista(tipo).filter(x=>String(x.funcionario_id)===String(id))}
 
@@ -716,6 +750,8 @@ function iniciar(){
   for(const section of [ini,team])if(section)new MutationObserver(atualizar).observe(section,{attributes:true,attributeFilter:['class','hidden','style']});
   ['obrix:offline-base-atualizada','obrix:offline-core-restaurado','obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:progresso-atualizado'].forEach(x=>window.addEventListener(x,atualizar));
   window.addEventListener('pageshow',atualizar);
+  window.addEventListener('obrix:atividade-externa',()=>{if(secaoVisivel('inicio'))void buscarEventos(true)});
+  window.addEventListener('obrix:atividade-local',()=>{if(secaoVisivel('inicio'))renderInicio()});
   setTimeout(atualizar,1200);setTimeout(atualizar,3200);
   let ultimaAssinaturaInicio='';
   setInterval(()=>{
