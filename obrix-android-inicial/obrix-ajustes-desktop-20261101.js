@@ -88,6 +88,10 @@ html[data-theme="light"] .accountDeleteModal .excluir:is(:hover,:focus,:active){
 `;
   s.textContent+=`
 @media (min-width:621px){
+  #app button[aria-label="Voltar"],#app a[aria-label="Voltar"],
+  #app #obrixHeaderVoltar,.obrixSetaVoltar{transition:none!important;animation:none!important}
+  #app button[aria-label="Voltar"]:has(svg)::before,
+  #app a[aria-label="Voltar"]:has(svg)::before{content:none!important;display:none!important}
   #app>.top #obrixHeaderVoltar::before,
   #app>.top #obrixHeaderVoltar::after{content:none!important;display:none!important}
   #app>.top #obrixHeaderVoltar svg[data-obrix-back-icon]{display:block!important;visibility:visible!important}
