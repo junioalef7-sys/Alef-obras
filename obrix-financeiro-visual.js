@@ -63,8 +63,27 @@ html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financ
 @media(max-width:640px){#financeiroMain .kpi{padding:10px!important;min-height:70px!important}#financeiroMain .kpi strong{font-size:18px!important}#financeiroMain .obxFinCardCompacto{padding:10px!important}#financeiroMain .obxFinAcoes{gap:7px!important}}
 `;
 document.head.appendChild(css);
-const init=()=>{aplicar();const main=document.getElementById('financeiroMain');if(main&&!main.__obxFinVisual){main.__obxFinVisual=true;new MutationObserver(()=>requestAnimationFrame(aplicar)).observe(main,{childList:true,subtree:true})}[100,400,900,1800].forEach(ms=>setTimeout(aplicar,ms))};
+let proximaAplicacao=0,agendaAplicacao=0;
+function agendarAplicar(){
+  clearTimeout(agendaAplicacao);
+  agendaAplicacao=setTimeout(()=>{
+    if(document.hidden)return;
+    const main=document.getElementById('financeiroMain');
+    if(main&&!main.classList.contains('hidden'))aplicar();
+  },110);
+}
+const init=()=>{
+  aplicar();
+  const main=document.getElementById('financeiroMain');
+  if(main&&!main.__obxFinVisual){
+    main.__obxFinVisual=true;
+    new MutationObserver(muts=>{
+      if(muts.some(m=>m.addedNodes.length||m.removedNodes.length))agendarAplicar();
+    }).observe(main,{childList:true,subtree:false});
+  }
+  setTimeout(agendarAplicar,300);
+};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
-window.addEventListener('obrix:theme-applied',()=>requestAnimationFrame(aplicar));
+window.addEventListener('obrix:theme-applied',agendarAplicar);
 window.OBRIX_FIN_VISUAL={refresh:aplicar};
 })();
