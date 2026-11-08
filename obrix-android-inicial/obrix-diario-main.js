@@ -40,7 +40,57 @@ function perfilAtual(){try{return typeof profile!=='undefined'&&profile?profile:
 function payloadAtual(){return {obra_id:$('diarioObra').value,data:$('diarioData').value,clima:$('diarioClima').value,temperatura:$('diarioTemperatura').value.trim()||null,servicos_executados:$('diarioServicos').value.trim()||null,ocorrencias:$('diarioOcorrencias').value.trim()||null,materiais_utilizados:$('diarioMateriais').value.trim()||null,equipamentos_utilizados:$('diarioEquipamentos').value.trim()||null,observacoes:$('diarioObs').value.trim()||null,status:$('diarioStatus').value,equipe_ids:[...document.querySelectorAll('#diarioEquipeBox input[type=checkbox]:checked')].map(x=>x.value),atualizado_em:new Date().toISOString()}}
 function carregarLocal(msg='Modo offline: exibindo dados salvos neste aparelho.'){off()?.restoreBase?.();diarios=off()?.rows?.()||[];fillObras();if(!$('diarioData').value)$('diarioData').value=today();render();showMsg(msg,true)}
 async function load(){ensure();if(!navigator.onLine&&off()){carregarLocal();return}if(!perfilAtual()){if(off()?.restoreBase?.()&&!navigator.onLine){carregarLocal();return}return}try{await off()?.sync?.().catch(()=>false);if(!window.obras?.length){window.obras=await OBRIX_BACKEND.readTable('obras','criado_em')}const server=await OBRIX_BACKEND.readTable('diarios_obra','data')||[];off()?.saveCache?.(server);off()?.captureBase?.();diarios=off()?.merge?.(server)||server;fillObras();if(!$('diarioData').value)$('diarioData').value=today();render()}catch(e){if(off()?.restoreBase?.()){carregarLocal('Sem conexão com o servidor. Exibindo os dados salvos no aparelho.')}else showError(e)}}
-async function save(){const oid=$('diarioObra').value,date=$('diarioData').value;if(!oid||!date)return showMsg('Selecione a obra e a data.',false);const btn=$('diarioSalvar'),id=$('diarioId').value,p=perfilAtual();btn.disabled=true;const payload=payloadAtual();try{if(!p?.empresa_id){if(off()?.restoreBase?.())return await save();throw new Error('Abra o OBRIX conectado pelo menos uma vez antes de usar o modo offline.')}const offlinePayload={...payload,empresa_id:p.empresa_id};if(!navigator.onLine||String(id).startsWith('offline-')){const localId=off()?.add?.(offlinePayload,String(id).startsWith('offline-')?id:null);if(navigator.onLine)await off()?.sync?.().catch(()=>false);resetForm();if(navigator.onLine)await load();else carregarLocal();showMsg(navigator.onLine?'Diário salvo e sincronização iniciada.':'Salvo no aparelho. Será sincronizado automaticamente quando a internet voltar.');return localId}const sb=await OBRIX_BACKEND.init();let q=id?sb.from('diarios_obra').update(payload).eq('id',id).eq('empresa_id',p.empresa_id).select('id'):sb.from('diarios_obra').insert({...payload,empresa_id:p.empresa_id}).select('id');const {data,error}=await q;if(error)throw error;if(!data?.length)throw new Error('A gravação não foi confirmada.');resetForm();await load();showMsg(id?'Diário atualizado com sucesso.':'Diário salvo com sucesso.')}catch(e){const m=e?.message||String(e);if(off()&&(!navigator.onLine||/failed to fetch|network|fetch failed|offline|conex/i.test(m))&&p?.empresa_id){off().add({...payload,empresa_id:p.empresa_id},String(id).startsWith('offline-')?id:null);resetForm();carregarLocal('Sem internet. O diário foi salvo no aparelho e será sincronizado depois.')}else{showMsg(m.includes('duplicate key')?'Já existe um diário para esta obra nessa data.':ptError(e),false)}}finally{btn.disabled=false}}
+async function save(){
+ const oid=$('diarioObra')?.value,date=$('diarioData')?.value;
+ if(!oid||!date){showMsg('Selecione a obra e a data.',false);return}
+ const btn=$('diarioSalvar');
+ if(!btn||btn.disabled)return;
+ const id=$('diarioId')?.value||'';
+ let p=perfilAtual(),persistido=false;
+ const payload=payloadAtual();
+ btn.disabled=true;
+ try{
+  if(!p?.empresa_id&&navigator.onLine)p=await OBRIX_BACKEND.profile();
+  if(!p?.empresa_id&&off()?.restoreBase?.())p=perfilAtual();
+  if(!p?.empresa_id)throw new Error('Conta não identificada. Entre uma vez conectado antes de salvar offline.');
+  const local={...payload,empresa_id:p.empresa_id};
+  const registrarLocal=()=>{
+    const localId=off()?.add?.(local,String(id).startsWith('offline-')?id:null);
+    if(!localId)throw new Error('O Diário não foi gravado no aparelho. Verifique o armazenamento disponível.');
+    persistido=true;
+    return localId;
+  };
+  if(!navigator.onLine||String(id).startsWith('offline-')){
+    registrarLocal();
+    let sincronizado=false;
+    if(navigator.onLine)sincronizado=await off()?.sync?.().catch(()=>false)===true;
+    resetForm();
+    try{if(navigator.onLine)await load();else carregarLocal()}catch(e){console.warn('Diário salvo; atualização da lista pendente',e)}
+    showMsg(sincronizado?'Diário salvo e sincronizado.':'Diário salvo no aparelho. Sincronização pendente.');
+    return;
+  }
+  const sb=await OBRIX_BACKEND.init();
+  const q=id?sb.from('diarios_obra').update(payload).eq('id',id).eq('empresa_id',p.empresa_id).select('id'):
+    sb.from('diarios_obra').insert({...payload,empresa_id:p.empresa_id}).select('id');
+  const r=await q;
+  if(r.error)throw r.error;
+  if(!r.data?.length)throw new Error('O banco não confirmou a gravação do diário.');
+  persistido=true;
+  resetForm();
+  try{await load()}catch(e){console.warn('Diário gravado; atualização da lista pendente',e)}
+  showMsg(id?'Diário atualizado com sucesso.':'Diário salvo com sucesso.');
+ }catch(e){
+  if(persistido){showMsg('Diário registrado. Atualize a lista para conferir.',true);return}
+  const msg=e?.message||String(e);
+  if(off()&&p?.empresa_id&&(!navigator.onLine||/failed to fetch|network|fetch failed|offline|conex|timeout/i.test(msg))){
+    try{
+      const localId=off().add({...payload,empresa_id:p.empresa_id},String(id).startsWith('offline-')?id:null);
+      if(!localId)throw new Error('Armazenamento local não confirmou a gravação.');
+      resetForm();carregarLocal('Diário salvo no aparelho. Sincronização pendente.');
+    }catch(localError){showMsg('Não foi possível guardar o diário: '+(localError?.message||localError),false)}
+  }else showMsg(msg.includes('duplicate key')?'Já existe um diário para esta obra nessa data.':ptError(e),false);
+ }finally{btn.disabled=false}
+}
 async function removeD(d){if(!await window.OBRIX_CONFIRMAR_EXCLUSAO({titulo:'Excluir diário',mensagem:`Excluir o diário de ${formatDate(d.data)}?`,confirmar:'Excluir'}))return;if(d.__offline&&String(d.id).startsWith('offline-')){off()?.removePending?.(d.id);carregarLocal('Registro offline excluído do aparelho.');return}if(!navigator.onLine)return showMsg('Para excluir um diário já sincronizado, conecte o aparelho à internet.',false);try{const p=perfilAtual(),sb=await OBRIX_BACKEND.init(),{error}=await sb.from('diarios_obra').delete().eq('id',d.id).eq('empresa_id',p.empresa_id);if(error)throw error;await load();showMsg('Diário excluído com sucesso.')}catch(e){showError(e)}}
 function ensureJsPdf(){if(window.jspdf?.jsPDF)return Promise.resolve(window.jspdf.jsPDF);if(pdfPromise)return pdfPromise;pdfPromise=new Promise((resolve,reject)=>{if(!navigator.onLine){reject(new Error('Para gerar o PDF pela primeira vez, conecte o aparelho à internet.'));return}let done=false;const finish=(ok,v)=>{if(done)return;done=true;ok?resolve(v):reject(v)};const s=document.createElement('script');s.src=JSPDF_SRC;s.async=true;s.onload=()=>window.jspdf?.jsPDF?finish(true,window.jspdf.jsPDF):finish(false,new Error('Não foi possível iniciar o gerador de PDF.'));s.onerror=()=>finish(false,new Error('Não foi possível carregar o gerador de PDF.'));document.head.appendChild(s);setTimeout(()=>finish(false,new Error('O gerador de PDF demorou demais para carregar.')),10000)}).catch(e=>{pdfPromise=null;throw e});return pdfPromise}
 function nomeObra(id){return (window.obras||[]).find(o=>String(o.id)===String(id))?.nome||'Obra'}
