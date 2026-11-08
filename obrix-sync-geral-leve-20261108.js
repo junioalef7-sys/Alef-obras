@@ -15,7 +15,7 @@ const MODULOS={
 };
 const ELEMENTOS={orcamentos:'orcamentosMain',notas:'notasMain',documentos:'documentosMain',
   estoque:'estoqueMain',diario:'diarioMain',relatorios:'relatoriosMain',equipe:'equipe'};
-let canal=null,canalCliente=null,empresa='',iniciando=false,tentativa=0,retryTimer=0,atividadeTimer=0;
+let canal=null,canalCliente=null,empresa='',iniciando=false,tentativa=0,retryTimer=0,atividadeTimer=0,ultimaVerificacaoIdentidade=0;
 const timers=new Map(),emCarga=new Set(),pendente=new Set(),ultimaConsulta=new Map();
 const secao=mod=>document.getElementById(ELEMENTOS[mod]||'');
 const ativo=()=>navigator.onLine&&!document.hidden&&!!document.getElementById('app')&&
@@ -66,7 +66,7 @@ function onChange(tab,payload){
 function desligar(){
   clearTimeout(retryTimer);retryTimer=0;
   const antigo=canal,cliente=canalCliente;
-  canal=null;canalCliente=null;empresa='';
+  canal=null;canalCliente=null;empresa='';ultimaVerificacaoIdentidade=0;
   if(antigo)try{
     if(cliente?.removeChannel)void cliente.removeChannel(antigo).catch?.(()=>{});
     else antigo.unsubscribe?.();
@@ -74,9 +74,12 @@ function desligar(){
 }
 async function iniciar(){
   if(iniciando||!ativo()||!window.OBRIX_BACKEND)return;
+  // Não consultar perfil e sessão a cada ciclo de reconciliação no computador.
+  if(canal&&empresa&&Date.now()-ultimaVerificacaoIdentidade<60000)return;
   iniciando=true;
   try{
     const p=await window.OBRIX_BACKEND.profile(),sb=await window.OBRIX_BACKEND.init();
+    ultimaVerificacaoIdentidade=Date.now();
     if(!p?.empresa_id){retryTimer=setTimeout(iniciar,1800);return}
     if(canal&&empresa===p.empresa_id)return;
     if(canal)desligar();
@@ -114,7 +117,7 @@ document.addEventListener('visibilitychange',()=>{
   void iniciar();reconciliarVisivel();
 });
 ['obrix:modules-ready','obrix:modules-online-ready','obrix:session-shell','obrix:grupo-pronto']
-  .forEach(ev=>window.addEventListener(ev,()=>{void iniciar();reconciliarVisivel()}));
+  .forEach(ev=>window.addEventListener(ev,()=>{if(ev==='obrix:session-shell')ultimaVerificacaoIdentidade=0;void iniciar();reconciliarVisivel()}));
 setInterval(()=>{if(ativo()){void iniciar();reconciliarVisivel()}},12000);
 setTimeout(()=>{void iniciar();reconciliarVisivel()},700);
 window.OBRIX_SYNC_GERAL={status:()=>({conectado:!!canal,empresa:!!empresa,modulos:Object.keys(ELEMENTOS)}),
