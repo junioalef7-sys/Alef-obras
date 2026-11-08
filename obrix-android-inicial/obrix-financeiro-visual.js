@@ -3,14 +3,21 @@
 if(window.__OBRIX_FIN_VISUAL)return;window.__OBRIX_FIN_VISUAL=true;
 function ehVoltar(b){const t=String(b?.textContent||'').replace(/\s+/g,'').trim(),a=String(b?.getAttribute?.('aria-label')||'').toLowerCase(),ti=String(b?.getAttribute?.('title')||'').toLowerCase();return t==='←'||t==='‹'||t==='⬅'||t==='↩'||a.includes('voltar')||ti.includes('voltar')}
 function removerSetasDuplicadas(){
- const main=document.getElementById('financeiroMain');if(!main)return;
- const top=main.previousElementSibling?.classList?.contains('top')?main.previousElementSibling:document.querySelector('#app>.top,.wrap #app .top');
- const candidatos=[...(top?.querySelectorAll?.('button,.btn,[role="button"],a')||[]),...main.querySelectorAll(':scope > button,:scope > .btn,:scope > [role="button"],:scope > a,.hero button,.hero .btn,.hero [role="button"],.hero a')].filter(ehVoltar);
- if(candidatos.length>1)candidatos.slice(1).forEach(b=>b.remove());
+  // Não remover nós de navegação: outros módulos os recriavam causando piscadas.
+  const main=document.getElementById('financeiroMain');
+  if(!main)return;
+  const global=document.getElementById('obrixHeaderVoltar');
+  const candidatos=[...main.querySelectorAll(':scope > button,:scope > .btn,:scope > [role="button"],:scope > a,.hero button,.hero .btn,.hero [role="button"],.hero a')].filter(ehVoltar);
+  // A seta global é a navegação principal; as secundárias ficam apenas ocultas.
+  const ocultar=!!global&&!global.classList.contains('hidden');
+  for(const el of candidatos){
+    if(el.classList.contains('obxFinBackDuplicada')!==ocultar)
+      el.classList.toggle('obxFinBackDuplicada',ocultar);
+  }
 }
 function aplicar(){
  const main=document.getElementById('financeiroMain');if(!main)return;removerSetasDuplicadas();
- const hero=main.querySelector('.hero');if(hero){hero.querySelectorAll('p').forEach(p=>p.remove());hero.classList.add('obxFinHeroLimpo');hero.querySelectorAll('button,.btn,[role="button"],a').forEach(b=>{if(ehVoltar(b))b.remove()})}
+ const hero=main.querySelector('.hero');if(hero&&!hero.classList.contains('obxFinHeroLimpo'))hero.classList.add('obxFinHeroLimpo');
  const rec=document.getElementById('fmRecebido'),des=document.getElementById('fmDespesas'),res=document.getElementById('fmResultado');
  if(rec)rec.classList.add('obxFinRecebido');if(des)des.classList.add('obxFinDespesa');if(res)res.classList.add('obxFinResultado');
  const br=document.getElementById('fmReceita'),bd=document.getElementById('fmDespesa');if(br)br.classList.add('obxFinBtnReceita');if(bd)bd.classList.add('obxFinBtnDespesa');
@@ -42,6 +49,8 @@ html[data-theme="light"] #financeiroMain #fmLista [data-fin-card="1"] .mini>smal
 #financeiroMain .actions .obxFinApagar{background:var(--ob-surface2,#f5f7fa)!important;color:#ff3b30!important;-webkit-text-fill-color:#ff3b30!important;border:1px solid var(--ob-border,#d7dee7)!important;outline:0!important;box-shadow:none!important}
 html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financeiroMain .actions .obxFinApagar{background:var(--ob-surface2,#111e2c)!important;border-color:var(--ob-border,#293b4d)!important;color:#ff453a!important;-webkit-text-fill-color:#ff453a!important}
 #financeiroMain .obxFinHeroLimpo{margin-bottom:10px!important;padding-bottom:0!important}
+#financeiroMain .hero>p{display:none!important}
+#financeiroMain .obxFinBackDuplicada{display:none!important}
 #financeiroMain .obxFinHeroLimpo h1{margin-bottom:0!important}
 #financeiroMain .kpis{gap:8px!important}
 #financeiroMain .kpi{padding:12px!important;min-height:76px!important;border-radius:12px!important}
@@ -63,13 +72,13 @@ html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financ
 @media(max-width:640px){#financeiroMain .kpi{padding:10px!important;min-height:70px!important}#financeiroMain .kpi strong{font-size:18px!important}#financeiroMain .obxFinCardCompacto{padding:10px!important}#financeiroMain .obxFinAcoes{gap:7px!important}}
 `;
 document.head.appendChild(css);
-let proximaAplicacao=0,agendaAplicacao=0;
+let agendaAplicacao=0,ultimoVisual=0;
 function agendarAplicar(){
   clearTimeout(agendaAplicacao);
   agendaAplicacao=setTimeout(()=>{
     if(document.hidden)return;
     const main=document.getElementById('financeiroMain');
-    if(main&&!main.classList.contains('hidden'))aplicar();
+    if(main&&!main.classList.contains('hidden')&&Date.now()-ultimoVisual>=180){ultimoVisual=Date.now();aplicar();}
   },110);
 }
 const init=()=>{
