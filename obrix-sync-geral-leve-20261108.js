@@ -32,7 +32,7 @@ function atualizarAtividades(){
   },850);
 }
 async function atualizar(mod){
-  if(!estaVisivel(mod)||edicao(mod))return;
+  if(!estaVisivel(mod)||(mod!=='diario'&&edicao(mod)))return;
   if(emCarga.has(mod)){pendente.add(mod);return}
   emCarga.add(mod);
   try{
@@ -58,7 +58,7 @@ function agendar(mod,delay=240){
 }
 function onChange(tab,payload){
   atualizarAtividades();
-  const mod=MODULOS[tab];if(mod&&estaVisivel(mod))agendar(mod,300);
+  const mod=MODULOS[tab];if(mod&&estaVisivel(mod))agendar(mod,mod==='diario'?160:300);
   window.dispatchEvent(new CustomEvent('obrix:modulo-remoto-alterado',{
     detail:{modulo:mod,tabela:tab,tipo:payload?.eventType||'UPDATE'}
   }));
@@ -90,7 +90,7 @@ async function iniciar(){
     canalCliente=sb;
     canal=ch.subscribe(status=>{
       if(canal!==ch)return;
-      if(status==='SUBSCRIBED'){tentativa=0;atualizarAtividades();}
+      if(status==='SUBSCRIBED'){tentativa=0;atualizarAtividades();if(estaVisivel('diario'))agendar('diario',200);}
       if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
         desligar();tentativa=Math.min(5,tentativa+1);
         retryTimer=setTimeout(iniciar,Math.min(15000,1000*2**tentativa));
@@ -105,7 +105,7 @@ async function iniciar(){
 function reconciliarVisivel(){
   if(!ativo())return;
   for(const mod of Object.keys(ELEMENTOS))
-    if(estaVisivel(mod)&&Date.now()-(ultimaConsulta.get(mod)||0)>30000)agendar(mod,500);
+    if(estaVisivel(mod)&&Date.now()-(ultimaConsulta.get(mod)||0)>(mod==='diario'?10000:30000))agendar(mod,500);
 }
 window.addEventListener('online',()=>{desligar();void iniciar();reconciliarVisivel()});
 window.addEventListener('focus',()=>{void iniciar();reconciliarVisivel()});
@@ -115,7 +115,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 ['obrix:modules-ready','obrix:modules-online-ready','obrix:session-shell','obrix:grupo-pronto']
   .forEach(ev=>window.addEventListener(ev,()=>{void iniciar();reconciliarVisivel()}));
-setInterval(()=>{if(ativo()){void iniciar();reconciliarVisivel()}},30000);
+setInterval(()=>{if(ativo()){void iniciar();reconciliarVisivel()}},12000);
 setTimeout(()=>{void iniciar();reconciliarVisivel()},700);
 window.OBRIX_SYNC_GERAL={status:()=>({conectado:!!canal,empresa:!!empresa,modulos:Object.keys(ELEMENTOS)}),
   refresh:reconciliarVisivel,start:iniciar};
