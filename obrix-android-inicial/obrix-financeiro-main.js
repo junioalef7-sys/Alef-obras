@@ -56,7 +56,7 @@
     window.financeiro=rows.data||[];extrasFinanceiro=extras.data||[];checklistFinanceiro=checks.data||[];
     lastSync=signature(window.financeiro,extrasFinanceiro,checklistFinanceiro);return lastSync;
   }
-  function atualizarObras(){try{window.OBRIX_OBRAS?.render?.()}catch(_){}}
+  function atualizarObras(){const sec=document.getElementById('obras');if(!sec||sec.classList.contains('hidden'))return;try{window.OBRIX_OBRAS?.render?.()}catch(_){}}
   function podeExcluir(x){return x.origem==='manual'||!!x.pagamento_equipe_id||!!x.compra_id}
   function resumoChecklists(x){
     const mapa=new Map(checklistFinanceiro.map(c=>[String(c.id),c.nome||'Etapa'])),vals=valoresChecklist(x);
@@ -70,7 +70,7 @@
     const rec=f.filter(x=>x.tipo==='receita').reduce((s,x)=>s+Number(x.valor||0),0),des=f.filter(x=>x.tipo==='despesa').reduce((s,x)=>s+Number(x.valor||0),0),resultado=contratoAtualizado-des;
     const set=(id,val)=>{const el=$(id);if(el&&el.textContent!==val)el.textContent=val};
     set('fmContrato',money(contratoAtualizado));set('fmRecebido',money(rec));set('fmDespesas',money(des));set('fmResultado',money(resultado));
-    const c=$('fmContrato')?.closest('.kpi')?.querySelector('small'),r=$('fmResultado')?.closest('.kpi')?.querySelector('small');if(c)c.textContent='Contrato atualizado';if(r)r.textContent='Resultado da obra';
+    const c=$('fmContrato')?.closest('.kpi')?.querySelector('small'),r=$('fmResultado')?.closest('.kpi')?.querySelector('small');if(c&&c.textContent!=='Contrato atualizado')c.textContent='Contrato atualizado';if(r&&r.textContent!=='Resultado da obra')r.textContent='Resultado da obra';
     const lista=$('fmLista');
     const html=f.length?f.slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||''))).map(x=>{
       const o=os.find(z=>String(z.id)===String(x.obra_id)),manual=x.origem==='manual',checks=resumoChecklists(x);
