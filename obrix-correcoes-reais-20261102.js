@@ -26,23 +26,12 @@ async function atualizarObrasRemotas(){
   if(obrasRefreshing){obrasRefreshFila=true;return}
   obrasRefreshing=true;
   try{
-    if(typeof window.carregar==='function'){
-      await window.carregar();
-    }else if(typeof window.OBRIX_REFRESH_ALL==='function'){
-      await window.OBRIX_REFRESH_ALL();
-    }else{
-      const c=await contexto();if(!c)return;
-      const [o,e]=await Promise.all([
-        c.sb.from('obras').select('*').eq('empresa_id',c.eid),
-        c.sb.from('servicos_extras').select('*').eq('empresa_id',c.eid)
-      ]);
-      if(o.error||e.error)throw(o.error||e.error);
-      window.obras=o.data||[];window.extras=e.data||[];
-    }
-    if(obrasVisiveis())window.OBRIX_OBRAS_FIEL?.refresh?.();
-    window.OBRIX_DASH?.paint?.();
+    if(typeof window.OBRIX_CORE_OBRAS_SYNC==='function')
+      await window.OBRIX_CORE_OBRAS_SYNC();
+    else
+      console.warn('Obras: sincronizador do nucleo ainda nao carregado');
   }catch(e){
-    console.warn('OBRIX Obras: atualização remota indisponível',e);
+    console.warn('Obras: consulta ao servidor indisponivel; sera repetida',e);
   }finally{
     obrasRefreshing=false;
     if(obrasRefreshFila){obrasRefreshFila=false;agendarObrasRemotas(700)}
@@ -80,31 +69,27 @@ async function sincronizarObraAberta(){detectarObraModal();if(!obraChecklistId)r
 function acompanharFinanceiro(){const form=document.getElementById('fmForm');if(!form||finObs)return;finObs=new MutationObserver(()=>{if(!form.classList.contains('hidden'))return;finObs.disconnect();finObs=null;agendarDados(80)});finObs.observe(form,{attributes:true,attributeFilter:['class']});setTimeout(()=>{if(finObs){finObs.disconnect();finObs=null}},8000)}
 function pararCanal(){clearTimeout(retryTimer);retryTimer=null;if(canal){try{canal.unsubscribe?.()}catch(_){}canal=null}}
 async function realtime(){if(canal||!navigator.onLine)return;try{const c=await contexto();if(!c)return;let ch=c.sb.channel('obrix-sync-real-'+c.eid);
-ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'obras',filter:`empresa_id=eq.${c.eid}`},payload=>{
-  const novo=payload?.new||null;
-  const atual=novo?.id?(window.obras||[]).find(x=>String(x.id)===String(novo.id)):null;
-  if(novo?.id&&atual){
-    Object.assign(atual,novo);
-    pintarCardProgresso(novo.id,novo.progresso);
-    if(obrasVisiveis())try{window.OBRIX_OBRAS_FIEL?.render?.()||window.OBRIX_OBRAS?.render?.()}catch(_){}
-    try{window.OBRIX_DASH?.paint?.()}catch(_){}
-    agendarVisuais();
-  }
-  // INSERT e DELETE precisam recarregar a coleção: atualizar só um cartão não inclui/exclui obras.
-  // UPDATE também reconcilia o cache offline, sem sobrescrever o servidor.
-  agendarObrasRemotas(novo?.id&&atual?850:220);
-});
-for(const tabela of ['financeiro','servicos_extras'])ch=ch.on('postgres_changes',{event:'*',schema:'public',table:tabela,filter:`empresa_id=eq.${c.eid}`},()=>agendarDados(320));
+ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'obras',filter:`empresa_id=eq.${c.eid}`},()=>agendarObrasRemotas(100));
+ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'servicos_extras',filter:`empresa_id=eq.${c.eid}`},()=>agendarObrasRemotas(120));
+for(const tabela of ['financeiro'])ch=ch.on('postgres_changes',{event:'*',schema:'public',table:tabela,filter:`empresa_id=eq.${c.eid}`},()=>agendarDados(320));
 for(const tabela of ['funcionarios','diarias','vales','bonus_extras'])ch=ch.on('postgres_changes',{event:'*',schema:'public',table:tabela,filter:`empresa_id=eq.${c.eid}`},()=>agendarEquipe(350));
 ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'faltas',filter:`empresa_id=eq.${c.eid}`},payload=>{
   window.dispatchEvent(new CustomEvent('obrix:equipe-registro',{detail:{table:'faltas',funcionarioId:payload?.new?.funcionario_id||payload?.old?.funcionario_id||null}}));
 });
 ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'checklist_itens',filter:`empresa_id=eq.${c.eid}`},payload=>{const id=String(payload?.new?.obra_id||payload?.old?.obra_id||obraChecklistId||'');if(id&&(!obraChecklistId||String(obraChecklistId)===id)){obraChecklistId=id;agendarSalvar(180,true)}});
-canal=ch.subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){pararCanal();retryTimer=setTimeout(realtime,1500)}})}catch(e){console.warn('OBRIX: realtime indisponível',e);pararCanal();retryTimer=setTimeout(realtime,1800)}}
+canal=ch.subscribe(status=>{if(status==='SUBSCRIBED')agendarObrasRemotas(160);if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){pararCanal();retryTimer=setTimeout(realtime,1500)}})}catch(e){console.warn('OBRIX: realtime indisponível',e);pararCanal();retryTimer=setTimeout(realtime,1800)}}
 document.addEventListener('click',e=>{capturarObraChecklist(e.target);if(e.target.closest?.('#fmSalvar'))acompanharFinanceiro();if(e.target.closest?.('.checkClose'))agendarSalvar(0,true);setTimeout(agendarVisuais,0);setTimeout(agendarVisuais,160);if(e.target.closest?.('.obxChecklist,[data-check-open]'))setTimeout(sincronizarObraAberta,350)},true);
 document.addEventListener('input',e=>{if(!e.target.closest?.('[data-check-range]'))return;detectarObraModal();const p=mediaAtual();if(obraChecklistId&&p!=null){aplicarProgressoLocal(obraChecklistId,p);agendarSalvar(220,false)}},true);
 document.addEventListener('change',e=>{if(!e.target.closest?.('[data-check-range]'))return;detectarObraModal();const p=mediaAtual();if(obraChecklistId&&p!=null)aplicarProgressoLocal(obraChecklistId,p);agendarSalvar(80,true)},true);
 const root=document.getElementById('app')||document.body;new MutationObserver(agendarVisuais).observe(root,{childList:true,subtree:true});
 window.addEventListener('focus',()=>{agendarVisuais();agendarDados(100);if(obrasVisiveis())agendarObrasRemotas(1200);realtime()});window.addEventListener('pageshow',()=>{agendarVisuais();agendarDados(100);realtime()});document.addEventListener('visibilitychange',()=>{if(!document.hidden){agendarVisuais();agendarDados(100);if(obrasVisiveis())agendarObrasRemotas(1200);realtime()}});window.addEventListener('online',()=>{pararCanal();agendarDados(80);realtime()});window.addEventListener('offline',pararCanal);window.addEventListener('resize',agendarVisuais);
 setTimeout(()=>{agendarVisuais();realtime()},300);setTimeout(agendarVisuais,1000);
+// Protecao contra eventos perdidos/rede instavel: consulta leve a cada 12 s
+// apenas quando Inicio ou Obras estiverem visiveis.
+setInterval(()=>{
+  if(!navigator.onLine||document.hidden)return;
+  const inicio=document.getElementById('inicio');
+  if(obrasVisiveis()||(inicio&&!inicio.classList.contains('hidden')))
+    agendarObrasRemotas(0);
+},12000);
 })();
