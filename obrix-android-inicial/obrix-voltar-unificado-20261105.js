@@ -5,7 +5,7 @@
   window.__obrixVoltarUnificado=true;
   const ICON='<svg data-obrix-back-icon="normalized-v2" viewBox="0 0 24 24" width="27" height="27" fill="none" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function norm(b){
-    if(!b||!b.isConnected)return;
+    if(!b||!b.isConnected||b.id==='obrixHeaderVoltar')return; // seta global pertence ao cabecalho
     const role=String(b.getAttribute('aria-label')||'')+' '+String(b.getAttribute('title')||'');
     const glyph=String(b.textContent||'').trim();
     const back=b.id==='obrixHeaderVoltar'||b.id==='obxVoltarObras'||
