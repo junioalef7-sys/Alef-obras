@@ -28,18 +28,27 @@ function signature(){const t=document.documentElement.dataset.theme||'';const vi
 function aplicar(force=false){if(applying)return;const sig=signature();if(!force&&sig===lastSignature)return;applying=true;try{diario();limpar();seta();window.OBRIX_EQUIPE_VISUAL_FINAL?.refresh?.();if(!document.getElementById('obrixTheme'))window.OBRIX_THEME?.refresh?.();window.OBRIX_ACTIONS_CLEAN_V1?.apply?.();lastSignature=signature()}finally{applying=false}}
 function agenda(force=false){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;aplicar(force)})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>aplicar(true),{once:true});else aplicar(true);
-const mo=new MutationObserver(muts=>{
-  if(applying||document.hidden)return;
-  const importante=el=>{
-    if(!el||el.nodeType!==1)return false;
-    const id=el.id||'';
-    return id==='app'||id==='inicio'||id==='obras'||id==='equipe'||
-      id==='menuMain'||id==='financeiroMain'||id==='resumoGeralMain'||
-      id.endsWith('Main')||el.classList?.contains('modalBack');
-  };
-  const relevante=muts.some(m=>
-    (m.type==='attributes'&&importante(m.target))||
-    (m.type==='childList'&&[...m.addedNodes].some(importante))
-  );
-  if(relevante)agenda(false);
-});mo.observe(document.getElementById('app')||document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});new MutationObserver(()=>agenda(true)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto'].forEach(x=>window.addEventListener(x,()=>agenda(true)));window.addEventListener('pageshow',()=>agenda(true));window.OBRIX_VISUAL_PADRAO_FINAL={refresh:()=>agenda(true)};})();
+// Observadores limitados aos containers de navegacao: evita percorrer cada
+// alteração de texto, cartão ou formulário durante uma sessão longa no desktop.
+const appRaiz=document.getElementById('app')||document.body;
+const observados=new WeakSet();
+const paginasObserver=new MutationObserver(muts=>{
+  if(!document.hidden&&muts.some(m=>m.attributeName==='class'||m.attributeName==='hidden'))
+    agenda(false);
+});
+function conectarPaginas(){
+  const pages=appRaiz.querySelectorAll(':scope > main,:scope > section,#financeiroMain,#resumoGeralMain,[id$="Main"]');
+  for(const page of pages){
+    if(observados.has(page))continue;
+    observados.add(page);
+    paginasObserver.observe(page,{attributes:true,attributeFilter:['class','hidden']});
+  }
+}
+const estruturaObserver=new MutationObserver(muts=>{
+  if(!muts.some(m=>m.addedNodes.length||m.removedNodes.length))return;
+  conectarPaginas();
+  if(!document.hidden)agenda(false);
+});
+estruturaObserver.observe(appRaiz,{childList:true,subtree:false});
+conectarPaginas();
+new MutationObserver(()=>agenda(true)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto'].forEach(x=>window.addEventListener(x,()=>{conectarPaginas();agenda(true)}));window.addEventListener('pageshow',()=>agenda(true));window.OBRIX_VISUAL_PADRAO_FINAL={refresh:()=>agenda(true)};})();
