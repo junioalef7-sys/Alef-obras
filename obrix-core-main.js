@@ -44,6 +44,42 @@ function restaurarOfflineCore(reason='core'){
   return true
 }
 async function carregarSecundarios(eid){try{const sb=await OBRIX_BACKEND.init(),[ex,di,va,bo]=await Promise.all([sb.from('servicos_extras').select('*').eq('empresa_id',eid),sb.from('diarias').select('*').eq('empresa_id',eid),sb.from('vales').select('*').eq('empresa_id',eid),sb.from('bonus_extras').select('*').eq('empresa_id',eid)]);[ex,di,va,bo].forEach(r=>{if(r.error)throw r.error});extras=ex.data||[];diarias=di.data||[];vales=va.data||[];bonus=bo.data||[];publicarGlobais();salvarBaseOffline();atualizarInicio();if($('obras')&&!$('obras').classList.contains('hidden'))renderObras();if($('equipe')&&!$('equipe').classList.contains('hidden'))renderEquipe();window.OBRIX_DASH?.paint?.()}catch(e){console.warn('OBRIX: dados secundários serão sincronizados depois',e)}}
+// Reconciliacao pontual com o servidor: nao refaz o login nem substitui dados financeiros locais.
+let obrasSyncPendente=null;
+async function sincronizarObrasDoServidor(){
+  if(obrasSyncPendente)return obrasSyncPendente;
+  if(!navigator.onLine||!profile?.empresa_id)return false;
+  try{
+    const estado=window.OBRIX_OFFLINE_CENTRAL?.status?.();
+    if(Number(estado?.total||estado?.pendentes||0)>0)return false;
+  }catch(_){}
+  obrasSyncPendente=(async()=>{
+    const eid=profile.empresa_id,sb=await OBRIX_BACKEND.init();
+    const [ro,re]=await Promise.all([
+      sb.from('obras').select('*').eq('empresa_id',eid).order('criado_em',{ascending:false}),
+      sb.from('servicos_extras').select('*').eq('empresa_id',eid)
+    ]);
+    if(ro.error||re.error)throw(ro.error||re.error);
+    // Uma conta trocada durante a consulta nao pode receber dados da anterior.
+    if(!profile||profile.empresa_id!==eid)return false;
+    const novos=ro.data||[],novosExtras=re.data||[];
+    if(JSON.stringify(obras)===JSON.stringify(novos)&&
+       JSON.stringify(extras)===JSON.stringify(novosExtras))return false;
+    obras=novos;
+    extras=novosExtras;
+    publicarGlobais();
+    salvarBaseOffline();
+    atualizarInicio();
+    if($('obras')&&!$('obras').classList.contains('hidden'))
+      (window.OBRIX_OBRAS_FIEL?.refresh||window.OBRIX_OBRAS?.render)?.();
+    window.OBRIX_PREVIEW?.refresh?.();
+    window.OBRIX_DASH?.paint?.();
+    window.dispatchEvent(new CustomEvent('obrix:obras-remotas-atualizadas',{detail:{total:obras.length}}));
+    return true;
+  })().finally(()=>{obrasSyncPendente=null});
+  return obrasSyncPendente;
+}
+window.OBRIX_CORE_OBRAS_SYNC=sincronizarObrasDoServidor;
 async function carregar(){if(restaurarOfflineCore('core-carregar'))return true;if(carregandoCore)return;carregandoCore=true;try{profile=await timeout(OBRIX_BACKEND.profile(),12000,'Não foi possível carregar seu perfil. Tente novamente.');salvarIdentidadeOffline(profile);const anterior=lerBaseOffline();const sb=await OBRIX_BACKEND.init(),eid=profile.empresa_id;const [ow,fn,fi]=await timeout(Promise.all([sb.from('obras').select('*').eq('empresa_id',eid).order('criado_em',{ascending:false}),sb.from('funcionarios').select('*').eq('empresa_id',eid).order('criado_em',{ascending:false}),sb.from('financeiro').select('*').eq('empresa_id',eid).order('data',{ascending:false})]),15000,'A conexão demorou demais. Tente novamente.');[ow,fn,fi].forEach(r=>{if(r.error)throw r.error});obras=ow.data||[];funcionarios=fn.data||[];financeiro=fi.data||[];extras=Array.isArray(anterior?.extras)?anterior.extras:[];diarias=Array.isArray(anterior?.diarias)?anterior.diarias:[];vales=Array.isArray(anterior?.vales)?anterior.vales:[];bonus=Array.isArray(anterior?.bonus)?anterior.bonus:[];publicarGlobais();salvarBaseOffline();atualizarInicio();if($('usuario'))$('usuario').textContent=profile.nome||profile.email||'';renderObras();renderEquipe();mostrarApp();window.__OBRIX_CORE_LAST_LOAD=Date.now();void carregarSecundarios(eid);return true}catch(e){if(restaurarOfflineCore('core-fallback'))return true;mostrarErro(e);return false}finally{carregandoCore=false}}
 function abrir(id){['inicio','obras','equipe'].forEach(x=>$(x)?.classList.toggle('hidden',x!==id));$('financeiroMain')?.classList.add('hidden');$('estoqueMain')?.classList.add('hidden');$('menuMain')?.classList.add('hidden');$('bInicio')?.classList.toggle('active',id==='inicio');$('bEquipe')?.classList.toggle('active',id==='equipe');$('bMenu')?.classList.remove('active');if(id==='equipe')renderEquipe();if(id==='obras')renderObras();scrollTo({top:0,behavior:'smooth'})}
 function renderObras(){const box=$('listaObras');if(!box)return;box.innerHTML=obras.length?obras.map(o=>{const ex=extras.filter(x=>String(x.obra_id)===String(o.id)).reduce((s,x)=>s+Number(x.valor||0),0),rec=financeiro.filter(x=>String(x.obra_id)===String(o.id)&&x.tipo==='receita'&&(!x.status_lancamento||x.status_lancamento==='ativo')).reduce((s,x)=>s+Number(x.valor||0),0),desp=financeiro.filter(x=>String(x.obra_id)===String(o.id)&&x.tipo==='despesa'&&(!x.status_lancamento||x.status_lancamento==='ativo')).reduce((s,x)=>s+Number(x.valor||0),0),tot=Number(o.valor_contrato||0)+ex;return `<div class="card item"><h3>${esc(o.nome||'Obra')}</h3><div class="muted">${esc(o.cliente||'')} • ${esc(o.status||'')}</div><div class="grid"><div class="mini"><small>Total atualizado</small><b>${money(tot)}</b></div><div class="mini"><small>Recebido</small><b>${money(rec)}</b></div><div class="mini"><small>A receber</small><b>${money(Math.max(0,tot-rec))}</b></div><div class="mini"><small>Despesas</small><b>${money(desp)}</b></div></div></div>`}).join(''):'<div class="card muted">Nenhuma obra cadastrada.</div>'}
