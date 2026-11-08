@@ -10,7 +10,7 @@ function hideSplash(){
  const el=document.getElementById('obrixIosLaunch');
  if(el){el.setAttribute('aria-hidden','true');setTimeout(()=>el.remove(),450)}
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(hideSplash,1120),{once:true});else setTimeout(hideSplash,1120);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(hideSplash,2500),{once:true});else setTimeout(hideSplash,2500);
 setTimeout(hideSplash,8000);
 function boot(){
  const standalone=navigator.standalone===true||window.matchMedia?.('(display-mode: standalone)')?.matches===true;
