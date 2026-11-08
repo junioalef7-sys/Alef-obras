@@ -138,14 +138,26 @@
       const q=await sb.from('obras').select('id,nome').eq('empresa_id',p.empresa_id).order('nome',{ascending:true});
       if(q.error)throw q.error;
       if(!select.isConnected||$('fmObra')!==select)return;
-      const was=String(select.value||initial),items=(q.data||[]).filter(o=>o.id);
-      const options=[new Option('Sem obra vinculada','')];
-      for(const o of items)options.push(new Option(String(o.nome||'Obra'),String(o.id)));
-      select.replaceChildren(...options);
-      select.value=options.some(o=>o.value===was)?was:'';
-      select.dataset.obrixObrasStatus='pronto';
-      select.disabled=false;
-      atualizarChecklistForm(null);
+      const items=(q.data||[]).filter(o=>o.id);
+      const novos=[{id:'',nome:'Sem obra vinculada'},...items.map(o=>({id:String(o.id),nome:String(o.nome||'Obra')}))];
+      const aplicar=()=>{
+        if(!select.isConnected||$('fmObra')!==select)return;
+        const anterior=String(select.value||initial);
+        const iguais=select.options.length===novos.length&&
+          novos.every((o,i)=>select.options[i]?.value===o.id&&select.options[i]?.text===o.nome);
+        if(!iguais){
+          select.replaceChildren(...novos.map(o=>new Option(o.nome,o.id)));
+          select.value=novos.some(o=>o.id===anterior)?anterior:'';
+        }
+        select.dataset.obrixObrasStatus='pronto';
+        select.disabled=false;
+        if(select.value!==anterior)atualizarChecklistForm(null);
+      };
+      // Não desmontar o select enquanto o menu nativo está aberto.
+      if(document.activeElement===select){
+        select.dataset.obrixObrasStatus='pronto';
+        select.addEventListener('blur',aplicar,{once:true});
+      }else aplicar();
     }catch(e){
       if(!select.isConnected||$('fmObra')!==select)return;
       select.dataset.obrixObrasStatus='erro';
