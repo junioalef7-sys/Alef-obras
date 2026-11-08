@@ -151,6 +151,10 @@ function start(){
   if(app)new MutationObserver(muts=>{
     if(muts.some(m=>[...m.addedNodes].some(n=>n.nodeType===1&&(n.id==='equipe'||n.classList?.contains('obrix-equipe-controles')))))schedule();
   }).observe(app,{childList:true,subtree:false});
+  const sec=document.getElementById('equipe');
+  if(sec)new MutationObserver(muts=>{
+    if(muts.some(m=>[...m.addedNodes].some(n=>n.nodeType===1&&n.classList?.contains('obrix-equipe-controles'))))schedule();
+  }).observe(sec,{childList:true,subtree:false});
   new MutationObserver(schedule).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
   ['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','pageshow','online','offline'].forEach(n=>window.addEventListener(n,schedule));
 }
