@@ -15,7 +15,7 @@ const MODULOS={
 };
 const ELEMENTOS={orcamentos:'orcamentosMain',notas:'notasMain',documentos:'documentosMain',
   estoque:'estoqueMain',diario:'diarioMain',relatorios:'relatoriosMain',equipe:'equipe'};
-let canal=null,empresa='',iniciando=false,tentativa=0,retryTimer=0,atividadeTimer=0;
+let canal=null,canalCliente=null,empresa='',iniciando=false,tentativa=0,retryTimer=0,atividadeTimer=0;
 const timers=new Map(),emCarga=new Set(),pendente=new Set(),ultimaConsulta=new Map();
 const secao=mod=>document.getElementById(ELEMENTOS[mod]||'');
 const ativo=()=>navigator.onLine&&!document.hidden&&!!document.getElementById('app')&&
@@ -65,8 +65,12 @@ function onChange(tab,payload){
 }
 function desligar(){
   clearTimeout(retryTimer);retryTimer=0;
-  if(canal){try{window.OBRIX_BACKEND?.init?.().then(sb=>sb.removeChannel(canal)).catch(()=>{})}catch(_){try{canal.unsubscribe?.()}catch(__){}}}
-  canal=null;empresa='';
+  const antigo=canal,cliente=canalCliente;
+  canal=null;canalCliente=null;empresa='';
+  if(antigo)try{
+    if(cliente?.removeChannel)void cliente.removeChannel(antigo).catch?.(()=>{});
+    else antigo.unsubscribe?.();
+  }catch(_){try{antigo.unsubscribe?.()}catch(__){}}
 }
 async function iniciar(){
   if(iniciando||!ativo()||!window.OBRIX_BACKEND)return;
@@ -83,7 +87,9 @@ async function iniciar(){
       ch=ch.on('postgres_changes',{event:'*',schema:'public',table:tab,filter:filtro},
         payload=>onChange(tab,payload));
     });
+    canalCliente=sb;
     canal=ch.subscribe(status=>{
+      if(canal!==ch)return;
       if(status==='SUBSCRIBED'){tentativa=0;atualizarAtividades();}
       if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
         desligar();tentativa=Math.min(5,tentativa+1);
