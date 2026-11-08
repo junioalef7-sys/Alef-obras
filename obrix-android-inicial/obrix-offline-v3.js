@@ -36,7 +36,8 @@ const clone=v=>{try{return JSON.parse(JSON.stringify(v))}catch(_){return v}};
 const now=()=>new Date().toISOString();
 const has=v=>Array.isArray(v)&&v.length>0;
 const same=(a,b)=>a!=null&&b!=null&&String(a)===String(b);
-const isOffline=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true||document.documentElement.dataset.obrixOfflineV3==='1';
+// O atributo da tela indica o estado; não pode ser usado como sua própria causa.
+const isOffline=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true;
 const pathOf=s=>{try{return new URL(s,location.href).pathname}catch(_){return s}};
 const loaded=new Set();
 let active=false,runtimeReady=false,runtimePromise=null,current=null;
@@ -108,7 +109,7 @@ function owns(){return isOffline()||active}
 
 document.addEventListener('click',clickCapture,true);
 window.addEventListener('offline',()=>setTimeout(()=>start('connection-lost-v3'),0));
-window.addEventListener('online',()=>{capture('back-online');document.documentElement.removeAttribute('data-obrix-offline-v3');active=false});
+window.addEventListener('online',()=>{capture('back-online');if(!isOffline()){document.documentElement.removeAttribute('data-obrix-offline-v3');document.documentElement.removeAttribute('data-obrix-offline');active=false}});
 window.addEventListener('obrix:offline-base-atualizada',()=>capture('base-updated'));
 window.addEventListener('obrix:offline-v2-change',()=>capture('v2-change'));
 window.addEventListener('pageshow',()=>{if(isOffline())setTimeout(()=>start('pageshow-v3'),0);else setTimeout(()=>capture('pageshow-online'),300)});
