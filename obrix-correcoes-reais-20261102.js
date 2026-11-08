@@ -40,17 +40,26 @@ async function atualizarObrasRemotas(){
 const equipeVisivel=()=>{const e=document.getElementById('equipe');return !!(e&&!e.classList.contains('hidden'))};
 const financeiroVisivel=()=>{const e=document.getElementById('financeiroMain');return !!(e&&!e.classList.contains('hidden'))};
 async function atualizarDados(){
-  if(!navigator.onLine||document.hidden||atualizandoGeral||Date.now()-ultimaAtualizacaoGeral<1800)return;
+  if(!navigator.onLine||document.hidden||atualizandoGeral||Date.now()-ultimaAtualizacaoGeral<800)return;
+  const form=document.getElementById('fmForm');
+  if(form&&!form.classList.contains('hidden'))return;
   atualizandoGeral=true;ultimaAtualizacaoGeral=Date.now();
   try{
-    if(typeof window.carregar==='function')await window.carregar();
-    else if(typeof window.OBRIX_REFRESH_ALL==='function')await window.OBRIX_REFRESH_ALL();
-    if(obrasVisiveis())try{window.OBRIX_OBRAS_FIEL?.refresh?.()}catch(_){}
-    if(financeiroVisivel())try{await window.OBRIX_FIN?.render?.(true)}catch(_){}
-    if(equipeVisivel()&&!window.__OBRIX_EQUIPE_LAST_LOAD)try{await window.OBRIX_EQUIPE?.refresh?.()}catch(_){}
-    window.OBRIX_DASH?.paint?.();
-  }catch(e){console.warn('OBRIX: sincronização será repetida',e)}
-  finally{atualizandoGeral=false;agendarVisuais()}
+    // Eventos financeiros nao devem recarregar todas as obras, equipe e telas.
+    if(window.OBRIX_FIN?.render)await window.OBRIX_FIN.render(true);
+    else{
+      const c=await contexto();
+      if(!c)return;
+      const r=await c.sb.from('financeiro').select('*').eq('empresa_id',c.eid).order('data',{ascending:false});
+      if(r.error)throw r.error;
+      window.financeiro=r.data||[];
+    }
+    if(document.getElementById('inicio')&&!document.getElementById('inicio').classList.contains('hidden')){
+      window.OBRIX_PREVIEW?.refresh?.();
+      window.OBRIX_DASH?.paint?.();
+    }
+  }catch(e){console.warn('Financeiro: sincronização pontual indisponível',e)}
+  finally{atualizandoGeral=false}
 }
 function agendarDados(ms=300){clearTimeout(refreshTimer);refreshTimer=setTimeout(atualizarDados,ms)}
 function agendarEquipe(ms=350){
@@ -63,7 +72,7 @@ function agendarEquipe(ms=350){
     }catch(e){console.warn('Equipe: sincronização será repetida',e)}
   },ms);
 }
-async function salvarProgresso(forcarRemoto=false){detectarObraModal();const id=obraChecklistId;if(!id||!navigator.onLine)return;let p=mediaAtual();if(forcarRemoto||p==null){const pr=await mediaRemota(id);if(pr!=null)p=pr}if(p==null)return;aplicarProgressoLocal(id,p);setTimeout(()=>{try{window.OBRIX_OBRAS?.render?.()}catch(_){}agendarVisuais()},40)}
+async function salvarProgresso(forcarRemoto=false){detectarObraModal();const id=obraChecklistId;if(!id||!navigator.onLine)return;let p=mediaAtual();if(forcarRemoto||p==null){const pr=await mediaRemota(id);if(pr!=null)p=pr}if(p==null)return;aplicarProgressoLocal(id,p);setTimeout(()=>{if(obrasVisiveis())try{window.OBRIX_OBRAS?.render?.()}catch(_){}},40)}
 function agendarSalvar(ms=260,forcarRemoto=false){clearTimeout(saveTimer);saveTimer=setTimeout(()=>salvarProgresso(forcarRemoto),ms)}
 async function sincronizarObraAberta(){detectarObraModal();if(!obraChecklistId)return;const p=mediaAtual();if(p!=null)aplicarProgressoLocal(obraChecklistId,p);agendarSalvar(120,true)}
 function acompanharFinanceiro(){const form=document.getElementById('fmForm');if(!form||finObs)return;finObs=new MutationObserver(()=>{if(!form.classList.contains('hidden'))return;finObs.disconnect();finObs=null;agendarDados(80)});finObs.observe(form,{attributes:true,attributeFilter:['class']});setTimeout(()=>{if(finObs){finObs.disconnect();finObs=null}},8000)}
