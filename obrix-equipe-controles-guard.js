@@ -146,11 +146,13 @@ function ensure(){
 let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(ensure,0)}
 function start(){
   ensure();
-  if(document.body)new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});
+  // O antigo observador da página inteira gerava reprocessamento contínuo.
+  const app=document.getElementById('app');
+  if(app)new MutationObserver(muts=>{
+    if(muts.some(m=>[...m.addedNodes].some(n=>n.nodeType===1&&(n.id==='equipe'||n.classList?.contains('obrix-equipe-controles')))))schedule();
+  }).observe(app,{childList:true,subtree:false});
   new MutationObserver(schedule).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-  ['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','pageshow','focus','online','offline'].forEach(n=>window.addEventListener(n,schedule));
-  document.addEventListener('click',()=>setTimeout(schedule,0),true);
-  setInterval(ensure,700);
+  ['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto','pageshow','online','offline'].forEach(n=>window.addEventListener(n,schedule));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 window.OBRIX_EQUIPE_CONTROLES_GUARD={ensure,sincronizarFuncao};
