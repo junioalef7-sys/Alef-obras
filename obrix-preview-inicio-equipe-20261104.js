@@ -29,11 +29,11 @@ function primeiroNome(){
 }
 const JANELA_ATUALIZACOES_MS=30*24*60*60*1000;
 function atividades(){
-  const a=[],agora=Date.now(),inicio=agora-JANELA_ATUALIZACOES_MS;
+  const a=[],agora=Date.now();
   const push=(key,txt,date,icon)=>{
     const t=dataHora(date);
     // Apply the 30-day cutoff to local and remote records, not only the display.
-    if(t>=inicio&&t<=agora+60000)a.push({key,txt,date,t,icon});
+    if(t>0&&t<=agora+60000)a.push({key,txt,date,t,icon});
   };
   const nomes=new Map(funcs().map(f=>[String(f.id),f.nome||'Funcionário']));
   const nomesObra=new Map(obras().map(o=>[String(o.id),o.nome||'Obra']));
@@ -41,7 +41,7 @@ function atividades(){
   lista('diarias').forEach(d=>{
     const data=d.criado_em||d.created_at||d.data;
     const t=dataHora(data);
-    if(t<inicio||t>agora+60000)return;
+    if(t<=0||t>agora+60000)return;
     push('diaria:'+d.id,'Diária registrada: '+(nomes.get(String(d.funcionario_id))||'Funcionário')+' · '+(nomesObra.get(String(d.obra_id))||'Sem obra vinculada'),data,'◷');
   });
   eventosRemotos.forEach(e=>push(e.key,e.txt,e.date,e.icon));
@@ -93,7 +93,7 @@ function renderInicio(){
   const obrasBox=$('obpObras');
   if(obrasBox&&obrasBox.__obpMarkup!==obrasHtml){obrasBox.innerHTML=obrasHtml;obrasBox.__obpMarkup=obrasHtml}
   const at=atividades().slice(0,10);
-  const atividadesHtml=at.length?at.map(atividadeHTML).join(''):'<div class="obp-empty">Sem atualizações nos últimos 30 dias.</div>';
+  const atividadesHtml=at.length?at.map(atividadeHTML).join(''):'<div class="obp-empty">Sem atualizações registradas.</div>';
   const atividadesBox=$('obpAtividades');
   if(atividadesBox&&atividadesBox.__obpMarkup!==atividadesHtml){atividadesBox.innerHTML=atividadesHtml;atividadesBox.__obpMarkup=atividadesHtml}
 }
@@ -181,7 +181,7 @@ function cliqueInicio(e){
 function abrirAtualizacoes(){
   document.querySelector('.obp-activities-modal')?.remove();
   const a=atividades(),back=document.createElement('div');back.className='modalBack obp-activities-modal';
-  back.innerHTML='<div class="modal obp-modal"><div class="obp-modal-head"><h2>Últimas atualizações</h2><button type="button" aria-label="Fechar" data-close>×</button></div><div class="obp-modal-body">'+(a.length?a.map(atividadeHTML).join(''):'<p>Sem atualizações nos últimos 30 dias.</p>')+'</div></div>';
+  back.innerHTML='<div class="modal obp-modal"><div class="obp-modal-head"><h2>Últimas atualizações</h2><button type="button" aria-label="Fechar" data-close>×</button></div><div class="obp-modal-body">'+(a.length?a.map(atividadeHTML).join(''):'<p>Sem atualizações registradas.</p>')+'</div></div>';
   document.body.appendChild(back);back.querySelector('[data-close]').onclick=()=>back.remove();
   back.addEventListener('click',e=>{if(e.target===back)back.remove()});
 }
@@ -191,12 +191,10 @@ async function buscarEventos(){
   try{
     const sb=await window.OBRIX_BACKEND?.init?.();const p=await window.OBRIX_BACKEND?.profile?.();if(!sb||!p?.empresa_id)return;
     const fontes=[['relatorio_fotos','Foto adicionada','▧','id,obra_id,criado_em','criado_em'],['diarios_obra','Diário de obra atualizado','▤','id,obra_id,data','data'],['checklist_itens','Checklist atualizado','☑','id,obra_id,atualizado_em','atualizado_em']];
-    const inicio=new Date(Date.now()-JANELA_ATUALIZACOES_MS);
     const rows=await Promise.all(fontes.map(async ([t,titulo,icon,campos,ordem])=>{
       try{
-        const desde=ordem==='data'?inicio.toISOString().slice(0,10):inicio.toISOString();
         const r=await sb.from(t).select(campos).eq('empresa_id',p.empresa_id)
-          .gte(ordem,desde).order(ordem,{ascending:false}).limit(15);
+          .order(ordem,{ascending:false}).limit(15);
         if(r.error)return[];
         return (r.data||[]).map(x=>({key:t+':'+x.id,txt:titulo+' · '+nomeObra(x.obra_id),date:x.atualizado_em||x.criado_em||x.created_at||x.data,icon}));
       }catch(_){return[]}
