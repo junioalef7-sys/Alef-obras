@@ -86,6 +86,14 @@ html[data-theme="light"] .accountDeleteModal .excluir:is(:hover,:focus,:active){
   box-shadow:none!important;
 }
 `;
+  s.textContent+=`
+@media (min-width:621px){
+  #app>.top #obrixHeaderVoltar::before,
+  #app>.top #obrixHeaderVoltar::after{content:none!important;display:none!important}
+  #app>.top #obrixHeaderVoltar svg[data-obrix-back-icon]{display:block!important;visibility:visible!important}
+  #app>.top:has(#obrixHeaderVoltar:not(.hidden)) button[aria-label="Voltar"]:not(#obrixHeaderVoltar){display:none!important}
+}
+`;
   document.head.appendChild(s);
 }
 
