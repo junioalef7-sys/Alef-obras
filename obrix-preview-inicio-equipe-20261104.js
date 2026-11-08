@@ -335,19 +335,25 @@ function obpAtualizarFaltas(id){
     obpFaltasCache.delete(chave);
   }
   const sequencia=++obpFaltasVisualSeq;
-  if(!abertas){el.textContent='0';return}
+  // Não alternar número e marcador de carregamento a cada refresh da Equipe.
+  // Preserva o valor estável até chegar a contagem válida da consulta atual.
+  const atualizarNumero=valor=>{if(el.textContent!==valor)el.textContent=valor};
+  if(!abertas){atualizarNumero('0');return}
   const cache=obpFaltasCache.get(chave),pagCache=obpUltimoPagamentoCache.get(chave);
-  el.textContent=cache?.rows&&pagCache&&!pagCache.error&&!pagCache.promise
-    ?String(obpContarFaltasPeriodo(id,cache.rows,pagCache.item)):'—';
+  if(cache?.rows&&pagCache&&!pagCache.error&&!pagCache.promise)
+    atualizarNumero(String(obpContarFaltasPeriodo(id,cache.rows,pagCache.item)));
   void Promise.all([obpBuscarFaltas(id),obpUltimoPagamento(id)])
     .then(([faltas,pagamento])=>{
       const atual=document.getElementById('obpFaltasTotal');
-      if(atual&&chave===String(selecionado)&&sequencia===obpFaltasVisualSeq)
-        atual.textContent=String(obpContarFaltasPeriodo(id,faltas,pagamento));
+      if(atual&&chave===String(selecionado)&&sequencia===obpFaltasVisualSeq){
+        const valor=String(obpContarFaltasPeriodo(id,faltas,pagamento));
+        if(atual.textContent!==valor)atual.textContent=valor;
+      }
     }).catch(error=>{
       const atual=document.getElementById('obpFaltasTotal');
       if(atual&&chave===String(selecionado)&&sequencia===obpFaltasVisualSeq){
-        atual.textContent='—';
+        // Falha de rede não deve fazer uma contagem já visível piscar.
+        if(!atual.textContent.trim())atual.textContent='—';
         console.warn('Faltas do período: consulta indisponível',error);
       }
     });
@@ -491,11 +497,15 @@ function renderEquipe(){
   // Never recreate the five buttons for the same employee when monetary
   // values or the team data are refreshed. Retain their nodes and inline colors.
   if(detalhe.__obpLastHtml!==detalheHtml||!detalhe.querySelector('.obp-person-actions')){
-    const antigos=detalhe.__obpEmployeeId===String(f.id)?detalhe.querySelector('.obp-person-actions'):null;
+    const mesmoFuncionario=detalhe.__obpEmployeeId===String(f.id);
+    const antigos=mesmoFuncionario?detalhe.querySelector('.obp-person-actions'):null;
+    const contadorAntigo=mesmoFuncionario?detalhe.querySelector('.obp-attendance-absence'):null;
     if(antigos){
       const novo=document.createElement('div');
       novo.innerHTML=detalheHtml;
       novo.querySelector('.obp-person-actions')?.replaceWith(antigos);
+      // Mantém o nó do cartão de Faltas; outros KPIs podem mudar sem piscar.
+      if(contadorAntigo)novo.querySelector('.obp-attendance-absence')?.replaceWith(contadorAntigo);
       detalhe.replaceChildren(...novo.childNodes);
     }else{
       detalhe.innerHTML=detalheHtml;
