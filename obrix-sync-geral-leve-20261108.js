@@ -9,6 +9,8 @@ const MODULOS={
   materiais:'estoque',estoques:'estoque',estoque_saldos:'estoque',
   estoque_movimentacoes:'estoque',compras:'estoque',compra_itens:'estoque',
   fornecedores:'estoque',diario_atividades:'diario',diario_equipe:'diario',
+  diarios_obra:'diario',fotos_obra:'fotos',relatorio_fotos:'fotos',
+  relatorios_fotograficos:'fotos',pagamento_diarias:'equipe',
   relatorios:'relatorios'
 };
 const ELEMENTOS={orcamentos:'orcamentosMain',notas:'notasMain',documentos:'documentosMain',
@@ -39,6 +41,8 @@ async function atualizar(mod){
     if(mod==='documentos')await window.OBRIX_DOCUMENTOS?.load?.();
     if(mod==='estoque')await window.OBRIX_EST?.refresh?.();
     if(mod==='diario')await window.OBRIX_DIARIO?.load?.();
+    if(mod==='equipe')await window.OBRIX_EQUIPE?.refresh?.();
+    if(mod==='fotos')window.dispatchEvent(new Event('obrix:fotografias-atualizadas'));
     // Relatorios gerados nao devem ser recalculados automaticamente (PDF pesado).
     if(mod==='relatorios')window.dispatchEvent(new CustomEvent('obrix:relatorios-atualizados'));
     ultimaConsulta.set(mod,Date.now());
