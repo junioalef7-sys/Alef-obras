@@ -2,7 +2,7 @@
 if(window.__OBRIX_CORRECOES_REAIS_20261102)return;window.__OBRIX_CORRECOES_REAIS_20261102=true;
 let obraChecklistId='',filaVisual=false,saveTimer=null,refreshTimer=null,canal=null,retryTimer=null,ctxCache=null,finObs=null;
 const estilo=document.createElement('style');estilo.id='obrix-correcoes-reais-20261102-style';estilo.textContent=`@media(max-width:760px){#fmFiltrosPanel .fmFiltrosGrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px!important}#fmFiltrosPanel .fmFiltrosGrid label.obrixDataCompact{grid-column:auto!important;min-width:0!important;width:100%!important;max-width:100%!important}#fmFiltroDataInicio,#fmFiltroDataFim{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;height:40px!important;box-sizing:border-box!important;font-size:12px!important;padding:7px 5px!important;letter-spacing:-.2px!important}}`;
-function estiloPorUltimo(){if(estilo.parentNode!==document.head||document.head.lastElementChild!==estilo)document.head.appendChild(estilo)}
+function estiloPorUltimo(){if(estilo.parentNode!==document.head)document.head.appendChild(estilo)}
 function brancoAndamento(){document.querySelectorAll('#obras .obxStatus.andamento,#listaObras .obxStatus.andamento').forEach(el=>{el.style.setProperty('color','#fff','important');el.style.setProperty('-webkit-text-fill-color','#fff','important')})}
 function corrigirDatas(){if(innerWidth>760)return;const a=document.getElementById('fmFiltroDataInicio'),b=document.getElementById('fmFiltroDataFim');if(!a&&!b)return;const grid=(a||b)?.closest?.('.fmFiltrosGrid');if(grid){grid.style.setProperty('grid-template-columns','minmax(0,1fr) minmax(0,1fr)','important');grid.style.setProperty('gap','8px','important');[...grid.children].forEach(ch=>{if(!(ch instanceof HTMLElement))return;const ehData=ch.contains(a)||ch.contains(b);if(ehData){ch.classList.add('obrixDataCompact');ch.style.setProperty('grid-column','auto','important');ch.style.setProperty('min-width','0','important');ch.style.setProperty('width','100%','important')}else if(ch.matches('label')){ch.style.setProperty('grid-column','1 / -1','important')}})}for(const el of [a,b]){if(!el)continue;const lab=el.closest('label');lab?.classList.add('obrixDataCompact');el.style.setProperty('width','100%','important');el.style.setProperty('max-width','100%','important');el.style.setProperty('min-width','0','important');el.style.setProperty('height','40px','important');el.style.setProperty('box-sizing','border-box','important');el.style.setProperty('font-size','12px','important');el.style.setProperty('padding','7px 5px','important')}}
 function detectarObraModal(){if(!document.querySelector('.checkModalBack'))return;if(obraChecklistId)return;const nome=document.querySelector('.checkModalBack .checkHead .muted')?.textContent?.trim();if(!nome)return;const o=(window.obras||[]).find(x=>String(x.nome||'').trim()===nome);if(o)obraChecklistId=String(o.id)}
@@ -72,7 +72,7 @@ async function realtime(){if(canal||!navigator.onLine)return;try{const c=await c
 ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'obras',filter:`empresa_id=eq.${c.eid}`},()=>agendarObrasRemotas(100));
 ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'servicos_extras',filter:`empresa_id=eq.${c.eid}`},()=>agendarObrasRemotas(120));
 for(const tabela of ['financeiro'])ch=ch.on('postgres_changes',{event:'*',schema:'public',table:tabela,filter:`empresa_id=eq.${c.eid}`},()=>agendarDados(320));
-for(const tabela of ['funcionarios','diarias','vales','bonus_extras'])ch=ch.on('postgres_changes',{event:'*',schema:'public',table:tabela,filter:`empresa_id=eq.${c.eid}`},()=>agendarEquipe(350));
+for(const tabela of ['funcionarios','diarias','vales','bonus_extras'])ch=ch.on('postgres_changes',{event:'*',schema:'public',table:tabela,filter:`empresa_id=eq.${c.eid}`},()=>{if(!window.OBRIX_EQUIPE_REALTIME_SYNC)agendarEquipe(450)});
 ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'faltas',filter:`empresa_id=eq.${c.eid}`},payload=>{
   window.dispatchEvent(new CustomEvent('obrix:equipe-registro',{detail:{table:'faltas',funcionarioId:payload?.new?.funcionario_id||payload?.old?.funcionario_id||null}}));
 });
@@ -81,7 +81,7 @@ canal=ch.subscribe(status=>{if(status==='SUBSCRIBED')agendarObrasRemotas(160);if
 document.addEventListener('click',e=>{capturarObraChecklist(e.target);if(e.target.closest?.('#fmSalvar'))acompanharFinanceiro();if(e.target.closest?.('.checkClose'))agendarSalvar(0,true);setTimeout(agendarVisuais,0);setTimeout(agendarVisuais,160);if(e.target.closest?.('.obxChecklist,[data-check-open]'))setTimeout(sincronizarObraAberta,350)},true);
 document.addEventListener('input',e=>{if(!e.target.closest?.('[data-check-range]'))return;detectarObraModal();const p=mediaAtual();if(obraChecklistId&&p!=null){aplicarProgressoLocal(obraChecklistId,p);agendarSalvar(220,false)}},true);
 document.addEventListener('change',e=>{if(!e.target.closest?.('[data-check-range]'))return;detectarObraModal();const p=mediaAtual();if(obraChecklistId&&p!=null)aplicarProgressoLocal(obraChecklistId,p);agendarSalvar(80,true)},true);
-const root=document.getElementById('app')||document.body;new MutationObserver(agendarVisuais).observe(root,{childList:true,subtree:true});
+const root=document.getElementById('app')||document.body;const mo=new MutationObserver(muts=>{if(document.hidden)return;if(muts.some(m=>m.addedNodes.length||m.removedNodes.length))agendarVisuais()});mo.observe(root,{childList:true,subtree:false});
 window.addEventListener('focus',()=>{agendarVisuais();agendarDados(100);if(obrasVisiveis())agendarObrasRemotas(1200);realtime()});window.addEventListener('pageshow',()=>{agendarVisuais();agendarDados(100);realtime()});document.addEventListener('visibilitychange',()=>{if(!document.hidden){agendarVisuais();agendarDados(100);if(obrasVisiveis())agendarObrasRemotas(1200);realtime()}});window.addEventListener('online',()=>{pararCanal();agendarDados(80);realtime()});window.addEventListener('offline',pararCanal);window.addEventListener('resize',agendarVisuais);['obrix:modules-online-ready','obrix:session-shell','obrix:grupo-pronto'].forEach(ev=>window.addEventListener(ev,()=>{if(!canal)realtime();agendarObrasRemotas(220)}));
 setTimeout(()=>{agendarVisuais();realtime()},300);setTimeout(agendarVisuais,1000);
 // Protecao contra eventos perdidos/rede instavel: consulta leve a cada 12 s
@@ -91,5 +91,5 @@ setInterval(()=>{
   const inicio=document.getElementById('inicio');
   if(obrasVisiveis()||(inicio&&!inicio.classList.contains('hidden')))
     agendarObrasRemotas(0);
-},12000);
+},22000);
 })();
