@@ -500,11 +500,13 @@ function renderEquipe(){
     const mesmoFuncionario=detalhe.__obpEmployeeId===String(f.id);
     const antigos=mesmoFuncionario?detalhe.querySelector('.obp-person-actions'):null;
     const contadorAntigo=mesmoFuncionario?detalhe.querySelector('.obp-attendance-absence'):null;
+    const registrosAntigo=mesmoFuncionario?detalhe.querySelector('.obp-registros-principal'):null;
     if(antigos){
       const novo=document.createElement('div');
       novo.innerHTML=detalheHtml;
       novo.querySelector('.obp-person-actions')?.replaceWith(antigos);
-      // Mantém o nó do cartão de Faltas; outros KPIs podem mudar sem piscar.
+      // Não recriar o botão de histórico nem o cartão de faltas em cada atualização.
+      if(registrosAntigo)novo.querySelector('.obp-registros-principal')?.replaceWith(registrosAntigo);
       if(contadorAntigo)novo.querySelector('.obp-attendance-absence')?.replaceWith(contadorAntigo);
       detalhe.replaceChildren(...novo.childNodes);
     }else{
