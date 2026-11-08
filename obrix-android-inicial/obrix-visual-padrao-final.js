@@ -7,7 +7,7 @@ const st=document.createElement('style');st.id='obrix-visual-padrao-final';st.te
 const TIT=['obras','diário de obras','diario de obras','financeiro','equipe','funcionários','funcionarios','materiais / estoque','materiais/estoque','material estoque','materiais de estoque','estoque','orçamentos','orcamentos','orçamento','orcamento','relatórios','relatorios','documentos','notas','backup','backups','central offline','central clim','planos e assinaturas','planos de assinatura','ajuda e feedback','configurações','configuracoes','resumo geral','resumo da obra'];const n=s=>(s||'').replace(/\s+/g,' ').trim().toLowerCase(),vis=e=>!!e&&!e.classList.contains('hidden')&&getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden',modal=e=>!!e.closest('.modal,.modalBack,[role="dialog"],.estOp,[class*="modal"],[class*="dialog"]');
 function neutro(b){if(!b)return;
 // Na prévia não sobrescrever as cores dos botões de ação nem do Novo.
-if(b.matches?.('#equipe #obpEquipe .obp-person-actions button,#equipe #obpNovo,#inicio #obpHome .obp-shortcuts button'))return;
+if(b.matches?.('#equipe #obpEquipe .obp-person-actions button,#equipe #obpEquipe .obp-registros-principal,#equipe #obpEquipe .obp-excluir-da-lista,#equipe #obpNovo,#inicio #obpHome .obp-shortcuts button'))return;
 // Idempotent: avoid repeated inline writes that trigger DOM observers and reflows.
 const st=b.style;
 if(st.getPropertyValue('background')==='var(--ob-surface-2)'&&
