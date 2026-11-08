@@ -10,19 +10,31 @@ const ICONS={
 };
 
 function decorateButton(btn,type,label){if(!btn||btn.dataset.obrixPayDecorated==='1')return;btn.dataset.obrixPayDecorated='1';btn.classList.add('obrixPayMethod');btn.setAttribute('aria-label',label);btn.innerHTML=`<span class="obrixPayIcon">${ICONS[type]}</span><span class="obrixPayLabel">${label}</span>`}
-function decorateCard(card){if(!card||card.dataset.obrixPayReady==='1')return;const pix=card.querySelector('[data-ass-plano]'),row=card.querySelector('.assCobEfiRow');if(!pix||!row)return;const boleto=row.querySelector('[data-ass-cob-efi$=":boleto"]'),cartao=row.querySelector('[data-ass-cob-efi$=":cartao"]');if(!boleto||!cartao)return;card.dataset.obrixPayReady='1';row.classList.add('obrixPayStack');decorateButton(pix,'pix','Pagar com Pix');decorateButton(boleto,'boleto','Pagar com Boleto');decorateButton(cartao,'cartao','Pagar com Cartão');row.append(pix,boleto,cartao);card.querySelector('.assPayActions > [data-ass-boleto]')?.remove()}
+function decorateCard(card){if(!card)return;if(card.dataset.obrixPayReady==='1'){card.querySelectorAll('.assPayActions [data-ass-boleto]').forEach(b=>b.remove());return}const pix=card.querySelector('[data-ass-plano]'),row=card.querySelector('.assCobEfiRow');if(!pix||!row)return;const boleto=row.querySelector('[data-ass-cob-efi$=":boleto"]'),cartao=row.querySelector('[data-ass-cob-efi$=":cartao"]');if(!boleto||!cartao)return;card.dataset.obrixPayReady='1';row.classList.add('obrixPayStack');decorateButton(pix,'pix','Pagar com Pix');decorateButton(boleto,'boleto','Pagar com Boleto');decorateButton(cartao,'cartao','Pagar com Cartão');row.append(pix,boleto,cartao);card.querySelectorAll('.assPayActions [data-ass-boleto]').forEach(b=>b.remove())}
 function prepararAcoes(){
   document.querySelectorAll('#listaObras .item').forEach(card=>{const a=card.querySelector('.actions');if(!a)return;const apagar=[...a.querySelectorAll('button')].find(b=>/^excluir$/i.test(b.textContent.trim())||/^apagar$/i.test(b.textContent.trim()));if(apagar){apagar.textContent='Apagar';apagar.classList.add('obrixWhiteAction')}a.querySelector('.obrixEnviarObra')?.remove()});
   document.querySelectorAll('#orcLista .orcCard').forEach(card=>{const a=card.querySelector('.orcActions');if(!a)return;const apagar=a.querySelector('.excluir')||[...a.querySelectorAll('button')].find(b=>/^excluir$/i.test(b.textContent.trim())||/^apagar$/i.test(b.textContent.trim()));if(apagar){apagar.textContent='Apagar';apagar.classList.add('obrixWhiteAction')}a.querySelector('.obrixEnviarOrcamento')?.remove()});
 }
-function scan(){const box=document.getElementById('assPlanos');if(box)box.querySelectorAll('.assPlano').forEach(decorateCard);prepararAcoes()}
+let observadorPlanos=null,planosObservados=null;
+function scan(){
+ const box=document.getElementById('assPlanos');
+ if(box&&box!==planosObservados){
+   observadorPlanos?.disconnect();
+   observadorPlanos=new MutationObserver(scheduleScan);
+   observadorPlanos.observe(box,{childList:true,subtree:true});
+   planosObservados=box;
+ }
+ if(box)box.querySelectorAll('.assPlano').forEach(decorateCard);
+ prepararAcoes();
+}
 
 const css=document.createElement('style');css.id='obrixPagamentosUiAlinhamentoCss';css.textContent=`
 #assPlanos .assCobEfiRow.obrixPayStack{display:flex!important;flex-direction:column!important;gap:10px!important;width:100%!important;margin-top:12px!important;background:transparent!important}
 #app #assPlanos .assCobEfiRow.obrixPayStack>.obrixPayMethod,#app #assPlanos button.obrixPayMethod{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;width:100%!important;min-width:0!important;margin:0!important;padding:13px 16px!important;border:1px solid var(--ob-border)!important;border-radius:12px!important;background:var(--ob-surface)!important;color:var(--ob-text)!important;-webkit-text-fill-color:var(--ob-text)!important;box-shadow:none!important;text-align:left!important;font-weight:800!important}
+#assPlanos .assPlano[data-obrix-pay-ready="1"] .assPayActions [data-ass-boleto]{display:none!important}
 #assPlanos .obrixPayIcon{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 24px!important;width:24px!important;height:24px!important}#assPlanos .obrixPayIcon svg{width:22px!important;height:22px!important;display:block!important}#assPlanos .obrixPayLabel{display:block!important;flex:1!important;text-align:left!important}
 `;
 document.head.appendChild(css);
 let scheduled=false;function scheduleScan(){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;scan()})}
-new MutationObserver(scheduleScan).observe(document.body,{childList:true,subtree:true});document.addEventListener('obrix:feature-pronto',scheduleScan);window.addEventListener('obrix:modules-ready',scheduleScan);setTimeout(scan,100);setTimeout(scan,500);setTimeout(scan,1200);
+const app=document.getElementById('app');if(app)new MutationObserver(scheduleScan).observe(app,{childList:true,subtree:false});document.addEventListener('obrix:feature-pronto',scheduleScan);window.addEventListener('obrix:modules-ready',scheduleScan);setTimeout(scan,100);setTimeout(scan,500);setTimeout(scan,1200);
 })();
