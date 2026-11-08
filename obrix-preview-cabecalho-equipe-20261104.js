@@ -60,7 +60,7 @@ function boot(){
     }
   },true);
   ['pageshow','focus','obrix:modules-ready','obrix:grupo-pronto','obrix:theme-applied'].forEach(ev=>window.addEventListener(ev,queue));
-  setInterval(queue,4500);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)queue()});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
 else boot();
