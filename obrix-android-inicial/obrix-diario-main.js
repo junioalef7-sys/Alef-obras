@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const $=id=>document.getElementById(id),today=()=>new Date().toISOString().slice(0,10),escHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const JSPDF_SRC='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
-let diarios=[],pdfPromise=null;
+let diarios=[],pdfPromise=null,loadPromise=null,rerunLoad=false,loadedOnce=false,lastHistorySignature='',noticeTimer=null;
 const off=()=>window.OBRIX_OFFLINE_DIARIO;
 const ptError=e=>window.OBRIX_PT_ERROR?.(e)||(e?.message||String(e||'Não foi possível concluir.'));
 function ensure(){
@@ -28,18 +28,79 @@ function ensure(){
   $('diarioSalvar').onclick=save;
   $('diarioCancelar').onclick=resetForm;
 }
-function showMsg(text,ok=true){const el=$('diarioMsg');if(!el)return;el.textContent=text;el.className='diarioMsg '+(ok?'ok':'erro');}
+function showMsg(text,ok=true){
+   const el=$('diarioMsg');if(!el)return;
+   clearTimeout(noticeTimer);
+   el.textContent=text;el.className='diarioMsg '+(ok?'ok':'erro');
+   if(ok&&/salvo com sucesso|atualizado com sucesso|salvo e sincronizado/i.test(text)){
+     noticeTimer=setTimeout(()=>{if(el.textContent===text)el.classList.add('hidden')},4500);
+   }
+ }
 function showError(e){showMsg('Erro: '+ptError(e),false)}
-function fillObras(){const s=$('diarioObra');if(!s)return;const old=s.value;s.innerHTML='';(window.obras||[]).forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.nome||'Obra';s.appendChild(op)});if([...s.options].some(o=>o.value===old))s.value=old;if(!s.options.length){const op=document.createElement('option');op.value='';op.textContent='Cadastre uma obra primeiro';s.appendChild(op)}}
+function fillObras(){
+   const sel=$('diarioObra');if(!sel)return false;
+   if(document.activeElement===sel&&sel.options.length){
+     if(sel.dataset.obrixPendente!=='1'){
+       sel.dataset.obrixPendente='1';
+       sel.addEventListener('blur',()=>{delete sel.dataset.obrixPendente;fillObras()},{once:true});
+     }
+     return false;
+   }
+   const obras=window.obras||[],next=obras.length?obras.map(o=>({id:String(o.id),nome:String(o.nome||'Obra')})):[{id:'',nome:'Cadastre uma obra primeiro'}];
+   const atual=Array.from(sel.options).map(o=>({id:String(o.value),nome:String(o.textContent)}));
+   if(JSON.stringify(next)===JSON.stringify(atual))return false;
+   const old=sel.value;
+   sel.replaceChildren(...next.map(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.nome;return op}));
+   if(next.some(o=>o.id===old))sel.value=old;
+   return true;
+ }
 function currentRows(){const oid=$('diarioObra')?.value;return diarios.filter(d=>String(d.obra_id)===String(oid)).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')))}
-function render(){const rows=currentRows();$('diarioKTotal').textContent=String(rows.length);$('diarioKFinal').textContent=String(rows.filter(x=>x.status==='finalizado').length);$('diarioKRasc').textContent=String(rows.filter(x=>x.status!=='finalizado').length);const box=$('diarioLista');if(!box)return;if(!rows.length){box.innerHTML='<div class="muted diarioVazio">Nenhum diário registrado para esta obra.</div>';return}box.innerHTML=rows.map(d=>{const aguardando=!!d.__offline;return `<div class="diarioItem" data-id="${escHtml(d.id)}"><button class="diarioItemHead" type="button"><span><b>${escHtml(formatDate(d.data))}</b><small>${escHtml(d.clima||'Sem clima')}${d.temperatura?' • '+escHtml(d.temperatura):''}</small></span><span class="diarioBadge ${aguardando?'offline':d.status==='finalizado'?'finalizado':''}">${aguardando?'Aguardando sincronização':d.status==='finalizado'?'Finalizado':'Rascunho'}</span></button><div class="diarioItemBody hidden"><div class="diarioResumo"><b>Serviços executados</b><p>${escHtml(d.servicos_executados||'Não informado')}</p><b>Ocorrências</b><p>${escHtml(d.ocorrencias||'Sem ocorrências')}</p><b>Materiais utilizados</b><p>${escHtml(d.materiais_utilizados||'Não informado')}</p><b>Equipamentos utilizados</b><p>${escHtml(d.equipamentos_utilizados||'Não informado')}</p>${d.observacoes?`<b>Observações</b><p>${escHtml(d.observacoes)}</p>`:''}</div><div class="diarioActions"><button class="btn diarioPdf" type="button">Visualizar PDF</button><button class="btn editar" type="button">Editar</button><button class="btn diarioPerigo excluir" type="button">Excluir</button></div></div></div>`}).join('');box.querySelectorAll('.diarioItem').forEach(el=>{const d=rows.find(x=>String(x.id)===String(el.dataset.id));if(!d)return;el.querySelector('.diarioItemHead').onclick=()=>el.querySelector('.diarioItemBody').classList.toggle('hidden');el.querySelector('.diarioPdf').onclick=()=>abrirPdf(d);el.querySelector('.editar').onclick=()=>edit(d);el.querySelector('.excluir').onclick=()=>removeD(d)})}
+function render(){const rows=currentRows();$('diarioKTotal').textContent=String(rows.length);$('diarioKFinal').textContent=String(rows.filter(x=>x.status==='finalizado').length);$('diarioKRasc').textContent=String(rows.filter(x=>x.status!=='finalizado').length);const box=$('diarioLista');if(!box)return;const chave=String($('diarioObra')?.value||'')+'|'+JSON.stringify(rows);if(chave===lastHistorySignature&&box.hasChildNodes())return;lastHistorySignature=chave;if(!rows.length){box.innerHTML='<div class="muted diarioVazio">Nenhum diário registrado para esta obra.</div>';return}box.innerHTML=rows.map(d=>{const aguardando=!!d.__offline;return `<div class="diarioItem" data-id="${escHtml(d.id)}"><button class="diarioItemHead" type="button"><span><b>${escHtml(formatDate(d.data))}</b><small>${escHtml(d.clima||'Sem clima')}${d.temperatura?' • '+escHtml(d.temperatura):''}</small></span><span class="diarioBadge ${aguardando?'offline':d.status==='finalizado'?'finalizado':''}">${aguardando?'Aguardando sincronização':d.status==='finalizado'?'Finalizado':'Rascunho'}</span></button><div class="diarioItemBody hidden"><div class="diarioResumo"><b>Serviços executados</b><p>${escHtml(d.servicos_executados||'Não informado')}</p><b>Ocorrências</b><p>${escHtml(d.ocorrencias||'Sem ocorrências')}</p><b>Materiais utilizados</b><p>${escHtml(d.materiais_utilizados||'Não informado')}</p><b>Equipamentos utilizados</b><p>${escHtml(d.equipamentos_utilizados||'Não informado')}</p>${d.observacoes?`<b>Observações</b><p>${escHtml(d.observacoes)}</p>`:''}</div><div class="diarioActions"><button class="btn diarioPdf" type="button">Visualizar PDF</button><button class="btn editar" type="button">Editar</button><button class="btn diarioPerigo excluir" type="button">Excluir</button></div></div></div>`}).join('');box.querySelectorAll('.diarioItem').forEach(el=>{const d=rows.find(x=>String(x.id)===String(el.dataset.id));if(!d)return;el.querySelector('.diarioItemHead').onclick=()=>el.querySelector('.diarioItemBody').classList.toggle('hidden');el.querySelector('.diarioPdf').onclick=()=>abrirPdf(d);el.querySelector('.editar').onclick=()=>edit(d);el.querySelector('.excluir').onclick=()=>removeD(d)})}
 function formatDate(v){if(!v)return'';const [y,m,d]=String(v).slice(0,10).split('-');return d&&m&&y?`${d}/${m}/${y}`:v}
 function resetForm(){if(!$('diarioId'))return;$('diarioId').value='';$('diarioData').value=today();$('diarioClima').value='Ensolarado';$('diarioTemperatura').value='';$('diarioStatus').value='rascunho';$('diarioServicos').value='';$('diarioOcorrencias').value='';$('diarioMateriais').value='';$('diarioEquipamentos').value='';$('diarioObs').value='';document.querySelectorAll('#diarioEquipeBox input[type=checkbox]').forEach(x=>x.checked=false);$('diarioFormTitle').textContent='Novo diário';$('diarioCancelar').classList.add('hidden');$('diarioMsg').classList.add('hidden')}
 function edit(d){$('diarioId').value=d.id;$('diarioObra').value=d.obra_id;$('diarioData').value=d.data;$('diarioClima').value=d.clima||'Ensolarado';$('diarioTemperatura').value=d.temperatura||'';$('diarioStatus').value=d.status||'rascunho';$('diarioServicos').value=d.servicos_executados||'';$('diarioOcorrencias').value=d.ocorrencias||'';$('diarioMateriais').value=d.materiais_utilizados||'';$('diarioEquipamentos').value=d.equipamentos_utilizados||'';$('diarioObs').value=d.observacoes||'';const ids=new Set((d.equipe_ids||[]).map(String));document.querySelectorAll('#diarioEquipeBox input[type=checkbox]').forEach(x=>x.checked=ids.has(String(x.value)));$('diarioFormTitle').textContent='Editar diário';$('diarioCancelar').classList.remove('hidden');scrollTo({top:0,behavior:'smooth'})}
 function perfilAtual(){try{return typeof profile!=='undefined'&&profile?profile:null}catch{return null}}
 function payloadAtual(){return {obra_id:$('diarioObra').value,data:$('diarioData').value,clima:$('diarioClima').value,temperatura:$('diarioTemperatura').value.trim()||null,servicos_executados:$('diarioServicos').value.trim()||null,ocorrencias:$('diarioOcorrencias').value.trim()||null,materiais_utilizados:$('diarioMateriais').value.trim()||null,equipamentos_utilizados:$('diarioEquipamentos').value.trim()||null,observacoes:$('diarioObs').value.trim()||null,status:$('diarioStatus').value,equipe_ids:[...document.querySelectorAll('#diarioEquipeBox input[type=checkbox]:checked')].map(x=>x.value),atualizado_em:new Date().toISOString()}}
-function carregarLocal(msg='Modo offline: exibindo dados salvos neste aparelho.'){off()?.restoreBase?.();diarios=off()?.rows?.()||[];fillObras();if(!$('diarioData').value)$('diarioData').value=today();render();showMsg(msg,true)}
-async function load(){ensure();if(!navigator.onLine&&off()){carregarLocal();return}if(!perfilAtual()){if(off()?.restoreBase?.()&&!navigator.onLine){carregarLocal();return}return}try{await off()?.sync?.().catch(()=>false);if(!window.obras?.length){window.obras=await OBRIX_BACKEND.readTable('obras','criado_em')}const server=await OBRIX_BACKEND.readTable('diarios_obra','data')||[];off()?.saveCache?.(server);off()?.captureBase?.();diarios=off()?.merge?.(server)||server;fillObras();if(!$('diarioData').value)$('diarioData').value=today();render()}catch(e){if(off()?.restoreBase?.()){carregarLocal('Sem conexão com o servidor. Exibindo os dados salvos no aparelho.')}else showError(e)}}
+function carregarLocal(msg='Modo offline: exibindo dados salvos neste aparelho.'){
+    if(!navigator.onLine)off()?.restoreBase?.();
+    diarios=off()?.rows?.()||[];
+    fillObras();if(!$('diarioData').value)$('diarioData').value=today();
+    render();showMsg(msg,true);
+ }
+async function load(){
+  ensure();
+  // Um novo evento durante uma leitura exige no máximo uma nova conferência,
+  // nunca várias leituras simultâneas nem re-renderizações em cascata.
+  if(loadPromise){rerunLoad=true;return loadPromise}
+  loadPromise=(async()=>{
+    if(!navigator.onLine&&off()){carregarLocal();return}
+    if(!perfilAtual()){if(!navigator.onLine&&off()?.restoreBase?.())carregarLocal();return}
+    try{
+      if(!window.obras?.length)window.obras=await OBRIX_BACKEND.readTable('obras','criado_em');
+      const server=await OBRIX_BACKEND.readTable('diarios_obra','data')||[];
+      const merged=off()?.merge?.(server)||server;
+      const mudou=!loadedOnce||JSON.stringify(diarios)!==JSON.stringify(merged);
+      const listaMudou=fillObras();
+      if(mudou){
+        diarios=merged;
+        off()?.saveCache?.(server);
+      }
+      loadedOnce=true;
+      if(!$('diarioData').value)$('diarioData').value=today();
+      if(mudou||listaMudou)render();
+    }catch(e){
+      if(!loadedOnce){
+        const cached=off()?.rows?.()||[];
+        if(cached.length){diarios=cached;fillObras();render();showMsg('Não foi possível consultar o servidor. Exibindo diário salvo no aparelho.',false)}
+        else showError(e);
+      }else console.warn('Diário: conferência remota será repetida',e);
+    }
+  })().finally(()=>{
+    loadPromise=null;
+    if(rerunLoad){rerunLoad=false;setTimeout(()=>{if(!document.hidden)void load()},280)}
+  });
+  return loadPromise;
+}
 async function save(){
  const oid=$('diarioObra')?.value,date=$('diarioData')?.value;
  if(!oid||!date){showMsg('Selecione a obra e a data.',false);return}
@@ -65,7 +126,7 @@ async function save(){
     let sincronizado=false;
     if(navigator.onLine)sincronizado=await off()?.sync?.().catch(()=>false)===true;
     resetForm();
-    try{if(navigator.onLine)await load();else carregarLocal()}catch(e){console.warn('Diário salvo; atualização da lista pendente',e)}
+    if(navigator.onLine)void load();else carregarLocal();
     showMsg(sincronizado?'Diário salvo e sincronizado.':'Diário salvo no aparelho. Sincronização pendente.');
     return;
   }
@@ -77,8 +138,8 @@ async function save(){
   if(!r.data?.length)throw new Error('O banco não confirmou a gravação do diário.');
   persistido=true;
   resetForm();
-  try{await load()}catch(e){console.warn('Diário gravado; atualização da lista pendente',e)}
   showMsg(id?'Diário atualizado com sucesso.':'Diário salvo com sucesso.');
+  void load();
  }catch(e){
   if(persistido){showMsg('Diário registrado. Atualize a lista para conferir.',true);return}
   const msg=e?.message||String(e);
@@ -104,5 +165,5 @@ function wireNavigation(){const oldAbrir=window.abrir;if(typeof oldAbrir==='func
 const css=document.createElement('style');css.textContent=`.diarioKpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}.diarioKpi{min-width:0;background:var(--surface,#fff);border:1px solid var(--border,#e2e8f0);border-radius:14px;padding:12px 8px;text-align:center;box-shadow:var(--shadow,none)}.diarioKpi small{display:block;color:var(--muted,#64748b);font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.diarioKpi strong{display:block;font-size:22px;margin-top:4px;color:var(--text,#0f172a)}.diarioForm label{display:block;font-weight:800;margin:10px 0 5px}.diarioForm input,.diarioForm select,.diarioForm textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:11px;font:inherit;background:#fff;color:#0f172a}.diarioForm textarea{min-height:88px;resize:vertical}.diarioGrid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.diarioGrid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.diarioActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.diarioActions .diarioPdf{background:#1d4ed8!important;color:#fff!important}.diarioSecundario{background:#e2e8f0;color:#0f172a}.diarioPerigo{background:#b91c1c!important;color:#fff!important}.diarioMsg{margin-top:12px;padding:11px;border-radius:10px;font-weight:800}.diarioMsg.ok{background:#dcfce7;color:#166534}.diarioMsg.erro{background:#fee2e2;color:#991b1b}.diarioVazio{padding:15px 0}.diarioItem{border-top:1px solid #e2e8f0}.diarioItem:first-child{border-top:0}.diarioItemHead{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;background:transparent;border:0;padding:15px 0;color:inherit}.diarioItemHead b,.diarioItemHead small{display:block}.diarioItemHead small{color:#64748b;margin-top:4px}.diarioBadge{background:#e2e8f0;color:#334155;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:900}.diarioBadge.finalizado{background:#dcfce7;color:#166534}.diarioBadge.offline{background:#fef3c7;color:#92400e}html[data-theme="dark"] .diarioBadge{background:#243244!important;color:#dbe7f5!important;border:1px solid #3a4b60}html[data-theme="dark"] .diarioBadge.finalizado{background:#123524!important;color:#86efac!important;border-color:#1f5a3a}html[data-theme="dark"] .diarioBadge.offline{background:#422006!important;color:#fde68a!important;border-color:#713f12}html[data-theme="dark"] .diarioKpi{background:#0d1722!important;border-color:#2a3a4d!important}html[data-theme="dark"] .diarioKpi strong{color:#f8fafc!important}.diarioItemBody{padding:0 0 15px}.diarioResumo p{white-space:pre-wrap;margin:4px 0 12px;color:#475569}.diarioPdfBack{position:fixed;inset:0;z-index:10050;background:rgba(2,6,23,.88);padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom));display:flex}.diarioPdfModal{width:min(100%,980px);height:100%;margin:auto;background:#fff;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 70px rgba(0,0,0,.45)}.diarioPdfHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px;background:#0f172a;color:#fff}.diarioPdfHead b,.diarioPdfHead small{display:block}.diarioPdfHead small{color:#cbd5e1;margin-top:2px}.diarioPdfActions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.diarioPdfActions button{border:1px solid #475569;background:#1e293b;color:#fff;border-radius:9px;padding:9px 11px;font-weight:850}.diarioPdfActions .enviar{background:#1d4ed8;border-color:#1d4ed8}.diarioPdfActions .fechar{background:#991b1b;border-color:#991b1b}.diarioPdfFrame{flex:1;width:100%;border:0;background:#e5e7eb}@media(max-width:700px){.diarioKpis{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px}.diarioKpi{padding:10px 5px}.diarioKpi small{font-size:10px}.diarioKpi strong{font-size:19px}.diarioGrid2,.diarioGrid3{grid-template-columns:1fr}.diarioItemHead{align-items:flex-start}.diarioActions .btn{flex:1;min-width:110px}.diarioPdfHead{align-items:flex-start;flex-direction:column}.diarioPdfActions{width:100%;display:grid;grid-template-columns:1fr 1fr}.diarioPdfActions .fechar{grid-column:1/-1}.diarioPdfActions button{width:100%}}`;document.head.appendChild(css);
 window.addEventListener('obrix:diario-sincronizado',()=>{if(navigator.onLine&&!document.getElementById('diarioMain')?.classList.contains('hidden'))load().catch(()=>{})});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{ensure();wireNavigation()});else{ensure();wireNavigation()}
-window.OBRIX_DIARIO={open,load,render,abrirPdf};
+window.OBRIX_DIARIO={open,load,render,abrirPdf,status:()=>({carregando:!!loadPromise,total:diarios.length,pendentes:off()?.status?.().pendentes||0})};
 })();
