@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'unsafe-inline'; img-src blob: data:; connect-src https://gnvclctqnwxnjxydzhwc.supabase.co https://mjzlwnuklfopdmgcvdcs.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>OBRIX | Fotografias recuperadas — teste</title>
+<style>
+:root{font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172a3e;background:#f4f6f9}
+*{box-sizing:border-box}html,body{margin:0;max-width:100%;overflow-x:hidden}main{max-width:1030px;padding:16px 14px 42px;margin:auto}
+h1{font-size:25px;line-height:1.22;margin:5px 0 13px;color:#17293d}h2{font-size:18px;margin:0 0 10px;color:#1d3146}
+p{color:#4c6276;margin:10px 0}a{color:#28587a;text-decoration:underline}
+.panel{background:#fff;border:1px solid #dce5ef;border-radius:15px;padding:16px;margin:13px 0}
+.eyebrow{font-size:12px;letter-spacing:.085em;text-transform:uppercase;color:#99451f;font-weight:850}
+.small{font-size:13px;color:#6a7a8b}
+.notice{padding:11px 12px;border-radius:9px;background:#edf3f9;border-left:3px solid #b0c3d6}
+label{display:block;font-size:14px;font-weight:700;margin:9px 0 5px}
+input{display:block;width:100%;padding:13px;border:1px solid #bdcbdb;border-radius:10px;color:#1a3147;background:white;font:16px system-ui}
+button{border:0;border-radius:10px;background:#dc591e;padding:11px 15px;min-height:44px;font-size:15px;color:white;font-weight:750;cursor:pointer;touch-action:manipulation}
+button.secondary{background:#354b64}button:disabled{opacity:.48;cursor:default}
+.row{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stat{background:#f7f9fc;border:1px solid #e0e7f0;border-radius:10px;padding:11px;min-width:0}
+.stat b{display:block;font-size:25px;color:#14273b}.stat span{font-size:12px;color:#66798a}
+.groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.groups button{width:100%;text-align:left;background:#f8fafc;color:#183249;border:1px solid #cad6e3}
+.groups button.active{background:#fff6ef;border:2px solid #df5c1b}
+.groups small{display:block;font-weight:450;color:#607488;font-size:12px}
+.status{padding:11px;background:#eef4fa;border-radius:9px;color:#264760;white-space:pre-wrap;overflow-wrap:anywhere}
+.error{color:#9c2424;background:#fff0ed}
+.photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.card{border:1px solid #dde6f0;border-radius:11px;overflow:hidden;min-width:0}
+.photo{display:block;padding:0;width:100%;aspect-ratio:4/3;border-radius:0;background:#eaf0f7}
+.photo img{display:block;width:100%;height:100%;object-fit:contain}
+.caption{padding:9px;overflow-wrap:anywhere;font-size:13px;color:#576b7d}
+.caption b{display:block;font-size:14px;color:#1d3247}
+.pagination{display:flex;justify-content:center;align-items:center;gap:9px;margin:14px 0;flex-wrap:wrap}
+.pagination select{border:1px solid #b9c8d9;border-radius:9px;background:white;color:#183048;padding:10px;font:16px system-ui}
+.viewer{position:fixed;inset:0;z-index:9999;background:#0a1425ef;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;gap:12px}
+.viewer[hidden],[hidden]{display:none!important}
+.viewer img{width:100%;max-width:1000px;max-height:calc(100dvh - 96px);object-fit:contain}
+.viewer button{align-self:flex-end;background:#455c77}
+@media(max-width:660px){main{padding:11px}.panel{padding:13px}.photos{grid-template-columns:repeat(2,minmax(0,1fr))}.photo{aspect-ratio:1/1}}
+@media(max-width:370px){.photos{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<main>
+<div class="eyebrow">OBRIX · Conta de teste</div>
+<h1>Fotografias recuperadas</h1>
+<p>Visualização independente das <strong>242 fotografias verificadas por SHA-256</strong>. As imagens são carregadas exclusivamente do laboratório privado.</p>
+<p><a href="./obrix.html">← Voltar ao OBRIX</a></p>
+<section class="panel" id="login">
+<h2>Entrar na conta de teste</h2>
+<p class="small">Utilize o e-mail e a senha da conta com oito obras. O login é feito diretamente no Supabase de origem. As fotos são lidas apenas do laboratório, após verificar a permissão da conta.</p>
+<form id="form">
+<label for="mail">E-mail</label><input id="mail" type="email" autocomplete="username" required>
+<label for="pass">Senha</label><input id="pass" type="password" autocomplete="current-password" required>
+<button id="sign" style="margin-top:12px" type="submit">Entrar e consultar cópia recuperada</button>
+</form>
+</section>
+<section id="library" hidden>
+<section class="panel">
+<div class="row"><h2>Acervo restaurado (teste)</h2><button id="exit" class="secondary" type="button">Sair da conta</button></div>
+<div class="stats"><div class="stat"><b id="total">242</b><span>Arquivos preservados</span></div><div class="stat"><b id="countA">216</b><span>Grupo A</span></div><div class="stat"><b id="countB">26</b><span>Grupo B</span></div></div>
+<p class="notice"><strong>Obra não identificada.</strong> Não houve associação automática às obras. A cópia do laboratório é independente, somente para consulta. Nenhuma foto é editada ou transferida para o relatório de uma obra.</p>
+</section>
+<section class="panel">
+<h2>Selecionar grupo</h2>
+<div class="groups">
+<button type="button" id="A" class="active">Grupo A<small>216 fotos · obra não identificada</small></button>
+<button type="button" id="B">Grupo B<small>26 fotos · obra não identificada</small></button>
+</div>
+<div class="row" style="margin:16px 0 9px"><strong id="groupTitle">Grupo A</strong><span class="small" id="pageInfo"></span></div>
+<div id="grid" class="photos"></div>
+<div class="pagination">
+<button id="prev" type="button" class="secondary">Anterior</button>
+<label for="selector" style="margin:0">Página</label><select id="selector"></select>
+<button id="next" type="button" class="secondary">Próxima</button>
+</div>
+</section>
+</section>
+<section class="panel"><h2>Estado da restauração</h2><div id="status" class="status" role="status" aria-live="polite">Aguardando login.</div></section>
+<section class="panel"><h2>Proteção</h2><p class="small">Somente leitura do armazenamento privado do laboratório. Os arquivos originais permanecem no Supabase de origem. A restauração no OBRIX oficial ainda não foi realizada.</p></section>
+<div id="viewer" class="viewer" hidden><button type="button" id="hide" class="secondary">Fechar imagem</button><img id="enlarged" alt="Fotografia ampliada" /></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/dist/umd/supabase.min.js"></script>
+<script>
+(()=>{
+"use strict";
+const SOURCE_API="https://gnvclctqnwxnjxydzhwc.supabase.co",SOURCE_KEY="sb_publishable_dyV1JLgSjJ9thtCBLa9kJA_rTNYFKRM";
+const LAB_API="https://mjzlwnuklfopdmgcvdcs.supabase.co/functions/v1/obrix-fotos-lab-galeria-readonly",LAB_KEY="sb_publishable_y9Zcco35Ci7grw9DIvcFJw_ZK3uc_CG";
+const COMPANY="ec70a79d-42ce-47af-8831-986a01b152c5";
+const LIMIT=6,$=id=>document.getElementById(id);
+let client=null,all=null,group="A",page=0,seq=0,urls=[],locked=false,authorized=false;
+function message(v,bad=false){$("status").textContent=String(v);$("status").classList.toggle("error",!!bad)}
+function closeZoom(){$("viewer").hidden=true;$("enlarged").removeAttribute("src")}
+function clearPhotos(){
+ ++seq;closeZoom();for(const u of urls)URL.revokeObjectURL(u);urls=[];
+ $("grid").replaceChildren();
+}
+async function request(op,path=null){
+ if(!client||!authorized)throw Error("Acesso não autorizado.");
+ const session=await client.auth.getSession();
+ const token=session.data?.session?.access_token;
+ if(!token)throw Error("Sua sessão expirou. Entre novamente.");
+ const body=op==="read"?{op,path}:{op};
+ const response=await fetch(LAB_API,{
+  method:"POST",cache:"no-store",
+  headers:{"Content-Type":"application/json",Authorization:"Bearer "+token,apikey:LAB_KEY},
+  body:JSON.stringify(body)
+ });
+ if(!response.ok){
+  let err="HTTP "+response.status;
+  try{const e=await response.json();err=e.error||err}catch(_){}
+  throw Error("Falha no laboratório: "+err);
+ }
+ if(op==="read")return response.blob();
+ return response.json();
+}
+function controls(){
+ const entries=all?.[group]||[],pages=Math.ceil(entries.length/LIMIT);
+ $("groupTitle").textContent="Grupo "+group+" · "+entries.length+" fotografias";
+ $("A").classList.toggle("active",group==="A");
+ $("B").classList.toggle("active",group==="B");
+ $("pageInfo").textContent=entries.length?"Fotos "+(page*LIMIT+1)+"–"+Math.min(entries.length,(page+1)*LIMIT)+" de "+entries.length:"";
+ const sel=$("selector");sel.replaceChildren();
+ for(let i=0;i<pages;i++){const o=document.createElement("option");o.value=String(i);o.textContent=(i+1)+" de "+pages;sel.append(o)}
+ sel.value=String(page);sel.disabled=!entries.length;
+ $("prev").disabled=page===0;$("next").disabled=page>=pages-1;
+}
+async function render(){
+ if(!authorized||!all)return;
+ clearPhotos();const active=seq;
+ controls();
+ const chosen=(all[group]||[]).slice(page*LIMIT,(page+1)*LIMIT),cards=[];
+ for(let i=0;i<chosen.length;i++){
+  const entry=chosen[i],card=document.createElement("div");card.className="card";
+  const btn=document.createElement("button");btn.className="photo";btn.type="button";btn.disabled=true;
+  btn.setAttribute("aria-label","Ampliar fotografia "+(page*LIMIT+i+1));
+  const im=document.createElement("img");im.alt="Fotografia recuperada do grupo "+group;im.loading="lazy";btn.append(im);
+  const info=document.createElement("div");info.className="caption";
+  const name=document.createElement("b");name.textContent="Foto "+(page*LIMIT+i+1);
+  const text=document.createElement("span");text.textContent="Carregando do laboratório...";
+  info.append(name,text);card.append(btn,info);$("grid").append(card);
+  cards.push({entry,im,btn,text,index:page*LIMIT+i+1});
+ }
+ let counter=0,done=0,failed=0;
+ message("Carregando imagens da cópia independente do laboratório...");
+ async function worker(){
+  while(counter<cards.length){
+   const c=cards[counter++];
+   try{
+    const blob=await request("read",c.entry.path);
+    if(active!==seq||!authorized)return;
+    if(blob.size!==c.entry.size||!["image/jpeg","image/png"].includes(blob.type))throw Error("Arquivo divergente");
+    const url=URL.createObjectURL(blob);urls.push(url);c.im.src=url;c.btn.disabled=false;
+    c.text.textContent=(c.entry.size/1024).toFixed(0)+" KiB · conferida no laboratório";
+    c.btn.onclick=()=>{
+     if(active!==seq||!authorized)return;
+     $("enlarged").src=url;$("viewer").hidden=false;
+    };
+   }catch(e){if(active!==seq||!authorized)return;failed++;c.text.textContent="Falha ao abrir: "+(e?.message||e)}
+   done++;
+   if(active===seq&&authorized)message("Arquivos abertos: "+done+"/"+cards.length+(failed?" · Falhas: "+failed:""));
+  }
+ }
+ await Promise.all([worker(),worker()]);
+ if(active===seq&&authorized)message("Grupo "+group+" · página "+(page+1)+": "+(done-failed)+"/"+cards.length+" arquivos conferidos e exibidos a partir do laboratório."+(failed?" Falhas: "+failed:""),failed>0);
+}
+function makeClient(){
+ if(!window.supabase)throw Error("Biblioteca de autenticação indisponível. Verifique a conexão.");
+ if(!client){
+  client=window.supabase.createClient(SOURCE_API,SOURCE_KEY,{
+   auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}
+  });
+ }
+ return client;
+}
+async function showGallery(){
+ const sb=makeClient();
+ const who=await sb.auth.getUser();
+ if(who.error||!who.data?.user?.id)throw Error("Sua sessão expirou. Entre novamente.");
+ const profile=await sb.from("perfis").select("empresa_id").eq("id",who.data.user.id).single();
+ if(profile.error||profile.data?.empresa_id!==COMPANY)
+  throw Error("Estas fotografias estão disponíveis somente na conta de teste com oito obras.");
+ authorized=true;message("Consultando a cópia privada do laboratório...");
+ const res=await request("list");
+ if(!res.ok||res.total!==242||res.bytes!==184417927||!Array.isArray(res.files))
+  throw Error("O laboratório não confirmou os 242 arquivos.");
+ const A=res.files.filter(x=>x.group==="A"),B=res.files.filter(x=>x.group==="B");
+ if(A.length!==216||B.length!==26||
+    res.files.reduce((s,x)=>s+Number(x.size),0)!==184417927)
+  throw Error("O inventário da cópia está divergente.");
+ all={A,B};group="A";page=0;
+ $("login").hidden=true;$("library").hidden=false;
+ await render();
+}
+async function restoreExistingSession(){
+ if(locked)return;
+ locked=true;$("sign").disabled=true;
+ try{
+  const sb=makeClient(),session=await sb.auth.getSession();
+  if(session.error)throw Error("Não foi possível recuperar a sessão do OBRIX.");
+  if(!session.data?.session){
+   message("Entre com a conta de teste para visualizar as fotografias.");
+   return;
+  }
+  message("Sessão do OBRIX identificada. Abrindo a galeria...");
+  await showGallery();
+ }catch(e){
+  authorized=false;all=null;
+  $("login").hidden=false;$("library").hidden=true;
+  message("Não foi possível abrir automaticamente: "+(e?.message||e)+
+   " Se necessário, entre com a conta de teste abaixo.",true);
+ }finally{
+  locked=false;$("sign").disabled=false;
+ }
+}
+async function login(e){
+ e.preventDefault();if(locked)return;
+ locked=true;$("sign").disabled=true;
+ try{
+  const sb=makeClient();
+  message("Autenticando a conta de teste...");
+  const signed=await sb.auth.signInWithPassword({
+   email:$("mail").value.trim(),password:$("pass").value
+  });
+  if(signed.error)throw signed.error;
+  await showGallery();
+ }catch(e){
+  authorized=false;all=null;
+  $("login").hidden=false;$("library").hidden=true;
+  message("Não foi possível consultar as fotografias: "+(e?.message||e),true);
+ }finally{
+  $("pass").value="";locked=false;$("sign").disabled=false;
+ }
+}
+function changeGroup(g){if(!authorized||!all?.[g])return;group=g;page=0;void render()}
+function changePage(n){if(!authorized||!all)return;const max=Math.ceil((all[group]||[]).length/LIMIT);if(!Number.isInteger(n)||n<0||n>=max)return;page=n;void render()}
+async function logout(){
+ clearPhotos();authorized=false;all=null;
+ if(client){try{await client.auth.signOut()}catch(_){}}
+ client=null;$("library").hidden=true;$("login").hidden=false;
+ message("Sessão encerrada.");
+}
+$("form").addEventListener("submit",login);
+$("A").addEventListener("click",()=>changeGroup("A"));
+$("B").addEventListener("click",()=>changeGroup("B"));
+$("prev").addEventListener("click",()=>changePage(page-1));
+$("next").addEventListener("click",()=>changePage(page+1));
+$("selector").addEventListener("change",e=>changePage(Number(e.target.value)));
+$("exit").addEventListener("click",logout);
+$("hide").addEventListener("click",closeZoom);
+$("viewer").addEventListener("click",e=>{if(e.target===$("viewer"))closeZoom()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("viewer").hidden)closeZoom()});
+void restoreExistingSession();
+})();
+</script>
+</body></html>
