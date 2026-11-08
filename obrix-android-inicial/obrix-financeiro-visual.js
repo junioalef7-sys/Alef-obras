@@ -9,7 +9,7 @@ function removerSetasDuplicadas(){
   const global=document.getElementById('obrixHeaderVoltar');
   const candidatos=[...main.querySelectorAll(':scope > button,:scope > .btn,:scope > [role="button"],:scope > a,.hero button,.hero .btn,.hero [role="button"],.hero a')].filter(ehVoltar);
   // A seta global é a navegação principal; as secundárias ficam apenas ocultas.
-  const ocultar=!!global&&!global.classList.contains('hidden');
+  const ocultar=!!global;
   for(const el of candidatos){
     if(el.classList.contains('obxFinBackDuplicada')!==ocultar)
       el.classList.toggle('obxFinBackDuplicada',ocultar);
@@ -51,6 +51,9 @@ html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financ
 #financeiroMain .obxFinHeroLimpo{margin-bottom:10px!important;padding-bottom:0!important}
 #financeiroMain .hero>p{display:none!important}
 #financeiroMain .obxFinBackDuplicada{display:none!important}
+#financeiroMain .hero button[aria-label="Voltar"],
+#financeiroMain .hero a[aria-label="Voltar"],
+#financeiroMain .hero button[title="Voltar"]{display:none!important}
 #financeiroMain .obxFinHeroLimpo h1{margin-bottom:0!important}
 #financeiroMain .kpis{gap:8px!important}
 #financeiroMain .kpi{padding:12px!important;min-height:76px!important;border-radius:12px!important}
