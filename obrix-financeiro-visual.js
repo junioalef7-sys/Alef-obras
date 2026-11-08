@@ -51,6 +51,9 @@ html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financ
 #financeiroMain .obxFinHeroLimpo{margin-bottom:10px!important;padding-bottom:0!important}
 #financeiroMain .hero>p{display:none!important}
 #financeiroMain .obxFinBackDuplicada{display:none!important}
+#app:has(#financeiroMain:not(.hidden))>.top #obrixHeaderVoltar::before,
+#app:has(#financeiroMain:not(.hidden))>.top #obrixHeaderVoltar::after{content:none!important;display:none!important}
+#app:has(#financeiroMain:not(.hidden))>.top button[aria-label="Voltar"]:not(#obrixHeaderVoltar){display:none!important}
 #financeiroMain .hero button[aria-label="Voltar"],
 #financeiroMain .hero a[aria-label="Voltar"],
 #financeiroMain .hero button[title="Voltar"]{display:none!important}
