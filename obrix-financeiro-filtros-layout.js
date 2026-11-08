@@ -141,15 +141,32 @@
     return true;
   }
 
-  const obs=new MutationObserver(()=>requestAnimationFrame(organizarDatas));
-  obs.observe(document.documentElement,{childList:true,subtree:true});
-  window.addEventListener('pageshow',organizarDatas);
-  window.addEventListener('resize',organizarDatas);
-  window.addEventListener('focus',organizarDatas);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)organizarDatas()});
-  setTimeout(organizarDatas,50);
-  setTimeout(organizarDatas,250);
-  setTimeout(organizarDatas,800);
+  // Observar somente o painel de filtros. Nunca todo o DOM:
+  // no computador isso disparava centenas de reprocessamentos por minuto.
+  let obs=null,gridObservada=null,agendado=false;
+  function agendar(){
+    if(agendado||document.hidden)return;
+    agendado=true;
+    requestAnimationFrame(()=>{agendado=false;organizarDatas()});
+  }
+  function conectar(){
+    const grid=document.querySelector('#fmFiltrosPanel .fmFiltrosGrid');
+    if(grid&&grid!==gridObservada){
+      obs?.disconnect();
+      obs=new MutationObserver(agendar);
+      obs.observe(grid,{childList:true,subtree:false});
+      gridObservada=grid;
+    }
+    agendar();
+  }
+  window.addEventListener('pageshow',conectar);
+  window.addEventListener('resize',agendar);
+  window.addEventListener('focus',conectar);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)conectar()});
+  setTimeout(conectar,50);
+  setTimeout(conectar,250);
+  setTimeout(conectar,800);
 
-  window.OBRIX_FIN_FILTROS_LAYOUT={refresh:organizarDatas};
+  ['obrix:modules-ready','obrix:grupo-pronto'].forEach(e=>window.addEventListener(e,conectar));
+  window.OBRIX_FIN_FILTROS_LAYOUT={refresh:conectar};
 })();
