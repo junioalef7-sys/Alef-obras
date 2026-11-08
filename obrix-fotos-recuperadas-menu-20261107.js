@@ -1,7 +1,9 @@
 (()=>{
 'use strict';
 if(window.OBRIX_FOTOS_RECUPERADAS)return;
-const COMPANY='ec70a79d-42ce-47af-8831-986a01b152c5',BUCKET='relatorio-fotografico',PAGE_SIZE=6;
+const COMPANY='ec70a79d-42ce-47af-8831-986a01b152c5',PAGE_SIZE=6;
+const LAB_API='https://mjzlwnuklfopdmgcvdcs.supabase.co/functions/v1/obrix-fotos-lab-galeria-readonly';
+const LAB_PUBLIC_KEY="sb_publishable_y9Zcco35Ci7grw9DIvcFJw_ZK3uc_CG";
 const GROUPS={
  A:{folder:'98073940-6c39-4171-92eb-0d21c551eba8',count:216,bytes:172155200},
  B:{folder:'822ed78c-3b03-4cd7-9fb4-718c2a661e09',count:26,bytes:12262727}
@@ -41,17 +43,48 @@ function install(){
  document.addEventListener('keydown',e=>{if(!openNow||e.key!=='Escape')return;if(!$('obrFrZoom').hidden)closeZoom();else close()});
  document.addEventListener('click',e=>{if(e.target?.closest?.('#sair,#menuSair'))close()},true);
 }
-async function listFolder(g){
- const cfg=GROUPS[g],path=COMPANY+'/'+cfg.folder;
- const result=await sb.storage.from(BUCKET).list(path,{limit:500,offset:0,sortBy:{column:'name',order:'asc'}});
- if(result.error)throw Error('Não foi possível consultar o grupo '+g+': '+result.error.message);
- const found=(result.data||[]).map(x=>{
-  const size=Number(x.metadata?.size);
-  if(!x.metadata||!Number.isSafeInteger(size)||size<=0||!(/^[a-zA-Z0-9_.-]+$/).test(x.name)||x.name.includes('..'))throw Error('Arquivo inesperado no grupo '+g);
-  return {path:path+'/'+x.name,name:x.name,size,created:x.created_at};
+async function labRequest(operation,path){
+ if(!sb)throw Error('Sessão OBRIX indisponível.');
+ const auth=await sb.auth.getSession();
+ if(auth.error||!auth.data?.session?.access_token)throw Error('Sua sessão expirou.');
+ const request={op:operation};
+ if(operation==='read')request.path=path;
+ const resp=await fetch(LAB_API,{
+  method:'POST',cache:'no-store',
+  headers:{'Content-Type':'application/json',
+   Authorization:'Bearer '+auth.data.session.access_token,
+   apikey:LAB_PUBLIC_KEY},
+  body:JSON.stringify(request)
  });
- if(found.length!==cfg.count||found.reduce((s,x)=>s+x.size,0)!==cfg.bytes||new Set(found.map(x=>x.path)).size!==cfg.count)
-  throw Error('O grupo '+g+' não confere com o inventário de segurança.');
+ if(!resp.ok){
+  let info;
+  try{info=await resp.json()}catch(_){}
+  throw Error('Laboratório: '+(info?.error||'HTTP '+resp.status));
+ }
+ return operation==='read'?resp.blob():resp.json();
+}
+async function listVerifiedLab(){
+ const data=await labRequest('list');
+ if(!data.ok||data.total!==242||data.bytes!==184417927||!Array.isArray(data.files))
+  throw Error('O laboratório não confirmou o acervo completo.');
+ const found={A:[],B:[]};
+ let size=0;
+ const unique=new Set();
+ for(const row of data.files){
+  if(!row||!found[row.group]||typeof row.path!=='string'||
+     !row.path.startsWith(COMPANY+'/'+GROUPS[row.group].folder+'/')||
+     !/^[A-Za-z0-9_.-]+\.(jpe?g|png)$/i.test(row.path.split('/').pop())||
+     unique.has(row.path)||!Number.isSafeInteger(Number(row.size))||Number(row.size)<100)
+    throw Error('Inventário do laboratório contém arquivo inesperado.');
+  unique.add(row.path);size+=Number(row.size);
+  found[row.group].push({path:row.path,name:row.path.split('/').pop(),size:Number(row.size)});
+ }
+ if(found.A.length!==216||found.B.length!==26||size!==184417927||
+    found.A.reduce((n,x)=>n+x.size,0)!==172155200||
+    found.B.reduce((n,x)=>n+x.size,0)!==12262727)
+    throw Error('O inventário da cópia independente está divergente.');
+ found.A.sort((a,b)=>a.path.localeCompare(b.path));
+ found.B.sort((a,b)=>a.path.localeCompare(b.path));
  return found;
 }
 function controls(){
@@ -87,13 +120,12 @@ async function render(){
   while(next<cards.length){
    const x=cards[next++];
    try{
-    const r=await sb.storage.from(BUCKET).download(x.f.path);
+    const r=await labRequest('read',x.f.path);
     if(active!==seq||!openNow)return;
-    if(r.error||!r.data)throw Error(r.error?.message||'Foto indisponível');
-    if(r.data.size!==x.f.size)throw Error('Tamanho inesperado');
-    if(r.data.type&&!['image/jpeg','image/png'].includes(r.data.type))throw Error('Formato inesperado');
-    const url=URL.createObjectURL(r.data);blobUrls.push(url);x.img.src=url;x.btn.disabled=false;
-    x.detail.textContent=(x.f.size/1024).toFixed(0)+' KiB · Envio '+new Date(x.f.created).toLocaleDateString('pt-BR');
+    if(!r||r.size!==x.f.size)throw Error('Tamanho diferente do inventário SHA-256');
+    if(!['image/jpeg','image/png'].includes(r.type))throw Error('Formato inesperado');
+    const url=URL.createObjectURL(r);blobUrls.push(url);x.img.src=url;x.btn.disabled=false;
+    x.detail.textContent=(x.f.size/1024).toFixed(0)+' KiB · cópia independente SHA-256';
     x.btn.onclick=()=>{if(active!==seq||!openNow)return;$('obrFrLarge').src=url;$('obrFrFilename').textContent='Grupo '+group+' · Foto '+x.number+' · '+x.f.name;$('obrFrZoom').hidden=false};
    }catch(e){if(active!==seq||!openNow)return;failed++;x.detail.textContent='Não foi possível abrir: '+(e.message||String(e))}
    finished++;if(active===seq&&openNow)status('Carregadas '+finished+'/'+cards.length+(failed?' · Falhas '+failed:''));
@@ -114,10 +146,10 @@ async function load(){
   const user=await instance.auth.getUser();
   if(user.error||!user.data?.user)throw Error('Sua sessão expirou. Entre novamente.');
   if(profile?.empresa_id!==COMPANY)throw Error('Estas 242 fotos estão disponíveis apenas na conta de teste com oito obras.');
-  sb=instance;status('Conferindo o inventário dos dois grupos...');
-  const [a,b]=await Promise.all([listFolder('A'),listFolder('B')]);
+  sb=instance;status('Conferindo a cópia privada do laboratório...');
+  const verified=await listVerifiedLab();
   if(!openNow||active!==seq)return;
-  items={A:a,B:b};group='A';page=0;
+  items=verified;group='A';page=0;
   await render();
  }catch(e){if(openNow&&active===seq)status(e.message||String(e),true)}
 }
@@ -130,5 +162,5 @@ function open(){
  status('Validando sessão e conferindo arquivos...');
  root.scrollTop=0;void load();return true;
 }
-window.OBRIX_FOTOS_RECUPERADAS={open,close,version:'test-20261107'};
+window.OBRIX_FOTOS_RECUPERADAS={open,close,version:'lab-sha256-20261108'};
 })();
