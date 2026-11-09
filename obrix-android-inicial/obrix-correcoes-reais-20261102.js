@@ -116,7 +116,9 @@ setTimeout(()=>{agendarVisuais();realtime()},300);setTimeout(agendarVisuais,1000
 // Protecao contra eventos perdidos/rede instavel: consulta leve a cada 12 s
 // apenas quando Inicio ou Obras estiverem visiveis.
 setInterval(()=>{
-  if(!navigator.onLine||document.hidden)return;
+  // Fallback de reconciliação: não repetir consultas a Obras quando a
+  // assinatura Realtime está ativa. A atualização por evento permanece.
+  if(!navigator.onLine||document.hidden||canal)return;
   const inicio=document.getElementById('inicio');
   if(obrasVisiveis()||(inicio&&!inicio.classList.contains('hidden')))
     agendarObrasRemotas(0);
