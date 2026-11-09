@@ -14,8 +14,10 @@ function voltarMenu(main){
 
 function aplicarConfig(){
   if(!temaClaro())return;
-  const root=document.getElementById('configMain');if(!root)return;
+  const root=document.getElementById('configMain');if(!root||root.classList.contains('hidden'))return;
   root.querySelectorAll('[data-del="equipe"],[data-del="financeiro"],[data-del="obras"],[data-del="tudo"],#cfgExcluirConta').forEach(b=>{
+    if(b.dataset.obrixConfigEstilo==='claro')return;
+    b.dataset.obrixConfigEstilo='claro';
     b.style.setProperty('background','#e5eaf0','important');
     b.style.setProperty('background-color','#e5eaf0','important');
     b.style.setProperty('background-image','none','important');
@@ -28,7 +30,7 @@ function aplicarConfig(){
 
 function prepararSeta(id){
   const b=document.getElementById(id);if(!b)return;
-  b.textContent='←';b.setAttribute('aria-label','Voltar');b.title='Voltar';b.classList.add('obrixSetaVoltar');
+  if(b.textContent!=='←')b.textContent='←';if(b.getAttribute('aria-label')!=='Voltar')b.setAttribute('aria-label','Voltar');if(b.title!=='Voltar')b.title='Voltar';b.classList.add('obrixSetaVoltar');
 }
 
 function prepararAssinatura(){
@@ -43,7 +45,7 @@ function prepararAssinatura(){
 function prepararOrcamentos(){
   const main=document.getElementById('orcamentosMain');if(!main)return;
   const form=main.querySelector('#orcForm');if(!form)return;
-  const topo=form.querySelector('#orcCancelar');if(topo){topo.textContent='Cancelar';topo.setAttribute('aria-label','Cancelar orçamento')}
+  const topo=form.querySelector('#orcCancelar');if(topo){if(topo.textContent!=='Cancelar')topo.textContent='Cancelar';if(topo.getAttribute('aria-label')!=='Cancelar orçamento')topo.setAttribute('aria-label','Cancelar orçamento')}
   const area=form.querySelector(':scope > .orcActions');
   if(area&&!area.querySelector('#orcCancelarRodape')){
     const b=document.createElement('button');b.type='button';b.id='orcCancelarRodape';b.className='btn orcSec';b.textContent='Cancelar';
@@ -127,7 +129,8 @@ document.addEventListener('click',e=>{
   protegerRenderObrasFinanceiro();
   const novo=e.target.closest?.('#equipe [data-cmd="novo"]');
   if(novo){e.preventDefault();e.stopImmediatePropagation();abrirNovoFuncionario();return}
-  setTimeout(prepararEstruturas,0);setTimeout(prepararEstruturas,250);
+  // Não varrer Configurações e Orçamentos depois de cada clique no aplicativo.
+  // As estruturas são preparadas ao carregar os módulos ou trocar o tema.
 },true);
 window.addEventListener('pageshow',prepararEstruturas);
 window.addEventListener('obrix:modules-ready',prepararEstruturas);
