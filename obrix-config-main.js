@@ -5,7 +5,22 @@ function esconderOutros(){['inicio','obras','equipe','financeiroMain','estoqueMa
 function atualizaTema(){const t=document.documentElement.dataset.theme||'light';$('cfgClaro')?.classList.toggle('active',t==='light');$('cfgEscuro')?.classList.toggle('active',t==='dark')}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function modal(titulo,html){document.querySelector('.cfgModalBack')?.remove();const b=document.createElement('div');b.className='modalBack cfgModalBack';b.innerHTML=`<div class="modal cfgModal"><h2>${esc(titulo)}</h2>${html}</div>`;document.body.appendChild(b);b.querySelector('.cancelar')?.addEventListener('click',()=>b.remove());return b}
-async function carregarUsuario(){try{const p=await OBRIX_BACKEND.profile(),u=await OBRIX_BACKEND.currentUser();if($('cfgNome'))$('cfgNome').textContent=p?.nome||'Não informado';if($('cfgEmail'))$('cfgEmail').textContent=u?.email||p?.email||'Não informado'}catch(e){if($('cfgEmail'))$('cfgEmail').textContent='Não foi possível carregar'}}
+let usuarioEmCarga=null;
+function atualizarTextoConfig(id,valor){
+  const el=$(id);
+  if(el&&el.textContent!==valor)el.textContent=valor;
+}
+async function carregarUsuario(){
+  if(usuarioEmCarga)return usuarioEmCarga;
+  usuarioEmCarga=(async()=>{
+    try{
+      const p=await OBRIX_BACKEND.profile(),u=await OBRIX_BACKEND.currentUser();
+      atualizarTextoConfig('cfgNome',p?.nome||'Não informado');
+      atualizarTextoConfig('cfgEmail',u?.email||p?.email||'Não informado');
+    }catch(e){atualizarTextoConfig('cfgEmail','Não foi possível carregar')}
+  })();
+  try{return await usuarioEmCarga}finally{usuarioEmCarga=null}
+}
 function ensure(){if($('configMain'))return;const app=$('app'),bottom=app?.querySelector('.bottom');if(!app||!bottom)return;const m=document.createElement('main');m.id='configMain';m.className='hidden';m.innerHTML=`
 <div class="hero cfgHero"><div><h1>Configurações</h1><p>Conta, aparência e dados do aplicativo</p></div><button class="cfgFechar" id="cfgFechar">Fechar</button></div>
 <div class="card"><h3>Dados pessoais do usuário</h3><div class="cfgUserData"><div><small>Nome</small><b id="cfgNome">Carregando...</b></div><div><small>E-mail</small><b id="cfgEmail">Carregando...</b></div></div><div class="cfgAccountActions"><button class="btn" id="cfgTrocarEmail">Trocar e-mail</button><button class="btn" id="cfgTrocarSenha">Trocar senha</button></div><div id="cfgContaStatus" class="muted cfgStatus"></div></div>
