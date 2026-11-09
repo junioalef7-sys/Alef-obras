@@ -84,6 +84,8 @@ async function openOnline(k,btn){
 function interceptMenu(e){
   const btn=e.target.closest?.('#menuMain [data-go]');
   if(!btn)return;
+  // A ajuda de instalação é um modal local do Android, não uma rota de módulos.
+  if(btn.dataset.go==='como_instalar_android')return;
   setCloseTarget('menu');
   if(btn.dataset.go==='equipe'){
     document.documentElement.dataset.obrixEquipeOrigem='menu';
