@@ -14,7 +14,29 @@ function renderFallback(){let m=document.getElementById('offlineCentralMain');if
 async function syncFallback(e){const b=e?.currentTarget;if(b){b.disabled=true;b.textContent='Carregando sincronização...'}try{const l=window.OBRIX_POS_LOGIN_LOADER;if(!l?.loadFeature)throw new Error('Carregador indisponível.');const ok=await timeout(l.loadFeature('offlineSync'),7000);if(!ok)throw new Error('Não foi possível carregar a sincronização.');const mods=['OBRIX_OFFLINE_OBRAS','OBRIX_OFFLINE_EQUIPE','OBRIX_OFFLINE_ESTOQUE','OBRIX_OFFLINE_DIARIO','OBRIX_OFFLINE_NOTAS','OBRIX_OFFLINE_CHECKLIST'].map(k=>window[k]).filter(Boolean);await timeout(Promise.allSettled(mods.map(m=>Promise.resolve().then(()=>m.sync?.()))),10000);renderFallback()}catch(err){alert(err?.message||'Não foi possível sincronizar agora.');renderFallback()}}
 async function toolsFallback(e){const b=e?.currentTarget;if(b){b.disabled=true;b.textContent='Carregando ferramentas...'}try{const l=window.OBRIX_POS_LOGIN_LOADER;if(!l?.loadFeature)throw new Error('Carregador indisponível.');await timeout(l.loadFeature('offlineSync'),7000);const ok=await timeout(l.loadFeature('offlineTools'),10000);if(!ok)throw new Error('Não foi possível carregar as ferramentas offline.');if(b)b.textContent='Ferramentas carregadas';window.dispatchEvent(new CustomEvent('obrix:offline-tools-ready'))}catch(err){if(b){b.disabled=false;b.textContent='Ferramentas avançadas'}alert(err?.message||'Não foi possível carregar as ferramentas offline.')}}
 function openOffline(){hideAll();const m=renderFallback();m?.classList.remove('hidden');scrollTo({top:0,behavior:'smooth'})}
-async function garantir(k){if(!featureKeys.has(k))return true;const loader=window.OBRIX_POS_LOGIN_LOADER;if(!loader?.loadFeature)return false;return await timeout(loader.loadFeature(k),30000)}
+async function garantir(k){
+  if(!featureKeys.has(k))return true;
+  if(typeof window[map[k]]?.open==='function')return true;
+  const loader=window.OBRIX_POS_LOGIN_LOADER;
+  if(!loader?.loadFeature)return false;
+  const carregamento=timeout(loader.loadFeature(k),30000).catch(()=>false);
+  // Configurações tem scripts complementares. A tela principal pode abrir
+  // assim que seu controlador estiver pronto, sem aguardar todos eles.
+  if(k==='config'){
+    const pronto=new Promise(resolve=>{
+      const fim=Date.now()+15000;
+      const verificar=()=>{
+        if(typeof window.OBRIX_CONFIG?.open==='function')resolve(true);
+        else if(Date.now()>=fim)resolve(false);
+        else setTimeout(verificar,100);
+      };
+      verificar();
+    });
+    const ok=await Promise.race([carregamento,pronto]);
+    return ok||typeof window.OBRIX_CONFIG?.open==='function';
+  }
+  return await carregamento;
+}
 async function go(k,btn){
   // Cada clique é uma intenção de navegação. Uma carga lenta não bloqueia
   // os demais botões, e resultados antigos não podem reabrir outra tela.
