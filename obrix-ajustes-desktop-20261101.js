@@ -111,6 +111,18 @@ html[data-theme="light"] .accountDeleteModal .excluir:is(:hover,:focus,:active){
     background:none!important;
     box-shadow:none!important;
   }
+  /* Os quatro botões brancos justapostos simulavam um único cartão.
+     Deixar só os ícones/rótulos clicáveis, sem camada de fundo. */
+  html:not([data-obrix-offline-v3="1"]) body #app > .bottom:not(#obrixOfflineV3Bottom) > button{
+    background:transparent!important;
+    background-color:transparent!important;
+    background-image:none!important;
+    border:0!important;
+    box-shadow:none!important;
+    border-radius:0!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
 }
 @media (min-width:621px){
   #app button[aria-label="Voltar"],#app a[aria-label="Voltar"],
