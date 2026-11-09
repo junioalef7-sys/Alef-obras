@@ -79,7 +79,12 @@
       const meta=[o?.nome||'Sem obra',x.data||'',labels[x.categoria]||x.categoria||'',x.subcategoria||'',checkTxt].filter(Boolean);
       return `<div class="card item" data-fin-card="1" data-id="${esc(x.id)}" data-obra="${esc(x.obra_id||'')}" data-tipo="${esc(x.tipo||'')}" data-categoria="${esc(x.categoria||'')}"><h3>${esc(x.descricao||'Lançamento')}</h3><div class="muted">${meta.map(esc).join(' • ')}</div><div class="grid"><div class="mini"><small>${x.tipo==='receita'?'Receita':'Despesa'}</small><b>${money(x.valor)}</b></div></div>${podeExcluir(x)?`<div class="actions">${manual?`<button type="button" data-fin="editar" data-id="${x.id}">Editar</button>`:''}<button type="button" data-fin="excluir" data-id="${x.id}">Excluir</button></div>`:''}</div>`;
     }).join(''):'<div class="card muted">Nenhum lançamento financeiro.</div>';
-    if(lista&&lista.innerHTML!==html)lista.innerHTML=html;
+    let listaMudou=false;
+    // Separar o HTML gerado dos ajustes visuais adicionados por outros módulos.
+    if(lista&&(lista.__obrixMarkup!==html||lista.childElementCount===0)){
+      lista.innerHTML=html;lista.__obrixMarkup=html;listaMudou=true;
+    }
+    if(listaMudou)window.OBRIX_FIN_VISUAL?.refresh?.();
     atualizarObras();window.OBRIX_FIN_BUSCA?.refreshOptions?.();window.OBRIX_FIN_BUSCA?.aplicar?.();
   }
 
@@ -262,6 +267,7 @@
   function visivel(){const x=$('financeiroMain');return !!x&&!x.classList.contains('hidden')}
   function open(){ensure();['inicio','obras','equipe'].forEach(id=>$(id)?.classList.add('hidden'));$('estoqueMain')?.classList.add('hidden');$('menuMain')?.classList.add('hidden');$('financeiroMain').classList.remove('hidden');$('bInicio')?.classList.remove('active');$('bEquipe')?.classList.remove('active');renderLocal();void render(true);void startRealtime();scrollTo({top:0,behavior:'smooth'})}
   async function startRealtime(){
+    if(window.__OBRIX_CORRECOES_REAIS_20261102)return;
     if(realtime)return;try{const p=await OBRIX_BACKEND.profile(),sb=await OBRIX_BACKEND.init(),filtro=`empresa_id=eq.${p.empresa_id}`,agendar=()=>{clearTimeout(realtimeTimer);realtimeTimer=setTimeout(()=>{if(visivel()&&$('fmForm')?.classList.contains('hidden'))render(true)},250)};realtime=sb.channel('obrix-financeiro-sync-'+p.empresa_id).on('postgres_changes',{event:'*',schema:'public',table:'financeiro',filter:filtro},agendar).on('postgres_changes',{event:'*',schema:'public',table:'servicos_extras',filter:filtro},agendar).on('postgres_changes',{event:'*',schema:'public',table:'checklist_itens',filter:filtro},agendar).subscribe()}catch(e){console.warn('Financeiro realtime indisponível',e)}
   }
   async function poll(){if(polling||document.visibilityState!=='visible'||!visivel()||!$('fmForm')?.classList.contains('hidden'))return;polling=true;try{const before=lastSync;await fetchDados();if(lastSync!==before)renderLocal()}catch(_){}finally{polling=false}}
