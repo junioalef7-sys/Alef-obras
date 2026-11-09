@@ -93,7 +93,7 @@ function renderInicio(){
   const obrasHtml=recentes.length?recentes.map(o=>{const p=progresso(o);return '<button type="button" class="obp-work" data-home-obra="'+esc(o.id)+'"><span class="obp-work-icon">▥</span><span class="obp-work-main"><strong>'+esc(o.nome||'Obra')+'</strong><span class="obp-progress"><i style="width:'+(p??0)+'%"></i></span></span><span class="obp-work-pct">'+(p===null?'—':p+'%')+'</span><span class="obp-work-arrow">›</span></button>'}).join(''):'<div class="obp-empty">Nenhuma obra em andamento.</div>';
   const obrasBox=$('obpObras');
   if(obrasBox&&obrasBox.__obpMarkup!==obrasHtml){obrasBox.innerHTML=obrasHtml;obrasBox.__obpMarkup=obrasHtml}
-  const at=atividades().slice(0,10);
+  const at=atividades().slice(0,5);
   const atividadesHtml=at.length?at.map(atividadeHTML).join(''):'<div class="obp-empty">Sem atualizações registradas.</div>';
   const atividadesBox=$('obpAtividades');
   if(atividadesBox&&atividadesBox.__obpMarkup!==atividadesHtml){atividadesBox.innerHTML=atividadesHtml;atividadesBox.__obpMarkup=atividadesHtml}
@@ -181,7 +181,7 @@ function cliqueInicio(e){
 }
 function abrirAtualizacoes(){
   document.querySelector('.obp-activities-modal')?.remove();
-  const a=atividades(),back=document.createElement('div');back.className='modalBack obp-activities-modal';
+  const a=atividades().slice(0,5),back=document.createElement('div');back.className='modalBack obp-activities-modal';
   back.innerHTML='<div class="modal obp-modal"><div class="obp-modal-head"><h2>Últimas atualizações</h2><button type="button" aria-label="Fechar" data-close>×</button></div><div class="obp-modal-body">'+(a.length?a.map(atividadeHTML).join(''):'<p>Sem atualizações registradas.</p>')+'</div></div>';
   document.body.appendChild(back);back.querySelector('[data-close]').onclick=()=>back.remove();
   back.addEventListener('click',e=>{if(e.target===back)back.remove()});
