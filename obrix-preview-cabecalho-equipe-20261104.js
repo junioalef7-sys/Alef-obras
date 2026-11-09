@@ -55,11 +55,10 @@ function boot(){
   if(team)new MutationObserver(queue).observe(team,{attributes:true,attributeFilter:['class']});
   // O cabeçalho global não deve recriar o título da Equipe.
   document.addEventListener('click',e=>{
-    if(e.target.closest('button,a,[data-go],[data-page]')){
-      queue();setTimeout(queue,200);
-    }
+    // Não redesenhar o cabeçalho ao clicar em filtros, fichas ou ações.
+    if(e.target.closest('#app>.bottom button,#menuMain [data-go],#app>.top #obrixHeaderVoltar'))queue();
   },true);
-  ['pageshow','focus','obrix:modules-ready','obrix:grupo-pronto','obrix:theme-applied'].forEach(ev=>window.addEventListener(ev,queue));
+  ['pageshow','obrix:modules-ready','obrix:grupo-pronto','obrix:theme-applied'].forEach(ev=>window.addEventListener(ev,queue));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)queue()});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
