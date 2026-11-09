@@ -13,7 +13,7 @@ const appOpen=()=>{const app=document.getElementById('app'),login=document.getEl
 const pathOf=src=>{try{return new URL(src,location.href).pathname}catch(_){return src}};
 const loadedPaths=new Set([...document.scripts].filter(s=>s.src).map(s=>pathOf(s.src)));
 function loaded(src){const p=pathOf(src);if(loadedPaths.has(p))return true;const found=[...document.scripts].some(s=>s.src&&pathOf(s.src)===p);if(found)loadedPaths.add(p);return found}
-function loadOne(src,scope='base'){return new Promise(resolve=>{if(loaded(src))return resolve(true);const s=document.createElement('script');s.src=src;s.async=false;s.dataset.obrixPosLogin=scope;let done=false,timer=null;const finish=ok=>{if(done)return;done=true;if(timer)clearTimeout(timer);if(ok)loadedPaths.add(pathOf(src));resolve(ok)};s.onload=()=>finish(true);s.onerror=()=>finish(false);document.body.appendChild(s);timer=setTimeout(()=>finish(false),7000)})}
+function loadOne(src,scope='base'){return new Promise(resolve=>{if(loaded(src))return resolve(true);const s=document.createElement('script');s.src=src;s.async=false;s.dataset.obrixPosLogin=scope;let done=false,timer=null;const finish=ok=>{if(done)return;done=true;if(timer)clearTimeout(timer);if(ok)loadedPaths.add(pathOf(src));else s.remove();resolve(ok)};s.onload=()=>finish(true);s.onerror=()=>finish(false);document.body.appendChild(s);timer=setTimeout(()=>finish(false),20000)})}
 function primeList(list,scope='base'){if(!navigator.onLine)return;for(const src of list){if(loaded(src))continue;try{const href=new URL(src,location.href).href;if(warmLinks.has(href))continue;warmLinks.add(href);const l=document.createElement('link');l.rel='preload';l.as='script';l.href=href;l.dataset.obrixPerfPrime=scope;try{l.fetchPriority=scope.startsWith('base')?'high':'auto'}catch(_){ }document.head.appendChild(l)}catch(_){}}}
 async function yieldUI(){await new Promise(r=>requestAnimationFrame(()=>r()))}
 async function loadList(list,scope){primeList(list,scope);await yieldUI();let ok=true,novos=0;for(const src of list){if(loaded(src))continue;if(!await loadOne(src,scope))ok=false;novos++;if(novos%3===0)await yieldUI()}if(novos%3!==0)await yieldUI();return ok}
@@ -24,9 +24,16 @@ function warmOne(src){if(desktop()||!navigator.onLine||loaded(src))return;try{co
 async function warmMobilePrimary(){if(desktop()||!navigator.onLine||!appOpen())return false;const list=[...GROUPS.financeiro,...GROUPS.equipe,...GROUPS.obras,...GROUPS.estoque];let n=0;for(const src of [...new Set(list)]){warmOne(src);n++;if(n%3===0)await sleep(120)}return true}
 const idlePause=(timeout=220)=>new Promise(r=>{if('requestIdleCallback'in window)requestIdleCallback(()=>r(),{timeout});else setTimeout(r,80)});
 async function prewarmPrimary(){if(!desktop()||!navigator.onLine||!appOpen())return false;for(const name of ['financeiro','obras','estoque','equipe']){try{await loadGroup(name)}catch(_){ }await idlePause(220)}return true}
-function schedulePrewarm(){if(prewarmScheduled||!navigator.onLine)return;prewarmScheduled=true;const run=()=>{if(desktop())prewarmPrimary().catch(()=>{});else warmMobilePrimary().catch(()=>{})};if('requestIdleCallback'in window)requestIdleCallback(run,{timeout:desktop()?900:1200});else setTimeout(run,desktop()?280:450)}
-async function loadBase(list,scope){await loadList(list,scope);instalarLazyHooks();window.OBRIX_THEME?.refresh?.();window.OBRIX_OBRAS_FIEL?.refresh?.();window.OBRIX_FIN_VISUAL?.refresh?.()}
-async function start(){if(started||!appOpen())return false;started=true;baseMode=navigator.onLine?'online':'offline';await sleep(10);await loadBase(navigator.onLine?BASE:BASE_OFFLINE,'base:'+baseMode);baseDone=navigator.onLine;schedulePrewarm();return true}
+function schedulePrewarm(){if(prewarmScheduled||!navigator.onLine)return;prewarmScheduled=true;
+  // No desktop, pré-carregar quatro módulos executava dezenas de scripts de
+  // uma vez, iniciando observadores e consultas mesmo sem abrir as telas.
+  // Grupos continuam disponíveis via loadGroup ao entrar em cada página.
+  if(desktop())return;
+  const run=()=>warmMobilePrimary().catch(()=>{});
+  if('requestIdleCallback'in window)requestIdleCallback(run,{timeout:1200});else setTimeout(run,450);
+}
+async function loadBase(list,scope){const ok=await loadList(list,scope);instalarLazyHooks();window.OBRIX_THEME?.refresh?.();window.OBRIX_OBRAS_FIEL?.refresh?.();window.OBRIX_FIN_VISUAL?.refresh?.();return ok}
+async function start(){if(started||!appOpen())return false;started=true;baseMode=navigator.onLine?'online':'offline';await sleep(10);const ok=await loadBase(navigator.onLine?BASE:BASE_OFFLINE,'base:'+baseMode);baseDone=navigator.onLine&&ok;if(!ok)console.warn('OBRIX: módulos básicos incompletos, novas tentativas disponíveis');schedulePrewarm();return ok}
 async function upgradeOnline(){if(!started||!navigator.onLine||baseDone||!appOpen())return false;await loadBase(BASE,'base:online-upgrade');baseDone=true;schedulePrewarm();return true}
 function watch(){if(appOpen())start()}
 const app=document.getElementById('app');if(app)new MutationObserver(watch).observe(app,{attributes:true,attributeFilter:['class']});
