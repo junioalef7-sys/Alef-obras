@@ -8,7 +8,7 @@ function ensure(){
   if($('relatoriosMain'))return;
   const app=$('app'),bottom=app?.querySelector('.bottom');if(!app||!bottom)return;
   const m=document.createElement('main');m.id='relatoriosMain';m.className='hidden';
-  m.innerHTML=`<div class="hero"><h1>Relatórios</h1><p>Financeiro, equipe e trabalhador para conferência, impressão e PDF</p></div>
+  m.innerHTML=`<div class="hero"><h1>Relatórios</h1></div>
   <div class="relTipo"><button class="btn active" id="relTipoFinanceiro">Financeiro</button><button class="btn" id="relTipoEquipe">Equipe / Trabalhador</button></div>
   <div class="card relFiltros" id="relFinFiltros"><h3>Relatório Financeiro</h3><div class="relGrid"><select id="relObra"><option value="">Todas as obras</option></select><input id="relInicio" type="date"><input id="relFim" type="date"><button class="btn" id="relGerar">Gerar relatório</button></div></div>
   <div class="card relFiltros hidden" id="relEqFiltros"><h3>Relatório da Equipe / Trabalhador</h3><div class="relGrid"><select id="relFuncionario"><option value="">Toda a equipe</option></select><input id="relEqInicio" type="date"><input id="relEqFim" type="date"><button class="btn" id="relEqGerar">Gerar relatório</button></div></div>
