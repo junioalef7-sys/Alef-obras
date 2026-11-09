@@ -47,7 +47,7 @@ function atividades(){
   eventosRemotos.forEach(e=>push(e.key,e.txt,e.date,e.icon));
   eventosLocais().forEach(e=>push(e.key,e.txt,e.date,e.icon));
   const uniq=new Map();a.sort((x,y)=>y.t-x.t).forEach(x=>{if(!uniq.has(x.key))uniq.set(x.key,x)});
-  return [...uniq.values()].slice(0,80);
+  return [...uniq.values()].slice(0,500);
 }
 function atividadeHTML(e){
   const raw=String(e.txt||'Atualização'),colon=raw.indexOf(': '),dot=raw.indexOf(' · ');
@@ -181,10 +181,32 @@ function cliqueInicio(e){
 }
 function abrirAtualizacoes(){
   document.querySelector('.obp-activities-modal')?.remove();
-  const a=atividades().slice(0,5),back=document.createElement('div');back.className='modalBack obp-activities-modal';
+  const a=atividades().filter(item=>item.t>=Date.now()-JANELA_ATUALIZACOES_MS),back=document.createElement('div');back.className='modalBack obp-activities-modal';
   back.innerHTML='<div class="modal obp-modal"><div class="obp-modal-head"><h2>Últimas atualizações</h2><button type="button" aria-label="Fechar" data-close>×</button></div><div class="obp-modal-body">'+(a.length?a.map(atividadeHTML).join(''):'<p>Sem atualizações registradas.</p>')+'</div></div>';
   document.body.appendChild(back);back.querySelector('[data-close]').onclick=()=>back.remove();
   back.addEventListener('click',e=>{if(e.target===back)back.remove()});
+  // Ver todas consulta o histórico completo somente sob demanda.
+  // Não aumentar consultas do início em segundo plano.
+  void (async()=>{
+    try{
+      const [sb,p]=await Promise.all([window.OBRIX_BACKEND?.init?.(),window.OBRIX_BACKEND?.profile?.()]);
+      if(!sb||!p?.empresa_id||!back.isConnected)return;
+      const r=await sb.rpc('obrix_feed_geral',{p_limite:300});
+      if(r.error)throw r.error;
+      const remotos=(r.data||[]).map(e=>({
+        key:String(e.chave||''),txt:String(e.texto||'Atualização do aplicativo'),
+        date:e.data_evento,icon:e.icone||'▤'
+      })).map(e=>({...e,key:e.key.startsWith('obras:')?'obra:'+e.key.slice(6):
+        e.key.startsWith('diarias:')?'diaria:'+e.key.slice(8):e.key}));
+      if(!back.isConnected)return;
+      const anteriores=eventosRemotos;
+      eventosRemotos=remotos;
+      const historico=atividades().filter(item=>item.t>=Date.now()-JANELA_ATUALIZACOES_MS);
+      eventosRemotos=anteriores;
+      const corpo=back.querySelector('.obp-modal-body');
+      if(corpo)corpo.innerHTML=historico.length?historico.map(atividadeHTML).join(''):'<p>Sem atualizações nos últimos 30 dias.</p>';
+    }catch(e){console.warn('Histórico dos últimos 30 dias indisponível; exibindo registros carregados',e)}
+  })();
 }
 const ATIVIDADES_LOCAL_PREFIX='obrix_atividades_locais_v1_';
 let feedTimer=0;
