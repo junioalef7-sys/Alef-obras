@@ -41,11 +41,15 @@ document.addEventListener('click',e=>{
   if(e.target.closest?.('#fmSalvar'))acompanharFinanceiro();
 },true);
 
+// O checklist sincroniza seus próprios itens. Não repetir carregar()+renders
+// de todos os módulos duas vezes a cada alteração de uma única etapa.
+let checklistVisualTimer=null;
 document.addEventListener('change',e=>{
-  const r=e.target.closest?.('[data-check-range]');
-  if(!r)return;
-  setTimeout(()=>atualizarTudo(),700);
-  setTimeout(()=>atualizarTudo(),1800);
+  if(!e.target.closest?.('[data-check-range]'))return;
+  clearTimeout(checklistVisualTimer);
+  checklistVisualTimer=setTimeout(()=>{
+    window.dispatchEvent(new CustomEvent('obrix:progresso-atualizado'));
+  },450);
 },true);
 
 window.OBRIX_REFRESH_ALL=atualizarTudo;
