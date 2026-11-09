@@ -11,7 +11,7 @@ html[data-theme="dark"] #app .card,html[data-theme="dark"] #app .hero,html[data-
 html[data-theme="dark"] #app .card .card,html[data-theme="dark"] #app .card .panel,html[data-theme="dark"] #app .card .box,html[data-theme="dark"] #app .card article,html[data-theme="dark"] #app article .card,html[data-theme="dark"] #app .panel .card,html[data-theme="dark"] #app .obrix-modelo-card .obrix-modelo-pagamento,html[data-theme="dark"] #app .obrix-modelo-card .obrix-modelo-metrica,html[data-theme="dark"] #app .obrix-modelo-card .obrix-modelo-pilulas span,html[data-theme="dark"] #app .mini,html[data-theme="dark"] #app .kpi{background:#111e2c!important;background-color:#111e2c!important;color:#f8fafc!important;border-color:#293b4d!important}
 #app time,#app .date,#app .data,#app [class*="data" i],#app [class*="date" i]{text-align:center!important}
 `;
-function apply(){let s=document.getElementById(ID);if(!s){s=document.createElement('style');s.id=ID;s.textContent=css}document.head.appendChild(s)}
+function apply(){let s=document.getElementById(ID);if(!s){s=document.createElement('style');s.id=ID;s.textContent=css;document.head.appendChild(s)}else if(!s.isConnected)document.head.appendChild(s)}
 apply();
 new MutationObserver(()=>requestAnimationFrame(apply)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 window.addEventListener('obrix:modules-ready',apply);window.addEventListener('obrix:modules-online-ready',apply);window.addEventListener('obrix:grupo-pronto',apply);window.addEventListener('obrix:feature-pronto',apply);window.addEventListener('pageshow',apply);
