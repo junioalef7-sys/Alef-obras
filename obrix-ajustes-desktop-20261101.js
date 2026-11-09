@@ -99,6 +99,17 @@ html[data-theme="light"] .accountDeleteModal .excluir:is(:hover,:focus,:active){
     box-shadow:none!important;
     backdrop-filter:none!important;
     -webkit-backdrop-filter:none!important;
+    outline:0!important;
+    border-radius:0!important;
+    -webkit-box-shadow:none!important;
+    filter:none!important;
+  }
+  html:not([data-obrix-offline-v3="1"]) body #app > .bottom:not(#obrixOfflineV3Bottom)::before,
+  html:not([data-obrix-offline-v3="1"]) body #app > .bottom:not(#obrixOfflineV3Bottom)::after{
+    content:none!important;
+    display:none!important;
+    background:none!important;
+    box-shadow:none!important;
   }
 }
 @media (min-width:621px){
