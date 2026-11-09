@@ -1,5 +1,10 @@
 (()=>{'use strict';if(window.__OBRIX_VISUAL_PADRAO_FINAL)return;window.__OBRIX_VISUAL_PADRAO_FINAL=true;
 const st=document.createElement('style');st.id='obrix-visual-padrao-final';st.textContent=`
+/* A seta superior só existe para Equipe quando a navegação veio do Menu. */
+html[data-obrix-equipe-origem="rodape"] #app:has(#equipe:not(.hidden)) > .top #obrixHeaderVoltar,
+html[data-obrix-equipe-origem="rodape"] #app:has(#equipe:not(.hidden)) > .top button[aria-label="Voltar"]{
+  display:none!important;visibility:hidden!important;
+}
 :root{--ob-bg:#eef2f6;--ob-surface:#f8fafc;--ob-card:#f8fafc;--ob-surface-2:#e5eaf0;--ob-text:#0f172a;--ob-muted:#526173;--ob-border:#cbd5df;color-scheme:light}html[data-theme="dark"]{--ob-bg:#07111b;--ob-surface:#0d1722;--ob-card:#0d1722;--ob-surface-2:#111e2c;--ob-text:#f8fafc;--ob-muted:#c3ceda;--ob-border:#293b4d;color-scheme:dark}html,body,body>.wrap,#app{background:var(--ob-bg)!important;color:var(--ob-text)!important}#app :is(.card,.hero,.panel,.box,.sheet,.drawer,.kpi,.item){background:var(--ob-surface)!important;color:var(--ob-text)!important;border-color:var(--ob-border)!important;box-shadow:none!important}#app :is(.mini,.status,input,select,textarea,button,.btn,.bottom button,.nav button){background:var(--ob-surface-2)!important;color:var(--ob-text)!important;-webkit-text-fill-color:var(--ob-text)!important;border-color:var(--ob-border)!important;box-shadow:none!important}#app button,#app .btn,#app input[type="button"],#app input[type="submit"],#app input[type="reset"],#app [role="button"],.modalBack button,.modalBack .btn,.modal button,.modal .btn,[role="dialog"] button,[role="dialog"] .btn{background:var(--ob-surface-2)!important;background-color:var(--ob-surface-2)!important;background-image:none!important;color:var(--ob-text)!important;-webkit-text-fill-color:var(--ob-text)!important;border-color:var(--ob-border)!important;box-shadow:none!important}
 #financeiroMain>.hero{min-height:72px!important;display:flex!important;align-items:center!important;padding-top:12px!important;padding-bottom:12px!important}#financeiroMain>.hero h1{margin:0!important;line-height:1.15!important;display:flex!important;align-items:center!important}.obrixFinReceita{background:#16a34a!important;background-color:#16a34a!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#16a34a!important}.obrixFinDespesa{background:#dc2626!important;background-color:#dc2626!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#dc2626!important}
 .obrixConfigPerigo{background:var(--ob-surface-2)!important;background-color:var(--ob-surface-2)!important;background-image:none!important;color:#dc2626!important;-webkit-text-fill-color:#dc2626!important;border:2px solid #dc2626!important;box-shadow:none!important}
@@ -29,6 +34,19 @@ let applying=false,scheduled=false,lastSignature='';
 function signature(){const t=document.documentElement.dataset.theme||'';const visible=[...document.querySelectorAll('#app>main:not(.hidden),#app>section:not(.hidden),#app .modalBack:not(.hidden),#app .modal:not(.hidden),#app [role="dialog"]:not(.hidden)')].map(x=>x.id||x.className||x.tagName).join('|');return t+'::'+visible}
 function aplicar(force=false){if(applying)return;const sig=signature();if(!force&&sig===lastSignature)return;applying=true;try{diario();limpar();seta();window.OBRIX_EQUIPE_VISUAL_FINAL?.refresh?.();if(!document.getElementById('obrixTheme'))window.OBRIX_THEME?.refresh?.();window.OBRIX_ACTIONS_CLEAN_V1?.apply?.();lastSignature=signature()}finally{applying=false}}
 function agenda(force=false){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;aplicar(force)})}
+// Capturar a origem antes dos interceptores de Menu/rodapé, que podem
+// interromper a propagação do clique e impedir o controle tradicional.
+window.addEventListener('click',event=>{
+  const target=event.target;
+  const viaRodape=target?.closest?.('#app>.bottom #bEquipe,#app>.bottom button:nth-child(3)');
+  const viaMenu=target?.closest?.('#menuMain [data-go="equipe"]');
+  if(!viaRodape&&!viaMenu)return;
+  const origem=viaRodape?'rodape':'menu';
+  if(document.documentElement.dataset.obrixEquipeOrigem!==origem){
+    document.documentElement.dataset.obrixEquipeOrigem=origem;
+    requestAnimationFrame(()=>window.OBRIX_VISUAL_PADRAO_FINAL?.refresh?.());
+  }
+},true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>aplicar(true),{once:true});else aplicar(true);
 // Observadores limitados aos containers de navegacao: evita percorrer cada
 // alteração de texto, cartão ou formulário durante uma sessão longa no desktop.
