@@ -140,17 +140,34 @@
 
   // Source the work selector directly from Supabase. On first login the global
   // work list may not have loaded yet, causing "Sem obra vinculada" only.
+  let obrasOpcoesCache=null,obrasOpcoesConsulta=0,obrasOpcoesPromise=null;
+  async function consultarObrasParaSelecionar(){
+    if(obrasOpcoesCache&&Date.now()-obrasOpcoesConsulta<60000)return obrasOpcoesCache;
+    if(obrasOpcoesPromise)return obrasOpcoesPromise;
+    obrasOpcoesPromise=(async()=>{
+      const locais=Array.isArray(window.obras)?window.obras.filter(o=>o?.id):[];
+      try{
+        const [sb,p]=await Promise.all([OBRIX_BACKEND.init(),OBRIX_BACKEND.profile()]);
+        if(!p?.empresa_id)throw new Error('Empresa não identificada.');
+        const q=await sb.from('obras').select('id,nome').eq('empresa_id',p.empresa_id).order('nome',{ascending:true});
+        if(q.error)throw q.error;
+        obrasOpcoesCache=(q.data||[]).filter(o=>o?.id);
+        obrasOpcoesConsulta=Date.now();
+        return obrasOpcoesCache;
+      }catch(e){
+        if(locais.length){obrasOpcoesCache=locais;obrasOpcoesConsulta=Date.now()-45000;return locais}
+        throw e;
+      }
+    })();
+    try{return await obrasOpcoesPromise}finally{obrasOpcoesPromise=null}
+  }
   async function carregarObrasParaLancamento(select,obraOriginal=''){
     if(!select||!select.isConnected)return;
     const initial=String(obraOriginal||'');
     select.dataset.obrixObrasStatus='carregando';
     try{
-      const [sb,p]=await Promise.all([OBRIX_BACKEND.init(),OBRIX_BACKEND.profile()]);
-      if(!p?.empresa_id)throw Error('Empresa não identificada.');
-      const q=await sb.from('obras').select('id,nome').eq('empresa_id',p.empresa_id).order('nome',{ascending:true});
-      if(q.error)throw q.error;
+      const items=await consultarObrasParaSelecionar();
       if(!select.isConnected||$('fmObra')!==select)return;
-      const items=(q.data||[]).filter(o=>o.id);
       const novos=[{id:'',nome:'Sem obra vinculada'},...items.map(o=>({id:String(o.id),nome:String(o.nome||'Obra')}))];
       const aplicar=()=>{
         if(!select.isConnected||$('fmObra')!==select)return;
@@ -166,7 +183,7 @@
         if(select.value!==anterior)atualizarChecklistForm(null);
       };
       // Não desmontar o select enquanto o menu nativo está aberto.
-      if(document.activeElement===select){
+      if(document.activeElement===select&&select.options.length>1){
         select.dataset.obrixObrasStatus='pronto';
         select.addEventListener('blur',aplicar,{once:true});
       }else aplicar();
@@ -185,7 +202,7 @@
     ensure();salvando=false;
     const cats=tipo==='receita'?[['entrada','Entrada']]:Object.entries(labels).filter(([k])=>k!=='entrada'),box=$('fmForm');
     box.innerHTML=`<h3>${x?'Editar':'Novo'} ${tipo==='receita'?'receita':'despesa'}</h3>
-      <label>Obra</label><select id="fmObra"><option value="">Sem obra vinculada</option>${(window.obras||[]).map(o=>`<option value="${o.id}" ${String(x?.obra_id||'')===String(o.id)?'selected':''}>${esc(o.nome)}</option>`).join('')}</select>
+      <label>Obra</label><select id="fmObra"><option value="">Sem obra vinculada</option>${(obrasOpcoesCache||window.obras||[]).map(o=>`<option value="${o.id}" ${String(x?.obra_id||'')===String(o.id)?'selected':''}>${esc(o.nome)}</option>`).join('')}</select>
       <label>Categoria</label><select id="fmCat">${cats.map(([v,l])=>`<option value="${v}" ${x?.categoria===v?'selected':''}>${esc(l)}</option>`).join('')}</select>
       <label>Subcategoria</label><input id="fmSubcat" list="fmSubLista" placeholder="Ex.: Areia / brita, Parcela, Frete..." value="${esc(x?.subcategoria||'')}"><datalist id="fmSubLista"></datalist>
       <label>Descrição</label><input id="fmDesc" placeholder="Descrição" value="${esc(x?.descricao||'')}">
@@ -272,7 +289,7 @@
   }
   function editar(id){const x=(window.financeiro||[]).find(z=>String(z.id)===String(id));if(!x)return alert('Lançamento não encontrado. Atualize o Financeiro e tente novamente.');form(x.tipo,x)}
   function visivel(){const x=$('financeiroMain');return !!x&&!x.classList.contains('hidden')}
-  function open(){ensure();['inicio','obras','equipe'].forEach(id=>$(id)?.classList.add('hidden'));$('estoqueMain')?.classList.add('hidden');$('menuMain')?.classList.add('hidden');$('financeiroMain').classList.remove('hidden');$('bInicio')?.classList.remove('active');$('bEquipe')?.classList.remove('active');renderLocal();void render(true);void startRealtime();scrollTo({top:0,behavior:'smooth'})}
+  function open(){ensure();void consultarObrasParaSelecionar().catch(e=>console.warn('Obras disponíveis: pré-carregamento adiado',e));['inicio','obras','equipe'].forEach(id=>$(id)?.classList.add('hidden'));$('estoqueMain')?.classList.add('hidden');$('menuMain')?.classList.add('hidden');$('financeiroMain').classList.remove('hidden');$('bInicio')?.classList.remove('active');$('bEquipe')?.classList.remove('active');renderLocal();void render(true);void startRealtime();scrollTo({top:0,behavior:'smooth'})}
   async function startRealtime(){
     // A camada de sincronização principal já observa financeiro,
     // serviços extras e checklist. Evitar canal redundante por tela.
