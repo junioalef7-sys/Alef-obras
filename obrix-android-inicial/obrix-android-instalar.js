@@ -164,7 +164,7 @@ function boot(){
  if(standalone())installed=true;
  injectCSS();
  const app=$('app');
- if(app)new MutationObserver(schedule).observe(app,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
+ if(app)new MutationObserver(schedule).observe(app,{attributes:true,attributeFilter:['class']});
  function watchIntroduction(){
    const intro=$('obrixOnboarding');if(!intro)return false;
    new MutationObserver(schedule).observe(intro,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
