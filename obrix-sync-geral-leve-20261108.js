@@ -32,7 +32,7 @@ function atualizarAtividades(){
   },850);
 }
 async function atualizar(mod){
-  if(!estaVisivel(mod)||(mod!=='diario'&&edicao(mod)))return;
+  if(!estaVisivel(mod)||edicao(mod))return;
   if(emCarga.has(mod)){pendente.add(mod);return}
   emCarga.add(mod);
   try{
@@ -108,8 +108,15 @@ async function iniciar(){
 function reconciliarVisivel(){
   if(!ativo())return;
   for(const mod of Object.keys(ELEMENTOS))
-    if(estaVisivel(mod)&&Date.now()-(ultimaConsulta.get(mod)||0)>(mod==='diario'?10000:30000))agendar(mod,500);
+    if(estaVisivel(mod)&&!edicao(mod)&&Date.now()-(ultimaConsulta.get(mod)||0)>(mod==='diario'?60000:90000))agendar(mod,500);
 }
+// Realtime atualiza por eventos. A consulta periódica é apenas uma recuperação leve.
+document.addEventListener('focusout',ev=>{
+  for(const mod of Object.keys(ELEMENTOS)){
+    const sec=secao(mod);
+    if(sec?.contains(ev.target))setTimeout(()=>{if(estaVisivel(mod)&&!edicao(mod))agendar(mod,650)},350);
+  }
+},true);
 window.addEventListener('online',()=>{desligar();void iniciar();reconciliarVisivel()});
 window.addEventListener('focus',()=>{void iniciar();reconciliarVisivel()});
 document.addEventListener('visibilitychange',()=>{
