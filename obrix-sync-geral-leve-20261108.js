@@ -16,7 +16,7 @@ const MODULOS={
 const ELEMENTOS={orcamentos:'orcamentosMain',notas:'notasMain',documentos:'documentosMain',
   estoque:'estoqueMain',diario:'diarioMain',relatorios:'relatoriosMain',equipe:'equipe'};
 let canal=null,canalCliente=null,empresa='',iniciando=false,tentativa=0,retryTimer=0,atividadeTimer=0,ultimaVerificacaoIdentidade=0;
-const timers=new Map(),emCarga=new Set(),pendente=new Set(),ultimaConsulta=new Map();
+const timers=new Map(),emCarga=new Set(),pendente=new Set(),ultimaConsulta=new Map(),aguardandoFimEdicao=new Set();
 const secao=mod=>document.getElementById(ELEMENTOS[mod]||'');
 const ativo=()=>navigator.onLine&&!document.hidden&&!!document.getElementById('app')&&
   !document.getElementById('app').classList.contains('hidden');
@@ -32,7 +32,9 @@ function atualizarAtividades(){
   },850);
 }
 async function atualizar(mod){
-  if(!estaVisivel(mod)||edicao(mod))return;
+  if(!estaVisivel(mod))return;
+  if(edicao(mod)){aguardandoFimEdicao.add(mod);return}
+  aguardandoFimEdicao.delete(mod);
   if(emCarga.has(mod)){pendente.add(mod);return}
   emCarga.add(mod);
   try{
@@ -114,7 +116,9 @@ function reconciliarVisivel(){
 document.addEventListener('focusout',ev=>{
   for(const mod of Object.keys(ELEMENTOS)){
     const sec=secao(mod);
-    if(sec?.contains(ev.target))setTimeout(()=>{if(estaVisivel(mod)&&!edicao(mod))agendar(mod,650)},350);
+    if(sec?.contains(ev.target)&&aguardandoFimEdicao.has(mod))setTimeout(()=>{
+      if(estaVisivel(mod)&&!edicao(mod)){aguardandoFimEdicao.delete(mod);agendar(mod,650)}
+    },350);
   }
 },true);
 window.addEventListener('online',()=>{desligar();void iniciar();reconciliarVisivel()});
