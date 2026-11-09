@@ -23,7 +23,7 @@ function ensure(){
  if($('offlineCentralMain'))return;
  const app=$('app'),bottom=app?.querySelector('.bottom');if(!app||!bottom)return;
  const m=document.createElement('main');m.id='offlineCentralMain';m.className='hidden';
- m.innerHTML=`<div class="hero offlineCentralHero"><div><h1>Central Offline</h1><p>Fila local, sincronização e estado do aparelho.</p></div><button type="button" id="offlineCentralFechar">Fechar</button></div>
+ m.innerHTML=`<div class="hero offlineCentralHero"><div><h1>Central Offline</h1></div><button type="button" id="offlineCentralFechar">Fechar</button></div>
  <div class="card offlineCentralResumo"><div><small>Conexão</small><strong id="offlineCentralConexao">—</strong></div><div><small>Total pendente</small><strong id="offlineCentralTotal">0</strong></div><div><small>Conflitos</small><strong id="offlineCentralConflitos">0</strong></div><div><small>Sincronização</small><strong id="offlineCentralSyncEstado">Em dia</strong></div></div>
  <div id="offlineCentralLista" class="offlineCentralLista"></div>
  <section id="offlineConflictSection" class="card offlineConflictSection hidden"><strong>Conflitos preservados</strong><p class="muted" id="offlineConflictResumo"></p><button type="button" class="btn" id="offlineConflictCarregar">Abrir resolução de conflitos</button><div id="offlineConflictList"></div></section>
