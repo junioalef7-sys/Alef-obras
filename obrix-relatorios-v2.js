@@ -19,10 +19,31 @@ function ensure(){
 function esconderOutros(){['inicio','obras','equipe','financeiroMain','estoqueMain','assinaturaMain','menuMain'].forEach(id=>$(id)?.classList.add('hidden'));document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'))}
 function trocar(novo){modo=novo;$('relFinFiltros')?.classList.toggle('hidden',novo!=='financeiro');$('relEqFiltros')?.classList.toggle('hidden',novo!=='equipe');$('relTipoFinanceiro')?.classList.toggle('active',novo==='financeiro');$('relTipoEquipe')?.classList.toggle('active',novo==='equipe');$('relResultado')?.classList.add('hidden');dadosAtuais=null}
 async function carregarFiltros(){
-  const [os,fs]=await Promise.all([OBRIX_BACKEND.readTable('obras','criado_em').catch(()=>[]),OBRIX_BACKEND.readTable('funcionarios','criado_em').catch(()=>[])]);
-  window.obras=os||window.obras||[];window.funcionarios=fs||window.funcionarios||[];
-  const so=$('relObra');if(so)so.innerHTML='<option value="">Todas as obras</option>'+((os||[]).map(o=>`<option value="${o.id}">${esc(o.nome||'Obra')}</option>`).join(''));
-  const sf=$('relFuncionario');if(sf)sf.innerHTML='<option value="">Toda a equipe</option>'+((fs||[]).map(f=>`<option value="${f.id}">${esc(f.nome||'Funcionário')}${f.cargo?' — '+esc(f.cargo):''}</option>`).join(''));
+  const [novasObras,novosFuncionarios]=await Promise.all([
+    OBRIX_BACKEND.readTable('obras','criado_em').catch(()=>null),
+    OBRIX_BACKEND.readTable('funcionarios','criado_em').catch(()=>null)
+  ]);
+  // Falha temporária de consulta não pode apagar a lista global, usada
+  // também por Diário, Financeiro, Notas e Documentos.
+  if(Array.isArray(novasObras)&&novasObras.length)window.obras=novasObras;
+  if(Array.isArray(novosFuncionarios)&&novosFuncionarios.length)window.funcionarios=novosFuncionarios;
+  const os=Array.isArray(novasObras)&&novasObras.length?novasObras:(window.obras||[]);
+  const fs=Array.isArray(novosFuncionarios)&&novosFuncionarios.length?novosFuncionarios:(window.funcionarios||[]);
+  const atualizar=(id,lista)=>{
+    const sel=$(id);if(!sel)return;
+    const markup=lista.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.nome)+'</option>').join('');
+    if(sel.dataset.obrixMarkup===markup&&sel.options.length===lista.length)return;
+    const aplicar=()=>{
+      if(!sel.isConnected)return;
+      const old=sel.value;
+      sel.innerHTML=markup;sel.dataset.obrixMarkup=markup;
+      if(lista.some(o=>String(o.id)===String(old)))sel.value=old;
+    };
+    if(document.activeElement===sel&&sel.options.length>1)sel.addEventListener('blur',aplicar,{once:true});
+    else aplicar();
+  };
+  atualizar('relObra',[{id:'',nome:'Todas as obras'},...os.map(o=>({id:o.id,nome:o.nome||'Obra'}))]);
+  atualizar('relFuncionario',[{id:'',nome:'Toda a equipe'},...fs.map(f=>({id:f.id,nome:(f.nome||'Funcionário')+(f.cargo?' — '+f.cargo:'')}))]);
 }
 async function open(){ensure();esconderOutros();$('relatoriosMain')?.classList.remove('hidden');await carregarFiltros();scrollTo({top:0,behavior:'smooth'})}
 function noPeriodo(data,inicio,fim){const d=String(data||'').slice(0,10);return (!inicio||d>=inicio)&&(!fim||d<=fim)}
