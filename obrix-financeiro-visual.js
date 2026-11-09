@@ -27,7 +27,7 @@ function aplicar(){
    const tipo=card.dataset.tipo;const mini=card.querySelector('.mini');const rotulo=mini?.querySelector('small');const valor=mini?.querySelector('b');
    if(valor){valor.classList.toggle('obxFinValorDespesa',tipo==='despesa');valor.classList.toggle('obxFinValorReceita',tipo==='receita');if(document.documentElement.dataset.theme==='light'){const cor=tipo==='receita'?'#16a34a':'#dc2626';valor.style.setProperty('color',cor,'important');valor.style.setProperty('-webkit-text-fill-color',cor,'important')}}
    if(rotulo&&document.documentElement.dataset.theme==='light'){rotulo.style.setProperty('color','var(--ob-muted,#526173)','important');rotulo.style.setProperty('-webkit-text-fill-color','var(--ob-muted,#526173)','important')}
-   const btn=card.querySelector('[data-fin="excluir"]');if(btn){btn.textContent='Apagar';btn.classList.add('obxFinApagar')}
+   const btn=card.querySelector('[data-fin="excluir"]');if(btn){if(btn.textContent!=='Apagar')btn.textContent='Apagar';btn.classList.add('obxFinApagar')}
  });
  main.querySelectorAll('[id*="check" i],[class*="check" i]').forEach(box=>{
    box.querySelectorAll('[data-tipo="receita"] b,.receita b,[class*="receita"] strong,[class*="receita"] b').forEach(el=>el.classList.add('obxFinValorReceita'));
