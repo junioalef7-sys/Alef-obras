@@ -72,7 +72,13 @@
     set('fmContrato',money(contratoAtualizado));set('fmRecebido',money(rec));set('fmDespesas',money(des));set('fmResultado',money(resultado));
     const c=$('fmContrato')?.closest('.kpi')?.querySelector('small'),r=$('fmResultado')?.closest('.kpi')?.querySelector('small');if(c&&c.textContent!=='Contrato atualizado')c.textContent='Contrato atualizado';if(r&&r.textContent!=='Resultado da obra')r.textContent='Resultado da obra';
     const lista=$('fmLista');
-    const html=f.length?f.slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||''))).map(x=>{
+    const html=f.length?f.slice().sort((a,b)=>{
+      // Último registro criado primeiro. A data contábil pode ter sido
+      // informada retroativamente e não determina a ordem de lançamento.
+      const criadoA=Date.parse(a.criado_em||a.created_at||a.atualizado_em||a.data||'')||0;
+      const criadoB=Date.parse(b.criado_em||b.created_at||b.atualizado_em||b.data||'')||0;
+      return criadoB-criadoA||String(b.data||'').localeCompare(String(a.data||''));
+    }).map(x=>{
       const o=os.find(z=>String(z.id)===String(x.obra_id)),manual=x.origem==='manual',checks=resumoChecklists(x);
       const totalChecks=Object.values(valoresChecklist(x)).reduce((s,v)=>s+Number(v||0),0),sem=Math.max(0,Number(x.valor||0)-totalChecks);
       const checkTxt=checks.length?`Checklists: ${checks.join(', ')}${sem>0?` • Sem checklist: ${money(sem)}`:''}`:'Sem checklist';
