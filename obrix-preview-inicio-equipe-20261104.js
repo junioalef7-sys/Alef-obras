@@ -581,7 +581,7 @@ async function abrirRegistrosEquipePremium(id){
     const resultados=linhas.filter(x=>aba==='historico'||(aba==='diarias'&&x.tipoRegistro==='diaria')||
       (aba==='faltas'&&x.tipoRegistro==='falta')||(aba==='pagamentos'&&x.pago));
     back.querySelector('[data-obp-linhas]').innerHTML=resultados.length?resultados.slice(0,limite).map(x=>{
-      const excluir=x.tipoRegistro==='falta'||((x.tipoRegistro==='diaria'||x.tipoRegistro==='bonus')&&!x.pago);
+      const excluir=x.tipoRegistro==='falta'||x.tipoRegistro==='vale'||((x.tipoRegistro==='diaria'||x.tipoRegistro==='bonus')&&!x.pago);
       const icone=x.tipoRegistro==='falta'?'⊗':x.tipoRegistro==='bonus'?'✦':x.tipoRegistro==='vale'?'▰':'▣';
       return '<article class="obp-registro-linha"><span class="obp-registro-icone'+(x.tipoRegistro==='falta'?' falta':'')+'" aria-hidden="true">'+icone+'</span>'+
         '<div class="obp-registro-info"><b>'+esc(x.tipo)+'</b>'+
@@ -656,9 +656,9 @@ async function abrirRegistrosEquipePremium(id){
   back.addEventListener('click',async e=>{
     const btn=e.target.closest('[data-obp-excluir-tipo]');if(!btn||btn.disabled)return;
     const tipo=btn.dataset.obpExcluirTipo,registroId=btn.dataset.obpExcluirId;
-    if(!['falta','diaria','bonus'].includes(tipo))return;
+    if(!['falta','diaria','bonus','vale'].includes(tipo))return;
     const x=linhas.find(y=>y.tipoRegistro===tipo&&String(y.id)===String(registroId));
-    if(!x||(tipo!=='falta'&&x.pago))return;
+    if(!x||(tipo!=='falta'&&tipo!=='vale'&&x.pago))return;
     const chaveExclusao=tipo+':'+String(registroId);
     if(pendentesExclusao.has(chaveExclusao))return;
     pendentesExclusao.add(chaveExclusao);
@@ -672,7 +672,9 @@ async function abrirRegistrosEquipePremium(id){
     let ok=false;
     try{ok=await window.OBRIX_CONFIRMAR_EXCLUSAO({
       titulo:'Excluir '+rotulo,
-      mensagem:'Excluir '+rotulo+' de '+func.nome+' em '+dataPtBR(x.data)+'? Esta ação não pode ser desfeita.',
+      mensagem:tipo==='vale'
+        ?'Estornar o vale de '+func.nome+' de '+dataPtBR(x.data)+'? Ele deixará de contar nas pendências e a despesa financeira será estornada, mantendo o histórico.'
+        :'Excluir '+rotulo+' de '+func.nome+' em '+dataPtBR(x.data)+'? Esta ação não pode ser desfeita.',
       confirmar:'Excluir'
     })}catch(err){
       pendentesExclusao.delete(chaveExclusao);btn.disabled=false;
@@ -696,15 +698,24 @@ async function abrirRegistrosEquipePremium(id){
         if(r.error)throw r.error;
         if(r.data?.length)throw Error('Lançamento já vinculado a um pagamento. Exclusão bloqueada.');
       }
-      const tabela=tipo==='falta'?'faltas':tipo==='diaria'?'diarias':'bonus_extras';
-      let q=sb.from(tabela).delete().eq('id',registroId).eq('empresa_id',p.empresa_id)
-        .eq('funcionario_id',id);
-      if(tipo==='diaria')q=q.eq('paga',false);
-      if(tipo==='bonus')q=q.eq('pago',false);
-      const {data,error}=await q.select('id');
-      if(error)throw error;
-      if(!data?.length)throw Error('Registro não encontrado, quitado ou já excluído.');
-      excluido=true;
+      if(tipo==='vale'){
+        const r=await sb.rpc('obrix_estornar_vale_equipe',{
+          p_vale_id:registroId,p_motivo:'Excluído no histórico de funcionários'
+        });
+        if(r.error)throw r.error;
+        if(r.data?.ok!==true)throw Error('O servidor não confirmou o estorno do vale.');
+        excluido=true;
+      }else{
+        const tabela=tipo==='falta'?'faltas':tipo==='diaria'?'diarias':'bonus_extras';
+        let q=sb.from(tabela).delete().eq('id',registroId).eq('empresa_id',p.empresa_id)
+          .eq('funcionario_id',id);
+        if(tipo==='diaria')q=q.eq('paga',false);
+        if(tipo==='bonus')q=q.eq('pago',false);
+        const {data,error}=await q.select('id');
+        if(error)throw error;
+        if(!data?.length)throw Error('Registro não encontrado, quitado ou já excluído.');
+        excluido=true;
+      }
       if(tipo==='falta')obpFaltasCache.delete(String(id));
       fechar();
       try{await window.OBRIX_EQUIPE?.refresh?.()}catch(err){console.warn('Atualização da equipe:',err)}
