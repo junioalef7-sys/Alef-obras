@@ -46,7 +46,8 @@ function fillObras(){
      }
      return false;
    }
-   const obras=window.obras||[],next=obras.length?obras.map(o=>({id:String(o.id),nome:String(o.nome||'Obra')})):[{id:'',nome:'Cadastre uma obra primeiro'}];
+   const obras=(window.obras||[]).filter(o=>o?.status==='andamento');
+   const next=obras.length?obras.map(o=>({id:String(o.id),nome:String(o.nome||'Obra')})):[{id:'',nome:'Nenhuma obra em andamento'}];
    const atual=Array.from(sel.options).map(o=>({id:String(o.value),nome:String(o.textContent)}));
    if(JSON.stringify(next)===JSON.stringify(atual))return false;
    const old=sel.value;
@@ -125,6 +126,17 @@ async function save(){
   if(!p?.empresa_id&&navigator.onLine)p=await OBRIX_BACKEND.profile();
   if(!p?.empresa_id&&off()?.restoreBase?.())p=perfilAtual();
   if(!p?.empresa_id)throw new Error('Conta não identificada. Entre uma vez conectado antes de salvar offline.');
+  // Validação para novos diários e edições: histórico preservado,
+  // mas somente obras atualmente em andamento aceitam alterações.
+  const localObra=(window.obras||[]).find(o=>String(o.id)===String(oid));
+  if(!navigator.onLine){
+    if(localObra?.status!=='andamento')throw new Error('Somente obras em andamento podem receber diários.');
+  }else{
+    const db=await OBRIX_BACKEND.init();
+    const checagem=await db.from('obras').select('status').eq('id',oid).eq('empresa_id',p.empresa_id).maybeSingle();
+    if(checagem.error)throw checagem.error;
+    if(checagem.data?.status!=='andamento')throw new Error('Somente obras em andamento podem receber diários.');
+  }
   const local={...payload,empresa_id:p.empresa_id};
   const registrarLocal=()=>{
     const localId=off()?.add?.(local,String(id).startsWith('offline-')?id:null);
