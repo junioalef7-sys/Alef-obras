@@ -18,34 +18,43 @@ function ensure(){
 }
 function esconderOutros(){['inicio','obras','equipe','financeiroMain','estoqueMain','assinaturaMain','menuMain'].forEach(id=>$(id)?.classList.add('hidden'));document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'))}
 function trocar(novo){modo=novo;$('relFinFiltros')?.classList.toggle('hidden',novo!=='financeiro');$('relEqFiltros')?.classList.toggle('hidden',novo!=='equipe');$('relTipoFinanceiro')?.classList.toggle('active',novo==='financeiro');$('relTipoEquipe')?.classList.toggle('active',novo==='equipe');$('relResultado')?.classList.add('hidden');dadosAtuais=null}
-async function carregarFiltros(){
-  const [novasObras,novosFuncionarios]=await Promise.all([
-    OBRIX_BACKEND.readTable('obras','criado_em').catch(()=>null),
-    OBRIX_BACKEND.readTable('funcionarios','criado_em').catch(()=>null)
-  ]);
-  // Falha temporária de consulta não pode apagar a lista global, usada
-  // também por Diário, Financeiro, Notas e Documentos.
-  if(Array.isArray(novasObras)&&novasObras.length)window.obras=novasObras;
-  if(Array.isArray(novosFuncionarios)&&novosFuncionarios.length)window.funcionarios=novosFuncionarios;
-  const os=Array.isArray(novasObras)&&novasObras.length?novasObras:(window.obras||[]);
-  const fs=Array.isArray(novosFuncionarios)&&novosFuncionarios.length?novosFuncionarios:(window.funcionarios||[]);
-  const atualizar=(id,lista)=>{
-    const sel=$(id);if(!sel)return;
-    const markup=lista.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.nome)+'</option>').join('');
-    if(sel.dataset.obrixMarkup===markup&&sel.options.length===lista.length)return;
-    const aplicar=()=>{
-      if(!sel.isConnected)return;
-      const old=sel.value;
-      sel.innerHTML=markup;sel.dataset.obrixMarkup=markup;
-      if(lista.some(o=>String(o.id)===String(old)))sel.value=old;
-    };
-    if(document.activeElement===sel&&sel.options.length>1)sel.addEventListener('blur',aplicar,{once:true});
-    else aplicar();
-  };
-  atualizar('relObra',[{id:'',nome:'Todas as obras'},...os.map(o=>({id:o.id,nome:o.nome||'Obra'}))]);
-  atualizar('relFuncionario',[{id:'',nome:'Toda a equipe'},...fs.map(f=>({id:f.id,nome:(f.nome||'Funcionário')+(f.cargo?' — '+f.cargo:'')}))]);
+function preencherSelectRelatorio(id,lista){
+ const sel=$(id);if(!sel)return;
+ const rows=lista.map(x=>({id:String(x.id||''),nome:String(x.nome||'')}));
+ const iguais=rows.length===sel.options.length&&rows.every((x,i)=>
+   sel.options[i]?.value===x.id&&sel.options[i]?.textContent===x.nome);
+ if(iguais)return;
+ const aplicar=()=>{
+   if(!sel.isConnected)return;
+   const anterior=sel.value;
+   const options=rows.map(x=>new Option(x.nome,x.id));
+   sel.replaceChildren(...options);
+   if(rows.some(x=>x.id===anterior))sel.value=anterior;
+ };
+ if(document.activeElement===sel&&sel.options.length>1){
+   sel.__obrixSelectPendente=aplicar;
+   if(!sel.dataset.obrixSelectBlurBound){
+     sel.dataset.obrixSelectBlurBound='1';
+     sel.addEventListener('blur',()=>{sel.dataset.obrixSelectBlurBound='';sel.__obrixSelectPendente?.();sel.__obrixSelectPendente=null},{once:true});
+   }
+ }else aplicar();
 }
-async function open(){ensure();esconderOutros();$('relatoriosMain')?.classList.remove('hidden');await carregarFiltros();scrollTo({top:0,behavior:'smooth'})}
+async function carregarFiltros(){
+ const montar=(os,fs)=>{
+   preencherSelectRelatorio('relObra',[{id:'',nome:'Todas as obras'},...os.map(o=>({id:o.id,nome:o.nome||'Obra'}))]);
+   preencherSelectRelatorio('relFuncionario',[{id:'',nome:'Toda a equipe'},...fs.map(f=>({id:f.id,nome:(f.nome||'Funcionário')+(f.cargo?' — '+f.cargo:'')}))]);
+ };
+ montar(Array.isArray(window.obras)?window.obras:[],Array.isArray(window.funcionarios)?window.funcionarios:[]);
+ if(!navigator.onLine)return;
+ const [rO,rF]=await Promise.all([
+   OBRIX_BACKEND.readTable('obras','criado_em').catch(e=>{console.warn('Relatórios: obras',e);return null}),
+   OBRIX_BACKEND.readTable('funcionarios','criado_em').catch(e=>{console.warn('Relatórios: funcionários',e);return null})
+ ]);
+ if(Array.isArray(rO)&&rO.length)window.obras=rO;
+ if(Array.isArray(rF)&&rF.length)window.funcionarios=rF;
+ montar(Array.isArray(rO)&&rO.length?rO:(window.obras||[]),Array.isArray(rF)&&rF.length?rF:(window.funcionarios||[]));
+}
+async function open(){ensure();esconderOutros();$('relatoriosMain')?.classList.remove('hidden');void carregarFiltros().catch(e=>console.warn('Relatórios: seleção de obras',e));scrollTo({top:0,behavior:'smooth'})}
 function noPeriodo(data,inicio,fim){const d=String(data||'').slice(0,10);return (!inicio||d>=inicio)&&(!fim||d<=fim)}
 function obraNome(id,obras){return (obras||[]).find(o=>String(o.id)===String(id))?.nome||'Sem obra'}
 function funcNome(id,funcs){return (funcs||[]).find(f=>String(f.id)===String(id))?.nome||'Funcionário'}
