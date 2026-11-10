@@ -13,11 +13,69 @@ function pagamentos(id){if(window.OBRIX_OBRAS_PAGAMENTOS?.open)return window.OBR
 function acao(icon,titulo,sub,onclick,cor='azul'){return `<button class="obxAcao ${cor}" onclick="${onclick}"><span class="obxIcone">${icon}</span><span><b>${titulo}</b><small>${sub}</small></span><i>›</i></button>`}
 function renderLista(lista){return `<div class="obxBusca"><span>⌕</span><input id="obxBuscaObra" placeholder="Buscar obra..." value="${esc(busca)}"></div><div class="obxFiltros">${[['todas','Todas'],['andamento','Em andamento'],['pausada','Pausadas'],['concluida','Concluídas']].map(([v,t])=>`<button class="${filtro===v?'ativo':''}" data-filtro="${v}">${t}</button>`).join('')}</div><div class="obxCards">${lista.map(o=>{const d=dados(o),p=progresso(o),s=status(o);return `<article class="obxObraCard" data-id="${o.id}"><div class="obxCardTopo"><div class="obxMiniFoto">🏗️</div><div class="obxCardInfo"><h3>${esc(o.nome||'Obra')}</h3><p><b>Cliente:</b> ${esc(o.cliente||'Não informado')}</p><p><b>Local:</b> ${esc(o.local||o.endereco||'Não informado')}</p></div><button class="obxAbrir" data-abrir="${o.id}">›</button></div><div class="obxStatusLinha"><span class="obxStatus ${s}">${statusTxt(s)}</span><div class="obxBar"><i style="width:${p}%"></i></div><b>${p}%</b></div><div class="obxCardFin"><div><small>Contrato</small><b>${money(d.tot)}</b></div><div class="verde"><small>Recebido</small><b>${money(d.rec)}</b></div><div class="vermelho"><small>Despesas</small><b>${money(d.desp)}</b></div><div class="azul"><small>Resultado</small><b>${money(d.res)}</b></div></div></article>`}).join('')}</div><button class="obxMais" id="obxNovaObra">+</button>`}
 function renderDetalhe(o){const d=dados(o),p=progresso(o),s=status(o);return `<div class="obxDetalhe"><button type="button" class="obxVoltar" id="obxVoltarObras" aria-label="Voltar" title="Voltar"><svg data-obrix-back-icon="1" viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="obxCapa"><div class="obxCapaIcon">🏗️</div></div><div class="obxDetalheHead"><div><h2>${esc(o.nome||'Obra')}</h2><p>Cliente: ${esc(o.cliente||'Não informado')}</p><p>Local: ${esc(o.local||o.endereco||'Não informado')}</p>${o.data_inicio?`<p>Início: ${esc(o.data_inicio)}${o.data_fim?` &nbsp; Previsão: ${esc(o.data_fim)}`:''}</p>`:''}</div><span class="obxStatus ${s}">${statusTxt(s)}</span></div><p class="obxProgTitulo">Progresso geral da obra</p><div class="obxProg"><div class="obxBar"><i style="width:${p}%"></i></div><b>${p}%</b></div><div class="obxResumoTitulo"><span>💵</span><b>Resumo financeiro</b><i>›</i></div><div class="obxResumoGrid"><div><small>Contrato atualizado</small><b>${money(d.tot)}</b></div><div class="verde"><small>Recebido</small><b>${money(d.rec)}</b></div><div class="vermelho"><small>Despesas</small><b>${money(d.desp)}</b></div><div class="azul"><small>Lucro parcial</small><b>${money(d.lucro)}</b></div><div class="azul"><small>Resultado da obra</small><b>${money(d.res)}</b></div><div class="laranja"><small>A receber</small><b>${money(d.receber)}</b></div><div><small>Margem</small><b>${d.margem.toFixed(1).replace('.',',')}%</b></div></div><div class="obxAcoes">${acao('☑','Checklist','Acompanhe as etapas da obra',`OBRIX_OBRAS_FIEL.checklist('${o.id}')`)}${acao('▣','Diário de obra','Registre o andamento diário',`window.OBRIX_DIARIO?.open?.('${o.id}')`)}${acao('👥','Equipe / Dias','Funcionários e diárias desta obra',`window.abrir?.('equipe')`)}${acao('$','Pagamentos recebidos','Receitas da obra',`OBRIX_OBRAS_FIEL.pagamentos('${o.id}')`,'verde')}${acao('▤','Serviços adicionais','Itens extras do contrato',`OBRIX_OBRAS.abrirExtra('${o.id}')`,'laranja')}${acao('▰','Despesas da obra','Materiais, mão de obra e outras',`window.abrir?.('financeiro')`,'vermelho')}${acao('▣','Relatório fotográfico','Fotos da obra',`OBRIX_OBRAS_FIEL.fotos('${o.id}')`,'roxo')}${acao('▤','Documentos','Contratos, orçamentos e anexos',`window.OBRIX_DOCUMENTOS?.open?.('${o.id}')`,'roxo')}${acao('✎','Editar obra','Dados da obra',`OBRIX_OBRAS.editar('${o.id}')`,'cinza')}${acao('✓','Concluir obra','Finalizar e arquivar',`OBRIX_OBRAS_FIEL.concluir('${o.id}')`,'verde')}${acao('✕','Excluir obra','Sem lançamentos, fotos ou histórico protegido',`OBRIX_OBRAS.excluir('${o.id}')`,'vermelho')}</div></div>`}
+function atualizarListaSemRemontar(box,novoHtml){
+  // Atualiza somente o que mudou. Mantém os nós, foco, rolagem, handlers
+  // e cartões no DOM durante sincronizações sucessivas.
+  const atual=box.querySelector(':scope > .obxCards');
+  const buscaAtual=box.querySelector(':scope > .obxBusca');
+  if(!atual||!buscaAtual)return false;
+  const tpl=document.createElement('template');
+  tpl.innerHTML=novoHtml;
+  const nova=tpl.content.querySelector(':scope > .obxCards');
+  if(!nova)return false;
+  const atualizarTexto=(antigo,novo)=>{
+    if(!antigo||!novo||antigo.textContent===novo.textContent)return;
+    antigo.replaceChildren(...[...novo.childNodes].map(n=>n.cloneNode(true)));
+  };
+  const atualizarCard=(antigo,novo)=>{
+    const campos=['.obxCardInfo h3','.obxCardInfo p:nth-of-type(1)',
+      '.obxCardInfo p:nth-of-type(2)','.obxStatusLinha > b'];
+    for(const seletor of campos)atualizarTexto(antigo.querySelector(seletor),novo.querySelector(seletor));
+    const a=antigo.querySelector('.obxStatus'),b=novo.querySelector('.obxStatus');
+    if(a&&b){if(a.className!==b.className)a.className=b.className;atualizarTexto(a,b)}
+    const barAntigo=antigo.querySelector('.obxStatusLinha .obxBar i');
+    const barNovo=novo.querySelector('.obxStatusLinha .obxBar i');
+    if(barAntigo&&barNovo&&barAntigo.style.width!==barNovo.style.width)
+      barAntigo.style.width=barNovo.style.width;
+    const ta=[...antigo.querySelectorAll('.obxCardFin b')];
+    const tb=[...novo.querySelectorAll('.obxCardFin b')];
+    for(let i=0;i<Math.min(ta.length,tb.length);i++)atualizarTexto(ta[i],tb[i]);
+  };
+  const antigos=new Map([...atual.querySelectorAll(':scope > .obxObraCard')].map(n=>[n.dataset.id,n]));
+  const desejados=[...nova.querySelectorAll(':scope > .obxObraCard')];
+  const ids=new Set(desejados.map(n=>n.dataset.id));
+  antigos.forEach((node,id)=>{if(!ids.has(id))node.remove()});
+  for(let i=0;i<desejados.length;i++){
+    const modelo=desejados[i],id=modelo.dataset.id;
+    const node=antigos.get(id)||modelo.cloneNode(true);
+    if(antigos.has(id))atualizarCard(node,modelo);
+    if(atual.children[i]!==node)atual.insertBefore(node,atual.children[i]||null);
+  }
+  const filtroAtual=box.querySelector(':scope > .obxFiltros');
+  const filtroNovo=tpl.content.querySelector(':scope > .obxFiltros');
+  if(filtroAtual&&filtroNovo){
+    const aa=[...filtroAtual.querySelectorAll('[data-filtro]')];
+    const bb=[...filtroNovo.querySelectorAll('[data-filtro]')];
+    aa.forEach((n,i)=>{
+      const ativo=bb[i]?.classList.contains('ativo')||false;
+      if(n.classList.contains('ativo')!==ativo)n.classList.toggle('ativo',ativo);
+    });
+  }
+  return true;
+}
 function render(){if(rendering)return;const box=document.getElementById('listaObras');if(!box)return;rendering=true;try{const todas=window.obras||[];let html='';if(detalhe){const o=todas.find(x=>String(x.id)===String(detalhe));if(o){html=renderDetalhe(o)}else detalhe=null}if(!html){const lista=todas.filter(o=>(filtro==='todas'||status(o)===filtro||(filtro==='concluida'&&status(o)==='concluída'))&&(!busca||String(o.nome||'').toLowerCase().includes(busca.toLowerCase())||String(o.cliente||'').toLowerCase().includes(busca.toLowerCase())));html=renderLista(lista)}// Um render legado pode substituir os nós sem atualizar a assinatura.
   // Não aceitar cache antigo caso a estrutura aprovada já tenha sido trocada.
   const contemVisualAprovado=!!box.querySelector(':scope > .obxBusca,:scope > .obxDetalhe');
-  if(box.__obrixUltimoHtml===html&&contemVisualAprovado)return;const active=document.activeElement;const focoBusca=active?.id==='obxBuscaObra';const pos=focoBusca?active.selectionStart:null;box.innerHTML=html;box.__obrixUltimoHtml=html;ligar();if(focoBusca){const novo=document.getElementById('obxBuscaObra');if(novo){novo.focus({preventScroll:true});try{novo.setSelectionRange(pos,pos)}catch(_){}}}}finally{rendering=false}}
-function ligar(){document.getElementById('obxBuscaObra')?.addEventListener('input',e=>{busca=e.target.value;render()});document.querySelectorAll('#listaObras [data-filtro]').forEach(b=>b.onclick=()=>{filtro=b.dataset.filtro;render()});document.querySelectorAll('#listaObras [data-abrir]').forEach(b=>b.onclick=()=>{detalhe=b.dataset.abrir;render()});document.getElementById('obxVoltarObras')?.addEventListener('click',()=>{detalhe=null;render()});document.getElementById('obxNovaObra')?.addEventListener('click',()=>window.OBRIX_OBRAS?.nova?.())}
+  if(box.__obrixUltimoHtml===html&&contemVisualAprovado)return;
+  if(!detalhe&&atualizarListaSemRemontar(box,html)){
+    box.__obrixUltimoHtml=html;ligar();return;
+  }
+  const active=document.activeElement;const focoBusca=active?.id==='obxBuscaObra';const pos=focoBusca?active.selectionStart:null;box.innerHTML=html;box.__obrixUltimoHtml=html;ligar();if(focoBusca){const novo=document.getElementById('obxBuscaObra');if(novo){novo.focus({preventScroll:true});try{novo.setSelectionRange(pos,pos)}catch(_){}}}}finally{rendering=false}}
+function ligar(){const campoBusca=document.getElementById('obxBuscaObra');
+  if(campoBusca&&!campoBusca.dataset.obrixInputBound){
+    campoBusca.dataset.obrixInputBound='1';
+    campoBusca.addEventListener('input',e=>{busca=e.target.value;render()});
+  }document.querySelectorAll('#listaObras [data-filtro]').forEach(b=>b.onclick=()=>{filtro=b.dataset.filtro;render()});document.querySelectorAll('#listaObras [data-abrir]').forEach(b=>b.onclick=()=>{detalhe=b.dataset.abrir;render()});document.getElementById('obxVoltarObras')?.addEventListener('click',()=>{detalhe=null;render()});document.getElementById('obxNovaObra')?.addEventListener('click',()=>window.OBRIX_OBRAS?.nova?.())}
 function cabecalho(){const sec=document.getElementById('obras');if(!sec)return;const hero=sec.querySelector(':scope > .hero');if(hero){const h=hero.querySelector('h1');if(h&&h.textContent!=='Obras')h.textContent='Obras';hero.querySelectorAll('p').forEach(p=>p.remove())}const head=sec.querySelector('.sectionHead');if(head&&head.style.display!=='none')head.style.display='none'}
 function concluir(id){if(confirm('Marcar esta obra como concluída?')){const o=(window.obras||[]).find(x=>String(x.id)===String(id));if(o){o.status='concluida';o.progresso=100;window.salvar?.();render()}}}
 function preparar(){cabecalho();window.renderObras=render;if(window.OBRIX_OBRAS)try{window.OBRIX_OBRAS.render=render}catch(_){}render()}
