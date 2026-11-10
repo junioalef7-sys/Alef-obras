@@ -210,7 +210,7 @@ async function gerarEquipe(){
     const funcs=fr.data||[],obras=or.data||[],funcId=funcionarioSelecionado,inicio=$('relEqInicio').value,fim=$('relEqFim').value,ids=new Set(funcs.filter(f=>!funcId||String(f.id)===String(funcId)).map(f=>String(f.id)));
     const pertenceObra=x=>!obraEquipeId||String(x.obra_id)===String(obraEquipeId);
     const ds=(dr.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&pertenceObra(x)&&noPeriodo(x.data,inicio,fim));
-    const vs=(vr.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&pertenceObra(x)&&noPeriodo(x.data,inicio,fim));
+    const vs=(vr.data||[]).filter(x=>!x.estornado_em&&ids.has(String(x.funcionario_id))&&pertenceObra(x)&&noPeriodo(x.data,inicio,fim));
     const bs=(br.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&pertenceObra(x)&&noPeriodo(x.data,inicio,fim));
     const pagoPorObra=new Map();
     (fin.data||[]).filter(x=>x.status_lancamento==='ativo'&&(!obraEquipeId||String(x.obra_id)===String(obraEquipeId))).forEach(x=>{
