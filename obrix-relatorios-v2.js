@@ -203,5 +203,17 @@ function imprimirAtual(){
 function cssPrint(){return `<style>body{font-family:Arial,sans-serif;color:#111;padding:28px}h1{margin:0 0 4px}h2{font-size:16px;margin-top:22px}.meta{color:#555;margin-bottom:22px}.resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.box{border:1px solid #ccc;border-radius:8px;padding:10px}.box small{display:block;color:#666}.box b{display:block;margin-top:5px}table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:18px}th,td{border-bottom:1px solid #ddd;padding:7px;text-align:left}th{background:#f3f4f6}@media print{body{padding:0}}@page{size:A4;margin:12mm}</style>`}
 const css=document.createElement('style');css.textContent='.relTipo{display:flex;gap:8px;margin-bottom:12px}.relTipo .btn{background:#e2e8f0;color:#0f172a}.relTipo .btn.active{background:#0f172a;color:#fff}.relFiltros h3{margin-top:0}.relGrid{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center}.relGrid select,.relGrid input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:transparent;color:inherit}.relObraBuscaWrap,.relFuncionarioBuscaWrap{min-width:0;width:100%}.relObraBuscaWrap input,.relFuncionarioBuscaWrap input{width:100%;min-width:0}.relObraBuscaWrap select.hidden,.relFuncionarioBuscaWrap select.hidden{display:none!important}.relKpis{margin-top:14px}.relKpis .kpi span{display:block;margin-top:5px;font-size:13px;font-weight:700;color:#64748b}@media(max-width:760px){.relGrid{grid-template-columns:1fr 1fr}.relGrid select,.relGrid .btn{grid-column:1/-1}}@media(max-width:480px){.relTipo{display:grid;grid-template-columns:1fr}.relGrid{grid-template-columns:1fr}.relGrid select,.relGrid .btn{grid-column:auto}}';document.head.appendChild(css);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(ensure,150));else setTimeout(ensure,150);
+// Complementos financeiros usam capturas próprias: validar o texto antes
+// que qualquer gerador utilize o select oculto como filtro.
+document.addEventListener('click',e=>{
+  if(!e.target?.closest?.('#relGerar'))return;
+  if($('relFinFiltros')?.classList.contains('hidden'))return;
+  try{validarBuscaObra()}
+  catch(err){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    alert(err?.message||'Escolha uma obra válida na busca.');
+  }
+},true);
 window.OBRIX_RELATORIOS={open,gerar:gerarFinanceiro,gerarEquipe,imprimir:imprimirAtual};
 })();
