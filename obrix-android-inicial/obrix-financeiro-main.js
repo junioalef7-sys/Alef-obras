@@ -144,11 +144,11 @@
     if(obrasOpcoesCache&&Date.now()-obrasOpcoesConsulta<60000)return obrasOpcoesCache;
     if(obrasOpcoesPromise)return obrasOpcoesPromise;
     obrasOpcoesPromise=(async()=>{
-      const locais=Array.isArray(window.obras)?window.obras.filter(o=>o?.id):[];
+      const locais=Array.isArray(window.obras)?window.obras.filter(o=>o?.id&&o.status==='andamento'):[];
       try{
         const [sb,p]=await Promise.all([OBRIX_BACKEND.init(),OBRIX_BACKEND.profile()]);
         if(!p?.empresa_id)throw new Error('Empresa não identificada.');
-        const q=await sb.from('obras').select('id,nome').eq('empresa_id',p.empresa_id).order('nome',{ascending:true});
+        const q=await sb.from('obras').select('id,nome,status').eq('empresa_id',p.empresa_id).eq('status','andamento').order('nome',{ascending:true});
         if(q.error)throw q.error;
         obrasOpcoesCache=(q.data||[]).filter(o=>o?.id);
         obrasOpcoesConsulta=Date.now();
@@ -167,7 +167,8 @@
     try{
       const items=await consultarObrasParaSelecionar();
       if(!select.isConnected||$('fmObra')!==select)return;
-      const novos=[{id:'',nome:'Sem obra vinculada'},...items.map(o=>({id:String(o.id),nome:String(o.nome||'Obra')}))];
+      const completos=[...items];if(initial&&!completos.some(o=>String(o.id)===initial)){const antiga=(window.obras||[]).find(o=>String(o.id)===initial);if(antiga)completos.push(antiga)}
+      const novos=[{id:'',nome:'Selecione uma obra em andamento'},...completos.map(o=>({id:String(o.id),nome:String(o.nome||'Obra')}))];
       const aplicar=()=>{
         if(!select.isConnected||$('fmObra')!==select)return;
         const anterior=String(select.value||initial);
@@ -201,7 +202,7 @@
     ensure();salvando=false;
     const cats=tipo==='receita'?[['entrada','Entrada']]:Object.entries(labels).filter(([k])=>k!=='entrada'),box=$('fmForm');
     box.innerHTML=`<h3>${x?'Editar':'Novo'} ${tipo==='receita'?'receita':'despesa'}</h3>
-      <label>Obra</label><select id="fmObra"><option value="">Sem obra vinculada</option>${(obrasOpcoesCache||window.obras||[]).map(o=>`<option value="${o.id}" ${String(x?.obra_id||'')===String(o.id)?'selected':''}>${esc(o.nome)}</option>`).join('')}</select>
+      <label>Obra</label><select id="fmObra"><option value="">Selecione uma obra em andamento</option>${(obrasOpcoesCache||window.obras||[]).filter(o=>o.status==='andamento'||(x?.obra_id&&String(o.id)===String(x.obra_id))).map(o=>`<option value="${o.id}" ${String(x?.obra_id||'')===String(o.id)?'selected':''}>${esc(o.nome)}</option>`).join('')}</select>
       <label>Categoria</label><select id="fmCat">${cats.map(([v,l])=>`<option value="${v}" ${x?.categoria===v?'selected':''}>${esc(l)}</option>`).join('')}</select>
       <label>Subcategoria</label><input id="fmSubcat" list="fmSubLista" placeholder="Ex.: Areia / brita, Parcela, Frete..." value="${esc(x?.subcategoria||'')}"><datalist id="fmSubLista"></datalist>
       <label>Descrição</label><input id="fmDesc" placeholder="Descrição" value="${esc(x?.descricao||'')}">
@@ -243,7 +244,14 @@
     const btn=$('fmSalvar');salvando=true;if(btn){btn.disabled=true;btn.textContent='Salvando...'}
     try{
       const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile(),empresaId=p.empresa_id;
-      const payload={obra_id:$('fmObra')?.value||null,checklist_id:ids[0]||null,checklist_ids:ids,checklist_valores:valores,tipo,categoria:$('fmCat')?.value||'outros',subcategoria:$('fmSubcat')?.value.trim()||null,descricao,valor,data:$('fmData')?.value,origem:'manual',status_lancamento:'ativo',atualizado_em:new Date().toISOString()};
+      const obraSelecionada=$('fmObra')?.value||'';
+      if(!obraSelecionada)throw Error('Selecione uma obra em andamento.');
+      if(!id){
+        const obraAtual=await sb.from('obras').select('status').eq('empresa_id',empresaId).eq('id',obraSelecionada).maybeSingle();
+        if(obraAtual.error)throw obraAtual.error;
+        if(obraAtual.data?.status!=='andamento')throw Error('Só é permitido registrar lançamentos em obras em andamento.');
+      }
+      const payload={obra_id:obraSelecionada,checklist_id:ids[0]||null,checklist_ids:ids,checklist_valores:valores,tipo,categoria:$('fmCat')?.value||'outros',subcategoria:$('fmSubcat')?.value.trim()||null,descricao,valor,data:$('fmData')?.value,origem:'manual',status_lancamento:'ativo',atualizado_em:new Date().toISOString()};
       const q=id?await sb.from('financeiro').update(payload).eq('id',id).eq('empresa_id',empresaId).eq('origem','manual').select('*').single():await sb.from('financeiro').insert({...payload,empresa_id:empresaId}).select('*').single();
       if(q.error)throw q.error;
       const atual=Array.isArray(window.financeiro)?window.financeiro.slice():[],idx=atual.findIndex(z=>String(z.id)===String(q.data.id));if(idx>=0)atual[idx]=q.data;else atual.unshift(q.data);window.financeiro=atual;
