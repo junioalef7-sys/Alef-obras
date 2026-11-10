@@ -18,6 +18,7 @@ const statusObra=o=>String(o.status||'').toLowerCase().normalize('NFD').replace(
 const emAndamento=o=>['andamento','em_andamento','em_execucao'].includes(statusObra(o));
 const progresso=o=>{const p=window.OBRIX_PROGRESS_CORE?.status?.().medias?.[String(o.id)];const v=Number(p??o.progresso??o.percentual??o.percentual_conclusao);return Number.isFinite(v)?Math.max(0,Math.min(100,Math.round(v))):null};
 let eventosRemotos=[],eventosAtualizados=0,buscandoEventos=false,selecionado='',filtro='todos',buscaEquipe='',aba='resumo',modalAberto=false,agendado=false,buscaEquipeTimer=0;
+let posicaoEquipeAnterior={id:'',rolagem:0,topo:0};
 function primeiroNome(){
   let raw='';
   try{raw=(typeof profile!=='undefined'&&profile?.nome)||''}catch(_){}
@@ -805,8 +806,29 @@ async function cliqueEquipe(e){
     return;
   }
   if(t.dataset.teamFilter){filtro=t.dataset.teamFilter;selecionado='';gerenciarAberto=false;renderEquipe();return}
-  if(t.dataset.teamId){selecionado=t.dataset.teamId;renderEquipe();scrollTo({top:0,behavior:'smooth'});return}
-  if(t.hasAttribute('data-team-back')){selecionado='';renderEquipe();scrollTo({top:0,behavior:'smooth'});return}
+  if(t.dataset.teamId){
+    const atual=t.closest('[data-team-id]');
+    posicaoEquipeAnterior={
+      id:String(t.dataset.teamId),
+      rolagem:window.scrollY||document.documentElement.scrollTop||0,
+      topo:atual?.getBoundingClientRect().top||0
+    };
+    selecionado=String(t.dataset.teamId);renderEquipe();
+    window.scrollTo({top:0,behavior:'instant'});return;
+  }
+  if(t.hasAttribute('data-team-back')){
+    const anterior={...posicaoEquipeAnterior};
+    selecionado='';renderEquipe();
+    requestAnimationFrame(()=>{
+      const botoes=[...document.querySelectorAll('#obpFuncionarios [data-team-id]')];
+      const mesmo=botoes.find(b=>String(b.dataset.teamId)===anterior.id);
+      const destino=mesmo
+        ?(window.scrollY||0)+mesmo.getBoundingClientRect().top-anterior.topo
+        :anterior.rolagem;
+      window.scrollTo({top:Math.max(0,destino),behavior:'instant'});
+    });
+    return;
+  }
   if(t.dataset.teamAction&&selecionado)return equipeAcaoPreview(selecionado,t.dataset.teamAction);
 }
 
