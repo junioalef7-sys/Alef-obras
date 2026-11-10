@@ -10,11 +10,12 @@ function ensure(){
   const m=document.createElement('main');m.id='relatoriosMain';m.className='hidden';
   m.innerHTML=`<div class="hero"><h1>Relatórios</h1></div>
   <div class="relTipo"><button class="btn active" id="relTipoFinanceiro">Financeiro</button><button class="btn" id="relTipoEquipe">Equipe / Trabalhador</button></div>
-  <div class="card relFiltros" id="relFinFiltros"><h3>Relatório Financeiro</h3><div class="relGrid"><select id="relObra"><option value="">Todas as obras</option></select><input id="relInicio" type="date"><input id="relFim" type="date"><button class="btn" id="relGerar">Gerar relatório</button></div></div>
+  <div class="card relFiltros" id="relFinFiltros"><h3>Relatório Financeiro</h3><div class="relGrid"><div class="relObraBuscaWrap"><input type="search" id="relObraBusca" list="relObraSugestoes" placeholder="Buscar obra pelo nome..." aria-label="Buscar obra pelo nome" autocomplete="off"><datalist id="relObraSugestoes"></datalist><select id="relObra" class="hidden" aria-hidden="true" tabindex="-1"><option value=""></option></select></div><input id="relInicio" type="date"><input id="relFim" type="date"><button class="btn" id="relGerar">Gerar relatório</button></div></div>
   <div class="card relFiltros hidden" id="relEqFiltros"><h3>Relatório da Equipe / Trabalhador</h3><div class="relGrid"><select id="relFuncionario"><option value="">Toda a equipe</option></select><input id="relEqInicio" type="date"><input id="relEqFim" type="date"><button class="btn" id="relEqGerar">Gerar relatório</button></div></div>
   <div id="relResultado" class="hidden"></div>`;
   app.insertBefore(m,bottom);
   $('relTipoFinanceiro').onclick=()=>trocar('financeiro');$('relTipoEquipe').onclick=()=>trocar('equipe');$('relGerar').onclick=gerarFinanceiro;$('relEqGerar').onclick=gerarEquipe;
+  const campo=$('relObraBusca');if(campo){campo.addEventListener('input',resolverBuscaObra);campo.addEventListener('change',resolverBuscaObra)}
 }
 function esconderOutros(){['inicio','obras','equipe','financeiroMain','estoqueMain','assinaturaMain','menuMain'].forEach(id=>$(id)?.classList.add('hidden'));document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'))}
 function trocar(novo){modo=novo;$('relFinFiltros')?.classList.toggle('hidden',novo!=='financeiro');$('relEqFiltros')?.classList.toggle('hidden',novo!=='equipe');$('relTipoFinanceiro')?.classList.toggle('active',novo==='financeiro');$('relTipoEquipe')?.classList.toggle('active',novo==='equipe');$('relResultado')?.classList.add('hidden');dadosAtuais=null}
@@ -39,9 +40,50 @@ function preencherSelectRelatorio(id,lista){
    }
  }else aplicar();
 }
+function normalizarBuscaObra(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim()}
+function atualizarSugestoesObra(){
+  const sel=$('relObra'),campo=$('relObraBusca'),lista=$('relObraSugestoes');
+  if(!sel||!campo||!lista)return;
+  const items=[...sel.options].filter(o=>o.value).map(o=>({id:o.value,nome:o.textContent}));
+  const nomes=new Map();
+  items.forEach(o=>nomes.set(normalizarBuscaObra(o.nome),(nomes.get(normalizarBuscaObra(o.nome))||0)+1));
+  const opcoes=items.map(o=>({...o,rotulo:(nomes.get(normalizarBuscaObra(o.nome))||0)>1?o.nome+' • '+o.id.slice(0,8):o.nome}));
+  const marca=JSON.stringify(opcoes);
+  if(lista.dataset.obrixLista!==marca){
+    lista.replaceChildren(...opcoes.map(o=>{const opt=document.createElement('option');opt.value=o.rotulo;return opt}));
+    lista.dataset.obrixLista=marca;
+  }
+  sel.__obrixBuscaOpcoes=opcoes;
+  if(sel.value&&document.activeElement!==campo){
+    const atual=opcoes.find(o=>o.id===sel.value);
+    if(atual&&campo.value!==atual.rotulo)campo.value=atual.rotulo;
+  }
+  if(document.activeElement!==campo&&campo.value)resolverBuscaObra();
+}
+function resolverBuscaObra(){
+ const campo=$('relObraBusca'),sel=$('relObra');if(!campo||!sel)return '';
+ const q=normalizarBuscaObra(campo.value);
+ const opcoes=sel.__obrixBuscaOpcoes||[];
+ const match=q?opcoes.find(o=>normalizarBuscaObra(o.rotulo)===q):null;
+ sel.value=match?.id||'';
+ return sel.value;
+}
+function validarBuscaObra(){
+ const campo=$('relObraBusca'),sel=$('relObra');
+ const texto=String(campo?.value||'').trim();
+ if(!texto)throw Error('Digite o nome da obra para gerar o relatório.');
+ let id=resolverBuscaObra();
+ if(!id){
+   const q=normalizarBuscaObra(texto),matches=(sel.__obrixBuscaOpcoes||[]).filter(o=>normalizarBuscaObra(o.rotulo).includes(q));
+   if(matches.length===1){id=matches[0].id;sel.value=id;campo.value=matches[0].rotulo}
+ }
+ if(!id)throw Error('Selecione uma obra válida na busca pelo nome.');
+ return id;
+}
 async function carregarFiltros(){
  const montar=(os,fs)=>{
-   preencherSelectRelatorio('relObra',[{id:'',nome:'Todas as obras'},...os.map(o=>({id:o.id,nome:o.nome||'Obra'}))]);
+   preencherSelectRelatorio('relObra',[{id:'',nome:''},...os.map(o=>({id:o.id,nome:o.nome||'Obra'}))]);
+   atualizarSugestoesObra();
    preencherSelectRelatorio('relFuncionario',[{id:'',nome:'Toda a equipe'},...fs.map(f=>({id:f.id,nome:(f.nome||'Funcionário')+(f.cargo?' — '+f.cargo:'')}))]);
  };
  montar(Array.isArray(window.obras)?window.obras:[],Array.isArray(window.funcionarios)?window.funcionarios:[]);
@@ -63,8 +105,9 @@ function abrirImpressao(html){const w=window.open('','_blank');if(!w)return aler
 async function gerarFinanceiro(){
   const btn=$('relGerar');if(btn){btn.disabled=true;btn.textContent='Gerando...'}
   try{
+    const obraSelecionada=validarBuscaObra();
     const [fin,extras,obrasDb]=await Promise.all([OBRIX_BACKEND.readTable('financeiro','data'),OBRIX_BACKEND.readTable('servicos_extras','criado_em'),OBRIX_BACKEND.readTable('obras','criado_em')]);
-    const obraId=$('relObra').value,inicio=$('relInicio').value,fim=$('relFim').value,obras=(obrasDb||[]).filter(o=>!obraId||String(o.id)===String(obraId)),ids=new Set(obras.map(o=>String(o.id)));
+    const obraId=obraSelecionada,inicio=$('relInicio').value,fim=$('relFim').value,obras=(obrasDb||[]).filter(o=>!obraId||String(o.id)===String(obraId)),ids=new Set(obras.map(o=>String(o.id)));
     const f=(fin||[]).filter(x=>(!x.status_lancamento||x.status_lancamento==='ativo')&&(!obraId||ids.has(String(x.obra_id)))&&noPeriodo(x.data,inicio,fim));
     const ex=(extras||[]).filter(x=>!obraId||ids.has(String(x.obra_id)));
     const contrato=obras.reduce((s,o)=>s+Number(o.valor_contrato||0),0)+ex.reduce((s,x)=>s+Number(x.valor||0),0),recebido=f.filter(x=>x.tipo==='receita').reduce((s,x)=>s+Number(x.valor||0),0),despesas=f.filter(x=>x.tipo==='despesa').reduce((s,x)=>s+Number(x.valor||0),0),resultado=contrato-despesas,margem=contrato>0?(resultado/contrato)*100:0,nomeObra=obraId?(obras[0]?.nome||'Obra'):'Todas as obras';
@@ -116,7 +159,7 @@ function imprimirAtual(){
   abrirImpressao(`<!doctype html><html><head><meta charset="utf-8"><title>Relatório da Equipe OBRIX</title>${cssPrint()}</head><body><h1>OBRIX — Relatório da Equipe / Trabalhador</h1><div class="meta">${esc(d.nome)} • ${esc(periodoTexto(d.inicio,d.fim))}</div><div class="resumo"><div class="box"><small>Diárias</small><b>${d.qtdDiarias.toLocaleString('pt-BR')} • ${money(d.valorDiarias)}</b></div><div class="box"><small>Vales</small><b>${money(d.vales)}</b></div><div class="box"><small>Bônus e Extras</small><b>${money(d.bonus)}</b></div><div class="box"><small>Total pago</small><b>${money(d.totalPago)}</b></div><div class="box"><small>Líquido em aberto</small><b>${money(d.liquidoAberto)}</b></div></div><h2>Movimentações</h2><table><thead><tr><th>Data</th><th>Funcionário</th><th>Obra</th><th>Tipo</th><th>Descrição</th><th>Status</th><th>Valor</th></tr></thead><tbody>${mov||'<tr><td colspan="7">Nenhuma movimentação.</td></tr>'}</tbody></table><h2>Pagamentos realizados</h2><table><thead><tr><th>Data</th><th>Funcionário</th><th>Bruto</th><th>Vales</th><th>Líquido pago</th></tr></thead><tbody>${pags||'<tr><td colspan="5">Nenhum pagamento.</td></tr>'}</tbody></table><script>window.onload=()=>setTimeout(()=>window.print(),150);<\/script></body></html>`);
 }
 function cssPrint(){return `<style>body{font-family:Arial,sans-serif;color:#111;padding:28px}h1{margin:0 0 4px}h2{font-size:16px;margin-top:22px}.meta{color:#555;margin-bottom:22px}.resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.box{border:1px solid #ccc;border-radius:8px;padding:10px}.box small{display:block;color:#666}.box b{display:block;margin-top:5px}table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:18px}th,td{border-bottom:1px solid #ddd;padding:7px;text-align:left}th{background:#f3f4f6}@media print{body{padding:0}}@page{size:A4;margin:12mm}</style>`}
-const css=document.createElement('style');css.textContent='.relTipo{display:flex;gap:8px;margin-bottom:12px}.relTipo .btn{background:#e2e8f0;color:#0f172a}.relTipo .btn.active{background:#0f172a;color:#fff}.relFiltros h3{margin-top:0}.relGrid{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center}.relGrid select,.relGrid input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:transparent;color:inherit}.relKpis{margin-top:14px}.relKpis .kpi span{display:block;margin-top:5px;font-size:13px;font-weight:700;color:#64748b}@media(max-width:760px){.relGrid{grid-template-columns:1fr 1fr}.relGrid select,.relGrid .btn{grid-column:1/-1}}@media(max-width:480px){.relTipo{display:grid;grid-template-columns:1fr}.relGrid{grid-template-columns:1fr}.relGrid select,.relGrid .btn{grid-column:auto}}';document.head.appendChild(css);
+const css=document.createElement('style');css.textContent='.relTipo{display:flex;gap:8px;margin-bottom:12px}.relTipo .btn{background:#e2e8f0;color:#0f172a}.relTipo .btn.active{background:#0f172a;color:#fff}.relFiltros h3{margin-top:0}.relGrid{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center}.relGrid select,.relGrid input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:transparent;color:inherit}.relObraBuscaWrap{min-width:0;width:100%}.relObraBuscaWrap input{width:100%;min-width:0}.relObraBuscaWrap select.hidden{display:none!important}.relKpis{margin-top:14px}.relKpis .kpi span{display:block;margin-top:5px;font-size:13px;font-weight:700;color:#64748b}@media(max-width:760px){.relGrid{grid-template-columns:1fr 1fr}.relGrid select,.relGrid .btn{grid-column:1/-1}}@media(max-width:480px){.relTipo{display:grid;grid-template-columns:1fr}.relGrid{grid-template-columns:1fr}.relGrid select,.relGrid .btn{grid-column:auto}}';document.head.appendChild(css);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(ensure,150));else setTimeout(ensure,150);
 window.OBRIX_RELATORIOS={open,gerar:gerarFinanceiro,gerarEquipe,imprimir:imprimirAtual};
 })();
