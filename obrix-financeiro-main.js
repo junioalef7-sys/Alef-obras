@@ -48,7 +48,7 @@
   async function fetchDados(){
     const p=await OBRIX_BACKEND.profile(),sb=await OBRIX_BACKEND.init(),eid=p.empresa_id;
     const [rows,extras,checks]=await Promise.all([
-      sb.from('financeiro').select('id,empresa_id,obra_id,checklist_id,checklist_ids,checklist_valores,tipo,categoria,subcategoria,descricao,valor,data,origem,pagamento_equipe_id,compra_id,status_lancamento,atualizado_em').eq('empresa_id',eid).order('data',{ascending:false}),
+      sb.from('financeiro').select('id,empresa_id,obra_id,checklist_id,checklist_ids,checklist_valores,tipo,categoria,subcategoria,descricao,valor,data,origem,pagamento_equipe_id,vale_id,compra_id,status_lancamento,criado_em,atualizado_em').eq('empresa_id',eid).order('data',{ascending:false}),
       sb.from('servicos_extras').select('id,obra_id,valor,atualizado_em').eq('empresa_id',eid),
       sb.from('checklist_itens').select('id,obra_id,nome,ordem,atualizado_em').eq('empresa_id',eid).order('ordem',{ascending:true})
     ]);
@@ -57,7 +57,8 @@
     lastSync=signature(window.financeiro,extrasFinanceiro,checklistFinanceiro);return lastSync;
   }
   function atualizarObras(){const sec=document.getElementById('obras');if(!sec||sec.classList.contains('hidden'))return;try{window.OBRIX_OBRAS?.render?.()}catch(_){}}
-  function podeExcluir(x){return x.origem==='manual'||!!x.pagamento_equipe_id||!!x.compra_id}
+  function podeExcluir(x){return x.origem==='manual'||!!x.compra_id}
+  function podeEstornar(x){return (x.origem==='pagamento_equipe'&&!!x.pagamento_equipe_id)||(x.origem==='vale_equipe'&&!!x.vale_id)}
   function resumoChecklists(x){
     const mapa=new Map(checklistFinanceiro.map(c=>[String(c.id),c.nome||'Etapa'])),vals=valoresChecklist(x);
     return idsChecklist(x).map(id=>{const nome=mapa.get(String(id));if(!nome)return null;const v=Number(vals[id]||0);return v>0?`${nome} (${money(v)})`:nome}).filter(Boolean);
@@ -83,7 +84,7 @@
       const totalChecks=Object.values(valoresChecklist(x)).reduce((s,v)=>s+Number(v||0),0),sem=Math.max(0,Number(x.valor||0)-totalChecks);
       const checkTxt=checks.length?`Checklists: ${checks.join(', ')}${sem>0?` • Sem checklist: ${money(sem)}`:''}`:'Sem checklist';
       const meta=[o?.nome||'Sem obra',x.data||'',labels[x.categoria]||x.categoria||'',x.subcategoria||'',checkTxt].filter(Boolean);
-      return `<div class="card item" data-fin-card="1" data-id="${esc(x.id)}" data-obra="${esc(x.obra_id||'')}" data-tipo="${esc(x.tipo||'')}" data-categoria="${esc(x.categoria||'')}"><h3>${esc(x.descricao||'Lançamento')}</h3><div class="muted">${meta.map(esc).join(' • ')}</div><div class="grid"><div class="mini"><small>${x.tipo==='receita'?'Receita':'Despesa'}</small><b>${money(x.valor)}</b></div></div>${podeExcluir(x)?`<div class="actions">${manual?`<button type="button" data-fin="editar" data-id="${x.id}">Editar</button>`:''}<button type="button" data-fin="excluir" data-id="${x.id}">Excluir</button></div>`:''}</div>`;
+      return `<div class="card item" data-fin-card="1" data-id="${esc(x.id)}" data-obra="${esc(x.obra_id||'')}" data-tipo="${esc(x.tipo||'')}" data-categoria="${esc(x.categoria||'')}"><h3>${esc(x.descricao||'Lançamento')}</h3><div class="muted">${meta.map(esc).join(' • ')}</div><div class="grid"><div class="mini"><small>${x.tipo==='receita'?'Receita':'Despesa'}</small><b>${money(x.valor)}</b></div></div>${podeExcluir(x)||podeEstornar(x)?`<div class="actions">${manual?`<button type="button" data-fin="editar" data-id="${x.id}">Editar</button>`:''}${podeEstornar(x)?`<button type="button" data-fin="estornar" data-id="${x.id}">Estornar</button>`:`<button type="button" data-fin="excluir" data-id="${x.id}">Excluir</button>`}</div>`:''}</div>`;
     }).join(''):'<div class="card muted">Nenhum lançamento financeiro.</div>';
     let listaMudou=false;
     // Os ajustes aprovados acrescentam classes ao DOM. Comparar innerHTML
@@ -290,6 +291,41 @@
       overlay.querySelector('[data-cancelar]').focus();
     });
   }
+async function estornarAutomatico(id){
+ const x=(window.financeiro||[]).find(z=>String(z.id)===String(id));
+ if(!x||!podeEstornar(x))return alert('Este lançamento não permite estorno por aqui.');
+ if(!navigator.onLine)return alert('É necessário estar conectado para estornar com segurança.');
+ const ehPagamento=x.origem==='pagamento_equipe';
+ if(typeof window.OBRIX_CONFIRMAR_EXCLUSAO!=='function')
+   return alert('Confirmação indisponível. Atualize o aplicativo.');
+ const ok=await window.OBRIX_CONFIRMAR_EXCLUSAO({
+   titulo:ehPagamento?'Estornar pagamento de equipe':'Estornar vale da equipe',
+   mensagem:ehPagamento
+     ?'Estornar este pagamento? As diárias, os vales e os bônus vinculados voltarão às pendências. O Financeiro manterá o registro como estornado.'
+     :'Estornar este vale? Ele deixará de contar nas pendências e a despesa ficará registrada como estornada. Se o vale pertence a um pagamento ativo, estorne primeiro esse pagamento.',
+   confirmar:'Estornar',cancelar:'Cancelar'
+ });
+ if(!ok)return;
+ const btn=$('fmLista')?.querySelector('[data-fin="estornar"][data-id="'+CSS.escape(String(id))+'"]');
+ if(btn){btn.disabled=true;btn.textContent='Estornando...'}
+ try{
+   const sb=await OBRIX_BACKEND.init();
+   const args=ehPagamento
+     ?{p_pagamento_id:x.pagamento_equipe_id,p_motivo:'Estornado pelo Financeiro do OBRIX'}
+     :{p_vale_id:x.vale_id,p_motivo:'Estornado pelo Financeiro do OBRIX'};
+   const func=ehPagamento?'obrix_estornar_pagamento_equipe':'obrix_estornar_vale_equipe';
+   const result=await sb.rpc(func,args);
+   if(result.error)throw result.error;
+   if(result.data?.ok!==true)throw Error('O servidor não confirmou o estorno.');
+   try{await window.OBRIX_EQUIPE?.refresh?.({force:true,financeiro:true})}catch(e){console.warn('Equipe após estorno',e)}
+   await render(true);
+   window.OBRIX_DASH?.paint?.();
+ }catch(e){
+   alert(e?.message||'Não foi possível estornar o lançamento.');
+ }finally{
+   if(btn?.isConnected){btn.disabled=false;btn.textContent='Estornar'}
+ }
+}
   async function excluir(id){
     const x=(window.financeiro||[]).find(z=>String(z.id)===String(id));if(!x||!podeExcluir(x))return alert('Este lançamento não pode ser excluído por aqui.');
     if(!await confirmarExclusaoFinanceiro())return;
@@ -320,7 +356,7 @@
   setInterval(poll,60000);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&visivel()&&$('fmForm')?.classList.contains('hidden'))void render(true)});
   window.addEventListener('focus',()=>{if(visivel()&&$('fmForm')?.classList.contains('hidden'))void render(true)});
-  document.addEventListener('click',e=>{const fin=e.target.closest('[data-fin]');if(fin){e.preventDefault();e.stopImmediatePropagation();if(fin.dataset.fin==='editar')editar(fin.dataset.id);else if(fin.dataset.fin==='excluir')excluir(fin.dataset.id);return}const b=e.target.closest('button');if(!b)return;const t=(b.textContent||'').trim();if(t==='Financeiro'){e.preventDefault();e.stopImmediatePropagation();open()}},true);
+  document.addEventListener('click',e=>{const fin=e.target.closest('[data-fin]');if(fin){e.preventDefault();e.stopImmediatePropagation();if(fin.dataset.fin==='editar')editar(fin.dataset.id);else if(fin.dataset.fin==='excluir')excluir(fin.dataset.id);else if(fin.dataset.fin==='estornar')void estornarAutomatico(fin.dataset.id);return}const b=e.target.closest('button');if(!b)return;const t=(b.textContent||'').trim();if(t==='Financeiro'){e.preventDefault();e.stopImmediatePropagation();open()}},true);
   window.OBRIX_FIN={open,render,editar,excluir,checklists:()=>checklistFinanceiro.slice(),categorias:labels};
   setTimeout(ensure,0);
 })();
