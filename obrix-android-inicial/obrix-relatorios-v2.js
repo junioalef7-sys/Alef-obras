@@ -11,12 +11,13 @@ function ensure(){
   m.innerHTML=`<div class="hero"><h1>Relatórios</h1></div>
   <div class="relTipo"><button class="btn active" id="relTipoFinanceiro">Financeiro</button><button class="btn" id="relTipoEquipe">Equipe / Trabalhador</button></div>
   <div class="card relFiltros" id="relFinFiltros"><h3>Relatório Financeiro</h3><div class="relGrid"><div class="relObraBuscaWrap"><input type="search" id="relObraBusca" list="relObraSugestoes" placeholder="Buscar obra pelo nome..." aria-label="Buscar obra pelo nome" autocomplete="off"><datalist id="relObraSugestoes"></datalist><select id="relObra" class="hidden" aria-hidden="true" tabindex="-1"><option value=""></option></select></div><input id="relInicio" type="date"><input id="relFim" type="date"><button class="btn" id="relGerar">Gerar relatório</button></div></div>
-  <div class="card relFiltros hidden" id="relEqFiltros"><h3>Relatório da Equipe / Trabalhador</h3><div class="relGrid"><div class="relFuncionarioBuscaWrap"><input type="search" id="relFuncionarioBusca" list="relFuncionarioSugestoes" placeholder="Buscar funcionário pelo nome..." aria-label="Buscar funcionário pelo nome" autocomplete="off"><datalist id="relFuncionarioSugestoes"></datalist><select id="relFuncionario" class="hidden" aria-hidden="true" tabindex="-1"><option value=""></option></select></div><input id="relEqInicio" type="date"><input id="relEqFim" type="date"><button class="btn" id="relEqGerar">Gerar relatório</button></div></div>
+  <div class="card relFiltros hidden" id="relEqFiltros"><h3>Relatório da Equipe / Trabalhador</h3><div class="relGrid"><div class="relEquipeObraBuscaWrap"><input type="search" id="relEquipeObraBusca" list="relEquipeObraSugestoes" placeholder="Buscar obra pelo nome..." aria-label="Buscar obra da equipe pelo nome" autocomplete="off"><datalist id="relEquipeObraSugestoes"></datalist><select id="relEquipeObra" class="hidden" aria-hidden="true" tabindex="-1"><option value=""></option></select></div><div class="relFuncionarioBuscaWrap"><input type="search" id="relFuncionarioBusca" list="relFuncionarioSugestoes" placeholder="Buscar funcionário pelo nome..." aria-label="Buscar funcionário pelo nome" autocomplete="off"><datalist id="relFuncionarioSugestoes"></datalist><select id="relFuncionario" class="hidden" aria-hidden="true" tabindex="-1"><option value=""></option></select></div><input id="relEqInicio" type="date"><input id="relEqFim" type="date"><button class="btn" id="relEqGerar">Gerar relatório</button></div></div>
   <div id="relResultado" class="hidden"></div>`;
   app.insertBefore(m,bottom);
   $('relTipoFinanceiro').onclick=()=>trocar('financeiro');$('relTipoEquipe').onclick=()=>trocar('equipe');$('relGerar').onclick=gerarFinanceiro;$('relEqGerar').onclick=gerarEquipe;
   const campo=$('relObraBusca');if(campo){campo.addEventListener('input',resolverBuscaObra);campo.addEventListener('change',resolverBuscaObra)}
   const buscaEquipe=$('relFuncionarioBusca');if(buscaEquipe){buscaEquipe.addEventListener('input',resolverBuscaFuncionario);buscaEquipe.addEventListener('change',resolverBuscaFuncionario)}
+  const buscaObraEquipe=$('relEquipeObraBusca');if(buscaObraEquipe){buscaObraEquipe.addEventListener('input',resolverBuscaEquipeObra);buscaObraEquipe.addEventListener('change',resolverBuscaEquipeObra)}
 }
 function esconderOutros(){['inicio','obras','equipe','financeiroMain','estoqueMain','assinaturaMain','menuMain'].forEach(id=>$(id)?.classList.add('hidden'));document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'))}
 function trocar(novo){modo=novo;$('relFinFiltros')?.classList.toggle('hidden',novo!=='financeiro');$('relEqFiltros')?.classList.toggle('hidden',novo!=='equipe');$('relDiarioFiltros')?.classList.add('hidden');$('relTipoFinanceiro')?.classList.toggle('active',novo==='financeiro');$('relTipoEquipe')?.classList.toggle('active',novo==='equipe');$('relTipoDiario')?.classList.remove('active');$('relResultado')?.classList.add('hidden');dadosAtuais=null}
@@ -81,6 +82,38 @@ function validarBuscaObra(){
  if(!id)throw Error('Selecione uma obra válida na busca pelo nome.');
  return id;
 }
+function atualizarSugestoesEquipeObra(){
+ const sel=$('relEquipeObra'),campo=$('relEquipeObraBusca'),lista=$('relEquipeObraSugestoes');if(!sel||!campo||!lista)return;
+ const objs=[...($('relObra')?.options||[])].filter(o=>o.value).map(o=>({id:o.value,rotulo:o.textContent}));
+ const texto=JSON.stringify(objs);
+ if(lista.dataset.obrixLista!==texto){
+   lista.replaceChildren(...objs.map(x=>{const opt=document.createElement('option');opt.value=x.rotulo;return opt}));
+   lista.dataset.obrixLista=texto;
+   const val=sel.value;
+   sel.replaceChildren(new Option('',''),...objs.map(o=>new Option(o.rotulo,o.id)));
+   if(objs.some(o=>o.id===val))sel.value=val;
+ }
+ sel.__obrixBuscaOpcoes=objs;
+ if(sel.value&&document.activeElement!==campo){const atual=objs.find(o=>o.id===sel.value);if(atual)campo.value=atual.rotulo}
+ if(document.activeElement!==campo)resolverBuscaEquipeObra();
+}
+function resolverBuscaEquipeObra(){
+ const sel=$('relEquipeObra'),campo=$('relEquipeObraBusca');if(!sel||!campo)return '';
+ const q=normalizarBuscaObra(campo.value);
+ const found=q?(sel.__obrixBuscaOpcoes||[]).find(o=>normalizarBuscaObra(o.rotulo)===q):null;
+ sel.value=found?.id||'';return sel.value;
+}
+function validarBuscaEquipeObra(){
+ const sel=$('relEquipeObra'),campo=$('relEquipeObraBusca'),texto=String(campo?.value||'').trim();
+ if(!texto)return '';
+ let id=resolverBuscaEquipeObra();
+ if(!id){
+   const q=normalizarBuscaObra(texto),achados=(sel.__obrixBuscaOpcoes||[]).filter(o=>normalizarBuscaObra(o.rotulo).includes(q));
+   if(achados.length===1){id=achados[0].id;campo.value=achados[0].rotulo;sel.value=id}
+ }
+ if(!id)throw Error('Selecione uma obra válida no campo de busca.');
+ return id;
+}
 function atualizarSugestoesFuncionario(){
  const sel=$('relFuncionario'),campo=$('relFuncionarioBusca'),lista=$('relFuncionarioSugestoes');
  if(!sel||!campo||!lista)return;
@@ -124,6 +157,7 @@ async function carregarFiltros(){
  const montar=(os,fs)=>{
    preencherSelectRelatorio('relObra',[{id:'',nome:''},...os.map(o=>({id:o.id,nome:o.nome||'Obra'}))]);
    atualizarSugestoesObra();
+   atualizarSugestoesEquipeObra();
    preencherSelectRelatorio('relFuncionario',[{id:'',nome:''},...fs.map(f=>({id:f.id,nome:(f.nome||'Funcionário')+(f.cargo?' — '+f.cargo:'')}))]);
    atualizarSugestoesFuncionario();
  };
@@ -161,32 +195,38 @@ async function gerarFinanceiro(){
 async function gerarEquipe(){
   const btn=$('relEqGerar');if(btn){btn.disabled=true;btn.textContent='Gerando...'}
   try{
-    const funcionarioSelecionado=validarBuscaFuncionario();
+    const obraEquipeId=validarBuscaEquipeObra(),funcionarioSelecionado=validarBuscaFuncionario();
     const p=await OBRIX_BACKEND.profile(),sb=await OBRIX_BACKEND.init(),eid=p.empresa_id;
-    const [fr,dr,vr,br,pr,or]=await Promise.all([
+    const [fr,dr,vr,br,pr,or,fin]=await Promise.all([
       sb.from('funcionarios').select('*').eq('empresa_id',eid),
       sb.from('diarias').select('*').eq('empresa_id',eid),
       sb.from('vales').select('*').eq('empresa_id',eid),
       sb.from('bonus_extras').select('*').eq('empresa_id',eid),
       sb.from('pagamentos_equipe').select('*').eq('empresa_id',eid),
-      sb.from('obras').select('*').eq('empresa_id',eid)
+      sb.from('obras').select('*').eq('empresa_id',eid),
+      sb.from('financeiro').select('pagamento_equipe_id,obra_id,valor,origem,status_lancamento').eq('empresa_id',eid).eq('origem','pagamento_equipe')
     ]);
     const erro=[fr,dr,vr,br,pr,or].find(r=>r.error);if(erro)throw erro.error;
     const funcs=fr.data||[],obras=or.data||[],funcId=funcionarioSelecionado,inicio=$('relEqInicio').value,fim=$('relEqFim').value,ids=new Set(funcs.filter(f=>!funcId||String(f.id)===String(funcId)).map(f=>String(f.id)));
-    const ds=(dr.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&noPeriodo(x.data,inicio,fim));
-    const vs=(vr.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&noPeriodo(x.data,inicio,fim));
-    const bs=(br.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&noPeriodo(x.data,inicio,fim));
-    const ps=(pr.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&!x.estornado_em&&noPeriodo(x.data_pagamento,inicio,fim));
-    const qtdDiarias=ds.reduce((s,x)=>s+Number(x.quantidade||0),0),valorDiarias=ds.reduce((s,x)=>s+Number(x.valor_total||0),0),vales=vs.reduce((s,x)=>s+Number(x.valor||0),0),bonus=bs.reduce((s,x)=>s+Number(x.valor||0),0),totalPago=ps.reduce((s,x)=>s+Number(x.valor_liquido||0),0);
+    const pertenceObra=x=>!obraEquipeId||String(x.obra_id)===String(obraEquipeId);
+    const ds=(dr.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&pertenceObra(x)&&noPeriodo(x.data,inicio,fim));
+    const vs=(vr.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&pertenceObra(x)&&noPeriodo(x.data,inicio,fim));
+    const bs=(br.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&pertenceObra(x)&&noPeriodo(x.data,inicio,fim));
+    const pagoPorObra=new Map();
+    (fin.data||[]).filter(x=>x.status_lancamento==='ativo'&&(!obraEquipeId||String(x.obra_id)===String(obraEquipeId))).forEach(x=>{
+      if(x.pagamento_equipe_id){const k=String(x.pagamento_equipe_id);pagoPorObra.set(k,(pagoPorObra.get(k)||0)+Number(x.valor||0))}
+    });
+    const ps=(pr.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&!x.estornado_em&&noPeriodo(x.data_pagamento,inicio,fim)&&(!obraEquipeId||pagoPorObra.has(String(x.id))));
+    const qtdDiarias=ds.reduce((s,x)=>s+Number(x.quantidade||0),0),valorDiarias=ds.reduce((s,x)=>s+Number(x.valor_total||0),0),vales=vs.reduce((s,x)=>s+Number(x.valor||0),0),bonus=bs.reduce((s,x)=>s+Number(x.valor||0),0),totalPago=ps.reduce((s,x)=>s+(obraEquipeId?Number(pagoPorObra.get(String(x.id))||0):Number(x.valor_liquido||0)),0);
     const abertoDiarias=ds.filter(x=>!x.paga).reduce((s,x)=>s+Number(x.valor_total||0),0),abertoVales=vs.filter(x=>!x.quitado).reduce((s,x)=>s+Number(x.valor||0),0),abertoBonus=bs.filter(x=>!x.pago).reduce((s,x)=>s+Number(x.valor||0),0),liquidoAberto=abertoDiarias+abertoBonus-abertoVales;
     const nome=funcId?(funcs.find(f=>String(f.id)===String(funcId))?.nome||'Funcionário'):'Toda a equipe';
-    dadosAtuais={tipo:'equipe',nome,inicio,fim,funcs,obras,diarias:ds,valesMov:vs,bonusMov:bs,pagamentos:ps,qtdDiarias,valorDiarias,vales,bonus,totalPago,liquidoAberto};
+    dadosAtuais={tipo:'equipe',nome,obraEquipeId,pagoPorObra:Object.fromEntries(pagoPorObra),inicio,fim,funcs,obras,diarias:ds,valesMov:vs,bonusMov:bs,pagamentos:ps,qtdDiarias,valorDiarias,vales,bonus,totalPago,liquidoAberto};
     const movimentos=[
       ...ds.map(x=>({data:x.data,funcionario_id:x.funcionario_id,obra_id:x.obra_id,tipo:'Diária',descricao:Number(x.quantidade||0)===0.5?'Meia diária':'Diária',valor:Number(x.valor_total||0),status:x.paga?'Paga':'Em aberto'})),
       ...vs.map(x=>({data:x.data,funcionario_id:x.funcionario_id,obra_id:x.obra_id,tipo:'Vale',descricao:x.observacoes||'Vale',valor:-Number(x.valor||0),status:x.quitado?'Quitado':'Em aberto'})),
       ...bs.map(x=>({data:x.data,funcionario_id:x.funcionario_id,obra_id:x.obra_id,tipo:x.tipo==='bonus'?'Bônus':'Extra',descricao:x.descricao||'Bônus/Extra',valor:Number(x.valor||0),status:x.pago?'Pago':'Em aberto'}))
     ].sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
-    $('relResultado').innerHTML=`<div class="kpis relKpis"><div class="kpi"><small>Diárias</small><strong>${qtdDiarias.toLocaleString('pt-BR')}</strong><span>${money(valorDiarias)}</span></div><div class="kpi"><small>Vales</small><strong>${money(vales)}</strong></div><div class="kpi"><small>Bônus e Extras</small><strong>${money(bonus)}</strong></div><div class="kpi"><small>Total pago</small><strong>${money(totalPago)}</strong></div><div class="kpi"><small>Líquido em aberto</small><strong>${money(liquidoAberto)}</strong></div></div><div class="sectionHead"><strong>${esc(nome)} • ${esc(periodoTexto(inicio,fim))}</strong><button class="btn" id="relImprimirAtual">Imprimir / Salvar PDF</button></div><h3>Movimentações</h3><div>${movimentos.length?movimentos.map(x=>`<div class="card item"><h3>${esc(x.tipo)} — ${esc(x.descricao)}</h3><div class="muted">${esc(funcNome(x.funcionario_id,funcs))} • ${esc(obraNome(x.obra_id,obras))} • ${esc(x.data||'')} • ${esc(x.status)}</div><div class="grid"><div class="mini"><small>Valor</small><b>${money(x.valor)}</b></div></div></div>`).join(''):'<div class="card muted">Nenhuma movimentação no período.</div>'}</div><h3>Pagamentos realizados</h3><div>${ps.length?ps.slice().sort((a,b)=>String(b.data_pagamento||'').localeCompare(String(a.data_pagamento||''))).map(x=>`<div class="card item"><h3>${esc(funcNome(x.funcionario_id,funcs))}</h3><div class="muted">${esc(x.data_pagamento||'')}</div><div class="grid"><div class="mini"><small>Bruto</small><b>${money(x.valor_bruto)}</b></div><div class="mini"><small>Vales</small><b>${money(x.valor_vales)}</b></div><div class="mini"><small>Líquido pago</small><b>${money(x.valor_liquido)}</b></div></div></div>`).join(''):'<div class="card muted">Nenhum pagamento realizado no período.</div>'}</div>`;
+    $('relResultado').innerHTML=`<div class="kpis relKpis"><div class="kpi"><small>Diárias</small><strong>${qtdDiarias.toLocaleString('pt-BR')}</strong><span>${money(valorDiarias)}</span></div><div class="kpi"><small>Vales</small><strong>${money(vales)}</strong></div><div class="kpi"><small>Bônus e Extras</small><strong>${money(bonus)}</strong></div><div class="kpi"><small>Total pago</small><strong>${money(totalPago)}</strong></div><div class="kpi"><small>Líquido em aberto</small><strong>${money(liquidoAberto)}</strong></div></div><div class="sectionHead"><strong>${esc(nome)} • ${esc(obraEquipeId?obraNome(obraEquipeId,obras):'Todas as obras')} • ${esc(periodoTexto(inicio,fim))}</strong><button class="btn" id="relImprimirAtual">Imprimir / Salvar PDF</button></div><h3>Movimentações</h3><div>${movimentos.length?movimentos.map(x=>`<div class="card item"><h3>${esc(x.tipo)} — ${esc(x.descricao)}</h3><div class="muted">${esc(funcNome(x.funcionario_id,funcs))} • ${esc(obraNome(x.obra_id,obras))} • ${esc(x.data||'')} • ${esc(x.status)}</div><div class="grid"><div class="mini"><small>Valor</small><b>${money(x.valor)}</b></div></div></div>`).join(''):'<div class="card muted">Nenhuma movimentação no período.</div>'}</div><h3>Pagamentos realizados</h3><div>${ps.length?ps.slice().sort((a,b)=>String(b.data_pagamento||'').localeCompare(String(a.data_pagamento||''))).map(x=>`<div class="card item"><h3>${esc(funcNome(x.funcionario_id,funcs))}</h3><div class="muted">${esc(x.data_pagamento||'')}</div><div class="grid"><div class="mini"><small>Bruto</small><b>${obraEquipeId?'—':money(x.valor_bruto)}</b></div><div class="mini"><small>Vales</small><b>${obraEquipeId?'—':money(x.valor_vales)}</b></div><div class="mini"><small>Líquido pago</small><b>${money(obraEquipeId?pagoPorObra.get(String(x.id))||0:x.valor_liquido)}</b></div></div></div>`).join(''):'<div class="card muted">Nenhum pagamento realizado no período.</div>'}</div>`;
     $('relResultado').classList.remove('hidden');$('relImprimirAtual').onclick=imprimirAtual;
   }catch(e){alert(e.message||'Não foi possível gerar o relatório da equipe.')}finally{if(btn){btn.disabled=false;btn.textContent='Gerar relatório'}}
 }
@@ -201,7 +241,7 @@ function imprimirAtual(){
   abrirImpressao(`<!doctype html><html><head><meta charset="utf-8"><title>Relatório da Equipe OBRIX</title>${cssPrint()}</head><body><h1>OBRIX — Relatório da Equipe / Trabalhador</h1><div class="meta">${esc(d.nome)} • ${esc(periodoTexto(d.inicio,d.fim))}</div><div class="resumo"><div class="box"><small>Diárias</small><b>${d.qtdDiarias.toLocaleString('pt-BR')} • ${money(d.valorDiarias)}</b></div><div class="box"><small>Vales</small><b>${money(d.vales)}</b></div><div class="box"><small>Bônus e Extras</small><b>${money(d.bonus)}</b></div><div class="box"><small>Total pago</small><b>${money(d.totalPago)}</b></div><div class="box"><small>Líquido em aberto</small><b>${money(d.liquidoAberto)}</b></div></div><h2>Movimentações</h2><table><thead><tr><th>Data</th><th>Funcionário</th><th>Obra</th><th>Tipo</th><th>Descrição</th><th>Status</th><th>Valor</th></tr></thead><tbody>${mov||'<tr><td colspan="7">Nenhuma movimentação.</td></tr>'}</tbody></table><h2>Pagamentos realizados</h2><table><thead><tr><th>Data</th><th>Funcionário</th><th>Bruto</th><th>Vales</th><th>Líquido pago</th></tr></thead><tbody>${pags||'<tr><td colspan="5">Nenhum pagamento.</td></tr>'}</tbody></table><script>window.onload=()=>setTimeout(()=>window.print(),150);<\/script></body></html>`);
 }
 function cssPrint(){return `<style>body{font-family:Arial,sans-serif;color:#111;padding:28px}h1{margin:0 0 4px}h2{font-size:16px;margin-top:22px}.meta{color:#555;margin-bottom:22px}.resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.box{border:1px solid #ccc;border-radius:8px;padding:10px}.box small{display:block;color:#666}.box b{display:block;margin-top:5px}table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:18px}th,td{border-bottom:1px solid #ddd;padding:7px;text-align:left}th{background:#f3f4f6}@media print{body{padding:0}}@page{size:A4;margin:12mm}</style>`}
-const css=document.createElement('style');css.textContent='.relTipo{display:flex;gap:8px;margin-bottom:12px}.relTipo .btn{background:#e2e8f0;color:#0f172a}.relTipo .btn.active{background:#0f172a;color:#fff}.relFiltros h3{margin-top:0}.relGrid{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center}.relGrid select,.relGrid input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:transparent;color:inherit}.relObraBuscaWrap,.relFuncionarioBuscaWrap{min-width:0;width:100%}.relObraBuscaWrap input,.relFuncionarioBuscaWrap input{width:100%;min-width:0}.relObraBuscaWrap select.hidden,.relFuncionarioBuscaWrap select.hidden{display:none!important}.relKpis{margin-top:14px}.relKpis .kpi span{display:block;margin-top:5px;font-size:13px;font-weight:700;color:#64748b}@media(max-width:760px){.relGrid{grid-template-columns:1fr 1fr}.relGrid select,.relGrid .btn{grid-column:1/-1}}@media(max-width:480px){.relTipo{display:grid;grid-template-columns:1fr}.relGrid{grid-template-columns:1fr}.relGrid select,.relGrid .btn{grid-column:auto}}';document.head.appendChild(css);
+const css=document.createElement('style');css.textContent='.relTipo{display:flex;gap:8px;margin-bottom:12px}.relTipo .btn{background:#e2e8f0;color:#0f172a}.relTipo .btn.active{background:#0f172a;color:#fff}.relFiltros h3{margin-top:0}.relGrid{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center}.relGrid select,.relGrid input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:transparent;color:inherit}.relObraBuscaWrap,.relFuncionarioBuscaWrap,.relEquipeObraBuscaWrap{min-width:0;width:100%}.relObraBuscaWrap input,.relFuncionarioBuscaWrap input,.relEquipeObraBuscaWrap input{width:100%;min-width:0}.relObraBuscaWrap select.hidden,.relFuncionarioBuscaWrap select.hidden,.relEquipeObraBuscaWrap select.hidden{display:none!important}.relKpis{margin-top:14px}.relKpis .kpi span{display:block;margin-top:5px;font-size:13px;font-weight:700;color:#64748b}@media(max-width:760px){.relGrid{grid-template-columns:1fr 1fr}.relGrid select,.relGrid .btn{grid-column:1/-1}}@media(max-width:480px){.relTipo{display:grid;grid-template-columns:1fr}.relGrid{grid-template-columns:1fr}.relGrid select,.relGrid .btn{grid-column:auto}}';document.head.appendChild(css);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(ensure,150));else setTimeout(ensure,150);
 // Complementos financeiros usam capturas próprias: validar o texto antes
 // que qualquer gerador utilize o select oculto como filtro.
