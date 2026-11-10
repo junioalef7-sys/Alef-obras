@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const $=id=>document.getElementById(id),today=()=>new Date().toISOString().slice(0,10),escHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const JSPDF_SRC='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
-let diarios=[],pdfPromise=null,loadPromise=null,rerunLoad=false,loadedOnce=false,lastHistorySignature='',noticeTimer=null;
+let diarios=[],pdfPromise=null,loadPromise=null,rerunLoad=false,loadedOnce=false,lastHistorySignature='',noticeTimer=null,ultimaConsultaObras=0;
 const off=()=>window.OBRIX_OFFLINE_DIARIO;
 const ptError=e=>window.OBRIX_PT_ERROR?.(e)||(e?.message||String(e||'Não foi possível concluir.'));
 function ensure(){
@@ -81,9 +81,12 @@ async function load(){
     // A sessão do Supabase pode estar válida antes da variável global profile.
     // Isso não pode impedir a leitura online dos diários nem das obras.
     try{
-      if(!window.obras?.length){
+      if(!window.obras?.length||Date.now()-ultimaConsultaObras>60000){
         const obrasServidor=await OBRIX_BACKEND.readTable('obras','criado_em');
-        if(Array.isArray(obrasServidor))window.obras=obrasServidor;
+        if(Array.isArray(obrasServidor)){
+          if(obrasServidor.length||!window.obras?.length)window.obras=obrasServidor;
+          ultimaConsultaObras=Date.now();
+        }
       }
       const server=await OBRIX_BACKEND.readTable('diarios_obra','data')||[];
       const merged=off()?.merge?.(server)||server;
