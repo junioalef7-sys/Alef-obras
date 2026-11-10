@@ -11,15 +11,65 @@ function instalar(){
   const b=document.createElement('button');b.className='btn';b.id='relTipoDiario';b.textContent='Diário de Obras';tipos.appendChild(b);b.onclick=abrirFiltros;
   const fin=$('relFinFiltros');if(!fin)return;
   const c=document.createElement('div');c.className='card relFiltros hidden';c.id='relDiarioFiltros';
-  c.innerHTML='<h3>Relatório do Diário de Obras</h3><div class="relGrid"><select id="relDiarioObra"><option value="">Todas as obras</option></select><input id="relDiarioInicio" type="date"><input id="relDiarioFim" type="date"><button class="btn" id="relDiarioGerar">Gerar relatório</button></div>';
+  c.innerHTML='<h3>Relatório do Diário de Obras</h3><div class="relGrid"><div class="relDiarioBuscaWrap"><input id="relDiarioBusca" type="search" list="relDiarioSugestoes" placeholder="Buscar obra pelo nome..." aria-label="Buscar obra do diário pelo nome" autocomplete="off"><datalist id="relDiarioSugestoes"></datalist><select id="relDiarioObra" class="hidden" aria-hidden="true" tabindex="-1"><option value=""></option></select></div><input id="relDiarioInicio" type="date"><input id="relDiarioFim" type="date"><button class="btn" id="relDiarioGerar">Gerar relatório</button></div>';
   fin.parentNode.insertBefore(c,fin.nextSibling);$('relDiarioGerar').onclick=gerar;
+  const busca=$('relDiarioBusca');if(busca){busca.addEventListener('input',resolverBuscaDiario);busca.addEventListener('change',resolverBuscaDiario)}
 }
 function fecharOutros(){['relFinFiltros','relEqFiltros','relClienteFiltros','relDocsFiltros'].forEach(id=>$(id)?.classList.add('hidden'))}
+function normalizarNome(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim()}
+function preencherBuscaDiario(os){
+ const sel=$('relDiarioObra'),campo=$('relDiarioBusca'),lista=$('relDiarioSugestoes');
+ if(!sel||!campo||!lista)return;
+ const items=(Array.isArray(os)?os:[]).filter(o=>o?.id).map(o=>({id:String(o.id),nome:String(o.nome||'Obra')}));
+ const counts=new Map();
+ items.forEach(o=>{const k=normalizarNome(o.nome);counts.set(k,(counts.get(k)||0)+1)});
+ const opcoes=items.map(o=>({...o,rotulo:(counts.get(normalizarNome(o.nome))||0)>1?o.nome+' • '+o.id.slice(0,8):o.nome}));
+ const atual=sel.value;
+ const iguais=opcoes.length===sel.options.length-1&&opcoes.every((o,i)=>sel.options[i+1]?.value===o.id&&sel.options[i+1]?.textContent===o.rotulo);
+ if(!iguais){
+   sel.replaceChildren(new Option('',''),...opcoes.map(o=>new Option(o.rotulo,o.id)));
+   if(opcoes.some(o=>o.id===atual))sel.value=atual;
+ }
+ const marca=JSON.stringify(opcoes);
+ if(lista.dataset.obrixLista!==marca){
+   lista.replaceChildren(...opcoes.map(o=>{const opt=document.createElement('option');opt.value=o.rotulo;return opt}));
+   lista.dataset.obrixLista=marca;
+ }
+ sel.__obrixBuscaOpcoes=opcoes;
+ if(sel.value&&document.activeElement!==campo){
+   const selecionada=opcoes.find(o=>o.id===sel.value);
+   if(selecionada)campo.value=selecionada.rotulo;
+ }
+ if(document.activeElement!==campo)resolverBuscaDiario();
+}
+function resolverBuscaDiario(){
+ const campo=$('relDiarioBusca'),sel=$('relDiarioObra');if(!campo||!sel)return '';
+ const q=normalizarNome(campo.value);
+ const match=q?(sel.__obrixBuscaOpcoes||[]).find(o=>normalizarNome(o.rotulo)===q):null;
+ sel.value=match?.id||'';
+ return sel.value;
+}
+function validarBuscaDiario(){
+ const campo=$('relDiarioBusca'),sel=$('relDiarioObra');
+ const texto=String(campo?.value||'').trim();
+ if(!texto)throw Error('Informe o nome da obra para gerar o diário.');
+ let oid=resolverBuscaDiario();
+ if(!oid){
+   const q=normalizarNome(texto),achadas=(sel.__obrixBuscaOpcoes||[]).filter(o=>normalizarNome(o.rotulo).includes(q));
+   if(achadas.length===1){oid=achadas[0].id;sel.value=oid;campo.value=achadas[0].rotulo}
+ }
+ if(!oid)throw Error('Escolha uma obra válida no campo de busca.');
+ return oid;
+}
 async function abrirFiltros(){
   instalar();fecharOutros();$('relDiarioFiltros')?.classList.remove('hidden');
   document.querySelectorAll('.relTipo .btn').forEach(x=>x.classList.remove('active'));$('relTipoDiario')?.classList.add('active');$('relResultado')?.classList.add('hidden');
-  const os=await OBRIX_BACKEND.readTable('obras','criado_em').catch(()=>[]),s=$('relDiarioObra');
-  s.innerHTML='<option value="">Todas as obras</option>'+os.map(o=>`<option value="${o.id}">${esc(o.nome||'Obra')}</option>`).join('');
+  const locais=Array.isArray(window.obras)?window.obras:[];
+  preencherBuscaDiario(locais);
+  try{
+    const os=await OBRIX_BACKEND.readTable('obras','criado_em');
+    if(Array.isArray(os)&&os.length)preencherBuscaDiario(os);
+  }catch(e){console.warn('Relatório Diário: obras indisponíveis',e)}
 }
 function noPeriodo(v,i,f){v=String(v||'').slice(0,10);return(!i||v>=i)&&(!f||v<=f)}
 function fotosDoDiario(d,fotos){return fotos.filter(f=>String(f.diario_id||'')===String(d.id)||(!f.diario_id&&String(f.obra_id)===String(d.obra_id)&&String(f.data_foto||'').slice(0,10)===String(d.data||'').slice(0,10)))}
@@ -50,7 +100,8 @@ async function imagemData(url){
 async function gerar(){
   const btn=$('relDiarioGerar');btn.disabled=true;btn.textContent='Gerando...';
   try{
-    const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile(),oid=$('relDiarioObra').value,ini=$('relDiarioInicio').value,fim=$('relDiarioFim').value;
+    const oid=validarBuscaDiario();
+    const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile(),ini=$('relDiarioInicio').value,fim=$('relDiarioFim').value;
     const [dr,or,fr]=await Promise.all([
       sb.from('diarios_obra').select('*').eq('empresa_id',p.empresa_id).order('data',{ascending:false}),
       sb.from('obras').select('id,nome').eq('empresa_id',p.empresa_id),
@@ -146,8 +197,8 @@ async function imprimir(){
 }
 
 const css=document.createElement('style');
-css.textContent='.relDiarioFotos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}.relDiarioFotos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px}.relDiarioAcoes{display:flex;gap:7px;flex-wrap:wrap}.relFechar{background:#64748b!important}';
+css.textContent='.relDiarioBuscaWrap{min-width:0;width:100%}.relDiarioBuscaWrap input{width:100%;min-width:0}.relDiarioBuscaWrap select.hidden{display:none!important}.relDiarioFotos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}.relDiarioFotos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px}.relDiarioAcoes{display:flex;gap:7px;flex-wrap:wrap}.relFechar{background:#64748b!important}';
 document.head.appendChild(css);
 function scan(){if($('relatoriosMain'))instalar()}
-new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});scan();
+const app=document.getElementById('app');if(app)new MutationObserver(scan).observe(app,{childList:true});scan();
 })();
