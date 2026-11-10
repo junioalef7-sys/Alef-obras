@@ -89,8 +89,8 @@
   }
 
   async function registrarFalta(id){
-    const f=acharFunc(id);if(!f)return alert('Funcionário não encontrado.');
-    const opts='<option value="">Sem obra</option>'+obrasList().map(o=>`<option value="${esc(o.id)}" ${String(o.id)===String(f.obra_id||'')?'selected':''}>${esc(o.nome||'Obra')}</option>`).join('');
+    const f=acharFunc(id);if(!f)return alert('Funcionário não encontrado.');if(f.ativo!==true)return alert('Somente funcionários ativos podem registrar faltas.');
+    const opts='<option value="">Selecione uma obra em andamento</option>'+obrasList().filter(o=>String(o.status)==='andamento').map(o=>`<option value="${esc(o.id)}" ${String(o.id)===String(f.obra_id||'')?'selected':''}>${esc(o.nome||'Obra')}</option>`).join('');
     const back=abrirModal('Registrar falta',`<p class="muted"><b>${esc(f.nome)}</b></p><label>Obra</label><select class="obra">${opts}</select><label>Data</label><input class="data" type="date" value="${hoje()}"><label>Tipo</label><select class="tipo"><option value="false">Falta injustificada</option><option value="true">Falta justificada</option></select><label>Motivo</label><input class="motivo" placeholder="Motivo da falta"><label>Observações</label><input class="obs" placeholder="Observações opcionais"><div class="modalActions"><button class="btn cancelar" type="button">Cancelar</button><button class="btn salvar" type="button">Registrar falta</button></div>`,'obrix-modelo-modal');
     back.querySelector('.cancelar').onclick=()=>back.remove();
     back.querySelector('.salvar').onclick=async()=>{
@@ -98,7 +98,17 @@
       const btn=back.querySelector('.salvar');btn.disabled=true;
       try{
         const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();
-        const {error}=await sb.from('faltas').insert({empresa_id:p.empresa_id,funcionario_id:f.id,obra_id:back.querySelector('.obra').value||null,data,justificada:back.querySelector('.tipo').value==='true',motivo:back.querySelector('.motivo').value.trim()||null,observacoes:back.querySelector('.obs').value.trim()||null});
+        if(!p?.empresa_id)throw Error('Conta não identificada.');
+        const obra_id=back.querySelector('.obra').value;
+        if(!obra_id)throw Error('Selecione uma obra em andamento.');
+        const [ro,rf]=await Promise.all([
+          sb.from('obras').select('status').eq('id',obra_id).eq('empresa_id',p.empresa_id).maybeSingle(),
+          sb.from('funcionarios').select('ativo').eq('id',f.id).eq('empresa_id',p.empresa_id).maybeSingle()
+        ]);
+        if(ro.error)throw ro.error;if(rf.error)throw rf.error;
+        if(ro.data?.status!=='andamento')throw Error('Só é permitido registrar faltas em obras em andamento.');
+        if(rf.data?.ativo!==true)throw Error('Somente funcionários ativos podem registrar faltas.');
+        const {error}=await sb.from('faltas').insert({empresa_id:p.empresa_id,funcionario_id:f.id,obra_id,data,justificada:back.querySelector('.tipo').value==='true',motivo:back.querySelector('.motivo').value.trim()||null,observacoes:back.querySelector('.obs').value.trim()||null});
         if(error)throw error;back.remove();window.dispatchEvent(new CustomEvent('obrix:equipe-registro',{detail:{table:'faltas',funcionarioId:f.id}}));alert('Falta registrada.');
       }catch(e){alert(e.message||'Não foi possível registrar a falta.')}finally{btn.disabled=false}
     };
