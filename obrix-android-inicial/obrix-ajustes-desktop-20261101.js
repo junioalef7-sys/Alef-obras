@@ -87,7 +87,20 @@ html[data-theme="light"] .accountDeleteModal .excluir:is(:hover,:focus,:active){
 }
 `;
   s.textContent+=`
-/* Rodapé agora tem painel de fundo no estilo cápsula aprovado. */
+/* Rodapé do computador: retirar apenas o painel de fundo,
+   preservando os quatro botões e toda a navegação aprovada. */
+@media (min-width:761px){
+  html:not([data-obrix-offline-v3="1"]) body #app > .bottom:not(#obrixOfflineV3Bottom){
+    background:transparent!important;
+    background-color:transparent!important;
+    background-image:none!important;
+    border-top:0!important;
+    border-bottom:0!important;
+    box-shadow:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+}
 @media (min-width:621px){
   #app button[aria-label="Voltar"],#app a[aria-label="Voltar"],
   #app #obrixHeaderVoltar,.obrixSetaVoltar{transition:none!important;animation:none!important}
