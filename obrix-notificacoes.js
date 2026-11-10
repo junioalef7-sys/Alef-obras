@@ -16,7 +16,7 @@ function ensure(){
   if(bell&&!bell.isConnected)bell=null;
   if(overlay&&!overlay.isConnected)overlay=null;
   if(!bell){
-    let actions=top.querySelector('.obrixTopActions');if(!actions){actions=document.createElement('div');actions.className='obrixTopActions';if(sair){top.insertBefore(actions,sair);actions.appendChild(sair)}else top.appendChild(actions)}
+    let actions=top.querySelector('.obrixTopActions');if(!actions){actions=document.createElement('div');actions.className='obrixTopActions';if(sair&&sair.parentNode===top){top.insertBefore(actions,sair);actions.appendChild(sair)}else top.appendChild(actions)}
     bell=document.createElement('button');bell.type='button';bell.id='obrixNotifBell';bell.className='obrixNotifBell';bell.setAttribute('aria-label','Notificações');bell.innerHTML='<span class="obrixBellIcon">🔔</span><b id="obrixNotifCount" class="hidden">0</b>';bell.onclick=open;actions.insertBefore(bell,sair?.parentNode===actions?sair:null);
   }
   if(!overlay){
