@@ -12,7 +12,7 @@
     const back=document.createElement('div');
     back.className='modalBack obrix-hist-pag-back';
     back.innerHTML=`<div class="modal obrix-hist-pag-modal">
-      <div class="obrix-hist-pag-head"><div><h2>Histórico de pagamentos</h2><p>Pagamentos realizados da equipe e opção de estorno.</p></div><button type="button" class="obrix-hist-pag-x" aria-label="Fechar">×</button></div>
+      <div class="obrix-hist-pag-head"><div><h2>Histórico de pagamentos</h2><p>Pagamentos realizados e estornados da equipe.</p></div><button type="button" class="obrix-hist-pag-x" aria-label="Fechar">×</button></div>
       <div class="obrix-hist-pag-resumo" id="obrixHistPagResumo"></div>
       <div class="obrix-hist-pag-lista" id="obrixHistPagLista"><div class="muted">Carregando pagamentos...</div></div>
     </div>`;
@@ -51,7 +51,7 @@
           <div class="liq"><small>Líquido pago</small><b>${money(p.valor_liquido)}</b></div>
           <div class="acum"><small>Total pago acumulado</small><b>${money(acumulado)}</b></div>
         </div>
-        ${est?`<div class="obrix-hist-pag-estorno-info"><b>Estornado em ${dataBR(p.estornado_em)}</b>${p.motivo_estorno?`<span>Motivo: ${esc(p.motivo_estorno)}</span>`:''}</div>`:`<div class="obrix-hist-pag-actions"><button type="button" class="obrix-hist-pag-estornar" data-estornar-pag="${esc(p.id)}">Estornar pagamento</button></div>`}
+        ${est?`<div class="obrix-hist-pag-estorno-info"><b>Estornado em ${dataBR(p.estornado_em)}</b>${p.motivo_estorno?`<span>Motivo: ${esc(p.motivo_estorno)}</span>`:''}</div>`:''}
       </article>`;
     }).join('');
     lista.querySelectorAll('[data-estornar-pag]').forEach(b=>b.onclick=()=>estornar(back,base,b.dataset.estornarPag,b));
