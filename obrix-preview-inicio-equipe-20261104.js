@@ -779,8 +779,12 @@ async function cliqueEquipe(e){
       if(error)throw error;
       if(!data?.length)throw Error('A alteração não foi confirmada.');
       f.ativo=data[0].ativo;
+      window.dispatchEvent(new Event('obrix:funcionario-status'));
       renderEquipe();
-      void window.OBRIX_EQUIPE?.refresh?.().catch?.(err=>console.warn('Atualização após status:',err));
+      try{
+        const atualizacao=window.OBRIX_EQUIPE?.refresh?.();
+        if(atualizacao&&typeof atualizacao.catch==='function')atualizacao.catch(err=>console.warn('Atualização após status:',err));
+      }catch(err){console.warn('Atualização após status:',err)}
     }catch(err){
       if(window.OBRIX_AVISO)await window.OBRIX_AVISO(err.message||'Falha ao alterar funcionário.','Equipe');
       else alert(err.message||'Falha ao alterar funcionário.');
