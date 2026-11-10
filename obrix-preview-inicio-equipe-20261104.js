@@ -486,7 +486,10 @@ function renderEquipe(){
   if(btnGerenciar.getAttribute('aria-expanded')!==String(gerenciarAberto))btnGerenciar.setAttribute('aria-expanded',String(gerenciarAberto));
   const funcionariosHtml=filtrados.length?filtrados.map(f=>{
     const ficha='<button type="button" class="obp-person" data-team-id="'+esc(f.id)+'"><span class="obp-avatar">♟</span><span class="obp-person-text"><strong>'+esc(f.nome||'Funcionário')+'</strong><small>'+esc(f.cargo||f.funcao||'Função não informada')+'</small></span><span class="obp-chevron">›</span></button>';
-    return modoExclusaoLista?'<div class="obp-excluir-linha">'+ficha+'<button type="button" class="obp-excluir-da-lista" data-team-delete="'+esc(f.id)+'">Excluir</button></div>':modoAtivacaoLista?'<div class="obp-excluir-linha">'+ficha+'<button type="button" class="obp-estado-da-lista" data-team-toggle="'+esc(f.id)+'">'+(f.ativo===false?'Ativar':'Desativar')+'</button></div>':ficha;
+    // Ativar/Desativar permanece na própria lista, sem exigir Gerenciar.
+    const toggle='<button type="button" class="obp-estado-da-lista" data-team-toggle="'+esc(f.id)+'" aria-label="'+(f.ativo===false?'Ativar':'Desativar')+' '+esc(f.nome||'funcionário')+'">'+(f.ativo===false?'Ativar':'Desativar')+'</button>';
+    const excluir=modoExclusaoLista?'<button type="button" class="obp-excluir-da-lista" data-team-delete="'+esc(f.id)+'">Excluir</button>':'';
+    return '<div class="obp-excluir-linha">'+ficha+toggle+excluir+'</div>';
   }).join(''):'<div class="obp-empty">Nenhum funcionário encontrado.</div>';
   const listaFuncionarios=$('obpFuncionarios');
   if(listaFuncionarios.__obpUltimoHtml!==funcionariosHtml){listaFuncionarios.innerHTML=funcionariosHtml;listaFuncionarios.__obpUltimoHtml=funcionariosHtml}
