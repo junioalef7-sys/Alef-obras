@@ -75,8 +75,8 @@
     montarTopo();
     const box=document.getElementById('listaEquipe');if(!box)return;
     const fs=funcs().filter(f=>filtro==='todos'||(filtro==='ativos'&&f.ativo!==false)||(filtro==='inativos'&&f.ativo===false));
-    box.innerHTML=fs.length?fs.map(cardHtml).join(''):'<div class="card muted">Nenhum funcionário encontrado.</div>';
-    box.querySelectorAll('[data-acao]').forEach(btn=>btn.onclick=()=>acao(btn.dataset.id,btn.dataset.acao));
+    const markup=fs.length?fs.map(cardHtml).join(''):'<div class="card muted">Nenhum funcionário encontrado.</div>';
+    if(box.__obrixTeamMarkup!==markup||!box.childElementCount){box.innerHTML=markup;box.__obrixTeamMarkup=markup;box.querySelectorAll('[data-acao]').forEach(btn=>btn.onclick=()=>acao(btn.dataset.id,btn.dataset.acao))}
   }
 
   function abrirModal(titulo,conteudo,classe=''){
