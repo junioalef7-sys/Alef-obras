@@ -93,6 +93,28 @@
     const opts='<option value="">Selecione uma obra em andamento</option>'+obrasList().filter(o=>String(o.status)==='andamento').map(o=>`<option value="${esc(o.id)}" ${String(o.id)===String(f.obra_id||'')?'selected':''}>${esc(o.nome||'Obra')}</option>`).join('');
     const back=abrirModal('Registrar falta',`<p class="muted"><b>${esc(f.nome)}</b></p><label>Obra</label><select class="obra">${opts}</select><label>Data</label><input class="data" type="date" value="${hoje()}"><label>Tipo</label><select class="tipo"><option value="false">Falta injustificada</option><option value="true">Falta justificada</option></select><label>Motivo</label><input class="motivo" placeholder="Motivo da falta"><label>Observações</label><input class="obs" placeholder="Observações opcionais"><div class="modalActions"><button class="btn cancelar" type="button">Cancelar</button><button class="btn salvar" type="button">Registrar falta</button></div>`,'obrix-modelo-modal');
     back.querySelector('.cancelar').onclick=()=>back.remove();
+    // Usar as obras já carregadas imediatamente, mas atualizar o seletor
+    // quando o desktop estiver com o cache incompleto.
+    void (async()=>{
+      try{
+        const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();
+        if(!p?.empresa_id||!back.isConnected)return;
+        const r=await sb.from('obras').select('id,nome,status').eq('empresa_id',p.empresa_id).eq('status','andamento').order('nome');
+        if(r.error)throw r.error;
+        const sel=back.querySelector('select.obra');
+        if(!sel?.isConnected)return;
+        const itens=[{id:'',nome:'Selecione uma obra em andamento'},...(r.data||[]).map(o=>({id:String(o.id),nome:String(o.nome||'Obra')}))];
+        const aplicar=()=>{
+          if(!sel.isConnected)return;
+          const escolhido=sel.value;
+          const iguais=itens.length===sel.options.length&&itens.every((o,i)=>sel.options[i]?.value===o.id&&sel.options[i]?.text===o.nome);
+          if(!iguais)sel.replaceChildren(...itens.map(o=>new Option(o.nome,o.id)));
+          if(itens.some(o=>o.id===escolhido))sel.value=escolhido;
+        };
+        if(document.activeElement===sel&&sel.options.length>1)sel.addEventListener('blur',aplicar,{once:true});
+        else aplicar();
+      }catch(e){console.warn('Obras disponíveis para falta:',e)}
+    })();
     back.querySelector('.salvar').onclick=async()=>{
       const data=back.querySelector('.data').value;if(!data)return alert('Informe a data da falta.');
       const btn=back.querySelector('.salvar');btn.disabled=true;
