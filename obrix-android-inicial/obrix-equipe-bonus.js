@@ -29,6 +29,7 @@ async function carregarChecklist(select,obraId){
 }
 
 async function abrirBonus(f){
+  if(f?.ativo!==true)throw Error('Somente funcionários ativos podem receber bônus e extras.');
   const obras=await OBRIX_BACKEND.readTable('obras','criado_em');
   const b=document.createElement('div');
   b.className='modalBack';
@@ -56,7 +57,7 @@ async function abrirBonus(f){
   b.querySelector('strong').textContent=f.nome||'Funcionário';
   b.querySelector('.data').value=hoje();
   const obra=b.querySelector('.obra'),modo=b.querySelector('.modo'),wrap=b.querySelector('.checkWrap'),check=b.querySelector('.check');
-  (obras||[]).filter(o=>o.status!=='concluida').forEach(o=>{
+  (obras||[]).filter(o=>o.status==='andamento').forEach(o=>{
     const x=document.createElement('option');
     x.value=o.id;
     x.textContent=o.nome||'Obra';
@@ -78,6 +79,13 @@ async function abrirBonus(f){
     if(com&&!checklist_id)return alert('Selecione o checklist / etapa.');
     try{
       const {sb,eid}=await contexto();
+      const [ro,rf]=await Promise.all([
+        sb.from('obras').select('status').eq('empresa_id',eid).eq('id',obra_id).maybeSingle(),
+        sb.from('funcionarios').select('ativo').eq('empresa_id',eid).eq('id',f.id).maybeSingle()
+      ]);
+      if(ro.error)throw ro.error;if(rf.error)throw rf.error;
+      if(ro.data?.status!=='andamento')throw Error('Só são permitidos bônus em obras em andamento.');
+      if(rf.data?.ativo!==true)throw Error('Somente funcionários ativos podem receber bônus e extras.');
       const r=await sb.from('bonus_extras').insert({empresa_id:eid,funcionario_id:f.id,obra_id,checklist_id,tipo:b.querySelector('.tipo').value,descricao:b.querySelector('.desc').value.trim()||'Bônus/Extra',valor,data,pago:false});
       if(r.error)throw r.error;
       b.remove();
