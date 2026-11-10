@@ -11,14 +11,15 @@ function ensure(){
   m.innerHTML=`<div class="hero"><h1>Relatórios</h1></div>
   <div class="relTipo"><button class="btn active" id="relTipoFinanceiro">Financeiro</button><button class="btn" id="relTipoEquipe">Equipe / Trabalhador</button></div>
   <div class="card relFiltros" id="relFinFiltros"><h3>Relatório Financeiro</h3><div class="relGrid"><div class="relObraBuscaWrap"><input type="search" id="relObraBusca" list="relObraSugestoes" placeholder="Buscar obra pelo nome..." aria-label="Buscar obra pelo nome" autocomplete="off"><datalist id="relObraSugestoes"></datalist><select id="relObra" class="hidden" aria-hidden="true" tabindex="-1"><option value=""></option></select></div><input id="relInicio" type="date"><input id="relFim" type="date"><button class="btn" id="relGerar">Gerar relatório</button></div></div>
-  <div class="card relFiltros hidden" id="relEqFiltros"><h3>Relatório da Equipe / Trabalhador</h3><div class="relGrid"><select id="relFuncionario"><option value="">Toda a equipe</option></select><input id="relEqInicio" type="date"><input id="relEqFim" type="date"><button class="btn" id="relEqGerar">Gerar relatório</button></div></div>
+  <div class="card relFiltros hidden" id="relEqFiltros"><h3>Relatório da Equipe / Trabalhador</h3><div class="relGrid"><div class="relFuncionarioBuscaWrap"><input type="search" id="relFuncionarioBusca" list="relFuncionarioSugestoes" placeholder="Buscar funcionário pelo nome..." aria-label="Buscar funcionário pelo nome" autocomplete="off"><datalist id="relFuncionarioSugestoes"></datalist><select id="relFuncionario" class="hidden" aria-hidden="true" tabindex="-1"><option value=""></option></select></div><input id="relEqInicio" type="date"><input id="relEqFim" type="date"><button class="btn" id="relEqGerar">Gerar relatório</button></div></div>
   <div id="relResultado" class="hidden"></div>`;
   app.insertBefore(m,bottom);
   $('relTipoFinanceiro').onclick=()=>trocar('financeiro');$('relTipoEquipe').onclick=()=>trocar('equipe');$('relGerar').onclick=gerarFinanceiro;$('relEqGerar').onclick=gerarEquipe;
   const campo=$('relObraBusca');if(campo){campo.addEventListener('input',resolverBuscaObra);campo.addEventListener('change',resolverBuscaObra)}
+  const buscaEquipe=$('relFuncionarioBusca');if(buscaEquipe){buscaEquipe.addEventListener('input',resolverBuscaFuncionario);buscaEquipe.addEventListener('change',resolverBuscaFuncionario)}
 }
 function esconderOutros(){['inicio','obras','equipe','financeiroMain','estoqueMain','assinaturaMain','menuMain'].forEach(id=>$(id)?.classList.add('hidden'));document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'))}
-function trocar(novo){modo=novo;$('relFinFiltros')?.classList.toggle('hidden',novo!=='financeiro');$('relEqFiltros')?.classList.toggle('hidden',novo!=='equipe');$('relTipoFinanceiro')?.classList.toggle('active',novo==='financeiro');$('relTipoEquipe')?.classList.toggle('active',novo==='equipe');$('relResultado')?.classList.add('hidden');dadosAtuais=null}
+function trocar(novo){modo=novo;$('relFinFiltros')?.classList.toggle('hidden',novo!=='financeiro');$('relEqFiltros')?.classList.toggle('hidden',novo!=='equipe');$('relDiarioFiltros')?.classList.add('hidden');$('relTipoFinanceiro')?.classList.toggle('active',novo==='financeiro');$('relTipoEquipe')?.classList.toggle('active',novo==='equipe');$('relTipoDiario')?.classList.remove('active');$('relResultado')?.classList.add('hidden');dadosAtuais=null}
 function preencherSelectRelatorio(id,lista){
  const sel=$(id);if(!sel)return;
  const rows=lista.map(x=>({id:String(x.id||''),nome:String(x.nome||'')}));
@@ -80,11 +81,51 @@ function validarBuscaObra(){
  if(!id)throw Error('Selecione uma obra válida na busca pelo nome.');
  return id;
 }
+function atualizarSugestoesFuncionario(){
+ const sel=$('relFuncionario'),campo=$('relFuncionarioBusca'),lista=$('relFuncionarioSugestoes');
+ if(!sel||!campo||!lista)return;
+ const todos=[...sel.options].filter(o=>o.value).map(o=>({id:o.value,nome:o.textContent}));
+ const counts=new Map();
+ todos.forEach(o=>{const key=normalizarBuscaObra(o.nome);counts.set(key,(counts.get(key)||0)+1)});
+ const opcoes=todos.map(o=>({...o,rotulo:(counts.get(normalizarBuscaObra(o.nome))||0)>1?o.nome+' • '+o.id.slice(0,8):o.nome}));
+ const marca=JSON.stringify(opcoes);
+ if(lista.dataset.obrixLista!==marca){
+   lista.replaceChildren(...opcoes.map(o=>{const opt=document.createElement('option');opt.value=o.rotulo;return opt}));
+   lista.dataset.obrixLista=marca;
+ }
+ sel.__obrixBuscaOpcoes=opcoes;
+ if(sel.value&&document.activeElement!==campo){
+   const atual=opcoes.find(o=>o.id===sel.value);
+   if(atual&&campo.value!==atual.rotulo)campo.value=atual.rotulo;
+ }
+ if(document.activeElement!==campo)resolverBuscaFuncionario();
+}
+function resolverBuscaFuncionario(){
+ const campo=$('relFuncionarioBusca'),sel=$('relFuncionario');if(!campo||!sel)return '';
+ const q=normalizarBuscaObra(campo.value);
+ const match=q?(sel.__obrixBuscaOpcoes||[]).find(o=>normalizarBuscaObra(o.rotulo)===q):null;
+ sel.value=match?.id||'';
+ return sel.value;
+}
+function validarBuscaFuncionario(){
+ const campo=$('relFuncionarioBusca'),sel=$('relFuncionario');
+ const text=String(campo?.value||'').trim();
+ if(!text)return '';
+ let id=resolverBuscaFuncionario();
+ if(!id){
+   const q=normalizarBuscaObra(text);
+   const candidatos=(sel.__obrixBuscaOpcoes||[]).filter(o=>normalizarBuscaObra(o.rotulo).includes(q));
+   if(candidatos.length===1){id=candidatos[0].id;sel.value=id;campo.value=candidatos[0].rotulo}
+ }
+ if(!id)throw Error('Escolha um funcionário na busca pelo nome ou deixe o campo vazio para toda a equipe.');
+ return id;
+}
 async function carregarFiltros(){
  const montar=(os,fs)=>{
    preencherSelectRelatorio('relObra',[{id:'',nome:''},...os.map(o=>({id:o.id,nome:o.nome||'Obra'}))]);
    atualizarSugestoesObra();
-   preencherSelectRelatorio('relFuncionario',[{id:'',nome:'Toda a equipe'},...fs.map(f=>({id:f.id,nome:(f.nome||'Funcionário')+(f.cargo?' — '+f.cargo:'')}))]);
+   preencherSelectRelatorio('relFuncionario',[{id:'',nome:''},...fs.map(f=>({id:f.id,nome:(f.nome||'Funcionário')+(f.cargo?' — '+f.cargo:'')}))]);
+   atualizarSugestoesFuncionario();
  };
  montar(Array.isArray(window.obras)?window.obras:[],Array.isArray(window.funcionarios)?window.funcionarios:[]);
  if(!navigator.onLine)return;
@@ -120,6 +161,7 @@ async function gerarFinanceiro(){
 async function gerarEquipe(){
   const btn=$('relEqGerar');if(btn){btn.disabled=true;btn.textContent='Gerando...'}
   try{
+    const funcionarioSelecionado=validarBuscaFuncionario();
     const p=await OBRIX_BACKEND.profile(),sb=await OBRIX_BACKEND.init(),eid=p.empresa_id;
     const [fr,dr,vr,br,pr,or]=await Promise.all([
       sb.from('funcionarios').select('*').eq('empresa_id',eid),
@@ -130,7 +172,7 @@ async function gerarEquipe(){
       sb.from('obras').select('*').eq('empresa_id',eid)
     ]);
     const erro=[fr,dr,vr,br,pr,or].find(r=>r.error);if(erro)throw erro.error;
-    const funcs=fr.data||[],obras=or.data||[],funcId=$('relFuncionario').value,inicio=$('relEqInicio').value,fim=$('relEqFim').value,ids=new Set(funcs.filter(f=>!funcId||String(f.id)===String(funcId)).map(f=>String(f.id)));
+    const funcs=fr.data||[],obras=or.data||[],funcId=funcionarioSelecionado,inicio=$('relEqInicio').value,fim=$('relEqFim').value,ids=new Set(funcs.filter(f=>!funcId||String(f.id)===String(funcId)).map(f=>String(f.id)));
     const ds=(dr.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&noPeriodo(x.data,inicio,fim));
     const vs=(vr.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&noPeriodo(x.data,inicio,fim));
     const bs=(br.data||[]).filter(x=>ids.has(String(x.funcionario_id))&&noPeriodo(x.data,inicio,fim));
@@ -159,7 +201,7 @@ function imprimirAtual(){
   abrirImpressao(`<!doctype html><html><head><meta charset="utf-8"><title>Relatório da Equipe OBRIX</title>${cssPrint()}</head><body><h1>OBRIX — Relatório da Equipe / Trabalhador</h1><div class="meta">${esc(d.nome)} • ${esc(periodoTexto(d.inicio,d.fim))}</div><div class="resumo"><div class="box"><small>Diárias</small><b>${d.qtdDiarias.toLocaleString('pt-BR')} • ${money(d.valorDiarias)}</b></div><div class="box"><small>Vales</small><b>${money(d.vales)}</b></div><div class="box"><small>Bônus e Extras</small><b>${money(d.bonus)}</b></div><div class="box"><small>Total pago</small><b>${money(d.totalPago)}</b></div><div class="box"><small>Líquido em aberto</small><b>${money(d.liquidoAberto)}</b></div></div><h2>Movimentações</h2><table><thead><tr><th>Data</th><th>Funcionário</th><th>Obra</th><th>Tipo</th><th>Descrição</th><th>Status</th><th>Valor</th></tr></thead><tbody>${mov||'<tr><td colspan="7">Nenhuma movimentação.</td></tr>'}</tbody></table><h2>Pagamentos realizados</h2><table><thead><tr><th>Data</th><th>Funcionário</th><th>Bruto</th><th>Vales</th><th>Líquido pago</th></tr></thead><tbody>${pags||'<tr><td colspan="5">Nenhum pagamento.</td></tr>'}</tbody></table><script>window.onload=()=>setTimeout(()=>window.print(),150);<\/script></body></html>`);
 }
 function cssPrint(){return `<style>body{font-family:Arial,sans-serif;color:#111;padding:28px}h1{margin:0 0 4px}h2{font-size:16px;margin-top:22px}.meta{color:#555;margin-bottom:22px}.resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.box{border:1px solid #ccc;border-radius:8px;padding:10px}.box small{display:block;color:#666}.box b{display:block;margin-top:5px}table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:18px}th,td{border-bottom:1px solid #ddd;padding:7px;text-align:left}th{background:#f3f4f6}@media print{body{padding:0}}@page{size:A4;margin:12mm}</style>`}
-const css=document.createElement('style');css.textContent='.relTipo{display:flex;gap:8px;margin-bottom:12px}.relTipo .btn{background:#e2e8f0;color:#0f172a}.relTipo .btn.active{background:#0f172a;color:#fff}.relFiltros h3{margin-top:0}.relGrid{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center}.relGrid select,.relGrid input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:transparent;color:inherit}.relObraBuscaWrap{min-width:0;width:100%}.relObraBuscaWrap input{width:100%;min-width:0}.relObraBuscaWrap select.hidden{display:none!important}.relKpis{margin-top:14px}.relKpis .kpi span{display:block;margin-top:5px;font-size:13px;font-weight:700;color:#64748b}@media(max-width:760px){.relGrid{grid-template-columns:1fr 1fr}.relGrid select,.relGrid .btn{grid-column:1/-1}}@media(max-width:480px){.relTipo{display:grid;grid-template-columns:1fr}.relGrid{grid-template-columns:1fr}.relGrid select,.relGrid .btn{grid-column:auto}}';document.head.appendChild(css);
+const css=document.createElement('style');css.textContent='.relTipo{display:flex;gap:8px;margin-bottom:12px}.relTipo .btn{background:#e2e8f0;color:#0f172a}.relTipo .btn.active{background:#0f172a;color:#fff}.relFiltros h3{margin-top:0}.relGrid{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center}.relGrid select,.relGrid input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:transparent;color:inherit}.relObraBuscaWrap,.relFuncionarioBuscaWrap{min-width:0;width:100%}.relObraBuscaWrap input,.relFuncionarioBuscaWrap input{width:100%;min-width:0}.relObraBuscaWrap select.hidden,.relFuncionarioBuscaWrap select.hidden{display:none!important}.relKpis{margin-top:14px}.relKpis .kpi span{display:block;margin-top:5px;font-size:13px;font-weight:700;color:#64748b}@media(max-width:760px){.relGrid{grid-template-columns:1fr 1fr}.relGrid select,.relGrid .btn{grid-column:1/-1}}@media(max-width:480px){.relTipo{display:grid;grid-template-columns:1fr}.relGrid{grid-template-columns:1fr}.relGrid select,.relGrid .btn{grid-column:auto}}';document.head.appendChild(css);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(ensure,150));else setTimeout(ensure,150);
 window.OBRIX_RELATORIOS={open,gerar:gerarFinanceiro,gerarEquipe,imprimir:imprimirAtual};
 })();
