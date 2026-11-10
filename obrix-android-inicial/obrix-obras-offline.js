@@ -17,10 +17,37 @@ function allowed(data={}){return{nome:String(data.nome||'').trim(),cliente:Strin
 function writeQueue(v){write(QUEUE_KEY,Array.isArray(v)?v:[]);renderStatus();window.dispatchEvent(new CustomEvent('obrix:obras-offline-atualizado'))}
 function merge(rows=cache()){const map=new Map((Array.isArray(rows)?rows:[]).map(x=>[String(x.id),{...x}]));mine().forEach(op=>{const x=map.get(String(op.id));if(x)map.set(String(op.id),{...x,...op.payload,__offline:true,__conflict:!!op.conflict})});return [...map.values()]}
 function updateBase(rows){const b=read(BASE_KEY,null);if(!b?.profile?.empresa_id)return;write(BASE_KEY,{...b,obras:Array.isArray(rows)?rows:[],updatedAt:new Date().toISOString()})}
-function publishRows(rows){const next=Array.isArray(rows)?rows:[];try{if(typeof obras!=='undefined'&&Array.isArray(obras)){obras.splice(0,obras.length,...next);window.obras=obras}else window.obras=next}catch{window.obras=next}updateBase(next);try{typeof publicarGlobais==='function'&&publicarGlobais()}catch{}try{typeof atualizarInicio==='function'&&atualizarInicio()}catch{}try{window.OBRIX_OBRAS?.render?.()}catch{}try{window.OBRIX_DASH?.sync?.()}catch{}}
+function publishRows(rows){
+  const next=Array.isArray(rows)?rows:[];
+  // Duas fontes de sincronização não devem remontar toda a tela
+  // quando o servidor devolve os mesmos registros.
+  const atual=Array.isArray(window.obras)?window.obras:[];
+  if(JSON.stringify(atual)===JSON.stringify(next))return false;
+  try{if(typeof obras!=='undefined'&&Array.isArray(obras)){obras.splice(0,obras.length,...next);window.obras=obras}else window.obras=next}catch{window.obras=next}updateBase(next);try{typeof publicarGlobais==='function'&&publicarGlobais()}catch{}try{typeof atualizarInicio==='function'&&atualizarInicio()}catch{}try{window.OBRIX_OBRAS?.render?.()}catch{}try{window.OBRIX_DASH?.sync?.()}catch{}}
 function applyLocal(){publishRows(merge(cache().length?cache():(window.obras||[])))}
 function saveEdit(id,data){const e=empresa(),base=baseRow(id);if(!e)throw new Error('Abra o OBRIX conectado pelo menos uma vez antes de usar Obras offline.');if(!id||!base)throw new Error('Obra não encontrada no aparelho.');const payload=allowed(data);if(!payload.nome)throw new Error('Informe o nome da obra.');const old=mine().find(x=>String(x.id)===String(id)),all=queue().filter(x=>!(String(x.empresa_id||'')===String(e)&&String(x.id)===String(id)));all.push({id,empresa_id:e,payload,base_atualizado_em:old?.base_atualizado_em??base?.atualizado_em??null,at:new Date().toISOString(),conflict:!!old?.conflict,conflict_remote_at:old?.conflict_remote_at||null,conflict_message:old?.conflict_message||''});writeQueue(all);applyLocal();schedule(1000);return true}
-async function refresh(){if(!navigator.onLine||!window.OBRIX_BACKEND)return false;const e=empresa();if(!e)return false;try{const sb=await OBRIX_BACKEND.init(),r=await sb.from('obras').select('*').eq('empresa_id',e).order('criado_em',{ascending:true});if(r.error)throw r.error;saveCache(r.data||[]);publishRows(merge(r.data||[]));lastError='';return true}catch(err){lastError=err?.message||'Falha ao atualizar obras.';renderStatus();return false}}
+let refreshPendente=null;
+async function refresh(){
+  if(refreshPendente)return refreshPendente;
+  if(!navigator.onLine||!window.OBRIX_BACKEND)return false;
+  const e=empresa();if(!e)return false;
+  refreshPendente=(async()=>{
+    try{
+      const sb=await OBRIX_BACKEND.init();
+      const r=await sb.from('obras').select('*').eq('empresa_id',e).order('criado_em',{ascending:false});
+      if(r.error)throw r.error;
+      if(empresa()!==e)return false;
+      saveCache(r.data||[]);
+      publishRows(merge(r.data||[]));
+      lastError='';
+      return true;
+    }catch(err){
+      lastError=err?.message||'Falha ao atualizar obras.';
+      renderStatus();return false;
+    }
+  })();
+  try{return await refreshPendente}finally{refreshPendente=null}
+}
 async function remoteVersion(sb,e,id){const r=await sb.from('obras').select('id,atualizado_em').eq('id',id).eq('empresa_id',e).maybeSingle();if(r.error)throw r.error;return r.data||null}
 function markConflict(op,msg,remoteAt){return{...op,conflict:true,conflict_message:msg,conflict_remote_at:remoteAt||null}}
 async function sync(){if(syncing||!navigator.onLine||!window.OBRIX_BACKEND)return false;const e=empresa();if(!e)return false;const all=queue(),ops=all.filter(x=>String(x.empresa_id||'')===String(e)),others=all.filter(x=>String(x.empresa_id||'')!==String(e));if(!ops.length){lastError='';renderStatus();return true}syncing=true;lastError='';renderStatus();const failed=[];try{const sb=await OBRIX_BACKEND.init();for(const original of ops){let op={...original};try{const remote=await remoteVersion(sb,e,op.id),baseAt=op.base_atualizado_em;if(!remote){op=markConflict(op,'Conflito: esta obra não existe mais no servidor.',null);failed.push(op);lastError='Há conflito em Obras. A alteração do aparelho foi preservada.';continue}if(!baseAt||time(remote.atualizado_em)>time(baseAt)){op=markConflict(op,'Conflito: esta obra foi alterada em outro dispositivo depois da versão salva neste aparelho.',remote.atualizado_em);failed.push(op);lastError='Há conflito em Obras. Os dados do aparelho foram preservados sem sobrescrever o servidor.';continue}const payload=allowed(op.payload);const r=await sb.from('obras').update(payload).eq('id',op.id).eq('empresa_id',e).select('id');if(r.error)throw r.error;if(!r.data?.length)throw new Error('A atualização da obra não foi confirmada pelo servidor.')}catch(err){if(!failed.includes(op))failed.push(op);if(!op.conflict)lastError=err?.message||'Falha ao sincronizar obra.'}}writeQueue([...others,...failed]);if(!failed.length)await refresh();else applyLocal();window.dispatchEvent(new CustomEvent('obrix:obras-sincronizadas',{detail:{pendentes:failed.length,conflitos:failed.filter(x=>x.conflict).length,ok:!failed.length}}));return !failed.length}catch(err){lastError=err?.message||'Falha ao sincronizar obras.';return false}finally{syncing=false;renderStatus();if(mine().length&&!conflicts().length)schedule(15000)}}
