@@ -25,10 +25,11 @@
     const main=document.createElement('main');
     main.id='financeiroMain';main.className='hidden';
     main.innerHTML=`<div class="hero"><h1>Financeiro</h1><p>Receitas, despesas e resultado das obras</p></div>
-      <div class="kpis"><div class="kpi"><small>Contrato atualizado</small><strong id="fmContrato">R$ 0,00</strong></div><div class="kpi"><small>Recebido</small><strong id="fmRecebido">R$ 0,00</strong></div><div class="kpi"><small>Despesas</small><strong id="fmDespesas">R$ 0,00</strong></div><div class="kpi"><small>Resultado da obra</small><strong id="fmResultado">R$ 0,00</strong></div></div>
+      <div class="kpis fmKpisEssenciais"><div class="kpi"><small>Contrato atualizado</small><strong id="fmContrato">R$ 0,00</strong></div><div class="kpi"><small>Resultado da obra</small><strong id="fmResultado">R$ 0,00</strong></div></div><span id="fmRecebido" hidden aria-hidden="true"></span><span id="fmDespesas" hidden aria-hidden="true"></span>
       <div class="sectionHead"><strong>Lançamentos</strong><div><button class="btn" id="fmReceita">+ Receita</button> <button class="btn" id="fmDespesa">+ Despesa</button></div></div>
       <div class="fmTotaisAcoes" role="group" aria-label="Totais do financeiro"><button type="button" id="fmTotalReceitasBtn" aria-pressed="false">Total de receitas <strong id="fmTotalReceitasVal">R$ 0,00</strong></button><button type="button" id="fmTotalDespesasBtn" aria-pressed="false">Total de despesas <strong id="fmTotalDespesasVal">R$ 0,00</strong></button></div><div id="fmForm" class="card form hidden"></div><div id="fmLista"></div>`;
     const equipe=$('equipe');equipe.parentNode.insertBefore(main,equipe.nextSibling);
+    const style=document.getElementById('obrixFinanceiroResumo2Colunas')||document.createElement('style');style.id='obrixFinanceiroResumo2Colunas';style.textContent='#financeiroMain .fmKpisEssenciais{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}';if(!style.isConnected)document.head.appendChild(style);
     $('fmReceita').onclick=()=>form('receita');
     $('fmDespesa').onclick=()=>form('despesa');
     for(const [tipo,id] of [['receita','fmTotalReceitasBtn'],['despesa','fmTotalDespesasBtn']])$(id).onclick=()=>{filtroTotais=filtroTotais===tipo?'todos':tipo;aplicarFiltroTotais()};
