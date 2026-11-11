@@ -52,11 +52,10 @@ function atualizarSugestoesObra(){
   const opcoes=items.map(o=>({...o,rotulo:(nomes.get(normalizarBuscaObra(o.nome))||0)>1?o.nome+' • '+o.id.slice(0,8):o.nome}));
   const marca=JSON.stringify(opcoes);
   if(lista.dataset.obrixLista!==marca){
-    lista.replaceChildren(new Option('Toda a equipe'),...opcoes.map(o=>{const opt=document.createElement('option');opt.value=o.rotulo;return opt}));
+    lista.replaceChildren(...opcoes.map(o=>{const opt=document.createElement('option');opt.value=o.rotulo;return opt}));
     lista.dataset.obrixLista=marca;
   }
   sel.__obrixBuscaOpcoes=opcoes;
-  if(!sel.value&&document.activeElement!==campo&&!campo.value)campo.value='Toda a equipe';
   if(sel.value&&document.activeElement!==campo){
     const atual=opcoes.find(o=>o.id===sel.value);
     if(atual&&campo.value!==atual.rotulo)campo.value=atual.rotulo;
@@ -124,7 +123,7 @@ function atualizarSugestoesFuncionario(){
  const opcoes=todos.map(o=>({...o,rotulo:(counts.get(normalizarBuscaObra(o.nome))||0)>1?o.nome+' • '+o.id.slice(0,8):o.nome}));
  const marca=JSON.stringify(opcoes);
  if(lista.dataset.obrixLista!==marca){
-   lista.replaceChildren(...opcoes.map(o=>{const opt=document.createElement('option');opt.value=o.rotulo;return opt}));
+   lista.replaceChildren(new Option('Toda a equipe'),...opcoes.map(o=>{const opt=document.createElement('option');opt.value=o.rotulo;return opt}));
    lista.dataset.obrixLista=marca;
  }
  sel.__obrixBuscaOpcoes=opcoes;
