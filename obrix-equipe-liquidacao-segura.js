@@ -95,11 +95,11 @@ async function garantirValesFinanceiros(sb,eid,funcionario,vs){
 async function registrar({funcionarioId,data,obraPagamentoId,esperado}={}){
  const id=str(funcionarioId);
  if(emProcessamento.has(id))throw Error('Este funcionário já possui pagamento em andamento.');
- emProcessamento.add(id);let pid=null;
+ emProcessamento.add(id);let pid=null,sb=null;
  try{
    if(!navigator.onLine)throw Error('Conecte-se à internet para pagar com segurança.');
    if(!data||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(data))throw Error('Informe uma data de pagamento válida.');
-   const sb=await OBRIX_BACKEND.init(),perfil=await OBRIX_BACKEND.profile(),eid=perfil?.empresa_id;
+   sb=await OBRIX_BACKEND.init();const perfil=await OBRIX_BACKEND.profile(),eid=perfil?.empresa_id;
    if(!eid)throw Error('Empresa não identificada.');
    const func=await sb.from('funcionarios').select('id,nome').eq('empresa_id',eid).eq('id',id).maybeSingle();
    if(func.error)throw func.error;
@@ -161,7 +161,16 @@ async function registrar({funcionarioId,data,obraPagamentoId,esperado}={}){
    return{ok:true,id:pid,nome:func.data.nome,bruto:valor(r.bruto),vales:valor(r.vales),
      liquido:valor(r.liquido),despesasNovas:linhas.reduce((a,x)=>a+Number(x.valor||0),0)};
  }catch(e){
-   if(pid)throw new Error('O pagamento foi iniciado, mas não foi possível confirmar todas as etapas. Não repita a operação antes de conferir o Financeiro e o Histórico do funcionário. Detalhes: '+(e?.message||e));
+   if(pid){
+    let estornado=false;
+    try{
+      const reverter=await sb.rpc('obrix_estornar_pagamento_equipe',{
+        p_pagamento_id:pid,p_motivo:'Reversão automática por falha na gravação da baixa'});
+      estornado=!reverter.error&&reverter.data?.ok===true;
+    }catch(erro){console.error('OBRIX: falha ao reverter pagamento incompleto',erro)}
+    if(estornado)throw new Error('Pagamento não concluído. A tentativa foi revertida com segurança e as pendências foram reabertas. Motivo: '+(e?.message||e));
+    throw new Error('Pagamento incompleto. Não repita antes de conferir o Financeiro e o Histórico; estorno automático não confirmado. Detalhes: '+(e?.message||e));
+   }
    throw e;
  }finally{emProcessamento.delete(id)}
 }
