@@ -95,7 +95,8 @@ const css=document.createElement('style');css.id='obrix-obras-profissional';css.
   background:#557ca8!important;background-color:#557ca8!important;
   border-color:#557ca8!important;
 }
-#app #obras .obxStatus.andamento{
+#app #obras .obxStatus.andamento,
+#app #obras .obxStatus.obxStatus-andamento{
   background:#05b94f!important;background-color:#05b94f!important;
   color:#fff!important;-webkit-text-fill-color:#fff!important;
   opacity:1!important;filter:none!important;transition:none!important;animation:none!important;
