@@ -100,7 +100,24 @@ async function sincronizarObrasDoServidor(){
 }
 window.OBRIX_CORE_OBRAS_SYNC=sincronizarObrasDoServidor;
 async function carregar(){if(restaurarOfflineCore('core-carregar'))return true;if(carregandoCore)return;carregandoCore=true;try{profile=await timeout(OBRIX_BACKEND.profile(),12000,'Não foi possível carregar seu perfil. Tente novamente.');salvarIdentidadeOffline(profile);const anterior=lerBaseOffline();const sb=await OBRIX_BACKEND.init(),eid=profile.empresa_id;const [ow,fn,fi]=await timeout(Promise.all([sb.from('obras').select('*').eq('empresa_id',eid).order('criado_em',{ascending:false}),sb.from('funcionarios').select('*').eq('empresa_id',eid).order('criado_em',{ascending:false}),sb.from('financeiro').select('*').eq('empresa_id',eid).order('data',{ascending:false})]),15000,'A conexão demorou demais. Tente novamente.');[ow,fn,fi].forEach(r=>{if(r.error)throw r.error});obras=ow.data||[];funcionarios=fn.data||[];financeiro=fi.data||[];extras=Array.isArray(anterior?.extras)?anterior.extras:[];diarias=Array.isArray(anterior?.diarias)?anterior.diarias:[];vales=Array.isArray(anterior?.vales)?anterior.vales:[];bonus=Array.isArray(anterior?.bonus)?anterior.bonus:[];publicarGlobais();salvarBaseOffline();atualizarInicio();if($('usuario'))$('usuario').textContent=profile.nome||profile.email||'';renderObras();renderEquipe();mostrarApp();window.__OBRIX_CORE_LAST_LOAD=Date.now();void carregarSecundarios(eid);return true}catch(e){if(restaurarOfflineCore('core-fallback'))return true;mostrarErro(e);return false}finally{carregandoCore=false}}
-function abrir(id){['inicio','obras','equipe'].forEach(x=>$(x)?.classList.toggle('hidden',x!==id));$('financeiroMain')?.classList.add('hidden');$('estoqueMain')?.classList.add('hidden');$('menuMain')?.classList.add('hidden');$('bInicio')?.classList.toggle('active',id==='inicio');$('bEquipe')?.classList.toggle('active',id==='equipe');$('bMenu')?.classList.remove('active');if(id==='equipe')renderEquipe();if(id==='obras')renderObras();scrollTo({top:0,behavior:'smooth'})}
+function abrir(id){
+  // Uma rota principal substitui a tela anterior, inclusive módulos abertos pelo Menu.
+  // Limitar ao nível superior para preservar formulários e cartões internos.
+  const destino=$(id);
+  document.querySelectorAll('#app > main').forEach(page=>{
+    if(page!==destino&&!page.classList.contains('hidden'))page.classList.add('hidden');
+  });
+  ['inicio','obras','equipe','financeiroMain','estoqueMain','menuMain','notasMain','documentosMain','diarioMain','orcamentosMain','relatoriosMain','backupMain','configMain','assinaturaMain','offlineCentralMain','offlineMenuFallbackMain','offlineV3Financeiro','offlineV3Menu','resumoGeralMain'].forEach(key=>{
+    const page=$(key);if(page&&page!==destino&&!page.classList.contains('hidden'))page.classList.add('hidden');
+  });
+  if(destino)destino.classList.remove('hidden');
+  $('bInicio')?.classList.toggle('active',id==='inicio');
+  $('bEquipe')?.classList.toggle('active',id==='equipe');
+  $('bMenu')?.classList.remove('active');
+  if(id==='equipe')renderEquipe();
+  if(id==='obras')renderObras();
+  scrollTo({top:0,behavior:'smooth'})
+}
 function renderObras(){
   // Após montar a interface aprovada, nunca substituir a lista por cartões legados.
   // Esta função é chamada pelo login, navegação, sincronização e dados secundários.
