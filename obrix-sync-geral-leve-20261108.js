@@ -16,7 +16,7 @@ const MODULOS={
 const ELEMENTOS={orcamentos:'orcamentosMain',notas:'notasMain',documentos:'documentosMain',
   estoque:'estoqueMain',diario:'diarioMain',relatorios:'relatoriosMain',equipe:'equipe'};
 let canal=null,canalCliente=null,empresa='',iniciando=false,tentativa=0,retryTimer=0,atividadeTimer=0,ultimaVerificacaoIdentidade=0;
-const timers=new Map(),emCarga=new Set(),pendente=new Set(),ultimaConsulta=new Map(),aguardandoFimEdicao=new Set();
+const timers=new Map(),emCarga=new Set(),pendente=new Set(),ultimaConsulta=new Map(),ultimaTentativa=new Map(),suspensoAte=new Map(),aguardandoFimEdicao=new Set();
 const secao=mod=>document.getElementById(ELEMENTOS[mod]||'');
 const ativo=()=>navigator.onLine&&!document.hidden&&!!document.getElementById('app')&&
   !document.getElementById('app').classList.contains('hidden');
@@ -37,6 +37,7 @@ async function atualizar(mod){
   aguardandoFimEdicao.delete(mod);
   if(emCarga.has(mod)){pendente.add(mod);return}
   emCarga.add(mod);
+  ultimaTentativa.set(mod,Date.now());
   try{
     if(mod==='orcamentos')await window.OBRIX_ORCAMENTOS?.load?.();
     if(mod==='notas')await window.OBRIX_NOTAS?.load?.();
@@ -48,15 +49,26 @@ async function atualizar(mod){
     // Relatorios gerados nao devem ser recalculados automaticamente (PDF pesado).
     if(mod==='relatorios')window.dispatchEvent(new CustomEvent('obrix:relatorios-atualizados'));
     ultimaConsulta.set(mod,Date.now());
-  }catch(e){console.warn('Sincronizacao do modulo '+mod+' indisponivel',e)}
+    suspensoAte.delete(mod);
+  }catch(e){
+    // Em indisponibilidade não repetir consultas a cada evento.
+    suspensoAte.set(mod,Date.now()+3000);
+    console.warn('Sincronizacao do modulo '+mod+' indisponivel',e)
+  }
   finally{
     emCarga.delete(mod);
     if(pendente.delete(mod))agendar(mod,650);
   }
 }
 function agendar(mod,delay=240){
-  clearTimeout(timers.get(mod));
-  timers.set(mod,setTimeout(()=>{timers.delete(mod);void atualizar(mod)},delay));
+  // Coalescência: uma enxurrada de eventos não deve reiniciar o timer
+  // indefinidamente, nem criar várias consultas concorrentes.
+  if(timers.has(mod))return;
+  const agora=Date.now(),intervalo=mod==='diario'?650:1400;
+  const espera=Math.max(delay,
+    intervalo-(agora-(ultimaTentativa.get(mod)||0)),
+    (suspensoAte.get(mod)||0)-agora);
+  timers.set(mod,setTimeout(()=>{timers.delete(mod);void atualizar(mod)},Math.max(0,espera)));
 }
 function onChange(tab,payload){
   atualizarAtividades();
