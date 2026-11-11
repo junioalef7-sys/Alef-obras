@@ -13,6 +13,9 @@
     back.className='modalBack obrix-hist-pag-back';
     back.innerHTML=`<div class="modal obrix-hist-pag-modal">
       <div class="obrix-hist-pag-head"><div><h2>Histórico de pagamentos</h2><p>Pagamentos realizados e estornados da equipe.</p></div><button type="button" class="obrix-hist-pag-x" aria-label="Fechar">×</button></div>
+      <label class="obrix-hist-pag-busca-label" for="obrixHistPagBusca">Buscar pagamentos</label>
+      <input type="search" class="obrix-hist-pag-busca" id="obrixHistPagBusca" placeholder="Funcionário, data, valor ou situação..." autocomplete="off">
+      <div class="muted obrix-hist-pag-resultado" aria-live="polite"></div>
       <div class="obrix-hist-pag-resumo" id="obrixHistPagResumo"></div>
       <div class="obrix-hist-pag-lista" id="obrixHistPagLista"><div class="muted">Carregando pagamentos...</div></div>
     </div>`;
@@ -34,12 +37,26 @@
 
   function render(back,base){
     const lista=back.querySelector('#obrixHistPagLista'),res=back.querySelector('#obrixHistPagResumo');
+    const termo=String(back.querySelector('#obrixHistPagBusca')?.value||'')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
+    const filtrar=p=>{
+      const nome=base.funcs.get(String(p.funcionario_id))||'Funcionário';
+      const texto=[nome,p.data_pagamento,dataBR(p.data_pagamento),p.estornado_em?dataBR(p.estornado_em):'',
+        p.estornado_em?'estornado':'pago',p.valor_liquido,p.valor_bruto,p.valor_diarias,
+        p.valor_bonus_extras,p.valor_vales,money(p.valor_liquido),p.observacoes,p.motivo_estorno].join(' ')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
+      return !termo||texto.includes(termo);
+    };
+    const encontrados=base.pagamentos.filter(filtrar);
+    const info=back.querySelector('.obrix-hist-pag-resultado');
+    if(info)info.textContent=encontrados.length+' de '+base.pagamentos.length+' pagamento(s)';
     const ativos=base.pagamentos.filter(x=>!x.estornado_em),estornados=base.pagamentos.filter(x=>!!x.estornado_em);
     const acumulados=new Map();
     ativos.forEach(x=>{const id=String(x.funcionario_id||'');if(id)acumulados.set(id,(acumulados.get(id)||0)+Number(x.valor_liquido||0))});
     res.innerHTML=`<div><small>Pagamentos válidos</small><strong>${ativos.length}</strong></div><div><small>Estornados</small><strong>${estornados.length}</strong></div>`;
     if(!base.pagamentos.length){lista.innerHTML='<div class="card muted">Nenhum pagamento registrado.</div>';return}
-    lista.innerHTML=base.pagamentos.map(p=>{
+    if(!encontrados.length){lista.innerHTML='<div class="card muted">Nenhum pagamento encontrado para esta busca.</div>';return}
+    lista.innerHTML=encontrados.map(p=>{
       const est=!!p.estornado_em,nome=base.funcs.get(String(p.funcionario_id))||'Funcionário',acumulado=acumulados.get(String(p.funcionario_id))||0;
       return `<article class="card obrix-hist-pag-card ${est?'estornado':''}" data-pag-id="${esc(p.id)}">
         <div class="obrix-hist-pag-cardtop"><div><h3>${esc(nome)}</h3><p>${dataBR(p.data_pagamento)}</p></div><span class="obrix-hist-pag-status">${est?'Estornado':'Pago'}</span></div>
@@ -78,7 +95,7 @@
 
   async function abrir(){
     if(abrindo)return;abrindo=true;const back=modal();
-    try{const base=await buscar();render(back,base)}catch(e){back.querySelector('#obrixHistPagLista').innerHTML=`<div class="status">${esc(window.OBRIX_PT_ERROR?.(e)||e.message||'Não foi possível carregar o histórico de pagamentos.')}</div>`}finally{abrindo=false}
+    try{const base=await buscar();back.querySelector('#obrixHistPagBusca').addEventListener('input',()=>render(back,base));render(back,base)}catch(e){back.querySelector('#obrixHistPagLista').innerHTML=`<div class="status">${esc(window.OBRIX_PT_ERROR?.(e)||e.message||'Não foi possível carregar o histórico de pagamentos.')}</div>`}finally{abrindo=false}
   }
 
   function instalarBotao(){
@@ -89,6 +106,9 @@
   }
 
   const css=document.createElement('style');css.textContent=`
+    .obrix-hist-pag-busca-label{display:block;margin:12px 0 5px;font-weight:800}
+    .obrix-hist-pag-busca{display:block;width:100%;box-sizing:border-box;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid var(--ob-border,#cbd5e1);background:var(--ob-surface,#fff);color:var(--ob-text,#0f172a);font-size:16px}
+    .obrix-hist-pag-resultado{margin-top:6px;font-size:12px}
     .obrix-historico-pagamentos-topo{background:#fff!important;color:#334155!important;border-color:#cbd5e1!important;box-shadow:none!important}
     .obrix-hist-pag-modal{width:min(760px,100%);max-height:90vh;overflow:auto}.obrix-hist-pag-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.obrix-hist-pag-head h2{margin:0 0 4px}.obrix-hist-pag-head p{margin:0;color:#64748b}.obrix-hist-pag-x{border:0;background:transparent;color:inherit;font-size:30px;line-height:1}
     .obrix-hist-pag-resumo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:16px 0}.obrix-hist-pag-resumo>div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px}.obrix-hist-pag-resumo small{display:block;color:#64748b;font-weight:700}.obrix-hist-pag-resumo strong{display:block;margin-top:4px;font-size:18px}
