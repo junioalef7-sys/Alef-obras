@@ -283,9 +283,12 @@ async function obpBuscarFaltas(id,force=false){
   })();
   obpFaltasCache.set(chave,{...cache,promise,updated:Date.now()});
   try{
-    const rows=await promise;obpFaltasCache.set(chave,{rows,updated:Date.now()});return rows;
+    const rows=await promise;
+    if(obpFaltasCache.get(chave)?.promise===promise)obpFaltasCache.set(chave,{rows,updated:Date.now()});
+    return rows;
   }catch(error){
-    obpFaltasCache.set(chave,{rows:cache?.rows,error,updated:Date.now()});throw error;
+    if(obpFaltasCache.get(chave)?.promise===promise)obpFaltasCache.set(chave,{rows:cache?.rows,error,updated:Date.now()});
+    throw error;
   }
 }
 // Faltas não são liquidadas no banco: o histórico conserva todas as linhas.
@@ -316,10 +319,10 @@ async function obpUltimoPagamento(id,force=false){
   obpUltimoPagamentoCache.set(chave,{item:cache?.item,promise,updated:Date.now()});
   try{
     const item=await promise;
-    obpUltimoPagamentoCache.set(chave,{item,updated:Date.now()});
+    if(obpUltimoPagamentoCache.get(chave)?.promise===promise)obpUltimoPagamentoCache.set(chave,{item,updated:Date.now()});
     return item;
   }catch(error){
-    obpUltimoPagamentoCache.set(chave,{error,updated:Date.now()});
+    if(obpUltimoPagamentoCache.get(chave)?.promise===promise)obpUltimoPagamentoCache.set(chave,{error,updated:Date.now()});
     throw error;
   }
 }
@@ -891,10 +894,16 @@ function iniciar(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',iniciar,{once:true});else iniciar();
 window.addEventListener('obrix:equipe-registro',event=>{
-  if(event?.detail?.table!=='faltas')return;
+  const tipo=event?.detail?.table;
+  if(tipo!=='faltas'&&tipo!=='pagamentos_equipe')return;
   const id=event.detail.funcionarioId;
-  if(id)obpFaltasCache.delete(String(id));
-  else obpFaltasCache.clear();
+  if(id){
+    obpFaltasCache.delete(String(id));
+    if(tipo==='pagamentos_equipe')obpUltimoPagamentoCache.delete(String(id));
+  }else{
+    obpFaltasCache.clear();
+    if(tipo==='pagamentos_equipe')obpUltimoPagamentoCache.clear();
+  }
   if(id&&String(id)===String(selecionado))obpAtualizarFaltas(id);
   if(secaoVisivel('equipe'))atualizar();
 });
