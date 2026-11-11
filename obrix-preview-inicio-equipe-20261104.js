@@ -569,7 +569,7 @@ async function abrirRegistrosEquipePremium(id){
     '<button type="button" data-obp-tab="faltas">Faltas</button>'+
     '<button type="button" data-obp-tab="pagamentos">Pagamentos</button></nav>'+
     '<div class="obp-registros-indicadores" data-obp-kpis></div>'+
-    '<h3>Histórico de registros</h3><p class="obp-registros-aviso" data-obp-aviso hidden></p>'+
+    '<h3>Histórico de registros</h3><label for="obpBuscaRegistrosPremium" style="display:block;font-weight:700;margin:8px 0 5px">Buscar registros</label><input id="obpBuscaRegistrosPremium" data-obp-busca type="search" placeholder="Tipo, obra, data ou status" autocomplete="off" aria-label="Buscar registros do funcionário" style="box-sizing:border-box;display:block;width:100%;min-width:0;max-width:100%;padding:12px;font-size:16px;border:1px solid #94a3b8;border-radius:10px;background:var(--ob-surface,#fff);color:var(--ob-text,#111827)"><small data-obp-resultados class="muted" style="display:block;margin:4px 0 9px"></small><p class="obp-registros-aviso" data-obp-aviso hidden></p>'+
     '<div class="obp-registros-lista" data-obp-linhas>Carregando registros...</div>'+
     '<button type="button" class="obp-registros-mais" data-obp-mais hidden>Mostrar mais registros</button></div>';
   document.body.appendChild(back);
@@ -583,8 +583,15 @@ async function abrirRegistrosEquipePremium(id){
   let aba='historico',limite=60,linhas=[];
   function renderizar(){
     if(!back.isConnected)return;
-    const resultados=linhas.filter(x=>aba==='historico'||(aba==='diarias'&&x.tipoRegistro==='diaria')||
-      (aba==='faltas'&&x.tipoRegistro==='falta')||(aba==='pagamentos'&&x.pago));
+    const termo=String(back.querySelector('[data-obp-busca]')?.value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    const resultados=linhas.filter(x=>{
+      const naAba=aba==='historico'||(aba==='diarias'&&x.tipoRegistro==='diaria')||
+        (aba==='faltas'&&x.tipoRegistro==='falta')||(aba==='pagamentos'&&x.pago);
+      if(!naAba)return false;
+      if(!termo)return true;
+      return [x.tipo,x.tipoRegistro,x.status,x.motivo,x.descricao,nomeObra(x.obra),x.data,dataPtBR(x.data),x.valor?dinheiro(x.valor):''].join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(termo);
+    });
+    const contador=back.querySelector('[data-obp-resultados]');if(contador)contador.textContent=resultados.length+' registros encontrados';
     back.querySelector('[data-obp-linhas]').innerHTML=resultados.length?resultados.slice(0,limite).map(x=>{
       const excluir=x.tipoRegistro==='falta'||(x.tipoRegistro==='vale'&&!x.pago)||((x.tipoRegistro==='diaria'||x.tipoRegistro==='bonus')&&!x.pago);
       const icone=x.tipoRegistro==='falta'?'⊗':x.tipoRegistro==='bonus'?'✦':x.tipoRegistro==='vale'?'▰':'▣';
@@ -609,6 +616,7 @@ async function abrirRegistrosEquipePremium(id){
     aba=btn.dataset.obpTab;limite=60;renderizar();
   }));
   back.querySelector('[data-obp-mais]').onclick=()=>{limite+=60;renderizar()};
+  back.querySelector('[data-obp-busca]').addEventListener('input',()=>{limite=60;renderizar()});
   const r=resumoEquipe(func),equivalentes=r.completas+r.meias/2;
   back.querySelector('[data-obp-kpis]').innerHTML=
     '<div><small>Diárias em aberto</small><strong>Inteiras: '+r.completas+'</strong><strong>Meias: '+r.meias+'</strong></div>'+
@@ -777,7 +785,7 @@ async function cliqueEquipe(e){
   if(t.id==='obpNovo')return clicarAntigo('#equipe .obrix-equipe-controles [data-cmd="novo"]');
   if(t.id==='obpExpandir'){resumoExpandido=!resumoExpandido;renderEquipe();return}
   if(t.id==='obpPagarEquipe')return clicarAntigo('#equipe .obrix-pagar-equipe-topo');
-  if(t.id==='obpHistoricoPag')return clicarAntigo('#equipe .obrix-historico-pagamentos-topo');
+  if(t.id==='obpHistoricoPag'){await esperarEquipe();if(window.OBRIX_EQUIPE_HISTORICO_PAGAMENTOS?.open)return window.OBRIX_EQUIPE_HISTORICO_PAGAMENTOS.open();return clicarAntigo('#equipe .obrix-historico-pagamentos-topo')}
   if(t.id==='obpGerenciar'){gerenciarAberto=!gerenciarAberto;renderEquipe();return}
   if(t.dataset.manager){
     if(t.dataset.manager==='excluir'){modoExclusaoLista=true;modoAtivacaoLista=false;gerenciarAberto=false;selecionado='';renderEquipe();return}
