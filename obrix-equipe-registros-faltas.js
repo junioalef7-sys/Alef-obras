@@ -9,8 +9,8 @@ function nomeFuncionario(id){return lista('funcionarios').find(f=>String(f.id)==
 function limparRemovidos(){document.querySelectorAll('#equipe [data-acao="faltas"],#equipe [data-acao="editar"]').forEach(b=>b.remove())}
 function criarModal(id){
  const back=document.createElement('div');back.className='modalBack obrix-registros-faltas-back';
- back.innerHTML=`<div class="modal obrix-modelo-modal"><div class="obrix-modal-head"><h2>Registros do funcionário</h2><button type="button" class="obrix-modal-x" aria-label="Fechar">×</button></div><p class="muted"><b>${esc(nomeFuncionario(id))}</b></p><div class="obrix-registros-corpo"><div class="obrix-carregando">Carregando...</div></div></div>`;
- document.body.appendChild(back);back.querySelector('.obrix-modal-x').onclick=()=>back.remove();back.addEventListener('click',e=>{if(e.target===back)back.remove()});return back;
+ back.innerHTML=`<div class="modal obrix-modelo-modal"><div class="obrix-modal-head"><h2>Registros do funcionário</h2><button type="button" class="obrix-modal-x" aria-label="Fechar">×</button></div><p class="muted"><b>${esc(nomeFuncionario(id))}</b></p><label class="obrix-registros-busca-label">Buscar registros</label><input type="search" class="obrix-registros-busca" placeholder="Data, obra, tipo, valor ou situação..." autocomplete="off"><div class="obrix-registros-busca-status muted" aria-live="polite"></div><div class="obrix-registros-corpo"><div class="obrix-carregando">Carregando...</div></div></div>`;
+ document.body.appendChild(back);back.querySelector('.obrix-registros-busca').addEventListener('input',()=>aplicarBusca(back));back.querySelector('.obrix-modal-x').onclick=()=>back.remove();back.addEventListener('click',e=>{if(e.target===back)back.remove()});return back;
 }
 function linhasLocais(id){
  const rows=[];
@@ -24,6 +24,27 @@ function linhaHtml(x){
  if(x.kind==='falta')return `<div class="obrix-registro-linha obrix-registro-falta" data-falta-row="${esc(x.id)}"><div><b>${data}</b><span>Falta · ${esc(x.obra)}</span>${x.motivo?`<small>Motivo: ${esc(x.motivo)}</small>`:''}${x.observacoes?`<small>${esc(x.observacoes)}</small>`:''}</div><div class="obrix-registro-valor"><b>${x.justificada?'Justificada':'Injustificada'}</b><button type="button" class="obrix-excluir-registro" data-excluir-falta="${esc(x.id)}">Excluir</button></div></div>`;
  if(x.kind==='diaria')return `<div class="obrix-registro-linha" data-diaria-row="${esc(x.id)}"><div><b>${data}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span></div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small>${x.paga?'':`<button type="button" class="obrix-excluir-registro" data-excluir-diaria="${esc(x.id)}">Excluir</button>`}</div></div>`;
  return `<div class="obrix-registro-linha"><div><b>${data}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span></div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small></div></div>`;
+}
+function aplicarBusca(back){
+ const campo=back?.querySelector('.obrix-registros-busca');
+ const termo=String(campo?.value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
+ const linhas=[...back.querySelectorAll('.obrix-registros-corpo .obrix-registro-linha')];
+ let visiveis=0;
+ linhas.forEach(linha=>{
+   const texto=linha.textContent.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
+   const exibir=!termo||texto.includes(termo);
+   linha.classList.toggle('hidden',!exibir);
+   if(exibir)visiveis++;
+ });
+ const status=back.querySelector('.obrix-registros-busca-status');
+ if(status)status.textContent=linhas.length?visiveis+' de '+linhas.length+' registro(s)':'';
+ let vazio=back.querySelector('.obrix-registros-busca-vazio');
+ if(!vazio&&linhas.length){
+   vazio=document.createElement('p');vazio.className='muted obrix-registros-busca-vazio hidden';
+   vazio.textContent='Nenhum registro encontrado para esta busca.';
+   back.querySelector('.obrix-registros-corpo')?.appendChild(vazio);
+ }
+ if(vazio)vazio.classList.toggle('hidden',!termo||visiveis>0);
 }
 const excluindoRegistros=new Set();
 async function excluirLinha(table,idRegistro,funcionarioId,back){
@@ -68,6 +89,7 @@ async function carregar(id,back){
   const {data,error}=await sb.from('faltas').select('id,obra_id,data,justificada,motivo,observacoes').eq('empresa_id',p.empresa_id).eq('funcionario_id',id).order('data',{ascending:false});if(error)throw error;
   const rows=linhasLocais(id);(data||[]).forEach(x=>rows.push({kind:'falta',id:x.id,data:x.data,obra:nomeObra(x.obra_id),justificada:!!x.justificada,motivo:x.motivo||'',observacoes:x.observacoes||''}));rows.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
   corpo.innerHTML=`<div class="obrix-registros-lista">${rows.length?rows.map(linhaHtml).join(''):'<p class="muted">Nenhum registro encontrado.</p>'}</div>`;
+  aplicarBusca(back);
   corpo.querySelectorAll('[data-excluir-diaria]').forEach(btn=>btn.onclick=()=>excluirLinha('diarias',btn.dataset.excluirDiaria,id,back));
   corpo.querySelectorAll('[data-excluir-falta]').forEach(btn=>btn.onclick=()=>excluirLinha('faltas',btn.dataset.excluirFalta,id,back));
  }catch(e){corpo.innerHTML=`<div class="status">${esc(e.message||'Não foi possível carregar os registros.')}</div>`}
@@ -77,6 +99,6 @@ document.addEventListener('click',e=>{const b=e.target.closest?.('#equipe [data-
 function instalar(){limparRemovidos();const box=document.getElementById('listaEquipe');if(box&&!box.__obrixRegistrosObserver){box.__obrixRegistrosObserver=true;new MutationObserver(limparRemovidos).observe(box,{childList:true,subtree:true})}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(instalar,0),{once:true});else instalar();
 window.addEventListener('obrix:grupo-pronto',e=>{if(e.detail?.name==='equipe')setTimeout(instalar,0)});
-const css=document.createElement('style');css.id='obrixRegistrosEquipeCss';css.textContent='#equipe .obrix-atualizar-equipe{display:none!important}.obrix-excluir-registro{display:block;margin-top:8px;border:1px solid #ef4444!important;background:#fff!important;color:#dc2626!important;border-radius:9px;padding:7px 10px;font-weight:900}.obrix-registro-falta .obrix-registro-valor{min-width:104px}html[data-theme="dark"] .obrix-excluir-registro,body.dark .obrix-excluir-registro{background:#161d25!important;color:#f87171!important;border-color:#ef4444!important}';document.head.appendChild(css);
+const css=document.createElement('style');css.id='obrixRegistrosEquipeCss';css.textContent='.obrix-registros-busca-label{display:block;font-weight:800;margin:12px 0 5px}.obrix-registros-busca{width:100%;box-sizing:border-box;min-height:44px;padding:10px 12px;border:1px solid var(--ob-border,#cbd5e1);border-radius:10px;background:var(--ob-surface,#fff);color:var(--ob-text,#0f172a);font-size:16px}.obrix-registros-busca-status{font-size:12px;margin:5px 0 10px}#equipe .obrix-atualizar-equipe{display:none!important}.obrix-excluir-registro{display:block;margin-top:8px;border:1px solid #ef4444!important;background:#fff!important;color:#dc2626!important;border-radius:9px;padding:7px 10px;font-weight:900}.obrix-registro-falta .obrix-registro-valor{min-width:104px}html[data-theme="dark"] .obrix-excluir-registro,body.dark .obrix-excluir-registro{background:#161d25!important;color:#f87171!important;border-color:#ef4444!important}';document.head.appendChild(css);
 window.OBRIX_EQUIPE_REGISTROS_FALTAS={open:abrir,refreshButtons:limparRemovidos};
 })();
