@@ -4,7 +4,7 @@ if(window.__OBRIX_REL_FOTO)return;window.__OBRIX_REL_FOTO=true;
 const BUCKET='relatorio-fotografico',PAGE=24,esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const dataBR=v=>{if(!v)return'—';const p=String(v).slice(0,10).split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:v};
 function obras(){try{return window.obras||[]}catch(_){return[]}}
-function modal(html){const b=document.createElement('div');b.className='modalBack obrix-rf-back';b.innerHTML=`<div class="modal obrix-rf-modal"><div class="obrix-rf-head"><h2>Relatório fotográfico</h2><button class="obrix-rf-x">×</button></div>${html}</div>`;document.body.appendChild(b);b.querySelector('.obrix-rf-x').onclick=()=>b.remove();b.onclick=e=>{if(e.target===b)b.remove()};return b}
+function modal(html){const b=document.createElement('div');b.className='modalBack obrix-rf-back';b.innerHTML=`<div class="modal obrix-rf-modal"><div class="obrix-rf-head"><h2>Relatório fotográfico</h2><button class="obrix-rf-x">×</button></div>${html}</div>`;document.body.appendChild(b);const fechar=()=>{b.querySelector('.obrix-rf-lista')?.__obrixThumbObserver?.disconnect?.();b.remove()};b.querySelector('.obrix-rf-x').onclick=fechar;b.onclick=e=>{if(e.target===b)fechar()};return b}
 async function comprimir(file){if(file.size<=1800000)return file;return new Promise((ok,fail)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{try{const max=1920,scale=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*scale);c.height=Math.round(img.height*scale);c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.toBlob(blob=>{URL.revokeObjectURL(u);blob?ok(new File([blob],file.name.replace(/\.[^.]+$/,'.jpg'),{type:'image/jpeg'})):fail(new Error('Falha ao comprimir foto.'))},'image/jpeg',.82)}catch(e){URL.revokeObjectURL(u);fail(e)}};img.onerror=()=>{URL.revokeObjectURL(u);fail(new Error('Foto inválida.'))};img.src=u})}
 async function listar(obraId,page=0,filtros={}){
  const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile(),ini=page*PAGE,fim=ini+PAGE;
@@ -21,7 +21,47 @@ async function listar(obraId,page=0,filtros={}){
 }
 async function checklists(obraId){const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile(),r=await sb.from('checklist_itens').select('id,nome,ordem').eq('empresa_id',p.empresa_id).eq('obra_id',obraId).order('ordem');if(r.error)throw r.error;return r.data||[]}
 async function thumb(path){const sb=await OBRIX_BACKEND.init(),r=await sb.storage.from(BUCKET).createSignedUrl(path,900,{transform:{width:420,height:315,resize:'contain'}});if(r.error)throw r.error;return r.data.signedUrl}
-function ativarThumbs(area){const carregar=async box=>{if(box.dataset.loaded)return;box.dataset.loaded='1';try{const url=await thumb(box.dataset.path);box.innerHTML=`<img loading="lazy" decoding="async" src="${esc(url)}" alt="Foto da obra">`}catch(_){box.textContent='Imagem indisponível'}};if(!('IntersectionObserver'in window)){area.querySelectorAll('.obrix-rf-img').forEach(carregar);return}const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);carregar(e.target)}}),{rootMargin:'250px'});area.querySelectorAll('.obrix-rf-img').forEach(x=>io.observe(x))}
+// No máximo quatro URLs assinadas simultaneamente, preservando a rolagem.
+const filaMiniaturas=[];let miniaturasAtivas=0;
+function drenarMiniaturas(){
+  while(miniaturasAtivas<4&&filaMiniaturas.length){
+    const item=filaMiniaturas.shift();
+    if(!item.box.isConnected){item.reject(new Error('Miniatura fechada'));continue}
+    miniaturasAtivas++;
+    void thumb(item.path).then(item.resolve,item.reject).finally(()=>{
+      miniaturasAtivas--;drenarMiniaturas();
+    });
+  }
+}
+function thumbLimitada(path,box){
+  return new Promise((resolve,reject)=>{
+    filaMiniaturas.push({path,box,resolve,reject});
+    drenarMiniaturas();
+  });
+}
+function ativarThumbs(area){
+  const carregar=async box=>{
+    if(box.dataset.loaded||!box.isConnected)return;
+    box.dataset.loaded='1';
+    try{
+      const url=await thumbLimitada(box.dataset.path,box);
+      if(box.isConnected&&area.contains(box))
+        box.innerHTML=`<img loading="lazy" decoding="async" src="${esc(url)}" alt="Foto da obra">`;
+    }catch(_){if(box.isConnected&&area.contains(box))box.textContent='Imagem indisponível'}
+  };
+  if(!('IntersectionObserver'in window)){
+    area.querySelectorAll('.obrix-rf-img:not([data-loaded])').forEach(carregar);
+    return;
+  }
+  let io=area.__obrixThumbObserver;
+  if(!io){
+    io=new IntersectionObserver(es=>es.forEach(e=>{
+      if(e.isIntersecting){io.unobserve(e.target);carregar(e.target)}
+    }),{rootMargin:'120px'});
+    area.__obrixThumbObserver=io;
+  }
+  area.querySelectorAll('.obrix-rf-img:not([data-loaded])').forEach(box=>io.observe(box));
+}
 function ligarCards(back,obraId,area){area.querySelectorAll('.obrix-rf-card').forEach(card=>{const a=card.querySelector('.obrix-rf-abrir'),d=card.querySelector('.obrix-rf-excluir');if(a&&!a.dataset.on){a.dataset.on='1';a.onclick=async()=>{const sb=await OBRIX_BACKEND.init(),r=await sb.storage.from(BUCKET).createSignedUrl(card.dataset.path,300);if(r.error)return alert(r.error.message);window.open(r.data.signedUrl,'_blank')}}if(d&&!d.dataset.on){d.dataset.on='1';d.onclick=()=>excluir(back,obraId,card.dataset.id,card.dataset.path)}})}
 function htmlCards(rows){return rows.map(x=>`<article class="obrix-rf-card" data-id="${x.id}" data-path="${esc(x.storage_path)}"><div class="obrix-rf-img" data-path="${esc(x.storage_path)}">Carregando...</div><div><b>${dataBR(x.data_foto)}</b><p>${esc(x.descricao||'Sem descrição')}</p><button type="button" class="obrix-rf-abrir">Abrir foto</button><button type="button" class="obrix-rf-excluir">Excluir</button></div></article>`).join('')}
 async function renderLista(back,obraId,page=0,append=false){
@@ -29,7 +69,7 @@ async function renderLista(back,obraId,page=0,append=false){
  const seq=String(Number(back.dataset.rfBuscaSeq||0)+1);back.dataset.rfBuscaSeq=seq;
  const filtros={texto:back.querySelector('.obrix-rf-busca')?.value||'',data:back.querySelector('.obrix-rf-filtro-data')?.value||'',etapa:back.querySelector('.obrix-rf-filtro-etapa')?.value||''};
  const ativo=()=>back.isConnected&&back.dataset.rfBuscaSeq===seq;
- if(!append)area.innerHTML='<p class="muted">Carregando fotos...</p>';
+ if(!append){area.__obrixThumbObserver?.disconnect?.();area.__obrixThumbObserver=null;area.innerHTML='<p class="muted">Carregando fotos...</p>'}
  if(mais)mais.disabled=true;
  try{
   const{rows,hasMore,total}=await listar(obraId,page,filtros);
