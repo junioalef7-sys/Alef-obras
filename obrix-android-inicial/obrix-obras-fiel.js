@@ -32,7 +32,7 @@ function atualizarListaSemRemontar(box,novoHtml){
       '.obxCardInfo p:nth-of-type(2)','.obxStatusLinha > b'];
     for(const seletor of campos)atualizarTexto(antigo.querySelector(seletor),novo.querySelector(seletor));
     const a=antigo.querySelector('.obxStatus'),b=novo.querySelector('.obxStatus');
-    if(a&&b){if(a.className!==b.className)a.className=b.className;atualizarTexto(a,b)}
+    if(a&&b){if(a.className!==b.className)a.className=b.className;if(a.getAttribute('style')!==b.getAttribute('style')){if(b.hasAttribute('style'))a.setAttribute('style',b.getAttribute('style'));else a.removeAttribute('style')}atualizarTexto(a,b)}
     const barAntigo=antigo.querySelector('.obxStatusLinha .obxBar i');
     const barNovo=novo.querySelector('.obxStatusLinha .obxBar i');
     if(barAntigo&&barNovo&&barAntigo.style.width!==barNovo.style.width)
