@@ -8,7 +8,7 @@
   '<div class="muted estHistStatus" aria-live="polite"></div>'+
   '<div class="estHist estHistLista"></div>'+
   '<div class="modalActions"><button class="btn cancelar">Fechar</button></div>');
- const norm=v=>String(v??'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
+ const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
  const campo=b.querySelector('.estHistBusca'),lista=b.querySelector('.estHistLista'),status=b.querySelector('.estHistStatus');
  function renderBusca(){
    const termo=norm(campo?.value);
