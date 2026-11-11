@@ -46,4 +46,23 @@
     overlay.querySelector('button').focus();
   });
 
+  // Confirmação positiva no visual do OBRIX (laranja; não usa o confirm do navegador).
+  window.OBRIX_CONFIRMAR_PAGAMENTO=({titulo='Confirmar pagamento',mensagem='Deseja confirmar este pagamento?',confirmar='Confirmar pagamento',cancelar='Cancelar'}={})=>new Promise(resolve=>{
+    ensureStyle();
+    const overlay=document.createElement('div');
+    overlay.className='obrixConfirmOverlay obrixPagamentoConfirmOverlay';
+    overlay.innerHTML='<div class="obrixConfirmBox" role="dialog" aria-modal="true"><h2></h2><p></p><div class="obrixConfirmActions"><button type="button" class="obrixConfirmCancel"></button><button type="button" class="obrixConfirmPagamento"></button></div></div>';
+    overlay.querySelector('h2').textContent=String(titulo);
+    overlay.querySelector('p').textContent=String(mensagem);
+    const cancelar=overlay.querySelector('.obrixConfirmCancel'),aceitar=overlay.querySelector('.obrixConfirmPagamento');
+    cancelar.textContent=String(cancelar);aceitar.textContent=String(confirmar);
+    aceitar.style.cssText='background:var(--ob-accent,#ff5a00)!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border:1px solid var(--ob-accent,#ff5a00)!important;border-radius:11px;min-height:46px;font-weight:800';
+    let terminado=false;
+    const key=e=>{if(e.key==='Escape'){e.preventDefault();fechar(false)}};
+    function fechar(ok){if(terminado)return;terminado=true;document.removeEventListener('keydown',key,true);overlay.remove();resolve(ok)}
+    cancelar.onclick=()=>fechar(false);aceitar.onclick=()=>fechar(true);
+    overlay.addEventListener('click',e=>{if(e.target===overlay)fechar(false)});
+    document.body.appendChild(overlay);document.addEventListener('keydown',key,true);cancelar.focus();
+  });
+
 })();
