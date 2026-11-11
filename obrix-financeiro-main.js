@@ -23,10 +23,25 @@
     const main=document.createElement('main');
     main.id='financeiroMain';main.className='hidden';
     main.innerHTML=`<div class="hero"><h1>Financeiro</h1><p>Receitas, despesas e resultado das obras</p></div>
-      <div id="fmIndicadoresInternos" hidden aria-hidden="true"><span id="fmContrato"></span><span id="fmResultado"></span><span id="fmRecebido"></span><span id="fmDespesas"></span></div>
+      <div id="fmIndicadoresInternos" hidden aria-hidden="true"><span id="fmContrato"></span><span id="fmResultado"></span></div>
+      <div class="fmFluxoCards" aria-label="Resumo de receitas e despesas"><div class="kpi fmFluxoReceitas"><small>Receitas</small><strong id="fmRecebido">R$ 0,00</strong></div><div class="kpi fmFluxoDespesas"><small>Despesas</small><strong id="fmDespesas">R$ 0,00</strong></div></div>
       <div class="sectionHead"><strong>Lançamentos</strong><div><button class="btn" id="fmReceita">+ Receita</button> <button class="btn" id="fmDespesa">+ Despesa</button></div></div>
 <div id="fmForm" class="card form hidden"></div><div id="fmLista"></div>`;
     const equipe=$('equipe');equipe.parentNode.insertBefore(main,equipe.nextSibling);
+    const layoutFluxo=document.createElement('style');
+    layoutFluxo.id='obrixFinanceiroReceitasDespesas20261111';
+    layoutFluxo.textContent=`
+    #financeiroMain .fmFluxoCards{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;margin:0 0 12px!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important}
+    #financeiroMain .fmFluxoCards>.kpi{box-sizing:border-box!important;min-width:0!important;max-width:100%!important;min-height:86px!important;height:auto!important;border-radius:12px!important;padding:12px!important;background:var(--ob-surface-2,#e5eaf0)!important;border:1px solid var(--ob-border,#d7dee7)!important;display:flex!important;flex-direction:column!important;justify-content:center!important;gap:5px!important}
+    #financeiroMain .fmFluxoCards .kpi small{font-size:12px!important;line-height:1.2!important;display:block!important;color:var(--ob-muted,#526173)!important;-webkit-text-fill-color:var(--ob-muted,#526173)!important}
+    #financeiroMain .fmFluxoCards .kpi strong{display:block!important;font-size:clamp(15px,4.1vw,20px)!important;line-height:1.2!important;max-width:100%!important;overflow-wrap:anywhere!important;font-variant-numeric:tabular-nums!important;margin:0!important}
+    html[data-theme="light"] #financeiroMain .fmFluxoReceitas strong{color:#167a37!important;-webkit-text-fill-color:#167a37!important}
+    html[data-theme="light"] #financeiroMain .fmFluxoDespesas strong{color:#bb2424!important;-webkit-text-fill-color:#bb2424!important}
+    html[data-theme="dark"] #financeiroMain .fmFluxoReceitas strong{color:#4ade80!important;-webkit-text-fill-color:#4ade80!important}
+    html[data-theme="dark"] #financeiroMain .fmFluxoDespesas strong{color:#ff7575!important;-webkit-text-fill-color:#ff7575!important}
+    @media(min-width:621px){#financeiroMain .fmFluxoCards .kpi strong{font-size:20px!important}}
+    `;
+    document.head.appendChild(layoutFluxo);
     $('fmReceita').onclick=()=>form('receita');
     $('fmDespesa').onclick=()=>form('despesa');
   }
