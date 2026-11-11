@@ -581,7 +581,7 @@ async function abrirRegistrosEquipePremium(id){
     const resultados=linhas.filter(x=>aba==='historico'||(aba==='diarias'&&x.tipoRegistro==='diaria')||
       (aba==='faltas'&&x.tipoRegistro==='falta')||(aba==='pagamentos'&&x.pago));
     back.querySelector('[data-obp-linhas]').innerHTML=resultados.length?resultados.slice(0,limite).map(x=>{
-      const excluir=x.tipoRegistro==='falta'||x.tipoRegistro==='vale'||((x.tipoRegistro==='diaria'||x.tipoRegistro==='bonus')&&!x.pago);
+      const excluir=x.tipoRegistro==='falta'||(x.tipoRegistro==='vale'&&!x.pago)||((x.tipoRegistro==='diaria'||x.tipoRegistro==='bonus')&&!x.pago);
       const icone=x.tipoRegistro==='falta'?'⊗':x.tipoRegistro==='bonus'?'✦':x.tipoRegistro==='vale'?'▰':'▣';
       return '<article class="obp-registro-linha"><span class="obp-registro-icone'+(x.tipoRegistro==='falta'?' falta':'')+'" aria-hidden="true">'+icone+'</span>'+
         '<div class="obp-registro-info"><b>'+esc(x.tipo)+'</b>'+
@@ -658,7 +658,7 @@ async function abrirRegistrosEquipePremium(id){
     const tipo=btn.dataset.obpExcluirTipo,registroId=btn.dataset.obpExcluirId;
     if(!['falta','diaria','bonus','vale'].includes(tipo))return;
     const x=linhas.find(y=>y.tipoRegistro===tipo&&String(y.id)===String(registroId));
-    if(!x||(tipo!=='falta'&&tipo!=='vale'&&x.pago))return;
+    if(!x||(tipo!=='falta'&&x.pago))return;
     const chaveExclusao=tipo+':'+String(registroId);
     if(pendentesExclusao.has(chaveExclusao))return;
     pendentesExclusao.add(chaveExclusao);
@@ -694,11 +694,14 @@ async function abrirRegistrosEquipePremium(id){
         const tabela=tipo==='diaria'?'pagamento_diarias':'pagamento_bonus_extras';
         const coluna=tipo==='diaria'?'diaria_id':'bonus_extra_id';
         const r=await sb.from(tabela).select('id').eq('empresa_id',p.empresa_id)
-          .eq(coluna,registroId).limit(1);
+          .eq(coluna,registroId).eq('ativo',true).limit(1);
         if(r.error)throw r.error;
         if(r.data?.length)throw Error('Lançamento já vinculado a um pagamento. Exclusão bloqueada.');
       }
       if(tipo==='vale'){
+        const vinculo=await sb.from('pagamento_vales').select('id').eq('empresa_id',p.empresa_id).eq('vale_id',registroId).eq('ativo',true).limit(1);
+        if(vinculo.error)throw vinculo.error;
+        if(vinculo.data?.length||x.pago)throw Error('Vale quitado. Estorne primeiro o pagamento pelo Financeiro para liberar a exclusão.');
         const r=await sb.rpc('obrix_estornar_vale_equipe',{
           p_vale_id:registroId,p_motivo:'Excluído no histórico de funcionários'
         });
