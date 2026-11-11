@@ -35,7 +35,7 @@ html[data-theme="dark"] #app :is(.obxResumoGrid>div,.obxValor,.obxAcao,.fmCheckl
   background-color:var(--ob-surface-2,#111e2c)!important;
   border-color:var(--ob-border,#293b4d)!important;
 }
-#app :is(.obxResumoGrid>div,.obxValor,.obxAcao) :is(small,b){
+#app .obxAcao :is(small,b){
   color:var(--ob-text)!important;
 }
 #app .obxCardFin>div,#app .obxResumoGrid>div,#app .obxAcao{
