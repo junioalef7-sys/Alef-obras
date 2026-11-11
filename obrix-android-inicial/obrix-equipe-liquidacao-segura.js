@@ -32,7 +32,7 @@ function calcular({ds=[],bs=[],vs=[]}={}){
   if(liquido>0&&!obrasTrabalhadas.length)erros.push('Não há obra com diária ou bônus para receber o pagamento.');
   return{bruto:brutoDiarias+brutoBonus,diarias:brutoDiarias,bonus:brutoBonus,vales:adiantamentos,liquido,obras,porEtapa,negativas,obrasTrabalhadas,precisaEscolherObra:liquido>0&&negativas.length>0&&obrasTrabalhadas.length>1,erros};
 }
-function opçõesDeObra(r,obras){
+function opcoesDeObra(r,obras){
   const nomes=new Map((obras||[]).map(o=>[str(o.id),str(o.nome||'Obra')]));
   return r.obrasTrabalhadas.map(o=>({id:o.id,nome:nomes.get(o.id)||'Obra '+o.id.slice(0,8)}));
 }
