@@ -105,8 +105,7 @@ async function atualizarAoRetornar(){
   const seq=++refreshSeq;
   window.OBRIX_ASSINATURA?.load?.();
   if(localStorage.getItem(S.id)&&localStorage.getItem(S.owner)===owner)verificar({silencioso:true});
-  setTimeout(()=>{if(seq===refreshSeq&&assinaturaAberta())window.OBRIX_ASSINATURA?.load?.()},1200);
-  setTimeout(()=>{if(seq===refreshSeq&&assinaturaAberta())window.OBRIX_ASSINATURA?.load?.()},3500);
+  // Sem cargas repetidas após o foco: elas recriavam cartões e provocavam piscadas.
 }
 function botao(txt,plano,metodo){const b=document.createElement('button');b.type='button';b.className='btn assCobEfiBtn obrixPermanentNeutral obrixPayMethod';b.dataset.obrixPermanentNeutral='1';b.textContent=txt;b.dataset.assCobEfi=`${plano}:${metodo}`;b.onclick=()=>abrir(plano,metodo);return b}
 function scan(){
@@ -120,7 +119,7 @@ function scan(){
   });
 }
 const css=document.createElement('style');css.textContent=`.assCobEfiRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.assCobEfiBtn{width:100%}html:not([data-obrix-offline-v3="1"])[data-theme="light"] body #app #assPlanos button.obrixPayMethod,html:not([data-obrix-offline-v3="1"]):not([data-theme="dark"]) body:not(.dark) #app #assPlanos button.obrixPayMethod{background:#E2E8F0!important;background-color:#E2E8F0!important;background-image:none!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-color:#CBD5E1!important;box-shadow:none!important}.assCobEfiGerar,.assCobEfiAbrir,.assCobEfiCard .assVerify{width:100%;margin-top:12px;text-align:center;text-decoration:none;display:block}.assCobEfiAbrir.hidden{display:none!important}@media(max-width:620px){.assCobEfiRow{grid-template-columns:1fr}}`;document.head.appendChild(css);
-new MutationObserver(()=>scan()).observe(document.body,{childList:true,subtree:true});document.addEventListener('obrix:feature-pronto',()=>setTimeout(scan,50));
+new MutationObserver(events=>{if(events.some(e=>e.target?.id==='assPlanos'||e.target?.closest?.('#assPlanos')))scan()}).observe(document.body,{childList:true,subtree:true});document.addEventListener('obrix:feature-pronto',()=>setTimeout(scan,50));
 window.addEventListener('focus',atualizarAoRetornar);window.addEventListener('pageshow',atualizarAoRetornar);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')atualizarAoRetornar()});
 setTimeout(scan,100);setTimeout(scan,1000);
 window.OBRIX_EFI_COBRANCAS={abrir,gerar,verificar,scan,atualizar:atualizarAoRetornar};
