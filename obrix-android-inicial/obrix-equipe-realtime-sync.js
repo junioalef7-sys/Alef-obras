@@ -40,9 +40,16 @@ function reconciliar(){
   if(!navigator.onLine)return;
   clearTimeout(reconcileTimer);reconcileTimer=setTimeout(async()=>{
     try{await window.OBRIX_EQUIPE?.refresh?.();if(visivel())pintar()}catch(e){console.warn('Equipe: conferência de sincronização indisponível',e)}
-  },2200);
+  },650);
 }
 function mudou(table,payload){
+  window.dispatchEvent(new Event('obrix:atividade-externa'));
+  if(table==='faltas'||table==='pagamentos_equipe'){
+    const row=payload?.new?.funcionario_id?payload.new:payload?.old;
+    window.dispatchEvent(new CustomEvent('obrix:equipe-registro',{detail:{
+      table,funcionarioId:row?.funcionario_id||null,externo:true
+    }}));
+  }
   const aplicado=aplicarPayload(table,payload);
   if(aplicado&&visivel())requestAnimationFrame(pintar);
   else if(visivel()&&!['faltas','pagamentos_equipe'].includes(table))requestAnimationFrame(pintar);
@@ -52,16 +59,16 @@ async function iniciar(){
   if(canal||iniciando||!navigator.onLine||!window.OBRIX_BACKEND)return;
   iniciando=true;
   try{
-    const p=await window.OBRIX_BACKEND.profile(),sb=await window.OBRIX_BACKEND.init();if(!p?.empresa_id)return;
+    const p=await window.OBRIX_BACKEND.profile(),sb=await window.OBRIX_BACKEND.init();if(!p?.empresa_id){setTimeout(iniciar,1600);return;}
     const filtro=`empresa_id=eq.${p.empresa_id}`;
-    canal=sb.channel('obrix-equipe-realtime-v2-'+p.empresa_id)
+    canal=sb.channel('obrix-equipe-realtime-v3-'+p.empresa_id)
       .on('postgres_changes',{event:'*',schema:'public',table:'funcionarios',filter:filtro},p=>mudou('funcionarios',p))
       .on('postgres_changes',{event:'*',schema:'public',table:'diarias',filter:filtro},p=>mudou('diarias',p))
       .on('postgres_changes',{event:'*',schema:'public',table:'vales',filter:filtro},p=>mudou('vales',p))
       .on('postgres_changes',{event:'*',schema:'public',table:'bonus_extras',filter:filtro},p=>mudou('bonus_extras',p))
       .on('postgres_changes',{event:'*',schema:'public',table:'faltas',filter:filtro},p=>mudou('faltas',p))
       .on('postgres_changes',{event:'*',schema:'public',table:'pagamentos_equipe',filter:filtro},p=>mudou('pagamentos_equipe',p))
-      .subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){canal=null;setTimeout(iniciar,800)}});
+      .subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){try{sb.removeChannel(canal)}catch(_){}canal=null;setTimeout(iniciar,1600)}});
   }catch(e){console.warn('Equipe realtime indisponível',e);canal=null}finally{iniciando=false}
 }
 function atualizarAgora(){if(visivel())pintar();reconciliar()}
