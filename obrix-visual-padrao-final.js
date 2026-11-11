@@ -34,6 +34,25 @@ html[data-theme="light"] #app #obxVoltarObras.obxVoltarAndroid svg[data-obrix-ba
 html[data-theme="light"] #app #obxVoltarObras.obxVoltarAndroid svg[data-obrix-back-icon] path{
  stroke:#fff!important;stroke-width:3!important;
 }
+
+/* Evita cartões pequenos/grandes excederem a tela sem alterar os layouts aprovados. */
+#app :is(.card,.item,.panel,.box,.kpi,.mini,.metric,.metrica,.obxValor,.obxAcao,.obp-work,.obp-detail-finance>div,.obxCardFin>div,.obxResumoGrid>div){
+ box-sizing:border-box;min-width:0;max-width:100%;
+}
+#app :is(.card,.item,.panel,.box,.kpi,.mini,.obxValor,.obxCardFin>div) :is(b,strong){
+ max-width:100%;overflow-wrap:anywhere;
+}
+/* Os cartões de valores das obras não tinham superfície própria em alguns temas. */
+html[data-theme="light"] #app .obxCardFin>div{
+ background-color:var(--ob-surface-2,#e5eaf0);
+ border:1px solid var(--ob-border,#cbd5df);
+ border-radius:10px;min-width:0;
+}
+html[data-theme="dark"] #app .obxCardFin>div{
+ background-color:var(--ob-surface-2,#111e2c);
+ border:1px solid var(--ob-border,#293b4d);
+ border-radius:10px;min-width:0;
+}
 `;document.head.appendChild(st);
 const TIT=['obras','diário de obras','diario de obras','financeiro','equipe','funcionários','funcionarios','materiais / estoque','materiais/estoque','material estoque','materiais de estoque','estoque','orçamentos','orcamentos','orçamento','orcamento','relatórios','relatorios','documentos','notas','backup','backups','central offline','central clim','planos e assinaturas','planos de assinatura','ajuda e feedback','configurações','configuracoes','resumo geral','resumo da obra'];const n=s=>(s||'').replace(/\s+/g,' ').trim().toLowerCase(),vis=e=>!!e&&!e.classList.contains('hidden')&&getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden',modal=e=>!!e.closest('.modal,.modalBack,[role="dialog"],.estOp,[class*="modal"],[class*="dialog"]');
 function neutro(b){
