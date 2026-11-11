@@ -57,6 +57,25 @@
       stroke:currentColor!important;stroke-width:3!important;
       stroke-linecap:round!important;stroke-linejoin:round!important;fill:none!important;
     }
+
+    /* Contraste permanente na seta de voltar de Obras no Android claro.
+       O tema global aplicava texto escuro sobre fundo claro, apagando o SVG. */
+    html[data-theme="light"] #app #obxVoltarObras.obxVoltarAndroid,
+    html[data-theme="light"] #app #obxVoltarObras.obrixBackNormalized{
+      background:#17364e!important;background-color:#17364e!important;
+      color:#fff!important;-webkit-text-fill-color:#fff!important;
+      border:1px solid #17364e!important;opacity:1!important;
+      filter:none!important;visibility:visible!important;
+    }
+    html[data-theme="light"] #app #obxVoltarObras.obrixBackNormalized svg[data-obrix-back-icon],
+    html[data-theme="light"] #app #obxVoltarObras.obxVoltarAndroid svg[data-obrix-back-icon]{
+      color:#fff!important;-webkit-text-fill-color:#fff!important;
+      opacity:1!important;visibility:visible!important;filter:none!important;
+    }
+    html[data-theme="light"] #app #obxVoltarObras.obrixBackNormalized svg[data-obrix-back-icon] path,
+    html[data-theme="light"] #app #obxVoltarObras.obxVoltarAndroid svg[data-obrix-back-icon] path{
+      stroke:#fff!important;stroke-width:3!important;opacity:1!important;
+    }
   `;
   document.head.appendChild(css);
   function start(){
