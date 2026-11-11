@@ -23,11 +23,10 @@
     const main=document.createElement('main');
     main.id='financeiroMain';main.className='hidden';
     main.innerHTML=`<div class="hero"><h1>Financeiro</h1><p>Receitas, despesas e resultado das obras</p></div>
-      <div class="kpis fmKpisEssenciais"><div class="kpi"><small>Contrato atualizado</small><strong id="fmContrato">R$ 0,00</strong></div><div class="kpi"><small>Resultado da obra</small><strong id="fmResultado">R$ 0,00</strong></div></div><span id="fmRecebido" hidden aria-hidden="true"></span><span id="fmDespesas" hidden aria-hidden="true"></span>
+      <div id="fmIndicadoresInternos" hidden aria-hidden="true"><span id="fmContrato"></span><span id="fmResultado"></span><span id="fmRecebido"></span><span id="fmDespesas"></span></div>
       <div class="sectionHead"><strong>Lançamentos</strong><div><button class="btn" id="fmReceita">+ Receita</button> <button class="btn" id="fmDespesa">+ Despesa</button></div></div>
 <div id="fmForm" class="card form hidden"></div><div id="fmLista"></div>`;
     const equipe=$('equipe');equipe.parentNode.insertBefore(main,equipe.nextSibling);
-    const style=document.getElementById('obrixFinanceiroResumo2Colunas')||document.createElement('style');style.id='obrixFinanceiroResumo2Colunas';style.textContent='#financeiroMain .fmKpisEssenciais{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}';if(!style.isConnected)document.head.appendChild(style);
     $('fmReceita').onclick=()=>form('receita');
     $('fmDespesa').onclick=()=>form('despesa');
   }
