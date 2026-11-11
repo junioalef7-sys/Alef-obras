@@ -147,6 +147,10 @@ async function route(name){
 function offlineLogin(){clearError();const s=assemble();if(!s?.profile?.empresa_id){showError('Modo offline ainda não preparado neste aparelho. Entre uma vez com internet para salvar os dados.');return false}const typed=(document.getElementById('email')?.value||'').trim().toLowerCase(),cached=String(s.profile.email||'').trim().toLowerCase();if(typed&&cached&&typed!==cached){showError('Sem internet, este aparelho só pode abrir a conta salva localmente.');return false}setLoggedOut(false);active=true;current=s;persistCompat(s);openShell(s,'login-offline-v3');void route('inicio').catch(e=>console.warn('Offline: início indisponível',e));return true}
 function offlineLogout(){setLoggedOut(true);capture('offline-logout');active=false;document.documentElement.removeAttribute('data-obrix-offline-v3');document.getElementById('app')?.classList.add('hidden');document.getElementById('login')?.classList.remove('hidden');const p=document.getElementById('senha');if(p)p.value='';clearError()}
 function clickCapture(e){if(!isOffline())return;const el=e.target?.closest?.('button,a,[data-offv3-go],[data-go]');if(!el)return;if(el.id==='entrar'){e.preventDefault();e.stopImmediatePropagation();offlineLogin();return}if(el.id==='sair'||el.id==='menuSair'){e.preventDefault();e.stopImmediatePropagation();offlineLogout();return}const b=el.closest?.('#app>.bottom button');if(b){const i=[...document.querySelectorAll('#app>.bottom button')].indexOf(b);e.preventDefault();e.stopImmediatePropagation();route(['inicio','financeiro','equipe','menu'][i]||'inicio');return}const go=el.dataset?.offv3Go;if(go){e.preventDefault();e.stopImmediatePropagation();route(go)}}
+function authenticatedShellVisible(){
+  const app=document.getElementById('app'),login=document.getElementById('login');
+  return !!(app&&!app.classList.contains('hidden')&&login?.classList.contains('hidden'));
+}
 let inicioOfflinePendente=null;
 async function start(reason='offline-v3'){
   if(inicioOfflinePendente)return inicioOfflinePendente;
