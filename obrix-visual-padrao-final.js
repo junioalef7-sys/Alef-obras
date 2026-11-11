@@ -20,10 +20,39 @@ html[data-obrix-equipe-origem="rodape"] #app:has(#equipe:not(.hidden)) > .top bu
 html.obrixFinanceAndroidVisible #app>.top #obrixHeaderVoltar.obrixFinanceStandardBack::before,
 html.obrixFinanceAndroidVisible #app>.top #obrixHeaderVoltar.obrixFinanceStandardBack::after{content:none!important;display:none!important;width:0!important;height:0!important;-webkit-mask:none!important;mask:none!important}
 html.obrixFinanceAndroidVisible #app>.top #obrixHeaderVoltar.obrixFinanceStandardBack svg[data-obrix-back-icon]{display:block!important;width:29px!important;height:29px!important;flex:0 0 29px!important;opacity:1!important;visibility:visible!important;transform:none!important;fill:none!important;stroke:none!important;color:inherit!important}
-.obrixHeaderVoltar.hidden{display:none!important}#app>.top:has(.obrixHeaderVoltar:not(.hidden)){justify-content:flex-start!important}#app>.top:has(.obrixHeaderVoltar:not(.hidden))>div:first-of-type{margin-right:auto!important}#diarioMain .diarioAtualizar{display:none!important}#diarioNovoDiario{width:100%!important;min-height:56px!important;display:flex!important;align-items:center!important;justify-content:center!important;margin:0 0 14px!important;border:1px solid var(--ob-border)!important;border-radius:14px!important;background:var(--ob-surface-2)!important;color:var(--ob-text)!important;font-weight:700!important;font-size:16px!important;box-sizing:border-box!important}#diarioMain input[type="date"]{color:#000!important;-webkit-text-fill-color:#000!important}.obrixDocNovo{width:100%!important;min-height:56px!important;display:flex!important;align-items:center!important;justify-content:center!important;font-size:16px!important;font-weight:800!important;background:var(--ob-surface-2)!important;color:var(--ob-text)!important;border:1px solid var(--ob-border)!important}.obrixDocExcluir{background:#dc2626!important;background-color:#dc2626!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#dc2626!important}`;document.head.appendChild(st);
+.obrixHeaderVoltar.hidden{display:none!important}#app>.top:has(.obrixHeaderVoltar:not(.hidden)){justify-content:flex-start!important}#app>.top:has(.obrixHeaderVoltar:not(.hidden))>div:first-of-type{margin-right:auto!important}#diarioMain .diarioAtualizar{display:none!important}#diarioNovoDiario{width:100%!important;min-height:56px!important;display:flex!important;align-items:center!important;justify-content:center!important;margin:0 0 14px!important;border:1px solid var(--ob-border)!important;border-radius:14px!important;background:var(--ob-surface-2)!important;color:var(--ob-text)!important;font-weight:700!important;font-size:16px!important;box-sizing:border-box!important}#diarioMain input[type="date"]{color:#000!important;-webkit-text-fill-color:#000!important}.obrixDocNovo{width:100%!important;min-height:56px!important;display:flex!important;align-items:center!important;justify-content:center!important;font-size:16px!important;font-weight:800!important;background:var(--ob-surface-2)!important;color:var(--ob-text)!important;border:1px solid var(--ob-border)!important}.obrixDocExcluir{background:#dc2626!important;background-color:#dc2626!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#dc2626!important}
+/* Ajuste responsivo: manter proporções existentes e impedir transbordamento. */
+#app :is(.card,.item,.panel,.box,.kpi,.mini,.metric,.metrica,.obxValor,.obxAcao,.obxResumoGrid>div,.obp-work,.obp-detail-finance>div){
+  box-sizing:border-box!important;min-width:0!important;max-width:100%!important;
+}
+#app :is(.card,.item,.panel,.box,.kpi,.mini,.obxValor,.obxResumoGrid>div) :is(strong,b,small){
+  max-width:100%;overflow-wrap:anywhere;
+}
+#app :is(.grid,.kpis,.obxResumoGrid,.obxCardFin,.obp-detail-finance){
+  max-width:100%;min-width:0;box-sizing:border-box;
+}
+#app :is(.obxResumoGrid>div,.obxValor,.obxAcao,.fmChecklistTotal>div){
+  background-color:var(--ob-surface-2,#e5eaf0)!important;
+  border-color:var(--ob-border,#cbd5df)!important;
+}
+html[data-theme="dark"] #app :is(.obxResumoGrid>div,.obxValor,.obxAcao,.fmChecklistTotal>div){
+  background-color:var(--ob-surface-2,#111e2c)!important;
+  border-color:var(--ob-border,#293b4d)!important;
+}
+#app :is(.obxResumoGrid>div,.obxValor,.obxAcao) :is(small,b){
+  color:var(--ob-text)!important;
+}
+#app .obxCardFin>div,#app .obxResumoGrid>div,#app .obxAcao{
+  min-height:0;align-self:stretch;
+}
+@media(max-width:620px){
+ #app :is(.card,.item,.panel,.box){width:100%;max-width:100%;min-width:0}
+ #app :is(.obxResumoGrid,.obp-detail-finance){grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+`;document.head.appendChild(st);
 const TIT=['obras','diário de obras','diario de obras','financeiro','equipe','funcionários','funcionarios','materiais / estoque','materiais/estoque','material estoque','materiais de estoque','estoque','orçamentos','orcamentos','orçamento','orcamento','relatórios','relatorios','documentos','notas','backup','backups','central offline','central clim','planos e assinaturas','planos de assinatura','ajuda e feedback','configurações','configuracoes','resumo geral','resumo da obra'];const n=s=>(s||'').replace(/\s+/g,' ').trim().toLowerCase(),vis=e=>!!e&&!e.classList.contains('hidden')&&getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden',modal=e=>!!e.closest('.modal,.modalBack,[role="dialog"],.estOp,[class*="modal"],[class*="dialog"]');
 function neutro(b){
- if(!b||b.id==='obrixTheme'||b.closest?.('#app>.bottom'))return;
+ if(!b||b.id==='obrixTheme'||b.id==='obxVoltarObras'||b.closest?.('#app>.bottom'))return;
  // Botões de confirmação/gravação não podem receber fundo neutro inline,
  // pois isso vence a regra laranja nos temas claro e escuro.
  if(b.matches?.('.salvar,.registrar,.btn.confirmar:not(.danger),[id$="Salvar" i],[id^="salvar" i],#fmSalvar,#diarioSalvar,#docSalvar,#notaSalvar,#orcSalvar,#emSalvar,#extraSalvar,#relGerar,#relEqGerar,#relDiarioGerar'))return;
