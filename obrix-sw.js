@@ -17,7 +17,7 @@ const APP=[
 const FRESH_CRITICAL=['/obrix.html','/obrix-startup-router.js','/obrix-offline-v3.js','/obrix-offline-v3-nav.js','/obrix-offline-v3-guard.js','/obrix-offline-bootstrap.js','/obrix-session-offline-fix.js','/obrix-offline-v2.js','/obrix-core-main.js','/obrix-theme-main.js','/obrix-menu-main.js','/obrix-financeiro-main.js','/obrix-equipe-main.js','/obrix-obras-main.js'];
 function isFreshCritical(p){return FRESH_CRITICAL.some(x=>p.endsWith(x))}
 async function directResponse(r){if(!r||r.type==='opaque'||!r.redirected)return r;try{const b=await r.clone().arrayBuffer(),h=new Headers(r.headers);h.delete('content-encoding');h.delete('content-length');h.delete('transfer-encoding');return new Response(b,{status:r.status,statusText:r.statusText,headers:h})}catch(_){return r}}
-async function cachedDirect(q){const r=await caches.match(q)||await caches.match(q,{ignoreSearch:true});return r?directResponse(r):null}
+async function cachedDirect(q){const cache=await caches.open(CACHE),r=await cache.match(q)||await cache.match(q,{ignoreSearch:true});return r?directResponse(r):null}
 async function cachePut(q,r){if(!r)return r;const s=await directResponse(r);if(s&&(s.ok||s.type==='opaque'))(await caches.open(CACHE)).put(q,s.clone()).catch(()=>{});return s}
 async function networkFirst(q,ms=4500){
   // Uma requisição que estourou tempo deve ser cancelada, não ficar
@@ -53,5 +53,5 @@ self.addEventListener('install',e=>e.waitUntil((async()=>{
   await Promise.all(Array.from({length:Math.min(6,APP.length)},()=>worker()));
   await self.skipWaiting();
 })()));
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
+self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x.startsWith('obrix-offline-v')&&x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url),same=u.origin===location.origin,cdn=[CDN_SUPABASE,CDN_HTML2CANVAS,CDN_JSPDF].includes(u.href);if(!same&&!cdn)return;e.respondWith((async()=>{if(same&&(e.request.mode==='navigate'||isFreshCritical(u.pathname)||/^\/.*obrix-[^/]+\.js$/.test(u.pathname))){const r=await networkFirst(e.request,e.request.mode==='navigate'?6000:4500);if(r)return r}try{return await cachePut(e.request,await fetch(e.request))}catch(_){const r=await cachedDirect(e.request);if(r)return r;if(e.request.mode==='navigate'){const s=await caches.match('./obrix.html',{ignoreSearch:true});if(s)return directResponse(s)}return Response.error()}})())});
