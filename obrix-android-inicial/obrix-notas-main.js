@@ -46,7 +46,16 @@ function fillObras(){
   sincronizarBuscaNota();
 }
 function obraNome(id){return (window.obras||[]).find(o=>String(o.id)===String(id))?.nome||''}
-function msg(t,ok=true){const x=$('notaMsg');x.textContent=t;x.className='notasMsg '+(ok?'ok':'erro')}
+let timerNotaMensagem=null;
+function msg(t,ok=true){
+ const x=$('notaMsg');if(!x)return;
+ if(timerNotaMensagem){clearTimeout(timerNotaMensagem);timerNotaMensagem=null}
+ x.textContent=t;x.className='notasMsg '+(ok?'ok':'erro');
+ if(ok)timerNotaMensagem=setTimeout(()=>{
+   if(x.textContent===t){x.classList.add('hidden');x.textContent=''}
+   timerNotaMensagem=null;
+ },2200);
+}
 function reset(){$('notaId').value='';$('notaTitulo').value='';$('notaConteudo').value='';$('notaCategoria').value='Geral';$('notaObra').value='';$('notaPrioridade').value='normal';$('notaFixada').checked=false;$('notaConcluida').checked=false;$('notaFormTitulo').textContent='Nova nota';if($('notaObraBusca'))$('notaObraBusca').value='';$('notaCancelar').classList.add('hidden');$('notaMsg').classList.add('hidden')}
 function edit(n){$('notaId').value=n.id;$('notaTitulo').value=n.titulo||'';$('notaConteudo').value=n.conteudo||'';$('notaCategoria').value=n.categoria||'Geral';$('notaObra').value=n.obra_id||'';if($('notaObraBusca'))$('notaObraBusca').value=obraNome(n.obra_id);$('notaPrioridade').value=n.prioridade||'normal';$('notaFixada').checked=!!n.fixada;$('notaConcluida').checked=!!n.concluida;$('notaFormTitulo').textContent='Editar nota';$('notaCancelar').classList.remove('hidden');scrollTo({top:0,behavior:'smooth'})}
 function docNota(n){const data=new Date(n.atualizado_em||n.criado_em||Date.now()).toLocaleString('pt-BR');return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(n.titulo||'Nota')}</title><style>body{font-family:Arial,sans-serif;color:#111827;max-width:800px;margin:32px auto;padding:0 24px}h1{margin-bottom:8px}.meta{color:#475569;margin-bottom:24px}.conteudo{white-space:pre-wrap;line-height:1.55;font-size:16px;border-top:1px solid #cbd5e1;padding-top:20px}@media print{body{margin:0;max-width:none;padding:10mm}}</style></head><body><h1>${esc(n.titulo||'Nota')}</h1><div class="meta">Categoria: ${esc(n.categoria||'Geral')}${n.obra_id?' • Obra: '+esc(obraNome(n.obra_id)):''} • Prioridade: ${esc(n.prioridade||'normal')} • ${n.concluida?'Concluída':'Em aberto'}<br>Atualizada em ${esc(data)}</div><div class="conteudo">${esc(n.conteudo||'')}</div></body></html>`}
