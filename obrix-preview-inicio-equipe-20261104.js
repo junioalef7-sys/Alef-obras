@@ -323,45 +323,48 @@ async function obpUltimoPagamento(id,force=false){
     throw error;
   }
 }
+// As faltas do ciclo atual começam após o último pagamento não estornado.
+// A data civil do pagamento pode estar um dia à frente do registro local
+// quando o sistema antigo gravou dates usando toISOString() em UTC.
+// Preferir a ordem dos eventos de gravação (criado_em) evita descartar a falta
+// registrada no mesmo dia local após a baixa da equipe.
 function obpContarFaltasPeriodo(id,faltas,pagamento){
-  // Zero diárias abertas significa zero faltas no cartão, mesmo com histórico.
-  if(!arrEquipe('diarias',id).some(d=>!d.paga))return 0;
-  const dataFechamento=String(pagamento?.data_pagamento||'').slice(0,10);
-  const instanteFechamento=Date.parse(pagamento?.criado_em||'');
+  const tPagamento=Date.parse(pagamento?.criado_em||'');
+  const temPagamento=!!pagamento;
+  const dataPagamento=String(pagamento?.data_pagamento||'').slice(0,10);
   return (faltas||[]).filter(f=>{
     const data=String(f.data||'').slice(0,10);
     if(!data)return false;
-    if(!pagamento)return true;
-    // Excluir faltas de períodos já quitados, inclusive retroativos.
-    if(dataFechamento&&data<dataFechamento)return false;
-    const criadaEm=Date.parse(f.criado_em||'');
-    if(Number.isFinite(instanteFechamento)&&Number.isFinite(criadaEm))
-      return criadaEm>instanteFechamento;
-    return !!dataFechamento&&data>dataFechamento;
+    if(!temPagamento)return true;
+    const tFalta=Date.parse(f.criado_em||'');
+    if(Number.isFinite(tPagamento)&&Number.isFinite(tFalta)){
+      // Registro criado antes de pagar pertence ao histórico já encerrado;
+      // registros novos formam um novo ciclo mesmo sem diárias lançadas.
+      return tFalta>tPagamento;
+    }
+    // Compatibilidade com registros antigos que não têm timestamps.
+    return !!dataPagamento&&data>dataPagamento;
   }).length;
 }
 async function obpFaltasPeriodo(id,linhas){
-  if(!arrEquipe('diarias',id).some(d=>!d.paga))return 0;
   const pagamento=await obpUltimoPagamento(id);
   return obpContarFaltasPeriodo(id,linhas,pagamento);
 }
 function obpAtualizarFaltas(id){
   const chave=String(id),el=document.getElementById('obpFaltasTotal');
   if(!el||chave!==String(selecionado))return;
+  // A lista de diárias não é pré-condição: é possível registrar uma falta
+  // antes de lançar a próxima diária do novo ciclo.
   const abertas=arrEquipe('diarias',id).filter(d=>!d.paga)
     .map(d=>String(d.id)).sort().join('|');
   const anterior=obpDiariasAbertasCache.get(chave);
   if(anterior!==abertas){
     obpDiariasAbertasCache.set(chave,abertas);
-    // Após pagar/reabrir diárias, não reutilizar faltas nem pagamentos antigos.
+    // Mudança de folha exige recarregar a referência de último pagamento.
     obpUltimoPagamentoCache.delete(chave);
     obpFaltasCache.delete(chave);
   }
-  const sequencia=++obpFaltasVisualSeq;
-  // Não alternar número e marcador de carregamento a cada refresh da Equipe.
-  // Preserva o valor estável até chegar a contagem válida da consulta atual.
   const atualizarNumero=valor=>{if(el.textContent!==valor)el.textContent=valor};
-  if(!abertas){atualizarNumero('0');return}
   const cache=obpFaltasCache.get(chave),pagCache=obpUltimoPagamentoCache.get(chave);
   if(cache?.rows&&pagCache&&!pagCache.error&&!pagCache.promise)
     atualizarNumero(String(obpContarFaltasPeriodo(id,cache.rows,pagCache.item)));
@@ -375,7 +378,6 @@ function obpAtualizarFaltas(id){
     }).catch(error=>{
       const atual=document.getElementById('obpFaltasTotal');
       if(atual&&chave===String(selecionado)){
-        // Falha de rede não deve fazer uma contagem já visível piscar.
         if(!atual.textContent.trim())atual.textContent='—';
         console.warn('Faltas do período: consulta indisponível',error);
       }
