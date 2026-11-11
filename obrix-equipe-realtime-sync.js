@@ -44,6 +44,12 @@ function reconciliar(){
 }
 function mudou(table,payload){
   window.dispatchEvent(new Event('obrix:atividade-externa'));
+  if(table==='faltas'||table==='pagamentos_equipe'){
+    const row=payload?.new?.funcionario_id?payload.new:payload?.old;
+    window.dispatchEvent(new CustomEvent('obrix:equipe-registro',{detail:{
+      table,funcionarioId:row?.funcionario_id||null,externo:true
+    }}));
+  }
   const aplicado=aplicarPayload(table,payload);
   if(aplicado&&visivel())requestAnimationFrame(pintar);
   else if(visivel()&&!['faltas','pagamentos_equipe'].includes(table))requestAnimationFrame(pintar);
