@@ -1,5 +1,5 @@
-const CACHE='obrix-offline-v62-ios-recovery';
-const BUILD='20261028-ios-recovery1';
+const CACHE='obrix-offline-v63-stability-coalesced';
+const BUILD='20261110-stability-coalesced1';
 const CDN_SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1';
 const CDN_HTML2CANVAS='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const CDN_JSPDF='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
@@ -17,9 +17,41 @@ const APP=[
 const FRESH_CRITICAL=['/obrix.html','/obrix-startup-router.js','/obrix-offline-v3.js','/obrix-offline-v3-nav.js','/obrix-offline-v3-guard.js','/obrix-offline-bootstrap.js','/obrix-session-offline-fix.js','/obrix-offline-v2.js','/obrix-core-main.js','/obrix-theme-main.js','/obrix-menu-main.js','/obrix-financeiro-main.js','/obrix-equipe-main.js','/obrix-obras-main.js'];
 function isFreshCritical(p){return FRESH_CRITICAL.some(x=>p.endsWith(x))}
 async function directResponse(r){if(!r||r.type==='opaque'||!r.redirected)return r;try{const b=await r.clone().arrayBuffer(),h=new Headers(r.headers);h.delete('content-encoding');h.delete('content-length');h.delete('transfer-encoding');return new Response(b,{status:r.status,statusText:r.statusText,headers:h})}catch(_){return r}}
-async function cachedDirect(q){const r=await caches.match(q,{ignoreSearch:true});return r?directResponse(r):null}
+async function cachedDirect(q){const r=await caches.match(q)||await caches.match(q,{ignoreSearch:true});return r?directResponse(r):null}
 async function cachePut(q,r){if(!r)return r;const s=await directResponse(r);if(s&&(s.ok||s.type==='opaque'))(await caches.open(CACHE)).put(q,s.clone()).catch(()=>{});return s}
-async function networkFirst(q,ms=4500){try{const r=await Promise.race([fetch(new Request(q,{cache:'reload'})),new Promise((_,rej)=>setTimeout(()=>rej(Error('timeout')),ms))]);return cachePut(q,r)}catch(_){return cachedDirect(q)}}
-self.addEventListener('install',e=>e.waitUntil((async()=>{const c=await caches.open(CACHE);await Promise.allSettled(APP.map(async u=>{try{const q=new Request(u,{cache:'reload'}),r=await fetch(q),s=await directResponse(r);if(s&&(s.ok||s.type==='opaque'))await c.put(q,s.clone())}catch(_){}}));await self.skipWaiting()})()));
+async function networkFirst(q,ms=4500){
+  // Uma requisição que estourou tempo deve ser cancelada, não ficar
+  // baixando arquivos em segundo plano enquanto novas telas abrem.
+  const abort=new AbortController();
+  const timer=setTimeout(()=>abort.abort(),ms);
+  try{
+    const r=await fetch(new Request(q,{cache:'reload',signal:abort.signal}));
+    return await cachePut(q,r);
+  }catch(_){return cachedDirect(q)}
+  finally{clearTimeout(timer)}
+}
+async function precoletar(c,url){
+  const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),9000);
+  try{
+    const q=new Request(url,{cache:'reload',signal:abort.signal});
+    const r=await fetch(q),s=await directResponse(r);
+    if(s&&(s.ok||s.type==='opaque'))await c.put(q,s.clone());
+  }catch(_){}
+  finally{clearTimeout(timer)}
+}
+self.addEventListener('install',e=>e.waitUntil((async()=>{
+  const c=await caches.open(CACHE);
+  // O cache offline anterior tentava baixar todos os arquivos simultaneamente.
+  // Seis workers mantêm a cobertura offline, sem pico de 80+ requests.
+  let index=0;
+  const worker=async()=>{
+    while(index<APP.length){
+      const n=index++;
+      await precoletar(c,APP[n]);
+    }
+  };
+  await Promise.all(Array.from({length:Math.min(6,APP.length)},()=>worker()));
+  await self.skipWaiting();
+})()));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url),same=u.origin===location.origin,cdn=[CDN_SUPABASE,CDN_HTML2CANVAS,CDN_JSPDF].includes(u.href);if(!same&&!cdn)return;e.respondWith((async()=>{if(same&&(e.request.mode==='navigate'||isFreshCritical(u.pathname)||/^\/.*obrix-[^/]+\.js$/.test(u.pathname))){const r=await networkFirst(e.request,e.request.mode==='navigate'?6000:4500);if(r)return r}try{return await cachePut(e.request,await fetch(e.request))}catch(_){const r=await cachedDirect(e.request);if(r)return r;if(e.request.mode==='navigate'){const s=await caches.match('./obrix.html',{ignoreSearch:true});if(s)return directResponse(s)}return Response.error()}})())});
