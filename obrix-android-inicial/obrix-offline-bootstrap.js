@@ -19,7 +19,12 @@ function hydrate(raw){
     bonus:Array.isArray(b.bonus)?b.bonus:[],
     updatedAt:b.updatedAt||ec?.savedAt||fc?.savedAt||null
   };
-  const recovered=(next.obras.length||next.funcionarios.length||next.financeiro.length||next.extras.length||next.diarias.length)>0;
+  // Não regravar o cache completo toda vez que uma tela consulta base().
+  // Só persistir quando algum dado realmente foi recuperado dos caches separados.
+  const fields=['obras','funcionarios','financeiro','extras','diarias'];
+  const recovered=fields.some(k=>
+    (!Array.isArray(b[k])||!b[k].length)&&Array.isArray(next[k])&&next[k].length>0
+  );
   if(recovered){next.cacheRecovered=true;write(BASE_KEY,next)}
   return next;
 }
@@ -32,6 +37,11 @@ function base(){
 function sameAccount(b){const typed=(document.getElementById('email')?.value||'').trim().toLowerCase(),cached=String(b?.profile?.email||'').trim().toLowerCase();return !typed||!cached||typed===cached}
 function restore(reason='offline'){
   const b=base();if(!b||!sameAccount(b))return false;
+  const appAtual=document.getElementById('app'),loginAtual=document.getElementById('login');
+  // Várias rotas chamam restore ao mesmo tempo: não desmontar a tela já aberta.
+  if(appAtual&&!appAtual.classList.contains('hidden')&&
+     loginAtual?.classList.contains('hidden')&&
+     document.documentElement.dataset.obrixOffline==='1')return true;
   const login=document.getElementById('login'),app=document.getElementById('app'),usuario=document.getElementById('usuario');
   window.__OBRIX_OFFLINE_BOOTSTRAP_BASE=b;window.obras=Array.isArray(b.obras)?b.obras:[];window.funcionarios=Array.isArray(b.funcionarios)?b.funcionarios:[];window.financeiro=Array.isArray(b.financeiro)?b.financeiro:[];window.extras=Array.isArray(b.extras)?b.extras:[];window.diarias=Array.isArray(b.diarias)?b.diarias:[];window.vales=Array.isArray(b.vales)?b.vales:[];window.bonus=Array.isArray(b.bonus)?b.bonus:[];
   login?.classList.add('hidden');app?.classList.remove('hidden');if(usuario)usuario.textContent=b.profile.nome||b.profile.email||'';
