@@ -368,13 +368,13 @@ function obpAtualizarFaltas(id){
   void Promise.all([obpBuscarFaltas(id),obpUltimoPagamento(id)])
     .then(([faltas,pagamento])=>{
       const atual=document.getElementById('obpFaltasTotal');
-      if(atual&&chave===String(selecionado)&&sequencia===obpFaltasVisualSeq){
+      if(atual&&chave===String(selecionado)){
         const valor=String(obpContarFaltasPeriodo(id,faltas,pagamento));
         if(atual.textContent!==valor)atual.textContent=valor;
       }
     }).catch(error=>{
       const atual=document.getElementById('obpFaltasTotal');
-      if(atual&&chave===String(selecionado)&&sequencia===obpFaltasVisualSeq){
+      if(atual&&chave===String(selecionado)){
         // Falha de rede não deve fazer uma contagem já visível piscar.
         if(!atual.textContent.trim())atual.textContent='—';
         console.warn('Faltas do período: consulta indisponível',error);
@@ -890,6 +890,7 @@ window.addEventListener('obrix:equipe-registro',event=>{
   const id=event.detail.funcionarioId;
   if(id)obpFaltasCache.delete(String(id));
   else obpFaltasCache.clear();
+  if(id&&String(id)===String(selecionado))obpAtualizarFaltas(id);
   if(secaoVisivel('equipe'))atualizar();
 });
 window.OBRIX_PREVIEW={refresh:atualizar,openActivity:abrirAtualizacoes};
