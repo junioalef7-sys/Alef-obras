@@ -100,6 +100,7 @@ document.addEventListener('click',e=>{
   if(b?.dataset.relFoto){setTimeout(()=>{if(document.querySelector('.obrix-rf-back'))void assinar(b.dataset.relFoto)},80);return}
   if(e.target.closest?.('.obrix-rf-x')||e.target.classList?.contains('obrix-rf-back'))setTimeout(limpar,0);
 },true);
+window.addEventListener('obrix:fotos-abertas',e=>{if(e.detail?.obraId)void assinar(e.detail.obraId)});
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden&&obraAtual&&!canal&&document.querySelector('.obrix-rf-back'))void assinar(obraAtual);
 });
