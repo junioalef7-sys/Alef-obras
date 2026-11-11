@@ -36,11 +36,15 @@ function pintar(){
   try{window.OBRIX_EQUIPE_CONTROLES_GUARD?.ensure?.()}catch(_){ }
   const k=document.getElementById('funcs');if(k){try{k.textContent=String(lista('funcionarios').filter(f=>f.ativo!==false).length)}catch(_){}}
 }
-function reconciliar(){
-  if(!navigator.onLine)return;
+function reconciliar(forcar=false){
+  // A tela oculta recebe o payload Realtime no cache, mas não precisa
+  // consultar quatro tabelas completas após cada evento de outra área.
+  if(!navigator.onLine||document.hidden||(!forcar&&!visivel()))return;
   clearTimeout(reconcileTimer);reconcileTimer=setTimeout(async()=>{
-    try{await window.OBRIX_EQUIPE?.refresh?.();if(visivel())pintar()}catch(e){console.warn('Equipe: conferência de sincronização indisponível',e)}
-  },650);
+    if(document.hidden||(!forcar&&!visivel()))return;
+    try{await window.OBRIX_EQUIPE?.refresh?.();if(visivel())pintar()}
+    catch(e){console.warn('Equipe: conferência de sincronização indisponível',e)}
+  },700);
 }
 function mudou(table,payload){
   window.dispatchEvent(new Event('obrix:atividade-externa'));
@@ -56,7 +60,7 @@ function mudou(table,payload){
   reconciliar();
 }
 async function iniciar(){
-  if(canal||iniciando||!navigator.onLine||!window.OBRIX_BACKEND)return;
+  if(canal||iniciando||!navigator.onLine||document.hidden||!window.OBRIX_BACKEND)return;
   iniciando=true;
   try{
     const p=await window.OBRIX_BACKEND.profile(),sb=await window.OBRIX_BACKEND.init();if(!p?.empresa_id){setTimeout(iniciar,1600);return;}
@@ -71,7 +75,7 @@ async function iniciar(){
       .subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){try{sb.removeChannel(canal)}catch(_){}canal=null;setTimeout(iniciar,1600)}});
   }catch(e){console.warn('Equipe realtime indisponível',e);canal=null}finally{iniciando=false}
 }
-function atualizarAgora(){if(visivel())pintar();reconciliar()}
+function atualizarAgora(){if(visivel())pintar();reconciliar(true)}
 window.addEventListener('online',()=>{setTimeout(iniciar,80);setTimeout(atualizarAgora,180)});
 window.addEventListener('focus',()=>{if(visivel()){void iniciar();atualizarAgora()}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&visivel()){void iniciar();atualizarAgora()}});
