@@ -16,10 +16,39 @@ html[data-obrix-equipe-origem="rodape"] #app:has(#equipe:not(.hidden)) > .top bu
 :root{--ob-bg:#eef2f6;--ob-surface:#f8fafc;--ob-card:#f8fafc;--ob-surface-2:#e5eaf0;--ob-text:#0f172a;--ob-muted:#526173;--ob-border:#cbd5df;color-scheme:light}html[data-theme="dark"]{--ob-bg:#07111b;--ob-surface:#0d1722;--ob-card:#0d1722;--ob-surface-2:#111e2c;--ob-text:#f8fafc;--ob-muted:#c3ceda;--ob-border:#293b4d;color-scheme:dark}html,body,body>.wrap,#app{background:var(--ob-bg)!important;color:var(--ob-text)!important}#app :is(.card,.hero,.panel,.box,.sheet,.drawer,.kpi,.item){background:var(--ob-surface)!important;color:var(--ob-text)!important;border-color:var(--ob-border)!important;box-shadow:none!important}#app :is(.mini,.status,input,select,textarea,button,.btn,.bottom button,.nav button){background:var(--ob-surface-2)!important;color:var(--ob-text)!important;-webkit-text-fill-color:var(--ob-text)!important;border-color:var(--ob-border)!important;box-shadow:none!important}#app button,#app .btn,#app input[type="button"],#app input[type="submit"],#app input[type="reset"],#app [role="button"],.modalBack button,.modalBack .btn,.modal button,.modal .btn,[role="dialog"] button,[role="dialog"] .btn{background:var(--ob-surface-2)!important;background-color:var(--ob-surface-2)!important;background-image:none!important;color:var(--ob-text)!important;-webkit-text-fill-color:var(--ob-text)!important;border-color:var(--ob-border)!important;box-shadow:none!important}
 #financeiroMain>.hero{min-height:72px!important;display:flex!important;align-items:center!important;padding-top:12px!important;padding-bottom:12px!important}#financeiroMain>.hero h1{margin:0!important;line-height:1.15!important;display:flex!important;align-items:center!important}.obrixFinReceita{background:#16a34a!important;background-color:#16a34a!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#16a34a!important}.obrixFinDespesa{background:#dc2626!important;background-color:#dc2626!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#dc2626!important}
 .obrixConfigPerigo{background:var(--ob-surface-2)!important;background-color:var(--ob-surface-2)!important;background-image:none!important;color:#dc2626!important;-webkit-text-fill-color:#dc2626!important;border:2px solid #dc2626!important;box-shadow:none!important}
-.obrixHeaderVoltar{width:42px!important;height:42px!important;padding:0!important;flex:0 0 42px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;border-radius:12px!important;font-size:26px!important;line-height:1!important;order:-2!important}.obrixHeaderVoltar.hidden{display:none!important}#app>.top:has(.obrixHeaderVoltar:not(.hidden)){justify-content:flex-start!important}#app>.top:has(.obrixHeaderVoltar:not(.hidden))>div:first-of-type{margin-right:auto!important}#diarioMain .diarioAtualizar{display:none!important}#diarioNovoDiario{width:100%!important;min-height:56px!important;display:flex!important;align-items:center!important;justify-content:center!important;margin:0 0 14px!important;border:1px solid var(--ob-border)!important;border-radius:14px!important;background:var(--ob-surface-2)!important;color:var(--ob-text)!important;font-weight:700!important;font-size:16px!important;box-sizing:border-box!important}#diarioMain input[type="date"]{color:#000!important;-webkit-text-fill-color:#000!important}.obrixDocNovo{width:100%!important;min-height:56px!important;display:flex!important;align-items:center!important;justify-content:center!important;font-size:16px!important;font-weight:800!important;background:var(--ob-surface-2)!important;color:var(--ob-text)!important;border:1px solid var(--ob-border)!important}.obrixDocExcluir{background:#dc2626!important;background-color:#dc2626!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#dc2626!important}`;document.head.appendChild(st);
+.obrixHeaderVoltar{width:42px!important;height:42px!important;padding:0!important;flex:0 0 42px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;border-radius:12px!important;font-size:26px!important;line-height:1!important;order:-2!important}.obrixHeaderVoltar.hidden{display:none!important}#app>.top:has(.obrixHeaderVoltar:not(.hidden)){justify-content:flex-start!important}#app>.top:has(.obrixHeaderVoltar:not(.hidden))>div:first-of-type{margin-right:auto!important}#diarioMain .diarioAtualizar{display:none!important}#diarioNovoDiario{width:100%!important;min-height:56px!important;display:flex!important;align-items:center!important;justify-content:center!important;margin:0 0 14px!important;border:1px solid var(--ob-border)!important;border-radius:14px!important;background:var(--ob-surface-2)!important;color:var(--ob-text)!important;font-weight:700!important;font-size:16px!important;box-sizing:border-box!important}#diarioMain input[type="date"]{color:#000!important;-webkit-text-fill-color:#000!important}.obrixDocNovo{width:100%!important;min-height:56px!important;display:flex!important;align-items:center!important;justify-content:center!important;font-size:16px!important;font-weight:800!important;background:var(--ob-surface-2)!important;color:var(--ob-text)!important;border:1px solid var(--ob-border)!important}.obrixDocExcluir{background:#dc2626!important;background-color:#dc2626!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#dc2626!important}
+/* Ajuste responsivo: manter proporções existentes e impedir transbordamento. */
+#app :is(.card,.item,.panel,.box,.kpi,.mini,.metric,.metrica,.obxValor,.obxAcao,.obxResumoGrid>div,.obp-work,.obp-detail-finance>div){
+  box-sizing:border-box!important;min-width:0!important;max-width:100%!important;
+}
+#app :is(.card,.item,.panel,.box,.kpi,.mini,.obxValor,.obxResumoGrid>div) :is(strong,b,small){
+  max-width:100%;overflow-wrap:anywhere;
+}
+#app :is(.grid,.kpis,.obxResumoGrid,.obxCardFin,.obp-detail-finance){
+  max-width:100%;min-width:0;box-sizing:border-box;
+}
+#app :is(.obxResumoGrid>div,.obxValor,.obxAcao,.fmChecklistTotal>div){
+  background-color:var(--ob-surface-2,#e5eaf0)!important;
+  border-color:var(--ob-border,#cbd5df)!important;
+}
+html[data-theme="dark"] #app :is(.obxResumoGrid>div,.obxValor,.obxAcao,.fmChecklistTotal>div){
+  background-color:var(--ob-surface-2,#111e2c)!important;
+  border-color:var(--ob-border,#293b4d)!important;
+}
+#app :is(.obxResumoGrid>div,.obxValor,.obxAcao) :is(small,b){
+  color:var(--ob-text)!important;
+}
+#app .obxCardFin>div,#app .obxResumoGrid>div,#app .obxAcao{
+  min-height:0;align-self:stretch;
+}
+@media(max-width:620px){
+ #app :is(.card,.item,.panel,.box){width:100%;max-width:100%;min-width:0}
+ #app :is(.obxResumoGrid,.obp-detail-finance){grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+`;document.head.appendChild(st);
 const TIT=['obras','diário de obras','diario de obras','financeiro','equipe','funcionários','funcionarios','materiais / estoque','materiais/estoque','material estoque','materiais de estoque','estoque','orçamentos','orcamentos','orçamento','orcamento','relatórios','relatorios','documentos','notas','backup','backups','central offline','central clim','planos e assinaturas','planos de assinatura','ajuda e feedback','configurações','configuracoes','resumo geral','resumo da obra'];const n=s=>(s||'').replace(/\s+/g,' ').trim().toLowerCase(),vis=e=>!!e&&!e.classList.contains('hidden')&&getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden',modal=e=>!!e.closest('.modal,.modalBack,[role="dialog"],.estOp,[class*="modal"],[class*="dialog"]');
 function neutro(b){
- if(!b||b.id==='obrixTheme'||b.closest?.('#app>.bottom'))return;
+ if(!b||b.id==='obrixTheme'||b.id==='obxVoltarObras'||b.closest?.('#app>.bottom'))return;
  // Botões de confirmação/gravação não podem receber fundo neutro inline,
  // pois isso vence a regra laranja nos temas claro e escuro.
  if(b.matches?.('.salvar,.registrar,.btn.confirmar:not(.danger),[id$="Salvar" i],[id^="salvar" i],#fmSalvar,#diarioSalvar,#docSalvar,#notaSalvar,#orcSalvar,#emSalvar,#extraSalvar,#relGerar,#relEqGerar,#relDiarioGerar'))return;
