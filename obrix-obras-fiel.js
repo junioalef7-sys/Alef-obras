@@ -32,7 +32,7 @@ function atualizarListaSemRemontar(box,novoHtml){
       '.obxCardInfo p:nth-of-type(2)','.obxStatusLinha > b'];
     for(const seletor of campos)atualizarTexto(antigo.querySelector(seletor),novo.querySelector(seletor));
     const a=antigo.querySelector('.obxStatus'),b=novo.querySelector('.obxStatus');
-    if(a&&b){if(a.className!==b.className)a.className=b.className;if(a.getAttribute('style')!==b.getAttribute('style')){if(b.hasAttribute('style'))a.setAttribute('style',b.getAttribute('style'));else a.removeAttribute('style')}atualizarTexto(a,b)}
+    if(a&&b){const statusMudou=a.className!==b.className;if(statusMudou)a.className=b.className;/* Não reescrever style quando o status é o mesmo: evita repaints e disputa com o tema. */if(statusMudou&&a.getAttribute('style')!==b.getAttribute('style')){if(b.hasAttribute('style'))a.setAttribute('style',b.getAttribute('style'));else a.removeAttribute('style')}atualizarTexto(a,b)}
     const barAntigo=antigo.querySelector('.obxStatusLinha .obxBar i');
     const barNovo=novo.querySelector('.obxStatusLinha .obxBar i');
     if(barAntigo&&barNovo&&barAntigo.style.width!==barNovo.style.width)
@@ -75,8 +75,11 @@ function atualizarDetalheSemRemontar(box,html){
   for(let i=0;i<atuais.length;i++){
    const a=atuais[i],n=novos[i];
    if(a.textContent!==n.textContent)a.textContent=n.textContent;
-   if(a.className!==n.className)a.className=n.className;
-   if(a.getAttribute('style')!==n.getAttribute('style')){
+   const statusMudou=a.className!==n.className;
+   if(statusMudou)a.className=n.className;
+   // O indicador mantém seu próprio nó e estilo em sincronizações sem mudança de status.
+   const manterStatus=seletor==='.obxDetalheHead .obxStatus'&&!statusMudou;
+   if(!manterStatus&&a.getAttribute('style')!==n.getAttribute('style')){
     if(n.hasAttribute('style'))a.setAttribute('style',n.getAttribute('style'));
     else a.removeAttribute('style');
    }
