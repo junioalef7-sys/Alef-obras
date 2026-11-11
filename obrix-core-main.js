@@ -6,11 +6,14 @@ let profile=null,obras=[],funcionarios=[],financeiro=[],extras=[],diarias=[],val
 function publicarGlobais(){window.obras=obras;window.funcionarios=funcionarios;window.financeiro=financeiro;window.extras=extras;window.diarias=diarias;window.vales=vales;window.bonus=bonus}
 function lerLocal(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}}
 function salvarIdentidadeOffline(p=profile){if(!p?.empresa_id)return false;try{localStorage.setItem(OFFLINE_IDENTITY_KEY,JSON.stringify({empresa_id:p.empresa_id,nome:p.nome||'',email:p.email||'',papel:p.papel||'',updatedAt:new Date().toISOString()}));return true}catch(_){return false}}
-function salvarBaseOffline(){
-  if(!profile?.empresa_id)return false;
+// Persistência offline: uma atualização de Equipe pode chegar junto de várias
+// notificações Realtime. Agrupar gravações síncronas evita bloquear o navegador.
+let salvarBaseTimer=null,salvarBaseEmpresa='';
+function gravarBaseOffline(eid){
+  if(!eid||profile?.empresa_id!==eid)return false;
   salvarIdentidadeOffline(profile);
   try{
-    const now=new Date().toISOString(),eid=profile.empresa_id;
+    const now=new Date().toISOString();
     const base={profile:{empresa_id:eid,nome:profile.nome||'',email:profile.email||'',papel:profile.papel||''},obras:Array.isArray(obras)?obras:[],funcionarios:Array.isArray(funcionarios)?funcionarios:[],financeiro:Array.isArray(financeiro)?financeiro:[],extras:Array.isArray(extras)?extras:[],diarias:Array.isArray(diarias)?diarias:[],vales:Array.isArray(vales)?vales:[],bonus:Array.isArray(bonus)?bonus:[],updatedAt:now};
     localStorage.setItem(OFFLINE_BASE_KEY,JSON.stringify(base));
     localStorage.setItem(OFFLINE_OBRAS_PREFIX+eid,JSON.stringify(base.obras));
@@ -20,8 +23,24 @@ function salvarBaseOffline(){
     localStorage.setItem(OFFLINE_FIN_PREFIX+eid,JSON.stringify({financeiro:base.financeiro,extras:base.extras,checklists:Array.isArray(fc?.checklists)?fc.checklists:[],savedAt:now}));
     window.dispatchEvent(new CustomEvent('obrix:offline-base-atualizada'));
     return true;
-  }catch(_){return false}
+  }catch(e){console.warn('Cache offline não pôde ser atualizado',e);return false}
 }
+function flushBaseOffline(){
+  if(salvarBaseTimer){clearTimeout(salvarBaseTimer);salvarBaseTimer=null}
+  if(!salvarBaseEmpresa)return;
+  const eid=salvarBaseEmpresa;salvarBaseEmpresa='';
+  gravarBaseOffline(eid);
+}
+function salvarBaseOffline(){
+  if(!profile?.empresa_id)return false;
+  salvarBaseEmpresa=profile.empresa_id;
+  if(!salvarBaseTimer){
+    salvarBaseTimer=setTimeout(()=>{salvarBaseTimer=null;flushBaseOffline()},160);
+  }
+  return true;
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)flushBaseOffline()});
+window.addEventListener('pagehide',flushBaseOffline);
 function lerBaseOffline(){try{const viaBoot=window.OBRIX_OFFLINE_BOOTSTRAP_API?.base?.();if(viaBoot?.profile?.empresa_id)return viaBoot;const b=JSON.parse(localStorage.getItem(OFFLINE_BASE_KEY)||'null');if(b?.profile?.empresa_id)return b;const i=JSON.parse(localStorage.getItem(OFFLINE_IDENTITY_KEY)||'null');if(i?.empresa_id)return{profile:{empresa_id:i.empresa_id,nome:i.nome||'',email:i.email||'',papel:i.papel||''},obras:[],funcionarios:[],financeiro:[],extras:[],diarias:[],vales:[],bonus:[],updatedAt:i.updatedAt||null,identityFallback:true}}catch(_){}return null}
 function atualizarInicio(){const total=obras.reduce((s,o)=>s+Number(o.valor_contrato||0),0)+extras.reduce((s,x)=>s+Number(x.valor||0),0),recebido=financeiro.filter(x=>x.tipo==='receita'&&(!x.status_lancamento||x.status_lancamento==='ativo')).reduce((s,x)=>s+Number(x.valor||0),0);if($('contratado'))$('contratado').textContent=money(total);if($('receber'))$('receber').textContent=money(Math.max(0,total-recebido));if($('ativas'))$('ativas').textContent=String(obras.filter(o=>['andamento','em_andamento'].includes(String(o.status||'').toLowerCase())).length);if($('funcs'))$('funcs').textContent=String(funcionarios.filter(f=>f.ativo!==false).length)}
 function timeout(p,ms,msg){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg||'Tempo de conexão esgotado.')),ms))])}
