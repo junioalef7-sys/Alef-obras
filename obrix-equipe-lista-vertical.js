@@ -158,8 +158,23 @@
     bonusList().filter(x=>String(x.funcionario_id)===String(id))
       .forEach(x=>rows.push({data:x.data,tipo:x.tipo==='extra'?'Extra':'Bônus',obra:nomeObra(x.obra_id),valor:Number(x.valor||0),status:x.pago?'Pago':'Em aberto',bonusId:String(x.id),pago:!!x.pago,descricao:x.descricao||''}));
     rows.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
-    const html=`<p class="muted"><b>${esc(f.nome)}</b></p><div class="obrix-registros-lista">${rows.length?rows.map(x=>`<div class="obrix-registro-linha"><div><b>${x.data?new Date(x.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span>${x.descricao?'<small>'+esc(x.descricao)+'</small>':''}</div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small>${x.bonusId&&!x.pago?'<button type="button" class="obrix-registro-excluir" data-bonus-id="'+esc(x.bonusId)+'" style="display:block;margin-top:8px;padding:7px 10px;border:1px solid #dc2626;border-radius:9px;color:#b91c1c;background:#fff;font-size:13px;font-weight:800">Excluir</button>':''}</div></div>`).join(''):'<p class="muted">Nenhum registro encontrado.</p>'}</div><div class="obrix-registros-acoes"><button type="button" data-extra="vale">Vale</button><button type="button" data-extra="bonus">Bônus e Extras</button><button type="button" class="pagar" data-extra="pagar">Pagar</button><button type="button" class="obrix-excluir-bonus-acao" style="grid-column:1/-1;display:block;width:100%;min-height:48px;background:#fff4f4!important;border:2px solid #b91c1c!important;color:#991b1b!important;-webkit-text-fill-color:#991b1b!important;font-weight:900;font-size:15px" aria-label="Excluir bônus ou extra">Excluir bônus / extra</button></div>`;
+    const html=`<p class="muted"><b>${esc(f.nome)}</b></p><label class="obrix-registros-busca-label">Buscar registros</label><input type="search" class="obrix-registros-busca" placeholder="Data, obra, tipo, valor ou situação..." autocomplete="off"><p class="muted obrix-registros-busca-status"></p><div class="obrix-registros-lista">${rows.length?rows.map(x=>`<div class="obrix-registro-linha"><div><b>${x.data?new Date(x.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</b><span>${esc(x.tipo)} · ${esc(x.obra)}</span>${x.descricao?'<small>'+esc(x.descricao)+'</small>':''}</div><div class="obrix-registro-valor"><b>${money(x.valor)}</b><small>${esc(x.status)}</small>${x.bonusId&&!x.pago?'<button type="button" class="obrix-registro-excluir" data-bonus-id="'+esc(x.bonusId)+'" style="display:block;margin-top:8px;padding:7px 10px;border:1px solid #dc2626;border-radius:9px;color:#b91c1c;background:#fff;font-size:13px;font-weight:800">Excluir</button>':''}</div></div>`).join(''):'<p class="muted">Nenhum registro encontrado.</p>'}</div><div class="obrix-registros-acoes"><button type="button" data-extra="vale">Vale</button><button type="button" data-extra="bonus">Bônus e Extras</button><button type="button" class="pagar" data-extra="pagar">Pagar</button><button type="button" class="obrix-excluir-bonus-acao" style="grid-column:1/-1;display:block;width:100%;min-height:48px;background:#fff4f4!important;border:2px solid #b91c1c!important;color:#991b1b!important;-webkit-text-fill-color:#991b1b!important;font-weight:900;font-size:15px" aria-label="Excluir bônus ou extra">Excluir bônus / extra</button></div>`;
     const back=abrirModal('Registros do funcionário',html,'obrix-modelo-modal');
+    const campoBusca=back.querySelector('.obrix-registros-busca');
+    const aplicarBusca=()=>{
+      const termo=String(campoBusca?.value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
+      let n=0;const linhas=[...back.querySelectorAll('.obrix-registros-lista .obrix-registro-linha')];
+      linhas.forEach(l=>{
+        const texto=l.textContent.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
+        const visivel=!termo||texto.includes(termo);l.classList.toggle('hidden',!visivel);if(visivel)n++;
+      });
+      back.querySelector('.obrix-registros-busca-status').textContent=n+' de '+linhas.length+' registro(s)';
+      let aviso=back.querySelector('.obrix-registros-sem-resultado');
+      if(!aviso){aviso=document.createElement('p');aviso.className='muted obrix-registros-sem-resultado hidden';aviso.textContent='Nenhum registro encontrado para esta busca.';back.querySelector('.obrix-registros-lista')?.appendChild(aviso)}
+      aviso.classList.toggle('hidden',!termo||n>0);
+    };
+    campoBusca?.addEventListener('input',aplicarBusca);
+    aplicarBusca();
     back.querySelectorAll('[data-extra]').forEach(btn=>btn.onclick=()=>{back.remove();window.equipeAcao?.(String(id),btn.dataset.extra)});
     // Fixed action, visible even when no bonus row is currently displayed.
     back.querySelector('.obrix-excluir-bonus-acao').onclick=()=>{
@@ -370,6 +385,9 @@
     html[data-theme="dark"] #equipe #listaEquipe .obrix-modelo-acoes [data-acao="bonus"],body.dark #equipe #listaEquipe .obrix-modelo-acoes [data-acao="bonus"]{border-color:#f2b84b!important;box-shadow:none!important}
     html[data-theme="dark"] .obrix-registros-acoes .pagar,body.dark .obrix-registros-acoes .pagar{background:#2563eb;border-color:#2563eb}
     html[data-theme="dark"] .obrix-registro-linha,body.dark .obrix-registro-linha{border-color:#334155}
+    .obrix-registros-busca-label{display:block;font-weight:800;margin:12px 0 5px}
+    .obrix-registros-busca{box-sizing:border-box;width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--ob-border,#cbd5e1);border-radius:10px;background:var(--ob-surface,#fff);color:var(--ob-text,#0f172a);font-size:16px}
+    .obrix-registros-busca-status{font-size:12px;margin:5px 0 10px}
     @media(max-width:700px){
       #listaEquipe .obrix-modelo-card{padding:20px 18px}.obrix-modelo-cabecalho h3{font-size:24px}.obrix-modelo-subnome{font-size:17px}.obrix-modelo-pagamento{padding:17px}.obrix-modelo-pagamento>b{font-size:27px}.obrix-modelo-metrica{min-height:106px;padding:14px}.obrix-modelo-metrica b{font-size:22px}.obrix-cmd,.obrix-filtro-equipe{min-height:54px;font-size:14px;padding:10px 8px}
       #equipe #listaEquipe .obrix-modelo-acoes button{min-height:46px!important;font-size:11.5px!important;padding:6px 2px!important}
