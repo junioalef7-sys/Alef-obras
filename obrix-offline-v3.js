@@ -90,47 +90,99 @@ function renderFallbackFinance(){const m=ensureMain('offlineV3Financeiro');if(!m
 function renderFallbackMenu(){const m=ensureMain('offlineV3Menu');if(!m)return;m.innerHTML=`<div class="hero"><h1>Menu</h1><p>Modo offline</p></div><div class="nav"><button data-offv3-go="obras">Obras<span>Dados salvos</span></button><button data-offv3-go="equipe">Equipe<span>Dados salvos</span></button><button data-offv3-go="financeiro">Financeiro<span>Dados salvos</span></button><button data-offv3-go="estoque">Estoque<span>Dados locais</span></button></div><div class="card"><b>Offline ativo</b><p class="muted">Os dados deste aparelho permanecem salvos e não são apagados ao sair da conta.</p></div>`}
 function renderCoreLists(){try{window.renderObras?.();window.renderEquipe?.()}catch(_){}const ob=document.getElementById('listaObras'),eq=document.getElementById('listaEquipe');if(ob&&current&&!ob.children.length)ob.innerHTML=current.obras.map(o=>`<div class="card item"><h3>${esc(o.nome||'Obra')}</h3><div class="muted">${esc(o.cliente||'')} • ${esc(o.status||'')}</div></div>`).join('')||'<div class="card muted">Nenhuma obra cadastrada.</div>';if(eq&&current&&!eq.children.length)eq.innerHTML=current.funcionarios.map(f=>`<div class="card item"><h3>${esc(f.nome||'Funcionário')}</h3><div class="muted">${esc(f.cargo||'')} • ${f.ativo===false?'Inativo':'Ativo'}</div></div>`).join('')||'<div class="card muted">Nenhum funcionário cadastrado.</div>'}
 function paintHome(){if(!current)return;const total=current.obras.reduce((s,o)=>s+Number(o.valor_contrato||0),0)+current.extras.reduce((s,x)=>s+Number(x.valor||0),0),recebido=current.financeiro.filter(x=>x.tipo==='receita'&&(!x.status_lancamento||x.status_lancamento==='ativo')).reduce((s,x)=>s+Number(x.valor||0),0);const c=document.getElementById('contratado'),r=document.getElementById('receber');if(c)c.textContent=money(total);if(r)r.textContent=money(Math.max(0,total-recebido));renderCoreLists()}
-function loadScript(src){const p=pathOf(src);if(loaded.has(p)||[...document.scripts].some(s=>s.src&&pathOf(s.src)===p))return Promise.resolve(true);return new Promise(resolve=>{const s=document.createElement('script');s.src=src;s.async=false;let done=false;const end=ok=>{if(done)return;done=true;if(ok)loaded.add(p);resolve(ok)};s.onload=()=>end(true);s.onerror=()=>end(false);document.body.appendChild(s);setTimeout(()=>end(false),6500)})}
+// Evita confundir um script ainda carregando com um módulo pronto e
+// reutiliza uma única requisição quando a inicialização ocorre várias vezes.
+const offlineScriptsEmCarga=new Map();
+function loadScript(src){
+  const p=pathOf(src);
+  if(loaded.has(p))return Promise.resolve(true);
+  if(offlineScriptsEmCarga.has(p))return offlineScriptsEmCarga.get(p);
+  const pronto=[...document.scripts].some(s=>
+    s.src&&pathOf(s.src)===p&&
+    s.dataset.obrixOfflineV3!=='loading'&&
+    (!s.dataset.obrixPosLogin||s.dataset.obrixPosLogin==='loaded')
+  );
+  if(pronto){loaded.add(p);return Promise.resolve(true)}
+  const tarefa=new Promise(resolve=>{
+    const el=document.createElement('script');el.src=src;el.async=false;
+    el.dataset.obrixOfflineV3='loading';
+    let done=false,timer=0;
+    const finalizar=ok=>{
+      if(done)return;done=true;clearTimeout(timer);
+      if(ok){loaded.add(p);el.dataset.obrixOfflineV3='loaded'}
+      else el.remove();
+      resolve(ok);
+    };
+    el.onload=()=>finalizar(true);
+    el.onerror=()=>finalizar(false);
+    timer=setTimeout(()=>finalizar(false),3500);
+    document.body.appendChild(el);
+  });
+  offlineScriptsEmCarga.set(p,tarefa);
+  void tarefa.finally(()=>{if(offlineScriptsEmCarga.get(p)===tarefa)offlineScriptsEmCarga.delete(p)});
+  return tarefa;
+}
 async function loadList(xs){let ok=true;for(const x of xs)if(!await loadScript(x))ok=false;return ok}
 async function runtime(){if(runtimeReady)return true;if(runtimePromise)return runtimePromise;runtimePromise=(async()=>{await loadScript('./obrix-offline-v2.js?v=20261024offlinev3');try{window.OBRIX_OFFLINE_V2?.activate?.()}catch(_){}await loadList(BASE_MODULES);runtimeReady=true;normalizeBottom();paintHome();return true})().finally(()=>{runtimePromise=null});return runtimePromise}
 async function loadGroup(name){const xs=GROUPS[name]||[];return loadList(xs)}
 async function loadFeature(name){if(name==='assinatura')return false;return loadList(FEATURES[name]||[])}
-async function route(name){if(!active&&!isOffline())return false;await runtime();normalizeBottom();if(name==='inicio'||name==='dashboard'){hideScreens();document.getElementById('inicio')?.classList.remove('hidden');activeBottom(0);paintHome();return true}if(name==='obras'){await loadGroup('obras');hideScreens();document.getElementById('obras')?.classList.remove('hidden');activeBottom(-1);renderCoreLists();try{window.OBRIX_OBRAS?.render?.()}catch(_){}return true}if(name==='equipe'){await loadGroup('equipe');hideScreens();document.getElementById('equipe')?.classList.remove('hidden');activeBottom(2);renderCoreLists();try{window.OBRIX_EQUIPE_MODELO?.render?.()}catch(_){}return true}if(name==='financeiro'){await loadGroup('financeiro');if(window.OBRIX_FIN?.open){try{window.OBRIX_FIN.open();activeBottom(1);return true}catch(_){}}hideScreens();renderFallbackFinance();document.getElementById('offlineV3Financeiro')?.classList.remove('hidden');activeBottom(1);return true}if(name==='estoque'){await loadGroup('estoque');if(window.OBRIX_EST?.open){try{window.OBRIX_EST.open();activeBottom(-1);return true}catch(_){}}return false}if(name==='menu'){hideScreens();renderFallbackMenu();document.getElementById('offlineV3Menu')?.classList.remove('hidden');activeBottom(3);return true}if(FEATURES[name]){await loadFeature(name);const map={diario:'OBRIX_DIARIO',orcamentos:'OBRIX_ORC',relatorios:'OBRIX_RELATORIOS',documentos:'OBRIX_DOCUMENTOS',notas:'OBRIX_NOTAS',backup:'OBRIX_BACKUP',config:'OBRIX_CONFIG'};try{window[map[name]]?.open?.();return true}catch(_){return false}}return false}
-function offlineLogin(){clearError();const s=assemble();if(!s?.profile?.empresa_id){showError('Modo offline ainda não preparado neste aparelho. Entre uma vez com internet para salvar os dados.');return false}const typed=(document.getElementById('email')?.value||'').trim().toLowerCase(),cached=String(s.profile.email||'').trim().toLowerCase();if(typed&&cached&&typed!==cached){showError('Sem internet, este aparelho só pode abrir a conta salva localmente.');return false}setLoggedOut(false);active=true;current=s;persistCompat(s);openShell(s,'login-offline-v3');runtime().then(()=>route('inicio'));return true}
+async function route(name){
+  if(!active&&!isOffline())return false;
+  // Abrir Início e Menu com a base local disponível, sem esperar dezenas de
+  // scripts que podem não estar no cache (o carregamento prossegue depois).
+  if(name==='inicio'||name==='dashboard'){
+    normalizeBottom();hideScreens();
+    document.getElementById('inicio')?.classList.remove('hidden');
+    activeBottom(0);paintHome();
+    if(!runtimeReady)void runtime().catch(e=>console.warn('Offline: módulos adicionais indisponíveis',e));
+    return true;
+  }
+  if(name==='menu'){
+    normalizeBottom();hideScreens();renderFallbackMenu();
+    document.getElementById('offlineV3Menu')?.classList.remove('hidden');activeBottom(3);
+    if(!runtimeReady)void runtime().catch(e=>console.warn('Offline: módulos adicionais indisponíveis',e));
+    return true;
+  }
+  await runtime();normalizeBottom();if(name==='inicio'||name==='dashboard'){hideScreens();document.getElementById('inicio')?.classList.remove('hidden');activeBottom(0);paintHome();return true}if(name==='obras'){await loadGroup('obras');hideScreens();document.getElementById('obras')?.classList.remove('hidden');activeBottom(-1);renderCoreLists();try{window.OBRIX_OBRAS?.render?.()}catch(_){}return true}if(name==='equipe'){await loadGroup('equipe');hideScreens();document.getElementById('equipe')?.classList.remove('hidden');activeBottom(2);renderCoreLists();try{window.OBRIX_EQUIPE_MODELO?.render?.()}catch(_){}return true}if(name==='financeiro'){await loadGroup('financeiro');if(window.OBRIX_FIN?.open){try{window.OBRIX_FIN.open();activeBottom(1);return true}catch(_){}}hideScreens();renderFallbackFinance();document.getElementById('offlineV3Financeiro')?.classList.remove('hidden');activeBottom(1);return true}if(name==='estoque'){await loadGroup('estoque');if(window.OBRIX_EST?.open){try{window.OBRIX_EST.open();activeBottom(-1);return true}catch(_){}}return false}if(name==='menu'){hideScreens();renderFallbackMenu();document.getElementById('offlineV3Menu')?.classList.remove('hidden');activeBottom(3);return true}if(FEATURES[name]){await loadFeature(name);const map={diario:'OBRIX_DIARIO',orcamentos:'OBRIX_ORC',relatorios:'OBRIX_RELATORIOS',documentos:'OBRIX_DOCUMENTOS',notas:'OBRIX_NOTAS',backup:'OBRIX_BACKUP',config:'OBRIX_CONFIG'};try{window[map[name]]?.open?.();return true}catch(_){return false}}return false}
+function offlineLogin(){clearError();const s=assemble();if(!s?.profile?.empresa_id){showError('Modo offline ainda não preparado neste aparelho. Entre uma vez com internet para salvar os dados.');return false}const typed=(document.getElementById('email')?.value||'').trim().toLowerCase(),cached=String(s.profile.email||'').trim().toLowerCase();if(typed&&cached&&typed!==cached){showError('Sem internet, este aparelho só pode abrir a conta salva localmente.');return false}setLoggedOut(false);active=true;current=s;persistCompat(s);openShell(s,'login-offline-v3');void route('inicio').catch(e=>console.warn('Offline: início indisponível',e));return true}
 function offlineLogout(){setLoggedOut(true);capture('offline-logout');active=false;document.documentElement.removeAttribute('data-obrix-offline-v3');document.getElementById('app')?.classList.add('hidden');document.getElementById('login')?.classList.remove('hidden');const p=document.getElementById('senha');if(p)p.value='';clearError()}
 function clickCapture(e){if(!isOffline())return;const el=e.target?.closest?.('button,a,[data-offv3-go],[data-go]');if(!el)return;if(el.id==='entrar'){e.preventDefault();e.stopImmediatePropagation();offlineLogin();return}if(el.id==='sair'||el.id==='menuSair'){e.preventDefault();e.stopImmediatePropagation();offlineLogout();return}const b=el.closest?.('#app>.bottom button');if(b){const i=[...document.querySelectorAll('#app>.bottom button')].indexOf(b);e.preventDefault();e.stopImmediatePropagation();route(['inicio','financeiro','equipe','menu'][i]||'inicio');return}const go=el.dataset?.offv3Go;if(go){e.preventDefault();e.stopImmediatePropagation();route(go)}}
 function authenticatedShellVisible(){
  const app=document.getElementById('app'),login=document.getElementById('login');
  return !!(app&&!app.classList.contains('hidden')&&login?.classList.contains('hidden'));
 }
+let inicioOfflinePendente=null;
 async function start(reason='offline-v3'){
- if(!isOffline()){active=false;capture('online-start');return false}
- const showingApp=authenticatedShellVisible();
- // Uma perda de rede enquanto o navegador vai para segundo plano não é logout.
- // Preserve a tela atual até o usuário voltar, sem abrir o login na animação de saída.
- if(showingApp && document.hidden)return true;
- // Uma sessão autenticada atualmente visível prevalece sobre um bloqueio offline antigo.
- // O logout explícito continua ocultando o app antes de marcar esse bloqueio.
- if(showingApp&&loggedOut())setLoggedOut(false);
- active=true;document.documentElement.dataset.obrixOfflineV3='1';
- if(loggedOut()){
-   document.getElementById('app')?.classList.add('hidden');
-   document.getElementById('login')?.classList.remove('hidden');
-   return true;
- }
- if(!activateData(reason)){
-   // Na perda transitória de conexão, não transformar uma sessão aberta em tela de login.
-   if(showingApp){
-     active=false;
-     document.documentElement.removeAttribute('data-obrix-offline-v3');
-     return false;
-   }
-   document.getElementById('app')?.classList.add('hidden');
-   document.getElementById('login')?.classList.remove('hidden');
-   showError('Modo offline ainda não preparado neste aparelho. Entre uma vez com internet.');
-   return false;
- }
- await runtime();await route('inicio');return true
+  if(inicioOfflinePendente)return inicioOfflinePendente;
+  const tarefa=(async()=>{
+    if(!isOffline()){active=false;capture('online-start');return false}
+    const mostrandoApp=authenticatedShellVisible();
+    if(mostrandoApp&&document.hidden)return true;
+    if(mostrandoApp&&loggedOut())setLoggedOut(false);
+    active=true;document.documentElement.dataset.obrixOfflineV3='1';
+    if(loggedOut()){
+      document.getElementById('app')?.classList.add('hidden');
+      document.getElementById('login')?.classList.remove('hidden');
+      return true;
+    }
+    if(!activateData(reason)){
+      // Perder rede não deve transformar uma sessão válida em tela travada.
+      if(mostrandoApp){
+        active=false;
+        document.documentElement.removeAttribute('data-obrix-offline-v3');
+        return false;
+      }
+      document.getElementById('app')?.classList.add('hidden');
+      document.getElementById('login')?.classList.remove('hidden');
+      showError('Modo offline ainda não preparado neste aparelho. Entre uma vez com internet.');
+      return false;
+    }
+    await route('inicio');
+    return true;
+  })();
+  inicioOfflinePendente=tarefa;
+  try{return await tarefa}
+  finally{if(inicioOfflinePendente===tarefa)inicioOfflinePendente=null}
 }
 function owns(){return isOffline()||active}
 
