@@ -41,20 +41,33 @@ const equipeVisivel=()=>{const e=document.getElementById('equipe');return !!(e&&
 const financeiroVisivel=()=>{const e=document.getElementById('financeiroMain');return !!(e&&!e.classList.contains('hidden'))};
 async function atualizarDados(){
   if(!navigator.onLine||document.hidden||atualizandoGeral||Date.now()-ultimaAtualizacaoGeral<800)return;
+  const app=document.getElementById('app');
+  if(!app||app.classList.contains('hidden'))return;
+  const financeiroAberto=financeiroVisivel();
+  const inicio=document.getElementById('inicio');
+  const inicioAberto=!!inicio&&!inicio.classList.contains('hidden');
+  const obrasAbertas=obrasVisiveis();
+  // Não atualizar três tabelas do Financeiro quando o usuário está em
+  // Documentos, Equipe, Diário, Relatórios, Configurações etc.
+  if(!financeiroAberto&&!inicioAberto&&!obrasAbertas)return;
   const form=document.getElementById('fmForm');
-  if(form&&!form.classList.contains('hidden'))return;
+  if(financeiroAberto&&form&&!form.classList.contains('hidden'))return;
   atualizandoGeral=true;ultimaAtualizacaoGeral=Date.now();
   try{
-    // Eventos financeiros nao devem recarregar todas as obras, equipe e telas.
-    if(window.OBRIX_FIN?.render)await window.OBRIX_FIN.render(true);
-    else{
-      const c=await contexto();
-      if(!c)return;
-      const r=await c.sb.from('financeiro').select('*').eq('empresa_id',c.eid).order('data',{ascending:false});
+    if(financeiroAberto&&window.OBRIX_FIN?.render){
+      await window.OBRIX_FIN.render(true);
+    }else{
+      // Início e Obras precisam somente do saldo, sem montar o Financeiro
+      // completo e carregar seus checklists em segundo plano.
+      const ctx=await contexto();
+      if(!ctx)return;
+      const r=await ctx.sb.from('financeiro').select('*').eq('empresa_id',ctx.eid).order('data',{ascending:false});
       if(r.error)throw r.error;
       window.financeiro=r.data||[];
+      try{financeiro=window.financeiro}catch(_){}
+      if(obrasAbertas)window.OBRIX_OBRAS_FIEL?.refresh?.();
     }
-    if(document.getElementById('inicio')&&!document.getElementById('inicio').classList.contains('hidden')){
+    if(inicioAberto){
       window.OBRIX_PREVIEW?.refresh?.();
       window.OBRIX_DASH?.paint?.();
     }
