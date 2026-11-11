@@ -18,6 +18,8 @@
 
   let salvando=false,realtime=null,realtimeTimer=null,polling=false,renderPromise=null,lastSync='',extrasFinanceiro=[],checklistFinanceiro=[];
 
+  let filtroTotais='todos';
+  function aplicarFiltroTotais(){const lista=$('fmLista');if(!lista)return;lista.classList.toggle('fmSomenteReceitas',filtroTotais==='receita');lista.classList.toggle('fmSomenteDespesas',filtroTotais==='despesa');for(const [tipo,id] of [['receita','fmTotalReceitasBtn'],['despesa','fmTotalDespesasBtn']]){const b=$(id);if(b){b.classList.toggle('active',filtroTotais===tipo);b.setAttribute('aria-pressed',String(filtroTotais===tipo))}}}
   function ensure(){
     if($('financeiroMain'))return;
     const main=document.createElement('main');
@@ -25,10 +27,11 @@
     main.innerHTML=`<div class="hero"><h1>Financeiro</h1><p>Receitas, despesas e resultado das obras</p></div>
       <div class="kpis"><div class="kpi"><small>Contrato atualizado</small><strong id="fmContrato">R$ 0,00</strong></div><div class="kpi"><small>Recebido</small><strong id="fmRecebido">R$ 0,00</strong></div><div class="kpi"><small>Despesas</small><strong id="fmDespesas">R$ 0,00</strong></div><div class="kpi"><small>Resultado da obra</small><strong id="fmResultado">R$ 0,00</strong></div></div>
       <div class="sectionHead"><strong>Lançamentos</strong><div><button class="btn" id="fmReceita">+ Receita</button> <button class="btn" id="fmDespesa">+ Despesa</button></div></div>
-      <div id="fmForm" class="card form hidden"></div><div id="fmLista"></div>`;
+      <div class="fmTotaisAcoes" role="group" aria-label="Totais do financeiro"><button type="button" id="fmTotalReceitasBtn" aria-pressed="false">Total de receitas <strong id="fmTotalReceitasVal">R$ 0,00</strong></button><button type="button" id="fmTotalDespesasBtn" aria-pressed="false">Total de despesas <strong id="fmTotalDespesasVal">R$ 0,00</strong></button></div><div id="fmForm" class="card form hidden"></div><div id="fmLista"></div>`;
     const equipe=$('equipe');equipe.parentNode.insertBefore(main,equipe.nextSibling);
     $('fmReceita').onclick=()=>form('receita');
     $('fmDespesa').onclick=()=>form('despesa');
+    for(const [tipo,id] of [['receita','fmTotalReceitasBtn'],['despesa','fmTotalDespesasBtn']])$(id).onclick=()=>{filtroTotais=filtroTotais===tipo?'todos':tipo;aplicarFiltroTotais()};
   }
 
   function active(){return (window.financeiro||[]).filter(x=>!x.status_lancamento||x.status_lancamento==='ativo')}
@@ -70,7 +73,7 @@
     const contratoBase=os.reduce((s,o)=>s+Number(o.valor_contrato||0),0),adicionais=extrasFinanceiro.reduce((s,x)=>s+Number(x.valor||0),0),contratoAtualizado=contratoBase+adicionais;
     const rec=f.filter(x=>x.tipo==='receita').reduce((s,x)=>s+Number(x.valor||0),0),des=f.filter(x=>x.tipo==='despesa').reduce((s,x)=>s+Number(x.valor||0),0),resultado=contratoAtualizado-des;
     const set=(id,val)=>{const el=$(id);if(el&&el.textContent!==val)el.textContent=val};
-    set('fmContrato',money(contratoAtualizado));set('fmRecebido',money(rec));set('fmDespesas',money(des));set('fmResultado',money(resultado));
+    set('fmContrato',money(contratoAtualizado));set('fmRecebido',money(rec));set('fmDespesas',money(des));set('fmResultado',money(resultado));set('fmTotalReceitasVal',money(rec));set('fmTotalDespesasVal',money(des));
     const c=$('fmContrato')?.closest('.kpi')?.querySelector('small'),r=$('fmResultado')?.closest('.kpi')?.querySelector('small');if(c&&c.textContent!=='Contrato atualizado')c.textContent='Contrato atualizado';if(r&&r.textContent!=='Resultado da obra')r.textContent='Resultado da obra';
     const lista=$('fmLista');
     const html=f.length?f.slice().sort((a,b)=>{
@@ -92,6 +95,7 @@
     if(lista&&(lista.__obrixMarkup!==html||lista.childElementCount===0)){
       lista.innerHTML=html;lista.__obrixMarkup=html;listaMudou=true;
     }
+    aplicarFiltroTotais();
     if(listaMudou)window.OBRIX_FIN_VISUAL?.refresh?.();
     atualizarObras();window.OBRIX_FIN_BUSCA?.refreshOptions?.();window.OBRIX_FIN_BUSCA?.aplicar?.();
   }
@@ -359,4 +363,5 @@ async function estornarAutomatico(id){
   document.addEventListener('click',e=>{const fin=e.target.closest('[data-fin]');if(fin){e.preventDefault();e.stopImmediatePropagation();if(fin.dataset.fin==='editar')editar(fin.dataset.id);else if(fin.dataset.fin==='excluir')excluir(fin.dataset.id);else if(fin.dataset.fin==='estornar')void estornarAutomatico(fin.dataset.id);return}const b=e.target.closest('button');if(!b)return;const t=(b.textContent||'').trim();if(t==='Financeiro'){e.preventDefault();e.stopImmediatePropagation();open()}},true);
   window.OBRIX_FIN={open,render,editar,excluir,checklists:()=>checklistFinanceiro.slice(),categorias:labels};
   setTimeout(ensure,0);
+const cssTotais=document.createElement('style');cssTotais.id='obrixFinanceiroTotaisAcoes';cssTotais.textContent='.fmTotaisAcoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0 14px}.fmTotaisAcoes button{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;border:1px solid var(--ob-border,#94a3b8);border-radius:12px;padding:12px;background:var(--ob-surface,#fff);color:var(--ob-text,#0f172a);font:inherit;font-weight:700;min-width:0}.fmTotaisAcoes button strong{font-size:16px;overflow-wrap:anywhere}.fmTotaisAcoes button.active{border:2px solid #f97316!important}.fmSomenteReceitas [data-fin-card="1"][data-tipo="despesa"],.fmSomenteDespesas [data-fin-card="1"][data-tipo="receita"]{display:none!important}@media(max-width:420px){.fmTotaisAcoes button{padding:9px}.fmTotaisAcoes button strong{font-size:14px}}';document.head.appendChild(cssTotais);
 })();
