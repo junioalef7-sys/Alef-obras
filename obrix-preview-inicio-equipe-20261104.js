@@ -785,7 +785,7 @@ async function cliqueEquipe(e){
   if(t.id==='obpNovo')return clicarAntigo('#equipe .obrix-equipe-controles [data-cmd="novo"]');
   if(t.id==='obpExpandir'){resumoExpandido=!resumoExpandido;renderEquipe();return}
   if(t.id==='obpPagarEquipe')return clicarAntigo('#equipe .obrix-pagar-equipe-topo');
-  if(t.id==='obpHistoricoPag'){await esperarEquipe();if(window.OBRIX_EQUIPE_HISTORICO_PAGAMENTOS?.open)return window.OBRIX_EQUIPE_HISTORICO_PAGAMENTOS.open();return clicarAntigo('#equipe .obrix-historico-pagamentos-topo')}
+  if(t.id==='obpHistoricoPag'){await esperarEquipe();if(!window.OBRIX_EQUIPE_HISTORICO_PAGAMENTOS?.open){try{await window.OBRIX_POS_LOGIN_LOADER?.loadGroup?.('equipe')}catch(_){}}if(window.OBRIX_EQUIPE_HISTORICO_PAGAMENTOS?.open)return window.OBRIX_EQUIPE_HISTORICO_PAGAMENTOS.open();return clicarAntigo('#equipe .obrix-historico-pagamentos-topo')}
   if(t.id==='obpGerenciar'){gerenciarAberto=!gerenciarAberto;renderEquipe();return}
   if(t.dataset.manager){
     if(t.dataset.manager==='excluir'){modoExclusaoLista=true;modoAtivacaoLista=false;gerenciarAberto=false;selecionado='';renderEquipe();return}
