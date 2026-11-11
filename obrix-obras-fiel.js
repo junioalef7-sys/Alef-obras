@@ -63,10 +63,32 @@ function atualizarListaSemRemontar(box,novoHtml){
   }
   return true;
 }
+function atualizarDetalheSemRemontar(box,html){
+ const existente=box.querySelector(':scope > .obxDetalhe');
+ if(!existente||!existente.querySelector('#obxVoltarObras'))return false;
+ const temp=document.createElement('div');temp.innerHTML=html;
+ const novo=temp.querySelector(':scope > .obxDetalhe');if(!novo)return false;
+ const seletores=['.obxDetalheHead h2','.obxDetalheHead p','.obxDetalheHead .obxStatus','.obxProg .obxBar i','.obxProg > b','.obxResumoGrid b'];
+ for(const seletor of seletores){
+  const atuais=[...existente.querySelectorAll(seletor)],novos=[...novo.querySelectorAll(seletor)];
+  if(atuais.length!==novos.length)return false;
+  for(let i=0;i<atuais.length;i++){
+   const a=atuais[i],n=novos[i];
+   if(a.textContent!==n.textContent)a.textContent=n.textContent;
+   if(a.className!==n.className)a.className=n.className;
+   if(a.getAttribute('style')!==n.getAttribute('style')){
+    if(n.hasAttribute('style'))a.setAttribute('style',n.getAttribute('style'));
+    else a.removeAttribute('style');
+   }
+  }
+ }
+ return true;
+}
 function render(){if(rendering)return;const box=document.getElementById('listaObras');if(!box)return;rendering=true;try{const todas=window.obras||[];let html='';if(detalhe){const o=todas.find(x=>String(x.id)===String(detalhe));if(o){html=renderDetalhe(o)}else detalhe=null}if(!html){const lista=todas.filter(o=>(filtro==='todas'||status(o)===filtro||(filtro==='concluida'&&status(o)==='concluída'))&&(!busca||String(o.nome||'').toLowerCase().includes(busca.toLowerCase())||String(o.cliente||'').toLowerCase().includes(busca.toLowerCase())));html=renderLista(lista)}// Um render legado pode substituir os nós sem atualizar a assinatura.
   // Não aceitar cache antigo caso a estrutura aprovada já tenha sido trocada.
   const contemVisualAprovado=!!box.querySelector(':scope > .obxBusca,:scope > .obxDetalhe');
   if(box.__obrixUltimoHtml===html&&contemVisualAprovado)return;
+  if(detalhe&&atualizarDetalheSemRemontar(box,html)){box.__obrixUltimoHtml=html;return}
   if(!detalhe&&atualizarListaSemRemontar(box,html)){
     box.__obrixUltimoHtml=html;ligar();return;
   }
@@ -88,5 +110,5 @@ function abrirDetalheDireto(id){
 }
 function voltarLista(){detalhe=null;render()}
 window.OBRIX_OBRAS_FIEL={render,refresh:preparar,open:abrirDetalheDireto,list:voltarLista,fotos,checklist,pagamentos,concluir};
-const init=()=>{preparar();document.addEventListener('click',e=>{if(e.target.closest?.('[data-page="obras"],a[href="#obras"]'))setTimeout(preparar,80)},true)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+const init=()=>{preparar();const listaObras=document.getElementById('listaObras');if(listaObras&&!listaObras.__obrixDetalheGuard){listaObras.__obrixDetalheGuard=true;let retornoPendente=false;new MutationObserver(()=>{if(!detalhe||rendering||retornoPendente||document.getElementById('obras')?.classList.contains('hidden')||listaObras.querySelector(':scope > .obxDetalhe'))return;retornoPendente=true;setTimeout(()=>{retornoPendente=false;if(detalhe&&!listaObras.querySelector(':scope > .obxDetalhe'))render()},100)}).observe(listaObras,{childList:true})}document.addEventListener('click',e=>{if(e.target.closest?.('[data-page="obras"],a[href="#obras"]'))setTimeout(preparar,80)},true)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
