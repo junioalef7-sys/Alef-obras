@@ -46,10 +46,12 @@
         else if(a.status==='teste'){
           const dias=diasRestantes(a.trial_fim);
           statusHtml=`<h3>Teste grátis</h3><div class="assBig">${dias} dia${dias===1?'':'s'} restante${dias===1?'':'s'}</div><p class="muted">Teste válido até ${fmtDate(a.trial_fim)}. Após o teste, sem pagamento, o acesso fica limitado a 1 obra e 1 funcionário.</p>`;
-        }else if(a.status==='ativo')
+        }else if(a.status==='ativo'&&a.plano==='permanente')
+          statusHtml='<h3>Plano permanente</h3><div class="assBig">Acesso completo</div><p class="muted">Sem data de vencimento.</p>';
+        else if(a.status==='ativo')
           statusHtml=`<h3>Assinatura ativa</h3><div class="assBig">${a.plano==='anual'?'Plano Anual':'Plano Mensal'}</div><p class="muted">Acesso completo${a.periodo_fim?' até '+fmtDate(a.periodo_fim):''}.</p>`;
         else statusHtml=`<h3>Assinatura</h3><div class="assBig">${String(a.status||'inativa').replace('_',' ')}</div><p class="muted">Escolha um plano para liberar o acesso completo.</p>`;
-        const planosHtml=(pr.data||[]).map(p=>{
+        const planosHtml=(a?.status==='ativo'&&a.plano==='permanente')?'<div class="card muted">Acesso permanente ativo. Nenhuma nova assinatura é necessária.</div>':(pr.data||[]).map(p=>{
           const anual=p.periodo==='anual'||p.codigo==='anual';
           return `<div class="card assPlano ${anual?'assDestaque':''}"><div class="assPlanoTop"><h3>${p.nome||p.codigo}</h3>${anual?'<span class="assEconomiaBadge">Economize 17%</span>':''}</div><div class="assPreco">${money(p.valor)}<small>/${anual?'ano':'mês'}</small></div><p class="muted">${p.descricao||''}</p><div class="assPayActions"><button type="button" class="btn obrixPermanentNeutral obrixPayMethod" data-ass-plano="${p.codigo}">Pagar com Pix</button><button type="button" class="btn obrixPermanentNeutral obrixPayMethod" data-ass-boleto="${p.codigo}">Pagar com boleto</button></div></div>`
         }).join('')||'<div class="card muted">Nenhum plano disponível.</div>';
