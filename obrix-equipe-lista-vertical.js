@@ -91,14 +91,8 @@
   async function registrarFalta(id){
     const f=acharFunc(id);if(!f)return alert('Funcionário não encontrado.');if(f.ativo!==true)return alert('Somente funcionários ativos podem registrar faltas.');
     const opts='<option value="">Selecione uma obra em andamento</option>'+obrasList().filter(o=>String(o.status)==='andamento').map(o=>`<option value="${esc(o.id)}" ${String(o.id)===String(f.obra_id||'')?'selected':''}>${esc(o.nome||'Obra')}</option>`).join('');
-    const back=abrirModal('Registrar falta',`<p class="muted"><b>${esc(f.nome)}</b></p><label>Obra</label><input class="obrix-falta-busca" type="search" list="obrixFaltaSugestoes" autocomplete="off" placeholder="Buscar obra pelo nome"><datalist id="obrixFaltaSugestoes"></datalist><select class="obra" aria-label="Selecionar obra em andamento">${opts}</select><label>Data</label><input class="data" type="date" value="${hoje()}"><label>Tipo</label><select class="tipo"><option value="false">Falta injustificada</option><option value="true">Falta justificada</option></select><label>Motivo</label><input class="motivo" placeholder="Motivo da falta"><label>Observações</label><input class="obs" placeholder="Observações opcionais"><div class="modalActions"><button class="btn cancelar" type="button">Cancelar</button><button class="btn salvar" type="button">Registrar falta</button></div>`,'obrix-modelo-modal');
+    const back=abrirModal('Registrar falta',`<p class="muted"><b>${esc(f.nome)}</b></p><label>Obra</label><select class="obra" aria-label="Selecionar obra em andamento">${opts}</select><label>Data</label><input class="data" type="date" value="${hoje()}"><label>Tipo</label><select class="tipo"><option value="false">Falta injustificada</option><option value="true">Falta justificada</option></select><label>Motivo</label><input class="motivo" placeholder="Motivo da falta"><label>Observações</label><input class="obs" placeholder="Observações opcionais"><div class="modalActions"><button class="btn cancelar" type="button">Cancelar</button><button class="btn salvar" type="button">Registrar falta</button></div>`,'obrix-modelo-modal');
     back.querySelector('.cancelar').onclick=()=>back.remove();
-    const selecaoFalta=back.querySelector('select.obra'),buscaFalta=back.querySelector('.obrix-falta-busca'),sugestoesFalta=back.querySelector('#obrixFaltaSugestoes');
-    const normalizarFalta=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-    const atualizarSugestoesFalta=()=>{const opts=[...selecaoFalta.options].filter(o=>o.value);sugestoesFalta.replaceChildren(...opts.map(o=>new Option(o.textContent)));const atual=opts.find(o=>o.value===selecaoFalta.value);if(document.activeElement!==buscaFalta&&atual)buscaFalta.value=atual.textContent};
-    const resolverBuscaFalta=()=>{const q=normalizarFalta(buscaFalta.value),opts=[...selecaoFalta.options].filter(o=>o.value);const exatos=opts.filter(o=>normalizarFalta(o.textContent)===q),similares=opts.filter(o=>normalizarFalta(o.textContent).includes(q));const escolhido=q?(exatos.length===1?exatos[0]:similares.length===1?similares[0]:null):null;if(escolhido)selecaoFalta.value=escolhido.value;return escolhido?.value||''};
-    buscaFalta.oninput=resolverBuscaFalta;buscaFalta.onchange=resolverBuscaFalta;selecaoFalta.onchange=atualizarSugestoesFalta;
-    atualizarSugestoesFalta();
     // Usar as obras já carregadas imediatamente, mas atualizar o seletor
     // quando o desktop estiver com o cache incompleto.
     void (async()=>{
@@ -116,7 +110,6 @@
           const iguais=itens.length===sel.options.length&&itens.every((o,i)=>sel.options[i]?.value===o.id&&sel.options[i]?.text===o.nome);
           if(!iguais)sel.replaceChildren(...itens.map(o=>new Option(o.nome,o.id)));
           if(itens.some(o=>o.id===escolhido))sel.value=escolhido;
-          atualizarSugestoesFalta();
         };
         if(document.activeElement===sel&&sel.options.length>1)sel.addEventListener('blur',aplicar,{once:true});
         else aplicar();
@@ -128,7 +121,7 @@
       try{
         const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();
         if(!p?.empresa_id)throw Error('Conta não identificada.');
-        resolverBuscaFalta();const obra_id=back.querySelector('.obra').value;
+        const obra_id=back.querySelector('.obra').value;
         if(!obra_id)throw Error('Selecione uma obra em andamento.');
         const [ro,rf]=await Promise.all([
           sb.from('obras').select('status').eq('id',obra_id).eq('empresa_id',p.empresa_id).maybeSingle(),
