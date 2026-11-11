@@ -76,29 +76,6 @@ html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financ
 #financeiroMain .obxFinCardCompacto .actions{margin-top:8px!important;gap:6px!important}
 #financeiroMain .obxFinCardCompacto .actions button{min-height:38px!important;padding:7px 11px!important}
 @media(max-width:640px){#financeiroMain .kpi{padding:10px!important;min-height:70px!important}#financeiroMain .kpi strong{font-size:18px!important}#financeiroMain .obxFinCardCompacto{padding:10px!important}#financeiroMain .obxFinAcoes{gap:7px!important}}
-
-/* Somente os cartões de cada lançamento de Receita/Despesa.
-   Não adiciona indicadores no topo do Financeiro. */
-#financeiroMain #fmLista [data-fin-card="1"]{
-  box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;
-}
-#financeiroMain #fmLista [data-fin-card="1"]>.grid{
-  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
-  width:100%!important;max-width:100%!important;min-width:0!important;
-}
-#financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini{
-  box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;
-  min-height:58px!important;height:auto!important;padding:8px 10px!important;
-  border-radius:10px!important;border:1px solid var(--ob-border,#cbd5df)!important;
-  background-color:var(--ob-surface-2,#e5eaf0)!important;
-}
-html[data-theme="dark"] #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini{
-  background-color:var(--ob-surface-2,#111e2c)!important;
-  border-color:var(--ob-border,#293b4d)!important;
-}
-#financeiroMain #fmLista [data-fin-card="1"] .mini>b{
-  max-width:100%!important;overflow-wrap:anywhere!important;
-}
 `;
 document.head.appendChild(css);
 let agendaAplicacao=0,ultimoVisual=0;
