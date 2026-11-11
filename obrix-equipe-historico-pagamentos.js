@@ -107,7 +107,7 @@
     @media(max-width:620px){.obrix-hist-pag-resumo{grid-template-columns:1fr 1fr}.obrix-hist-pag-grid{grid-template-columns:1fr 1fr}}
   `;document.head.appendChild(css);
 
-  const t=setInterval(()=>{if(instalarBotao())clearInterval(t)},150);
+  let tentativas=0;const t=setInterval(()=>{if(instalarBotao()||++tentativas>=20)clearInterval(t)},150);
   setTimeout(instalarBotao,1000);setTimeout(instalarBotao,2200);
   window.addEventListener('obrix:grupo-pronto',e=>{if(e.detail?.name==='equipe')setTimeout(instalarBotao,80)});
   window.OBRIX_EQUIPE_HISTORICO_PAGAMENTOS={open:abrir};
