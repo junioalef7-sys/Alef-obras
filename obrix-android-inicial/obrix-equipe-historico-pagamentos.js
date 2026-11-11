@@ -14,6 +14,7 @@
     back.innerHTML=`<div class="modal obrix-hist-pag-modal">
       <div class="obrix-hist-pag-head"><div><h2>Histórico de pagamentos</h2><p>Pagamentos realizados e estornados da equipe.</p></div><button type="button" class="obrix-hist-pag-x" aria-label="Fechar">×</button></div>
       <div class="obrix-hist-pag-resumo" id="obrixHistPagResumo"></div>
+      <label for="obrixHistPagBusca">Buscar pagamentos</label><input id="obrixHistPagBusca" type="search" placeholder="Funcionário, data, valor ou status" autocomplete="off" aria-label="Buscar no histórico de pagamentos"><div id="obrixHistPagFiltroStatus" class="muted" role="status"></div>
       <div class="obrix-hist-pag-lista" id="obrixHistPagLista"><div class="muted">Carregando pagamentos...</div></div>
     </div>`;
     document.body.appendChild(back);
@@ -39,7 +40,11 @@
     ativos.forEach(x=>{const id=String(x.funcionario_id||'');if(id)acumulados.set(id,(acumulados.get(id)||0)+Number(x.valor_liquido||0))});
     res.innerHTML=`<div><small>Pagamentos válidos</small><strong>${ativos.length}</strong></div><div><small>Estornados</small><strong>${estornados.length}</strong></div>`;
     if(!base.pagamentos.length){lista.innerHTML='<div class="card muted">Nenhum pagamento registrado.</div>';return}
-    lista.innerHTML=base.pagamentos.map(p=>{
+    const termo=String(back.querySelector('#obrixHistPagBusca')?.value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    const filtrados=termo?base.pagamentos.filter(p=>[base.funcs.get(String(p.funcionario_id))||'Funcionário',dataBR(p.data_pagamento),String(p.data_pagamento||''),Number(p.valor_liquido||0).toLocaleString('pt-BR'),p.estornado_em?'estornado':'pago',p.observacoes||'',p.motivo_estorno||''].join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(termo)):base.pagamentos;
+    const contador=back.querySelector('#obrixHistPagFiltroStatus');
+    if(contador)contador.textContent=filtrados.length+' de '+base.pagamentos.length+' pagamentos';
+    lista.innerHTML=filtrados.length?filtrados.map(p=>{
       const est=!!p.estornado_em,nome=base.funcs.get(String(p.funcionario_id))||'Funcionário',acumulado=acumulados.get(String(p.funcionario_id))||0;
       return `<article class="card obrix-hist-pag-card ${est?'estornado':''}" data-pag-id="${esc(p.id)}">
         <div class="obrix-hist-pag-cardtop"><div><h3>${esc(nome)}</h3><p>${dataBR(p.data_pagamento)}</p></div><span class="obrix-hist-pag-status">${est?'Estornado':'Pago'}</span></div>
@@ -53,7 +58,7 @@
         </div>
         ${est?`<div class="obrix-hist-pag-estorno-info"><b>Estornado em ${dataBR(p.estornado_em)}</b>${p.motivo_estorno?`<span>Motivo: ${esc(p.motivo_estorno)}</span>`:''}</div>`:''}
       </article>`;
-    }).join('');
+    }).join(''):'<div class="card muted">Nenhum pagamento encontrado.</div>';
     lista.querySelectorAll('[data-estornar-pag]').forEach(b=>b.onclick=()=>estornar(back,base,b.dataset.estornarPag,b));
   }
 
@@ -78,7 +83,7 @@
 
   async function abrir(){
     if(abrindo)return;abrindo=true;const back=modal();
-    try{const base=await buscar();render(back,base)}catch(e){back.querySelector('#obrixHistPagLista').innerHTML=`<div class="status">${esc(window.OBRIX_PT_ERROR?.(e)||e.message||'Não foi possível carregar o histórico de pagamentos.')}</div>`}finally{abrindo=false}
+    try{const base=await buscar();if(!back.isConnected)return;const campo=back.querySelector('#obrixHistPagBusca');campo.addEventListener('input',()=>render(back,base));render(back,base)}catch(e){back.querySelector('#obrixHistPagLista').innerHTML=`<div class="status">${esc(window.OBRIX_PT_ERROR?.(e)||e.message||'Não foi possível carregar o histórico de pagamentos.')}</div>`}finally{abrindo=false}
   }
 
   function instalarBotao(){
@@ -90,7 +95,7 @@
 
   const css=document.createElement('style');css.textContent=`
     .obrix-historico-pagamentos-topo{background:#fff!important;color:#334155!important;border-color:#cbd5e1!important;box-shadow:none!important}
-    .obrix-hist-pag-modal{width:min(760px,100%);max-height:90vh;overflow:auto}.obrix-hist-pag-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.obrix-hist-pag-head h2{margin:0 0 4px}.obrix-hist-pag-head p{margin:0;color:#64748b}.obrix-hist-pag-x{border:0;background:transparent;color:inherit;font-size:30px;line-height:1}
+    .obrix-hist-pag-modal #obrixHistPagBusca{box-sizing:border-box;display:block;width:100%;min-width:0;max-width:100%;padding:12px;font-size:16px;border:1px solid #94a3b8;border-radius:10px;background:#fff;color:#0f172a;margin:7px 0 5px}.obrix-hist-pag-modal #obrixHistPagFiltroStatus{font-size:12px;margin-bottom:10px}.obrix-hist-pag-modal{width:min(760px,100%);max-height:90vh;overflow:auto}.obrix-hist-pag-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.obrix-hist-pag-head h2{margin:0 0 4px}.obrix-hist-pag-head p{margin:0;color:#64748b}.obrix-hist-pag-x{border:0;background:transparent;color:inherit;font-size:30px;line-height:1}
     .obrix-hist-pag-resumo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:16px 0}.obrix-hist-pag-resumo>div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px}.obrix-hist-pag-resumo small{display:block;color:#64748b;font-weight:700}.obrix-hist-pag-resumo strong{display:block;margin-top:4px;font-size:18px}
     .obrix-hist-pag-card{margin-bottom:10px!important}.obrix-hist-pag-card.estornado{opacity:.72}.obrix-hist-pag-cardtop{display:flex;justify-content:space-between;gap:10px}.obrix-hist-pag-cardtop h3{margin:0}.obrix-hist-pag-cardtop p{margin:4px 0 0;color:#64748b}.obrix-hist-pag-status{height:max-content;border:1px solid #22c55e;border-radius:999px;padding:6px 9px;background:#dcfce7;color:#166534;font-size:12px;font-weight:900}.obrix-hist-pag-card.estornado .obrix-hist-pag-status{background:#fff1f2;color:#991b1b;border-color:#fecaca}
     .obrix-hist-pag-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-top:12px}.obrix-hist-pag-grid>div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:9px}.obrix-hist-pag-grid small{display:block;color:#64748b;font-size:11px;font-weight:700}.obrix-hist-pag-grid b{display:block;margin-top:4px}.obrix-hist-pag-grid .liq,.obrix-hist-pag-grid .acum{background:#f8fafc;border-color:#e2e8f0}
