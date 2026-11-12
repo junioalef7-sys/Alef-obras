@@ -1,6 +1,6 @@
 (()=>{'use strict';
 if(window.__OBRIX_EQUIPE_REALTIME_SYNC)return;window.__OBRIX_EQUIPE_REALTIME_SYNC=true;
-let canal=null,iniciando=false,reconcileTimer=0;
+let canal=null,iniciando=false,reconcileTimer=0,pinturaAgendada=false,consultaEmAndamento=false,consultaPendente=false,ultimaConsulta=0;
 function visivel(){const app=document.getElementById('app'),sec=document.getElementById('equipe');return !!(app&&sec&&!app.classList.contains('hidden')&&!sec.classList.contains('hidden'))}
 function lista(table){
   try{
@@ -36,15 +36,37 @@ function pintar(){
   try{window.OBRIX_EQUIPE_CONTROLES_GUARD?.ensure?.()}catch(_){ }
   const k=document.getElementById('funcs');if(k){try{k.textContent=String(lista('funcionarios').filter(f=>f.ativo!==false).length)}catch(_){}}
 }
+// Agrupa eventos do mesmo frame: renderização imediata do cache local sem repinturas duplicadas.
+function pintarUmaVez(){
+  if(pinturaAgendada||document.hidden||!visivel())return;
+  pinturaAgendada=true;
+  requestAnimationFrame(()=>{
+    pinturaAgendada=false;
+    if(!document.hidden&&visivel())pintar();
+  });
+}
 function reconciliar(forcar=false){
-  // A tela oculta recebe o payload Realtime no cache, mas não precisa
-  // consultar quatro tabelas completas após cada evento de outra área.
-  if(!navigator.onLine||document.hidden||(!forcar&&!visivel()))return;
-  clearTimeout(reconcileTimer);reconcileTimer=setTimeout(async()=>{
-    if(document.hidden||(!forcar&&!visivel()))return;
-    try{await window.OBRIX_EQUIPE?.refresh?.();if(visivel())pintar()}
-    catch(e){console.warn('Equipe: conferência de sincronização indisponível',e)}
-  },700);
+  // Reconsultar apenas a tela ativa. Evita buscas completas simultâneas ou
+  // reinícios indefinidos do debounce em sequência de eventos Realtime.
+  if(!navigator.onLine||document.hidden||!visivel())return;
+  if(consultaEmAndamento){consultaPendente=true;return}
+  if(reconcileTimer)return;
+  const espera=Math.max(forcar?100:700,2500-(Date.now()-ultimaConsulta));
+  reconcileTimer=setTimeout(async()=>{
+    reconcileTimer=0;
+    if(!navigator.onLine||document.hidden||!visivel())return;
+    if(consultaEmAndamento){consultaPendente=true;return}
+    consultaEmAndamento=true;
+    ultimaConsulta=Date.now();
+    try{
+      await window.OBRIX_EQUIPE?.refresh?.();
+      pintarUmaVez();
+    }catch(e){console.warn('Equipe: conferência de sincronização indisponível',e)}
+    finally{
+      consultaEmAndamento=false;
+      if(consultaPendente){consultaPendente=false;reconciliar(false)}
+    }
+  },espera);
 }
 function mudou(table,payload){
   window.dispatchEvent(new Event('obrix:atividade-externa'));
@@ -55,8 +77,7 @@ function mudou(table,payload){
     }}));
   }
   const aplicado=aplicarPayload(table,payload);
-  if(aplicado&&visivel())requestAnimationFrame(pintar);
-  else if(visivel()&&!['faltas','pagamentos_equipe'].includes(table))requestAnimationFrame(pintar);
+  if(visivel()&&(aplicado||!['faltas','pagamentos_equipe'].includes(table)))pintarUmaVez();
   reconciliar();
 }
 async function iniciar(){
@@ -75,7 +96,7 @@ async function iniciar(){
       .subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){try{sb.removeChannel(canal)}catch(_){}canal=null;setTimeout(iniciar,1600)}});
   }catch(e){console.warn('Equipe realtime indisponível',e);canal=null}finally{iniciando=false}
 }
-function atualizarAgora(){if(visivel())pintar();reconciliar(true)}
+function atualizarAgora(){pintarUmaVez();reconciliar(true)}
 window.addEventListener('online',()=>{setTimeout(iniciar,80);setTimeout(atualizarAgora,180)});
 window.addEventListener('focus',()=>{if(visivel()){void iniciar();atualizarAgora()}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&visivel()){void iniciar();atualizarAgora()}});
