@@ -54,6 +54,98 @@ html[data-theme="dark"] #app .obxCardFin>div{
  border-radius:10px;min-width:0;
 }
 `;document.head.appendChild(st);
+
+/* Ajuste de cartões exclusivamente para Android: o iPhone não recebe CSS novo. */
+if(/Android/i.test(navigator.userAgent||'')){
+ const stAndroid=document.createElement('style');stAndroid.id='obrix-financeiro-android-proporcoes';
+ stAndroid.textContent=[
+ '@media(max-width:760px){',
+ '#financeiroMain #fmLista [data-fin-card="1"] > .grid{box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:0!important;margin:7px 0 0!important;}',
+ '#financeiroMain #fmLista [data-fin-card="1"] > .grid > .mini{box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;height:56px!important;min-height:56px!important;max-height:56px!important;padding:8px 12px!important;margin:0!important;border-radius:10px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;overflow:hidden!important;}',
+ '#financeiroMain #fmLista [data-fin-card="1"] > .grid > .mini small{font-size:13px!important;line-height:20px!important;margin:0!important;}',
+ '#financeiroMain #fmLista [data-fin-card="1"] > .grid > .mini b{font-size:16px!important;line-height:20px!important;margin:0 0 0 auto!important;white-space:nowrap!important;max-width:55%!important;}',
+ '#financeiroMain #fmLista [data-fin-card="1"] > .actions{display:flex!important;align-items:stretch!important;gap:8px!important;width:100%!important;max-width:100%!important;margin-top:9px!important;}',
+ '#financeiroMain #fmLista [data-fin-card="1"] > .actions button{box-sizing:border-box!important;flex:1 1 0!important;width:auto!important;min-width:0!important;min-height:42px!important;height:42px!important;max-height:42px!important;padding:7px 9px!important;border-radius:10px!important;line-height:20px!important;}',
+ '}'
+ ].join('\n');document.head.appendChild(stAndroid);
+}
+const statusObras=document.createElement('style');statusObras.id='obrix-status-obras-contraste';
+statusObras.textContent=[
+ '#app #obras :is(.obxStatus.andamento,.obxStatus.em_andamento,.obxStatus.obxStatus-andamento,.obxStatus.obxStatus-em_andamento,button[data-filtro="andamento"],button[data-status="andamento"]){color:#fff!important;-webkit-text-fill-color:#fff!important;opacity:1!important;visibility:visible!important;filter:none!important;text-shadow:none!important;animation:none!important;transition:none!important;}',
+ '#app #obras :is(.obxStatus.andamento,.obxStatus.em_andamento,.obxStatus.obxStatus-andamento,.obxStatus.obxStatus-em_andamento){background-color:#05b94f!important;}',
+ 'html[data-theme="light"] #app #obras button[data-filtro="andamento"].ativo{background:#557ca8!important;border-color:#557ca8!important;}',
+ 'html[data-theme="light"] #app #obras button[data-filtro="andamento"]:not(.ativo){background:#0b2535!important;border-color:#496273!important;}'
+].join('\n');document.head.appendChild(statusObras);
+
+function textoBuscaGarantida(v){
+ return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .toLocaleLowerCase('pt-BR').trim();
+}
+/* Instala o campo na janela exibida, mesmo com um módulo antigo no cache PWA. */
+function garantirBuscaNoHistorico(back){
+ if(!back||back.nodeType!==1||back.dataset.obrixBuscaGarantida==='1')return;
+ const dialog=back.querySelector?.('.modal');if(!dialog)return;
+ const titulo=textoBuscaGarantida(dialog.querySelector('h2')?.textContent);
+ const estoque=back.classList.contains('estOp')&&/historico/.test(titulo)&&/(estoque|movimentac)/.test(titulo);
+ const equipe=/registros do funcionario/.test(titulo);
+ if(!estoque&&!equipe)return;
+ const raiz=estoque?dialog.querySelector('.estHistLista,.estHist'):
+  dialog.querySelector('.obrix-registros-corpo,.obrix-registros-lista');
+ if(!raiz)return;
+ back.dataset.obrixBuscaGarantida='1';
+ const classe=estoque?'estHistBusca':'obrix-registros-busca';
+ let input=dialog.querySelector('.'+classe);
+ if(!input){
+   const area=document.createElement('div');area.className='obrix-busca-garantida';
+   area.style.cssText='display:block;width:100%;margin:10px 0;min-width:0;';
+   const label=document.createElement('label');label.textContent=estoque?'Buscar movimentações':'Buscar registros';
+   const id=estoque?'estHistBuscaGarantida':'obrixRegistrosBuscaGarantida';
+   label.setAttribute('for',id);label.style.cssText='display:block;font-weight:800;margin-bottom:6px;';
+   input=document.createElement('input');input.type='search';input.id=id;input.className=classe;
+   input.autocomplete='off';
+   input.placeholder=estoque?'Material, local, tipo ou data...':'Data, obra, tipo ou valor...';
+   input.style.cssText='box-sizing:border-box;display:block;width:100%;min-height:44px;min-width:0;font-size:16px;padding:10px 12px;border:1px solid var(--ob-border,#cbd5df);border-radius:10px;background:var(--ob-surface-2,#f8fafc);color:var(--ob-text,#0f172a);';
+   area.appendChild(label);area.appendChild(input);raiz.parentElement?.insertBefore(area,raiz);
+ }
+ const seletor=estoque?'.item':'.obrix-registro-linha';
+ const aplicar=()=>{
+   if(!back.isConnected)return;
+   const termo=textoBuscaGarantida(input.value),linhas=[...raiz.querySelectorAll(seletor)];
+   let encontrados=0;
+   for(const linha of linhas){
+     const exibir=!termo||textoBuscaGarantida(linha.textContent).includes(termo);
+     linha.classList.toggle('hidden',!exibir);
+     if(exibir)encontrados++;
+   }
+   let contador=dialog.querySelector('.obrix-busca-garantida-contador');
+   if(!contador){
+     contador=document.createElement('div');contador.className='obrix-busca-garantida-contador';
+     contador.style.cssText='font-size:12px;margin:2px 0 8px;color:var(--ob-muted,#64748b);';
+     input.parentElement?.insertAdjacentElement('afterend',contador);
+   }
+   if(contador){
+     const texto=linhas.length?encontrados+' de '+linhas.length+' registro(s)':'';
+     if(contador.textContent!==texto)contador.textContent=texto;
+   }
+ };
+ input.addEventListener('input',aplicar);
+ new MutationObserver(aplicar).observe(raiz,{childList:true,subtree:true});
+ aplicar();
+}
+function instalarGarantiaBusca(){
+ const verificar=node=>{
+   if(node?.nodeType!==1)return;
+   if(node.matches?.('.modalBack,.estOp'))garantirBuscaNoHistorico(node);
+   node.querySelectorAll?.('.modalBack,.estOp').forEach(garantirBuscaNoHistorico);
+ };
+ document.querySelectorAll('.modalBack,.estOp').forEach(garantirBuscaNoHistorico);
+ new MutationObserver(muts=>{
+   for(const m of muts)for(const node of m.addedNodes)verificar(node);
+ }).observe(document.body,{childList:true,subtree:false});
+}
+if(document.body)instalarGarantiaBusca();
+else document.addEventListener('DOMContentLoaded',instalarGarantiaBusca,{once:true});
+
 const TIT=['obras','diário de obras','diario de obras','financeiro','equipe','funcionários','funcionarios','materiais / estoque','materiais/estoque','material estoque','materiais de estoque','estoque','orçamentos','orcamentos','orçamento','orcamento','relatórios','relatorios','documentos','notas','backup','backups','central offline','central clim','planos e assinaturas','planos de assinatura','ajuda e feedback','configurações','configuracoes','resumo geral','resumo da obra'];const n=s=>(s||'').replace(/\s+/g,' ').trim().toLowerCase(),vis=e=>!!e&&!e.classList.contains('hidden')&&getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden',modal=e=>!!e.closest('.modal,.modalBack,[role="dialog"],.estOp,[class*="modal"],[class*="dialog"]');
 function neutro(b){
  if(!b||b.id==='obrixTheme'||b.id==='obxVoltarObras'||b.closest?.('#app>.bottom')||b.matches?.('#obras .obxFiltros button[data-filtro="andamento"]'))return;
