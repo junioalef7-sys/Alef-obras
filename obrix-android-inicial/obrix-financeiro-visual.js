@@ -94,8 +94,6 @@ html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financ
     justify-self:stretch!important;
     min-width:0!important;
     width:100%!important;
-    height:auto!important;
-    max-height:none!important;
   }
 }
 `;
