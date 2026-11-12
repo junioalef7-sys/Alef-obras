@@ -130,6 +130,55 @@ html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financ
    white-space:nowrap!important;
  }
 }
+
+/* Android: largura da tarja Receita/Despesa igual à do iPhone (meia largura).
+   Um quadro pequeno à esquerda; os botões continuam em duas colunas completas.
+   A regra não é carregada pelo iPhone. */
+@media (max-width:700px){
+  html body #app #financeiroMain #fmLista [data-fin-card="1"]>.grid{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:7px!important;
+    width:100%!important;max-width:100%!important;min-width:0!important;
+    box-sizing:border-box!important;
+  }
+  html body #app #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:auto auto!important;
+    grid-column:1!important;
+    justify-self:stretch!important;
+    align-content:center!important;
+    justify-items:start!important;
+    align-items:center!important;
+    box-sizing:border-box!important;
+    width:100%!important;min-width:0!important;max-width:100%!important;
+    height:62px!important;min-height:62px!important;max-height:none!important;
+    padding:8px 9px!important;
+    gap:2px!important;
+    overflow:visible!important;
+  }
+  html body #app #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini>small,
+  html body #app #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini>b{
+    display:block!important;
+    grid-column:1!important;
+    width:100%!important;
+    min-width:0!important;max-width:100%!important;
+    text-align:left!important;
+    margin:0!important;
+    overflow:visible!important;
+    white-space:nowrap!important;
+  }
+  html body #app #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini>small{
+    grid-row:1!important;
+    font-size:12px!important;line-height:16px!important;
+  }
+  html body #app #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini>b{
+    grid-row:2!important;
+    font-size:clamp(13px,3.7vw,16px)!important;
+    line-height:20px!important;
+  }
+}
 `;
 document.head.appendChild(css);
 let agendaAplicacao=0,ultimoVisual=0;
