@@ -144,8 +144,9 @@ html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financ
   }
   html body #app #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini{
     display:grid!important;
-    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-columns:32px minmax(0,1fr)!important;
     grid-template-rows:auto auto!important;
+    column-gap:6px!important;
     grid-column:1!important;
     justify-self:stretch!important;
     align-content:center!important;
@@ -158,10 +159,15 @@ html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financ
     gap:2px!important;
     overflow:visible!important;
   }
+  /* Posiciona o ícone circular à esquerda e texto/valor empilhados à direita. */
+  html body #app #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini::before{
+    grid-column:1!important;grid-row:1/span 2!important;
+    align-self:center!important;justify-self:center!important;
+  }
   html body #app #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini>small,
   html body #app #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini>b{
     display:block!important;
-    grid-column:1!important;
+    grid-column:2!important;
     width:100%!important;
     min-width:0!important;max-width:100%!important;
     text-align:left!important;
@@ -175,7 +181,7 @@ html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financ
   }
   html body #app #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini>b{
     grid-row:2!important;
-    font-size:clamp(13px,3.7vw,16px)!important;
+    font-size:clamp(12px,3.7vw,16px)!important;
     line-height:20px!important;
   }
 }
