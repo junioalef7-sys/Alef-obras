@@ -32,10 +32,10 @@ html[data-theme="light"] #app #obxVoltarObras.obxVoltarAndroid svg[data-obrix-ba
 }
 
 /* Evita cartões pequenos/grandes excederem a tela sem alterar os layouts aprovados. */
-#app :is(.card,.item,.panel,.box,.kpi,.mini,.metric,.metrica,.obxValor,.obxAcao,.obp-work,.obp-detail-finance>div,.obxCardFin>div,.obxResumoGrid>div){
+#app :is(.card,.item,.panel,.box,.kpi,.mini,.metric,.metrica,.obxValor,.obxAcao,.obp-work,.obp-detail-finance>div,.obxCardFin>div,.obxResumoGrid>div):not(#financeiroMain *){
  box-sizing:border-box;min-width:0;max-width:100%;
 }
-#app :is(.card,.item,.panel,.box,.kpi,.mini,.obxValor,.obxCardFin>div) :is(b,strong){
+#app :is(.card,.item,.panel,.box,.kpi,.mini,.obxValor,.obxCardFin>div):not(#financeiroMain *) :is(b,strong){
  max-width:100%;overflow-wrap:anywhere;
 }
 /* Os cartões de valores das obras não tinham superfície própria em alguns temas. */
