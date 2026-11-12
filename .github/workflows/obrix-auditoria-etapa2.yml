@@ -1,0 +1,19 @@
+name: OBRIX - Etapa 2 - Testes de estabilidade da equipe
+on:
+  push:
+    branches:
+      - test/obrix-etapa2-sincronizacao-estavel-20261112
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Obter versao de teste sem publicar
+        uses: actions/checkout@v4
+      - name: Verificar sintaxe JavaScript da Equipe
+        run: node --check obrix-equipe-realtime-sync.js
+      - name: Executar testes de sincronizacao em ambiente simulado
+        run: node --test tests/obrix-realtime-equipe.test.cjs
