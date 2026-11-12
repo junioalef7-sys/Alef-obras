@@ -107,6 +107,12 @@ function garantirBuscaNoHistorico(back){
    input.style.cssText='box-sizing:border-box;display:block;width:100%;min-height:44px;min-width:0;font-size:16px;padding:10px 12px;border:1px solid var(--ob-border,#cbd5df);border-radius:10px;background:var(--ob-surface-2,#f8fafc);color:var(--ob-text,#0f172a);';
    area.appendChild(label);area.appendChild(input);raiz.parentElement?.insertBefore(area,raiz);
  }
+ // A PWA pode recuperar estilos antigos: tornar a busca existente realmente visível.
+ input.style?.setProperty?.('display','block','important');
+ input.style?.setProperty?.('visibility','visible','important');
+ input.style?.setProperty?.('opacity','1','important');
+ input.style?.setProperty?.('min-height','44px','important');
+ input.style?.setProperty?.('width','100%','important');
  const seletor=estoque?'.item':'.obrix-registro-linha';
  const aplicar=()=>{
    if(!back.isConnected)return;
