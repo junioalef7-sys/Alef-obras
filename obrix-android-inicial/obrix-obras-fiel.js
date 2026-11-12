@@ -32,7 +32,7 @@ function atualizarListaSemRemontar(box,novoHtml){
       '.obxCardInfo p:nth-of-type(2)','.obxStatusLinha > b'];
     for(const seletor of campos)atualizarTexto(antigo.querySelector(seletor),novo.querySelector(seletor));
     const a=antigo.querySelector('.obxStatus'),b=novo.querySelector('.obxStatus');
-    if(a&&b){if(a.className!==b.className)a.className=b.className;atualizarTexto(a,b)}
+    if(a&&b){if(a.className!==b.className)a.className=b.className;if(a.style.cssText!==b.style.cssText)a.style.cssText=b.style.cssText;atualizarTexto(a,b)}
     const barAntigo=antigo.querySelector('.obxStatusLinha .obxBar i');
     const barNovo=novo.querySelector('.obxStatusLinha .obxBar i');
     if(barAntigo&&barNovo&&barAntigo.style.width!==barNovo.style.width)
@@ -63,14 +63,27 @@ function atualizarListaSemRemontar(box,novoHtml){
   }
   return true;
 }
+function manterStatusBranco(box){
+  if(!box)return;
+  box.querySelectorAll('.obxStatus.andamento').forEach(el=>{
+    const cor=el.style;
+    if(cor.getPropertyValue('color')!=='#fff'||cor.getPropertyPriority('color')!=='important')
+      cor.setProperty('color','#fff','important');
+    if(cor.getPropertyValue('-webkit-text-fill-color')!=='#fff'||cor.getPropertyPriority('-webkit-text-fill-color')!=='important')
+      cor.setProperty('-webkit-text-fill-color','#fff','important');
+    if(cor.getPropertyValue('opacity')!=='1')cor.setProperty('opacity','1','important');
+    if(cor.getPropertyValue('transition')!=='none')cor.setProperty('transition','none','important');
+    if(cor.getPropertyValue('animation')!=='none')cor.setProperty('animation','none','important');
+  });
+}
 function render(){if(rendering)return;const box=document.getElementById('listaObras');if(!box)return;rendering=true;try{const todas=window.obras||[];let html='';if(detalhe){const o=todas.find(x=>String(x.id)===String(detalhe));if(o){html=renderDetalhe(o)}else detalhe=null}if(!html){const lista=todas.filter(o=>(filtro==='todas'||status(o)===filtro||(filtro==='concluida'&&status(o)==='concluída'))&&(!busca||String(o.nome||'').toLowerCase().includes(busca.toLowerCase())||String(o.cliente||'').toLowerCase().includes(busca.toLowerCase())));html=renderLista(lista)}// Um render legado pode substituir os nós sem atualizar a assinatura.
   // Não aceitar cache antigo caso a estrutura aprovada já tenha sido trocada.
   const contemVisualAprovado=!!box.querySelector(':scope > .obxBusca,:scope > .obxDetalhe');
-  if(box.__obrixUltimoHtml===html&&contemVisualAprovado)return;
+  if(box.__obrixUltimoHtml===html&&contemVisualAprovado){manterStatusBranco(box);return;}
   if(!detalhe&&atualizarListaSemRemontar(box,html)){
-    box.__obrixUltimoHtml=html;ligar();return;
+    box.__obrixUltimoHtml=html;manterStatusBranco(box);ligar();return;
   }
-  const active=document.activeElement;const focoBusca=active?.id==='obxBuscaObra';const pos=focoBusca?active.selectionStart:null;box.innerHTML=html;box.__obrixUltimoHtml=html;ligar();if(focoBusca){const novo=document.getElementById('obxBuscaObra');if(novo){novo.focus({preventScroll:true});try{novo.setSelectionRange(pos,pos)}catch(_){}}}}finally{rendering=false}}
+  const active=document.activeElement;const focoBusca=active?.id==='obxBuscaObra';const pos=focoBusca?active.selectionStart:null;box.innerHTML=html;box.__obrixUltimoHtml=html;manterStatusBranco(box);ligar();if(focoBusca){const novo=document.getElementById('obxBuscaObra');if(novo){novo.focus({preventScroll:true});try{novo.setSelectionRange(pos,pos)}catch(_){}}}}finally{rendering=false}}
 function ligar(){const campoBusca=document.getElementById('obxBuscaObra');
   if(campoBusca&&!campoBusca.dataset.obrixInputBound){
     campoBusca.dataset.obrixInputBound='1';
