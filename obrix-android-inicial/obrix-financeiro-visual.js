@@ -76,6 +76,28 @@ html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financ
 #financeiroMain .obxFinCardCompacto .actions{margin-top:8px!important;gap:6px!important}
 #financeiroMain .obxFinCardCompacto .actions button{min-height:38px!important;padding:7px 11px!important}
 @media(max-width:640px){#financeiroMain .kpi{padding:10px!important;min-height:70px!important}#financeiroMain .kpi strong{font-size:18px!important}#financeiroMain .obxFinCardCompacto{padding:10px!important}#financeiroMain .obxFinAcoes{gap:7px!important}}
+
+/* RESTAURACAO AUTENTICA (restore/android-first-approved-20261104):
+   a grade de largura dos lancamentos no Android tinha duas colunas iguais.
+   Reaplicada somente ao Financeiro, sem tocar no HTML nem em alturas/cores.
+   O quadro Receita/Despesa ocupa a primeira coluna; a segunda fica vazia. */
+@media (max-width:700px){
+  html body #app #financeiroMain #fmLista [data-fin-card="1"] > .grid{
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:6px!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  html body #app #financeiroMain #fmLista [data-fin-card="1"] > .grid > .mini{
+    grid-column:1!important;
+    justify-self:stretch!important;
+    min-width:0!important;
+    width:100%!important;
+    height:auto!important;
+    max-height:none!important;
+  }
+}
 `;
 document.head.appendChild(css);
 let agendaAplicacao=0,ultimoVisual=0;
