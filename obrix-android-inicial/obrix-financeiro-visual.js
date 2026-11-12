@@ -24,6 +24,22 @@ function aplicar(){
  const sh=main.querySelector('.sectionHead');if(sh){sh.classList.add('obxFinSectionHead');const acoes=sh.querySelector('div');if(acoes)acoes.classList.add('obxFinAcoes')}
  main.querySelectorAll('[data-fin-card="1"]').forEach(card=>{
    card.classList.add('obxFinCardCompacto');
+   // Android: o quadro Receita/Despesa sempre ocupa a primeira de duas colunas.
+   // Inline important vence regras CSS de largura total carregadas depois.
+   const gradeValor=card.querySelector(':scope > .grid');
+   const caixaValor=gradeValor?.querySelector(':scope > .mini');
+   if(gradeValor){
+     gradeValor.style.setProperty('display','grid','important');
+     gradeValor.style.setProperty('grid-template-columns','repeat(2,minmax(0,1fr))','important');
+     gradeValor.style.setProperty('width','100%','important');
+     gradeValor.style.setProperty('min-width','0','important');
+   }
+   if(caixaValor){
+     caixaValor.style.setProperty('grid-column','1','important');
+     caixaValor.style.setProperty('width','100%','important');
+     caixaValor.style.setProperty('min-width','0','important');
+     caixaValor.style.setProperty('max-width','100%','important');
+   }
    const tipo=card.dataset.tipo;const mini=card.querySelector('.mini');const rotulo=mini?.querySelector('small');const valor=mini?.querySelector('b');
    if(valor){valor.classList.toggle('obxFinValorDespesa',tipo==='despesa');valor.classList.toggle('obxFinValorReceita',tipo==='receita');if(document.documentElement.dataset.theme==='light'){const cor=tipo==='receita'?'#16a34a':'#dc2626';valor.style.setProperty('color',cor,'important');valor.style.setProperty('-webkit-text-fill-color',cor,'important')}}
    if(rotulo&&document.documentElement.dataset.theme==='light'){rotulo.style.setProperty('color','var(--ob-muted,#526173)','important');rotulo.style.setProperty('-webkit-text-fill-color','var(--ob-muted,#526173)','important')}
