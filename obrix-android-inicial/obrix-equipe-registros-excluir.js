@@ -33,9 +33,26 @@
   }
 
   function abrir(id){
+    // A central nova inclui faltas, busca e exclusões seguras.
+    if(typeof window.OBRIX_EQUIPE_REGISTROS_FALTAS?.open==='function')
+      return window.OBRIX_EQUIPE_REGISTROS_FALTAS.open(id);
     const f=funcs().find(x=>String(x.id)===String(id));if(!f)return alert('Funcionário não encontrado.');
     const rows=montarRows(id);
-    const back=modal('Registros do funcionário',`<p class="muted"><b>${esc(f.nome||'Funcionário')}</b></p><div class="obrix-registros-lista">${rows.length?rows.map(linha).join(''):'<p class="muted">Nenhum registro encontrado.</p>'}</div>`);
+    const back=modal('Registros do funcionário',`<p class="muted"><b>${esc(f.nome||'Funcionário')}</b></p><label class="obrix-registros-busca-label">Buscar registros</label><input type="search" class="obrix-registros-busca" placeholder="Data, obra, tipo, valor ou situação..." autocomplete="off"><div class="obrix-registros-busca-contador muted"></div><div class="obrix-registros-lista">${rows.length?rows.map(linha).join(''):'<p class="muted">Nenhum registro encontrado.</p>'}</div>`);
+    const busca=back.querySelector('.obrix-registros-busca');
+    const filtrar=()=>{
+      const termo=String(busca.value||'').normalize('NFD')
+        .replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
+      const linhas=[...back.querySelectorAll('.obrix-registros-lista .obrix-registro-linha')];
+      let visiveis=0;
+      linhas.forEach(l=>{
+        const texto=l.textContent.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
+        const ok=!termo||texto.includes(termo);l.classList.toggle('hidden',!ok);if(ok)visiveis++;
+      });
+      back.querySelector('.obrix-registros-busca-contador').textContent=
+        visiveis+' de '+linhas.length+' registros';
+    };
+    busca.addEventListener('input',filtrar);filtrar();
     back.querySelectorAll('[data-diaria-id]').forEach(btn=>btn.onclick=()=>excluirDiaria(id,btn.dataset.diariaId,back));
   }
 
@@ -60,6 +77,8 @@
   },true);
 
   const css=document.createElement('style');css.textContent=`
+    .obrix-registros-excluir-modal .obrix-registros-busca-label{display:block;font-weight:800;margin:10px 0 6px}.obrix-registros-excluir-modal .obrix-registros-busca{display:block;box-sizing:border-box;width:100%;height:44px;font-size:16px;padding:10px 12px;border:1px solid var(--ob-border,#cbd5e1);border-radius:10px;background:var(--ob-surface-2,#f8fafc);color:var(--ob-text,#0f172a)}.obrix-registros-busca-contador{font-size:12px;margin-top:5px}
+
     .obrix-registros-excluir-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.obrix-registros-excluir-head h2{margin:0}.obrix-registros-excluir-x{border:0;background:transparent;color:inherit;font-size:30px}.obrix-registro-excluir-direita{display:flex;align-items:center;gap:10px}.obrix-excluir-diaria-aberta{border:1px solid #fecaca;background:#fff1f2;color:#b91c1c;border-radius:9px;padding:8px 11px;font-weight:900}.obrix-excluir-diaria-aberta:disabled{opacity:.6}.obrix-registro-excluir-linha{gap:12px}
     html[data-theme="dark"] .obrix-excluir-diaria-aberta,body.dark .obrix-excluir-diaria-aberta{background:#2a1519;color:#fecaca;border-color:#7f1d1d}
     @media(max-width:520px){.obrix-registro-excluir-linha{align-items:flex-start!important}.obrix-registro-excluir-direita{flex-direction:column;align-items:flex-end}.obrix-excluir-diaria-aberta{min-width:86px}}
