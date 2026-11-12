@@ -51,23 +51,8 @@ html[data-theme="dark"] #app .obxCardFin>div{
 }
 `;document.head.appendChild(st);
 
-/* Respeitar no Android a mesma malha mobile do Financeiro do iPhone.
-   Apenas os lançamentos; KPIs do topo e Financeiro do iPhone intactos. */
-if(/Android/i.test(navigator.userAgent||'')){
- const finAndroid=document.createElement('style');
- finAndroid.id='obrix-financeiro-android-paridade-iphone';
- finAndroid.textContent=[
-  '@media(max-width:700px){',
-  '#financeiroMain #fmLista [data-fin-card="1"]>.grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;width:100%!important;min-width:0!important;margin:6px 0!important;}',
-  '#financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini{display:block!important;grid-column:auto!important;box-sizing:border-box!important;width:auto!important;min-width:0!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;padding:8px 10px!important;margin:0!important;border-radius:10px!important;}',
-  '#financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini small{display:block!important;font-size:11px!important;line-height:normal!important;margin:0!important;}',
-  '#financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini b{display:block!important;font-size:16px!important;line-height:normal!important;margin:0!important;max-width:none!important;white-space:nowrap!important;}',
-  '#financeiroMain #fmLista [data-fin-card="1"]>.actions{display:flex!important;flex-wrap:wrap!important;width:100%!important;gap:6px!important;margin-top:8px!important;}',
-  '#financeiroMain #fmLista [data-fin-card="1"]>.actions button{height:auto!important;max-height:none!important;min-height:38px!important;min-width:0!important;padding:7px 11px!important;flex:1!important;}',
-  '}'
- ].join('\n');
- document.head.appendChild(finAndroid);
-}
+/* No Android, usar a mesma grade e os mesmos cartões do Financeiro do iPhone.
+   As regras de paridade próprias para Android estavam sobrescrevendo o layout aprovado. */
 const statusObras=document.createElement('style');statusObras.id='obrix-status-obras-contraste';
 statusObras.textContent=[
  '#app #obras :is(.obxStatus.andamento,.obxStatus.em_andamento,.obxStatus.obxStatus-andamento,.obxStatus.obxStatus-em_andamento,button[data-filtro="andamento"],button[data-status="andamento"]){color:#fff!important;-webkit-text-fill-color:#fff!important;opacity:1!important;visibility:visible!important;filter:none!important;text-shadow:none!important;animation:none!important;transition:none!important;}',
