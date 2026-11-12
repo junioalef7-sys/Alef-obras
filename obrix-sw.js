@@ -1,11 +1,11 @@
 const CACHE='obrix-offline-v63-stability-coalesced';
-const BUILD='20261110-stability-coalesced1';
+const BUILD='20261111-history-search-android-cards2';
 const CDN_SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1';
 const CDN_HTML2CANVAS='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const CDN_JSPDF='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
 const APP=[
 './obrix.html','./obrix-startup-router.js','./obrix-offline-v3.js','./obrix-offline-v3-nav.js','./obrix-offline-v3-guard.js','./obrix-offline-bootstrap.js','./obrix-session-offline-fix.js','./obrix-offline-v2.js','./obrix-backend-adapter.js','./obrix-core-main.js','./obrix-ui-stability.js','./obrix-login-rescue.js','./obrix-login-eye-lite.js','./obrix-auth-main.js','./obrix-login-profissional.js',
-'./obrix-financeiro-main.js','./obrix-estoque-main.js','./obrix-equipe-main.js','./obrix-obras-main.js','./obrix-menu-main.js','./obrix-nav-active.js','./obrix-home-clean.js','./obrix-theme-main.js','./obrix-light-polish.js','./obrix-brand-main.js','./obrix-ajustes-ui-final.js',
+'./obrix-financeiro-main.js','./obrix-financeiro-visual.js','./obrix-visual-padrao-final.js','./obrix-obras-fiel.js','./obrix-estoque-operacoes-main.js','./obrix-equipe-registros-faltas.js','./obrix-estoque-main.js','./obrix-equipe-main.js','./obrix-obras-main.js','./obrix-menu-main.js','./obrix-nav-active.js','./obrix-home-clean.js','./obrix-theme-main.js','./obrix-light-polish.js','./obrix-brand-main.js','./obrix-ajustes-ui-final.js',
 './obrix-financeiro-resumo-obras.js','./obrix-financeiro-resumo-geral.js','./obrix-financeiro-protecao-estoque.js','./obrix-financeiro-busca.js','./obrix-financeiro-filtros-layout.js','./obrix-financeiro-grafico-receitas.js','./obrix-blindagem-financeiro.js',
 './obrix-equipe-controles-guard.js','./obrix-equipe-total-pago.js','./obrix-equipe-lista-vertical.js','./obrix-equipe-diretorio-pessoal.js','./obrix-equipe-botoes-neutros-v1.js','./obrix-equipe-estoque-fix-v1.js',
 './obrix-estoque-saida-obra.js','./obrix-estoque-operacoes-main.js','./obrix-estoque-estorno-final.js','./obrix-obras-busca.js','./obrix-obras-pagamentos.js','./obrix-checklist-v2.js',
