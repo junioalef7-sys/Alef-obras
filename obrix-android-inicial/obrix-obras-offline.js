@@ -17,12 +17,21 @@ function allowed(data={}){return{nome:String(data.nome||'').trim(),cliente:Strin
 function writeQueue(v){write(QUEUE_KEY,Array.isArray(v)?v:[]);renderStatus();window.dispatchEvent(new CustomEvent('obrix:obras-offline-atualizado'))}
 function merge(rows=cache()){const map=new Map((Array.isArray(rows)?rows:[]).map(x=>[String(x.id),{...x}]));mine().forEach(op=>{const x=map.get(String(op.id));if(x)map.set(String(op.id),{...x,...op.payload,__offline:true,__conflict:!!op.conflict})});return [...map.values()]}
 function updateBase(rows){const b=read(BASE_KEY,null);if(!b?.profile?.empresa_id)return;write(BASE_KEY,{...b,obras:Array.isArray(rows)?rows:[],updatedAt:new Date().toISOString()})}
+function obrasIguaisSemProgresso(a,b){
+  if(!Array.isArray(a)||!Array.isArray(b)||a.length!==b.length)return false;
+  return a.every((row,i)=>{
+    const outro=b[i];
+    if(!row||!outro)return row===outro;
+    const campos=o=>Object.keys(o).filter(k=>k!=='progresso').sort().map(k=>[k,o[k]]);
+    return JSON.stringify(campos(row))===JSON.stringify(campos(outro));
+  });
+}
 function publishRows(rows){
   const next=Array.isArray(rows)?rows:[];
   // Duas fontes de sincronização não devem remontar toda a tela
   // quando o servidor devolve os mesmos registros.
   const atual=Array.isArray(window.obras)?window.obras:[];
-  if(JSON.stringify(atual)===JSON.stringify(next))return false;
+  if(obrasIguaisSemProgresso(atual,next))return false;
   try{if(typeof obras!=='undefined'&&Array.isArray(obras)){obras.splice(0,obras.length,...next);window.obras=obras}else window.obras=next}catch{window.obras=next}updateBase(next);try{typeof publicarGlobais==='function'&&publicarGlobais()}catch{}try{typeof atualizarInicio==='function'&&atualizarInicio()}catch{}try{window.OBRIX_OBRAS?.render?.()}catch{}try{window.OBRIX_DASH?.sync?.()}catch{}}
 function applyLocal(){publishRows(merge(cache().length?cache():(window.obras||[])))}
 function saveEdit(id,data){const e=empresa(),base=baseRow(id);if(!e)throw new Error('Abra o OBRIX conectado pelo menos uma vez antes de usar Obras offline.');if(!id||!base)throw new Error('Obra não encontrada no aparelho.');const payload=allowed(data);if(!payload.nome)throw new Error('Informe o nome da obra.');const old=mine().find(x=>String(x.id)===String(id)),all=queue().filter(x=>!(String(x.empresa_id||'')===String(e)&&String(x.id)===String(id)));all.push({id,empresa_id:e,payload,base_atualizado_em:old?.base_atualizado_em??base?.atualizado_em??null,at:new Date().toISOString(),conflict:!!old?.conflict,conflict_remote_at:old?.conflict_remote_at||null,conflict_message:old?.conflict_message||''});writeQueue(all);applyLocal();schedule(1000);return true}

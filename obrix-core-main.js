@@ -64,6 +64,15 @@ function restaurarOfflineCore(reason='core'){
 }
 async function carregarSecundarios(eid){try{const sb=await OBRIX_BACKEND.init(),[ex,di,va,bo]=await Promise.all([sb.from('servicos_extras').select('*').eq('empresa_id',eid),sb.from('diarias').select('*').eq('empresa_id',eid),sb.from('vales').select('*').eq('empresa_id',eid),sb.from('bonus_extras').select('*').eq('empresa_id',eid)]);[ex,di,va,bo].forEach(r=>{if(r.error)throw r.error});extras=ex.data||[];diarias=di.data||[];vales=va.data||[];bonus=bo.data||[];publicarGlobais();salvarBaseOffline();atualizarInicio();if($('obras')&&!$('obras').classList.contains('hidden'))renderObras();if($('equipe')&&!$('equipe').classList.contains('hidden'))renderEquipe();window.OBRIX_DASH?.paint?.()}catch(e){console.warn('OBRIX: dados secundários serão sincronizados depois',e)}}
 // Reconciliacao pontual com o servidor: nao refaz o login nem substitui dados financeiros locais.
+function obrasIguaisSemProgresso(a,b){
+  if(!Array.isArray(a)||!Array.isArray(b)||a.length!==b.length)return false;
+  return a.every((row,i)=>{
+    const outro=b[i];
+    if(!row||!outro)return row===outro;
+    const campos=o=>Object.keys(o).filter(k=>k!=='progresso').sort().map(k=>[k,o[k]]);
+    return JSON.stringify(campos(row))===JSON.stringify(campos(outro));
+  });
+}
 let obrasSyncPendente=null;
 async function sincronizarObrasDoServidor(){
   if(obrasSyncPendente)return obrasSyncPendente;
@@ -82,10 +91,12 @@ async function sincronizarObrasDoServidor(){
     // Uma conta trocada durante a consulta nao pode receber dados da anterior.
     if(!profile||profile.empresa_id!==eid)return false;
     const novos=ro.data||[],novosExtras=re.data||[];
-    if(JSON.stringify(obras)===JSON.stringify(novos)&&
-       JSON.stringify(extras)===JSON.stringify(novosExtras))return false;
-    obras=novos;
-    extras=novosExtras;
+    const mesmasObras=obrasIguaisSemProgresso(obras,novos);
+    const mesmosExtras=JSON.stringify(extras)===JSON.stringify(novosExtras);
+    if(mesmasObras&&mesmosExtras)return false;
+    // O progresso do checklist é derivado e não deve invalidar os dados da obra.
+    if(!mesmasObras)obras=novos;
+    if(!mesmosExtras)extras=novosExtras;
     publicarGlobais();
     salvarBaseOffline();
     atualizarInicio();
