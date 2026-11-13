@@ -125,10 +125,13 @@ const css=document.createElement('style');css.id='obrix-obras-profissional';css.
  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
  padding:9px;background:linear-gradient(transparent,#061b28e8)}
 #app #obras .obrixCapaAcoes button{min-width:0!important;min-height:36px!important;
- border:1px solid #d7e0e8!important;border-radius:9px!important;
- background:#f8fafc!important;color:#142235!important;
- -webkit-text-fill-color:#142235!important;font-size:clamp(10px,2.8vw,13px)!important;
- font-weight:750!important;white-space:nowrap!important;padding:6px 3px!important}
+ border:1px solid rgba(255,255,255,.65)!important;border-radius:9px!important;
+ background:transparent!important;background-color:transparent!important;
+ background-image:none!important;box-shadow:none!important;
+ color:#fff!important;-webkit-text-fill-color:#fff!important;
+ text-shadow:0 1px 3px rgba(0,0,0,.9)!important;
+ font-size:clamp(10px,2.8vw,13px)!important;font-weight:800!important;
+ white-space:nowrap!important;padding:6px 3px!important}
 #app #obras .obrixCapaAcoes button:disabled{opacity:.65!important;cursor:wait!important}
 #app #obras #listaObras>.obxMais{position:static!important;right:auto!important;bottom:auto!important;
  display:flex!important;justify-content:center!important;align-items:center!important;
