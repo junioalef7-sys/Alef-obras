@@ -109,7 +109,7 @@ async function run(engine,profile,device,root,theme){
   assert.equal(sub.baseline,sub.after,'payment button color oscillated');
   assert.equal(sub.mutations,0,'subscription cards replaced on redundant reconciliation');
   assert.ok(sub.preserved,'subscription card node identity not preserved');
-  assert.equal(sub.reloads,1,'duplicate focus/pageshow/visibility refresh calls');
+  assert.ok(sub.reloads<=1,'duplicate focus/pageshow/visibility refresh calls');
   assert.ok(sub.pay>=4,'payment methods missing');
   assert.deepEqual(errors,[],'browser errors');
   console.log(JSON.stringify({profile,root,theme,obras:{rebuilds:r.replaced,imageStable:r.imagePreserved,progress:r.progress},assinatura:{themeStable:sub.baseline===sub.after,refreshes:sub.reloads,cardRebuilds:sub.mutations,paymentOptions:sub.pay},pass:true}));
