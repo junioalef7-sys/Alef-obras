@@ -44,7 +44,7 @@ async function run(browserType,profile,device,root,theme){
     let replacements=0,styling=0;
     const node=b;
     const watcher=new MutationObserver(records=>records.forEach(r=>{
-      if(r.type==='attributes'&&r.attributeName==='style')styling++;
+      if(r.type==='attributes'&&r.attributeName==='style'&&r.target===node)styling++;
       if(r.type==='childList'&&[...r.removedNodes].includes(node))replacements++;
     }));
     watcher.observe(document.body,{subtree:true,attributes:true,attributeFilter:['style'],childList:true});
