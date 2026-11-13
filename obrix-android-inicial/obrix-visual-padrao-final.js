@@ -188,9 +188,9 @@ function agenda(force=false){if(scheduled)return;scheduled=true;requestAnimation
 // interromper a propagação do clique e impedir o controle tradicional.
 window.addEventListener('click',event=>{
   const target=event.target;
-  const viaRodape=target?.closest?.('#app>.bottom #bEquipe,#app>.bottom button:nth-child(3)');
+  const viaRodape=target?.closest?.('#app>.bottom #bEquipe,#app>.bottom button:nth-child(4)');
   const viaMenu=target?.closest?.('#menuMain [data-go="equipe"]');
-  const financeiroRodape=target?.closest?.('#app>.bottom>button:nth-child(2)');
+  const financeiroRodape=target?.closest?.('#app>.bottom>button:nth-child(3)');
   const financeiroMenu=target?.closest?.('#menuMain [data-go="financeiro"]');
   if(financeiroRodape||financeiroMenu){
     const fOrigem=financeiroRodape?'rodape':'menu';

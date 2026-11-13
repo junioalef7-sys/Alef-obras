@@ -48,7 +48,7 @@ function fill(el,key){
 }
 function update(){
  const app=document.getElementById('app');if(!app)return;
- app.querySelectorAll(':scope>.bottom>button').forEach((b,i)=>addTo(b,['house','wallet','users','menu'][i]));
+ app.querySelectorAll(':scope>.bottom>button').forEach((b,i)=>addTo(b,['house','hardhat','wallet','users'][i]));
  app.querySelectorAll('#inicio #obpHome .obp-shortcuts button[data-short]').forEach(b=>{
   const m={nova:'plus',notas:'note',relatorios:'chart',foto:'camera',diario:'notebook',equipe:'users'};
   fill(b.querySelector(':scope>span'),m[b.dataset.short]||'note');

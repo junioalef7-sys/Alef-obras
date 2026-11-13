@@ -87,8 +87,8 @@ for(const prefix of ['','obrix-android-inicial/']){
     const foreign=await request('/obrix-account-delete.js?v=another-build');
     assert.equal(foreign.status,0,
       'offline snapshot from another build was incorrectly accepted');
-    assert.match(source,/obrix-offline-v64-exact-version-20261113/);
-    assert.match(loader,/obrix-obras-offline\.js\?v=20261113-exact-cache64/);
+    assert.match(source,/obrix-offline-v65-nav-header-20261113/);
+    assert.match(loader,/obrix-obras-offline\.js\?v=20261113-nav-header1/);
     assert.match(source,/'\.\/obrix-pos-login-loader\.js'/,
       'offline manifest loader must be precached');
   });
@@ -100,7 +100,7 @@ for(const prefix of ['','obrix-android-inicial/']){
     assert.ok(!loader.includes("await loadGroup('financeiro');await loadGroup('obras')"));
   });
   test(prefix+' nova versao PWA referenciada pelos scripts raiz/Android',()=>{
-    assert.ok(fs.readFileSync(prefix+'obrix-obras-offline.js','utf8').includes("obrix-sw.js?v=20261113-exact-cache64"));
+    assert.ok(fs.readFileSync(prefix+'obrix-obras-offline.js','utf8').includes("obrix-sw.js?v=20261113-nav-cache65"));
     assert.match(fs.readFileSync(prefix+'obrix.html','utf8'),/obrix-pos-login-loader\.js\?v=[\w.-]+/);
   });
 }

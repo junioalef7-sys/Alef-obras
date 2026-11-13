@@ -101,7 +101,7 @@ function interceptMenu(e){
 }function interceptConfigClose(e){const btn=e.target.closest?.('#configMain .cfgFechar');if(!btn)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();closeCurrent()}
 document.addEventListener('click',interceptMenu,true);document.addEventListener('click',interceptConfigClose,true);document.addEventListener('click',e=>{if(e.target.closest?.('.obrixModuleClose'))return;const homeOrigin=e.target.closest?.('#inicio .nav button,#app>.bottom button:not(#bMenu)');
 if(homeOrigin)setCloseTarget('inicio');
-const rodapeEquipe=e.target.closest?.('#app>.bottom #bEquipe,#app>.bottom button:nth-child(3)');
+const rodapeEquipe=e.target.closest?.('#app>.bottom #bEquipe,#app>.bottom button:nth-child(4)');
 if(rodapeEquipe){
   document.documentElement.dataset.obrixEquipeOrigem='rodape';
   window.OBRIX_VISUAL_PADRAO_FINAL?.refresh?.();

@@ -1,8 +1,8 @@
 (()=>{'use strict';
 if(window.__OBRIX_OFFLINE_V3_NAV)return;window.__OBRIX_OFFLINE_V3_NAV=true;
 const STYLE_ID='obrixOfflineV3NavStyle',NAV_ID='obrixOfflineV3Bottom';
-const ROUTES=['inicio','financeiro','equipe','menu'];
-const LABELS=['Início','Financeiro','Equipe','Menu'];
+const ROUTES=['inicio','obras','financeiro','equipe'];
+const LABELS=['Início','Obras','Financeiro','Equipe'];
 const offline=()=>!navigator.onLine||window.__OBRIX_FORCE_OFFLINE===true;
 function limparOnline(){
  if(offline())return;
