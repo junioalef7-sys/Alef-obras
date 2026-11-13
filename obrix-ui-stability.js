@@ -7,7 +7,7 @@ function makeClose(main){if(!main||main.querySelector('.obrixModuleClose'))retur
   // Não criar/remover botões durante a navegação; o visual final controla esses elementos.
 }
 function repairScroll(){document.documentElement.classList.add('obrixScrollFixed');document.body.classList.add('obrixScrollFixed');document.querySelectorAll('#app main:not(.hidden),#app>section:not(.hidden),[role="dialog"],.modal,.sheet,.drawer').forEach(el=>{if(el.closest?.('#login'))return;el.classList.add('obrixScrollableView')});document.querySelectorAll('.formActions,.modal-actions,.dialog-actions,.sheet-actions').forEach(el=>el.classList.add('obrixSafeActions'))}
-function openingState(btn,on){if(!btn)return;if(on){btn.classList.add('obrixOpening');btn.setAttribute('aria-busy','true');if(btn.dataset.obrixOldHtml==null)btn.dataset.obrixOldHtml=btn.innerHTML;const label=btn.querySelector('b')||btn.querySelector('span');if(label)label.textContent='Abrindo...'}else{btn.classList.remove('obrixOpening');btn.removeAttribute('aria-busy');if(btn.dataset.obrixOldHtml!=null){btn.innerHTML=btn.dataset.obrixOldHtml;delete btn.dataset.obrixOldHtml}}}
+function openingState(btn,on){if(!btn)return;if(on){btn.classList.add('obrixOpening');btn.setAttribute('aria-busy','true')}else{btn.classList.remove('obrixOpening');btn.removeAttribute('aria-busy')}}
 async function loadGroup(k){const l=window.OBRIX_POS_LOGIN_LOADER;if(!l?.loadGroup)return true;try{return await Promise.race([Promise.resolve(l.loadGroup(k)),sleep(12000).then(()=>false)])}catch{return false}}async function loadFeature(k){const l=window.OBRIX_POS_LOGIN_LOADER;if(!l?.loadFeature)return false;try{return await Promise.race([Promise.resolve(l.loadFeature(k)),sleep(12000).then(()=>false)])}catch{return false}}
 async function openOnline(k,btn){
   if(!navigator.onLine)return false;
@@ -52,12 +52,13 @@ async function openOnline(k,btn){
     }
     if(FEATURES.has(k)){
       const carregamento=loadFeature(k);
-      let mod=null;
-      if(k==='config'){
-        // Configurações é utilizável assim que o módulo principal termina;
-        // não esperar scripts complementares para desenhar a tela.
-        mod=await waitFor(()=>window.OBRIX_CONFIG?.open&&window.OBRIX_CONFIG,10000);
-      }
+      // O módulo principal pode abrir enquanto complementos terminam de carregar.
+      // A sequência original de scripts continua no loader, sem descartar recursos.
+      let mod=await Promise.race([
+        waitFor(()=>window[MAP[k]]?.open&&window[MAP[k]],10000),
+        carregamento.then(()=>window[MAP[k]]?.open?window[MAP[k]]:null)
+      ]);
+      if(!atual())return false;
       if(!mod){
         const ok=await carregamento;
         if(!atual())return false;
