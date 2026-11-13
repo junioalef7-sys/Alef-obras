@@ -10,7 +10,8 @@ async function run(engine,profile,device,root,theme){
  try{
   const page=await browser.newPage(device),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
-  await page.setContent(html);
+  await page.route('https://obrix-test.invalid/**',route=>route.fulfill({status:200,contentType:'text/html; charset=utf-8',body:html}));
+  await page.goto('https://obrix-test.invalid/obrix.html');
   await page.evaluate(theme=>{
     document.documentElement.dataset.theme=theme;
     window.obras=[{id:'work-1',nome:'Escola',cliente:'Cliente',local:'Centro',status:'andamento',valor_contrato:25000,progresso:45},{id:'work-2',nome:'Refeitório',cliente:'Cliente',local:'Centro',status:'andamento',valor_contrato:18000,progresso:20}];
