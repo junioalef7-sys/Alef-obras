@@ -23,75 +23,11 @@ function aplicar(){
  const br=document.getElementById('fmReceita'),bd=document.getElementById('fmDespesa');if(br)br.classList.add('obxFinBtnReceita');if(bd)bd.classList.add('obxFinBtnDespesa');
  const sh=main.querySelector('.sectionHead');if(sh){sh.classList.add('obxFinSectionHead');const acoes=sh.querySelector('div');if(acoes)acoes.classList.add('obxFinAcoes')}
  main.querySelectorAll('[data-fin-card="1"]').forEach(card=>{
-   card.classList.add('obxFinCardCompacto');
-   // Android: o quadro Receita/Despesa sempre ocupa a primeira de duas colunas.
-   // Inline important vence regras CSS de largura total carregadas depois.
-   const gradeValor=card.querySelector(':scope > .grid');
-   const caixaValor=gradeValor?.querySelector(':scope > .mini');
-   if(gradeValor){
-     gradeValor.style.setProperty('display','grid','important');
-     gradeValor.style.setProperty('grid-template-columns','repeat(2,minmax(0,1fr))','important');
-     gradeValor.style.setProperty('width','100%','important');
-     gradeValor.style.setProperty('min-width','0','important');
-   }
-   if(caixaValor){
-     caixaValor.style.setProperty('grid-column','1','important');
-     caixaValor.style.setProperty('width','100%','important');
-     caixaValor.style.setProperty('min-width','0','important');
-     caixaValor.style.setProperty('max-width','100%','important');
-   }
-   const tipo=card.dataset.tipo;const mini=card.querySelector('.mini');const rotulo=mini?.querySelector('small');const valor=mini?.querySelector('b');
-   // Somente Android: alinhar o valor imediatamente abaixo de Receita/Despesa.
-   // Não modificar largura, altura, padding, iconografia ou ações dos cartões.
-   if(mini){
-     mini.style.setProperty('display','flex','important');
-     mini.style.setProperty('flex-direction','column','important');
-     mini.style.setProperty('align-items','flex-start','important');
-     mini.style.setProperty('justify-content','center','important');
-   }
-   if(rotulo){
-     rotulo.style.setProperty('display','block','important');
-     rotulo.style.setProperty('align-self','flex-start','important');
-     rotulo.style.setProperty('margin-left','0','important');
-   }
-   if(valor){
-     valor.style.setProperty('display','block','important');
-     valor.style.setProperty('position','static','important');
-     valor.style.setProperty('align-self','flex-start','important');
-     valor.style.setProperty('flex','0 0 auto','important');
-     valor.style.setProperty('width','auto','important');
-     valor.style.setProperty('max-width','100%','important');
-     valor.style.setProperty('margin','2px 0 0','important');
-     valor.style.setProperty('text-align','left','important');
-   }
-   // Aplica as proporções diretamente na montagem real do cartão Android,
-   // sem depender de camadas CSS carregadas em ordens diferentes.
-   card.style.setProperty('padding','15px','important');
-   card.style.setProperty('margin-bottom','12px','important');
-   card.style.setProperty('border-radius','18px','important');
-   card.style.setProperty('border','1px solid var(--ob-border,#CBD5E1)','important');
-   card.style.setProperty('background-color','var(--ob-surface,#F8FAFC)','important');
-   card.querySelector(':scope>h3')?.style.setProperty('font-size','18px','important');
-   card.querySelector(':scope>.muted')?.style.setProperty('font-size','14px','important');
-   const actions=card.querySelector(':scope>.actions');
-   if(actions){
-     actions.style.setProperty('display','grid','important');
-     actions.style.setProperty('grid-template-columns','repeat(2,minmax(0,1fr))','important');
-     actions.style.setProperty('gap','9px','important');
-     const buttons=[...actions.querySelectorAll(':scope>button')];
-     buttons.forEach(btn=>{btn.style.setProperty('min-width','0','important');btn.style.setProperty('width','100%','important');btn.style.setProperty('grid-column',buttons.length===1?'1/-1':'auto','important')});
-   }
-   if(caixaValor){
-     caixaValor.style.setProperty('background-color','transparent','important');
-     caixaValor.style.setProperty('border','1px solid var(--ob-border,#CBD5E1)','important');
-     caixaValor.style.setProperty('border-radius','12px','important');
-     caixaValor.style.setProperty('padding','10px 8px 10px 45px','important');
-     caixaValor.style.setProperty('min-height','62px','important');
-   }
-   rotulo?.style.setProperty('font-size','14px','important');
-   valor?.style.setProperty('font-size','clamp(14px,3.8vw,18px)','important');
-   if(valor){valor.classList.toggle('obxFinValorDespesa',tipo==='despesa');valor.classList.toggle('obxFinValorReceita',tipo==='receita');if(document.documentElement.dataset.theme==='light'){const cor=tipo==='receita'?'#16a34a':'#dc2626';valor.style.setProperty('color',cor,'important');valor.style.setProperty('-webkit-text-fill-color',cor,'important')}}
-   if(rotulo&&document.documentElement.dataset.theme==='light'){rotulo.style.setProperty('color','var(--ob-muted,#526173)','important');rotulo.style.setProperty('-webkit-text-fill-color','var(--ob-muted,#526173)','important')}
+   // A disposição agora é definida apenas por CSS neste arquivo.
+   card.classList.remove('obxFinCardCompacto');
+   const tipo=card.dataset.tipo,valor=card.querySelector(':scope>.grid>.mini>b');
+   valor?.classList.toggle('obxFinValorDespesa',tipo==='despesa');
+   valor?.classList.toggle('obxFinValorReceita',tipo==='receita');
    const btn=card.querySelector('[data-fin="excluir"]');if(btn){if(btn.textContent!=='Apagar')btn.textContent='Apagar';btn.classList.add('obxFinApagar')}
  });
  main.querySelectorAll('[id*="check" i],[class*="check" i]').forEach(box=>{
@@ -131,59 +67,106 @@ html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financ
 #financeiroMain .obxFinSectionHead>strong{order:2!important;display:block!important;width:100%!important}
 #financeiroMain .obxFinAcoes{order:1!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px!important;width:100%!important}
 #financeiroMain .obxFinAcoes #fmReceita,#financeiroMain .obxFinAcoes #fmDespesa{width:100%!important;margin:0!important;min-height:44px!important;padding:9px 10px!important}
-#financeiroMain .obxFinCardCompacto{padding:12px!important;margin-bottom:8px!important;border-radius:12px!important}
-#financeiroMain .obxFinCardCompacto h3{font-size:15px!important;margin:0 0 4px!important;line-height:1.25!important}
-#financeiroMain .obxFinCardCompacto .muted{font-size:12px!important;line-height:1.35!important;margin-bottom:7px!important}
-#financeiroMain .obxFinCardCompacto .grid{gap:6px!important;margin:6px 0!important}
-#financeiroMain .obxFinCardCompacto .mini{padding:8px 10px!important;min-height:auto!important;border-radius:10px!important}
-#financeiroMain .obxFinCardCompacto .mini small{font-size:11px!important}
-#financeiroMain .obxFinCardCompacto .mini b{font-size:16px!important}
-#financeiroMain .obxFinCardCompacto .actions{margin-top:8px!important;gap:6px!important}
-#financeiroMain .obxFinCardCompacto .actions button{min-height:38px!important;padding:7px 11px!important}
-@media(max-width:640px){#financeiroMain .kpi{padding:10px!important;min-height:70px!important}#financeiroMain .kpi strong{font-size:18px!important}#financeiroMain .obxFinCardCompacto{padding:10px!important}#financeiroMain .obxFinAcoes{gap:7px!important}}
 
-/* RESTAURACAO AUTENTICA (restore/android-first-approved-20261104):
-   a grade de largura dos lancamentos no Android tinha duas colunas iguais.
-   Reaplicada somente ao Financeiro, sem tocar no HTML nem em alturas/cores.
-   O quadro Receita/Despesa ocupa a primeira coluna; a segunda fica vazia. */
-@media (max-width:700px){
-  html body #app #financeiroMain #fmLista [data-fin-card="1"] > .grid{
-    display:grid!important;
-    grid-template-columns:1fr 1fr!important;
-    gap:6px!important;
-    width:100%!important;
-    min-width:0!important;
-  }
-  html body #app #financeiroMain #fmLista [data-fin-card="1"] > .grid > .mini{
-    grid-column:1!important;
-    justify-self:stretch!important;
-    min-width:0!important;
-    width:100%!important;
-  }
-}
 
-/* Alinhamento do texto no mini-cartao do Android. Largura e altura preservadas. */
-@media (max-width:700px){
- #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini{
-   display:flex!important;
-   flex-direction:column!important;
-   align-items:flex-start!important;
-   justify-content:center!important;
+
+
+
+
+
+
+
+@media(max-width:640px){#financeiroMain .kpi{padding:10px!important;min-height:70px!important}#financeiroMain .kpi strong{font-size:18px!important}#financeiroMain .obxFinAcoes{gap:7px!important}}
+
+
+/* FONTE ÚNICA: cartão Financeiro Android — dimensões e posicionamento aprovados. */
+@media(max-width:760px){
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"].card.item{
+  box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;
+  padding:15px!important;margin:0 0 12px!important;
+  background:var(--ob-surface,#F8FAFC)!important;background-color:var(--ob-surface,#F8FAFC)!important;
+  border:1px solid var(--ob-border,#CBD5E1)!important;border-radius:18px!important;
+  box-shadow:none!important
  }
- #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini>small{
-   display:block!important;
-   align-self:flex-start!important;
-   margin-left:0!important;
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"]>h3{
+  font-size:18px!important;line-height:1.28!important;font-weight:850!important;margin:0 0 5px!important
  }
- #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini>b{
-   display:block!important;
-   position:static!important;
-   flex:0 0 auto!important;
-   align-self:flex-start!important;
-   width:auto!important;
-   max-width:100%!important;
-   margin:2px 0 0!important;
-   text-align:left!important;
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"]>.muted{
+  font-size:14px!important;line-height:1.38!important;margin:0 0 9px!important
+ }
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"]>.grid{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  width:100%!important;max-width:100%!important;min-width:0!important;
+  gap:8px!important;margin:8px 0 0!important;
+ }
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"]>.grid>.mini{
+  position:relative!important;grid-column:1!important;grid-row:auto!important;
+  box-sizing:border-box!important;width:100%!important;max-width:100%!important;
+  min-width:0!important;display:flex!important;flex-direction:column!important;
+  align-items:flex-start!important;justify-content:center!important;
+  background:transparent!important;background-color:transparent!important;
+  border:1px solid var(--ob-border,#CBD5E1)!important;border-radius:12px!important;
+  min-height:65px!important;padding:10px 5px 10px 48px!important;gap:0!important;
+  box-shadow:none!important
+ }
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"]>.grid>.mini::before,
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"]>.grid>.mini::after{
+  content:none!important;display:none!important
+ }
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"]>.grid>.mini>small{
+  display:block!important;position:static!important;align-self:flex-start!important;
+  margin:0!important;padding:0!important;min-height:0!important;
+  font-size:clamp(12px,3.35vw,14px)!important;font-weight:750!important;
+  line-height:1.2!important;text-align:left!important;white-space:nowrap!important;
+  color:var(--ob-muted,#526173)!important;-webkit-text-fill-color:var(--ob-muted,#526173)!important
+ }
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"]>.grid>.mini>small::before{
+  position:absolute!important;content:'↑'!important;left:9px!important;top:50%!important;
+  transform:translateY(-50%)!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  box-sizing:border-box!important;width:31px!important;height:31px!important;
+  border-radius:50%!important;background:#16A34A!important;
+  font-size:20px!important;font-weight:900!important;
+  color:#fff!important;-webkit-text-fill-color:#fff!important
+ }
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"][data-tipo="despesa"]>.grid>.mini>small::before{
+  content:'↓'!important;background:#DC2626!important
+ }
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"]>.grid>.mini>b{
+  display:block!important;position:static!important;align-self:flex-start!important;
+  margin:3px 0 0!important;padding:0!important;flex:0 1 auto!important;
+  width:auto!important;max-width:100%!important;min-width:0!important;
+  font-size:clamp(12px,3.55vw,17px)!important;font-weight:900!important;
+  letter-spacing:-.02em!important;line-height:1.2!important;
+  text-align:left!important;white-space:nowrap!important;font-variant-numeric:tabular-nums!important
+ }
+ html[data-theme="light"] body #app #financeiroMain #fmLista>[data-fin-card="1"][data-tipo="receita"]>.grid>.mini>b{
+  color:#15803D!important;-webkit-text-fill-color:#15803D!important
+ }
+ html[data-theme="light"] body #app #financeiroMain #fmLista>[data-fin-card="1"][data-tipo="despesa"]>.grid>.mini>b{
+  color:#B91C1C!important;-webkit-text-fill-color:#B91C1C!important
+ }
+ html[data-theme="dark"] body #app #financeiroMain #fmLista>[data-fin-card="1"][data-tipo="receita"]>.grid>.mini>b{
+  color:#4ADE80!important;-webkit-text-fill-color:#4ADE80!important
+ }
+ html[data-theme="dark"] body #app #financeiroMain #fmLista>[data-fin-card="1"][data-tipo="despesa"]>.grid>.mini>b{
+  color:#FF6B6B!important;-webkit-text-fill-color:#FF6B6B!important
+ }
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"]>.actions{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  width:100%!important;max-width:100%!important;gap:9px!important;
+  margin:10px 0 0!important
+ }
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"]>.actions>button{
+  box-sizing:border-box!important;grid-column:auto!important;
+  width:100%!important;max-width:100%!important;min-width:0!important;
+  min-height:42px!important;padding:8px 10px!important;
+  background:var(--ob-surface-2,#FFF)!important;
+  border:1px solid var(--ob-border,#CBD5E1)!important;border-radius:12px!important;
+  font-size:16px!important;font-weight:800!important
+ }
+ html body #app #financeiroMain #fmLista>[data-fin-card="1"]>.actions>button:only-child{
+  grid-column:1/-1!important
  }
 }
 `;
