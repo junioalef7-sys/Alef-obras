@@ -351,6 +351,18 @@ async function estornarAutomatico(id){
     .fmChecklistValor{width:100%!important;margin:0!important;padding:10px!important;text-align:right;font-weight:800}.fmChecklistValor:disabled{opacity:.5;background:#f1f5f9}
     .fmChecklistAviso{color:#64748b;font-size:13px;padding:6px}.fmChecklistTotal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px}.fmChecklistTotal>div{border:1px solid #e2e8f0;border-radius:10px;padding:9px;background:#fff}.fmChecklistTotal span{display:block;color:#64748b;font-size:11px;font-weight:800}.fmChecklistTotal strong{display:block;margin-top:3px;font-size:14px}.fmChecklistTotal.fmDistErro>div:last-child{border-color:#fca5a5;background:#fff1f2;color:#991b1b}
     html[data-theme="dark"] .fmChecklistMulti,body.dark .fmChecklistMulti{background:#0b1220;border-color:#334155}html[data-theme="dark"] .fmChecklistLinha,body.dark .fmChecklistLinha,html[data-theme="dark"] .fmChecklistTotal>div,body.dark .fmChecklistTotal>div{background:#111827;border-color:#334155;color:#f8fafc}html[data-theme="dark"] .fmChecklistValor:disabled,body.dark .fmChecklistValor:disabled{background:#0f172a}
+/* Ao exibir "Falta distribuir", a regra antiga era mais especifica que o tema
+   escuro; preservamos a semantica de erro, mas com cores legiveis. */
+html[data-theme="dark"] #fmChecklistTotal.fmDistErro>div:last-child,
+body.dark #fmChecklistTotal.fmDistErro>div:last-child{background:#381b28!important;background-color:#381b28!important;border-color:#b85b70!important;color:#ffe4e6!important}
+html[data-theme="dark"] #fmChecklistTotal.fmDistErro>div:last-child span,
+html[data-theme="dark"] #fmChecklistTotal.fmDistErro>div:last-child strong,
+body.dark #fmChecklistTotal.fmDistErro>div:last-child span,
+body.dark #fmChecklistTotal.fmDistErro>div:last-child strong{color:#ffe4e6!important;-webkit-text-fill-color:#ffe4e6!important}
+html[data-theme="dark"] #fmChecklistTotal>div span,body.dark #fmChecklistTotal>div span{color:#cbd5e1!important;-webkit-text-fill-color:#cbd5e1!important}
+html[data-theme="light"] #fmChecklistTotal.fmDistErro>div:last-child span,
+html[data-theme="light"] #fmChecklistTotal.fmDistErro>div:last-child strong{color:#7f1d1d!important;-webkit-text-fill-color:#7f1d1d!important}
+
     @media(max-width:520px){.fmChecklistLinha{grid-template-columns:minmax(0,1fr) 112px}.fmChecklistTotal{grid-template-columns:1fr 1fr}.fmChecklistTotal>div:last-child{grid-column:1/-1}}
   `;document.head.appendChild(css);
 
