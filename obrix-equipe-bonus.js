@@ -91,7 +91,7 @@ async function abrirBonus(f){
       b.remove();
       try{await window.OBRIX_EQUIPE?.refresh?.()}catch(_){}
       try{await window.OBRIX_REFRESH_ALL?.()}catch(_){}
-      alert('Bônus/Extra registrado com sucesso.');
+      window.OBRIX_SUCESSO?.('Bônus ou extra registrado com sucesso.');
     }catch(e){
       alert('Não foi possível registrar: '+(e.message||e));
     }

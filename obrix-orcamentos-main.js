@@ -42,7 +42,7 @@ function ensure(){
   $('orcAcrescimo').addEventListener('input',calc);
 }
 
-function showMsg(t,ok=true){const el=$('orcMsg');if(!el)return;el.textContent=t;el.className='orcMsg '+(ok?'ok':'erro')}
+function showMsg(t,ok=true){const el=$('orcMsg');if(!el)return;clearTimeout(el.__obrixTimer);el.textContent=t;el.className='orcMsg '+(ok?'ok':'erro');if(ok)el.__obrixTimer=setTimeout(()=>{if(el.textContent===t)el.classList.add('hidden')},2100)}
 function clearMsg(){const el=$('orcMsg');if(el)el.className='orcMsg hidden'}
 function statusLabel(s){return ({rascunho:'Rascunho',enviado:'Enviado',aprovado:'Aprovado',recusado:'Recusado',cancelado:'Cancelado'})[s]||s||'Rascunho'}
 function materialLabel(s){return ({cliente:'Por conta do cliente',inclusos:'Inclusos',parcial:'Parcial'})[s]||s||''}

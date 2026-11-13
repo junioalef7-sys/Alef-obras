@@ -32,8 +32,8 @@ function showMsg(text,ok=true){
    const el=$('diarioMsg');if(!el)return;
    clearTimeout(noticeTimer);
    el.textContent=text;el.className='diarioMsg '+(ok?'ok':'erro');
-   if(ok&&/salvo com sucesso|atualizado com sucesso|salvo e sincronizado/i.test(text)){
-     noticeTimer=setTimeout(()=>{if(el.textContent===text)el.classList.add('hidden')},4500);
+   if(ok&&/salvo|atualizado|excluído|sincronização pendente/i.test(text)){
+     noticeTimer=setTimeout(()=>{if(el.textContent===text)el.classList.add('hidden')},2100);
    }
  }
 function showError(e){showMsg('Erro: '+ptError(e),false)}
