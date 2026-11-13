@@ -217,7 +217,7 @@ async function diaria(f){const b=modal('Registrar diária',`<p><b>${esc(f.nome)}
      const resultado=await api.registrar({funcionarioId:f.id,data,obraPagamentoId:destino,esperado:r.liquido/100});
      b.remove();
      try{await refresh({force:true,financeiro:true})}catch(e){console.warn('Equipe: baixa gravada; sincronização pendente',e)}
-     await window.OBRIX_AVISO('Pagamento de '+money(resultado.liquido)+' registrado. Diárias, bônus e vales baixados com os vínculos originais preservados.','Pagamento concluído');
+     window.OBRIX_SUCESSO?.('Pagamento de '+money(resultado.liquido)+' registrado com sucesso.');
    }catch(e){await window.OBRIX_AVISO(e?.message||'Não foi possível concluir a baixa.','Pagamento da equipe')}
    finally{if(btn.isConnected){btn.disabled=false;btn.textContent='Confirmar pagamento'}}
  };
