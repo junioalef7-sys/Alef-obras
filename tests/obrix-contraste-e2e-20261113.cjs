@@ -83,8 +83,10 @@ async function prepare(page,path){
     await prepare(page,path);
     for(const theme of ['light','dark']){
       await page.evaluate(theme=>{
+        localStorage.setItem('obrix_theme',theme);
+        window.OBRIX_THEME?.apply?.(theme);
         document.documentElement.dataset.theme=theme;
-        document.body.classList.toggle('dark',theme==='dark');
+        document.body.classList.remove('dark');
         window.dispatchEvent(new Event('obrix:theme-changed'));
       },theme);
       await page.waitForTimeout(340);
@@ -92,7 +94,7 @@ async function prepare(page,path){
         const names=['finance','diarioOk','diarioErro','diarioInput','notasOk','notasErro',
           'notaAlta','notaBaixa','orcOk','orcErro','orcAprovado','orcRecusado',
           'orcInput','supOk','supErro','supOffline','supActive','supAberto'];
-        const o={};
+        const o={__theme:document.documentElement.dataset.theme};
         for(const name of names){
           const el=document.querySelector('[data-audit="'+name+'"]');
           if(!el)throw Error('Componente inexistente: '+name);
@@ -105,6 +107,7 @@ async function prepare(page,path){
         }
         return o;
       });
+      assert.equal(styles.__theme,theme,'OBRIX restored a previous theme during the scan');
       for(const [name,options] of Object.entries(expected)){
         assert.equal(hex(styles[name].bg),options[theme==='dark'?1:0],
           platform+' '+path+' '+theme+' - '+name+' fundo invertido');
