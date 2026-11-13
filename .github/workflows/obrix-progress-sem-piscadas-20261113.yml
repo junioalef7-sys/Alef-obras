@@ -1,0 +1,30 @@
+name: OBRIX regression - progress without flicker
+on:
+  push:
+    branches: [test/obrix-obras-sem-piscadas-20261113]
+permissions:
+  contents: read
+jobs:
+  testar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Validar sintaxe e regressao de DOM
+        run: |
+          node --check obrix-checklist-progress-core.js
+          node --check obrix-android-inicial/obrix-checklist-progress-core.js
+          node --check obrix-pos-login-loader.js
+          node --check obrix-android-inicial/obrix-pos-login-loader.js
+          node --test tests/progress-without-flicker.cjs
+          OBRIX_TEST_ROOT=obrix-android-inicial node --test tests/progress-without-flicker.cjs
+      - name: Instalar navegadores de teste
+        run: |
+          npm install --prefix /tmp/obrix-test-deps playwright@1.62.1 --no-save
+          /tmp/obrix-test-deps/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Testar 65 segundos com layout sintetico
+        env:
+          NODE_PATH: /tmp/obrix-test-deps/node_modules
+        run: node tests/progress-without-flicker-browser.cjs
