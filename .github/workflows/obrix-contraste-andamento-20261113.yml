@@ -1,0 +1,30 @@
+name: OBRIX contraste branco persistente em Obras
+on:
+  push:
+    branches: [test/obrix-contraste-andamento-persistente-20261113]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Sintaxe das correcoes e regressao de Obras
+        run: |
+          node --check obrix-visual-padrao-final.js
+          node --check obrix-android-inicial/obrix-visual-padrao-final.js
+          node --check obrix-light-ui-requested-v4.js
+          node --check obrix-android-inicial/obrix-light-ui-requested-v4.js
+          node --test tests/obras-sem-repintura-sincronizacao.cjs
+          OBRIX_TEST_ROOT=obrix-android-inicial node --test tests/obras-sem-repintura-sincronizacao.cjs
+      - name: Instalar navegadores
+        run: |
+          npm install --prefix /tmp/obrix-test-deps playwright@1.62.1 --no-save
+          /tmp/obrix-test-deps/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Testar contraste contra escritas tardias e tema claro escuro
+        env:
+          NODE_PATH: /tmp/obrix-test-deps/node_modules
+        run: node tests/obrix-contraste-persistente.cjs

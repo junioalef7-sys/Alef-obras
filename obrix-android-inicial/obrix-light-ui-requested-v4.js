@@ -16,7 +16,7 @@ function bottomBlock(){
  const bottom=document.querySelector('#app .bottom');if(!bottom)return;gray(bottom);bottom.querySelectorAll('button').forEach(grayButton);
 }
 function statuses(){
- document.querySelectorAll('#app *').forEach(e=>{if(e.children.length===0&&norm(e.textContent)==='em andamento'){e.dataset.obrixLightV4='1';imp(e,'color',GREEN);imp(e,'-webkit-text-fill-color',GREEN)}});
+ document.querySelectorAll('#app *').forEach(e=>{if(e.closest?.('#obras'))return;if(e.children.length===0&&norm(e.textContent)==='em andamento'){e.dataset.obrixLightV4='1';imp(e,'color',GREEN);imp(e,'-webkit-text-fill-color',GREEN)}});
 }
 function cleanup(){document.querySelectorAll('[data-obrix-light-v4="1"]').forEach(e=>{PROPS.forEach(p=>e.style.removeProperty(p));delete e.dataset.obrixLightV4})}
 function apply(){if(offline())return;if(!light()){cleanup();return}bottomBlock();textButtons();statuses()}
