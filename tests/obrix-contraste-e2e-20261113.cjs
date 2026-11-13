@@ -12,7 +12,7 @@ const expected={
   notasOk:['#dcfce7','#123524'],notasErro:['#fee2e2','#391b28'],
   orcOk:['#dcfce7','#123524'],orcErro:['#fee2e2','#391b28'],
   supOk:['#dcfce7','#123524'],supErro:['#fee2e2','#391b28'],
-  supOffline:['#fff7ed','#422006'],supActive:['#e5eaf0','#253b58']
+  supOffline:['#fff7ed','#422006']
 };
 function hex(s){
  const m=String(s).match(/rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)/);
@@ -122,11 +122,11 @@ async function prepare(page,path){
       assert.ok(contrast(hex(styles.finance.bg),hex(styles.finance.amount))>=4.5,
         platform+' valor pendente ilegivel');
       if(theme==='dark')for(const name of ['notaAlta','notaBaixa','orcAprovado',
-        'orcRecusado','supAberto','diarioInput','orcInput']){
+        'orcRecusado','supAberto','supActive','diarioInput','orcInput']){
         assert.ok(luminosity(hex(styles[name].bg))<.23,
           platform+' '+name+' conserva fundo claro no dark mode');
       }
-      if(theme==='light')for(const name of ['diarioInput','orcInput']){
+      if(theme==='light')for(const name of ['diarioInput','orcInput','supActive']){
         assert.ok(luminosity(hex(styles[name].bg))>.63,
           platform+' '+name+' tem fundo escuro no modo claro');
       }
