@@ -34,3 +34,15 @@ jobs:
         run: |
           node tests/obrix-config-cartoes-sem-vermelho.cjs
           node tests/obrix-obras-progresso-sem-oscilacao.cjs
+
+      - name: Abrir a pagina implantada sem login e medir CSS REAL dos botoes
+        env:
+          NODE_PATH: /tmp/obrix-test-deps/node_modules
+        run: node tests/obrix-e2e-real-preview-config.cjs
+      - name: Anexar captura de evidencia (se produzida)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: obrix-real-page-audit
+          path: test-results/obrix-preview-e2e/
+          if-no-files-found: ignore
