@@ -1,0 +1,32 @@
+name: OBRIX layout Em andamento e botoes Apagar neutros
+on:
+  push:
+    branches: [test/obrix-status-horizontal-apagar-sem-vermelho-20261113]
+permissions:
+  contents: read
+jobs:
+  ui-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Verificar sintaxe e sincronizacao de Obras
+        run: |
+          node --check obrix-config-main.js
+          node --check obrix-android-inicial/obrix-config-main.js
+          node --check obrix-obras-fiel.js
+          node --check obrix-android-inicial/obrix-obras-fiel.js
+          node --check obrix-config-claro-perigo-20261030.js
+          node --check obrix-ui-cleanup-v5.js
+          node --test tests/obras-sem-repintura-sincronizacao.cjs
+          OBRIX_TEST_ROOT=obrix-android-inicial node --test tests/obras-sem-repintura-sincronizacao.cjs
+      - name: Preparar Chromium WebKit
+        run: |
+          npm install --prefix /tmp/obrix-test-deps playwright@1.62.1 --no-save
+          /tmp/obrix-test-deps/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Verificar linha unica e quatro exclusoes nos dois temas
+        env:
+          NODE_PATH: /tmp/obrix-test-deps/node_modules
+        run: node tests/obrix-apagar-neutros-status-horizontal.cjs

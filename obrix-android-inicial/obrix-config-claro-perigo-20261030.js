@@ -13,18 +13,21 @@ function voltarMenu(main){
 }
 
 function aplicarConfig(){
-  if(!temaClaro())return;
-  const root=document.getElementById('configMain');if(!root||root.classList.contains('hidden'))return;
-  root.querySelectorAll('[data-del="equipe"],[data-del="financeiro"],[data-del="obras"],[data-del="tudo"]').forEach(b=>{
-    if(b.dataset.obrixConfigEstilo==='claro')return;
-    b.dataset.obrixConfigEstilo='claro';
-    b.style.setProperty('background','#e5eaf0','important');
-    b.style.setProperty('background-color','#e5eaf0','important');
-    b.style.setProperty('background-image','none','important');
-    b.style.setProperty('color','#0f172a','important');
-    b.style.setProperty('-webkit-text-fill-color','#0f172a','important');
-    b.style.setProperty('border','1px solid #cbd5df','important');
-    b.style.setProperty('box-shadow','none','important');
+  // Botões de apagar seguem exclusivamente o visual neutro de Configurações.
+  // Não fixar cores do tema claro; estilos antigos permaneciam ao mudar para escuro.
+  const root=document.getElementById('configMain');
+  if(!root||root.classList.contains('hidden'))return;
+  root.querySelectorAll('.cfgDeleteGrid button[data-del]').forEach(b=>{
+    const props={
+      border:'0',
+      outline:'0',
+      color:'var(--ob-text)',
+      '-webkit-text-fill-color':'var(--ob-text)'
+    };
+    for(const [prop,value] of Object.entries(props)){
+      if(b.style.getPropertyValue(prop)!==value||b.style.getPropertyPriority(prop)!=='important')
+        b.style.setProperty(prop,value,'important');
+    }
   });
 }
 
