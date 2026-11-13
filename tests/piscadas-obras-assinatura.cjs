@@ -49,10 +49,28 @@ async function run(engine,profile,device,root,theme){
       const actions=last.querySelectorAll('.obxAcao').length;
       const okOther=mod.open('work-2');
       const otherId=document.querySelector('.obrixCapaHero')?.dataset.obrixCapaId;
-      resolve({same,imagePreserved,imageUrlPreserved,arrowPreserved,replaced,progress,actions,okOther,otherId});
+      mod.list();
+      const listRoot=document.querySelector('#listaObras>.obxCards');
+      const firstCard=listRoot?.querySelector('.obxObraCard[data-id="work-1"]');
+      let listReplaced=0;
+      const listWatcher=new MutationObserver(events=>{listReplaced+=events.filter(e=>e.type==='childList').length});
+      listWatcher.observe(document.getElementById('listaObras'),{childList:true});
+      for(let j=0;j<20;j++){
+        window.obras[0].progresso=20+j;
+        window.financeiro=[{obra_id:'work-1',tipo:'receita',valor:200+j}];
+        mod.refresh();
+      }
+      setTimeout(()=>{
+        listWatcher.disconnect();
+        const listPreserved=document.querySelector('#listaObras>.obxCards')===listRoot&&
+          listRoot.querySelector('.obxObraCard[data-id="work-1"]')===firstCard;
+        resolve({same,imagePreserved,imageUrlPreserved,arrowPreserved,replaced,progress,actions,okOther,otherId,listReplaced,listPreserved});
+      },40);
     },50));
   });
   assert.equal(r.replaced,0,'Obras detail was rebuilt during repeated progress/finance updates');
+  assert.equal(r.listReplaced,0,'Obras list was rebuilt during repeated updates');
+  assert.ok(r.listPreserved,'Obras cards lost DOM identity despite same IDs');
   assert.ok(r.same&&r.imagePreserved&&r.imageUrlPreserved&&r.arrowPreserved,'cover or navigation replaced');
   assert.equal(r.progress,'85%','progress update not visible');
   assert.ok(r.actions>=5,'Obras action buttons lost');

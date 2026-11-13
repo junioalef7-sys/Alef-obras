@@ -21,7 +21,7 @@ function atualizarListaSemRemontar(box,novoHtml){
   if(!atual||!buscaAtual)return false;
   const tpl=document.createElement('template');
   tpl.innerHTML=novoHtml;
-  const nova=tpl.content.querySelector(':scope > .obxCards');
+  const nova=tpl.content.querySelector('.obxCards');
   if(!nova)return false;
   const atualizarTexto=(antigo,novo)=>{
     if(!antigo||!novo||antigo.textContent===novo.textContent)return;
@@ -52,7 +52,7 @@ function atualizarListaSemRemontar(box,novoHtml){
     if(atual.children[i]!==node)atual.insertBefore(node,atual.children[i]||null);
   }
   const filtroAtual=box.querySelector(':scope > .obxFiltros');
-  const filtroNovo=tpl.content.querySelector(':scope > .obxFiltros');
+  const filtroNovo=tpl.content.querySelector('.obxFiltros');
   if(filtroAtual&&filtroNovo){
     const aa=[...filtroAtual.querySelectorAll('[data-filtro]')];
     const bb=[...filtroNovo.querySelectorAll('[data-filtro]')];
@@ -80,7 +80,7 @@ function atualizarDetalheSemRemontar(box,novoHtml){
   const atual=box.querySelector(':scope > .obxDetalhe');
   if(!atual)return false;
   const tpl=document.createElement('template');tpl.innerHTML=novoHtml;
-  const novo=tpl.content.querySelector(':scope > .obxDetalhe');
+  const novo=tpl.content.querySelector('.obxDetalhe');
   if(!novo)return false;
   // O detalhe de outra obra precisa ser montado normalmente: seus botões
   // referenciam outro ID e jamais podem ser reaproveitados.
