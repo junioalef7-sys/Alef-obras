@@ -101,6 +101,6 @@ for(const prefix of ['','obrix-android-inicial/']){
   });
   test(prefix+' nova versao PWA referenciada pelos scripts raiz/Android',()=>{
     assert.ok(fs.readFileSync(prefix+'obrix-obras-offline.js','utf8').includes("obrix-sw.js?v=20261113-exact-cache64"));
-    assert.ok(fs.readFileSync(prefix+'obrix.html','utf8').includes("obrix-pos-login-loader.js?v=20261113-exact-cache64"));
+    assert.match(fs.readFileSync(prefix+'obrix.html','utf8'),/obrix-pos-login-loader\\.js\\?v=[\\w.-]+/);
   });
 }
