@@ -156,7 +156,7 @@ function boot(){
  new MutationObserver(ch=>{if(ch.some(c=>c.addedNodes.length||c.removedNodes.length))queue()})
  .observe(obras,{subtree:true,childList:true});
  document.addEventListener('click',click);
- window.addEventListener('pageshow',()=>{cache.clear();queue()},{passive:true});
+ window.addEventListener('pageshow',queue,{passive:true});
  queue();
 }
 window.OBRIX_CAPAS={defaultUrl,get:load,refresh:()=>{cache.clear();queue()}};

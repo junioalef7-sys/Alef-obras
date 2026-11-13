@@ -85,7 +85,7 @@ async function refresh(opcoes={}){
       const sec=document.getElementById('equipe');
       if(sec&&!sec.classList.contains('hidden'))window.renderEquipe?.();
       const k=document.getElementById('funcs');
-      if(k)k.textContent=String(funcionarios.filter(f=>f.ativo!==false).length);
+      if(k){const total=String(funcionarios.filter(f=>f.ativo!==false).length);if(k.textContent!==total)k.textContent=total;}
       if(incluirFinanceiro){
         window.OBRIX_FIN?.render?.();
         window.OBRIX_DASH?.paint?.();
