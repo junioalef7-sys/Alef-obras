@@ -18,11 +18,12 @@ function aplicarConfig(){
   const root=document.getElementById('configMain');
   if(!root||root.classList.contains('hidden'))return;
   root.querySelectorAll('.cfgDeleteGrid button[data-del]').forEach(b=>{
+    const cor=document.documentElement.dataset.theme==='dark'?'#f8fafc':'var(--ob-text)';
     const props={
       border:'0',
       outline:'0',
-      color:'var(--ob-text)',
-      '-webkit-text-fill-color':'var(--ob-text)'
+      color:cor,
+      '-webkit-text-fill-color':cor
     };
     for(const [prop,value] of Object.entries(props)){
       if(b.style.getPropertyValue(prop)!==value||b.style.getPropertyPriority(prop)!=='important')
