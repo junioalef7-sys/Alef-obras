@@ -265,7 +265,7 @@ const CONTRASTE_ANDAMENTO='#obras .obxStatus.andamento,#obras .obxStatus.em_anda
 const contratoAndamento=(node)=>{
   if(!node?.style)return;
   for(const prop of ['color','-webkit-text-fill-color']){
-    if(node.style.getPropertyValue(prop)!=='#fff'||node.style.getPropertyPriority(prop)!=='important')
+    if(!/^(?:#fff(?:fff)?|rgb\(255,\s*255,\s*255\))$/i.test(node.style.getPropertyValue(prop).trim())||node.style.getPropertyPriority(prop)!=='important')
       node.style.setProperty(prop,'#fff','important');
   }
 };

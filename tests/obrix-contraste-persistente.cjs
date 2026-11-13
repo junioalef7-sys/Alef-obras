@@ -51,7 +51,7 @@ async function run(browserType,deviceName,device,variant,theme){
       if(colors.some(row=>row.some(v=>v!=='rgb(255, 255, 255)')))throw Error('white text not preserved during late visual updates');
     }
     observer.disconnect();
-    return {transitions,styleWrites:nodes.every(n=>n.style.getPropertyValue('color')==='#fff')};
+    return {transitions,styleWrites:nodes.every(n=>/^(?:#fff(?:fff)?|rgb\(255,\s*255,\s*255\))$/i.test(n.style.getPropertyValue('color').trim()))};
   });
   assert.ok(delayed.styleWrites,'native style override not corrected');
   await page.evaluate(()=>{
