@@ -4,7 +4,7 @@
   const CONFIG_CACHE='obrix_public_config_v2';
   const CONFIG_TTL=6*60*60*1000;
   const OFFLINE_BASE='obrix_offline_base_v3',OFFLINE_BASE_OLD='obrix_offline_base_v2';
-  let client=null,userCache=null,userPromise=null,profileCache=null,profilePromise=null;
+  let client=null,clientPromise=null,userCache=null,userPromise=null,profileCache=null,profilePromise=null;
 
   function lerJson(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(_){return null}}
   function baseOffline(){const b=lerJson(OFFLINE_BASE)||lerJson(OFFLINE_BASE_OLD);return b?.profile?.empresa_id?b:null}
@@ -45,6 +45,8 @@
 
   async function init(){
     if(client)return client;
+    if(clientPromise)return clientPromise;
+    clientPromise=(async()=>{
     const cfg=await carregarConfig();
     client=window.supabase.createClient(cfg.url,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
     client.auth.onAuthStateChange((event,session)=>{
@@ -55,6 +57,8 @@
       }
     });
     return client;
+    })();
+    try{return await clientPromise}finally{clientPromise=null}
   }
 
   async function currentUser(force=false){
