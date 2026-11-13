@@ -37,11 +37,19 @@ test('offline refresh with unchanged remote data retains progress and avoids rep
   remote=[{...remote[0],nome:'Escola reformada'}];
   await c.OBRIX_OFFLINE_OBRAS.refresh();
   assert.equal(renders,1);assert.equal(c.window.obras[0].nome,'Escola reformada');
+  assert.equal(c.window.obras[0].progresso,65,'work edit should preserve locally calculated checklist progress');
   await c.OBRIX_OFFLINE_OBRAS.refresh();
   assert.equal(renders,1,'unchanged refresh must not re-render again');
 });
 test('core retains checklist progress when only extra-service records change',()=>{
   assert.ok(core.includes('const mesmasObras=obrasIguaisSemProgresso(obras,novos)'));
-  assert.ok(core.includes('if(!mesmasObras)obras=novos'));
+  assert.ok(core.includes('if(!mesmasObras)obras=conservarProgressoObras(obras,novos)'));
+  const match=core.match(/^function conservarProgressoObras\(anteriores,novas\)\{[\s\S]*?^\}/m);
+  assert.ok(match,'progress preservation helper must be available');
+  const preserve=vm.runInNewContext('('+match[0]+')');
+  const result=preserve([{id:'1',nome:'Escola',progresso:63}],[{id:'1',nome:'Escola reformada'}]);
+  assert.equal(result[0].progresso,63,'remote works refresh must preserve derived progress');
+  const serverValue=preserve([{id:'1',progresso:63}],[{id:'1',progresso:90}]);
+  assert.equal(serverValue[0].progresso,90,'explicit remote progress must remain authoritative');
   assert.ok(core.includes('if(!mesmosExtras)extras=novosExtras'));
 });
