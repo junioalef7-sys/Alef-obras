@@ -1,0 +1,32 @@
+name: OBRIX - Cartoes de Configuracoes sem bordas vermelhas
+on:
+  push:
+    branches: [test/obrix-config-cartoes-sem-vermelho-20261113]
+permissions:
+  contents: read
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Sintaxe e regressao existente
+        run: |
+          node --check obrix-account-delete.js
+          node --check obrix-android-inicial/obrix-account-delete.js
+          node --check obrix-config-main.js
+          node --check obrix-android-inicial/obrix-config-main.js
+          node --check obrix-config-claro-perigo-20261030.js
+          node --check obrix-android-inicial/obrix-config-claro-perigo-20261030.js
+          node --test tests/obras-sem-repintura-sincronizacao.cjs
+          OBRIX_TEST_ROOT=obrix-android-inicial node --test tests/obras-sem-repintura-sincronizacao.cjs
+      - name: Instalar Chromium e WebKit
+        run: |
+          npm install --prefix /tmp/obrix-test-deps playwright@1.62.1 --no-save
+          /tmp/obrix-test-deps/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Testar botoes e cartao em temas e navegadores
+        env:
+          NODE_PATH: /tmp/obrix-test-deps/node_modules
+        run: node tests/obrix-config-cartoes-sem-vermelho.cjs
