@@ -1,0 +1,37 @@
+name: OBRIX - Auditoria de contraste dos temas (somente preview)
+on:
+  push:
+    branches: [test/obrix-contraste-claro-escuro-20261113]
+permissions:
+  contents: read
+jobs:
+  theme-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verificar escopo, sintaxe e versoes no cache
+        run: node tests/obrix-contraste-temas-20261113.cjs
+      - name: Instalar Chromium e WebKit
+        run: |
+          npm install --prefix /tmp/obrix-theme-qa playwright@1.62.1 --no-save
+          /tmp/obrix-theme-qa/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Abrir paginas originais em servidor isolado
+        run: |
+          (nohup python3 -m http.server 8765 --bind 127.0.0.1 </dev/null >/tmp/obrix-theme-qa.log 2>&1 &)
+          sleep 2
+          curl --fail --silent http://127.0.0.1:8765/obrix.html >/dev/null
+          curl --fail --silent http://127.0.0.1:8765/obrix-android-inicial/obrix.html >/dev/null
+      - name: Medir fundos e textos de 18 componentes por tela e tema
+        env:
+          NODE_PATH: /tmp/obrix-theme-qa/node_modules
+        run: node tests/obrix-contraste-e2e-20261113.cjs
+      - name: Confirmar que botoes Configuracoes e cards Obras continuam estaveis
+        env:
+          NODE_PATH: /tmp/obrix-theme-qa/node_modules
+        run: |
+          node tests/obrix-config-cartoes-sem-vermelho.cjs
+          node tests/obrix-obras-progresso-sem-oscilacao.cjs
