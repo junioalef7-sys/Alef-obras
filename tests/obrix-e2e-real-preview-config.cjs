@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {chromium,webkit,devices}=require('playwright');
-const host='https://alef-obras-fkibfgjio-obrix3.vercel.app';
+const host='http://127.0.0.1:8765';
 const variants=['/obrix.html?obrix_auditoria=1','/obrix-android-inicial/obrix.html?obrix_auditoria=1'];
 const profiles=[['iPhone WebKit',webkit,devices['iPhone 13']],['Android Chromium',chromium,devices['Pixel 7']]];
 function output(s){process.stdout.write(JSON.stringify(s)+'\n')}
@@ -19,6 +19,7 @@ function output(s){process.stdout.write(JSON.stringify(s)+'\n')}
     const http=response?.status();
     if(http!==200)throw Error(device+variant+' página real indisponível HTTP '+http);
     await page.waitForTimeout(800);
+    await page.waitForFunction(()=>!!window.OBRIX_POS_LOGIN_LOADER,{timeout:20000}).catch(()=>{});
     const init=await page.evaluate(async()=>{
       // Não usar conta, banco de dados ou dados do usuário neste teste.
       document.getElementById('app')?.classList.remove('hidden');

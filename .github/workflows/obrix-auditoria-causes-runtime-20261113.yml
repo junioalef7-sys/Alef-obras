@@ -35,6 +35,11 @@ jobs:
           node tests/obrix-config-cartoes-sem-vermelho.cjs
           node tests/obrix-obras-progresso-sem-oscilacao.cjs
 
+      - name: Servir a mesma arvore de arquivos da previa sem a pagina de protecao Vercel
+        run: |
+          (nohup python3 -m http.server 8765 --bind 127.0.0.1 </dev/null >/tmp/obrix-real-page.log 2>&1 &)
+          sleep 2
+          curl --fail --silent http://127.0.0.1:8765/obrix.html > /dev/null
       - name: Abrir a pagina implantada sem login e medir CSS REAL dos botoes
         env:
           NODE_PATH: /tmp/obrix-test-deps/node_modules
