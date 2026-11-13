@@ -35,8 +35,8 @@ function appearance(){
   imp(darkBtn,'background',BLACK);imp(darkBtn,'background-color',BLACK);imp(darkBtn,'background-image','none');imp(darkBtn,'color',WHITE);imp(darkBtn,'-webkit-text-fill-color',WHITE);imp(darkBtn,'border','2px solid '+GOLD);imp(darkBtn,'box-shadow','none');
   const moon=darkBtn.querySelector('.obrixMoonGold');if(moon){moon.dataset.obrixLightV3Moon='1';imp(moon,'color',GOLD);imp(moon,'-webkit-text-fill-color',GOLD)}
  }
- const del=document.getElementById('cfgExcluirConta');
- if(del){del.dataset.obrixLightV3Delete='1';del.classList.add('danger');imp(del,'background','#D6001C');imp(del,'background-color','#D6001C');imp(del,'background-image','none');imp(del,'color',WHITE);imp(del,'-webkit-text-fill-color',WHITE);imp(del,'border','1px solid #B80018');imp(del,'box-shadow','none')}
+ // A aparência do botão Excluir conta é exclusiva de obrix-account-delete.js.
+ // Não reaplicar vermelho ao retornar à tela de Configurações.
 }
 function paymentButtons(){
  if(!light())return;

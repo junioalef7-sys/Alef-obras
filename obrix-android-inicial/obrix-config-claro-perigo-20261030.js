@@ -15,7 +15,7 @@ function voltarMenu(main){
 function aplicarConfig(){
   if(!temaClaro())return;
   const root=document.getElementById('configMain');if(!root||root.classList.contains('hidden'))return;
-  root.querySelectorAll('[data-del="equipe"],[data-del="financeiro"],[data-del="obras"],[data-del="tudo"],#cfgExcluirConta').forEach(b=>{
+  root.querySelectorAll('[data-del="equipe"],[data-del="financeiro"],[data-del="obras"],[data-del="tudo"]').forEach(b=>{
     if(b.dataset.obrixConfigEstilo==='claro')return;
     b.dataset.obrixConfigEstilo='claro';
     b.style.setProperty('background','#e5eaf0','important');

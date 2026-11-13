@@ -90,7 +90,7 @@ function corVermelha(valor){
 function neutralizarExcluirConta(){
   if(document.documentElement.dataset.theme!=='light')return;
   const root=document.getElementById('configMain')||document;
-  root.querySelectorAll('#cfgExcluirConta,.accountDeleteBtn,.accountDeleteModal .excluir').forEach(b=>{
+  root.querySelectorAll('.accountDeleteModal .excluir').forEach(b=>{
     b.style.setProperty('background','var(--ob-surface-2,#e5eaf0)','important');
     b.style.setProperty('background-color','var(--ob-surface-2,#e5eaf0)','important');
     b.style.setProperty('background-image','none','important');
