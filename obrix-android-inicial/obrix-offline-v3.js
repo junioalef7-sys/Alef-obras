@@ -82,7 +82,7 @@ function activateData(reason='offline-v3'){const s=assemble();if(!s?.profile?.em
 
 function normalizeBottom(){const box=document.querySelector('#app>.bottom');if(!box)return;const bs=[...box.querySelectorAll('button')];const labels=['Início','Obras','Financeiro','Equipe'];bs.slice(0,4).forEach((b,i)=>{if(b.textContent.trim()!==labels[i])b.textContent=labels[i];b.dataset.obrixOfflineV3Nav=String(i)});for(let i=4;i<bs.length;i++)bs[i].remove();box.dataset.obrixOfflineV3='1'}
 function hideScreens(){['inicio','obras','equipe','financeiroMain','estoqueMain','menuMain','diarioMain','notasMain','documentosMain','orcamentosMain','relatoriosMain','backupMain','configMain','assinaturaMain','offlineV3Financeiro','offlineV3Menu'].forEach(id=>document.getElementById(id)?.classList.add('hidden'))}
-function activeBottom(i){document.querySelectorAll('#app>.bottom button').forEach((b,j)=>b.classList.toggle('active',i===j))}
+function activeBottom(i){document.querySelectorAll('#app>.bottom').forEach(bar=>{bar.querySelectorAll(':scope>button').forEach((b,j)=>b.classList.toggle('active',i===j))})}
 function ensureMain(id){let m=document.getElementById(id);if(m)return m;const app=document.getElementById('app'),bottom=app?.querySelector('.bottom');if(!app||!bottom)return null;m=document.createElement('main');m.id=id;m.className='hidden';app.insertBefore(m,bottom);return m}
 const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
