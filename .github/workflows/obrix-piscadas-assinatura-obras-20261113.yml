@@ -1,0 +1,32 @@
+name: OBRIX diagnostico e regressao de piscadas Obras e Assinatura
+on:
+  push:
+    branches: [test/obrix-piscadas-obras-assinaturas-20261113]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Sintaxe e regressao de sincronizacao
+        run: |
+          node --check obrix-obras-fiel.js
+          node --check obrix-android-inicial/obrix-obras-fiel.js
+          node --check obrix-visual-padrao-final.js
+          node --check obrix-android-inicial/obrix-visual-padrao-final.js
+          node --check obrix-assinaturas-cobrancas-efi.js
+          node --check obrix-android-inicial/obrix-assinaturas-cobrancas-efi.js
+          node --test tests/obras-sem-repintura-sincronizacao.cjs
+          OBRIX_TEST_ROOT=obrix-android-inicial node --test tests/obras-sem-repintura-sincronizacao.cjs
+      - name: Instalar WebKit e Chromium
+        run: |
+          npm install --prefix /tmp/obrix-test-deps playwright@1.62.1 --no-save
+          /tmp/obrix-test-deps/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Reproduzir repinturas com dados simulados e prevenir regressoes
+        env:
+          NODE_PATH: /tmp/obrix-test-deps/node_modules
+        run: node tests/piscadas-obras-assinatura.cjs

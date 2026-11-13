@@ -21,7 +21,7 @@ function atualizarListaSemRemontar(box,novoHtml){
   if(!atual||!buscaAtual)return false;
   const tpl=document.createElement('template');
   tpl.innerHTML=novoHtml;
-  const nova=tpl.content.querySelector(':scope > .obxCards');
+  const nova=tpl.content.querySelector('.obxCards');
   if(!nova)return false;
   const atualizarTexto=(antigo,novo)=>{
     if(!antigo||!novo||antigo.textContent===novo.textContent)return;
@@ -52,7 +52,7 @@ function atualizarListaSemRemontar(box,novoHtml){
     if(atual.children[i]!==node)atual.insertBefore(node,atual.children[i]||null);
   }
   const filtroAtual=box.querySelector(':scope > .obxFiltros');
-  const filtroNovo=tpl.content.querySelector(':scope > .obxFiltros');
+  const filtroNovo=tpl.content.querySelector('.obxFiltros');
   if(filtroAtual&&filtroNovo){
     const aa=[...filtroAtual.querySelectorAll('[data-filtro]')];
     const bb=[...filtroNovo.querySelectorAll('[data-filtro]')];
@@ -76,11 +76,47 @@ function manterStatusBranco(box){
     if(cor.getPropertyValue('animation')!=='none')cor.setProperty('animation','none','important');
   });
 }
+function atualizarDetalheSemRemontar(box,novoHtml){
+  const atual=box.querySelector(':scope > .obxDetalhe');
+  if(!atual)return false;
+  const tpl=document.createElement('template');tpl.innerHTML=novoHtml;
+  const novo=tpl.content.querySelector('.obxDetalhe');
+  if(!novo)return false;
+  // O detalhe de outra obra precisa ser montado normalmente: seus botões
+  // referenciam outro ID e jamais podem ser reaproveitados.
+  const capaAtual=atual.querySelector('.obrixCapaHero[data-obrix-capa-id]');
+  const capaNova=novo.querySelector('.obrixCapaHero[data-obrix-capa-id]');
+  if(!capaAtual||!capaNova||capaAtual.dataset.obrixCapaId!==capaNova.dataset.obrixCapaId)return false;
+  const seletores=['.obxDetalheHead h2','.obxDetalheHead p','.obxDetalheHead .obxStatus',
+    '.obxProg b','.obxResumoGrid b'];
+  const alteracoes=[];
+  for(const seletor of seletores){
+    const antigos=[...atual.querySelectorAll(seletor)],novos=[...novo.querySelectorAll(seletor)];
+    // Campos estruturais novos (por exemplo, datas) seguem renderização normal.
+    if(antigos.length!==novos.length)return false;
+    for(let i=0;i<antigos.length;i++)alteracoes.push([antigos[i],novos[i]]);
+  }
+  for(const [antigo,novoCampo] of alteracoes){
+    if(antigo.className!==novoCampo.className)antigo.className=novoCampo.className;
+    if(antigo.matches('.obxStatus')){
+      const estilo=novoCampo.getAttribute('style');
+      if(antigo.getAttribute('style')!==estilo){
+        if(estilo===null)antigo.removeAttribute('style');else antigo.setAttribute('style',estilo);
+      }
+    }
+    if(antigo.innerHTML!==novoCampo.innerHTML)antigo.innerHTML=novoCampo.innerHTML;
+  }
+  const barra=atual.querySelector('.obxProg .obxBar i'),barraNova=novo.querySelector('.obxProg .obxBar i');
+  if(barra&&barraNova&&barra.style.width!==barraNova.style.width)barra.style.width=barraNova.style.width;
+  // Não remontar a capa/foto, as ações e os ouvintes quando só mudam números.
+  return true;
+}
 function render(){if(rendering)return;const box=document.getElementById('listaObras');if(!box)return;rendering=true;try{const todas=window.obras||[];let html='';if(detalhe){const o=todas.find(x=>String(x.id)===String(detalhe));if(o){html=renderDetalhe(o)}else detalhe=null}if(!html){const lista=todas.filter(o=>(filtro==='todas'||status(o)===filtro||(filtro==='concluida'&&status(o)==='concluída'))&&(!busca||String(o.nome||'').toLowerCase().includes(busca.toLowerCase())||String(o.cliente||'').toLowerCase().includes(busca.toLowerCase())));html=renderLista(lista)}// Um render legado pode substituir os nós sem atualizar a assinatura.
   // Não aceitar cache antigo caso a estrutura aprovada já tenha sido trocada.
   const contemVisualAprovado=!!box.querySelector(':scope > .obxBusca,:scope > .obxDetalhe');
   if(box.__obrixUltimoHtml===html&&contemVisualAprovado){manterStatusBranco(box);return;}
-  if(!detalhe&&atualizarListaSemRemontar(box,html)){
+  if((!detalhe&&atualizarListaSemRemontar(box,html))||
+     (detalhe&&atualizarDetalheSemRemontar(box,html))){
     box.__obrixUltimoHtml=html;manterStatusBranco(box);ligar();return;
   }
   const active=document.activeElement;const focoBusca=active?.id==='obxBuscaObra';const pos=focoBusca?active.selectionStart:null;box.innerHTML=html;box.__obrixUltimoHtml=html;manterStatusBranco(box);ligar();if(focoBusca){const novo=document.getElementById('obxBuscaObra');if(novo){novo.focus({preventScroll:true});try{novo.setSelectionRange(pos,pos)}catch(_){}}}}finally{rendering=false}}
@@ -88,7 +124,7 @@ function ligar(){const campoBusca=document.getElementById('obxBuscaObra');
   if(campoBusca&&!campoBusca.dataset.obrixInputBound){
     campoBusca.dataset.obrixInputBound='1';
     campoBusca.addEventListener('input',e=>{busca=e.target.value;render()});
-  }document.querySelectorAll('#listaObras [data-filtro]').forEach(b=>b.onclick=()=>{filtro=b.dataset.filtro;render()});document.querySelectorAll('#listaObras [data-abrir]').forEach(b=>b.onclick=()=>{detalhe=b.dataset.abrir;render()});document.getElementById('obxVoltarObras')?.addEventListener('click',()=>{detalhe=null;render()})}
+  }document.querySelectorAll('#listaObras [data-filtro]').forEach(b=>b.onclick=()=>{filtro=b.dataset.filtro;render()});document.querySelectorAll('#listaObras [data-abrir]').forEach(b=>b.onclick=()=>{detalhe=b.dataset.abrir;render()});const voltar=document.getElementById('obxVoltarObras');if(voltar&&!voltar.dataset.obrixVoltarBound){voltar.dataset.obrixVoltarBound='1';voltar.addEventListener('click',()=>{detalhe=null;render()})}}
 function cabecalho(){const sec=document.getElementById('obras');if(!sec)return;const hero=sec.querySelector(':scope > .hero');if(hero){const h=hero.querySelector('h1');if(h&&h.textContent!=='Obras')h.textContent='Obras';hero.querySelectorAll('p').forEach(p=>p.remove())}const head=sec.querySelector('.sectionHead');if(head&&head.style.display!=='none')head.style.display='none'}
 function concluir(id){if(confirm('Marcar esta obra como concluída?')){const o=(window.obras||[]).find(x=>String(x.id)===String(id));if(o){o.status='concluida';o.progresso=100;window.salvar?.();render()}}}
 function preparar(){cabecalho();window.renderObras=render;if(window.OBRIX_OBRAS)try{window.OBRIX_OBRAS.render=render}catch(_){}render()}

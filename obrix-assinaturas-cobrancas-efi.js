@@ -97,8 +97,12 @@ async function verificar(opts={}){
   }catch(e){if(!silencioso)status(pt(e),false);return false}finally{if(btn){btn.disabled=false;btn.textContent='Verificar pagamento'}}
 }
 function assinaturaAberta(){const m=$('assinaturaMain');return !!(m&&!m.classList.contains('hidden'))}
+let ultimoRetornoAssinatura=0;
 async function atualizarAoRetornar(){
   if(!assinaturaAberta())return;
+  // focus, pageshow e visibilitychange frequentemente ocorrem juntos.
+  // Reconciliar uma única vez preserva status de pagamento e evita consultas triplas.
+  const agora=Date.now();if(agora-ultimoRetornoAssinatura<1500)return;ultimoRetornoAssinatura=agora;
   const owner=await ownerId();if(!owner)return;
   const savedOwner=localStorage.getItem(S.owner)||'';
   if(savedOwner&&savedOwner!==owner)limpar();
