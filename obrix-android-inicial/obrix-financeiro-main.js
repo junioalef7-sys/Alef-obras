@@ -330,7 +330,7 @@ async function estornarAutomatico(id){
   async function excluir(id){
     const x=(window.financeiro||[]).find(z=>String(z.id)===String(id));if(!x||!podeExcluir(x))return alert('Este lançamento não pode ser excluído por aqui.');
     if(!await confirmarExclusaoFinanceiro())return;
-    try{const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile(),q=await sb.from('financeiro').delete().eq('id',id).eq('empresa_id',p.empresa_id);if(q.error)throw q.error;window.financeiro=(window.financeiro||[]).filter(z=>String(z.id)!==String(id));renderLocal();window.OBRIX_DASH?.paint?.()}catch(e){alert(e.message||'Erro ao excluir lançamento')}
+    try{const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile(),q=await sb.from('financeiro').delete().eq('id',id).eq('empresa_id',p.empresa_id);if(q.error)throw q.error;window.financeiro=(window.financeiro||[]).filter(z=>String(z.id)!==String(id));renderLocal();window.OBRIX_DASH?.paint?.();window.OBRIX_SUCESSO?.(x.tipo==='receita'?'Receita excluída com sucesso.':'Despesa excluída com sucesso.')}catch(e){alert(e.message||'Erro ao excluir lançamento')}
   }
   function editar(id){const x=(window.financeiro||[]).find(z=>String(z.id)===String(id));if(!x)return alert('Lançamento não encontrado. Atualize o Financeiro e tente novamente.');form(x.tipo,x)}
   function visivel(){const x=$('financeiroMain');return !!x&&!x.classList.contains('hidden')}

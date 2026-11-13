@@ -737,6 +737,7 @@ async function abrirRegistrosEquipePremium(id){
         excluido=true;
       }
       if(tipo==='falta')obpFaltasCache.delete(String(id));
+      window.OBRIX_SUCESSO?.(tipo==='vale'?'Vale estornado com sucesso.':tipo==='falta'?'Falta excluída com sucesso.':tipo==='diaria'?'Diária excluída com sucesso.':'Bônus ou extra excluído com sucesso.');
       fechar();
       try{await window.OBRIX_EQUIPE?.refresh?.()}catch(err){console.warn('Atualização da equipe:',err)}
       renderEquipe();

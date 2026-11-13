@@ -122,7 +122,7 @@ function funcionario(f=null){const b=modal(f?'Editar funcionário':'Novo funcion
       .eq('id',f.id).eq('empresa_id',eid).select('id');
     if(r.error)throw r.error;
     if(!r.data?.length)throw Error('Funcionário não encontrado ou exclusão não autorizada.');
-    await refresh();
+    await refresh();window.OBRIX_SUCESSO?.('Funcionário excluído com sucesso.');
   }catch(e){
     if(window.OBRIX_AVISO)await window.OBRIX_AVISO(e?.message||'Não foi possível excluir.','Equipe');
     else alert(e?.message||'Não foi possível excluir.');
