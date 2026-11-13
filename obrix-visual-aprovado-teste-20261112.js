@@ -57,6 +57,40 @@ function update(){
  app.querySelectorAll('#equipe #obpEquipe .obp-avatar').forEach(e=>fill(e,'users'));
  app.querySelectorAll('#menuMain .opmSide nav [data-go]>i').forEach(e=>fill(e,menuMap[e.parentElement.dataset.go]||'default'));
  app.querySelectorAll('#menuMain .opmSide nav .obrixFotoLink>i').forEach(e=>fill(e,'camera'));
+ // Ações dos módulos principais: apenas ícones, sem remover ouvintes de clique.
+ const actions=[
+  ['#financeiroMain #fmReceita','wallet'],
+  ['#financeiroMain #fmDespesa','banknote'],
+  ['#equipe #obpNovo','plus'],
+  ['#equipe #obpPagarEquipe','banknote'],
+  ['#equipe #obpHistoricoPag','history'],
+  ['#obras .sectionHead button','plus']
+ ];
+ actions.forEach(([sel,key])=>app.querySelectorAll(sel).forEach(b=>{
+  if(!b.querySelector('svg'))addTo(b,key);
+ }));
+ const features=[
+  ['#estoqueMain','/^(?:\+?\s*)?(?:entrada|sa[ií]da)\s+(?:de\s+)?material/i','boxes'],
+  ['#estoqueMain','/transfer[eê]ncia/i','boxes'],
+  ['#estoqueMain','/(?:\+\s*)?local(?:\s+de\s+estoque)?$/i','plus'],
+  ['#diarioMain','/novo\s+di[aá]rio/i','notebook'],
+  ['#relatoriosMain','/gerar\s+relat[oó]rio/i','chart'],
+  ['#documentosMain','/novo\s+documento/i','files'],
+  ['#notasMain','/nova\s+nota/i','note'],
+  ['#orcamentosMain','/novo\s+or[cç]amento/i','calculator']
+ ];
+ features.forEach(([scope,pattern,key])=>app.querySelectorAll(scope+' button').forEach(b=>{
+  if(!b.querySelector('svg')&&pattern.test((b.textContent||'').trim()))addTo(b,key);
+ }));
+ // Em caso de estilos anteriores inline important, manter a cor aprovada
+ // sem afetar o valor, a posição ou o tamanho do lançamento.
+ const dark=document.documentElement.dataset.theme==='dark';
+ app.querySelectorAll('#financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini>b').forEach(b=>{
+  const tipo=b.closest('[data-fin-card]')?.dataset.tipo;
+  const color=tipo==='receita'?(dark?'#4ADE80':'#15803D'):(dark?'#FF6B6B':'#B91C1C');
+  if(b.style.getPropertyValue('color')!==color)b.style.setProperty('color',color,'important');
+  if(b.style.getPropertyValue('-webkit-text-fill-color')!==color)b.style.setProperty('-webkit-text-fill-color',color,'important');
+ });
  app.querySelectorAll('#inicio #obpHome .obp-activity-ico').forEach(e=>{
   const t=(e.textContent||'').trim();
   const key=/foto|📷|▧/iu.test(t)?'camera':/receita|despesa|R\$|💰|💸/iu.test(t)?'wallet':/di[aá]ria|✓|✔/iu.test(t)?'calendar':'history';
