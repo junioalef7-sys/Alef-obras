@@ -39,15 +39,18 @@ async function openOnline(k,btn){
       return true;
     }
     if(GROUPS.has(k)){
-      const ok=await loadGroup(k);
-      if(!atual())return false;
-      if(!ok)throw new Error('Complementos do módulo não terminaram de carregar.');
+      // Financeiro e Estoque já possuem módulo principal no carregamento base.
+      // Não bloquear o primeiro toque esperando filtros, relatórios e offline.
       const objName=k==='financeiro'?'OBRIX_FIN':'OBRIX_EST';
+      const complemento=loadGroup(k);
       const mod=await waitFor(()=>window[objName]?.open&&window[objName],8000);
       if(!atual())return false;
       if(!mod)throw new Error('Módulo não terminou de carregar.');
       await Promise.resolve(mod.open());
       if(atual())repairScroll();
+      void complemento.then(ok=>{
+        if(!ok)console.warn('OBRIX: complementos do módulo indisponíveis:',k);
+      }).catch(e=>console.warn('OBRIX: complementos adiados',k,e));
       return true;
     }
     if(FEATURES.has(k)){
