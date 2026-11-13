@@ -36,6 +36,8 @@ function output(s){process.stdout.write(JSON.stringify(s)+'\n')}
       }catch(e){}
       const loadMs=Math.round(performance.now()-started);
       window.OBRIX_CONFIG?.open?.();
+      localStorage.setItem('obrix_theme','dark');
+      window.OBRIX_THEME?.apply?.('dark');
       document.documentElement.dataset.theme='dark';
       document.body.classList.remove('dark');
       return {apiBefore:has,loaded,loadMs,configPresent:!!document.getElementById('configMain'),
@@ -59,6 +61,7 @@ function output(s){process.stdout.write(JSON.stringify(s)+'\n')}
     const result={device,variant,http,timeToDOM:Date.now()-start,init,read,pageErrors:errors.slice(0,8)};
     output(result);
     assert.equal(init.configPresent,true,'Config screen did not mount on actual deployed HTML');
+    assert.equal(read.theme,'dark','Theme was overwritten by another runtime');
     assert.equal(read.values.length,4,'4 Apagar buttons are missing on actual HTML');
     for(const b of read.values){
       assert.equal(b.border,'0px','RED BORDER '+b.label);
@@ -68,6 +71,25 @@ function output(s){process.stdout.write(JSON.stringify(s)+'\n')}
     assert.equal(read.account?.background,'rgb(17, 30, 44)','Excluir conta card not visible');
     assert.equal(read.account?.border,'1px','Excluir conta card border missing');
     assert.ok(init.loadMs<10000,'Config opening slow');
+    // O cartão deve permanecer com fundo neutro ao voltar ao modo claro.
+    await page.evaluate(()=>{
+      localStorage.setItem('obrix_theme','light');
+      window.OBRIX_THEME?.apply?.('light');
+      document.documentElement.dataset.theme='light';
+    });
+    await page.waitForTimeout(220);
+    const clear=await page.evaluate(()=>{
+      const b=document.getElementById('cfgExcluirConta');
+      const s=b?getComputedStyle(b):null;
+      return {theme:document.documentElement.dataset.theme,background:s?.backgroundColor,
+        color:s?.color};
+    });
+    assert.equal(clear.theme,'light');
+    assert.equal(clear.background,'rgb(229, 234, 240)','Excluir conta light card missing');
+    assert.equal(clear.color,'rgb(15, 23, 42)');
+    await fs.promises.mkdir('test-results/obrix-preview-e2e',{recursive:true});
+    await page.screenshot({path:'test-results/obrix-preview-e2e/'+(device.startsWith('iPhone')?'ios':'android')+
+      (variant.includes('android-inicial')?'-android-page':'-root')+'.png',fullPage:false});
     await page.close();
    }
   }finally{await browser.close()}
