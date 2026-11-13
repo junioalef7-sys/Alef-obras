@@ -1,0 +1,37 @@
+name: OBRIX - Mudancas no escopo e regressao antes de publicar
+on:
+  push:
+    branches: [test/obrix-alteracoes-controladas-20261113]
+permissions:
+  contents: read
+jobs:
+  scope-and-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Bloquear arquivos fora do escopo aprovado e checar integrações
+        run: node tests/obrix-change-scope.cjs
+      - name: Verificar sintaxe e estabilidade da sincronização
+        run: |
+          node --check obrix-account-delete.js
+          node --check obrix-android-inicial/obrix-account-delete.js
+          node --check obrix-core-main.js
+          node --check obrix-android-inicial/obrix-core-main.js
+          node --check obrix-checklist-progress-core.js
+          node --check obrix-android-inicial/obrix-checklist-progress-core.js
+          node --test tests/obras-sem-repintura-sincronizacao.cjs
+          OBRIX_TEST_ROOT=obrix-android-inicial node --test tests/obras-sem-repintura-sincronizacao.cjs
+      - name: Instalar Chromium e WebKit
+        run: |
+          npm install --prefix /tmp/obrix-test-deps playwright@1.62.1 --no-save
+          /tmp/obrix-test-deps/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Validar Obras e Configuracoes nos dois temas
+        env:
+          NODE_PATH: /tmp/obrix-test-deps/node_modules
+        run: |
+          node tests/obrix-obras-progresso-sem-oscilacao.cjs
+          node tests/obrix-config-cartoes-sem-vermelho.cjs
