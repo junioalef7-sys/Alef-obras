@@ -24,7 +24,7 @@ for(const prefix of ['','obrix-android-inicial/']){
  assert.ok(c.includes('border-color:transparent!important'),'Borda vermelha não neutralizada em '+prefix);
  assert.ok(c.includes('-webkit-text-fill-color:#f8fafc!important'),'Texto vermelho não neutralizado em '+prefix);
  assert.ok(a.includes('background:#e5eaf0!important')&&a.includes('background:#111e2c!important'),'Cartão Excluir conta não tem ambos os temas em '+prefix);
- assert.ok(a.includes('b.querySelector(\\'.excluir\\').onclick=()=>excluirConta(b)'),'Confirmação Excluir conta removida em '+prefix);
+ assert.ok(a.includes("b.querySelector('.excluir').onclick=()=>excluirConta(b)"),'Confirmação Excluir conta removida em '+prefix);
  assert.ok(p.includes('function mediaConhecida(id)')&&p.includes('etapasRemovidas'),'Checklist ainda pode zerar obras sem itens em '+prefix);
  assert.ok(o.includes('const preservados=next.map(o=>'),'Obras offline perde progresso em '+prefix);
  assert.ok(core.includes('conservarProgressoObras(obras,novos)'),'Obras online perde progresso em '+prefix);
