@@ -64,6 +64,32 @@ function aplicar(){
      valor.style.setProperty('margin','2px 0 0','important');
      valor.style.setProperty('text-align','left','important');
    }
+   // Aplica as proporções diretamente na montagem real do cartão Android,
+   // sem depender de camadas CSS carregadas em ordens diferentes.
+   card.style.setProperty('padding','15px','important');
+   card.style.setProperty('margin-bottom','12px','important');
+   card.style.setProperty('border-radius','18px','important');
+   card.style.setProperty('border','1px solid var(--ob-border,#CBD5E1)','important');
+   card.style.setProperty('background-color','var(--ob-surface,#F8FAFC)','important');
+   card.querySelector(':scope>h3')?.style.setProperty('font-size','18px','important');
+   card.querySelector(':scope>.muted')?.style.setProperty('font-size','14px','important');
+   const actions=card.querySelector(':scope>.actions');
+   if(actions){
+     actions.style.setProperty('display','grid','important');
+     actions.style.setProperty('grid-template-columns','repeat(2,minmax(0,1fr))','important');
+     actions.style.setProperty('gap','9px','important');
+     const buttons=[...actions.querySelectorAll(':scope>button')];
+     buttons.forEach(btn=>{btn.style.setProperty('min-width','0','important');btn.style.setProperty('width','100%','important');btn.style.setProperty('grid-column',buttons.length===1?'1/-1':'auto','important')});
+   }
+   if(caixaValor){
+     caixaValor.style.setProperty('background-color','transparent','important');
+     caixaValor.style.setProperty('border','1px solid var(--ob-border,#CBD5E1)','important');
+     caixaValor.style.setProperty('border-radius','12px','important');
+     caixaValor.style.setProperty('padding','10px 8px 10px 45px','important');
+     caixaValor.style.setProperty('min-height','62px','important');
+   }
+   rotulo?.style.setProperty('font-size','14px','important');
+   valor?.style.setProperty('font-size','clamp(14px,3.8vw,18px)','important');
    if(valor){valor.classList.toggle('obxFinValorDespesa',tipo==='despesa');valor.classList.toggle('obxFinValorReceita',tipo==='receita');if(document.documentElement.dataset.theme==='light'){const cor=tipo==='receita'?'#16a34a':'#dc2626';valor.style.setProperty('color',cor,'important');valor.style.setProperty('-webkit-text-fill-color',cor,'important')}}
    if(rotulo&&document.documentElement.dataset.theme==='light'){rotulo.style.setProperty('color','var(--ob-muted,#526173)','important');rotulo.style.setProperty('-webkit-text-fill-color','var(--ob-muted,#526173)','important')}
    const btn=card.querySelector('[data-fin="excluir"]');if(btn){if(btn.textContent!=='Apagar')btn.textContent='Apagar';btn.classList.add('obxFinApagar')}
