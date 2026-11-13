@@ -1,0 +1,32 @@
+name: OBRIX Excluir conta sem repinturas
+on:
+  push:
+    branches: [test/obrix-excluir-conta-sem-piscadas-20261113]
+permissions:
+  contents: read
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Testes existentes e sintaxe
+        run: |
+          node --check obrix-account-delete.js
+          node --check obrix-android-inicial/obrix-account-delete.js
+          node --check obrix-visual-padrao-final.js
+          node --check obrix-android-inicial/obrix-visual-padrao-final.js
+          node --check obrix-config-claro-perigo-20261030.js
+          node --check obrix-ui-final-fix-20261101.js
+          node --test tests/obras-sem-repintura-sincronizacao.cjs
+          OBRIX_TEST_ROOT=obrix-android-inicial node --test tests/obras-sem-repintura-sincronizacao.cjs
+      - name: Instalar navegadores
+        run: |
+          npm install --prefix /tmp/obrix-test-deps playwright@1.62.1 --no-save
+          /tmp/obrix-test-deps/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Testar Excluir conta com foco, navegação, tema e modais
+        env:
+          NODE_PATH: /tmp/obrix-test-deps/node_modules
+        run: node tests/obrix-excluir-conta-sem-piscar.cjs

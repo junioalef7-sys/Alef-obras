@@ -23,7 +23,7 @@ function applyOne(b,goldText=b.classList.contains('obrixPermanentGoldText')){
  b.style.setProperty('text-shadow','none','important');
 }
 function classify(b){
- if(!(b instanceof HTMLElement))return;const t=norm(b.textContent),plain=t.replace(/^[+＋]\s*/,'');if(!t)return;
+ if(!(b instanceof HTMLElement)||b.id==='cfgExcluirConta'||b.matches?.('.accountDeleteBtn'))return;const t=norm(b.textContent),plain=t.replace(/^[+＋]\s*/,'');if(!t)return;
  if(inside(b,'#obras')){
   if(t==='checklist'||t.includes('relatorio fotografico')||(t.includes('pagamentos')&&t.includes('recebidos'))||/^servicos? extras?$/.test(t)||t==='editar')return mark(b);
  }
@@ -44,7 +44,7 @@ function classify(b){
  if(t==='excluir conta'||t==='sair da conta')return mark(b);
  if(b.dataset.obrixPermanentNeutral==='1')applyOne(b);
 }
-function scan(root=document){root.querySelectorAll?.('button,[role="button"]').forEach(classify);document.querySelectorAll('.obrixPermanentNeutral').forEach(b=>applyOne(b))}
+function scan(root=document){root.querySelectorAll?.('button,[role="button"]').forEach(classify);document.querySelectorAll('.obrixPermanentNeutral').forEach(b=>{if(b.id!=='cfgExcluirConta'&&!b.matches?.('.accountDeleteBtn'))applyOne(b)})}
 const STYLE=`
 #obras .hero p,#diarioMain .hero p,#financeiroMain .hero p,#equipe .hero p,#estoqueMain .hero p,#orcamentosMain .hero p,#relatoriosMain .hero p,#documentosMain .hero p,#notasMain .hero p,#backupMain .hero p,#configMain .hero p{display:none!important}
 #obras .hero h1,#diarioMain .hero h1,#financeiroMain .hero h1,#equipe .hero h1,#estoqueMain .hero h1,#orcamentosMain .hero h1,#relatoriosMain .hero h1,#documentosMain .hero h1,#notasMain .hero h1,#backupMain .hero h1,#configMain .hero h1{margin-bottom:0!important}
