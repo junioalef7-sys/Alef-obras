@@ -12,7 +12,7 @@ const expected={
   notasOk:['#dcfce7','#123524'],notasErro:['#fee2e2','#391b28'],
   orcOk:['#dcfce7','#123524'],orcErro:['#fee2e2','#391b28'],
   supOk:['#dcfce7','#123524'],supErro:['#fee2e2','#391b28'],
-  supOffline:['#fff7ed','#422006'],supActive:['#0f172a','#253b58']
+  supOffline:['#fff7ed','#422006'],supActive:['#e5eaf0','#253b58']
 };
 function hex(s){
  const m=String(s).match(/rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)/);
