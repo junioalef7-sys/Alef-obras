@@ -1,0 +1,33 @@
+name: OBRIX Obras sem oscilacao de progresso - Config mantida
+on:
+  push:
+    branches: [test/obrix-config-e-obras-sem-piscadas-20261113]
+permissions:
+  contents: read
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Sintaxe, regressao de sincronizacao e progresso
+        run: |
+          for js in obrix-core-main.js obrix-obras-offline.js obrix-obras-fiel.js obrix-checklist-progress-core.js obrix-android-inicial/obrix-core-main.js obrix-android-inicial/obrix-obras-offline.js obrix-android-inicial/obrix-obras-fiel.js obrix-android-inicial/obrix-checklist-progress-core.js; do
+            node --check "$js"
+          done
+          node --test tests/obras-sem-repintura-sincronizacao.cjs
+          OBRIX_TEST_ROOT=obrix-android-inicial node --test tests/obras-sem-repintura-sincronizacao.cjs
+      - name: Instalar navegadores
+        run: |
+          npm install --prefix /tmp/obrix-test-deps playwright@1.62.1 --no-save
+          /tmp/obrix-test-deps/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Testar Obras sem oscilar em ambos temas
+        env:
+          NODE_PATH: /tmp/obrix-test-deps/node_modules
+        run: node tests/obrix-obras-progresso-sem-oscilacao.cjs
+      - name: Testar botoes de Configuracoes
+        env:
+          NODE_PATH: /tmp/obrix-test-deps/node_modules
+        run: node tests/obrix-config-cartoes-sem-vermelho.cjs

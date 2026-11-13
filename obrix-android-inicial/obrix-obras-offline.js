@@ -32,7 +32,13 @@ function publishRows(rows){
   // quando o servidor devolve os mesmos registros.
   const atual=Array.isArray(window.obras)?window.obras:[];
   if(obrasIguaisSemProgresso(atual,next))return false;
-  try{if(typeof obras!=='undefined'&&Array.isArray(obras)){obras.splice(0,obras.length,...next);window.obras=obras}else window.obras=next}catch{window.obras=next}updateBase(next);try{typeof publicarGlobais==='function'&&publicarGlobais()}catch{}try{typeof atualizarInicio==='function'&&atualizarInicio()}catch{}try{window.OBRIX_OBRAS?.render?.()}catch{}try{window.OBRIX_DASH?.sync?.()}catch{}}
+  const antigos=new Map(atual.map(o=>[String(o.id),o]));
+  const preservados=next.map(o=>{
+    const anterior=antigos.get(String(o.id));
+    return anterior&&o.progresso==null&&anterior.progresso!=null
+      ?{...o,progresso:anterior.progresso}:o;
+  });
+  try{if(typeof obras!=='undefined'&&Array.isArray(obras)){obras.splice(0,obras.length,...preservados);window.obras=obras}else window.obras=preservados}catch{window.obras=preservados}updateBase(next);try{typeof publicarGlobais==='function'&&publicarGlobais()}catch{}try{typeof atualizarInicio==='function'&&atualizarInicio()}catch{}try{window.OBRIX_OBRAS?.render?.()}catch{}try{window.OBRIX_DASH?.sync?.()}catch{}}
 function applyLocal(){publishRows(merge(cache().length?cache():(window.obras||[])))}
 function saveEdit(id,data){const e=empresa(),base=baseRow(id);if(!e)throw new Error('Abra o OBRIX conectado pelo menos uma vez antes de usar Obras offline.');if(!id||!base)throw new Error('Obra não encontrada no aparelho.');const payload=allowed(data);if(!payload.nome)throw new Error('Informe o nome da obra.');const old=mine().find(x=>String(x.id)===String(id)),all=queue().filter(x=>!(String(x.empresa_id||'')===String(e)&&String(x.id)===String(id)));all.push({id,empresa_id:e,payload,base_atualizado_em:old?.base_atualizado_em??base?.atualizado_em??null,at:new Date().toISOString(),conflict:!!old?.conflict,conflict_remote_at:old?.conflict_remote_at||null,conflict_message:old?.conflict_message||''});writeQueue(all);applyLocal();schedule(1000);return true}
 let refreshPendente=null;

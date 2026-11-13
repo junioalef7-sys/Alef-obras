@@ -73,6 +73,17 @@ function obrasIguaisSemProgresso(a,b){
     return JSON.stringify(campos(row))===JSON.stringify(campos(outro));
   });
 }
+function conservarProgressoObras(anteriores,novas){
+  // Quando o Supabase devolve somente os campos de obras, a média do checklist
+  // (calculada no cliente) não pode desaparecer por um frame em cada sincronização.
+  const porId=new Map((Array.isArray(anteriores)?anteriores:[]).map(o=>[String(o.id),o]));
+  return (Array.isArray(novas)?novas:[]).map(o=>{
+    const anterior=porId.get(String(o.id));
+    if(!anterior||o.progresso!==null&&o.progresso!==undefined||
+       anterior.progresso===null||anterior.progresso===undefined)return o;
+    return {...o,progresso:anterior.progresso};
+  });
+}
 let obrasSyncPendente=null;
 async function sincronizarObrasDoServidor(){
   if(obrasSyncPendente)return obrasSyncPendente;
@@ -95,7 +106,7 @@ async function sincronizarObrasDoServidor(){
     const mesmosExtras=JSON.stringify(extras)===JSON.stringify(novosExtras);
     if(mesmasObras&&mesmosExtras)return false;
     // O progresso do checklist é derivado e não deve invalidar os dados da obra.
-    if(!mesmasObras)obras=novos;
+    if(!mesmasObras)obras=conservarProgressoObras(obras,novos);
     if(!mesmosExtras)extras=novosExtras;
     publicarGlobais();
     salvarBaseOffline();
