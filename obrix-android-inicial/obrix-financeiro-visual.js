@@ -41,6 +41,29 @@ function aplicar(){
      caixaValor.style.setProperty('max-width','100%','important');
    }
    const tipo=card.dataset.tipo;const mini=card.querySelector('.mini');const rotulo=mini?.querySelector('small');const valor=mini?.querySelector('b');
+   // Somente Android: alinhar o valor imediatamente abaixo de Receita/Despesa.
+   // Não modificar largura, altura, padding, iconografia ou ações dos cartões.
+   if(mini){
+     mini.style.setProperty('display','flex','important');
+     mini.style.setProperty('flex-direction','column','important');
+     mini.style.setProperty('align-items','flex-start','important');
+     mini.style.setProperty('justify-content','center','important');
+   }
+   if(rotulo){
+     rotulo.style.setProperty('display','block','important');
+     rotulo.style.setProperty('align-self','flex-start','important');
+     rotulo.style.setProperty('margin-left','0','important');
+   }
+   if(valor){
+     valor.style.setProperty('display','block','important');
+     valor.style.setProperty('position','static','important');
+     valor.style.setProperty('align-self','flex-start','important');
+     valor.style.setProperty('flex','0 0 auto','important');
+     valor.style.setProperty('width','auto','important');
+     valor.style.setProperty('max-width','100%','important');
+     valor.style.setProperty('margin','2px 0 0','important');
+     valor.style.setProperty('text-align','left','important');
+   }
    if(valor){valor.classList.toggle('obxFinValorDespesa',tipo==='despesa');valor.classList.toggle('obxFinValorReceita',tipo==='receita');if(document.documentElement.dataset.theme==='light'){const cor=tipo==='receita'?'#16a34a':'#dc2626';valor.style.setProperty('color',cor,'important');valor.style.setProperty('-webkit-text-fill-color',cor,'important')}}
    if(rotulo&&document.documentElement.dataset.theme==='light'){rotulo.style.setProperty('color','var(--ob-muted,#526173)','important');rotulo.style.setProperty('-webkit-text-fill-color','var(--ob-muted,#526173)','important')}
    const btn=card.querySelector('[data-fin="excluir"]');if(btn){if(btn.textContent!=='Apagar')btn.textContent='Apagar';btn.classList.add('obxFinApagar')}
@@ -111,6 +134,31 @@ html[data-theme="dark"] #financeiroMain .actions .obxFinApagar,body.dark #financ
     min-width:0!important;
     width:100%!important;
   }
+}
+
+/* Alinhamento do texto no mini-cartao do Android. Largura e altura preservadas. */
+@media (max-width:700px){
+ #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini{
+   display:flex!important;
+   flex-direction:column!important;
+   align-items:flex-start!important;
+   justify-content:center!important;
+ }
+ #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini>small{
+   display:block!important;
+   align-self:flex-start!important;
+   margin-left:0!important;
+ }
+ #financeiroMain #fmLista [data-fin-card="1"]>.grid>.mini>b{
+   display:block!important;
+   position:static!important;
+   flex:0 0 auto!important;
+   align-self:flex-start!important;
+   width:auto!important;
+   max-width:100%!important;
+   margin:2px 0 0!important;
+   text-align:left!important;
+ }
 }
 `;
 document.head.appendChild(css);
