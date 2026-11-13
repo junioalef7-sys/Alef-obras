@@ -34,6 +34,8 @@ function update(){
   replaceContent(b.querySelector(':scope>span'),key);
  });
  app.querySelectorAll('#inicio #obpHome .obp-work-icon').forEach(e=>replaceContent(e,'hardhat'));
+ // Restituir exatamente o ícone SVG users da versão visual aprovada.
+ app.querySelectorAll('#equipe #obpEquipe .obp-avatar').forEach(e=>replaceContent(e,'users'));
  app.querySelectorAll('#equipe #obpEquipe .obp-ind-ico').forEach(e=>{
   const t=e.closest('.obp-indicador')?.textContent||'';
   const key=/vale/i.test(t)?'banknote':/di[aá]ria|falta/i.test(t)?'calendar':
