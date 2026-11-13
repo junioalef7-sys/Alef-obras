@@ -1,0 +1,41 @@
+name: Validar estabilidade OBRIX etapa 2
+on:
+  push:
+    branches: [fix/obrix-desempenho-fotos-equipe-20261113]
+permissions:
+  contents: read
+jobs:
+  regressao:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Verificar sintaxe dos arquivos corrigidos
+        run: |
+          node --check obrix-capas-obras.js
+          node --check obrix-relatorio-fotografico.js
+          node --check obrix-android-inicial/obrix-relatorio-fotografico.js
+          node --check obrix-equipe-main.js
+          node --check obrix-android-inicial/obrix-equipe-main.js
+          node --check obrix-equipe-realtime-sync.js
+          node --check obrix-android-inicial/obrix-equipe-realtime-sync.js
+      - name: Regressao de conexoes e progresso
+        run: |
+          node --test tests/stability.cjs
+          OBRIX_TEST_ROOT=obrix-android-inicial node --test tests/stability.cjs
+      - name: Instalar navegadores de teste
+        run: |
+          npm install --prefix /tmp/obrix-test-deps playwright@1.62.1 --no-save
+          /tmp/obrix-test-deps/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Testar sessoes continuas nos tres perfis
+        env:
+          NODE_PATH: /tmp/obrix-test-deps/node_modules
+        run: node tests/stability-browser.cjs
+      - name: Medir cache de fotos renderizacoes e memoria sintetica
+        env:
+          NODE_PATH: /tmp/obrix-test-deps/node_modules
+        run: |
+          node tests/photo-stability-browser.cjs
+          OBRIX_ROOT=obrix-android-inicial node tests/photo-stability-browser.cjs

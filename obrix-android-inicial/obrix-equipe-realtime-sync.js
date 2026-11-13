@@ -34,7 +34,7 @@ function pintar(){
   if(!visivel())return;
   try{window.OBRIX_EQUIPE_MODELO?.render?.()}catch(_){try{window.renderEquipe?.()}catch(__){}}
   try{window.OBRIX_EQUIPE_CONTROLES_GUARD?.ensure?.()}catch(_){ }
-  const k=document.getElementById('funcs');if(k){try{k.textContent=String(lista('funcionarios').filter(f=>f.ativo!==false).length)}catch(_){}}
+  const k=document.getElementById('funcs');if(k){try{(()=>{const total=String(lista('funcionarios').filter(f=>f.ativo!==false).length);if(k.textContent!==total)k.textContent=total})()}catch(_){}}
 }
 function reconciliar(forcar=false){
   // A tela oculta recebe o payload Realtime no cache, mas não precisa
