@@ -83,12 +83,17 @@ async function permitted(sb,id,company){
  if(error||!data?.id)throw Error('Sem acesso à obra.');
 }
 async function compress(file){
- if(!file||!file.type.startsWith('image/'))throw Error('Selecione uma imagem válida.');
- if(file.size>20*1024*1024)throw Error('Escolha uma foto de até 20 MB.');
+ // Fotos HEIC/HEIF do iPhone podem vir sem MIME, mas continuam sendo imagens.
+ const nome=String(file?.name||'');
+ const imagemValida=!!file&&(String(file.type||'').startsWith('image/')||/\.(?:heic|heif|jpg|jpeg|png|webp|avif)$/i.test(nome));
+ if(!imagemValida)throw Error('Selecione uma fotografia (JPG, PNG, HEIC ou WebP).');
+ // O arquivo original é convertido para uma capa WebP leve (1200 × 675) antes de enviar.
+ // Fotos grandes do iPhone devem poder entrar na etapa de compactação.
+ if(file.size>150*1024*1024)throw Error('Foto muito grande para processar neste aparelho (limite de 150 MB).');
  const url=URL.createObjectURL(file);
  try{
   const img=await new Promise((ok,bad)=>{
-   const im=new Image();im.onload=()=>ok(im);im.onerror=()=>bad(Error('Não foi possível abrir a foto.'));im.src=url;
+   const im=new Image();im.onload=()=>ok(im);im.onerror=()=>bad(Error('Não foi possível abrir esta imagem. Tente uma foto em JPG ou PNG.'));im.src=url;
   });
   const w=img.naturalWidth,h=img.naturalHeight;
   if(!w||!h)throw Error('Foto inválida.');
