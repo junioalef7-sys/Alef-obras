@@ -89,7 +89,7 @@ for(const prefix of ['','obrix-android-inicial/']){
       'offline snapshot from another build was incorrectly accepted');
     assert.match(source,/obrix-offline-v64-exact-version-20261113/);
     assert.match(loader,/obrix-obras-offline\.js\?v=20261113-exact-cache64/);
-    assert.match(source,/'\.\/obrix-pos-login-loader\.js'/,
+    assert.match(fs.readFileSync(prefix+'obrix.html','utf8'),/obrix-pos-login-loader\.js\?v=[\w.-]+/);
       'offline manifest loader must be precached');
   });
   test(prefix+' prefetch: so quatro arquivos leves, sem executar modulos',()=>{
