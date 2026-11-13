@@ -55,7 +55,7 @@ function update(){
   for(const node of h.childNodes)if(node.nodeType===3){node.nodeValue=clean;break}
   h.insertAdjacentHTML('afterbegin',svg(key));h.dataset.obrixNewIconHeading='1';
  });
- app.querySelectorAll('#obras .obxMiniFoto,#obras .obxCapaIcon').forEach(e=>replaceContent(e,'hardhat'));
+ app.querySelectorAll('#obras .obxCapaIcon:not(.obrixCapaMini)').forEach(e=>replaceContent(e,'hardhat'));
  app.querySelectorAll('#obras .obxResumoTitulo>span').forEach(e=>replaceContent(e,'wallet'));
  app.querySelectorAll('#obras .obxAcao .obxIcone').forEach(e=>{
   const t=(e.closest('button')?.querySelector('b')?.textContent||'').toLowerCase();
