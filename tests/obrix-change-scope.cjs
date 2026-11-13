@@ -12,7 +12,7 @@ const required=['obrix.html','obrix-android-inicial/obrix.html'];
 for(const filename of required){
  const s=fs.readFileSync(filename,'utf8');
  assert.ok(s.includes('position:fixed!important;inset:auto 0 0 0!important'),'Rodapé fixo modificado: '+filename);
- assert.ok(s.includes('obrix-pos-login-loader.js?v=20261113-progresso-sem-oscilacao1'),'Loader sem versão atual: '+filename);
+ assert.ok(s.includes('obrix-pos-login-loader.js?v=20261113-exact-cache64'),'Loader sem versão atual: '+filename);
 }
 for(const prefix of ['','obrix-android-inicial/']){
  const c=fs.readFileSync(prefix+'obrix-config-main.js','utf8');
@@ -29,4 +29,5 @@ for(const prefix of ['','obrix-android-inicial/']){
  assert.ok(o.includes('const preservados=next.map(o=>'),'Obras offline perde progresso em '+prefix);
  assert.ok(core.includes('conservarProgressoObras(obras,novos)'),'Obras online perde progresso em '+prefix);
 }
+for(const prefix of ['','obrix-android-inicial/']){const sw=fs.readFileSync(prefix+'obrix-sw.js','utf8');assert.ok(sw.includes('v64-exact-version-20261113'),'Cache PWA não atualizado');assert.ok(!sw.includes('v63-stability-coalesced'),'Cache antigo ainda ativo')}
 console.log(JSON.stringify({result:'PASSOU',baseline:manifest.production_base_sha,changed_files:files,blocked_out_of_scope:0,footer:'preservado',modules_unchanged:true},null,2));

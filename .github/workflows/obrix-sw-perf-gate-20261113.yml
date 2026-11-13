@@ -1,0 +1,35 @@
+name: OBRIX Performance PWA sem alterar visual aprovado
+on:
+  push:
+    branches: [test/obrix-cache-versao-botoes-rapidos-20261113]
+permissions:
+  contents: read
+jobs:
+  scope-performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Garantir que nenhuma outra tela foi modificada
+        run: node tests/obrix-change-scope.cjs
+      - name: Validar sintaxe e cache versionado
+        run: |
+          for js in obrix-sw.js obrix-android-inicial/obrix-sw.js obrix-pos-login-loader.js obrix-android-inicial/obrix-pos-login-loader.js obrix-obras-offline.js obrix-android-inicial/obrix-obras-offline.js; do node --check "$js"; done
+          node --test tests/obrix-sw-fast-versioned.cjs
+      - name: Regressão de sincronização de Obras
+        run: |
+          node --test tests/obras-sem-repintura-sincronizacao.cjs
+          OBRIX_TEST_ROOT=obrix-android-inicial node --test tests/obras-sem-repintura-sincronizacao.cjs
+      - name: Instalar navegadores para verificar estilo real e botões
+        run: |
+          npm install --prefix /tmp/obrix-test-deps playwright@1.62.1 --no-save
+          /tmp/obrix-test-deps/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Verificar configurações e Obras no iPhone Android PC
+        env:
+          NODE_PATH: /tmp/obrix-test-deps/node_modules
+        run: |
+          node tests/obrix-config-cartoes-sem-vermelho.cjs
+          node tests/obrix-obras-progresso-sem-oscilacao.cjs
