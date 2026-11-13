@@ -4,7 +4,7 @@ const CDN_SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1';
 const CDN_HTML2CANVAS='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const CDN_JSPDF='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
 const APP=[
-'./obrix.html','./obrix-startup-router.js','./obrix-offline-v3.js','./obrix-offline-v3-nav.js','./obrix-offline-v3-guard.js','./obrix-offline-bootstrap.js','./obrix-session-offline-fix.js','./obrix-offline-v2.js','./obrix-backend-adapter.js','./obrix-core-main.js','./obrix-ui-stability.js','./obrix-login-rescue.js','./obrix-login-eye-lite.js','./obrix-auth-main.js','./obrix-login-profissional.js',
+'./obrix.html','./obrix-startup-router.js','./obrix-offline-v3.js','./obrix-offline-v3-nav.js','./obrix-offline-v3-guard.js','./obrix-offline-bootstrap.js','./obrix-session-offline-fix.js','./obrix-offline-v2.js','./obrix-backend-adapter.js','./obrix-core-main.js','./obrix-ui-stability.js','./obrix-pos-login-loader.js','./obrix-login-rescue.js','./obrix-login-eye-lite.js','./obrix-auth-main.js','./obrix-login-profissional.js',
 './obrix-financeiro-main.js','./obrix-financeiro-visual.js','./obrix-visual-padrao-final.js','./obrix-obras-fiel.js','./obrix-estoque-operacoes-main.js','./obrix-equipe-registros-faltas.js','./obrix-estoque-main.js','./obrix-equipe-main.js','./obrix-obras-main.js','./obrix-menu-main.js','./obrix-nav-active.js','./obrix-home-clean.js','./obrix-theme-main.js','./obrix-light-polish.js','./obrix-brand-main.js','./obrix-ajustes-ui-final.js',
 './obrix-financeiro-resumo-obras.js','./obrix-financeiro-resumo-geral.js','./obrix-financeiro-protecao-estoque.js','./obrix-financeiro-busca.js','./obrix-financeiro-filtros-layout.js','./obrix-financeiro-grafico-receitas.js','./obrix-blindagem-financeiro.js',
 './obrix-equipe-controles-guard.js','./obrix-equipe-total-pago.js','./obrix-equipe-lista-vertical.js','./obrix-equipe-diretorio-pessoal.js','./obrix-equipe-botoes-neutros-v1.js','./obrix-equipe-estoque-fix-v1.js',
@@ -17,13 +17,32 @@ const APP=[
 const FRESH_CRITICAL=['/obrix.html','/obrix-startup-router.js','/obrix-offline-v3.js','/obrix-offline-v3-nav.js','/obrix-offline-v3-guard.js','/obrix-offline-bootstrap.js','/obrix-session-offline-fix.js','/obrix-offline-v2.js','/obrix-core-main.js','/obrix-theme-main.js','/obrix-menu-main.js','/obrix-financeiro-main.js','/obrix-equipe-main.js','/obrix-obras-main.js'];
 function isFreshCritical(p){return FRESH_CRITICAL.some(x=>p.endsWith(x))}
 async function directResponse(r){if(!r||r.type==='opaque'||!r.redirected)return r;try{const b=await r.clone().arrayBuffer(),h=new Headers(r.headers);h.delete('content-encoding');h.delete('content-length');h.delete('transfer-encoding');return new Response(b,{status:r.status,statusText:r.statusText,headers:h})}catch(_){return r}}
-async function cachedDirect(q){
+async function cachedDirect(q,allowOfflineSnapshot=false){
   const u=new URL(typeof q==='string'?q:q.url);
   const cache=await caches.open(CACHE);
   const exact=await cache.match(q);
   if(exact)return directResponse(exact);
-  // Nunca trocar um JS/CSS versionado pela versão antiga ignorando ?v=.
-  if(u.searchParams.has('v')&&/\.(?:js|css)$/i.test(u.pathname))return null;
+  if(u.searchParams.has('v')&&/\.(?:js|css)$/i.test(u.pathname)){
+    // Só em falha da rede: aceitar bytes sem ?v= quando a versão solicitada
+    // estiver declarada pelo próprio shell/loader precacheado nesta instalação.
+    // Isso preserva o offline sem confundir scripts de builds diferentes.
+    if(!allowOfflineSnapshot)return null;
+    const basename=u.pathname.split('/').pop();
+    const tag=basename+'?v='+u.searchParams.get('v');
+    const dirname=u.href;
+    const shell=await cache.match(new URL('./obrix.html',dirname).href);
+    const loader=await cache.match(new URL('./obrix-pos-login-loader.js',dirname).href);
+    for(const registro of [shell,loader]){
+      if(!registro)continue;
+      const content=await registro.text();
+      const tags=content.match(/obrix-[\w-]+\.(?:js|css)\?v=[\w.-]+/g)||[];
+      if(tags.includes(tag)){
+        const snapshot=await cache.match(new URL('./'+basename,dirname).href);
+        if(snapshot)return directResponse(snapshot);
+      }
+    }
+    return null;
+  }
   const fallback=await cache.match(q,{ignoreSearch:true});
   return fallback?directResponse(fallback):null;
 }
@@ -36,7 +55,7 @@ async function networkFirst(q,ms=4500){
   try{
     const r=await fetch(new Request(q,{cache:'reload',signal:abort.signal}));
     return await cachePut(q,r);
-  }catch(_){return cachedDirect(q)}
+  }catch(_){return cachedDirect(q,true)}
   finally{clearTimeout(timer)}
 }
 async function precoletar(c,url){
