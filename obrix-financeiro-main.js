@@ -258,6 +258,7 @@
       if(q.error)throw q.error;
       const atual=Array.isArray(window.financeiro)?window.financeiro.slice():[],idx=atual.findIndex(z=>String(z.id)===String(q.data.id));if(idx>=0)atual[idx]=q.data;else atual.unshift(q.data);window.financeiro=atual;
       $('fmForm').classList.add('hidden');renderLocal();window.OBRIX_DASH?.paint?.();
+      window.OBRIX_SUCESSO?.(id?(tipo==='receita'?'Receita atualizada com sucesso.':'Despesa atualizada com sucesso.'):(tipo==='receita'?'Receita registrada com sucesso.':'Despesa registrada com sucesso.'));
     }catch(e){alert(e.message||'Erro ao salvar lançamento')}finally{salvando=false;if(btn){btn.disabled=false;btn.textContent='Salvar'}}
   }
 
