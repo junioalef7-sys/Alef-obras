@@ -12,7 +12,7 @@ async function run(browserType,profile,device,root,theme){
  try{
   const page=await browser.newPage(device),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
-  await page.route(origin+'**',route=>route.fulfill({status:200,contentType:'text/html; charset=utf-8',body:pageHTML}));
+  await page.route(origin+'**',route=>{const isScript=/\.js(?:\?|$)/.test(route.request().url());return route.fulfill({status:200,contentType:isScript?'text/javascript':'text/html; charset=utf-8',body:isScript?'void 0;':pageHTML});});
   await page.goto(origin+'app.html');
   await page.evaluate(theme=>{
     document.documentElement.dataset.theme=theme;
