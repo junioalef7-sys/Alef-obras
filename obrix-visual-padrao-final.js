@@ -256,4 +256,46 @@ const estruturaObserver=new MutationObserver(muts=>{
 });
 estruturaObserver.observe(appRaiz,{childList:true,subtree:false});
 conectarPaginas();
-new MutationObserver(()=>agenda(true)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto'].forEach(x=>window.addEventListener(x,()=>{conectarPaginas();agenda(true)}));window.addEventListener('pageshow',()=>agenda(true));window.OBRIX_VISUAL_PADRAO_FINAL={refresh:()=>agenda(true)};})();
+new MutationObserver(()=>agenda(true)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto'].forEach(x=>window.addEventListener(x,()=>{conectarPaginas();agenda(true)}));window.addEventListener('pageshow',()=>agenda(true));
+// O status "Em andamento" tem seu próprio contrato de contraste. Uma rotina
+// visual legada pode escrever verde INLINE com !important depois da navegação,
+// vencendo inclusive o CSS aprovado. Corrigir na origem e reconciliar somente
+// esses elementos, em microtask (antes do próximo frame), sem polling/redesenho.
+const CONTRASTE_ANDAMENTO='#obras .obxStatus.andamento,#obras .obxStatus.em_andamento,#obras .obxStatus.obxStatus-andamento,#obras .obxStatus.obxStatus-em_andamento,#obras button[data-filtro="andamento"],#obras button[data-filtro="em_andamento"],#obras [data-status="andamento"]';
+const contratoAndamento=(node)=>{
+  if(!node?.style)return;
+  for(const prop of ['color','-webkit-text-fill-color']){
+    if(node.style.getPropertyValue(prop)!=='#fff'||node.style.getPropertyPriority(prop)!=='important')
+      node.style.setProperty(prop,'#fff','important');
+  }
+};
+function revalidarContrasteAndamento(){
+  document.querySelectorAll(CONTRASTE_ANDAMENTO).forEach(contratoAndamento);
+}
+let contrastePendente=false;
+function agendarContrasteAndamento(){
+  if(contrastePendente)return;
+  contrastePendente=true;
+  queueMicrotask(()=>{contrastePendente=false;revalidarContrasteAndamento()});
+}
+function instalarContrasteAndamento(){
+  const obras=document.getElementById('obras');
+  if(!obras||obras.__obrixContrasteObservado)return;
+  obras.__obrixContrasteObservado=true;
+  const relevantes=CONTRASTE_ANDAMENTO.split(',').map(x=>x.replace(/^#obras /,'')).join(',');
+  const observer=new MutationObserver(changes=>{
+    if(changes.some(m=>{
+      if(m.type==='attributes')return m.target.matches?.(relevantes);
+      return [...m.addedNodes].some(n=>n.nodeType===1&&
+        (n.matches?.(relevantes)||n.querySelector?.(relevantes)));
+    }))agendarContrasteAndamento();
+  });
+  observer.observe(obras,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+  revalidarContrasteAndamento();
+}
+
+instalarContrasteAndamento();
+['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','pageshow'].forEach(name=>
+  window.addEventListener(name,()=>{instalarContrasteAndamento();agendarContrasteAndamento()}));
+window.OBRIX_VISUAL_PADRAO_FINAL={refresh:()=>{agenda(true);agendarContrasteAndamento()}};
+})();
