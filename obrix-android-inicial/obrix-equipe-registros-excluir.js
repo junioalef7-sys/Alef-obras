@@ -63,8 +63,9 @@
     const btn=back.querySelector(`[data-diaria-id="${CSS.escape(String(diariaId))}"]`);if(btn){btn.disabled=true;btn.textContent='Excluindo...'}
     try{
       const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();
-      const {data,error}=await sb.from('diarias').delete().eq('id',diariaId).eq('empresa_id',p.empresa_id).eq('funcionario_id',funcionarioId).eq('paga',false).select('id');
-      if(error)throw error;if(!data?.length)throw new Error('A diária não foi excluída. Ela pode já ter sido paga ou alterada.');
+      const {data,error}=await sb.rpc('obrix_excluir_diaria_segura',{p_diaria_id:diariaId});
+      if(error)throw error;if(data?.ok!==true)throw new Error('O servidor não confirmou a exclusão da diária.');
+      window.OBRIX_SUCESSO?.(data.acao==='cancelada'?'Diária cancelada; histórico financeiro preservado.':'Diária excluída com sucesso.');
       await window.OBRIX_EQUIPE?.refresh?.();
       back.remove();
       abrir(funcionarioId);

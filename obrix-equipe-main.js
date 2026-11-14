@@ -70,7 +70,7 @@ async function refresh(opcoes={}){
       const falha=resultados.find(r=>r.error);
       if(falha)throw falha.error;
       funcionarios=resultados[0].data||[];
-      diarias=resultados[1].data||[];
+      diarias=(resultados[1].data||[]).filter(d=>!d.cancelada_em);
       vales=(resultados[2].data||[]).filter(v=>!v.estornado_em);
       bonus=resultados[3].data||[];
       window.funcionarios=funcionarios;

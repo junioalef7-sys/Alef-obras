@@ -262,7 +262,7 @@ async function buscarEventos(force=false){
     eventosAtualizados=agora-50000;
   }finally{buscandoEventos=false}
 }
-function arrEquipe(tipo,id){return lista(tipo).filter(x=>String(x.funcionario_id)===String(id))}
+function arrEquipe(tipo,id){return lista(tipo).filter(x=>String(x.funcionario_id)===String(id)&&(tipo!=='diarias'||!x.cancelada_em))}
 
 const obpFaltasCache=new Map();
 async function obpBuscarFaltas(id,force=false){

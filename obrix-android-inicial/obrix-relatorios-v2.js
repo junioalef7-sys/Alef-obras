@@ -199,7 +199,7 @@ async function gerarEquipe(){
     const p=await OBRIX_BACKEND.profile(),sb=await OBRIX_BACKEND.init(),eid=p.empresa_id;
     const [fr,dr,vr,br,pr,or,fin]=await Promise.all([
       sb.from('funcionarios').select('*').eq('empresa_id',eid),
-      sb.from('diarias').select('*').eq('empresa_id',eid),
+      sb.from('diarias').select('*').eq('empresa_id',eid).is('cancelada_em',null),
       sb.from('vales').select('*').eq('empresa_id',eid),
       sb.from('bonus_extras').select('*').eq('empresa_id',eid),
       sb.from('pagamentos_equipe').select('*').eq('empresa_id',eid),

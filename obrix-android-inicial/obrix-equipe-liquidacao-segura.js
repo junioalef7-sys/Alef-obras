@@ -59,7 +59,7 @@ function linhasFinanceiro(r,eid,pid,nome,data,destino){
 async function dadosAbertos(sb,eid,funcionarioId){
  const id=str(funcionarioId);
  const [dr,br,vr]=await Promise.all([
-   sb.from('diarias').select('*').eq('empresa_id',eid).eq('funcionario_id',id).eq('paga',false),
+   sb.from('diarias').select('*').eq('empresa_id',eid).eq('funcionario_id',id).eq('paga',false).is('cancelada_em',null),
    sb.from('bonus_extras').select('*').eq('empresa_id',eid).eq('funcionario_id',id).eq('pago',false),
    sb.from('vales').select('*').eq('empresa_id',eid).eq('funcionario_id',id).eq('quitado',false).is('estornado_em',null)
  ]);
