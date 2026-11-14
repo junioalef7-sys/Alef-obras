@@ -22,7 +22,7 @@ const platforms=[
   const audited=['obrix-obras-fiel.js','obrix-estoque-estorno-final.js','obrix-equipe-historico-pagamentos.js','obrix-estoque-main.js','obrix-checklist-v2.js','obrix-notas-offline.js','obrix-offline-central-lite.js','obrix-backup-import-run.js','obrix-backup-completo.js','obrix-config-main.js'];
   for(const f of audited){
     const js=read(prefix+f);
-    assert.ok(!/(?<![\\w.])(confirm|prompt)\\s*\\(/.test(js),'Ainda há confirmação/prompt nativo em '+prefix+f);
+    assert.ok(!/(?<![\w.])(confirm|prompt)\s*\(/.test(js),'Ainda há confirmação/prompt nativo em '+prefix+f);
   }
   assert.ok(read(prefix+'obrix-equipe-folha-install.js').includes('obrix-instalar-fechar'),'Cartão sem botão de fechar '+prefix);
   assert.ok(read(prefix+'obrix-equipe-folha-install.js').includes('INSTALL_DISMISSED'),'Cartão de instalação pode reaparecer após dispensar '+prefix);
