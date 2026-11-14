@@ -57,7 +57,6 @@ for(const op of ['data-obp-periodo','value="30"','value="90"','value="all"'])
 assert.ok(premium.includes("periodoRegistros==='all'?naAba"),'Ver registros: histórico completo ocultado');
 // Garantir posição do Menu sem alterar a tela inicial nem duplicar setas.
 for(const folder of versions){
-  const htmlNav=getStub=>null;
   const html=read(folder+'obrix.html'),visual=read(folder+'obrix-visual-padrao-final.js');
   assert.ok(html.includes('obrix-visual-padrao-final.js?v=20261114-menu-direita-voltar2'),'Versão antiga do cabeçalho '+folder);
   for(const id of ['menuMain','obras','financeiroMain','equipe'])
@@ -69,7 +68,7 @@ for(const folder of versions){
 const r=read('obrix.html'),a=read('obrix-android-inicial/obrix.html');
 for(const page of [r,a]){
  assert.ok(page.includes('20261114-registros-periodo1'));
- assert.ok(page.includes('20261114-cabecalho-menu-voltar1'));
+ assert.ok(page.includes('20261114-menu-direita-voltar2'));
  assert.ok(page.includes('20261114-pdf-historico1'));
 }
 assert.equal(read('obrix-sw.js'),read('obrix-android-inicial/obrix-sw.js'),'Service workers diferentes');
