@@ -22,7 +22,7 @@ const platforms=[
    try{
     const page=await browser.newPage(profile);
     let native=0;page.on('dialog',async d=>{native++;await d.dismiss()});
-    await page.setContent('<!doctype html><html lang="pt-BR" data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="login" class="hidden"></div><section id="app"><main id="inicio"></main></section></body></html>');
+    await page.setContent('<!doctype html><html lang="pt-BR" data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>.hidden{display:none!important}</style></head><body><div id="login" class="hidden"></div><section id="app"><main id="inicio"></main></section></body></html>');
     await page.evaluate(()=>{
       window.__confirmOriginal=window.confirm;
       window.OBRIX_BACKEND={currentUser:async()=>({id:'conta_teste'})};
@@ -54,6 +54,7 @@ const platforms=[
       await page.locator('#obxOnboardSkip').click();
     }
     assert.ok(await page.locator('#obrixOnboarding').evaluate(e=>e.classList.contains('hidden')),'Apresentação não fechou: '+prefix+device);
+    assert.equal(await page.locator('#obrixOnboarding').evaluate(e=>getComputedStyle(e).display),'none','Card ainda visível após fechar: '+prefix+device);
     assert.equal(native,0,'O navegador ainda mostra mensagem nativa em '+prefix+device);
     console.log(JSON.stringify({variant:prefix||'root',device,nativeDialogs:0,alertsInObrix:true,installationCloses:true}));
     await page.close();
