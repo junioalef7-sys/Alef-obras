@@ -74,13 +74,13 @@ vm.runInContext(home.slice(from,to)+';globalThis.__acao=acaoRapida;',sandbox);
     });
     const inicio=await get();
     for(const item of Object.values(inicio))assert.notEqual(item.display,'none',prefix+name+' tela Início: botão removido');
-    for(const width of [320,375,device.viewport?.width||1280]){
+    for(const width of [320,375,390,device.viewport?.width||1280]){
       await page.setViewportSize({width,height:800});
       const measurements=await page.locator('#inicio .obp-shortcuts>button[data-short]').evaluateAll(nodes=>{
         const cards=nodes.map(el=>{
           const r=el.getBoundingClientRect(),icon=el.querySelector(':scope>span'),ir=icon?.getBoundingClientRect();
           return {name:el.dataset.short,width:r.width,height:r.height,iconWidth:ir?.width,iconHeight:ir?.height,
-            font:parseFloat(getComputedStyle(el).fontSize),scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,
+            font:parseFloat(getComputedStyle(el).fontSize),scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,
             left:r.left,right:r.right};
         });
         const grid=document.querySelector('#inicio .obp-shortcuts').getBoundingClientRect();
@@ -93,7 +93,10 @@ vm.runInContext(home.slice(from,to)+';globalThis.__acao=acaoRapida;',sandbox);
         assert.ok(Math.abs(card.height-first.height)<1,prefix+name+' cartões com alturas desiguais em '+width);
         assert.ok(Math.abs(card.font-first.font)<.1,prefix+name+' fontes desiguais em '+width);
         assert.ok(Math.abs(card.iconWidth-first.iconWidth)<1,prefix+name+' ícones desiguais em '+width);
-        assert.ok(card.scrollWidth<=card.clientWidth+1,prefix+name+' texto saiu do cartão em '+width+': '+JSON.stringify(card));
+        assert.ok(card.scrollWidth<=card.clientWidth+1,prefix+name+' texto saiu na horizontal em '+width+': '+JSON.stringify(card));
+        assert.ok(card.scrollHeight<=card.clientHeight+1,prefix+name+' texto saiu na vertical em '+width+': '+JSON.stringify(card));
+        const proporcao=card.height/card.width;
+        assert.ok(proporcao>=.90&&proporcao<=1.58,prefix+name+' cartão fora da proporção da foto em '+width+': '+proporcao);
         assert.ok(card.left>=measurements.grid.left-1&&card.right<=measurements.grid.right+1,prefix+name+' cartão ultrapassou o grid');
       }
       assert.ok(measurements.grid.right<=measurements.viewport+1,prefix+name+' grid ultrapassou a tela em '+width);
