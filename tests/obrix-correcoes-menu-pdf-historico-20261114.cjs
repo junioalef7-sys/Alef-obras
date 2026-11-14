@@ -43,13 +43,13 @@ for(const folder of versions){
  assert.ok(head.includes("dataset.obrixObrasOrigem==='rodape'"),'Obras do rodapé sem Menu '+folder);
  assert.ok(head.includes('const subTela='),'Subtela perde seta '+folder);
  const loader=get('obrix-pos-login-loader.js');
- assert.ok(loader.includes('obrix-equipe-historico-pagamentos.js?v=20261114-historico30d1'),
+ assert.ok(loader.includes('obrix-equipe-historico-pagamentos.js?v=20261114-confirmacoes-nativas2'),
   'Histórico de pagamentos não carregado '+folder);
  const start=get('obrix-startup-router.js');
  assert.ok(start.includes('obrix-orcamentos-ui-v8.js?v=20261114-pdf-rodape-livre1'),
    'Gerador PDF ainda antigo '+folder);
  const sw=get('obrix-sw.js');
- assert.ok(sw.includes('obrix-offline-v75-alertas-instalacao-20261114'),'Cache antigo '+folder);
+ assert.ok(sw.includes('obrix-offline-v76-alertas-confirmacoes-20261114'),'Cache antigo '+folder);
 }
 const premium=read(root);
 for(const op of ['data-obp-periodo','value="30"','value="90"','value="all"'])
