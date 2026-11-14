@@ -50,7 +50,7 @@ function update(){
  const app=document.getElementById('app');if(!app)return;
  app.querySelectorAll(':scope>.bottom>button').forEach((b,i)=>addTo(b,['house','hardhat','wallet','users'][i]));
  app.querySelectorAll('#inicio #obpHome .obp-shortcuts button[data-short]').forEach(b=>{
-  const m={nova:'plus',notas:'note',relatorios:'chart',foto:'camera',diario:'notebook',equipe:'users'};
+  const m={nova:'plus',notas:'note',relatorios:'chart',foto:'camera',diario:'notebook',documentos:'files',equipe:'users'};
   fill(b.querySelector(':scope>span'),m[b.dataset.short]||'note');
  });
  app.querySelectorAll('#inicio #obpHome .obp-work-icon').forEach(e=>fill(e,'hardhat'));

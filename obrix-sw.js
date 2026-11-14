@@ -1,5 +1,5 @@
-const CACHE='obrix-offline-v67-menu-tema-obras-20261113';
-const BUILD='20261113-preview-menu-tema-v67';
+const CACHE='obrix-offline-v68-home-shortcuts-menu-light-20261113';
+const BUILD='20261113-preview-home-menu-light-v68';
 const CDN_SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1';
 const CDN_HTML2CANVAS='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const CDN_JSPDF='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';

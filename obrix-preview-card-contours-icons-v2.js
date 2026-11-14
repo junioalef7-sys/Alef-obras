@@ -30,7 +30,7 @@ function update(){
  const app=document.getElementById('app');if(!app)return;
 
  app.querySelectorAll('#inicio #obpHome .obp-shortcuts button[data-short]').forEach(b=>{
-  const key={nova:'hardhat',notas:'note',relatorios:'chart',foto:'camera',diario:'notebook',equipe:'users'}[b.dataset.short]||'note';
+  const key={nova:'hardhat',notas:'note',relatorios:'chart',foto:'camera',diario:'notebook',documentos:'files',equipe:'users'}[b.dataset.short]||'note';
   replaceContent(b.querySelector(':scope>span'),key);
  });
  app.querySelectorAll('#inicio #obpHome .obp-work-icon').forEach(e=>replaceContent(e,'hardhat'));
