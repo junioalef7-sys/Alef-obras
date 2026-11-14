@@ -22,7 +22,7 @@ for(const prefix of ['','obrix-android-inicial/']){
  assert.ok(off.includes("['inicio','obras','financeiro','equipe']"));
  assert.ok(offnav.includes("const ROUTES=['inicio','obras','financeiro','equipe']"));
  assert.ok(loader.includes('obrix-menu-main.js?v=20261114-desktop-abertura1'));
- assert.ok(read(prefix+'obrix-sw.js').includes('obrix-offline-v71-home-cards-square-ref-20261113'));
+ assert.ok(read(prefix+'obrix-sw.js').includes('obrix-offline-v72-desktop-modules-equipe-obras-20261114'));
 }
 assert.ok(read('obrix-preview-card-contours-icons-v2.js').includes("['Obras','hardhat']"));
 console.log('OBRIX - menu superior e quatro abas com offline: OK');
