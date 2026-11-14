@@ -1,7 +1,7 @@
 (()=>{'use strict';if(window.__OBRIX_VISUAL_PADRAO_FINAL)return;window.__OBRIX_VISUAL_PADRAO_FINAL=true;
 const st=document.createElement('style');st.id='obrix-visual-padrao-final';st.textContent=`
 /* Setas superiores disponíveis somente nos acessos originados pelo Menu. */
-html[data-obrix-financeiro-origem="rodape"] #app:has(#financeiroMain:not(.hidden)) > .top #obrixHeaderVoltar,
+html[data-obrix-financeiro-origem="rodape"]:not(.obrixSubTelaAtiva) #app:has(#financeiroMain:not(.hidden)) > .top #obrixHeaderVoltar,
 html[data-obrix-financeiro-origem="rodape"] #app:has(#financeiroMain:not(.hidden)) > .top button[aria-label="Voltar"]{
  display:none!important;visibility:hidden!important;
 }
@@ -9,7 +9,7 @@ html[data-theme="light"] #app>.top #obrixTheme{
  animation:none!important;transition:none!important;opacity:1!important;visibility:visible!important;
 }
 /* A seta superior só existe para Equipe quando a navegação veio do Menu. */
-html[data-obrix-equipe-origem="rodape"] #app:has(#equipe:not(.hidden)) > .top #obrixHeaderVoltar,
+html[data-obrix-equipe-origem="rodape"]:not(.obrixSubTelaAtiva) #app:has(#equipe:not(.hidden)) > .top #obrixHeaderVoltar,
 html[data-obrix-equipe-origem="rodape"] #app:has(#equipe:not(.hidden)) > .top button[aria-label="Voltar"]{
   display:none!important;visibility:hidden!important;
 }
@@ -192,10 +192,15 @@ const financeiroViaRodape=financeiroVisivel&&document.documentElement.dataset.ob
 const obrasVisiveis=vis(document.getElementById('obras'));
 const obrasViaRodape=obrasVisiveis&&document.documentElement.dataset.obrixObrasOrigem==='rodape';
 // Modais internos não devem fazer a seta superior desaparecer.
-const subTela=!!document.querySelector('.modalBack:not(.hidden),#docViewerModal:not(.hidden),[role="dialog"]:not(.hidden)');
-b.classList.toggle('hidden',noInicio||noMenu||equipeViaRodape||obrasViaRodape||financeiroViaRodape||(!p&&!noResumo&&!paginaEstavel&&!subTela));b.onclick=()=>{if(noResumo){const rs=window.OBRIX_RESUMO_GERAL?.status?.()||{};if(rs.view==='obra'){window.OBRIX_RESUMO_GERAL?.open?.();return}resumo.classList.add('hidden');if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();return}}if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();return}if(typeof window.abrir==='function')window.abrir('inicio')}}
+const subTela=!!document.querySelector('body>.modalBack:not(.hidden),body>#docViewerModal:not(.hidden),body>[role="dialog"]:not(.hidden),#app [role="dialog"]:not(.hidden)');
+document.documentElement.classList.toggle('obrixSubTelaAtiva',subTela);
+const apenasRaizRodape=(equipeViaRodape||obrasViaRodape||financeiroViaRodape)&&!subTela;
+b.classList.toggle('hidden',noInicio||noMenu||apenasRaizRodape||(!p&&!noResumo&&!paginaEstavel&&!subTela));b.onclick=()=>{
+if(subTela){const aberto=document.querySelector('body>.modalBack:not(.hidden),body>#docViewerModal:not(.hidden)');const fechar=aberto?.querySelector('[data-obp-fechar],#docViewerClose,.obrix-hist-pag-x,.cancelar,[aria-label="Fechar"],button[data-close]');if(fechar){fechar.click();return}}
+const voltaObra=document.querySelector('#obras:not(.hidden) #obxVoltarObras');if(voltaObra){voltaObra.click();return}
+if(noResumo){const rs=window.OBRIX_RESUMO_GERAL?.status?.()||{};if(rs.view==='obra'){window.OBRIX_RESUMO_GERAL?.open?.();return}resumo.classList.add('hidden');if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();return}}if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();return}if(typeof window.abrir==='function')window.abrir('inicio')}}
 let applying=false,scheduled=false,lastSignature='';
-function signature(){const t=document.documentElement.dataset.theme||'';const visible=[...document.querySelectorAll('#app>main:not(.hidden),#app>section:not(.hidden),#app .modalBack:not(.hidden),#app .modal:not(.hidden),#app [role="dialog"]:not(.hidden)')].map(x=>x.id||x.className||x.tagName).join('|');return t+'::'+visible}
+function signature(){const html=document.documentElement,t=html.dataset.theme||'',origem=[html.dataset.obrixEquipeOrigem,html.dataset.obrixFinanceiroOrigem,html.dataset.obrixObrasOrigem].join('|');const visible=[...document.querySelectorAll('#app>main:not(.hidden),#app>section:not(.hidden),#app .modalBack:not(.hidden),#app .modal:not(.hidden),#app [role="dialog"]:not(.hidden),body>.modalBack:not(.hidden),body>#docViewerModal:not(.hidden),body>[role="dialog"]:not(.hidden)')].map(x=>x.id||x.className||x.tagName).join('|');return t+'::'+origem+'::'+visible}
 function aplicar(force=false){
  if(applying)return;
  const sig=signature();
@@ -270,6 +275,21 @@ const estruturaObserver=new MutationObserver(muts=>{
 });
 estruturaObserver.observe(appRaiz,{childList:true,subtree:false});
 conectarPaginas();
+// Observar somente a abertura/fechamento de diálogos de primeiro nível: sem varrer cartões.
+const dialogosObservados=new WeakSet();
+function conectarDialogos(){
+  document.querySelectorAll('body>.modalBack,body>#docViewerModal,body>[role="dialog"]').forEach(dialogo=>{
+    if(dialogosObservados.has(dialogo))return;
+    dialogosObservados.add(dialogo);
+    paginasObserver.observe(dialogo,{attributes:true,attributeFilter:['class','hidden']});
+  });
+}
+new MutationObserver(changes=>{
+  if(!changes.some(m=>[...m.addedNodes,...m.removedNodes].some(n=>n.nodeType===1&&n.matches?.('.modalBack,#docViewerModal,[role="dialog"]'))))return;
+  conectarDialogos();
+  if(!document.hidden)agenda(false);
+}).observe(document.body,{childList:true,subtree:false});
+conectarDialogos();
 new MutationObserver(()=>agenda(true)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:feature-pronto'].forEach(x=>window.addEventListener(x,()=>{conectarPaginas();agenda(true)}));window.addEventListener('pageshow',()=>agenda(true));
 // O status "Em andamento" tem seu próprio contrato de contraste. Uma rotina
 // visual legada pode escrever verde INLINE com !important depois da navegação,
