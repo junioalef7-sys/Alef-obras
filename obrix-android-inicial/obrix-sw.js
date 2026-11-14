@@ -1,5 +1,5 @@
-const CACHE='obrix-offline-v80-home-install-20261114';
-const BUILD='20261114-preview-home-install-v80';
+const CACHE='obrix-offline-v81-home-install-swfix-20261114';
+const BUILD='20261114-preview-home-install-swfix-v81';
 const CDN_SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1';
 const CDN_HTML2CANVAS='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const CDN_JSPDF='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
@@ -31,7 +31,7 @@ async function cachedDirect(q,allowOfflineSnapshot=false){
     const tag=basename+'?v='+u.searchParams.get('v');
     const dirname=u.href;
     const shell=await cache.match(new URL('./obrix.html',dirname).href);
-    const loader=await cache.match(new URL('./obrix-pos-login-loader.js','../obrix-install-card-home.js',dirname).href);
+    const loader=await cache.match(new URL('./obrix-pos-login-loader.js',dirname).href);
     for(const registro of [shell,loader]){
       if(!registro)continue;
       const content=await registro.text();
