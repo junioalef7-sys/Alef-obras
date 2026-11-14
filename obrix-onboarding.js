@@ -214,14 +214,21 @@ function renderInstall(){
   const tabs=devices.map(d=>'<button type="button" data-obx-device="'+d[0]+'" aria-pressed="'+String(d[0]===selectedDevice)+'" class="'+(d[0]===selectedDevice?'active':'')+'">'+d[1]+'</button>').join('');
   const steps=active.steps.map((step,i)=>'<li><span class="obxInstallNumber">'+(i+1)+'</span><span>'+esc(step)+'</span></li>').join('');
   const installed=installComplete||window.matchMedia?.('(display-mode: standalone)')?.matches||navigator.standalone===true;
-  const directButton=!installed?'<button type="button" id="obxInstallAction">'+(selectedDevice!=='iphone'&&installPrompt?'Instalar OBRIX agora':'Como instalar o OBRIX')+'</button>':'';
+  const directButton=!installed?'<button type="button" id="obxInstallAction">'+(selectedDevice!=='iphone'&&installPrompt?'Instalar OBRIX agora':'Ver instruções de instalação')+'</button>':'';
   const status=installed?'<p class="obxInstallStatus">O OBRIX já está instalado neste dispositivo.</p>':'<p class="obxInstallHint">Se a opção de instalação não aparecer, confira as opções do navegador.</p>';
   host.innerHTML='<section class="obxInstallPanel"><div class="obxInstallTabs" aria-label="Escolha seu dispositivo">'+tabs+'</div><div class="obxInstallContent"><h2>'+esc(active.title)+'</h2><ol class="obxInstallSteps">'+steps+'</ol>'+directButton+status+'</div></section>';
   host.querySelectorAll('[data-obx-device]').forEach(b=>b.onclick=()=>{selectedDevice=b.dataset.obxDevice;renderInstall()});
   const action=$('obxInstallAction');if(action)action.onclick=async()=>{
     if(!installPrompt||selectedDevice==='iphone'){
-      const list=host.querySelector('.obxInstallSteps');
-      list?.scrollIntoView?.({behavior:'smooth',block:'nearest'});
+      // Sem beforeinstallprompt não há link de instalação direta no Chrome.
+      // Mostrar uma orientação acionável dentro do OBRIX, em vez de um clique sem efeito.
+      const titulo='Como instalar o OBRIX no '+(selectedDevice==='desktop'?'computador':selectedDevice==='iphone'?'iPhone':'Android');
+      const instrucoes=active.steps.map((passo,i)=>(i+1)+'. '+passo).join('\n');
+      if(typeof window.OBRIX_AVISO==='function')void window.OBRIX_AVISO(instrucoes,titulo);
+      else{
+        const aviso=host.querySelector('.obxInstallHint');
+        if(aviso)aviso.textContent='Siga as instruções acima. A instalação direta depende da opção oferecida pelo navegador.';
+      }
       return;
     }
     const prompt=installPrompt;installPrompt=null;action.disabled=true;
@@ -279,7 +286,8 @@ function ensure(){
       </footer>
     </section>`;
   document.body.appendChild(overlay);
-  $('obxOnboardSkip').onclick=()=>close(true);
+  $('obxOnboardSkip').onclick=()=>close(!installOnly);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)close(false)});
   $('obxOnboardPrev').onclick=prev;
   $('obxOnboardNext').onclick=next;
   overlay.addEventListener('keydown',e=>{if(e.key==='Escape')close(false);if(e.key==='ArrowRight')next();if(e.key==='ArrowLeft')prev()});
@@ -364,7 +372,8 @@ async function user(){
 }
 
 async function open(force=false,onlyInstall=false){
-  if(opening)return;opening=true;
+  if(overlay&&!overlay.classList.contains('hidden'))return true;
+  if(opening)return false;opening=true;
   try{
     if(!appReady()&&!force)return false;
     const u=await user();if(!u?.id)return false;
