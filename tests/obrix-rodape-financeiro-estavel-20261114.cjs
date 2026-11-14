@@ -57,7 +57,7 @@ for(const pref of ['','obrix-android-inicial/']){
     await window.OBRIX_FIN.render(false);
    });
    await page.addScriptTag({content:protectedStock});
-   await page.locator('.finEstoqueProtegido').waitFor({timeout:1200});
+   await page.locator('.finEstoqueProtegido').waitFor({state:'attached',timeout:1200});
    await page.evaluate(()=>{window.__stockNotice=document.querySelector('.finEstoqueProtegido');window.dispatchEvent(new Event('focus'))});
    await page.waitForTimeout(250);
    assert.ok(await page.evaluate(()=>document.querySelectorAll('.finEstoqueProtegido').length===1&&window.__stockNotice===document.querySelector('.finEstoqueProtegido')),'Aviso do estoque piscando '+device);
