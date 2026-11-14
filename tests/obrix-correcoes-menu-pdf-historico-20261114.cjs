@@ -55,6 +55,17 @@ const premium=read(root);
 for(const op of ['data-obp-periodo','value="30"','value="90"','value="all"'])
  assert.ok(premium.includes(op),'Filtro de Ver registros precisa: '+op);
 assert.ok(premium.includes("periodoRegistros==='all'?naAba"),'Ver registros: histórico completo ocultado');
+// Garantir posição do Menu sem alterar a tela inicial nem duplicar setas.
+for(const folder of versions){
+  const htmlNav=getStub=>null;
+  const html=read(folder+'obrix.html'),visual=read(folder+'obrix-visual-padrao-final.js');
+  assert.ok(html.includes('obrix-visual-padrao-final.js?v=20261114-menu-direita-voltar2'),'Versão antiga do cabeçalho '+folder);
+  for(const id of ['menuMain','obras','financeiroMain','equipe'])
+    assert.ok(html.includes('#'+id+':not(.hidden)) > .top > #bMenu'),'Menu à direita ausente em '+id+' '+folder);
+  assert.ok(visual.includes('obrixSubTelaAtiva'),'A seta precisa sobreviver a subtelas '+folder);
+  assert.ok(visual.includes("body>.modalBack:not(.hidden)"),'Diálogo fora do app precisa entrar no estado de navegação '+folder);
+  assert.ok(visual.includes('conectarDialogos()'),'Diálogos devem disparar recálculo do cabeçalho '+folder);
+}
 const r=read('obrix.html'),a=read('obrix-android-inicial/obrix.html');
 for(const page of [r,a]){
  assert.ok(page.includes('20261114-registros-periodo1'));
