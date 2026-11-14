@@ -14,7 +14,7 @@ for(const folder of versions){
  for(const p of edited)assert.doesNotThrow(()=>new vm.Script(get(p),{filename:folder+p}),folder+p+' sintaxe incorreta');
  const onboarding=get('obrix-onboarding.js');
  assert.ok(!onboarding.includes("dataset.obrixInstallHelp='1'"),'Instalar ainda no Menu '+folder);
- assert.ok(folder?onboarding.includes('Como instalar o OBRIX'):onboarding.includes('obxInstallGuide'),'Guia no primeiro acesso desapareceu '+folder);
+ assert.ok(folder?onboarding.includes('Instalar o OBRIX no Android'):onboarding.includes('obxInstallGuide'),'Guia no primeiro acesso desapareceu '+folder);
  const v8=get('obrix-orcamentos-ui-v8.js');
  assert.ok(v8.includes('maxW=usableW-43'),'Rodapé precisa reservar 43mm '+folder);
  assert.ok(v8.includes('pdf.rect(pageW-margin-39,pageH-margin-12,39,12'),'Número de página precisa área própria '+folder);
