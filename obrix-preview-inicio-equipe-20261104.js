@@ -891,9 +891,17 @@ function iniciar(){
   const ini=$('inicio'),team=$('equipe'),legado=$('listaEquipe'),app=$('app');
   if(ini)new MutationObserver(()=>{if(secaoVisivel('inicio')&&!ini.querySelector('#obpHome'))atualizar()}).observe(ini,{childList:true,subtree:false});
   if(legado)new MutationObserver(()=>{if(secaoVisivel('equipe'))atualizar()}).observe(legado,{childList:true});
-  if(app)new MutationObserver(atualizar).observe(app,{attributes:true,attributeFilter:['class']});
-  // Navigation may only change the page's own class, not #app.
-  for(const section of [ini,team])if(section)new MutationObserver(atualizar).observe(section,{attributes:true,attributeFilter:['class','hidden','style']});
+  // Observar apenas mudança REAL de tela visível. Mudanças internas de classe
+  // no perfil da Equipe não podem provocar outro render em ciclo.
+  let inicioAnterior=secaoVisivel('inicio'),equipeAnterior=secaoVisivel('equipe');
+  const mudouPagina=()=>{
+    const inicioAtual=secaoVisivel('inicio'),equipeAtual=secaoVisivel('equipe');
+    if(inicioAtual===inicioAnterior&&equipeAtual===equipeAnterior)return;
+    inicioAnterior=inicioAtual;equipeAnterior=equipeAtual;
+    atualizar();
+  };
+  if(app)new MutationObserver(mudouPagina).observe(app,{attributes:true,attributeFilter:['class']});
+  for(const section of [ini,team])if(section)new MutationObserver(mudouPagina).observe(section,{attributes:true,attributeFilter:['class','hidden','style']});
   ['obrix:offline-base-atualizada','obrix:offline-core-restaurado','obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:progresso-atualizado'].forEach(x=>window.addEventListener(x,atualizar));
   window.addEventListener('pageshow',atualizar);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)atualizar()});

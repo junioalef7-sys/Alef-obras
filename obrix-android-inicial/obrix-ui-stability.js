@@ -24,8 +24,9 @@ async function openOnline(k,btn){
         if(!ok||!atual())return;
         try{await Promise.resolve(window.OBRIX_EQUIPE?.refresh?.())}catch(_){}
         if(!atual())return;
-        try{window.renderEquipe?.()}catch(_){}
-        repairScroll();
+        // O refresh já atualiza a Equipe Premium. Evitar renderização
+        // legada duplicada, que substituía cartões na sessão desktop.
+        if(atual())repairScroll();
       });
       return true;
     }

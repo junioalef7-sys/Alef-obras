@@ -68,7 +68,22 @@ async function garantir(k){
     const ok=await Promise.race([carregamento,pronto]);
     return ok||typeof window.OBRIX_CONFIG?.open==='function';
   }
-  return await carregamento;
+  // O controlador primário já pode abrir a tela enquanto scripts opcionais
+  // (filtros, exportação, modo offline) continuam carregando. Não confundir
+  // falha em complemento com indisponibilidade de Notas/Relatórios.
+  const pronto=new Promise(resolve=>{
+    const limite=Date.now()+12000;
+    const verificar=()=>{
+      if(typeof window[map[k]]?.open==='function')resolve(true);
+      else if(Date.now()>=limite)resolve(false);
+      else setTimeout(verificar,80);
+    };
+    verificar();
+  });
+  return await Promise.race([
+    carregamento.then(ok=>ok||typeof window[map[k]]?.open==='function'),
+    pronto
+  ]);
 }
 async function go(k,btn){
   // Cada clique é uma intenção de navegação. Uma carga lenta não bloqueia
