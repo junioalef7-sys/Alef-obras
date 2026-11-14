@@ -64,6 +64,29 @@
     return idsChecklist(x).map(id=>{const nome=mapa.get(String(id));if(!nome)return null;const v=Number(vals[id]||0);return v>0?`${nome} (${money(v)})`:nome}).filter(Boolean);
   }
 
+  // Atualização por ID: os cartões já exibidos permanecem no DOM ao registrar
+  // receitas e ao chegar o mesmo lançamento por realtime. Não apagar a lista
+  // inteira em cada render, pois isto pisca inclusive no computador.
+  function atualizarListaEstavel(lista,html){
+    if(!lista)return false;
+    if(lista.__obrixMarkup===html&&lista.childElementCount>0)return false;
+    const modelo=document.createElement('div');modelo.innerHTML=html;
+    const antigos=new Map([...lista.children].filter(el=>el.dataset.finCard==='1').map(el=>[el.dataset.id,el]));
+    let ponteiro=lista.firstElementChild,mudou=false;
+    for(const candidato of [...modelo.children]){
+      const chave=candidato.dataset.id||'',fonte=candidato.outerHTML;
+      let node=chave?antigos.get(chave):null;
+      if(node&&node.__obrixFonte!==fonte){node.replaceWith(candidato);node=candidato;mudou=true}
+      if(!node){node=candidato;mudou=true}
+      node.__obrixFonte=fonte;
+      if(node!==ponteiro){lista.insertBefore(node,ponteiro);mudou=true}
+      ponteiro=node.nextElementSibling;
+    }
+    while(ponteiro){const proximo=ponteiro.nextElementSibling;ponteiro.remove();ponteiro=proximo;mudou=true}
+    lista.__obrixMarkup=html;
+    return mudou;
+  }
+
   function renderLocal(){
     ensure();
     const f=active(),os=window.obras||[];
@@ -86,12 +109,8 @@
       const meta=[o?.nome||'Sem obra',x.data||'',labels[x.categoria]||x.categoria||'',x.subcategoria||'',checkTxt].filter(Boolean);
       return `<div class="card item" data-fin-card="1" data-id="${esc(x.id)}" data-obra="${esc(x.obra_id||'')}" data-tipo="${esc(x.tipo||'')}" data-categoria="${esc(x.categoria||'')}"><h3>${esc(x.descricao||'Lançamento')}</h3><div class="muted">${meta.map(esc).join(' • ')}</div><div class="grid"><div class="mini"><small>${x.tipo==='receita'?'Receita':'Despesa'}</small><b>${money(x.valor)}</b></div></div>${podeExcluir(x)||podeEstornar(x)?`<div class="actions">${manual?`<button type="button" data-fin="editar" data-id="${x.id}">Editar</button>`:''}${podeEstornar(x)?`<button type="button" data-fin="estornar" data-id="${x.id}">Estornar</button>`:`<button type="button" data-fin="excluir" data-id="${x.id}">Excluir</button>`}</div>`:''}</div>`;
     }).join(''):'<div class="card muted">Nenhum lançamento financeiro.</div>';
-    let listaMudou=false;
-    // Os ajustes aprovados acrescentam classes ao DOM. Comparar innerHTML
-    // depois disso sempre diverge e recriava todos os cartões a cada refresh.
-    if(lista&&(lista.__obrixMarkup!==html||lista.childElementCount===0)){
-      lista.innerHTML=html;lista.__obrixMarkup=html;listaMudou=true;
-    }
+    // Atualizar somente cartões novos/alterados, preservando os existentes.
+    const listaMudou=atualizarListaEstavel(lista,html);
     if(listaMudou)window.OBRIX_FIN_VISUAL?.refresh?.();
     atualizarObras();window.OBRIX_FIN_BUSCA?.refreshOptions?.();window.OBRIX_FIN_BUSCA?.aplicar?.();
   }
