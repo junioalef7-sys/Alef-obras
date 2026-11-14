@@ -2,6 +2,7 @@
 const fs=require('node:fs'),assert=require('node:assert/strict');
 const {chromium,webkit,devices}=require('playwright');
 const read=p=>fs.readFileSync(p,'utf8');
+assert.equal(read('obrix-install-card-home.js'),read('obrix-android-inicial/obrix-install-card-home.js'),'Instalador divergente entre plataformas');
 const loader=read('obrix-pos-login-loader.js'),team=read('obrix-equipe-folha-install.js'),installer=read('obrix-install-card-home.js');
 assert.ok(!loader.split('const BASE=')[1].split('const BASE_OFFLINE=')[0].includes('obrix-equipe-folha-install.js'));
 assert.ok(!team.includes('obrixInstalarApp'),'Instalação ainda acoplada à Equipe');
