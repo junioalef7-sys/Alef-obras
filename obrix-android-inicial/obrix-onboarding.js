@@ -295,9 +295,7 @@ function injectMenu(){
   if(!m.querySelector('[data-onboarding-replay]')){
     const b=document.createElement('button');b.type='button';b.dataset.onboardingReplay='1';b.className='obxReplay';b.innerHTML='<b>Conheça o OBRIX</b><small>Veja tudo que o aplicativo oferece</small>';b.onclick=()=>open(true);account.appendChild(b);
   }
-  if(!m.querySelector('[data-obrix-install-help]')){
-    const help=document.createElement('button');help.type='button';help.dataset.obrixInstallHelp='1';help.className='obxReplay';help.innerHTML='<b>Como instalar o OBRIX</b><small>Passo a passo e botão de instalação</small>';help.onclick=()=>open(true,true);account.appendChild(help);
-  }
+  /* Retirar somente o botão do Menu; guia do primeiro login permanece. */m.querySelectorAll('[data-obrix-install-help],.obxInstallMenuHeading').forEach(b=>b.remove());
   return true;
 }
 function watchMenu(){

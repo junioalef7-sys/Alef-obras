@@ -134,6 +134,8 @@ function abrir(id){
   });
   if(destino)destino.classList.remove('hidden');
   $('bInicio')?.classList.toggle('active',id==='inicio');
+  $('bObras')?.classList.toggle('active',id==='obras');
+  $('bFinanceiro')?.classList.remove('active');
   $('bEquipe')?.classList.toggle('active',id==='equipe');
   $('bMenu')?.classList.remove('active');
   if(id==='equipe')renderEquipe();

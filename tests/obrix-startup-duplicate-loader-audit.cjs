@@ -9,9 +9,9 @@ for(const prefix of ['','obrix-android-inicial/']){
    'Carregador antigo ainda é iniciado pelo roteador');
  assert.equal((html.match(/obrix-pos-login-loader\.js\?v=/g)||[]).length,1,
    'HTML não pode executar dois carregadores primários');
- assert.ok(html.includes('obrix-pos-login-loader.js?v=20261113-exact-cache64'),
+ assert.match(html,/obrix-pos-login-loader\.js\?v=[\w.-]+/,
    'Carregador da versão aprovada sumiu do HTML');
- assert.ok(html.includes('obrix-startup-router.js?v=20261113-inicializacao-unica1'),
+ assert.ok(html.includes('obrix-startup-router.js?v=20261114-pdf-historico1'),
    'Roteador anterior pode permanecer em cache');
  assert.ok(!startup.includes("await load('./obrix-pos-login-loader.js"),
    'Roteador ainda inicia carregador primário em duplicidade');

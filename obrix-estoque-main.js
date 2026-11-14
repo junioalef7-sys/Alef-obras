@@ -30,8 +30,11 @@
   x.dataset.obrixLoading='1';
   x.setAttribute('aria-busy','true');
   const loader=window.OBRIX_POS_LOGIN_LOADER;
-  void Promise.resolve(loader?.loadGroup?.('estoque')||false).then(ok=>{
-    if(ok===false)throw new Error('Operações de estoque indisponíveis.');
+  // Abrir primeiro a operação solicitada: as demais dependências de
+  // estoque podem carregar depois sem bloquear a tela ou gerar falso erro.
+  void Promise.resolve(loader?.loadStockOperations?.()??loader?.loadGroup?.('estoque')??false).then(ok=>{
+    if(ok===false&&typeof window.OBRIX_EST_OP?.abrir!=='function'&&typeof window.OBRIX_SAIDA_OBRA?.abrir!=='function')
+      throw new Error('Operações de estoque indisponíveis.');
     if(tipo==='saida'&&window.OBRIX_SAIDA_OBRA?.abrir)return window.OBRIX_SAIDA_OBRA.abrir();
     if(window.OBRIX_EST_OP?.abrir)return window.OBRIX_EST_OP.abrir(tipo);
     throw new Error('Módulo de estoque não terminou de carregar.');
