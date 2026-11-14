@@ -83,8 +83,8 @@
   async function estornar(back,base,id,btn){
     const p=base.pagamentos.find(x=>String(x.id)===String(id));if(!p||p.estornado_em)return;
     const nome=base.funcs.get(String(p.funcionario_id))||'Funcionário';
-    if(!confirm(`Estornar o pagamento de ${nome}, no valor de ${money(p.valor_liquido)}?\n\nAs diárias, vales e bônus/extras deste pagamento voltarão para aberto e o lançamento no Financeiro será estornado.`))return;
-    const motivo=prompt('Motivo do estorno (opcional):','')??null;
+    if(!await window.OBRIX_CONFIRMAR_EXCLUSAO({titulo:'Estornar pagamento',mensagem:`Estornar o pagamento de ${nome}, no valor de ${money(p.valor_liquido)}?\n\nAs diárias, vales e bônus/extras deste pagamento voltarão para aberto e o lançamento no Financeiro será estornado.`,confirmar:'Estornar'}))return;
+    const motivo=await window.OBRIX_PEDIR_TEXTO({titulo:'Motivo do estorno',mensagem:'Informe o motivo (opcional).',valor:''});
     if(motivo===null)return;
     btn.disabled=true;btn.textContent='Estornando...';
     try{
