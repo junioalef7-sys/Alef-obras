@@ -20,9 +20,9 @@ function home(){
 }
 (async()=>{
  for(const prefix of ['','obrix-android-inicial/']){
-  const moduleSource=read(prefix+'obrix-equipe-folha-install.js');
+  const moduleSource=read('obrix-install-card-home.js');
   assert.ok(moduleSource.includes("inicio.querySelector('#obpHome .obp-shortcuts')"),'Código não posiciona após os atalhos');
-  assert.ok(moduleSource.includes('observarInicioInstalacao'),'Recriação da Home não observada');
+  assert.ok(moduleSource.includes('MutationObserver(agendar).observe(inicio'),'Recriação da Home não observada');
   assert.ok(moduleSource.includes('<details class="obrix-instrucoes-install">'),'Instruções não compactadas');
   for(const [device,engine,profile] of devicesToTest){
     const browser=await engine.launch();
@@ -42,6 +42,7 @@ function home(){
       await page.goto('https://obrix-home-layout.invalid/test');
       await page.evaluate(()=>{window.__originalHome=document.getElementById('inicio').innerHTML});
       await page.addScriptTag({content:moduleSource});
+      assert.ok(await page.evaluate(()=>!window.__OBRIX_EQUIPE_FOLHA_INSTALL),'Instalação ainda depende do módulo Equipe');
       await page.locator('#obrixInstalarApp').waitFor({timeout:6500});
       const info=await page.evaluate(()=>{
        const c=document.getElementById('obrixInstalarApp'),r=c.getBoundingClientRect(),f=document.querySelector('.bottom').getBoundingClientRect();

@@ -6,20 +6,20 @@ const profiles=[['computador',chromium,{viewport:{width:1280,height:740}}],
  ['Android',chromium,devices['Pixel 7']],['iPhone',webkit,devices['iPhone 13']]];
 (async()=>{
 for(const pref of ['','obrix-android-inicial/']){
- const installer=read(pref+'obrix-equipe-folha-install.js');
+ const installer=read('obrix-install-card-home.js');
  const finance=read(pref+'obrix-financeiro-main.js');
  const protectedStock=read(pref+'obrix-financeiro-protecao-estoque.js');
- assert.ok(installer.includes('scroll-margin-bottom:calc(138px'),'Espaço do rodapé ausente');
+ assert.ok(installer.includes("#obpHome .obp-shortcuts"),'Instalador não depende dos atalhos da Início');
  assert.ok(finance.includes('atualizarListaEstavel(lista,html)'),'Recriação da lista inteira ainda ativa');
  assert.ok(!protectedStock.includes('querySelectorAll(\'.finEstoqueProtegido\').forEach(n=>n.remove())'),'Avisos recriados');
  for(const [device,engine,profile] of profiles){
   const browser=await engine.launch();
   try{
    const page=await browser.newPage(profile);
-   await page.setContent('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font:16px system-ui;background:#edf0f5}.hidden{display:none!important}#app{max-width:800px;margin:auto}#inicio{padding:16px}#inicio .card{display:block;padding:18px;background:#fff;border:1px solid #ccd;border-radius:12px}.bottom{position:fixed;bottom:0;left:0;right:0;height:84px;background:#fff;z-index:99999}</style><section id="app"><main id="inicio"><div style="height:640px">Início</div><section id="obxObras">Obras em andamento</section></main><main id="obras" class="hidden"></main><main id="equipe" class="hidden"></main><div class="bottom"><button>Início</button></div></section>');
+   await page.setContent('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font:16px system-ui;background:#edf0f5}.hidden{display:none!important}#app{max-width:800px;margin:auto}#inicio{padding:16px}#inicio .card{display:block;padding:18px;background:#fff;border:1px solid #ccd;border-radius:12px}.bottom{position:fixed;bottom:0;left:0;right:0;height:84px;background:#fff;z-index:99999}</style><section id="app"><main id="inicio"><div id="obpHome"><div class="obp-shortcuts"><button>Diário</button><button>Notas</button><button>Relatórios</button><button>Foto</button></div><div style="height:640px">Início</div><div class="obp-heading">Obras em andamento</div></div></main><main id="obras" class="hidden"></main><main id="equipe" class="hidden"></main><div class="bottom"><button>Início</button></div></section>');
    await page.addScriptTag({content:installer});
    await page.locator('#obrixInstalarApp').waitFor({timeout:6500});
-   await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));
+   await page.locator('#obrixInstalarApp').scrollIntoViewIfNeeded();
    const v=await page.evaluate(()=>{
     const card=document.querySelector('#obrixInstalarApp').getBoundingClientRect();
     const footer=document.querySelector('.bottom').getBoundingClientRect();

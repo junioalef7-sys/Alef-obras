@@ -45,82 +45,7 @@
   let resumoTimer=null;
   async function atualizarResumo(){clearTimeout(resumoTimer);resumoTimer=setTimeout(async()=>{garantirBotoesTopo();retirarAcoesDosRegistros();const box=garantirResumo();if(!box)return;const r=calcularFolha(),pago=await totalPagoHistorico();box.innerHTML=`<div class="obrix-gestao-head"><div><h2>Gestão da equipe</h2><p>Resumo total da folha de pagamento</p></div></div><div class="obrix-folha-grid"><div><small>Funcionários ativos</small><strong>${r.ativos}</strong></div><div><small>Diárias em aberto</small><strong>${money(r.diariasAberto)}</strong></div><div><small>Vales em aberto</small><strong>${money(r.valesAberto)}</strong></div><div><small>Bônus e extras</small><strong>${money(r.bonusAberto)}</strong></div><div><small>Bruto da folha</small><strong>${money(r.bruto)}</strong></div><div class="destaque"><small>Líquido a pagar</small><strong>${money(r.liquido)}</strong></div><div class="pago"><small>Total pago (histórico)</small><strong>${pago===null?'—':money(pago)}</strong></div></div>`},80)}
 
-  let deferredPrompt=null;
-  const instalado=()=>window.matchMedia?.('(display-mode: standalone)')?.matches===true||window.navigator.standalone===true;
-  const INSTALL_DISMISSED='obrix_instalar_card_dispensado_sessao_v1';
-  let dispensadoNestaSessao=false;
-  // A memória local impede o reaparecimento imediato mesmo em ambientes
-  // que bloqueiam sessionStorage (privacidade, iframe ou teste isolado).
-  const ignorado=()=>{if(dispensadoNestaSessao)return true;try{return sessionStorage.getItem(INSTALL_DISMISSED)==='1'}catch(_){return false}};
-  function fecharInstalacao(){
-    dispensadoNestaSessao=true;
-    try{sessionStorage.setItem(INSTALL_DISMISSED,'1')}catch(_){}
-    document.getElementById('obrixInstalarApp')?.remove();
-  }
-  // Na Início Premium a antiga #obxObras não existe mais. O cartão
-  // precisa ficar logo abaixo dos atalhos, antes da lista de obras, e não
-  // depois de toda a página atrás do rodapé fixo.
-  function posicionarCartaoInstalacao(inicio,card){
-    const atalhos=inicio.querySelector('#obpHome .obp-shortcuts');
-    if(atalhos){
-      if(card.parentElement!==atalhos.parentElement||card.previousElementSibling!==atalhos)
-        atalhos.insertAdjacentElement('afterend',card);
-      return;
-    }
-    const obras=inicio.querySelector('#obxObras');
-    if(obras){
-      if(card.previousElementSibling!==obras||card.parentElement!==obras.parentElement)
-        obras.insertAdjacentElement('afterend',card);
-    }else if(card.parentElement!==inicio)inicio.appendChild(card);
-  }
-  function observarInicioInstalacao(inicio){
-    if(inicio.__obrixInstalarObserver)return;
-    // O Início Premium pode substituir os filhos de #inicio ao inicializar.
-    // Observar apenas este nível evita monitoramento pesado do documento.
-    inicio.__obrixInstalarObserver=new MutationObserver(()=>{
-      if(!instalado()&&!ignorado())queueMicrotask(garantirInstalacao);
-    });
-    inicio.__obrixInstalarObserver.observe(inicio,{childList:true});
-  }
-  function garantirInstalacao(){
-    const inicio=document.getElementById('inicio');
-    if(!inicio)return;
-    if(instalado()||ignorado()){
-      inicio.querySelector('#obrixInstalarApp')?.remove();return;
-    }
-    observarInicioInstalacao(inicio);
-    let card=inicio.querySelector('#obrixInstalarApp');
-    if(card){posicionarCartaoInstalacao(inicio,card);return;}
-    card=document.createElement('section');card.id='obrixInstalarApp';card.className='card obrix-instalar-card';
-    card.innerHTML='<div class="obrix-instalar-head"><h2>Instalar o OBRIX</h2><button type="button" class="obrix-instalar-fechar" aria-label="Fechar instalação" title="Fechar">×</button></div>'+
-      '<p class="muted">Tenha o aplicativo na tela inicial para abrir mais rápido.</p>'+
-      '<button type="button" class="btn obrix-instalar-btn">Instalar aplicativo</button>'+
-      '<details class="obrix-instrucoes-install"><summary>Ver instruções de instalação</summary><div><h3>Como instalar</h3>'+
-      '<p><b>Computador — Chrome:</b> abra o menu ⋮ → Transmitir, salvar e compartilhar → Instalar página como app (ou use o ícone de instalação da barra de endereços).</p>'+
-      '<p><b>iPhone — Safari:</b> Compartilhar → Adicionar à Tela de Início → Adicionar.</p>'+
-      '<p><b>Android — Chrome:</b> menu ⋮ → Instalar aplicativo.</p>'+
-      '<p class="muted">A instalação automática só abre quando o navegador disponibiliza a opção de instalar.</p></div></details>';
-    posicionarCartaoInstalacao(inicio,card);
-    card.querySelector('.obrix-instalar-fechar').onclick=fecharInstalacao;
-    card.querySelector('.obrix-instalar-btn').onclick=async()=>{
-      if(deferredPrompt&&typeof deferredPrompt.prompt==='function'){
-        const prompt=deferredPrompt;deferredPrompt=null;
-        try{await prompt.prompt();await prompt.userChoice}catch(e){window.OBRIX_MENSAGEM?.('Use a opção Instalar página como app no menu do Chrome.','erro')}
-        if(instalado())card.remove();
-        return;
-      }
-      const guia='Computador: Chrome → ⋮ → Transmitir, salvar e compartilhar → Instalar página como app.\n'+
-        'Android: Chrome → ⋮ → Instalar aplicativo.\n'+
-        'iPhone: Safari → Compartilhar → Adicionar à Tela de Início.\n\n'+
-        'Se não houver opção de instalação, o navegador não ofereceu a instalação automática neste endereço.';
-      if(typeof window.OBRIX_AVISO==='function')void window.OBRIX_AVISO(guia,'Instalar o OBRIX');
-      else window.OBRIX_MENSAGEM?.('Veja as instruções de instalação disponíveis no cartão.','info');
-    };
-  }
-  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;garantirInstalacao()});
-  window.addEventListener('appinstalled',()=>{dispensadoNestaSessao=true;document.getElementById('obrixInstalarApp')?.remove()});
-
-  function iniciar(){garantirBotoesTopo();retirarAcoesDosRegistros();atualizarResumo();garantirInstalacao();const lista=document.getElementById('listaEquipe');if(lista&&!lista.__obrixFolhaObs){lista.__obrixFolhaObs=true;new MutationObserver(()=>atualizarResumo()).observe(lista,{childList:true,subtree:true})}// A antiga observação de todo o body provocava reprocessamentos ao navegar.
+  function iniciar(){garantirBotoesTopo();retirarAcoesDosRegistros();atualizarResumo();const lista=document.getElementById('listaEquipe');if(lista&&!lista.__obrixFolhaObs){lista.__obrixFolhaObs=true;new MutationObserver(()=>atualizarResumo()).observe(lista,{childList:true,subtree:true})}// A antiga observação de todo o body provocava reprocessamentos ao navegar.
   // O histórico é atualizado quando seus controles são usados, sem escanear toda a aplicação.
   if(!document.documentElement.dataset.obrixFolhaClickBound){document.documentElement.dataset.obrixFolhaClickBound='1';document.addEventListener('click',e=>{if(e.target.closest?.('#equipe [data-acao="registros"],#equipe [data-team-action="historico"]'))setTimeout(retirarAcoesDosRegistros,50)})}}
 
@@ -129,7 +54,7 @@
     .obrix-gestao-resumo{margin:0 0 18px!important;padding:18px!important}.obrix-gestao-head h2{margin:0 0 4px;font-size:22px}.obrix-gestao-head p{margin:0 0 14px;color:#64748b}
     .obrix-folha-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.obrix-folha-grid>div{border:1px solid #e2e8f0;border-radius:14px;padding:14px;background:#f8fafc;min-width:0}.obrix-folha-grid small{display:block;color:#64748b;font-weight:700;margin-bottom:5px}.obrix-folha-grid strong{display:block;font-size:20px;word-break:break-word}.obrix-folha-grid .destaque{background:#fff1f2;border-color:#fecdd3}.obrix-folha-grid .destaque strong{color:#e11d48}.obrix-folha-grid .pago{grid-column:1/-1}.obrix-folha-grid .pago strong{color:#10b981}
     .obrix-registros-acoes{grid-template-columns:1fr!important}.obrix-folha-modalhead{display:flex;align-items:center;justify-content:space-between;gap:12px}.obrix-folha-modalhead h2{margin:0}.obrix-folha-x{border:0;background:transparent;font-size:30px;color:inherit}.obrix-folha-modal label{display:block;font-weight:800;margin:12px 0 5px}.obrix-folha-modal select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#0f172a;font:inherit}
-    .obrix-instalar-card{margin-top:12px!important;margin-bottom:16px!important;scroll-margin-bottom:calc(110px + env(safe-area-inset-bottom,0px))!important;position:relative;z-index:1}#app #inicio>.obrix-instalar-card{margin-bottom:calc(138px + env(safe-area-inset-bottom,0px))!important;scroll-margin-bottom:calc(138px + env(safe-area-inset-bottom,0px))!important}#app #inicio:has(> #obrixInstalarApp){scroll-padding-bottom:calc(138px + env(safe-area-inset-bottom,0px))!important}.obrix-instalar-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.obrix-instalar-head h2{margin:0!important}.obrix-instalar-fechar{border:1px solid var(--ob-border,#cbd5e1)!important;border-radius:9px!important;min-width:38px!important;height:38px!important;background:var(--ob-surface-2,#e5eaf0)!important;color:var(--ob-text,#0f172a)!important;-webkit-text-fill-color:var(--ob-text,#0f172a)!important;font-size:25px!important;cursor:pointer!important}.obrix-instalar-card h2{margin:0 0 5px}.obrix-instalar-btn{width:100%;margin:6px 0 10px;min-height:46px}.obrix-instrucoes-install{border-top:1px solid #e2e8f0;padding-top:14px}.obrix-instrucoes-install summary{font-weight:800;cursor:pointer;color:var(--ob-text,#0f172a);-webkit-text-fill-color:var(--ob-text,#0f172a);padding:3px 0}.obrix-instrucoes-install[open] summary{margin-bottom:10px}html[data-theme="dark"] .obrix-instrucoes-install summary,body.dark .obrix-instrucoes-install summary{color:#f8fafc;-webkit-text-fill-color:#f8fafc}.obrix-instrucoes-install h3{margin:0 0 10px}.obrix-instrucoes-install p{line-height:1.5;margin:8px 0}
+    
     html[data-theme="dark"] .obrix-gestao-resumo,body.dark .obrix-gestao-resumo,html[data-theme="dark"] .obrix-instalar-card,body.dark .obrix-instalar-card{background:#0f172a;color:#f8fafc;border-color:#334155}html[data-theme="dark"] .obrix-folha-grid>div,body.dark .obrix-folha-grid>div{background:#111827;border-color:#334155}html[data-theme="dark"] .obrix-folha-grid .destaque,body.dark .obrix-folha-grid .destaque{background:#231b27;border-color:#3d2934}html[data-theme="dark"] .obrix-folha-modal,body.dark .obrix-folha-modal{background:#0f172a;color:#f8fafc}html[data-theme="dark"] .obrix-folha-modal select,body.dark .obrix-folha-modal select{background:#111827;color:#f8fafc;border-color:#334155}html[data-theme="dark"] .obrix-instrucoes-install,body.dark .obrix-instrucoes-install{border-color:#334155}
     @media(max-width:390px){.obrix-folha-grid{grid-template-columns:1fr}.obrix-folha-grid .pago{grid-column:auto}}
   `;document.head.appendChild(css);

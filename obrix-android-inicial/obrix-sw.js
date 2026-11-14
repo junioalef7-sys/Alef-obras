@@ -1,10 +1,10 @@
-const CACHE='obrix-offline-v79-instalar-fechar-estavel-20261114';
-const BUILD='20261114-preview-instalar-fechar-v79';
+const CACHE='obrix-offline-v80-home-install-20261114';
+const BUILD='20261114-preview-home-install-v80';
 const CDN_SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1';
 const CDN_HTML2CANVAS='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const CDN_JSPDF='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
 const APP=[
-'./obrix.html','./obrix-startup-router.js','./obrix-offline-v3.js','./obrix-offline-v3-nav.js','./obrix-offline-v3-guard.js','./obrix-offline-bootstrap.js','./obrix-session-offline-fix.js','./obrix-offline-v2.js','./obrix-backend-adapter.js','./obrix-core-main.js','./obrix-ui-stability.js','./obrix-pos-login-loader.js','./obrix-login-rescue.js','./obrix-login-eye-lite.js','./obrix-auth-main.js','./obrix-login-profissional.js',
+'./obrix.html','./obrix-startup-router.js','./obrix-offline-v3.js','./obrix-offline-v3-nav.js','./obrix-offline-v3-guard.js','./obrix-offline-bootstrap.js','./obrix-session-offline-fix.js','./obrix-offline-v2.js','./obrix-backend-adapter.js','./obrix-core-main.js','./obrix-ui-stability.js','./obrix-pos-login-loader.js','../obrix-install-card-home.js','./obrix-login-rescue.js','./obrix-login-eye-lite.js','./obrix-auth-main.js','./obrix-login-profissional.js',
 './obrix-financeiro-main.js','./obrix-financeiro-visual.js','./obrix-visual-padrao-final.js','./obrix-obras-fiel.js','./obrix-estoque-operacoes-main.js','./obrix-equipe-registros-faltas.js','./obrix-estoque-main.js','./obrix-equipe-main.js','./obrix-obras-main.js','./obrix-menu-main.js','./obrix-nav-active.js','./obrix-home-clean.js','./obrix-theme-main.js','./obrix-light-polish.js','./obrix-brand-main.js','./obrix-ajustes-ui-final.js',
 './obrix-financeiro-resumo-obras.js','./obrix-financeiro-resumo-geral.js','./obrix-financeiro-protecao-estoque.js','./obrix-financeiro-busca.js','./obrix-financeiro-filtros-layout.js','./obrix-financeiro-grafico-receitas.js','./obrix-blindagem-financeiro.js',
 './obrix-equipe-controles-guard.js','./obrix-equipe-total-pago.js','./obrix-equipe-lista-vertical.js','./obrix-equipe-diretorio-pessoal.js','./obrix-equipe-botoes-neutros-v1.js','./obrix-equipe-estoque-fix-v1.js',
@@ -31,7 +31,7 @@ async function cachedDirect(q,allowOfflineSnapshot=false){
     const tag=basename+'?v='+u.searchParams.get('v');
     const dirname=u.href;
     const shell=await cache.match(new URL('./obrix.html',dirname).href);
-    const loader=await cache.match(new URL('./obrix-pos-login-loader.js',dirname).href);
+    const loader=await cache.match(new URL('./obrix-pos-login-loader.js','../obrix-install-card-home.js',dirname).href);
     for(const registro of [shell,loader]){
       if(!registro)continue;
       const content=await registro.text();

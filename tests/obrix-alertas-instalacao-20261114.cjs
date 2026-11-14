@@ -24,14 +24,14 @@ const platforms=[
     const js=read(prefix+f);
     assert.ok(!/(?<![\w.])(confirm|prompt)\s*\(/.test(js),'Ainda há confirmação/prompt nativo em '+prefix+f);
   }
-  assert.ok(read(prefix+'obrix-equipe-folha-install.js').includes('obrix-instalar-fechar'),'Cartão sem botão de fechar '+prefix);
-  assert.ok(read(prefix+'obrix-equipe-folha-install.js').includes('INSTALL_DISMISSED'),'Cartão de instalação pode reaparecer após dispensar '+prefix);
+  assert.ok(read('obrix-install-card-home.js').includes('obrix-instalar-fechar'),'Cartão sem botão de fechar '+prefix);
+  assert.ok(read('obrix-install-card-home.js').includes('obrix_instalar_card_dispensado_sessao_v2'),'Cartão de instalação pode reaparecer após dispensar '+prefix);
   for(const [device,engine,profile] of platforms){
    const browser=await engine.launch();
    try{
     const page=await browser.newPage(profile);
     let native=0;page.on('dialog',async d=>{native++;await d.dismiss()});
-    const fixture='<!doctype html><html lang="pt-BR" data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>.hidden{display:none!important}</style></head><body><div id="login" class="hidden"></div><section id="app"><main id="inicio"></main></section></body></html>';
+    const fixture='<!doctype html><html lang="pt-BR" data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>.hidden{display:none!important}</style></head><body><div id="login" class="hidden"></div><section id="app"><main id="inicio"><div id="obpHome"><div class="obp-shortcuts"><button>Diário</button><button>Notas</button><button>Relatórios</button><button>Foto</button></div><div class="obp-heading">Obras</div></div></main></section></body></html>';
     // Abertura em origem HTTPS realista: about:blank não possui storage utilizável,
     // e a apresentação não consegue registrar o fechamento por usuário nesse caso.
     await page.route('https://obrix-instalacao.invalid/**',route=>route.fulfill({status:200,contentType:'text/html',body:fixture}));
@@ -70,11 +70,10 @@ const platforms=[
     assert.equal(await page.locator('#obrixOnboarding').evaluate(e=>getComputedStyle(e).display),'none','Card ainda visível após fechar: '+prefix+device);
     // O segundo cartão de instalação, dentro do Início, precisa abrir ajuda e fechar.
     await page.evaluate(()=>window.OBRIX_ONBOARDING.close(true));
-    await page.addScriptTag({content:read(prefix+'obrix-equipe-folha-install.js')});
+    await page.addScriptTag({content:read('obrix-install-card-home.js')});
     await page.locator('#obrixInstalarApp').waitFor({timeout:5000});
     await page.locator('#obrixInstalarApp .obrix-instalar-btn').click();
-    await page.locator('#obrixAvisoTitulo').waitFor();
-    await page.locator('#obrixAvisoTitulo').locator('..').locator('button').click();
+    assert.ok(await page.locator('#obrixInstalarApp details').evaluate(el=>el.open),'Botão Instalar sem orientação '+device);
     await page.locator('#obrixInstalarApp .obrix-instalar-fechar').click();
     assert.equal(await page.locator('#obrixInstalarApp').count(),0,'Instalação permaneceu após fechar '+prefix+device);
     await page.evaluate(()=>window.dispatchEvent(new Event('pageshow')));
