@@ -48,8 +48,12 @@
   let deferredPrompt=null;
   const instalado=()=>window.matchMedia?.('(display-mode: standalone)')?.matches===true||window.navigator.standalone===true;
   const INSTALL_DISMISSED='obrix_instalar_card_dispensado_sessao_v1';
-  const ignorado=()=>{try{return sessionStorage.getItem(INSTALL_DISMISSED)==='1'}catch(_){return false}};
+  let dispensadoNestaSessao=false;
+  // A memória local impede o reaparecimento imediato mesmo em ambientes
+  // que bloqueiam sessionStorage (privacidade, iframe ou teste isolado).
+  const ignorado=()=>{if(dispensadoNestaSessao)return true;try{return sessionStorage.getItem(INSTALL_DISMISSED)==='1'}catch(_){return false}};
   function fecharInstalacao(){
+    dispensadoNestaSessao=true;
     try{sessionStorage.setItem(INSTALL_DISMISSED,'1')}catch(_){}
     document.getElementById('obrixInstalarApp')?.remove();
   }
@@ -114,7 +118,7 @@
     };
   }
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;garantirInstalacao()});
-  window.addEventListener('appinstalled',()=>document.getElementById('obrixInstalarApp')?.remove());
+  window.addEventListener('appinstalled',()=>{dispensadoNestaSessao=true;document.getElementById('obrixInstalarApp')?.remove()});
 
   function iniciar(){garantirBotoesTopo();retirarAcoesDosRegistros();atualizarResumo();garantirInstalacao();const lista=document.getElementById('listaEquipe');if(lista&&!lista.__obrixFolhaObs){lista.__obrixFolhaObs=true;new MutationObserver(()=>atualizarResumo()).observe(lista,{childList:true,subtree:true})}// A antiga observação de todo o body provocava reprocessamentos ao navegar.
   // O histórico é atualizado quando seus controles são usados, sem escanear toda a aplicação.
