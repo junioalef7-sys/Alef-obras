@@ -7,6 +7,57 @@ const qdefs=[['Obras','obrix_obras_offline_v1'],['Equipe','obrix_equipe_offline_
 let abrindo='',navegacaoId=0,cacheConta=null,cacheContaAt=0,contaEmCarga=null;
 const read=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}};
 const timeout=(p,ms=6500)=>Promise.race([Promise.resolve(p),new Promise((_,rej)=>setTimeout(()=>rej(new Error('Tempo limite de carregamento.')),ms))]);
+
+/* A Central Offline e uma ferramenta tecnica. Nunca conceder acesso sem sessao e autorizacao do servidor. */
+const OFFLINE_ADMIN_TTL=5*60*1000;
+let offlineAdminCache={userId:null,expires:0,allowed:false};
+let offlineAdminPromise=null;
+async function podeAcessarCentralTecnica(){
+  if(!navigator.onLine)return false;
+  if(offlineAdminPromise)return offlineAdminPromise;
+  offlineAdminPromise=(async()=>{
+    try{
+      const api=window.OBRIX_BACKEND;
+      if(!api?.currentUser||!api?.init)return false;
+      const user=await timeout(api.currentUser(),4000);
+      if(!user?.id)return false;
+      if(offlineAdminCache.userId===user.id&&Date.now()<offlineAdminCache.expires)
+        return offlineAdminCache.allowed;
+      const sb=await timeout(api.init(),5000);
+      const {data,error}=await timeout(sb.from('obrix_admins').select('user_id').eq('user_id',user.id).maybeSingle(),5000);
+      if(error)throw error;
+      // Confirmar identidade ao terminar a consulta, evitando privilegiar a proxima sessao.
+      const atual=await timeout(api.currentUser(),4000);
+      if(atual?.id!==user.id)return false;
+      offlineAdminCache={userId:user.id,allowed:!!data,expires:Date.now()+OFFLINE_ADMIN_TTL};
+      return !!data;
+    }catch(err){
+      console.warn('OBRIX: verificacao de acesso tecnico indisponivel',err);
+      return false;
+    }
+  })();
+  try{return await offlineAdminPromise}finally{offlineAdminPromise=null}
+}
+async function atualizarAcessoCentralTecnica(){
+  const autorizado=await podeAcessarCentralTecnica();
+  const menu=document.getElementById('menuMain');
+  if(!menu||menu.classList.contains('hidden'))return;
+  menu.querySelectorAll('[data-go="offline"]').forEach(btn=>{
+    btn.classList.toggle('obrixTecnicoOculto',!autorizado);
+    btn.hidden=!autorizado;
+    btn.setAttribute('aria-hidden',String(!autorizado));
+  });
+}
+window.addEventListener('obrix:session-shell',()=>{
+  offlineAdminCache={userId:null,expires:0,allowed:false};
+  const menu=document.getElementById('menuMain');
+  menu?.querySelectorAll('[data-go="offline"]').forEach(btn=>{
+    btn.classList.add('obrixTecnicoOculto');btn.hidden=true;
+    btn.setAttribute('aria-hidden','true');
+  });
+  if(menu&&!menu.classList.contains('hidden'))void atualizarAcessoCentralTecnica();
+});
+
 function empresa(){return read('obrix_offline_base_v3',null)?.profile?.empresa_id||null}
 function mine(key){const e=empresa(),q=read(key,[]);if(!e||!Array.isArray(q))return[];return q.filter(x=>String(x?.empresa_id||x?.payload?.empresa_id||'')===String(e))}
 function hideAll(){
@@ -22,7 +73,8 @@ function hideAll(){
 function renderFallback(){let m=document.getElementById('offlineMenuFallbackMain');if(m&&!m.dataset.menuFallback){m.remove();m=null}const app=document.getElementById('app'),bottom=app?.querySelector('.bottom');if(!app||!bottom)return null;if(!m){m=document.createElement('main');m.id='offlineMenuFallbackMain';m.dataset.menuFallback='1';app.insertBefore(m,bottom)}const rows=qdefs.map(([label,key])=>{const q=mine(key),c=q.filter(x=>x?.conflict).length;return{label,n:q.length,c}}),total=rows.reduce((s,x)=>s+x.n,0),conf=rows.reduce((s,x)=>s+x.c,0);m.innerHTML=`<div class="hero offFastHero"><div><h1>Central Offline</h1></div><button type="button" id="offFastClose">Fechar</button></div><div class="card offFastResumo"><div><small>Conexão</small><strong>${navigator.onLine?'Online':'Sem internet'}</strong></div><div><small>Pendentes</small><strong>${total}</strong></div><div><small>Conflitos</small><strong>${conf}</strong></div></div><div class="offFastGrid">${rows.map(x=>`<article class="card"><div><b>${x.label}</b><small>${x.c?`${x.c} conflito${x.c===1?'':'s'}`:x.n?`${x.n} pendente${x.n===1?'':'s'}`:'Sincronizado'}</small></div><strong>${x.n}</strong></article>`).join('')}</div><div class="card offFastActions"><button type="button" class="btn" id="offFastSync" ${!navigator.onLine||!total||conf?'disabled':''}>${conf?'Resolva conflitos nas ferramentas':total?'Sincronizar pendências':'Tudo sincronizado'}</button><button type="button" class="btn" id="offFastTools">Ferramentas avançadas</button><p class="muted">A Central abre em modo leve para não travar o aplicativo. Diagnóstico, homologação, reparo e restauração só carregam quando solicitados.</p></div><div id="offlineAdvancedHost"></div>`;m.querySelector('#offFastClose').onclick=()=>window.OBRIX_MENU?.open?.();m.querySelector('#offFastSync').onclick=syncFallback;m.querySelector('#offFastTools').onclick=toolsFallback;return m}
 async function syncFallback(e){const b=e?.currentTarget;if(b){b.disabled=true;b.textContent='Carregando sincronização...'}try{const l=window.OBRIX_POS_LOGIN_LOADER;if(!l?.loadFeature)throw new Error('Carregador indisponível.');const ok=await timeout(l.loadFeature('offlineSync'),7000);if(!ok)throw new Error('Não foi possível carregar a sincronização.');const mods=['OBRIX_OFFLINE_OBRAS','OBRIX_OFFLINE_EQUIPE','OBRIX_OFFLINE_ESTOQUE','OBRIX_OFFLINE_DIARIO','OBRIX_OFFLINE_NOTAS','OBRIX_OFFLINE_CHECKLIST'].map(k=>window[k]).filter(Boolean);await timeout(Promise.allSettled(mods.map(m=>Promise.resolve().then(()=>m.sync?.()))),10000);renderFallback()}catch(err){alert(err?.message||'Não foi possível sincronizar agora.');renderFallback()}}
 async function toolsFallback(e){const b=e?.currentTarget;if(b){b.disabled=true;b.textContent='Carregando ferramentas...'}try{const l=window.OBRIX_POS_LOGIN_LOADER;if(!l?.loadFeature)throw new Error('Carregador indisponível.');await timeout(l.loadFeature('offlineSync'),7000);const ok=await timeout(l.loadFeature('offlineTools'),10000);if(!ok)throw new Error('Não foi possível carregar as ferramentas offline.');if(b)b.textContent='Ferramentas carregadas';window.dispatchEvent(new CustomEvent('obrix:offline-tools-ready'))}catch(err){if(b){b.disabled=false;b.textContent='Ferramentas avançadas'}alert(err?.message||'Não foi possível carregar as ferramentas offline.')}}
-function openOffline(){
+async function openOffline(){
+  if(!(await podeAcessarCentralTecnica()))return;
   hideAll();
   const central=window.OBRIX_OFFLINE_CENTRAL;
   if(typeof central?.open==='function'){
@@ -94,7 +146,7 @@ async function go(k,btn){
   if(k==='equipe')return window.abrir?.('equipe');
   if(k==='financeiro')return window.OBRIX_FIN?.open?.();
   if(k==='estoque')return window.OBRIX_EST?.open?.();
-  if(k==='offline')return openOffline();
+  if(k==='offline')return await openOffline();
   if(btn?.disabled)return;
   const old=btn?.innerHTML;
   if(btn){
@@ -146,7 +198,7 @@ function preencherConta(d){
   const letra=(d.nome||'').trim().charAt(0).toUpperCase();
   if(a&&a.textContent!==letra)a.textContent=letra;
 }
-function ensure(){if(document.getElementById('menuMain'))return;const app=document.getElementById('app'),bottom=app?.querySelector('.bottom');if(!app||!bottom)return;const m=document.createElement('main');m.id='menuMain';m.className='hidden obrixProMenu';m.innerHTML=`<div class="opmShell"><aside class="opmSide"><nav>${items.map(([k,i,n])=>k==='fotos_recuperadas'?`<a class="obrixFotoLink" data-obrix-fotos-company href="/fotos-recuperadas.html" hidden><i>${i}</i><span>${n}</span></a>`:`<button type="button" data-go="${k}" class="${k==='dashboard'?'active':''}"><i>${i}</i><span>${n}</span></button>`).join('')}</nav><div class="opmFoot"><div class="opmVersion"><b>OBRIX</b><small>Versão ${APP_VERSION}</small></div><div class="opmProfile"><div class="opmAvatar" id="menuAvatar"></div><div><b id="menuUsuarioNome"></b><small id="menuUsuario"></small></div></div><button type="button" id="menuSair">Sair da conta</button></div></aside><section class="opmContent"><div class="opmHead"><div><h1>Menu</h1><p>Acesse todas as áreas do OBRIX em um só lugar.</p></div></div><div class="opmGrid"><article><h3>🏗 Gestão de Obras</h3><button data-go="obras"><b>Obras</b><small>Projetos e acompanhamento</small></button><button data-go="diario"><b>Diário de Obras</b><small>Registros diários</small></button><button data-go="orcamentos"><b>Orçamentos</b><small>Propostas e serviços</small></button></article><article><h3>👥 Equipe e Materiais</h3><button data-go="equipe"><b>Funcionários</b><small>Equipe, diárias e pagamentos</small></button><button data-go="estoque"><b>Materiais / Estoque</b><small>Entradas e saídas</small></button></article><article><h3>💰 Financeiro</h3><button data-go="financeiro"><b>Financeiro</b><small>Receitas, despesas e resultado</small></button><button data-go="relatorios"><b>Relatórios</b></button></article><article class="wide"><h3>📁 Documentos e Dados</h3><div class="opmCols"><button data-go="documentos"><b>Documentos</b></button><a class="obrixFotoLink" data-obrix-fotos-company href="/fotos-recuperadas.html" hidden><b>Fotografias recuperadas</b><small>242 fotos em 2 grupos</small></a><button data-go="notas"><b>Notas</b></button><button data-go="backup"><b>Backup</b><small>Exportar e restaurar dados</small></button><button data-go="offline"><b>Central Offline</b></button></div></article><article class="account"><h3>⚙ Conta</h3><button data-go="assinatura"><b>Planos e Assinaturas</b><small>Gerencie seu plano</small></button><button data-go="config"><b>Configurações</b><small>Conta e preferências</small></button></article></div></section></div>`;app.insertBefore(m,bottom);m.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go,b));m.querySelector('#menuSair').onclick=()=>document.getElementById('sair')?.click();const menuBtn=document.getElementById('bMenu');if(menuBtn){menuBtn.onclick=open}const oldAbrir=window.abrir;window.abrir=function(id){++navegacaoId;m.classList.add('hidden');document.getElementById('bMenu')?.classList.remove('active');return oldAbrir(id)}}
+function ensure(){if(document.getElementById('menuMain'))return;const app=document.getElementById('app'),bottom=app?.querySelector('.bottom');if(!app||!bottom)return;const m=document.createElement('main');m.id='menuMain';m.className='hidden obrixProMenu';m.innerHTML=`<div class="opmShell"><aside class="opmSide"><nav>${items.map(([k,i,n])=>k==='fotos_recuperadas'?`<a class="obrixFotoLink" data-obrix-fotos-company href="/fotos-recuperadas.html" hidden><i>${i}</i><span>${n}</span></a>`:`<button type="button" data-go="${k}" class="${k==='dashboard'?'active':''} ${k==='offline'?'obrixTecnicoOculto':''}" ${k==='offline'?'hidden aria-hidden="true"':''}><i>${i}</i><span>${n}</span></button>`).join('')}</nav><div class="opmFoot"><div class="opmVersion"><b>OBRIX</b><small>Versão ${APP_VERSION}</small></div><div class="opmProfile"><div class="opmAvatar" id="menuAvatar"></div><div><b id="menuUsuarioNome"></b><small id="menuUsuario"></small></div></div><button type="button" id="menuSair">Sair da conta</button></div></aside><section class="opmContent"><div class="opmHead"><div><h1>Menu</h1><p>Acesse todas as áreas do OBRIX em um só lugar.</p></div></div><div class="opmGrid"><article><h3>🏗 Gestão de Obras</h3><button data-go="obras"><b>Obras</b><small>Projetos e acompanhamento</small></button><button data-go="diario"><b>Diário de Obras</b><small>Registros diários</small></button><button data-go="orcamentos"><b>Orçamentos</b><small>Propostas e serviços</small></button></article><article><h3>👥 Equipe e Materiais</h3><button data-go="equipe"><b>Funcionários</b><small>Equipe, diárias e pagamentos</small></button><button data-go="estoque"><b>Materiais / Estoque</b><small>Entradas e saídas</small></button></article><article><h3>💰 Financeiro</h3><button data-go="financeiro"><b>Financeiro</b><small>Receitas, despesas e resultado</small></button><button data-go="relatorios"><b>Relatórios</b></button></article><article class="wide"><h3>📁 Documentos e Dados</h3><div class="opmCols"><button data-go="documentos"><b>Documentos</b></button><a class="obrixFotoLink" data-obrix-fotos-company href="/fotos-recuperadas.html" hidden><b>Fotografias recuperadas</b><small>242 fotos em 2 grupos</small></a><button data-go="notas"><b>Notas</b></button><button data-go="backup"><b>Backup</b><small>Exportar e restaurar dados</small></button><button data-go="offline" class="obrixTecnicoOculto" hidden aria-hidden="true"><b>Central Offline</b></button></div></article><article class="account"><h3>⚙ Conta</h3><button data-go="assinatura"><b>Planos e Assinaturas</b><small>Gerencie seu plano</small></button><button data-go="config"><b>Configurações</b><small>Conta e preferências</small></button></article></div></section></div>`;app.insertBefore(m,bottom);m.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go,b));m.querySelector('#menuSair').onclick=()=>document.getElementById('sair')?.click();const menuBtn=document.getElementById('bMenu');if(menuBtn){menuBtn.onclick=open}const oldAbrir=window.abrir;window.abrir=function(id){++navegacaoId;m.classList.add('hidden');document.getElementById('bMenu')?.classList.remove('active');return oldAbrir(id)}}
 async function open(){
   ++navegacaoId;
   ensure();hideAll();
@@ -155,9 +207,30 @@ async function open(){
   preencherConta(cacheConta||dadosContaLocal());
   // Não bloquear a abertura do Menu esperando rede / perfil.
   void dadosConta().then(preencherConta).catch(e=>console.warn('Menu: perfil indisponível',e));
+  void atualizarAcessoCentralTecnica();
   scrollTo({top:0,behavior:'smooth'});
 }
-const css=document.createElement('style');css.textContent=`.opmLogo,.opmLogoMark{display:none!important}.obrixProMenu{margin:0!important}.opmShell{display:grid;grid-template-columns:255px minmax(0,1fr);min-height:690px;border-radius:20px;overflow:hidden;border:1px solid var(--border,#d7dee8)}.opmSide,.opmContent{background:#f4f6f8!important;color:#0f172a!important}.opmSide{padding:22px 15px;display:flex;flex-direction:column}.opmSide nav{display:grid;gap:3px}.opmSide nav button{border:0;background:transparent;color:#334155;text-align:left;padding:10px 12px;border-radius:9px;font-weight:750;font-size:14.3px;display:flex;align-items:center;gap:9px}.opmSide nav button i{font-style:normal;width:21px;font-size:17.6px}.opmSide nav button:hover,.opmSide nav button.active{background:#dbeafe;color:#174ea6}.opmFoot{margin-top:auto}.opmVersion,.opmProfile{background:#fff;border:1px solid #d7dee8;border-radius:11px;padding:10px;margin-top:8px}.opmVersion b,.opmVersion small,.opmProfile b,.opmProfile small{display:block}.opmProfile{display:flex;align-items:center;gap:8px}.opmAvatar{width:34px;height:34px;border-radius:50%;background:#dbeafe;display:grid;place-items:center;font-weight:900}.opmFoot #menuSair{width:100%;margin-top:8px;border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:9px;padding:9px;font-weight:800}.opmContent{padding:25px}.opmGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:19px}.opmGrid article{background:#fff;border:1px solid #d7dee8;border-radius:14px;padding:16px}.opmGrid article button{width:100%;text-align:left;border:0;border-top:1px solid #e2e8f0;background:transparent;color:#0f172a;padding:12px 4px}.opmGrid article button b,.opmGrid article button small{display:block}.opmGrid .wide{grid-column:span 2}.opmCols{display:grid;grid-template-columns:1fr 1fr;gap:0 15px}.opmGrid .account{background:#eaf2ff;color:#0f172a;border-color:#c9daf7}.opmLoading{opacity:.65!important;pointer-events:none!important}.offFastHero{display:flex;justify-content:space-between;align-items:center;gap:12px}.offFastHero button{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;border-radius:11px;padding:11px 16px;font-weight:900}.offFastResumo{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.offFastResumo>div{padding:10px;border:1px solid #e2e8f0;border-radius:11px}.offFastResumo small,.offFastGrid small{display:block;color:#64748b}.offFastGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px}.offFastGrid article{display:flex;justify-content:space-between;align-items:center}.offFastGrid article>strong{font-size:26px}.offFastActions{display:flex;gap:10px;flex-wrap:wrap}.offFastActions p{width:100%;margin:0}html[data-theme="dark"] .opmShell,html[data-theme="dark"] .opmSide,html[data-theme="dark"] .opmContent{background:#07111f!important;color:#f8fafc!important;border-color:#26384d!important}html[data-theme="dark"] .opmSide nav button{color:#e8eef7!important;background:transparent!important}html[data-theme="dark"] .opmSide nav button span,html[data-theme="dark"] .opmSide nav button i{color:inherit!important;opacity:1!important}html[data-theme="dark"] .opmSide nav button:hover,html[data-theme="dark"] .opmSide nav button.active{background:rgba(242,184,75,.13)!important;color:#f2b84b!important}html[data-theme="dark"] .opmVersion,html[data-theme="dark"] .opmProfile,html[data-theme="dark"] .opmGrid article,html[data-theme="dark"] .opmGrid .account{background:#0d1928!important;color:#f8fafc!important;border-color:#26384d!important}html[data-theme="dark"] .opmVersion b,html[data-theme="dark"] .opmProfile b{color:#f8fafc!important}html[data-theme="dark"] .opmVersion small,html[data-theme="dark"] .opmProfile small{color:#aab7c7!important}html[data-theme="dark"] .opmGrid article button{color:#f8fafc!important;border-color:#26384d!important}.opmSide nav a.obrixFotoLink[hidden],.opmGrid article a.obrixFotoLink[hidden]{display:none!important}
+const css=document.createElement('style');css.textContent=`
+/* Isolar o fundo aprovado do menu no computador; evitar a troca de cores ao abrir. */
+#app #menuMain [data-go="offline"].obrixTecnicoOculto,
+#app #menuMain [data-go="offline"][hidden]{display:none!important}
+@media(min-width:701px){
+  html[data-theme="light"] body #app #menuMain,
+  html[data-theme="light"] body #app #menuMain .opmShell,
+  html[data-theme="light"] body #app #menuMain .opmSide,
+  html[data-theme="light"] body #app #menuMain .opmContent {
+    background:var(--ob-bg,#EEF2F6)!important;
+    background-color:var(--ob-bg,#EEF2F6)!important;
+    background-image:none!important;
+  }
+  #app #menuMain .opmShell,
+  #app #menuMain .opmSide,
+  #app #menuMain .opmContent {
+    transition:none!important;
+    animation:none!important;
+  }
+}
+.opmLogo,.opmLogoMark{display:none!important}.obrixProMenu{margin:0!important}.opmShell{display:grid;grid-template-columns:255px minmax(0,1fr);min-height:690px;border-radius:20px;overflow:hidden;border:1px solid var(--border,#d7dee8)}.opmSide,.opmContent{background:#f4f6f8!important;color:#0f172a!important}.opmSide{padding:22px 15px;display:flex;flex-direction:column}.opmSide nav{display:grid;gap:3px}.opmSide nav button{border:0;background:transparent;color:#334155;text-align:left;padding:10px 12px;border-radius:9px;font-weight:750;font-size:14.3px;display:flex;align-items:center;gap:9px}.opmSide nav button i{font-style:normal;width:21px;font-size:17.6px}.opmSide nav button:hover,.opmSide nav button.active{background:#dbeafe;color:#174ea6}.opmFoot{margin-top:auto}.opmVersion,.opmProfile{background:#fff;border:1px solid #d7dee8;border-radius:11px;padding:10px;margin-top:8px}.opmVersion b,.opmVersion small,.opmProfile b,.opmProfile small{display:block}.opmProfile{display:flex;align-items:center;gap:8px}.opmAvatar{width:34px;height:34px;border-radius:50%;background:#dbeafe;display:grid;place-items:center;font-weight:900}.opmFoot #menuSair{width:100%;margin-top:8px;border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:9px;padding:9px;font-weight:800}.opmContent{padding:25px}.opmGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:19px}.opmGrid article{background:#fff;border:1px solid #d7dee8;border-radius:14px;padding:16px}.opmGrid article button{width:100%;text-align:left;border:0;border-top:1px solid #e2e8f0;background:transparent;color:#0f172a;padding:12px 4px}.opmGrid article button b,.opmGrid article button small{display:block}.opmGrid .wide{grid-column:span 2}.opmCols{display:grid;grid-template-columns:1fr 1fr;gap:0 15px}.opmGrid .account{background:#eaf2ff;color:#0f172a;border-color:#c9daf7}.opmLoading{opacity:.65!important;pointer-events:none!important}.offFastHero{display:flex;justify-content:space-between;align-items:center;gap:12px}.offFastHero button{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;border-radius:11px;padding:11px 16px;font-weight:900}.offFastResumo{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.offFastResumo>div{padding:10px;border:1px solid #e2e8f0;border-radius:11px}.offFastResumo small,.offFastGrid small{display:block;color:#64748b}.offFastGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px}.offFastGrid article{display:flex;justify-content:space-between;align-items:center}.offFastGrid article>strong{font-size:26px}.offFastActions{display:flex;gap:10px;flex-wrap:wrap}.offFastActions p{width:100%;margin:0}html[data-theme="dark"] .opmShell,html[data-theme="dark"] .opmSide,html[data-theme="dark"] .opmContent{background:#07111f!important;color:#f8fafc!important;border-color:#26384d!important}html[data-theme="dark"] .opmSide nav button{color:#e8eef7!important;background:transparent!important}html[data-theme="dark"] .opmSide nav button span,html[data-theme="dark"] .opmSide nav button i{color:inherit!important;opacity:1!important}html[data-theme="dark"] .opmSide nav button:hover,html[data-theme="dark"] .opmSide nav button.active{background:rgba(242,184,75,.13)!important;color:#f2b84b!important}html[data-theme="dark"] .opmVersion,html[data-theme="dark"] .opmProfile,html[data-theme="dark"] .opmGrid article,html[data-theme="dark"] .opmGrid .account{background:#0d1928!important;color:#f8fafc!important;border-color:#26384d!important}html[data-theme="dark"] .opmVersion b,html[data-theme="dark"] .opmProfile b{color:#f8fafc!important}html[data-theme="dark"] .opmVersion small,html[data-theme="dark"] .opmProfile small{color:#aab7c7!important}html[data-theme="dark"] .opmGrid article button{color:#f8fafc!important;border-color:#26384d!important}.opmSide nav a.obrixFotoLink[hidden],.opmGrid article a.obrixFotoLink[hidden]{display:none!important}
 .opmSide nav a.obrixFotoLink{display:flex;align-items:center;gap:9px;padding:10px 12px;border:0;border-radius:9px;background:transparent;color:#334155;text-align:left;text-decoration:none;font-weight:750;font-size:14.3px;line-height:normal;min-height:0}
 .opmSide nav a.obrixFotoLink i{font-style:normal;width:21px;font-size:17.6px}
 .opmSide nav a.obrixFotoLink:hover{background:#dbeafe;color:#174ea6}
