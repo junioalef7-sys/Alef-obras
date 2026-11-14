@@ -180,7 +180,7 @@ const slides=[
       ['Botão Instalar aplicativo','Toque no botão que aparece abaixo quando o Chrome oferecer a instalação. Confirme na janela do próprio navegador.'],
       ['Samsung Internet','Se estiver no Samsung Internet, use “Abrir no Chrome para instalar”. Não desative o Google Play Protect.'],
       ['Quando aparecer só Adicionar à tela inicial','Essa opção pode criar apenas um atalho. Verifique se o OBRIX aparece em Configurações → Aplicativos após a instalação.'],
-      ['Precisa consultar novamente?','Abra Menu → Como instalar o OBRIX para rever estas instruções e tentar instalar quando necessário.']
+      ['Precisa consultar novamente?','Abra Menu → Conheça o OBRIX e avance até a instalação. O botão direto depende do Chrome.']
     ]
   }
 ];
