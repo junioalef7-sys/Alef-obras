@@ -85,7 +85,7 @@ function obrasMaisMovimentadas(){
 function renderInicio(){
   const root=$('inicio');if(!root)return;
   if(!$('obpHome')||$('obpHome')?.querySelectorAll('.obp-shortcuts [data-short]').length!==4){
-    root.innerHTML='<div id="obpHome"><div class="obp-greeting"><h1 id="obpOla">Olá</h1><span class="obp-greeting-mark"></span></div><div class="obp-shortcuts"><button type="button" data-short="diario"><span>▣</span>Diário de obras</button><button type="button" data-short="notas"><span>✎</span>Notas</button><button type="button" data-short="relatorios"><span>▤</span>Relatórios</button><button type="button" data-short="foto"><span>▧</span>Foto</button></div><div class="obp-heading"><h2>Obras</h2><button type="button" data-home-all="obras">Ver todas <span>›</span></button></div><div id="obpObras"></div><div class="obp-heading"><h2>Últimas atualizações</h2><button type="button" data-home-all="atividades">Ver todas <span>›</span></button></div><div id="obpAtividades"></div></div>';
+    root.innerHTML='<div id="obpHome"><div class="obp-greeting"><h1 id="obpOla">Olá</h1><span class="obp-greeting-mark"></span></div><div class="obp-shortcuts"><button type="button" data-short="diario"><span>▣</span>Diário de obras</button><button type="button" data-short="financeiro"><span>▱</span>Financeiro</button><button type="button" data-short="equipe"><span>♙</span>Equipe</button><button type="button" data-short="foto"><span>▧</span>Foto</button></div><div class="obp-heading"><h2>Obras</h2><button type="button" data-home-all="obras">Ver todas <span>›</span></button></div><div id="obpObras"></div><div class="obp-heading"><h2>Últimas atualizações</h2><button type="button" data-home-all="atividades">Ver todas <span>›</span></button></div><div id="obpAtividades"></div></div>';
     if(root.dataset.obpClickBound!=='1'){root.addEventListener('click',cliqueInicio);root.dataset.obpClickBound='1'}
   }
   $('obpOla').textContent='Olá'+(primeiroNome()?', '+primeiroNome():'');
@@ -159,6 +159,8 @@ async function abrirFotoAtalho(){
   };
 }
 async function acaoRapida(tipo){
+  if(tipo==='financeiro'){window.OBRIX_FIN?.open?.();return}
+  if(tipo==='equipe'){window.abrir?.('equipe');return}
   if(tipo==='foto'){await abrirFotoAtalho();return}
   if(tipo==='nova'){abrirObras();try{await window.OBRIX_POS_LOGIN_LOADER?.loadGroup?.('obras')}catch(_){}setTimeout(()=>window.OBRIX_OBRAS?.nova?.(),150);return}
   if(['notas','relatorios','diario','documentos'].includes(tipo)){
