@@ -17,6 +17,15 @@ const platforms=[
   const html=read(prefix+'obrix.html');
   assert.ok(html.includes((prefix?'../':'./')+'obrix-alertas-global.js?v=20261114-alertas-visual1'),'Avisos sem versão nova em '+prefix);
   assert.ok(html.includes('obrix-onboarding.js?v=20261114-instalacao-desbloqueada2'),'Instalação antiga em '+prefix);
+  assert.ok(html.includes('obrix-confirmar-acoes.js?v=20261114-modal-texto-obrix1'),'Diálogo padrão antigo '+prefix);
+  assert.ok(read(prefix+'obrix-confirmar-acoes.js').includes('OBRIX_PEDIR_TEXTO'),'Input próprio inexistente '+prefix);
+  const audited=['obrix-obras-fiel.js','obrix-estoque-estorno-final.js','obrix-equipe-historico-pagamentos.js','obrix-estoque-main.js','obrix-checklist-v2.js','obrix-notas-offline.js','obrix-offline-central-lite.js','obrix-backup-import-run.js','obrix-backup-completo.js','obrix-config-main.js'];
+  for(const f of audited){
+    const js=read(prefix+f);
+    assert.ok(!/(?<![\\w.])(confirm|prompt)\\s*\\(/.test(js),'Ainda há confirmação/prompt nativo em '+prefix+f);
+  }
+  assert.ok(read(prefix+'obrix-equipe-folha-install.js').includes('obrix-instalar-fechar'),'Cartão sem botão de fechar '+prefix);
+  assert.ok(read(prefix+'obrix-equipe-folha-install.js').includes('INSTALL_DISMISSED'),'Cartão de instalação pode reaparecer após dispensar '+prefix);
   for(const [device,engine,profile] of platforms){
    const browser=await engine.launch();
    try{
@@ -55,6 +64,18 @@ const platforms=[
     }
     assert.ok(await page.locator('#obrixOnboarding').evaluate(e=>e.classList.contains('hidden')),'Apresentação não fechou: '+prefix+device);
     assert.equal(await page.locator('#obrixOnboarding').evaluate(e=>getComputedStyle(e).display),'none','Card ainda visível após fechar: '+prefix+device);
+    // O segundo cartão de instalação, dentro do Início, precisa abrir ajuda e fechar.
+    await page.evaluate(()=>window.OBRIX_ONBOARDING.close(true));
+    await page.addScriptTag({content:read(prefix+'obrix-equipe-folha-install.js')});
+    await page.locator('#obrixInstalarApp').waitFor({timeout:5000});
+    await page.locator('#obrixInstalarApp .obrix-instalar-btn').click();
+    await page.locator('#obrixAvisoTitulo').waitFor();
+    await page.locator('#obrixAvisoTitulo').locator('..').locator('button').click();
+    await page.locator('#obrixInstalarApp .obrix-instalar-fechar').click();
+    assert.equal(await page.locator('#obrixInstalarApp').count(),0,'Instalação permaneceu após fechar '+prefix+device);
+    await page.evaluate(()=>window.dispatchEvent(new Event('pageshow')));
+    await page.waitForTimeout(360);
+    assert.equal(await page.locator('#obrixInstalarApp').count(),0,'Cartão recriado depois de fechar '+prefix+device);
     assert.equal(native,0,'O navegador ainda mostra mensagem nativa em '+prefix+device);
     console.log(JSON.stringify({variant:prefix||'root',device,nativeDialogs:0,alertsInObrix:true,installationCloses:true}));
     await page.close();
