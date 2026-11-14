@@ -37,7 +37,7 @@ vm.runInContext(home.slice(from,to)+';globalThis.__acao=acaoRapida;',sandbox);
  assert.deepEqual(calls,['diario','relatorios'],'Atalhos não enviaram destino correto');
  for(const prefix of roots){
   const html=read(prefix+'obrix.html');
-  assert.match(html,/obrix-preview-inicio-equipe-20261104\.js\?v=20261114-equipe-observer-stable1/);
+  assert.match(html,/obrix-preview-inicio-equipe-20261104\.js\?v=20261114-registros-periodo1/);
   assert.match(html,/obrix-preview-card-contours-icons-v2\.js\?v=20261113-home-doc-icon1/);
   const st=html.match(/<style id="obrixNavHeaderTeste20261113">([\s\S]*?)<\/style>/);
   assert.ok(st,'CSS do cabeçalho inexistente: '+prefix);
