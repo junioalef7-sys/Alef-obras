@@ -698,7 +698,7 @@ async function abrirRegistrosEquipePremium(id){
       titulo:'Excluir '+rotulo,
       mensagem:tipo==='vale'
         ?'Estornar o vale de '+func.nome+' de '+dataPtBR(x.data)+'? Ele deixará de contar nas pendências e a despesa financeira será estornada, mantendo o histórico.'
-        :'Excluir '+rotulo+' de '+func.nome+' em '+dataPtBR(x.data)+'? Esta ação não pode ser desfeita.',
+        :'Excluir '+rotulo+' de '+func.nome+' em '+dataPtBR(x.data)+'? '+(tipo==='diaria'?'Se existir histórico de pagamentos estornados, a diária será cancelada sem apagar o histórico financeiro.':'Esta ação não pode ser desfeita.'),
       confirmar:'Excluir'
     })}catch(err){
       pendentesExclusao.delete(chaveExclusao);btn.disabled=false;
@@ -707,7 +707,7 @@ async function abrirRegistrosEquipePremium(id){
     }
     if(!ok||!back.isConnected){pendentesExclusao.delete(chaveExclusao);btn.disabled=false;return}
     const texto=btn.textContent;btn.textContent='Excluindo...';
-    let excluido=false;
+    let excluido=false,diariaCancelada=false;
     try{
       if(!navigator.onLine)throw Error('Conecte-se à internet para excluir com segurança.');
       const backend=window.OBRIX_BACKEND;
@@ -732,11 +732,16 @@ async function abrirRegistrosEquipePremium(id){
         if(r.error)throw r.error;
         if(r.data?.ok!==true)throw Error('O servidor não confirmou o estorno do vale.');
         excluido=true;
+      }else if(tipo==='diaria'){
+        const r=await sb.rpc('obrix_excluir_diaria_segura',{p_diaria_id:registroId});
+        if(r.error)throw r.error;
+        if(r.data?.ok!==true)throw Error('O servidor não confirmou a exclusão segura da diária.');
+        diariaCancelada=r.data.acao==='cancelada'||r.data.acao==='ja_cancelada';
+        excluido=true;
       }else{
-        const tabela=tipo==='falta'?'faltas':tipo==='diaria'?'diarias':'bonus_extras';
+        const tabela=tipo==='falta'?'faltas':'bonus_extras';
         let q=sb.from(tabela).delete().eq('id',registroId).eq('empresa_id',p.empresa_id)
           .eq('funcionario_id',id);
-        if(tipo==='diaria')q=q.eq('paga',false);
         if(tipo==='bonus')q=q.eq('pago',false);
         const {data,error}=await q.select('id');
         if(error)throw error;
@@ -744,7 +749,7 @@ async function abrirRegistrosEquipePremium(id){
         excluido=true;
       }
       if(tipo==='falta')obpFaltasCache.delete(String(id));
-      window.OBRIX_SUCESSO?.(tipo==='vale'?'Vale estornado com sucesso.':tipo==='falta'?'Falta excluída com sucesso.':tipo==='diaria'?'Diária excluída com sucesso.':'Bônus ou extra excluído com sucesso.');
+      window.OBRIX_SUCESSO?.(tipo==='vale'?'Vale estornado com sucesso.':tipo==='falta'?'Falta excluída com sucesso.':tipo==='diaria'?(diariaCancelada?'Diária cancelada. Histórico de pagamentos estornados preservado.':'Diária excluída com sucesso.'):'Bônus ou extra excluído com sucesso.');
       fechar();
       try{await window.OBRIX_EQUIPE?.refresh?.()}catch(err){console.warn('Atualização da equipe:',err)}
       renderEquipe();
