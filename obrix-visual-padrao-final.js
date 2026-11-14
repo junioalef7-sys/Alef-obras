@@ -188,7 +188,12 @@ if(isAndroidFinance){
 const equipeViaRodape=equipeVisivel&&document.documentElement.dataset.obrixEquipeOrigem!=='menu';
 const financeiroVisivel=vis(document.getElementById('financeiroMain'));
 const financeiroViaRodape=financeiroVisivel&&document.documentElement.dataset.obrixFinanceiroOrigem==='rodape';
-b.classList.toggle('hidden',noInicio||noMenu||equipeViaRodape||financeiroViaRodape||(!p&&!noResumo&&!paginaEstavel));b.onclick=()=>{if(noResumo){const rs=window.OBRIX_RESUMO_GERAL?.status?.()||{};if(rs.view==='obra'){window.OBRIX_RESUMO_GERAL?.open?.();return}resumo.classList.add('hidden');if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();return}}if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();return}if(typeof window.abrir==='function')window.abrir('inicio')}}
+// Acesso por rodapé abre Obras com o ícone de três linhas; detalhe usa sua seta interna.
+const obrasVisiveis=vis(document.getElementById('obras'));
+const obrasViaRodape=obrasVisiveis&&document.documentElement.dataset.obrixObrasOrigem==='rodape';
+// Modais internos não devem fazer a seta superior desaparecer.
+const subTela=!!document.querySelector('.modalBack:not(.hidden),#docViewerModal:not(.hidden),[role="dialog"]:not(.hidden)');
+b.classList.toggle('hidden',noInicio||noMenu||equipeViaRodape||obrasViaRodape||financeiroViaRodape||(!p&&!noResumo&&!paginaEstavel&&!subTela));b.onclick=()=>{if(noResumo){const rs=window.OBRIX_RESUMO_GERAL?.status?.()||{};if(rs.view==='obra'){window.OBRIX_RESUMO_GERAL?.open?.();return}resumo.classList.add('hidden');if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();return}}if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();return}if(typeof window.abrir==='function')window.abrir('inicio')}}
 let applying=false,scheduled=false,lastSignature='';
 function signature(){const t=document.documentElement.dataset.theme||'';const visible=[...document.querySelectorAll('#app>main:not(.hidden),#app>section:not(.hidden),#app .modalBack:not(.hidden),#app .modal:not(.hidden),#app [role="dialog"]:not(.hidden)')].map(x=>x.id||x.className||x.tagName).join('|');return t+'::'+visible}
 function aplicar(force=false){
@@ -218,6 +223,15 @@ window.addEventListener('click',event=>{
   const viaMenu=target?.closest?.('#menuMain [data-go="equipe"]');
   const financeiroRodape=target?.closest?.('#app>.bottom>button:nth-child(3)');
   const financeiroMenu=target?.closest?.('#menuMain [data-go="financeiro"]');
+  const obrasRodape=target?.closest?.('#app>.bottom #bObras,#app>.bottom button:nth-child(2)');
+  const obrasMenu=target?.closest?.('#menuMain [data-go="obras"]');
+  if(obrasRodape||obrasMenu){
+    const origem=obrasRodape?'rodape':'menu';
+    if(document.documentElement.dataset.obrixObrasOrigem!==origem){
+      document.documentElement.dataset.obrixObrasOrigem=origem;
+      requestAnimationFrame(()=>window.OBRIX_VISUAL_PADRAO_FINAL?.refresh?.());
+    }
+  }
   if(financeiroRodape||financeiroMenu){
     const fOrigem=financeiroRodape?'rodape':'menu';
     if(document.documentElement.dataset.obrixFinanceiroOrigem!==fOrigem){

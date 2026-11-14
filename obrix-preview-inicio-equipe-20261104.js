@@ -566,7 +566,7 @@ async function abrirRegistrosEquipePremium(id){
     '<button type="button" data-obp-tab="diarias">Diárias</button>'+
     '<button type="button" data-obp-tab="faltas">Faltas</button>'+
     '<button type="button" data-obp-tab="pagamentos">Pagamentos</button></nav>'+
-    '<div class="obp-registros-busca-box"><label for="obpRegistrosBuscaPremium">Buscar registros</label><input id="obpRegistrosBuscaPremium" type="search" data-obp-busca placeholder="Data, obra, tipo, valor ou situação..." autocomplete="off"><small data-obp-busca-contador aria-live="polite"></small></div>'+
+    '<div class="obp-registros-busca-box"><label for="obpRegistrosPeriodoPremium">Período</label><select id="obpRegistrosPeriodoPremium" data-obp-periodo><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="all">Todo o histórico</option></select><label for="obpRegistrosBuscaPremium">Buscar registros</label><input id="obpRegistrosBuscaPremium" type="search" data-obp-busca placeholder="Data, obra, tipo, valor ou situação..." autocomplete="off"><small data-obp-busca-contador aria-live="polite"></small></div>'+
     '<div class="obp-registros-indicadores" data-obp-kpis></div>'+
     '<h3>Histórico de registros</h3><p class="obp-registros-aviso" data-obp-aviso hidden></p>'+
     '<div class="obp-registros-lista" data-obp-linhas>Carregando registros...</div>'+
@@ -579,21 +579,23 @@ async function abrirRegistrosEquipePremium(id){
     const partes=String(valor||'').slice(0,10).split('-');
     return partes.length===3&&partes[0].length===4?partes[2]+'/'+partes[1]+'/'+partes[0]:'Sem data';
   };
-  let aba='historico',limite=60,linhas=[],termoBusca='';
+  let aba='historico',limite=60,linhas=[],termoBusca='',periodoRegistros='30';
   const normalizarBusca=valor=>String(valor??'').normalize('NFD')
     .replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
   function renderizar(){
     if(!back.isConnected)return;
     const naAba=linhas.filter(x=>aba==='historico'||(aba==='diarias'&&x.tipoRegistro==='diaria')||
       (aba==='faltas'&&x.tipoRegistro==='falta')||(aba==='pagamentos'&&x.pago));
-    const resultados=termoBusca?naAba.filter(x=>{
+    const desde=new Date();desde.setHours(0,0,0,0);desde.setDate(desde.getDate()-Number(periodoRegistros||0));
+    const filtradas=periodoRegistros==='all'?naAba:naAba.filter(x=>Date.parse(String(x.data||''))>=desde.getTime());
+    const resultados=termoBusca?filtradas.filter(x=>{
       const busca=[x.tipo,x.tipoRegistro,nomeObra(x.obra),dataPtBR(x.data),x.data,
         x.status,x.descricao,x.motivo,dinheiro(x.valor),String(x.valor??''),x.justificada?'justificada':'']
         .filter(v=>v!=null).join(' ');
       return normalizarBusca(busca).includes(termoBusca);
-    }):naAba;
+    }):filtradas;
     const contador=back.querySelector('[data-obp-busca-contador]');
-    if(contador)contador.textContent=resultados.length+' de '+naAba.length+' registro(s)';
+    if(contador)contador.textContent=resultados.length+' de '+filtradas.length+' registro(s) no período';
     back.querySelector('[data-obp-linhas]').innerHTML=resultados.length?resultados.slice(0,limite).map(x=>{
       const excluir=x.tipoRegistro==='falta'||(x.tipoRegistro==='vale'&&!x.pago)||((x.tipoRegistro==='diaria'||x.tipoRegistro==='bonus')&&!x.pago);
       const icone=x.tipoRegistro==='falta'?'⊗':x.tipoRegistro==='bonus'?'✦':x.tipoRegistro==='vale'?'▰':'▣';
@@ -614,6 +616,9 @@ async function abrirRegistrosEquipePremium(id){
       b.setAttribute('aria-selected',String(ativo));
     });
   }
+  back.querySelector('[data-obp-periodo]').addEventListener('change',e=>{
+    periodoRegistros=e.target.value;limite=60;renderizar();
+  });
   back.querySelector('[data-obp-busca]').addEventListener('input',e=>{
     termoBusca=normalizarBusca(e.target.value);limite=60;renderizar();
   });
