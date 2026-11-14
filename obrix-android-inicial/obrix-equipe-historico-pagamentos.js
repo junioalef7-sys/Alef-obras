@@ -14,6 +14,9 @@
     back.innerHTML=`<div class="modal obrix-hist-pag-modal">
       <div class="obrix-hist-pag-head"><div><h2>Histórico de pagamentos</h2><p>Pagamentos realizados e estornados da equipe.</p></div><button type="button" class="obrix-hist-pag-x" aria-label="Fechar">×</button></div>
       <label class="obrix-hist-pag-busca-label" for="obrixHistPagBusca">Buscar pagamentos</label>
+      <select id="obrixHistPagPeriodo" class="obrix-hist-pag-busca" aria-label="Período dos pagamentos">
+        <option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="all">Todo o histórico</option>
+      </select>
       <input type="search" class="obrix-hist-pag-busca" id="obrixHistPagBusca" placeholder="Funcionário, data, valor ou situação..." autocomplete="off">
       <div class="muted obrix-hist-pag-resultado" aria-live="polite"></div>
       <div class="obrix-hist-pag-resumo" id="obrixHistPagResumo"></div>
@@ -47,9 +50,12 @@
         .normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
       return !termo||texto.includes(termo);
     };
-    const encontrados=base.pagamentos.filter(filtrar);
+    const periodo=back.querySelector('#obrixHistPagPeriodo')?.value||'30';
+    const desde=new Date();desde.setHours(0,0,0,0);desde.setDate(desde.getDate()-Number(periodo)||0);
+    const visiveis=periodo==='all'?base.pagamentos:base.pagamentos.filter(p=>Date.parse(String(p.data_pagamento||p.criado_em||''))>=desde.getTime());
+    const encontrados=visiveis.filter(filtrar);
     const info=back.querySelector('.obrix-hist-pag-resultado');
-    if(info)info.textContent=encontrados.length+' de '+base.pagamentos.length+' pagamento(s)';
+    if(info)info.textContent=encontrados.length+' de '+visiveis.length+' pagamento(s) no período';
     const ativos=base.pagamentos.filter(x=>!x.estornado_em),estornados=base.pagamentos.filter(x=>!!x.estornado_em);
     const acumulados=new Map();
     ativos.forEach(x=>{const id=String(x.funcionario_id||'');if(id)acumulados.set(id,(acumulados.get(id)||0)+Number(x.valor_liquido||0))});
@@ -77,8 +83,8 @@
   async function estornar(back,base,id,btn){
     const p=base.pagamentos.find(x=>String(x.id)===String(id));if(!p||p.estornado_em)return;
     const nome=base.funcs.get(String(p.funcionario_id))||'Funcionário';
-    if(!confirm(`Estornar o pagamento de ${nome}, no valor de ${money(p.valor_liquido)}?\n\nAs diárias, vales e bônus/extras deste pagamento voltarão para aberto e o lançamento no Financeiro será estornado.`))return;
-    const motivo=prompt('Motivo do estorno (opcional):','')??null;
+    if(!await window.OBRIX_CONFIRMAR_EXCLUSAO({titulo:'Estornar pagamento',mensagem:`Estornar o pagamento de ${nome}, no valor de ${money(p.valor_liquido)}?\n\nAs diárias, vales e bônus/extras deste pagamento voltarão para aberto e o lançamento no Financeiro será estornado.`,confirmar:'Estornar'}))return;
+    const motivo=await window.OBRIX_PEDIR_TEXTO({titulo:'Motivo do estorno',mensagem:'Informe o motivo (opcional).',valor:''});
     if(motivo===null)return;
     btn.disabled=true;btn.textContent='Estornando...';
     try{
@@ -95,7 +101,7 @@
 
   async function abrir(){
     if(abrindo)return;abrindo=true;const back=modal();
-    try{const base=await buscar();back.querySelector('#obrixHistPagBusca').addEventListener('input',()=>render(back,base));render(back,base)}catch(e){back.querySelector('#obrixHistPagLista').innerHTML=`<div class="status">${esc(window.OBRIX_PT_ERROR?.(e)||e.message||'Não foi possível carregar o histórico de pagamentos.')}</div>`}finally{abrindo=false}
+    try{const base=await buscar();back.querySelector('#obrixHistPagBusca').addEventListener('input',()=>render(back,base));back.querySelector('#obrixHistPagPeriodo').addEventListener('change',()=>render(back,base));render(back,base)}catch(e){back.querySelector('#obrixHistPagLista').innerHTML=`<div class="status">${esc(window.OBRIX_PT_ERROR?.(e)||e.message||'Não foi possível carregar o histórico de pagamentos.')}</div>`}finally{abrindo=false}
   }
 
   function instalarBotao(){

@@ -83,7 +83,12 @@ async function refresh(opcoes={}){
       }
       window.__OBRIX_EQUIPE_LAST_LOAD=Date.now();
       const sec=document.getElementById('equipe');
-      if(sec&&!sec.classList.contains('hidden'))window.renderEquipe?.();
+      if(sec&&!sec.classList.contains('hidden')){
+        // Equipe Premium atualiza seu conteúdo de modo diferencial.
+        // Evitar reconstruir a lista antiga após toda reconciliação.
+        if(window.OBRIX_PREVIEW?.refresh)window.OBRIX_PREVIEW.refresh();
+        else window.renderEquipe?.();
+      }
       const k=document.getElementById('funcs');
       if(k)k.textContent=String(funcionarios.filter(f=>f.ativo!==false).length);
       if(incluirFinanceiro){
