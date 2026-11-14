@@ -45,6 +45,12 @@ for(const pref of ['','obrix-android-inicial/']){
    assert.ok(await page.evaluate(()=>window.__cardA===document.querySelector('[data-id="receita-a"]')),'Receita anterior recriada '+device);
    await page.evaluate(()=>window.OBRIX_FIN.render(false));
    assert.ok(await page.evaluate(()=>window.__cardA===document.querySelector('[data-id="receita-a"]')),'Cartão piscou em sync '+device);
+   await page.evaluate(async()=>{
+    const a=window.financeiro.find(f=>f.id==='receita-a');a.descricao='Receita A editada';
+    await window.OBRIX_FIN.render(false);
+   });
+   assert.equal(await page.locator('[data-fin-card][data-id="receita-a"] h3').textContent(),'Receita A editada','Edição da receita não atualizou');
+   assert.equal(await page.locator('[data-fin-card]').count(),2,'Outros cartões sumiram após edição');
    // Um aviso de Estoque deve ser criado uma vez e permanecer estável.
    await page.evaluate(async()=>{
     window.financeiro.push({id:'s1',obra_id:'obra1',tipo:'despesa',descricao:'Saída de estoque - cimento',valor:30,data:'2026-11-14',status_lancamento:'ativo',origem:'estoque'});

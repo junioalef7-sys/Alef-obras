@@ -76,7 +76,7 @@
     for(const candidato of [...modelo.children]){
       const chave=candidato.dataset.id||'',fonte=candidato.outerHTML;
       let node=chave?antigos.get(chave):null;
-      if(node&&node.__obrixFonte!==fonte){node.replaceWith(candidato);node=candidato;mudou=true}
+      if(node&&node.__obrixFonte!==fonte){const eraPonteiro=node===ponteiro;node.replaceWith(candidato);node=candidato;if(eraPonteiro)ponteiro=node;mudou=true}
       if(!node){node=candidato;mudou=true}
       node.__obrixFonte=fonte;
       if(node!==ponteiro){lista.insertBefore(node,ponteiro);mudou=true}
