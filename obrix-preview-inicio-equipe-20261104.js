@@ -85,7 +85,7 @@ function obrasMaisMovimentadas(){
 function renderInicio(){
   const root=$('inicio');if(!root)return;
   if(!$('obpHome')||$('obpHome')?.querySelectorAll('.obp-shortcuts [data-short]').length!==4){
-    root.innerHTML='<div id="obpHome"><div class="obp-greeting"><h1 id="obpOla">Olá</h1><span class="obp-greeting-mark"></span></div><div class="obp-shortcuts"><button type="button" data-short="nova"><span>＋</span>Nova obra</button><button type="button" data-short="notas"><span>✎</span>Notas</button><button type="button" data-short="relatorios"><span>▤</span>Relatórios</button><button type="button" data-short="foto"><span>▧</span>Foto</button></div><div class="obp-heading"><h2>Obras</h2><button type="button" data-home-all="obras">Ver todas <span>›</span></button></div><div id="obpObras"></div><div class="obp-heading"><h2>Últimas atualizações</h2><button type="button" data-home-all="atividades">Ver todas <span>›</span></button></div><div id="obpAtividades"></div></div>';
+    root.innerHTML='<div id="obpHome"><div class="obp-greeting"><h1 id="obpOla">Olá</h1><span class="obp-greeting-mark"></span></div><div class="obp-shortcuts"><button type="button" data-short="diario"><span>▣</span>Diário de obras</button><button type="button" data-short="notas"><span>✎</span>Notas</button><button type="button" data-short="relatorios"><span>▤</span>Relatórios</button><button type="button" data-short="foto"><span>▧</span>Foto</button></div><div class="obp-heading"><h2>Obras</h2><button type="button" data-home-all="obras">Ver todas <span>›</span></button></div><div id="obpObras"></div><div class="obp-heading"><h2>Últimas atualizações</h2><button type="button" data-home-all="atividades">Ver todas <span>›</span></button></div><div id="obpAtividades"></div></div>';
     if(root.dataset.obpClickBound!=='1'){root.addEventListener('click',cliqueInicio);root.dataset.obpClickBound='1'}
   }
   $('obpOla').textContent='Olá'+(primeiroNome()?', '+primeiroNome():'');
@@ -161,12 +161,12 @@ async function abrirFotoAtalho(){
 async function acaoRapida(tipo){
   if(tipo==='foto'){await abrirFotoAtalho();return}
   if(tipo==='nova'){abrirObras();try{await window.OBRIX_POS_LOGIN_LOADER?.loadGroup?.('obras')}catch(_){}setTimeout(()=>window.OBRIX_OBRAS?.nova?.(),150);return}
-  if(['notas','relatorios','diario'].includes(tipo)){
+  if(['notas','relatorios','diario','documentos'].includes(tipo)){
     // Use the same lazy-loading route as the app menu; opening a shortcut
     // must actually open the intended module, not just navigate to Obras.
     if(window.OBRIX_MENU?.go){await window.OBRIX_MENU.go(tipo);return}
     try{await window.OBRIX_POS_LOGIN_LOADER?.loadFeature?.(tipo);
-      const key={notas:'OBRIX_NOTAS',relatorios:'OBRIX_RELATORIOS',diario:'OBRIX_DIARIO'}[tipo];
+      const key={notas:'OBRIX_NOTAS',relatorios:'OBRIX_RELATORIOS',diario:'OBRIX_DIARIO',documentos:'OBRIX_DOCUMENTOS'}[tipo];
       if(window[key]?.open){await window[key].open();return}
     }catch(e){console.warn('Atalho OBRIX:',tipo,e)}
     window.OBRIX_MENU?.open?.();
@@ -566,7 +566,7 @@ async function abrirRegistrosEquipePremium(id){
     '<button type="button" data-obp-tab="diarias">Diárias</button>'+
     '<button type="button" data-obp-tab="faltas">Faltas</button>'+
     '<button type="button" data-obp-tab="pagamentos">Pagamentos</button></nav>'+
-    '<div class="obp-registros-busca-box"><label for="obpRegistrosBuscaPremium">Buscar registros</label><input id="obpRegistrosBuscaPremium" type="search" data-obp-busca placeholder="Data, obra, tipo, valor ou situação..." autocomplete="off"><small data-obp-busca-contador aria-live="polite"></small></div>'+
+    '<div class="obp-registros-busca-box"><label for="obpRegistrosPeriodoPremium">Período</label><select id="obpRegistrosPeriodoPremium" data-obp-periodo><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="all">Todo o histórico</option></select><label for="obpRegistrosBuscaPremium">Buscar registros</label><input id="obpRegistrosBuscaPremium" type="search" data-obp-busca placeholder="Data, obra, tipo, valor ou situação..." autocomplete="off"><small data-obp-busca-contador aria-live="polite"></small></div>'+
     '<div class="obp-registros-indicadores" data-obp-kpis></div>'+
     '<h3>Histórico de registros</h3><p class="obp-registros-aviso" data-obp-aviso hidden></p>'+
     '<div class="obp-registros-lista" data-obp-linhas>Carregando registros...</div>'+
@@ -579,21 +579,23 @@ async function abrirRegistrosEquipePremium(id){
     const partes=String(valor||'').slice(0,10).split('-');
     return partes.length===3&&partes[0].length===4?partes[2]+'/'+partes[1]+'/'+partes[0]:'Sem data';
   };
-  let aba='historico',limite=60,linhas=[],termoBusca='';
+  let aba='historico',limite=60,linhas=[],termoBusca='',periodoRegistros='30';
   const normalizarBusca=valor=>String(valor??'').normalize('NFD')
     .replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
   function renderizar(){
     if(!back.isConnected)return;
     const naAba=linhas.filter(x=>aba==='historico'||(aba==='diarias'&&x.tipoRegistro==='diaria')||
       (aba==='faltas'&&x.tipoRegistro==='falta')||(aba==='pagamentos'&&x.pago));
-    const resultados=termoBusca?naAba.filter(x=>{
+    const desde=new Date();desde.setHours(0,0,0,0);desde.setDate(desde.getDate()-Number(periodoRegistros||0));
+    const filtradas=periodoRegistros==='all'?naAba:naAba.filter(x=>Date.parse(String(x.data||''))>=desde.getTime());
+    const resultados=termoBusca?filtradas.filter(x=>{
       const busca=[x.tipo,x.tipoRegistro,nomeObra(x.obra),dataPtBR(x.data),x.data,
         x.status,x.descricao,x.motivo,dinheiro(x.valor),String(x.valor??''),x.justificada?'justificada':'']
         .filter(v=>v!=null).join(' ');
       return normalizarBusca(busca).includes(termoBusca);
-    }):naAba;
+    }):filtradas;
     const contador=back.querySelector('[data-obp-busca-contador]');
-    if(contador)contador.textContent=resultados.length+' de '+naAba.length+' registro(s)';
+    if(contador)contador.textContent=resultados.length+' de '+filtradas.length+' registro(s) no período';
     back.querySelector('[data-obp-linhas]').innerHTML=resultados.length?resultados.slice(0,limite).map(x=>{
       const excluir=x.tipoRegistro==='falta'||(x.tipoRegistro==='vale'&&!x.pago)||((x.tipoRegistro==='diaria'||x.tipoRegistro==='bonus')&&!x.pago);
       const icone=x.tipoRegistro==='falta'?'⊗':x.tipoRegistro==='bonus'?'✦':x.tipoRegistro==='vale'?'▰':'▣';
@@ -614,6 +616,9 @@ async function abrirRegistrosEquipePremium(id){
       b.setAttribute('aria-selected',String(ativo));
     });
   }
+  back.querySelector('[data-obp-periodo]').addEventListener('change',e=>{
+    periodoRegistros=e.target.value;limite=60;renderizar();
+  });
   back.querySelector('[data-obp-busca]').addEventListener('input',e=>{
     termoBusca=normalizarBusca(e.target.value);limite=60;renderizar();
   });
@@ -891,9 +896,17 @@ function iniciar(){
   const ini=$('inicio'),team=$('equipe'),legado=$('listaEquipe'),app=$('app');
   if(ini)new MutationObserver(()=>{if(secaoVisivel('inicio')&&!ini.querySelector('#obpHome'))atualizar()}).observe(ini,{childList:true,subtree:false});
   if(legado)new MutationObserver(()=>{if(secaoVisivel('equipe'))atualizar()}).observe(legado,{childList:true});
-  if(app)new MutationObserver(atualizar).observe(app,{attributes:true,attributeFilter:['class']});
-  // Navigation may only change the page's own class, not #app.
-  for(const section of [ini,team])if(section)new MutationObserver(atualizar).observe(section,{attributes:true,attributeFilter:['class','hidden','style']});
+  // Observar apenas mudança REAL de tela visível. Mudanças internas de classe
+  // no perfil da Equipe não podem provocar outro render em ciclo.
+  let inicioAnterior=secaoVisivel('inicio'),equipeAnterior=secaoVisivel('equipe');
+  const mudouPagina=()=>{
+    const inicioAtual=secaoVisivel('inicio'),equipeAtual=secaoVisivel('equipe');
+    if(inicioAtual===inicioAnterior&&equipeAtual===equipeAnterior)return;
+    inicioAnterior=inicioAtual;equipeAnterior=equipeAtual;
+    atualizar();
+  };
+  if(app)new MutationObserver(mudouPagina).observe(app,{attributes:true,attributeFilter:['class']});
+  for(const section of [ini,team])if(section)new MutationObserver(mudouPagina).observe(section,{attributes:true,attributeFilter:['class','hidden','style']});
   ['obrix:offline-base-atualizada','obrix:offline-core-restaurado','obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto','obrix:progresso-atualizado'].forEach(x=>window.addEventListener(x,atualizar));
   window.addEventListener('pageshow',atualizar);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)atualizar()});

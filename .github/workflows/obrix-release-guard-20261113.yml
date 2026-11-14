@@ -1,0 +1,56 @@
+name: OBRIX - Guardião de alterações e entrega verificável (somente teste)
+on:
+  push:
+    branches:
+      - 'test/obrix-garantia-publicacao-20261113'
+      - 'test/obrix-menu-direita-voltar-20261114'
+      - 'test/obrix-alertas-instalacao-20261114'
+      - 'test/obrix-cartao-rodape-receita-20261114'
+      - 'test/obrix-instalacao-independente-20261114'
+  pull_request:
+    branches:
+      - 'baseline/obrix-teste-20261113-cbaa60c'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Obter exatamente o commit da alteração
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Reprovar arquivos fora do escopo, loader antigo e cache divergente
+        run: node tests/obrix-release-guard-20261113.cjs
+      - name: Verificar inicialização, cache e proteção de módulos
+        run: |
+          node tests/obrix-startup-duplicate-loader-audit.cjs
+          node tests/obrix-sw-fast-versioned.cjs
+          node tests/obrix-navigation-layout-20261113.cjs
+      - name: Instalar navegadores de verificação
+        run: |
+          npm install --prefix /tmp/obrix-guard-deps playwright@1.62.1 --no-save
+          /tmp/obrix-guard-deps/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Iniciar o OBRIX real em servidor isolado
+        run: |
+          (nohup python3 -m http.server 8765 --bind 127.0.0.1 </dev/null >/tmp/obrix-guard.log 2>&1 &)
+          sleep 2
+          curl --fail --silent http://127.0.0.1:8765/obrix.html >/dev/null
+          curl --fail --silent http://127.0.0.1:8765/obrix-android-inicial/obrix.html >/dev/null
+      - name: Testar visual aprovado iPhone, Android e computador, claro/escuro
+        env:
+          NODE_PATH: /tmp/obrix-guard-deps/node_modules
+        run: |
+          node tests/obrix-contraste-e2e-20261113.cjs
+          node tests/obrix-config-cartoes-sem-vermelho.cjs
+          node tests/obrix-obras-progresso-sem-oscilacao.cjs
+          node tests/obrix-menu-tema-performance-20261113.cjs
+          node tests/obrix-home-menu-light-20261113.cjs
+          node tests/obrix-desktop-abertura-sem-piscadas-20261114.cjs
+          node tests/obrix-correcoes-menu-pdf-historico-20261114.cjs
+          node tests/obrix-alertas-instalacao-20261114.cjs
+          node tests/obrix-rodape-financeiro-estavel-20261114.cjs
+          node tests/obrix-instalar-home-premium-20261114.cjs
+          node tests/obrix-instalacao-sem-equipe-e2e-20261114.cjs
