@@ -31,7 +31,11 @@ const platforms=[
    try{
     const page=await browser.newPage(profile);
     let native=0;page.on('dialog',async d=>{native++;await d.dismiss()});
-    await page.setContent('<!doctype html><html lang="pt-BR" data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>.hidden{display:none!important}</style></head><body><div id="login" class="hidden"></div><section id="app"><main id="inicio"></main></section></body></html>');
+    const fixture='<!doctype html><html lang="pt-BR" data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>.hidden{display:none!important}</style></head><body><div id="login" class="hidden"></div><section id="app"><main id="inicio"></main></section></body></html>';
+    // Abertura em origem HTTPS realista: about:blank não possui storage utilizável,
+    // e a apresentação não consegue registrar o fechamento por usuário nesse caso.
+    await page.route('https://obrix-instalacao.invalid/**',route=>route.fulfill({status:200,contentType:'text/html',body:fixture}));
+    await page.goto('https://obrix-instalacao.invalid/fixture');
     await page.evaluate(()=>{
       window.__confirmOriginal=window.confirm;
       window.OBRIX_BACKEND={currentUser:async()=>({id:'conta_teste'})};
