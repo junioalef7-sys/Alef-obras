@@ -395,16 +395,8 @@ function injectMenu(){
     const b=document.createElement('button');b.type='button';b.dataset.onboardingReplay='1';b.className='obxReplay';
     b.innerHTML='<b>Conheça o OBRIX</b><small>Veja tudo que o aplicativo oferece</small>';b.onclick=()=>open(true);account.appendChild(b);
   }
-  if(account&&!account.querySelector('[data-obrix-install-help]')){
-    const b=document.createElement('button');b.type='button';b.dataset.obrixInstallHelp='1';b.className='obxReplay';
-    b.innerHTML='<b>Ajuda — Como instalar o OBRIX</b><small>iPhone, Android e computador</small>';b.onclick=()=>open(true,true);account.appendChild(b);
-  }
+  /* Retirar somente o botão do Menu; guia do primeiro login permanece. */m.querySelectorAll('[data-obrix-install-help],.obxInstallMenuHeading').forEach(b=>b.remove());
   const nav=m.querySelector('.opmSide nav');
-  if(nav&&!nav.querySelector('[data-obrix-install-help]')){
-    const heading=document.createElement('div');heading.className='obxInstallMenuHeading';heading.textContent='Ajuda';nav.appendChild(heading);
-    const b=document.createElement('button');b.type='button';b.dataset.obrixInstallHelp='1';b.className='obxInstallMenuButton';
-    b.innerHTML='<i>⬇</i><span>Como instalar o OBRIX</span>';b.onclick=()=>open(true,true);nav.appendChild(b);
-  }
   return !!(account&&nav);
 }
 function watchMenu(){
