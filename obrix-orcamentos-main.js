@@ -59,8 +59,17 @@ function render(){
   $('orcKTotal').textContent=String(orcamentos.length);
   const aprov=orcamentos.filter(o=>o.status==='aprovado');$('orcKAprov').textContent=String(aprov.length);$('orcKValor').textContent=money(aprov.reduce((s,o)=>s+num(o.valor_total),0));
   const box=$('orcLista');if(!box)return;
-  if(!orcamentos.length){box.innerHTML='<div class="card muted">Nenhum orçamento cadastrado.</div>';return}
-  box.innerHTML=orcamentos.map(o=>`<div class="card orcCard" data-id="${esc(o.id)}"><button class="orcCardHead" type="button"><span><b>Orçamento #${esc(o.numero)}</b><small>${esc(o.cliente_nome)}${o.endereco_obra?' • '+esc(o.endereco_obra):''}</small></span><span class="orcCardRight"><em class="orcStatus ${esc(o.status)}">${esc(statusLabel(o.status))}</em><strong>${money(o.valor_total)}</strong></span></button><div class="orcCardBody hidden"><div class="orcResumo"><div><span>Título</span><b>${esc(o.titulo||'Orçamento de Serviços')}</b></div><div><span>Validade</span><b>${esc(fmtDate(o.validade)||'Não informada')}</b></div><div><span>Materiais</span><b>${esc(materialLabel(o.materiais))}</b></div><div><span>Itens</span><b>${rowsFor(o.id).length}</b></div></div><div class="orcActions"><button class="btn editar" type="button">Editar</button><button class="btn imprimir" type="button">Imprimir</button><button class="btn orcPerigo excluir" type="button">Excluir</button></div></div></div>`).join('');
+  if(!orcamentos.length){
+   const vazio='<div class="card muted">Nenhum orçamento cadastrado.</div>';
+   if(box.__obrixMarkup!==vazio||box.childElementCount===0){box.innerHTML=vazio;box.__obrixMarkup=vazio}
+   return;
+  }
+  const html=orcamentos.map(o=>`<div class="card orcCard" data-id="${esc(o.id)}"><button class="orcCardHead" type="button"><span><b>Orçamento #${esc(o.numero)}</b><small>${esc(o.cliente_nome)}${o.endereco_obra?' • '+esc(o.endereco_obra):''}</small></span><span class="orcCardRight"><em class="orcStatus ${esc(o.status)}">${esc(statusLabel(o.status))}</em><strong>${money(o.valor_total)}</strong></span></button><div class="orcCardBody hidden"><div class="orcResumo"><div><span>Título</span><b>${esc(o.titulo||'Orçamento de Serviços')}</b></div><div><span>Validade</span><b>${esc(fmtDate(o.validade)||'Não informada')}</b></div><div><span>Materiais</span><b>${esc(materialLabel(o.materiais))}</b></div><div><span>Itens</span><b>${rowsFor(o.id).length}</b></div></div><div class="orcActions"><button class="btn editar" type="button">Editar</button><button class="btn imprimir" type="button">Imprimir</button><button class="btn orcPerigo excluir" type="button">Excluir</button></div></div></div>`).join('');
+  // Preservar o DOM e o estado expandido quando a sincronização não altera o conteúdo.
+  if(box.__obrixMarkup===html&&box.querySelector('.orcCard'))return;
+  const abertos=new Set([...box.querySelectorAll('.orcCard')].filter(el=>!el.querySelector('.orcCardBody')?.classList.contains('hidden')).map(el=>el.dataset.id));
+  box.innerHTML=html;box.__obrixMarkup=html;
+  box.querySelectorAll('.orcCard').forEach(el=>{if(abertos.has(el.dataset.id))el.querySelector('.orcCardBody')?.classList.remove('hidden')});
   box.querySelectorAll('.orcCard').forEach(el=>{const o=orcamentos.find(x=>String(x.id)===String(el.dataset.id));if(!o)return;el.querySelector('.orcCardHead').onclick=()=>el.querySelector('.orcCardBody').classList.toggle('hidden');el.querySelector('.editar').onclick=()=>edit(o);el.querySelector('.imprimir').onclick=()=>printSaved(o);el.querySelector('.excluir').onclick=()=>removeO(o)});
 }
 
