@@ -180,7 +180,7 @@ const slides=[
       ['Botão Instalar aplicativo','Toque no botão que aparece abaixo quando o Chrome oferecer a instalação. Confirme na janela do próprio navegador.'],
       ['Samsung Internet','Se estiver no Samsung Internet, use “Abrir no Chrome para instalar”. Não desative o Google Play Protect.'],
       ['Quando aparecer só Adicionar à tela inicial','Essa opção pode criar apenas um atalho. Verifique se o OBRIX aparece em Configurações → Aplicativos após a instalação.'],
-      ['Precisa consultar novamente?','Abra Menu → Como instalar o OBRIX para rever estas instruções e tentar instalar quando necessário.']
+      ['Precisa consultar novamente?','Abra Menu → Conheça o OBRIX e avance até a instalação. O botão direto depende do Chrome.']
     ]
   }
 ];
@@ -295,9 +295,7 @@ function injectMenu(){
   if(!m.querySelector('[data-onboarding-replay]')){
     const b=document.createElement('button');b.type='button';b.dataset.onboardingReplay='1';b.className='obxReplay';b.innerHTML='<b>Conheça o OBRIX</b><small>Veja tudo que o aplicativo oferece</small>';b.onclick=()=>open(true);account.appendChild(b);
   }
-  if(!m.querySelector('[data-obrix-install-help]')){
-    const help=document.createElement('button');help.type='button';help.dataset.obrixInstallHelp='1';help.className='obxReplay';help.innerHTML='<b>Como instalar o OBRIX</b><small>Passo a passo e botão de instalação</small>';help.onclick=()=>open(true,true);account.appendChild(help);
-  }
+  /* Retirar somente o botão do Menu; guia do primeiro login permanece. */m.querySelectorAll('[data-obrix-install-help],.obxInstallMenuHeading').forEach(b=>b.remove());
   return true;
 }
 function watchMenu(){

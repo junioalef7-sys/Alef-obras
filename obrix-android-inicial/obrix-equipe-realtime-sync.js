@@ -1,6 +1,7 @@
 (()=>{'use strict';
 if(window.__OBRIX_EQUIPE_REALTIME_SYNC)return;window.__OBRIX_EQUIPE_REALTIME_SYNC=true;
-let canal=null,iniciando=false,reconcileTimer=0;
+let canal=null,iniciando=false,reconcileTimer=0,paintQueued=false;
+function pintarAgendado(){if(paintQueued)return;paintQueued=true;requestAnimationFrame(()=>{paintQueued=false;if(visivel())pintar()})}
 function visivel(){const app=document.getElementById('app'),sec=document.getElementById('equipe');return !!(app&&sec&&!app.classList.contains('hidden')&&!sec.classList.contains('hidden'))}
 function lista(table){
   try{
@@ -32,7 +33,10 @@ function aplicarPayload(table,payload){
 }
 function pintar(){
   if(!visivel())return;
-  try{window.OBRIX_EQUIPE_MODELO?.render?.()}catch(_){try{window.renderEquipe?.()}catch(__){}}
+  // A Equipe Premium renderiza diferencialmente; evitar reconstruir a lista legada.
+  try{if(window.OBRIX_PREVIEW?.refresh)window.OBRIX_PREVIEW.refresh();
+    else if(window.OBRIX_EQUIPE_MODELO?.render)window.OBRIX_EQUIPE_MODELO.render();
+    else window.renderEquipe?.();}catch(e){console.warn('Equipe: atualização visual adiada',e)}
   try{window.OBRIX_EQUIPE_CONTROLES_GUARD?.ensure?.()}catch(_){ }
   const k=document.getElementById('funcs');if(k){try{k.textContent=String(lista('funcionarios').filter(f=>f.ativo!==false).length)}catch(_){}}
 }
@@ -42,8 +46,9 @@ function reconciliar(forcar=false){
   if(!navigator.onLine||document.hidden||(!forcar&&!visivel()))return;
   clearTimeout(reconcileTimer);reconcileTimer=setTimeout(async()=>{
     if(document.hidden||(!forcar&&!visivel()))return;
-    try{await window.OBRIX_EQUIPE?.refresh?.();if(visivel())pintar()}
-    catch(e){console.warn('Equipe: conferência de sincronização indisponível',e)}
+    try{await window.OBRIX_EQUIPE?.refresh?.();
+      // refresh() já notifica a interface, impedindo o segundo repaint.
+    }catch(e){console.warn('Equipe: conferência de sincronização indisponível',e)}
   },700);
 }
 function mudou(table,payload){
@@ -55,8 +60,7 @@ function mudou(table,payload){
     }}));
   }
   const aplicado=aplicarPayload(table,payload);
-  if(aplicado&&visivel())requestAnimationFrame(pintar);
-  else if(visivel()&&!['faltas','pagamentos_equipe'].includes(table))requestAnimationFrame(pintar);
+  if(visivel()&&(aplicado||!['faltas','pagamentos_equipe'].includes(table)))pintarAgendado();
   reconciliar();
 }
 async function iniciar(){

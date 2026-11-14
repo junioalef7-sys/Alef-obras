@@ -65,4 +65,24 @@
     document.body.appendChild(overlay);document.addEventListener('keydown',key,true);cancelar.focus();
   });
 
+  // Entrada de texto sem prompt() do navegador. Cancelar é sempre null.
+  window.OBRIX_PEDIR_TEXTO=({titulo='Informação',mensagem='',valor='',placeholder='',confirmar='Continuar',cancelar='Cancelar'}={})=>new Promise(resolve=>{
+    ensureStyle();
+    const overlay=document.createElement('div');overlay.className='obrixConfirmOverlay';
+    overlay.innerHTML='<div class="obrixConfirmBox" role="dialog" aria-modal="true" aria-label="Entrada de texto OBRIX"><h2></h2><p></p><input class="obrixConfirmTextInput" type="text" maxlength="250" autocomplete="off"><div class="obrixConfirmActions" style="margin-top:16px"><button type="button" class="obrixConfirmCancel"></button><button type="button" class="obrixConfirmPagamento"></button></div></div>';
+    overlay.querySelector('h2').textContent=String(titulo);
+    overlay.querySelector('p').textContent=String(mensagem);
+    const campo=overlay.querySelector('input'),cancel=overlay.querySelector('.obrixConfirmCancel'),yes=overlay.querySelector('.obrixConfirmPagamento');
+    campo.value=String(valor??'');campo.placeholder=String(placeholder||'');
+    campo.style.cssText='box-sizing:border-box;width:100%;min-height:47px;padding:10px 12px;border-radius:10px;border:1px solid var(--ob-border,#cbd5e1);background:var(--ob-surface-2,#f8fafc);color:var(--ob-text,#0f172a);-webkit-text-fill-color:var(--ob-text,#0f172a);font:600 16px system-ui,sans-serif';
+    cancel.textContent=String(cancelar);yes.textContent=String(confirmar);
+    yes.style.cssText='background:var(--ob-accent,#ff5a00)!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border:1px solid var(--ob-accent,#ff5a00)!important;border-radius:11px;min-height:46px;font-weight:800';
+    let done=false;
+    const key=e=>{if(e.key==='Escape'){e.preventDefault();finish(null)}else if(e.key==='Enter'){e.preventDefault();finish(campo.value)}};
+    function finish(result){if(done)return;done=true;document.removeEventListener('keydown',key,true);overlay.remove();resolve(result)}
+    cancel.onclick=()=>finish(null);yes.onclick=()=>finish(campo.value);
+    overlay.onclick=e=>{if(e.target===overlay)finish(null)};
+    document.body.appendChild(overlay);document.addEventListener('keydown',key,true);campo.focus();
+  });
+
 })();
