@@ -49,7 +49,7 @@ for(const folder of versions){
  assert.ok(start.includes('obrix-orcamentos-ui-v8.js?v=20261114-pdf-rodape-livre1'),
    'Gerador PDF ainda antigo '+folder);
  const sw=get('obrix-sw.js');
- assert.ok(sw.includes('obrix-offline-v82-sem-rodape-orc-estavel-20261114'),'Cache antigo '+folder);
+ assert.ok(sw.includes('obrix-offline-v83-sem-rodape-orc-estavel-20261114'),'Cache antigo '+folder);
 }
 const premium=read(root);
 for(const op of ['data-obp-periodo','value="30"','value="90"','value="all"'])

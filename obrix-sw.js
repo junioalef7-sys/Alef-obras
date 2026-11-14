@@ -1,5 +1,5 @@
-const CACHE='obrix-offline-v82-sem-rodape-orc-estavel-20261114';
-const BUILD='20261114-preview-sem-rodape-orc-estavel-v82';
+const CACHE='obrix-offline-v83-sem-rodape-orc-estavel-20261114';
+const BUILD='20261114-preview-sem-rodape-orc-estavel-v83';
 const CDN_SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1';
 const CDN_HTML2CANVAS='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const CDN_JSPDF='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';

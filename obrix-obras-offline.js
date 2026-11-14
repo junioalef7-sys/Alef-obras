@@ -80,7 +80,7 @@ window.addEventListener('online',()=>{setFormMode();if(!conflicts().length)sync(
 new MutationObserver(()=>wire()).observe(document.documentElement,{childList:true,subtree:true});
 setInterval(()=>{patchResolver();if(navigator.onLine&&mine().length&&!syncing&&!conflicts().length)sync().catch(()=>{})},30000);
 const css=document.createElement('style');css.textContent='.obraOfflineDatas{display:grid;grid-template-columns:1fr 1fr;gap:10px}.obraOfflineDatas label{font-weight:800;color:inherit}.obraOfflineFormAviso,.obrasOfflineStatus{margin:10px 0;padding:10px 12px;border-radius:11px;background:#fef3c7;color:#92400e;font-weight:850}.obraOfflineFormAviso.hidden,.obrasOfflineStatus.hidden{display:none!important}#oValor:disabled{opacity:.65;background:#f1f5f9}@media(max-width:560px){.obraOfflineDatas{grid-template-columns:1fr}}';document.head.appendChild(css);
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./obrix-sw.js?v=20261114-sem-rodape-orc-estavel-cache82').catch(()=>{});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./obrix-sw.js?v=20261114-sem-rodape-orc-estavel-cache83').catch(()=>{});
 setTimeout(()=>{wire();patchResolver();if(navigator.onLine)refresh().catch(()=>{});else applyLocal();renderStatus()},700);
 window.OBRIX_OFFLINE_OBRAS={saveEdit,sync,refresh,pending:mine,conflicts,merge,status:()=>({online:navigator.onLine,syncing,pendentes:mine().length,conflitos:conflicts().length,erro:lastError})};
 })();
