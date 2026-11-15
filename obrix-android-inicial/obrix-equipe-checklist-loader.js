@@ -14,8 +14,8 @@ async function load(){
   if(promise)return promise;
   promise=(async()=>{
     let ok=true;
-    if(!dadosLoaded())ok=await loadScript('./obrix-equipe-checklist-dados.js?v=20261022restore2','obrixEquipeChecklistDados')&&ok;
-    if(!patchLoaded())ok=await loadScript('./obrix-equipe-checklist-diaria.js?v=20261105-checklist-none-v1','obrixEquipeChecklistDiaria',true)&&ok;
+    if(!dadosLoaded())ok=await loadScript('./obrix-equipe-checklist-dados.js?v=20261115-regras-equipe-android2','obrixEquipeChecklistDados')&&ok;
+    if(!patchLoaded())ok=await loadScript('./obrix-equipe-checklist-diaria.js?v=20261115-regras-equipe-android2','obrixEquipeChecklistDiaria',true)&&ok;
     return ok;
   })();
   try{return await promise}finally{promise=null}
