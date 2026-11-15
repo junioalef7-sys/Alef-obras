@@ -31,7 +31,11 @@ function init(){
  ['obras','resumoGeralMain','financeiroMain','estoqueMain','diarioMain','menuMain','inicio'].forEach(id=>{
   const el=document.getElementById(id);if(el)mo.observe(el,{attributes:true,attributeFilter:['class'],childList:true});
  });
- document.addEventListener('click',()=>{schedule();setTimeout(schedule,120)},true);
+ document.addEventListener('click',event=>{
+    // Expandir um orçamento não muda a rota nem a visibilidade da seta superior.
+    if(event.target?.closest?.('#orcamentosMain .orcCardHead'))return;
+    schedule();setTimeout(schedule,120);
+  },true);
  window.addEventListener('pageshow',schedule,{passive:true});
  window.addEventListener('obrix:modules-ready',schedule,{passive:true});
 }
