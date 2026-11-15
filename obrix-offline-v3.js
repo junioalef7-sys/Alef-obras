@@ -26,7 +26,7 @@ const FEATURES={
  relatorios:['./obrix-relatorios-v2.js','./obrix-relatorios-mobile-fix.js','./obrix-relatorios-complementos.js','./obrix-relatorio-financeiro-obra.js','./obrix-relatorio-diario.js'],
  documentos:['./obrix-documentos-main.js','./obrix-documentos-direto.js'],
  notas:['./obrix-notas-main.js'],
- backup:['./obrix-backup-v2.js?v=20261115-backup-seta-checklist1','./obrix-backup-import-run.js','./obrix-backup-completo.js?v=20261115-backup-seta-checklist1'],
+ backup:['./obrix-backup-v2.js?v=20261115-backup-identificacao-v2','./obrix-backup-import-run.js?v=20261115-backup-identificacao-v2','./obrix-backup-completo.js?v=20261115-backup-identificacao-v2'],
  config:['./obrix-config-main.js']
 };
 const read=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(_){return d}};
