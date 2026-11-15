@@ -21,7 +21,7 @@ async function validarRegistroDiariaDia(sb,empresaId,funcionarioId,data,qtd){
 async function modal(f){
  const listaObras=await carregarObras();
  const back=document.createElement('div');back.className='modalBack';
- const hoje=new Date().toISOString().slice(0,10);
+ const agora=new Date(),hoje=new Date(agora.getTime()-agora.getTimezoneOffset()*60000).toISOString().slice(0,10);
  back.innerHTML=`<div class="modal"><h2>Registrar diária</h2><p><strong class="fn"></strong></p><label>Obra</label><select class="obra"><option value="">Selecione a obra</option></select><div class="grid2"><div><label>Data</label><input class="data" type="date" value="${hoje}"></div><div><label>Tipo</label><select class="qtd"><option value="1">Diária inteira</option><option value="0.5">Meia diária</option></select></div></div><label>Valor da diária</label><input class="valor" type="number" min="0" step="0.01" value="${Number(f.valor_diaria||0)}"><label>Observações</label><textarea class="obs"></textarea><div class="modalActions"><button class="btn light cancel">Cancelar</button><button class="btn save">Registrar</button></div></div>`;
  back.querySelector('.fn').textContent=f.nome;
  const sel=back.querySelector('.obra');listaObras.filter(o=>o.status!=='concluida').forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.nome;if(o.id===f.obra_id)op.selected=true;sel.appendChild(op)});
