@@ -68,8 +68,27 @@ function render(){
   // Preservar o DOM e o estado expandido quando a sincronização não altera o conteúdo.
   if(box.__obrixMarkup===html&&box.querySelector('.orcCard'))return;
   const abertos=new Set([...box.querySelectorAll('.orcCard')].filter(el=>!el.querySelector('.orcCardBody')?.classList.contains('hidden')).map(el=>el.dataset.id));
-  box.innerHTML=html;box.__obrixMarkup=html;
-  box.querySelectorAll('.orcCard').forEach(el=>{if(abertos.has(el.dataset.id))el.querySelector('.orcCardBody')?.classList.remove('hidden')});
+  const anteriores=new Map([...box.querySelectorAll('.orcCard')].map(el=>[el.dataset.id,el]));
+  const novo=document.createElement('div');novo.innerHTML=html;
+  const itensNovos=[...novo.querySelectorAll(':scope > .orcCard')];
+  const idsAtuais=new Set();
+  itensNovos.forEach((card,index)=>{
+    const id=card.dataset.id,antigo=anteriores.get(id);idsAtuais.add(id);
+    let reaproveitar=false;
+    if(antigo){
+      const comparador=antigo.cloneNode(true);comparador.querySelector('.orcCardBody')?.classList.add('hidden');
+      reaproveitar=comparador.outerHTML===card.outerHTML;
+    }
+    if(reaproveitar){
+      if(box.children[index]!==antigo)box.insertBefore(antigo,box.children[index]||null);
+    }else{
+      if(abertos.has(id))card.querySelector('.orcCardBody')?.classList.remove('hidden');
+      box.insertBefore(card,box.children[index]||null);
+      antigo?.remove();
+    }
+  });
+  [...box.querySelectorAll(':scope > .orcCard')].forEach(el=>{if(!idsAtuais.has(el.dataset.id))el.remove()});
+  box.__obrixMarkup=html;
   box.querySelectorAll('.orcCard').forEach(el=>{const o=orcamentos.find(x=>String(x.id)===String(el.dataset.id));if(!o)return;el.querySelector('.orcCardHead').onclick=()=>el.querySelector('.orcCardBody').classList.toggle('hidden');el.querySelector('.editar').onclick=()=>edit(o);el.querySelector('.imprimir').onclick=()=>printSaved(o);el.querySelector('.excluir').onclick=()=>removeO(o)});
 }
 
@@ -91,6 +110,23 @@ function edit(o){
 }
 async function load(){ensure();if(!profile)return;const sb=await OBRIX_BACKEND.init();const [{data:o,error:e1},{data:i,error:e2}]=await Promise.all([sb.from('orcamentos').select('*').eq('empresa_id',profile.empresa_id).order('numero',{ascending:false}),sb.from('orcamento_itens').select('*').eq('empresa_id',profile.empresa_id).order('ordem',{ascending:true})]);if(e1)throw e1;if(e2)throw e2;orcamentos=o||[];itens=i||[];render()}
 async function nextNumber(sb){const {data,error}=await sb.from('orcamentos').select('numero').eq('empresa_id',profile.empresa_id).order('numero',{ascending:false}).limit(1);if(error)throw error;return Number(data?.[0]?.numero||0)+1}
+function erroAoSalvarOrcamento(e){
+ const codigo=String(e?.code||'').toUpperCase(),texto=String(e?.message||e||'');
+ if(codigo==='23505'||/duplicate key|unique constraint/i.test(texto))return'Já existe um orçamento com o mesmo número. Atualize a lista e tente novamente.';
+ if(codigo==='23503'||/foreign key/i.test(texto))return'Um item está vinculado a um registro que não existe mais. Atualize o orçamento e confira os itens.';
+ if(codigo==='23502'||/not null|required field/i.test(texto))return'Falta preencher um campo obrigatório do orçamento.';
+ if(codigo==='23514'||/check constraint/i.test(texto))return'Um dos valores ou status do orçamento não atende às regras de cadastro.';
+ if(codigo==='22P02'||/invalid input syntax/i.test(texto))return'Um campo contém formato inválido. Confira datas, números e valores.';
+ if(codigo==='22007'||/invalid.*date/i.test(texto))return'Uma das datas informadas é inválida. Confira a validade e o início previsto.';
+ if(/timeout|timed out|504|503/i.test(texto))return'A conexão demorou mais que o esperado. Verifique se o orçamento foi salvo antes de tentar novamente.';
+ if(/fetch|network|offline|internet|connection/i.test(texto))return'Falha de conexão com o servidor. Confira sua internet e tente novamente.';
+ if(codigo==='42501'||/permission denied|row.level.security|not authorized/i.test(texto))return'Você não tem permissão para salvar esse orçamento. Confira o acesso à sua empresa.';
+ if(/Orçamento não encontrado|criação do orçamento não foi confirmada/i.test(texto))return texto;
+ const traduz=window.OBRIX_PT_ERROR?.(e);
+ if(traduz&&traduz!==texto&&!/Ocorreu um erro ao concluir/.test(traduz))return traduz;
+ if(/[à-ú]|orçamento|or[cç]amento/i.test(texto)&&texto.length<230)return texto;
+ return'Falha inesperada ao gravar o orçamento no servidor'+(codigo?' (código '+codigo+')':'')+'. Confira os dados e tente novamente.';
+}
 async function save(){
   const cliente=$('orcCliente').value.trim(),lista=collectItems();if(!cliente)return showMsg('Informe o nome do cliente.',false);if(!lista.length||lista.some(i=>!i.descricao||i.quantidade<=0))return showMsg('Preencha corretamente os itens do orçamento.',false);
   const btn=$('orcSalvar');btn.disabled=true;clearMsg();
@@ -99,7 +135,7 @@ async function save(){
     else{const numero=await nextNumber(sb);const {data,error}=await sb.from('orcamentos').insert({...payload,numero,empresa_id:profile.empresa_id}).select('id');if(error)throw error;oid=data?.[0]?.id;if(!oid)throw new Error('A criação do orçamento não foi confirmada.');isNew=true}
     const payloadItens=lista.map(i=>({...i,orcamento_id:oid,empresa_id:profile.empresa_id}));const {error:itemErr}=await sb.from('orcamento_itens').insert(payloadItens);if(itemErr){if(isNew)await sb.from('orcamentos').delete().eq('id',oid).eq('empresa_id',profile.empresa_id);throw itemErr}
     await load();const salvo=orcamentos.find(o=>String(o.id)===String(oid));if(salvo)edit(salvo);showMsg(id?'Orçamento atualizado com sucesso.':'Orçamento salvo com sucesso.')
-  }catch(e){showMsg('Erro: '+(e?.message||e),false)}finally{btn.disabled=false}
+  }catch(e){const motivo=erroAoSalvarOrcamento(e);console.warn('OBRIX orçamento: gravação não concluída',e);showMsg('Não foi possível salvar o orçamento. '+motivo,false);void window.OBRIX_AVISO?.('Não foi possível salvar o orçamento. '+motivo,'Erro ao salvar orçamento')}finally{btn.disabled=false}
 }
 async function removeO(o){if(!await window.OBRIX_CONFIRMAR_EXCLUSAO({titulo:'Excluir orçamento',mensagem:`Excluir o orçamento #${o.numero} de ${o.cliente_nome}?`,confirmar:'Excluir'}))return;try{const sb=await OBRIX_BACKEND.init(),{error}=await sb.from('orcamentos').delete().eq('id',o.id).eq('empresa_id',profile.empresa_id);if(error)throw error;if($('orcId').value===String(o.id))$('orcForm').classList.add('hidden');await load();window.OBRIX_SUCESSO?.('Orçamento excluído com sucesso.')}catch(e){showMsg('Erro ao excluir: '+(e?.message||e),false)}}
 
