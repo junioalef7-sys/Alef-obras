@@ -8,7 +8,7 @@ const label=x=>String(x?.textContent||'').replace(/\s+/g,' ').trim().toLocaleLow
 let scheduled=false;
 function visibleTeam(){
   const e=$('#equipe');
-  return !!(e&&!e.classList.contains('hidden')&&getComputedStyle(e).display!=='none');
+  return !!(e&&!e.classList.contains('hidden')&&!$('#app')?.classList.contains('hidden'));
 }
 function ensureHeader(){
   // O título e o botão de cadastro pertencem ao cartão dentro da tela Equipe,
@@ -38,9 +38,8 @@ function apply(){
   const team=visibleTeam();
   document.documentElement.classList.toggle('obrix-preview-team-active',team);
   const home=$('#inicio');
-  document.documentElement.classList.toggle('obrix-preview-home-active',!!(home&&!home.classList.contains('hidden')&&getComputedStyle(home).display!=='none'));
+  document.documentElement.classList.toggle('obrix-preview-home-active',!!(home&&!home.classList.contains('hidden')));
   document.documentElement.classList.toggle('obrix-preview-team-detail',team&&!!$('#equipe')?.classList.contains('obp-team-selected'));
-  document.getElementById('obrixPreviewTeamTop')?.remove();
   document.querySelectorAll('#app main,#app section[id$="Main"]').forEach(uniquePageTitles);
 }
 function queue(){
