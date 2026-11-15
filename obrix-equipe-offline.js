@@ -100,6 +100,14 @@ function diariaOffline(f){
     const q=Number(b.querySelector('.qtd').value);
     const v=Number(b.querySelector('.valor').value);
     if(!obra_id||!data||v<=0)return alert('Selecione a obra, data e valor.');
+    const mesmoDia=x=>String(x?.funcionario_id)===String(f.id)&&String(x?.data)===String(data);
+    const c=cache(),pendentes=mine();
+    if(c.faltas.some(mesmoDia)||pendentes.some(x=>x.type==='falta'&&mesmoDia(x.payload)))
+      return alert('Não é possível registrar diária. Este funcionário já possui falta registrada nesta data.');
+    const anteriores=[...c.diarias,...globals().diarias,...pendentes.filter(x=>x.type==='diaria').map(x=>x.payload)];
+    const unicas=[...new Map(anteriores.filter(x=>mesmoDia(x)&&!x.cancelada_em).map(x=>[String(x.id),x])).values()];
+    if(![0.5,1].includes(q)||unicas.reduce((total,x)=>total+Number(x.quantidade||0),0)+q>1.000001)
+      return alert('Limite diário atingido. É permitido uma diária inteira ou duas meias diárias por funcionário, por data.');
     const id=uuid();
     const payload={id,funcionario_id:f.id,obra_id,data,quantidade:q,valor_unitario:v,valor_total:v*q,paga:false,observacoes:b.querySelector('.obs').value.trim()||null,criado_em:new Date().toISOString()};
     queue('diaria',payload);
