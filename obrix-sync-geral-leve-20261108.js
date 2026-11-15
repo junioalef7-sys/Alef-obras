@@ -4,6 +4,7 @@
 if(window.__OBRIX_SYNC_GERAL_LEVE_20261108)return;
 window.__OBRIX_SYNC_GERAL_LEVE_20261108=true;
 const MODULOS={
+  obras:'obras',servicos_extras:'obras',checklist_itens:'obras',
   orcamentos:'orcamentos',orcamento_itens:'orcamentos',clientes:'orcamentos',
   notas:'notas',documentos:'documentos',
   materiais:'estoque',estoques:'estoque',estoque_saldos:'estoque',
@@ -13,7 +14,7 @@ const MODULOS={
   relatorios_fotograficos:'fotos',pagamento_diarias:'equipe',
   relatorios:'relatorios'
 };
-const ELEMENTOS={orcamentos:'orcamentosMain',notas:'notasMain',documentos:'documentosMain',
+const ELEMENTOS={obras:'obras',orcamentos:'orcamentosMain',notas:'notasMain',documentos:'documentosMain',
   estoque:'estoqueMain',diario:'diarioMain',relatorios:'relatoriosMain',equipe:'equipe'};
 let canal=null,canalCliente=null,empresa='',iniciando=false,tentativa=0,retryTimer=0,atividadeTimer=0,ultimaVerificacaoIdentidade=0;
 const timers=new Map(),emCarga=new Set(),pendente=new Set(),ultimaConsulta=new Map(),ultimaTentativa=new Map(),suspensoAte=new Map(),aguardandoFimEdicao=new Set();
@@ -39,6 +40,7 @@ async function atualizar(mod){
   emCarga.add(mod);
   ultimaTentativa.set(mod,Date.now());
   try{
+    if(mod==='obras')await window.OBRIX_CORE_OBRAS_SYNC?.();
     if(mod==='orcamentos')await window.OBRIX_ORCAMENTOS?.load?.();
     if(mod==='notas')await window.OBRIX_NOTAS?.load?.();
     if(mod==='documentos')await window.OBRIX_DOCUMENTOS?.load?.();
@@ -57,14 +59,14 @@ async function atualizar(mod){
   }
   finally{
     emCarga.delete(mod);
-    if(pendente.delete(mod))agendar(mod,650);
+    if(pendente.delete(mod))agendar(mod,180);
   }
 }
 function agendar(mod,delay=240){
   // Coalescência: uma enxurrada de eventos não deve reiniciar o timer
   // indefinidamente, nem criar várias consultas concorrentes.
   if(timers.has(mod))return;
-  const agora=Date.now(),intervalo=mod==='diario'?650:1400;
+  const agora=Date.now(),intervalo=mod==='diario'?300:500;
   const espera=Math.max(delay,
     intervalo-(agora-(ultimaTentativa.get(mod)||0)),
     (suspensoAte.get(mod)||0)-agora);
@@ -72,7 +74,7 @@ function agendar(mod,delay=240){
 }
 function onChange(tab,payload){
   atualizarAtividades();
-  const mod=MODULOS[tab];if(mod&&estaVisivel(mod))agendar(mod,mod==='diario'?160:300);
+  const mod=MODULOS[tab];if(mod&&estaVisivel(mod))agendar(mod,mod==='diario'?90:140);
   window.dispatchEvent(new CustomEvent('obrix:modulo-remoto-alterado',{
     detail:{modulo:mod,tabela:tab,tipo:payload?.eventType||'UPDATE'}
   }));
@@ -144,5 +146,7 @@ document.addEventListener('visibilitychange',()=>{
 setInterval(()=>{if(ativo()){void iniciar();reconciliarVisivel()}},12000);
 setTimeout(()=>{void iniciar();reconciliarVisivel()},700);
 window.OBRIX_SYNC_GERAL={status:()=>({conectado:!!canal,empresa:!!empresa,modulos:Object.keys(ELEMENTOS)}),
-  refresh:reconciliarVisivel,start:iniciar};
+  refresh:reconciliarVisivel,start:iniciar,changed:mod=>{
+    if(ELEMENTOS[mod]&&estaVisivel(mod))agendar(mod,100);
+  }};
 })();
