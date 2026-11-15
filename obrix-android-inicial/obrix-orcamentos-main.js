@@ -64,7 +64,7 @@ function render(){
    if(box.__obrixMarkup!==vazio||box.childElementCount===0){box.innerHTML=vazio;box.__obrixMarkup=vazio}
    return;
   }
-  const html=orcamentos.map(o=>`<div class="card orcCard" data-id="${esc(o.id)}"><button class="orcCardHead" type="button"><span><b>Orçamento #${esc(o.numero)}</b><small>${esc(o.cliente_nome)}${o.endereco_obra?' • '+esc(o.endereco_obra):''}</small></span><span class="orcCardRight"><em class="orcStatus ${esc(o.status)}">${esc(statusLabel(o.status))}</em><strong>${money(o.valor_total)}</strong></span></button><div class="orcCardBody hidden"><div class="orcResumo"><div><span>Título</span><b>${esc(o.titulo||'Orçamento de Serviços')}</b></div><div><span>Validade</span><b>${esc(fmtDate(o.validade)||'Não informada')}</b></div><div><span>Materiais</span><b>${esc(materialLabel(o.materiais))}</b></div><div><span>Itens</span><b>${rowsFor(o.id).length}</b></div></div><div class="orcActions"><button class="btn editar" type="button">Editar</button><button class="btn imprimir" type="button">Imprimir</button><button class="btn orcPerigo excluir" type="button">Excluir</button></div></div></div>`).join('');
+  const html=orcamentos.map(o=>`<div class="card orcCard" data-id="${esc(o.id)}"><button class="orcCardHead" type="button"><span><b>Orçamento #${esc(o.numero)}</b><small>${esc(o.cliente_nome)}${o.endereco_obra?' • '+esc(o.endereco_obra):''}</small></span><span class="orcCardRight"><em class="orcStatus ${esc(o.status)}">${esc(statusLabel(o.status))}</em><strong>${money(o.valor_total)}</strong></span></button><div class="orcCardBody hidden"><div class="orcResumo"><div><span>Título</span><b>${esc(o.titulo||'Orçamento de Serviços')}</b></div><div><span>Validade</span><b>${esc(fmtDate(o.validade)||'Não informada')}</b></div><div><span>Materiais</span><b>${esc(materialLabel(o.materiais))}</b></div><div><span>Itens</span><b>${rowsFor(o.id).length}</b></div></div><div class="orcActions"><button class="btn editar" type="button">Editar</button><button class="btn imprimir" type="button">Imprimir</button><button class="btn obrixApagarRegistro" type="button" data-orc-apagar>Apagar</button></div></div></div>`).join('');
   // Preservar o DOM e o estado expandido quando a sincronização não altera o conteúdo.
   if(box.__obrixMarkup===html&&box.querySelector('.orcCard'))return;
   const abertos=new Set([...box.querySelectorAll('.orcCard')].filter(el=>!el.querySelector('.orcCardBody')?.classList.contains('hidden')).map(el=>el.dataset.id));
@@ -77,6 +77,9 @@ function render(){
     let reaproveitar=false;
     if(antigo){
       const comparador=antigo.cloneNode(true);comparador.querySelector('.orcCardBody')?.classList.add('hidden');
+      // Estilos visuais inline são aplicados por outros módulos; não significam alteração de orçamento.
+      comparador.querySelectorAll('[style]').forEach(el=>el.removeAttribute('style'));
+      comparador.removeAttribute('style');
       reaproveitar=comparador.outerHTML===card.outerHTML;
     }
     if(reaproveitar){
@@ -89,7 +92,7 @@ function render(){
   });
   [...box.querySelectorAll(':scope > .orcCard')].forEach(el=>{if(!idsAtuais.has(el.dataset.id))el.remove()});
   box.__obrixMarkup=html;
-  box.querySelectorAll('.orcCard').forEach(el=>{const o=orcamentos.find(x=>String(x.id)===String(el.dataset.id));if(!o)return;el.querySelector('.orcCardHead').onclick=()=>el.querySelector('.orcCardBody').classList.toggle('hidden');el.querySelector('.editar').onclick=()=>edit(o);el.querySelector('.imprimir').onclick=()=>printSaved(o);el.querySelector('.excluir').onclick=()=>removeO(o)});
+  box.querySelectorAll('.orcCard').forEach(el=>{const o=orcamentos.find(x=>String(x.id)===String(el.dataset.id));if(!o)return;el.querySelector('.orcCardHead').onclick=()=>el.querySelector('.orcCardBody').classList.toggle('hidden');el.querySelector('.editar').onclick=()=>edit(o);el.querySelector('.imprimir').onclick=()=>printSaved(o);el.querySelector('[data-orc-apagar]').onclick=()=>removeO(o)});
 }
 
 function itemTemplate(i={}){const row=document.createElement('div');row.className='orcItem';row.innerHTML=`<div class="orcGridItem"><label>Descrição<input class="desc" value="${esc(i.descricao||'')}" placeholder="Serviço ou material"></label><label>Quantidade<input class="qtd" type="number" step="0.01" min="0.01" value="${esc(i.quantidade??1)}"></label><label>Unidade<select class="uni"><option>un</option><option>m</option><option>m²</option><option>m³</option><option>kg</option><option>dia</option><option>h</option><option>vb</option></select></label><label>Valor unitário<input class="vu" type="number" step="0.01" min="0" value="${esc(i.valor_unitario??0)}"></label><div class="orcItemTotal"><span>Total</span><b class="vt">R$ 0,00</b></div><button class="orcRemove" type="button" title="Remover item">×</button></div><label>Observações do item<input class="obs" value="${esc(i.observacoes||'')}" placeholder="Opcional"></label>`;
