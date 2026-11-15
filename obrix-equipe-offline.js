@@ -19,6 +19,7 @@ let retryTimer=null;
 let originalAcao=null;
 let originalRefresh=null;
 
+function hojeLocal(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function prof(){
   try{if(typeof profile!=='undefined'&&profile)return profile}catch{}
   return read(BASE_KEY,null)?.profile||null;
@@ -93,7 +94,7 @@ function queue(type,payload){
   return item;
 }
 function diariaOffline(f){
-  const b=modal('Registrar diária',`<p><b>${esc(f.nome||'Funcionário')}</b></p><label>Obra</label><select class="obra">${obraOpts(f.obra_id||'')}</select><label>Data</label><input class="data" type="date" value="${new Date().toISOString().slice(0,10)}"><label>Tipo</label><select class="qtd"><option value="1">Diária inteira</option><option value="0.5">Meia diária</option></select><label>Valor da diária</label><input class="valor" type="number" min="0" step="0.01" value="${Number(f.valor_diaria||0)}"><label>Observações</label><input class="obs"><p class="muted"><b>Sem internet:</b> esta diária ficará aguardando sincronização.</p><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Salvar offline</button></div>`);
+  const b=modal('Registrar diária',`<p><b>${esc(f.nome||'Funcionário')}</b></p><label>Obra</label><select class="obra">${obraOpts(f.obra_id||'')}</select><label>Data</label><input class="data" type="date" value="${hojeLocal()}"><label>Tipo</label><select class="qtd"><option value="1">Diária inteira</option><option value="0.5">Meia diária</option></select><label>Valor da diária</label><input class="valor" type="number" min="0" step="0.01" value="${Number(f.valor_diaria||0)}"><label>Observações</label><input class="obs"><p class="muted"><b>Sem internet:</b> esta diária ficará aguardando sincronização.</p><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Salvar offline</button></div>`);
   b.querySelector('.salvar').onclick=()=>{
     const obra_id=b.querySelector('.obra').value;
     const data=b.querySelector('.data').value;
@@ -117,7 +118,7 @@ function diariaOffline(f){
   };
 }
 function falta(f){
-  const b=modal('Registrar falta',`<p><b>${esc(f.nome||'Funcionário')}</b></p><label>Obra</label><select class="obra">${obraOpts(f.obra_id||'')}</select><label>Data</label><input class="data" type="date" value="${new Date().toISOString().slice(0,10)}"><label style="display:flex;gap:8px;align-items:center"><input class="just" type="checkbox" style="width:auto"> Falta justificada</label><label>Motivo</label><input class="motivo"><label>Observações</label><input class="obs"><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Registrar falta</button></div>`);
+  const b=modal('Registrar falta',`<p><b>${esc(f.nome||'Funcionário')}</b></p><label>Obra</label><select class="obra">${obraOpts(f.obra_id||'')}</select><label>Data</label><input class="data" type="date" value="${hojeLocal()}"><label style="display:flex;gap:8px;align-items:center"><input class="just" type="checkbox" style="width:auto"> Falta justificada</label><label>Motivo</label><input class="motivo"><label>Observações</label><input class="obs"><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Registrar falta</button></div>`);
   b.querySelector('.salvar').onclick=async()=>{
     const data=b.querySelector('.data').value;
     if(!data)return alert('Informe a data.');
