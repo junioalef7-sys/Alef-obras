@@ -2,6 +2,8 @@
 if(window.__OBRIX_ERROS_PTBR)return;window.__OBRIX_ERROS_PTBR=true;
 /* A exibição pertence ao sistema de avisos do OBRIX. */
 function traduz(v){const code=String(v?.code??'').toUpperCase();const raw=String(v?.message??v??'').trim();if(!raw)return'Não foi possível concluir a operação.';const s=raw.toLowerCase();
+ if(/OBRIX_DIARIA_LIMITE_DIA|obrix_diarias_limite_dia/i.test(raw))return'Este funcionário já atingiu o limite de 1 diária inteira ou 2 meias diárias nesta data, mesmo em obras diferentes.';
+ if(/OBRIX_DIARIA_QUANTIDADE|obrix_diaria_quantidade/i.test(raw))return'Selecione diária inteira ou meia diária.';
  if(/pagamento_diarias_diaria_id_fkey|on table [\"']?pagamento_diarias|foreign key.*pagamento_diarias/.test(s))return 'Esta diária possui histórico de pagamento. Se o pagamento foi estornado, use a exclusão segura para preservar o histórico financeiro.';
  if(/could not find the function.*obrix_excluir_diaria_segura|obrix_excluir_diaria_segura.*schema cache/.test(s))return 'A exclusão segura ainda não está disponível no banco. Os registros foram preservados.';
  if(/invalid login credentials|invalid credentials|wrong password|email or password|invalid grant/.test(s))return'E-mail ou senha incorretos.';
