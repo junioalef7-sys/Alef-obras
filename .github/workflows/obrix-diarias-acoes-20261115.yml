@@ -1,0 +1,26 @@
+name: OBRIX validação limite diárias e botões laranja
+on:
+  push:
+    branches:
+      - test/obrix-sync-segundo-registro-20261114
+    paths:
+      - 'obrix-diarias-limite.js'
+      - 'obrix-acoes-laranja.js'
+      - 'obrix-equipe-main.js'
+      - 'obrix.html'
+      - 'tests/obrix-diarias-acoes-20261115.cjs'
+      - '.github/workflows/obrix-diarias-acoes-20261115.yml'
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020e8
+        with:
+          node-version: '22'
+      - run: node --check obrix-diarias-limite.js
+      - run: node --check obrix-acoes-laranja.js
+      - run: node --test tests/obrix-diarias-acoes-20261115.cjs
