@@ -19,6 +19,7 @@ let retryTimer=null;
 let originalAcao=null;
 let originalRefresh=null;
 
+function hojeLocal(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function prof(){
   try{if(typeof profile!=='undefined'&&profile)return profile}catch{}
   return read(BASE_KEY,null)?.profile||null;
@@ -93,13 +94,21 @@ function queue(type,payload){
   return item;
 }
 function diariaOffline(f){
-  const b=modal('Registrar diária',`<p><b>${esc(f.nome||'Funcionário')}</b></p><label>Obra</label><select class="obra">${obraOpts(f.obra_id||'')}</select><label>Data</label><input class="data" type="date" value="${new Date().toISOString().slice(0,10)}"><label>Tipo</label><select class="qtd"><option value="1">Diária inteira</option><option value="0.5">Meia diária</option></select><label>Valor da diária</label><input class="valor" type="number" min="0" step="0.01" value="${Number(f.valor_diaria||0)}"><label>Observações</label><input class="obs"><p class="muted"><b>Sem internet:</b> esta diária ficará aguardando sincronização.</p><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Salvar offline</button></div>`);
+  const b=modal('Registrar diária',`<p><b>${esc(f.nome||'Funcionário')}</b></p><label>Obra</label><select class="obra">${obraOpts(f.obra_id||'')}</select><label>Data</label><input class="data" type="date" value="${hojeLocal()}"><label>Tipo</label><select class="qtd"><option value="1">Diária inteira</option><option value="0.5">Meia diária</option></select><label>Valor da diária</label><input class="valor" type="number" min="0" step="0.01" value="${Number(f.valor_diaria||0)}"><label>Observações</label><input class="obs"><p class="muted"><b>Sem internet:</b> esta diária ficará aguardando sincronização.</p><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Salvar offline</button></div>`);
   b.querySelector('.salvar').onclick=()=>{
     const obra_id=b.querySelector('.obra').value;
     const data=b.querySelector('.data').value;
     const q=Number(b.querySelector('.qtd').value);
     const v=Number(b.querySelector('.valor').value);
     if(!obra_id||!data||v<=0)return alert('Selecione a obra, data e valor.');
+    const mesmoDia=x=>String(x?.funcionario_id)===String(f.id)&&String(x?.data)===String(data);
+    const c=cache(),pendentes=mine();
+    if(c.faltas.some(mesmoDia)||pendentes.some(x=>x.type==='falta'&&mesmoDia(x.payload)))
+      return alert('Não é possível registrar diária. Este funcionário já possui falta registrada nesta data.');
+    const anteriores=[...c.diarias,...globals().diarias,...pendentes.filter(x=>x.type==='diaria').map(x=>x.payload)];
+    const unicas=[...new Map(anteriores.filter(x=>mesmoDia(x)&&!x.cancelada_em).map(x=>[String(x.id),x])).values()];
+    if(![0.5,1].includes(q)||unicas.reduce((total,x)=>total+Number(x.quantidade||0),0)+q>1.000001)
+      return alert('Limite diário atingido. É permitido uma diária inteira ou duas meias diárias por funcionário, por data.');
     const id=uuid();
     const payload={id,funcionario_id:f.id,obra_id,data,quantidade:q,valor_unitario:v,valor_total:v*q,paga:false,observacoes:b.querySelector('.obs').value.trim()||null,criado_em:new Date().toISOString()};
     queue('diaria',payload);
@@ -109,7 +118,7 @@ function diariaOffline(f){
   };
 }
 function falta(f){
-  const b=modal('Registrar falta',`<p><b>${esc(f.nome||'Funcionário')}</b></p><label>Obra</label><select class="obra">${obraOpts(f.obra_id||'')}</select><label>Data</label><input class="data" type="date" value="${new Date().toISOString().slice(0,10)}"><label style="display:flex;gap:8px;align-items:center"><input class="just" type="checkbox" style="width:auto"> Falta justificada</label><label>Motivo</label><input class="motivo"><label>Observações</label><input class="obs"><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Registrar falta</button></div>`);
+  const b=modal('Registrar falta',`<p><b>${esc(f.nome||'Funcionário')}</b></p><label>Obra</label><select class="obra">${obraOpts(f.obra_id||'')}</select><label>Data</label><input class="data" type="date" value="${hojeLocal()}"><label style="display:flex;gap:8px;align-items:center"><input class="just" type="checkbox" style="width:auto"> Falta justificada</label><label>Motivo</label><input class="motivo"><label>Observações</label><input class="obs"><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Registrar falta</button></div>`);
   b.querySelector('.salvar').onclick=async()=>{
     const data=b.querySelector('.data').value;
     if(!data)return alert('Informe a data.');
@@ -119,6 +128,13 @@ function falta(f){
     btn.disabled=true;
     try{
       if(!navigator.onLine){
+        const mesmoDia=x=>String(x.funcionario_id)===String(f.id)&&String(x.data)===String(data);
+        const cLocal=cache(),pendentes=mine();
+        if(cLocal.faltas.some(mesmoDia)||pendentes.some(x=>x.type==='falta'&&mesmoDia(x.payload)))
+          throw Error('Este funcionário já possui uma falta registrada nesta data. Não é permitido registrar outra falta no mesmo dia.');
+        if(cLocal.diarias.some(x=>mesmoDia(x)&&!x.cancelada_em)||globals().diarias.some(x=>mesmoDia(x)&&!x.cancelada_em)
+           ||pendentes.some(x=>x.type==='diaria'&&mesmoDia(x.payload)))
+          throw Error('Não é possível registrar falta. Este funcionário já possui diária registrada nesta data.');
         queue('falta',payload);
         const c=cache();
         c.faltas=[{...payload,empresa_id:empresa(),__offline:true},...c.faltas];
@@ -128,6 +144,14 @@ function falta(f){
         return;
       }
       const sb=await OBRIX_BACKEND.init();
+      const [faltaExistente,diariaExistente]=await Promise.all([
+        sb.from('faltas').select('id').eq('empresa_id',empresa()).eq('funcionario_id',f.id).eq('data',data).limit(1),
+        sb.from('diarias').select('id').eq('empresa_id',empresa()).eq('funcionario_id',f.id).eq('data',data).is('cancelada_em',null).limit(1)
+      ]);
+      if(faltaExistente.error)throw faltaExistente.error;
+      if(diariaExistente.error)throw diariaExistente.error;
+      if(faltaExistente.data?.length)throw Error('Este funcionário já possui uma falta registrada nesta data. Não é permitido registrar outra falta no mesmo dia.');
+      if(diariaExistente.data?.length)throw Error('Não é possível registrar falta. Este funcionário já possui diária registrada nesta data.');
       const r=await sb.from('faltas').insert({...payload,empresa_id:empresa()});
       if(r.error)throw r.error;
       b.remove();
@@ -214,8 +238,39 @@ async function sync(){
     for(const item of items){
       try{
         const table=item.type==='falta'?'faltas':'diarias';
+        const data=item.payload?.data,funcionarioId=item.payload?.funcionario_id;
+        if(table==='faltas'){
+          const [faltaExistente,diariaExistente]=await Promise.all([
+            sb.from('faltas').select('id').eq('empresa_id',empresa()).eq('funcionario_id',funcionarioId).eq('data',data).limit(1),
+            sb.from('diarias').select('id').eq('empresa_id',empresa()).eq('funcionario_id',funcionarioId).eq('data',data).is('cancelada_em',null).limit(1)
+          ]);
+          if(faltaExistente.error)throw faltaExistente.error;
+          if(diariaExistente.error)throw diariaExistente.error;
+          if(faltaExistente.data?.length&&String(faltaExistente.data[0].id)!==String(item.id))
+            throw Error('Falta duplicada: já existe registro para este funcionário e esta data.');
+          if(diariaExistente.data?.length)
+            throw Error('Registro em conflito: já existe diária nesta data.');
+        }
+        if(table==='diarias'){
+          const [faltaExistente,diariasExistentes]=await Promise.all([
+            sb.from('faltas').select('id').eq('empresa_id',empresa()).eq('funcionario_id',funcionarioId).eq('data',data).limit(1),
+            sb.from('diarias').select('id,quantidade').eq('empresa_id',empresa()).eq('funcionario_id',funcionarioId).eq('data',data).is('cancelada_em',null)
+          ]);
+          if(faltaExistente.error)throw faltaExistente.error;
+          if(diariasExistentes.error)throw diariasExistentes.error;
+          if(faltaExistente.data?.length)throw Error('Registro em conflito: já existe falta nesta data.');
+          const soma=(diariasExistentes.data||[]).filter(x=>String(x.id)!==String(item.id))
+            .reduce((total,x)=>total+Number(x.quantidade||0),0);
+          if(soma+Number(item.payload?.quantidade||0)>1.000001)
+            throw Error('Limite diário atingido. Registro offline mantido pendente para revisão.');
+        }
         const r=await sb.from(table).insert({...item.payload,id:item.id,empresa_id:empresa()});
-        if(r.error&&String(r.error.code)!=='23505')throw r.error;
+        if(r.error){
+          if(String(r.error.code)!=='23505')throw r.error;
+          const existente=await sb.from(table).select('id').eq('id',item.id).eq('empresa_id',empresa()).maybeSingle();
+          if(existente.error)throw existente.error;
+          if(!existente.data?.id)throw Error('Registro duplicado para esta data. Revise o histórico antes de sincronizar.');
+        }
       }catch(e){keep.push({...item,error:e?.message||'Falha ao sincronizar'})}
     }
     replaceMine(keep);
