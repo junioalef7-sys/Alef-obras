@@ -128,10 +128,10 @@ function falta(f){
     try{
       if(!navigator.onLine){
         const mesmoDia=x=>String(x.funcionario_id)===String(f.id)&&String(x.data)===String(data);
-        const c=cache(),pendentes=mine();
-        if(c.faltas.some(mesmoDia)||pendentes.some(x=>x.type==='falta'&&mesmoDia(x.payload)))
+        const cLocal=cache(),pendentes=mine();
+        if(cLocal.faltas.some(mesmoDia)||pendentes.some(x=>x.type==='falta'&&mesmoDia(x.payload)))
           throw Error('Este funcionário já possui uma falta registrada nesta data. Não é permitido registrar outra falta no mesmo dia.');
-        if(c.diarias.some(x=>mesmoDia(x)&&!x.cancelada_em)||globals().diarias.some(x=>mesmoDia(x)&&!x.cancelada_em)
+        if(cLocal.diarias.some(x=>mesmoDia(x)&&!x.cancelada_em)||globals().diarias.some(x=>mesmoDia(x)&&!x.cancelada_em)
            ||pendentes.some(x=>x.type==='diaria'&&mesmoDia(x.payload)))
           throw Error('Não é possível registrar falta. Este funcionário já possui diária registrada nesta data.');
         queue('falta',payload);
