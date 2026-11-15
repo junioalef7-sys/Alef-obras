@@ -42,7 +42,21 @@ function atualizarAtividades(){
 }
 async function atualizar(mod){
   if(!estaVisivel(mod))return;
-  if(edicao(mod)){aguardandoFimEdicao.add(mod);return}
+  // O carregamento lazy da tela pode ainda não estar pronto.
+  const disponivel={
+    orcamentos:()=>!!window.OBRIX_ORCAMENTOS?.load,
+    notas:()=>!!window.OBRIX_NOTAS?.load,
+    documentos:()=>!!window.OBRIX_DOCUMENTOS?.load,
+    diario:()=>!!window.OBRIX_DIARIO?.load,
+    equipe:()=>!!window.OBRIX_EQUIPE?.refresh,
+    obras:()=>typeof window.OBRIX_CORE_OBRAS_SYNC==='function'||!!window.OBRIX_OBRAS_DADOS?.sync,
+    financeiro:()=>!!window.OBRIX_FIN?.render
+  }[mod];
+  if(disponivel&&!disponivel())return;
+  const formularioFinanceiro=document.getElementById('fmForm');
+  if((mod==='financeiro'&&formularioFinanceiro&&!formularioFinanceiro.classList.contains('hidden'))||edicao(mod)){
+    aguardandoFimEdicao.add(mod);return;
+  }
   aguardandoFimEdicao.delete(mod);
   if(emCarga.has(mod)){pendente.add(mod);return}
   emCarga.add(mod);
@@ -143,7 +157,7 @@ async function iniciar(){
 function reconciliarVisivel(){
   if(!ativo())return;
   for(const mod of Object.keys(ELEMENTOS)){
-    const vencido=Date.now()-(ultimaConsulta.get(mod)||0)>16000;
+    const vencido=Date.now()-(ultimaConsulta.get(mod)||0)>12000;
     if(estaVisivel(mod)&&!edicao(mod)&&(modulosSujos.has(mod)||vencido))
       agendar(mod,modulosSujos.has(mod)?200:450);
   }
@@ -152,6 +166,8 @@ function reconciliarVisivel(){
 // protege contra pausa de WebSocket e eventos perdidos, sem consultar telas ocultas.
 window.addEventListener('obrix:atividade-local',()=>reconciliarVisivel());
 document.addEventListener('click',e=>{
+  if(e.target?.closest?.('#menuMain [data-go],.bottom button,#bInicio,#bEquipe,#bObras'))
+    setTimeout(reconciliarVisivel,180);
   const b=e.target?.closest?.('#notaSalvar,#orcSalvar,#docSalvar,#diarioSalvar,#fmSalvar,#salvarObraBtn');
   if(!b)return;
   // Esta conferência é pós-clique (a gravação ainda pode estar em andamento).
@@ -167,13 +183,14 @@ document.addEventListener('focusout',ev=>{
 },true);
 window.addEventListener('online',()=>{desligar();void iniciar();reconciliarVisivel()});
 window.addEventListener('focus',()=>{void iniciar();reconciliarVisivel()});
+window.addEventListener('pageshow',()=>{void iniciar();reconciliarVisivel()});
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){for(const t of timers.values())clearTimeout(t);timers.clear();return}
   void iniciar();reconciliarVisivel();
 });
 ['obrix:modules-ready','obrix:modules-online-ready','obrix:session-shell','obrix:grupo-pronto']
   .forEach(ev=>window.addEventListener(ev,()=>{if(ev==='obrix:session-shell')ultimaVerificacaoIdentidade=0;void iniciar();reconciliarVisivel()}));
-setInterval(()=>{if(ativo()){void iniciar();reconciliarVisivel()}},12000);
+setInterval(()=>{if(ativo()){void iniciar();reconciliarVisivel()}},8000);
 setTimeout(()=>{void iniciar();reconciliarVisivel()},700);
 window.OBRIX_SYNC_GERAL={status:()=>({conectado,empresa:!!empresa,modulos:Object.keys(ELEMENTOS),pendentes:[...modulosSujos]}),
   refresh:reconciliarVisivel,start:iniciar};
