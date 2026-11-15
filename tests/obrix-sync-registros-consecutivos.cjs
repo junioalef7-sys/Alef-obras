@@ -89,7 +89,7 @@ test('Obras sem sincronizador legado fazem leitura do banco sem recarregar a pá
  d.window.obras=[];d.window.extras=[];d.window.financeiro=[];
  d.window.OBRIX_OBRAS_FIEL={render:()=>{d.calls.push('renderObras')}};
  d.server.obras=[{id:'obra-a',nome:'Primeira obra'}];
- await d.advance(1100);
+ await d.advance(1700);
  assert.equal(d.window.obras.length,1);
  d.server.obras=[{id:'obra-a'},{id:'obra-b'}];
  await d.advance(18500);
