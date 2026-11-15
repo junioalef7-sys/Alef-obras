@@ -40,6 +40,30 @@ function atualizarAtividades(){
     window.dispatchEvent(new CustomEvent('obrix:atividade-externa'));
   },850);
 }
+async function reconciliarObrasBanco(){
+  // Recuperação quando o sincronizador legado não está disponível.
+  // Atualiza os arrays existentes, sem recriar os componentes e perder o estado da tela.
+  const p=await window.OBRIX_BACKEND.profile(),sb=await window.OBRIX_BACKEND.init();
+  if(!p?.empresa_id)throw Error('Empresa não identificada na sincronização.');
+  const id=p.empresa_id;
+  const [o,x,f]=await Promise.all([
+    sb.from('obras').select('*').eq('empresa_id',id),
+    sb.from('servicos_extras').select('*').eq('empresa_id',id),
+    sb.from('financeiro').select('*').eq('empresa_id',id)
+  ]);
+  for(const r of [o,x,f])if(r.error)throw r.error;
+  const manterReferencias=(nome,dados)=>{
+    const atuais=window[nome],rows=dados||[];
+    if(Array.isArray(atuais))atuais.splice(0,atuais.length,...rows);
+    else window[nome]=rows;
+  };
+  manterReferencias('obras',o.data);
+  manterReferencias('extras',x.data);
+  manterReferencias('financeiro',f.data);
+  if(window.OBRIX_OBRAS_FIEL?.render)window.OBRIX_OBRAS_FIEL.render();
+  else window.OBRIX_OBRAS?.render?.();
+  window.OBRIX_DASH?.paint?.();
+}
 async function atualizar(mod){
   if(!estaVisivel(mod))return;
   // O carregamento lazy da tela pode ainda não estar pronto.
@@ -49,7 +73,7 @@ async function atualizar(mod){
     documentos:()=>!!window.OBRIX_DOCUMENTOS?.load,
     diario:()=>!!window.OBRIX_DIARIO?.load,
     equipe:()=>!!window.OBRIX_EQUIPE?.refresh,
-    obras:()=>typeof window.OBRIX_CORE_OBRAS_SYNC==='function'||!!window.OBRIX_OBRAS_DADOS?.sync,
+    obras:()=>true,
     financeiro:()=>!!window.OBRIX_FIN?.render
   }[mod];
   if(disponivel&&!disponivel())return;
@@ -70,7 +94,8 @@ async function atualizar(mod){
     if(mod==='equipe')await window.OBRIX_EQUIPE?.refresh?.();
     if(mod==='obras'){
       if(typeof window.OBRIX_CORE_OBRAS_SYNC==='function')await window.OBRIX_CORE_OBRAS_SYNC();
-      else await window.OBRIX_OBRAS_DADOS?.sync?.();
+      else if(window.OBRIX_OBRAS_DADOS?.sync)await window.OBRIX_OBRAS_DADOS.sync();
+      else await reconciliarObrasBanco();
     }
     if(mod==='financeiro'&&document.getElementById('fmForm')?.classList.contains('hidden'))
       await window.OBRIX_FIN?.render?.(true);

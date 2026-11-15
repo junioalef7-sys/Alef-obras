@@ -13,7 +13,8 @@ function device(mod='notas'){
  const window={addEventListener:listen('window'),dispatchEvent:()=>{}},navigator={onLine:true};
  const timeout=(fn,delay=0)=>{const key=++id;timers.set(key,{at:clock+delay,fn});return key};
  const interval=(fn,delay)=>{const key=++id;timers.set(key,{at:clock+delay,fn,every:delay});return key};
- const supabase={channel(name){const c={name,events:[],on(_,params,fn){this.events.push({params,fn});return this},subscribe(status){this.status=status;channels.push(this);timeout(()=>status('SUBSCRIBED'),10);return this}};return c},removeChannel:async()=>{}};
+ const server={obras:[],servicos_extras:[],financeiro:[]};
+ const supabase={from(table){return{select(){return{eq:async()=>({data:server[table]||[],error:null})}}}},channel(name){const c={name,events:[],on(_,params,fn){this.events.push({params,fn});return this},subscribe(status){this.status=status;channels.push(this);timeout(()=>status('SUBSCRIBED'),10);return this}};return c},removeChannel:async()=>{}};
  window.OBRIX_BACKEND={profile:async()=>({empresa_id:COMPANY}),init:async()=>supabase};
  const modules={notas:'OBRIX_NOTAS',orcamentos:'OBRIX_ORCAMENTOS',documentos:'OBRIX_DOCUMENTOS',diario:'OBRIX_DIARIO',equipe:'OBRIX_EQUIPE',obras:'OBRIX_OBRAS_DADOS',financeiro:'OBRIX_FIN',estoque:'OBRIX_EST'};
  for(const [key,which] of Object.entries(modules))window[which]={load:async()=>{calls.push(key)},refresh:async()=>{calls.push(key)},render:async()=>{calls.push(key)},sync:async()=>{calls.push(key)}};
@@ -34,7 +35,7 @@ function device(mod='notas'){
  function remote(table){
   for(const c of channels)for(const e of c.events)if(e.params.table===table)e.fn({eventType:'INSERT',new:{empresa_id:COMPANY}});
  }
- return{advance,event,remote,calls,channels,focus:v=>{focused=v},screen:page=>{active=page},finForm};
+ return{advance,event,remote,calls,channels,window,server,focus:v=>{focused=v},screen:page=>{active=page},finForm};
 }
 test('segundo registro remoto aparece sem fechar nem recarregar',async()=>{
  const d=device();await d.advance(1000);
@@ -80,4 +81,17 @@ test('tres sessoes recebem duas atualizacoes independentes',async()=>{
 test('formulario financeiro aberto nao e substituido',async()=>{
  const d=device('financeiro');d.finForm.classList.contains=()=>false;
  await d.advance(1000);assert.ok(!d.calls.includes('financeiro'));
+});
+
+test('Obras sem sincronizador legado fazem leitura do banco sem recarregar a página',async()=>{
+ const d=device('obras');
+ delete d.window.OBRIX_OBRAS_DADOS;
+ d.window.obras=[];d.window.extras=[];d.window.financeiro=[];
+ d.window.OBRIX_OBRAS_FIEL={render:()=>{d.calls.push('renderObras')}};
+ d.server.obras=[{id:'obra-a',nome:'Primeira obra'}];
+ await d.advance(1100);
+ assert.equal(d.window.obras.length,1);
+ d.server.obras=[{id:'obra-a'},{id:'obra-b'}];
+ await d.advance(18500);
+ assert.equal(d.window.obras.length,2);
 });
