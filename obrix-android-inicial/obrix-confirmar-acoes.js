@@ -36,7 +36,7 @@
     const overlay=document.createElement('div');overlay.className='obrixConfirmOverlay';
     overlay.innerHTML='<div class="obrixConfirmBox" role="alertdialog" aria-modal="true" aria-labelledby="obrixAvisoTitulo"><h2 id="obrixAvisoTitulo"></h2><p></p><div class="obrixConfirmActions" style="grid-template-columns:1fr!important"><button type="button" class="obrixConfirmCancel">OK</button></div></div>';
     overlay.querySelector('h2').textContent=String(titulo);
-    overlay.querySelector('p').textContent=String(mensagem);
+    overlay.querySelector('p').textContent=String(window.OBRIX_PT_ERROR?.(mensagem)??mensagem);
     let done=false;
     const key=e=>{if(e.key==='Escape'||e.key==='Enter'){e.preventDefault();close()}};
     function close(){if(done)return;done=true;document.removeEventListener('keydown',key,true);overlay.remove();resolve()}

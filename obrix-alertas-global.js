@@ -18,7 +18,7 @@
   document.head.appendChild(s);
  }
  function aviso(mensagem,tipo){
-  const texto=String(mensagem??'').trim().slice(0,260);
+  const texto=String(window.OBRIX_PT_ERROR?.(mensagem)??mensagem??'').trim().slice(0,260);
   if(!texto||!document.body)return;
   const categoria=tipo||classificar(texto);
   const agora=Date.now(),chave=categoria+'|'+texto;

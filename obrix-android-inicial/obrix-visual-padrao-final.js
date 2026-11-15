@@ -138,6 +138,7 @@ else document.addEventListener('DOMContentLoaded',instalarGarantiaBusca,{once:tr
 
 const TIT=['obras','diário de obras','diario de obras','financeiro','equipe','funcionários','funcionarios','materiais / estoque','materiais/estoque','material estoque','materiais de estoque','estoque','orçamentos','orcamentos','orçamento','orcamento','relatórios','relatorios','documentos','notas','backup','backups','central offline','central clim','planos e assinaturas','planos de assinatura','ajuda e feedback','configurações','configuracoes','resumo geral','resumo da obra'];const n=s=>(s||'').replace(/\s+/g,' ').trim().toLowerCase(),vis=e=>!!e&&!e.classList.contains('hidden')&&getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden',modal=e=>!!e.closest('.modal,.modalBack,[role="dialog"],.estOp,[class*="modal"],[class*="dialog"]');
 function neutro(b){
+ if(b?.closest?.('#configMain'))return; // Configurações mantém os cartões do próprio tema.
  if(b?.closest?.('#menuMain'))return; // Cartoes do Menu usam cores estaveis, sem neutralizacao inline.
  if(!b||b.id==='obrixTheme'||b.id==='obxVoltarObras'||b.id==='cfgExcluirConta'||b.matches?.('.accountDeleteBtn')||b.closest?.('#configMain .cfgDeleteGrid')||b.closest?.('#app>.bottom')||b.matches?.('#obras .obxFiltros button[data-filtro="andamento"]')||b.matches?.('#assPlanos .obrixPayMethod'))return;
  // Botões de confirmação/gravação não podem receber fundo neutro inline,
