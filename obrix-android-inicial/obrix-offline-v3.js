@@ -18,7 +18,7 @@ const GROUPS={
  financeiro:['./obrix-financeiro-resumo-obras.js','./obrix-financeiro-resumo-geral.js','./obrix-financeiro-protecao-estoque.js','./obrix-financeiro-busca.js','./obrix-financeiro-filtros-layout.js','./obrix-financeiro-grafico-receitas.js','./obrix-blindagem-financeiro.js'],
  equipe:['./obrix-equipe-controles-guard.js','./obrix-equipe-total-pago.js','./obrix-equipe-lista-vertical.js','./obrix-equipe-diretorio-pessoal.js','./obrix-equipe-botoes-neutros-v1.js','./obrix-equipe-estoque-fix-v1.js'],
  estoque:['./obrix-estoque-saida-obra.js','./obrix-estoque-operacoes-main.js','./obrix-estoque-estorno-final.js'],
- obras:['./obrix-obras-busca.js','./obrix-obras-pagamentos.js','./obrix-checklist-v2.js']
+ obras:['./obrix-obras-busca.js','./obrix-obras-pagamentos.js','./obrix-checklist-v2.js?v=20261115-backup-seta-checklist1']
 };
 const FEATURES={
  diario:['./obrix-diario-main.js','./obrix-diario-equipe.js'],
@@ -26,7 +26,7 @@ const FEATURES={
  relatorios:['./obrix-relatorios-v2.js','./obrix-relatorios-mobile-fix.js','./obrix-relatorios-complementos.js','./obrix-relatorio-financeiro-obra.js','./obrix-relatorio-diario.js'],
  documentos:['./obrix-documentos-main.js','./obrix-documentos-direto.js'],
  notas:['./obrix-notas-main.js'],
- backup:['./obrix-backup-v2.js','./obrix-backup-import-run.js','./obrix-backup-completo.js'],
+ backup:['./obrix-backup-v2.js?v=20261115-backup-seta-checklist1','./obrix-backup-import-run.js','./obrix-backup-completo.js?v=20261115-backup-seta-checklist1'],
  config:['./obrix-config-main.js']
 };
 const read=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(_){return d}};
