@@ -61,7 +61,9 @@ function mudou(table,payload){
   }
   const aplicado=aplicarPayload(table,payload);
   if(visivel()&&(aplicado||!['faltas','pagamentos_equipe'].includes(table)))pintarAgendado();
-  reconciliar();
+  // O evento com a linha completa já atualiza a memória e a ficha. Evitar a segunda
+  // busca de todas as tabelas a cada registro, que causava piscadas no cabeçalho.
+  if(!aplicado||table==='faltas'||table==='pagamentos_equipe')reconciliar();
 }
 async function iniciar(){
   if(canal||iniciando||!navigator.onLine||document.hidden||!window.OBRIX_BACKEND)return;
