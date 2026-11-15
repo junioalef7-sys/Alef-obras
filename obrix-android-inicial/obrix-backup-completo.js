@@ -83,4 +83,7 @@ async function restaurar(){
    btn.disabled=false;btn.textContent='Tentar restaurar novamente';
  }
 }
-document.addEventListener('click',gerar,true);document.addEventListener('change',capturar,true);new MutationObserver(()=>botaoImportar()).observe(document.documentElement,{childList:true,subtree:true});})();
+document.addEventListener('click',gerar,true);document.addEventListener('change',capturar,true);
+// O estado do arquivo é atualizado pelo input e pela conferência, sem observar todo o DOM.
+window.addEventListener('obrix:backup-conferencia-pronta',botaoImportar);
+})();
