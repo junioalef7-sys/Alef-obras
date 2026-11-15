@@ -45,7 +45,8 @@
       card.classList.toggle('hidden',!ok);
       if(ok)visiveis++;
     });
-    if(info)info.textContent=q?(visiveis===1?'1 obra encontrada':`${visiveis} obras encontradas`):`${cards.length} obra${cards.length===1?'':'s'} cadastrada${cards.length===1?'':'s'}`;
+    const totalObras=Array.isArray(window.obras)?new Set(window.obras.map(o=>String(o.id))).size:cards.length;
+    if(info)info.textContent=q?(visiveis===1?'1 obra encontrada':`${visiveis} obras encontradas`):`${totalObras} obra${totalObras===1?'':'s'} cadastrada${totalObras===1?'':'s'}`;
   }
 
   function agendar(){
@@ -69,5 +70,6 @@
 
   function iniciar(){if(!garantir())setTimeout(iniciar,250)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',iniciar,{once:true});else iniciar();
+  window.addEventListener('obrix:obras-carregadas',()=>agendar());
   window.OBRIX_OBRAS_BUSCA={apply:aplicar,refresh:()=>{garantir();agendar()},refreshOptions:atualizarSugestoes};
 })();
