@@ -21,4 +21,59 @@ async function gerar(){const btn=$('backupGerar'),box=$('backupStatus');btn.disa
 async function salvarBackup(){if(!ultimo)return;const txt=JSON.stringify(ultimo,null,2),blob=new Blob([txt],{type:'application/json'}),nome=`OBRIX_BACKUP_${new Date().toISOString().slice(0,10)}.json`;try{const f=new File([blob],nome,{type:'application/json'});if(navigator.share&&navigator.canShare?.({files:[f]})){await navigator.share({files:[f],title:'Backup OBRIX'});window.OBRIX_ATIVIDADES_LOCAL?.registrar?.('Backup exportado: '+nome,'backup',ultimo?.empresa_id);return}}catch(e){if(e?.name==='AbortError')return}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();window.OBRIX_ATIVIDADES_LOCAL?.registrar?.('Backup exportado: '+nome,'backup',ultimo?.empresa_id);setTimeout(()=>URL.revokeObjectURL(url),60000)}
 async function conferirArquivo(ev){const file=ev.target.files?.[0],box=$('backupConferencia');if(!file)return;box.classList.remove('hidden');box.innerHTML='<div class="muted">Conferindo arquivo...</div>';ultimoEdifiq=null;try{const txt=(await file.text()).replace(/^\uFEFF/,'').trim();let b;try{b=JSON.parse(txt)}catch(_){b=JSON.parse(txt.replace(/,\s*([}\]])/g,'$1'))}if(b?.obrix_backup===1&&b?.dados&&b?.integridade){box.innerHTML=`<div class="backupArquivoNome"><strong>${file.name}</strong><span>${b.gerado_em?new Date(b.gerado_em).toLocaleString('pt-BR'):'Data não informada'}</span></div>`+resumoHtml(b);return}const ed=normalizarEdifiq(b);if(ed){ultimoEdifiq=ed;box.innerHTML=`<div class="backupArquivoNome"><strong>${file.name}</strong><span>Backup antigo do EDIFIQ</span></div>`+resumoEdifiqHtml(ed);return}throw new Error('Este arquivo não é um backup reconhecido do OBRIX nem do EDIFIQ.')}catch(e){box.innerHTML=`<div class="backupResultado erro"><strong>Arquivo inválido</strong><span>${e?.message||e}</span></div>`}finally{ev.target.value=''}}
 async function open(){ensure();esconderOutros();$('backupMain')?.classList.remove('hidden');scrollTo({top:0,behavior:'smooth'})}
-const css=document.createElement('style');css.textContent=`.backupHero{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.backupHero h1{margin:0 0 5px}.backupFechar{border:1px solid #ffffff55;background:#ffffff18;color:#fff;border-radius:10px;padding:9px 13px;font-weight:900}.backupStatus{margin-top:14px}.backupResultado{border-radius:12px;padding:12px 14px;display:grid;gap:4px;margin-bottom:12px}.backupResultado.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}.backupResultado.erro{background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}.backupTotais{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.backupTotais>div{border:1px solid #e2e8f0;border-radius:12px;padding:10px}.backupTotais small{display:block;color:#64748b;font-weight:700}.backupTotais b{display:block;margin-top:4px}.backupLista{margin-top:9px;border-top:1px solid #e2e8f0}.backupLinha{display:flex;justify-content:space-between;gap:12px;padding:8px 2px;border-bottom:1px solid #e2e8f0}.backupErros{margin-top:12px;padding:10px;border-radius:10px;background:#fff1f2;color:#9f1239}.backupSalvar{width:100%;margin-top:14px}.backupArquivo{display:block;border:2px dashed #cbd5e1;border-radius:13px;padding:16px;text-align:center;font-weight:900;cursor:pointer}.backupArquivo input{display:none}.backupArquivoNome{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px}.backupArquivoNome span{color:#64748b}.backupAviso p{margin-bottom:0}.backupAviso{border-left:4px solid #0f172a}.backupMigracao{margin-top:14px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:12px;padding:13px}.backupMigracao p{margin:6px 0 8px}.edifiqOk{border-left:4px solid #16a34a}@media(max-width:650px){.backupTotais{grid-template-columns:1fr 1fr}.backupArquivoNome{display:block}.backupArquivoNome span{display:block;margin-top:4px}}`;document.head.appendChild(css);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(ensure,200));else setTimeout(ensure,200);window.OBRIX_BACKUP={open,gerar,conferir:conferirArquivo,getEdifiq:()=>ultimoEdifiq};})();
+const css=document.createElement('style');css.textContent=`.backupHero{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.backupHero h1{margin:0 0 5px}.backupFechar{border:1px solid #ffffff55;background:#ffffff18;color:#fff;border-radius:10px;padding:9px 13px;font-weight:900}.backupStatus{margin-top:14px}.backupResultado{border-radius:12px;padding:12px 14px;display:grid;gap:4px;margin-bottom:12px}.backupResultado.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}.backupResultado.erro{background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}.backupTotais{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.backupTotais>div{border:1px solid #e2e8f0;border-radius:12px;padding:10px}.backupTotais small{display:block;color:#64748b;font-weight:700}.backupTotais b{display:block;margin-top:4px}.backupLista{margin-top:9px;border-top:1px solid #e2e8f0}.backupLinha{display:flex;justify-content:space-between;gap:12px;padding:8px 2px;border-bottom:1px solid #e2e8f0}.backupErros{margin-top:12px;padding:10px;border-radius:10px;background:#fff1f2;color:#9f1239}.backupSalvar{width:100%;margin-top:14px}.backupArquivo{display:block;border:2px dashed #cbd5e1;border-radius:13px;padding:16px;text-align:center;font-weight:900;cursor:pointer}.backupArquivo input{display:none}.backupArquivoNome{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px}.backupArquivoNome span{color:#64748b}.backupAviso p{margin-bottom:0}.backupAviso{border-left:4px solid #0f172a}.backupMigracao{margin-top:14px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:12px;padding:13px}.backupMigracao p{margin:6px 0 8px}.edifiqOk{border-left:4px solid #16a34a}@media(max-width:650px){.backupTotais{grid-template-columns:1fr 1fr}.backupArquivoNome{display:block}.backupArquivoNome span{display:block;margin-top:4px}}
+/* Contraste exclusivo do Backup; não interfere nos estilos das outras telas. */
+html[data-theme="light"] body #app #backupMain .backupMigracao{
+ background:#eff6ff!important;background-color:#eff6ff!important;border-color:#a7c6ed!important;color:#1e3a8a!important;
+}
+html[data-theme="light"] body #app #backupMain .backupMigracao :is(strong,p,span){
+ color:#1e3a8a!important;-webkit-text-fill-color:#1e3a8a!important;opacity:1!important;
+}
+html[data-theme="light"] body #app #backupMain .backupMigracao .muted{
+ color:#334f83!important;-webkit-text-fill-color:#334f83!important;opacity:1!important;
+}
+html[data-theme="dark"] body #app #backupMain .backupMigracao{
+ background:#15293f!important;background-color:#15293f!important;border-color:#476580!important;color:#f0f6ff!important;
+}
+html[data-theme="dark"] body #app #backupMain .backupMigracao :is(strong,p,span){
+ color:#f0f6ff!important;-webkit-text-fill-color:#f0f6ff!important;opacity:1!important;
+}
+html[data-theme="dark"] body #app #backupMain .backupMigracao .muted{
+ color:#c6d9f0!important;-webkit-text-fill-color:#c6d9f0!important;opacity:1!important;
+}
+html[data-theme="light"] body #app #backupMain .backupResultado.ok{
+ background:#ecfdf5!important;background-color:#ecfdf5!important;color:#065f46!important;
+}
+html[data-theme="light"] body #app #backupMain .backupResultado.ok :is(strong,span){
+ color:#065f46!important;-webkit-text-fill-color:#065f46!important;
+}
+html[data-theme="light"] body #app #backupMain .backupResultado.erro{
+ background:#fff1f2!important;background-color:#fff1f2!important;color:#9f1239!important;
+}
+html[data-theme="light"] body #app #backupMain .backupResultado.erro :is(strong,span){
+ color:#9f1239!important;-webkit-text-fill-color:#9f1239!important;
+}
+html[data-theme="dark"] body #app #backupMain .backupResultado.ok{
+ background:#14372d!important;background-color:#14372d!important;border-color:#38785d!important;color:#dcfff0!important;
+}
+html[data-theme="dark"] body #app #backupMain .backupResultado.ok :is(strong,span){
+ color:#dcfff0!important;-webkit-text-fill-color:#dcfff0!important;
+}
+html[data-theme="dark"] body #app #backupMain .backupResultado.erro{
+ background:#3b202a!important;background-color:#3b202a!important;border-color:#955468!important;color:#ffe4e9!important;
+}
+html[data-theme="dark"] body #app #backupMain .backupResultado.erro :is(strong,span){
+ color:#ffe4e9!important;-webkit-text-fill-color:#ffe4e9!important;
+}
+html[data-theme="dark"] body #app #backupMain .backupErros{
+ background:#3b202a!important;background-color:#3b202a!important;color:#ffe4e9!important;
+}
+html[data-theme="dark"] body #app #backupMain .backupTotais>div{
+ background:var(--ob-surface-2)!important;background-color:var(--ob-surface-2)!important;border-color:var(--ob-border)!important;
+}
+html[data-theme="dark"] body #app #backupMain .backupTotais :is(b,small),
+html[data-theme="dark"] body #app #backupMain .backupArquivoNome span,
+html[data-theme="dark"] body #app #backupMain .backupLinha :is(span,b){
+ color:var(--ob-text)!important;-webkit-text-fill-color:var(--ob-text)!important;opacity:1!important;
+}
+`;document.head.appendChild(css);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(ensure,200));else setTimeout(ensure,200);window.OBRIX_BACKUP={open,gerar,conferir:conferirArquivo,getEdifiq:()=>ultimoEdifiq};})();
