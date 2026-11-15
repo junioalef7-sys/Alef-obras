@@ -1,5 +1,11 @@
 (()=>{'use strict';if(window.__OBRIX_VISUAL_PADRAO_FINAL)return;window.__OBRIX_VISUAL_PADRAO_FINAL=true;
 const st=document.createElement('style');st.id='obrix-visual-padrao-final';st.textContent=`
+/* Estabilização visual restrita ao cabeçalho de Orçamentos. */
+html body #app:has(> #orcamentosMain:not(.hidden)) > .top,
+html body #app:has(> #orcamentosMain:not(.hidden)) > .top > *{
+ animation:none!important;transition:none!important;
+}
+
 /* Correção restrita à seta superior de Orçamentos. */
 html body #app:has(> #orcamentosMain:not(.hidden)) > .top #obrixHeaderVoltar{
  display:inline-flex!important;visibility:visible!important;opacity:1!important;
@@ -168,7 +174,27 @@ function botoesNeutros(){document.querySelectorAll('#app button,#app .btn,#app i
 function especiais(){document.querySelectorAll('#app button,#app .btn,#app [role="button"],.modalBack button,.modalBack .btn,.modal button,.modal .btn,[role="dialog"] button,[role="dialog"] .btn').forEach(b=>{const t=n(b.textContent),area=n((b.closest('main,section,.panel,.modal,.modalBack,[role="dialog"]')?.textContent||'').slice(0,500));b.classList.remove('obrixDocNovo','obrixDocExcluir','obrixFinReceita','obrixFinDespesa');if((t==='+ documentos'||t==='+ documento'||t==='+ novo documento'||t==='novo documento')&&area.includes('document'))b.classList.add('obrixDocNovo');if((t==='excluir'||t==='apagar')&&area.includes('document'))b.classList.add('obrixDocExcluir');if((t.includes('receita')||t==='+ receita')&&area.includes('finance'))b.classList.add('obrixFinReceita');if((t.includes('despesa')||t==='+ despesa')&&area.includes('finance'))b.classList.add('obrixFinDespesa')})}
 function fecharPrincipais(){document.querySelectorAll('#app main,#app section,#app .panel,#app .card').forEach(root=>{if(!titulo(root))return;const h=root.querySelector(':scope>h1,:scope>h2,:scope>.hero h1,:scope>.hero h2,:scope>.sectionHead strong,:scope header h1,:scope header h2,:scope>.rgHead h1,:scope>.rgHead h2');if(!h)return;const cab=h.closest('.hero,.sectionHead,header,.rgHead')||h.parentElement;if(!cab)return;cab.querySelectorAll('button,.btn,[role="button"]').forEach(b=>{if(n(b.textContent)==='fechar'&&!modal(b))b.remove()})})}
 function limpar(){document.querySelectorAll('#app main,#app section,#app .panel,#app .card').forEach(root=>{if(!titulo(root))return;root.querySelectorAll(':scope>.hero p,:scope>.hero small,:scope>.hero .subtitle,:scope>.hero .subtitulo,:scope>p.subtitle,:scope>p.subtitulo,:scope>.sectionHead p').forEach(e=>e.remove())});fecharPrincipais();botoesNeutros();especiais()}
-function seta(){const visTopo=e=>!!e&&!e.classList.contains('hidden')&&!document.getElementById('app')?.classList.contains('hidden');const top=document.querySelector('#app>.top');if(!top)return;let b=document.getElementById('obrixHeaderVoltar');if(!b){b=document.createElement('button');b.id='obrixHeaderVoltar';b.type='button';b.className='btn obrixHeaderVoltar hidden';b.setAttribute('aria-label','Voltar');b.setAttribute('title','Voltar');b.innerHTML='<svg data-obrix-back-icon="1" viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';top.insertBefore(b,top.firstElementChild)}if(!b.querySelector('svg[data-obrix-back-icon]'))b.innerHTML='<svg data-obrix-back-icon="1" viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';const inicio=document.getElementById('inicio'),menu=document.getElementById('menuMain')||document.getElementById('menu'),resumo=document.getElementById('resumoGeralMain'),noInicio=!!inicio&&visTopo(inicio),noMenu=!!menu&&visTopo(menu),noResumo=!!resumo&&visTopo(resumo),p=telaAtual();const paginaEstavel=['obras','equipe','financeiroMain','estoqueMain','resumoGeralMain','configMain','backupMain','diarioMain','notasMain','orcamentosMain','relatoriosMain','assinaturaMain','documentosMain'].some(id=>visTopo(document.getElementById(id)));const equipeVisivel=visTopo(document.getElementById('equipe'));
+function seta(){const visTopo=e=>!!e&&!e.classList.contains('hidden')&&!document.getElementById('app')?.classList.contains('hidden');const top=document.querySelector('#app>.top');if(!top)return;let b=document.getElementById('obrixHeaderVoltar');if(!b){b=document.createElement('button');b.id='obrixHeaderVoltar';b.type='button';b.className='btn obrixHeaderVoltar hidden';b.setAttribute('aria-label','Voltar');b.setAttribute('title','Voltar');b.innerHTML='<svg data-obrix-back-icon="1" viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';top.insertBefore(b,top.firstElementChild)}if(!b.querySelector('svg[data-obrix-back-icon]'))b.innerHTML='<svg data-obrix-back-icon="1" viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const orcAtivo=!!document.getElementById('orcamentosMain')&&
+ !document.getElementById('orcamentosMain').classList.contains('hidden')&&
+ !document.getElementById('app')?.classList.contains('hidden');
+if(orcAtivo){
+ // Preservar a mesma seta e o cabeçalho, sem alternar classes a cada atualização.
+ if(b.classList.contains('hidden'))b.classList.remove('hidden');
+ if(b.dataset.obrixOrcEstavel!=='1'){
+   b.dataset.obrixOrcEstavel='1';
+   b.onclick=()=>{
+     const dialogo=document.querySelector('body>.modalBack:not(.hidden),body>#docViewerModal:not(.hidden)');
+     const fechar=dialogo?.querySelector('[data-obp-fechar],#docViewerClose,.obrix-hist-pag-x,.cancelar,[aria-label="Fechar"],button[data-close]');
+     if(fechar){fechar.click();return}
+     if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();return}
+     if(typeof window.abrir==='function')window.abrir('inicio');
+   };
+ }
+ return;
+}
+if(b.dataset.obrixOrcEstavel==='1')delete b.dataset.obrixOrcEstavel;
+const inicio=document.getElementById('inicio'),menu=document.getElementById('menuMain')||document.getElementById('menu'),resumo=document.getElementById('resumoGeralMain'),noInicio=!!inicio&&visTopo(inicio),noMenu=!!menu&&visTopo(menu),noResumo=!!resumo&&visTopo(resumo),p=telaAtual();const paginaEstavel=['obras','equipe','financeiroMain','estoqueMain','resumoGeralMain','configMain','backupMain','diarioMain','notasMain','orcamentosMain','relatoriosMain','assinaturaMain','documentosMain'].some(id=>visTopo(document.getElementById(id)));const equipeVisivel=visTopo(document.getElementById('equipe'));
 const equipeViaRodape=equipeVisivel&&document.documentElement.dataset.obrixEquipeOrigem!=='menu';
 const financeiroVisivel=visTopo(document.getElementById('financeiroMain'));
 const financeiroViaRodape=financeiroVisivel&&document.documentElement.dataset.obrixFinanceiroOrigem==='rodape';
