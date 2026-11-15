@@ -9,13 +9,24 @@ async function carregarChecklist(select,obraId,selecionado=''){
   select.innerHTML='<option value="">Sem checklist / etapa</option>';
   if(!obraId)return;
   try{const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile(),r=await sb.from('checklist_itens').select('id,nome,ordem,progresso').eq('empresa_id',p.empresa_id).eq('obra_id',obraId).order('ordem',{ascending:true});if(r.error)throw r.error;(r.data||[]).forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=`${c.nome} (${Number(c.progresso||0)}%)`;if(String(c.id)===String(selecionado))o.selected=true;select.appendChild(o)})}catch(e){console.warn('Checklist da diária',e);select.innerHTML='<option value="">Não foi possível carregar o checklist</option>'}}
+async function validarRegistroDiariaDia(sb,empresaId,funcionarioId,data,qtd){
+  const [rf,rd]=await Promise.all([
+    sb.from('faltas').select('id').eq('empresa_id',empresaId).eq('funcionario_id',funcionarioId).eq('data',data).limit(1),
+    sb.from('diarias').select('id,quantidade').eq('empresa_id',empresaId).eq('funcionario_id',funcionarioId).eq('data',data).is('cancelada_em',null)
+  ]);
+  if(rf.error)throw rf.error;
+  if(rd.error)throw rd.error;
+  if(rf.data?.length)throw Error('Não é possível registrar diária. Este funcionário já possui falta registrada nesta data.');
+  if(![0.5,1].includes(qtd)||(rd.data||[]).reduce((v,x)=>v+Number(x.quantidade||0),0)+qtd>1.000001)
+    throw Error('Limite diário atingido. É permitido uma diária inteira ou duas meias diárias por funcionário, por data.');
+}
 async function registrarDiaria(f){
   const b=modal(`<h2>Registrar diária</h2><p><b>${esc(f.nome)}</b></p><label>Obra</label><select class="obra">${listaObras(f.obra_id||'')}</select><label>Checklist / etapa da obra</label><select class="check"><option value="">Selecione a obra primeiro</option></select><label>Data</label><input class="data" type="date" value="${hoje()}"><label>Tipo</label><select class="qtd"><option value="1">Diária inteira</option><option value="0.5">Meia diária</option></select><label>Valor da diária</label><input class="valor" type="number" min="0" step="0.01" value="${Number(f.valor_diaria||0)}"><label>Observações</label><input class="obs"><div class="modalActions"><button class="btn cancelar">Cancelar</button><button class="btn salvar">Registrar</button></div>`,'eqDadosModal');
   const obra=b.querySelector('.obra'),check=b.querySelector('.check');
   obra.onchange=()=>carregarChecklist(check,obra.value);
   if(obra.value)await carregarChecklist(check,obra.value);
   b.querySelector('.cancelar').onclick=()=>b.remove();
-  b.querySelector('.salvar').onclick=async()=>{const obra_id=obra.value,data=b.querySelector('.data').value,q=Number(b.querySelector('.qtd').value),v=Number(b.querySelector('.valor').value),checklist_id=check.value||null;if(!obra_id||!data||v<=0)return alert('Selecione a obra, data e valor.');const btn=b.querySelector('.salvar');btn.disabled=true;btn.textContent='Registrando...';try{const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile(),r=await sb.from('diarias').insert({empresa_id:p.empresa_id,funcionario_id:f.id,obra_id,checklist_id,data,quantidade:q,valor_unitario:v,valor_total:v*q,paga:false,observacoes:b.querySelector('.obs').value.trim()||null});if(r.error)throw r.error;b.remove();await window.OBRIX_EQUIPE?.refresh?.()}catch(e){btn.disabled=false;btn.textContent='Registrar';alert(e?.message||'Não foi possível registrar a diária.')}};
+  b.querySelector('.salvar').onclick=async()=>{const obra_id=obra.value,data=b.querySelector('.data').value,q=Number(b.querySelector('.qtd').value),v=Number(b.querySelector('.valor').value),checklist_id=check.value||null;if(!obra_id||!data||v<=0)return alert('Selecione a obra, data e valor.');const btn=b.querySelector('.salvar');btn.disabled=true;btn.textContent='Registrando...';try{const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile();await validarRegistroDiariaDia(sb,p.empresa_id,f.id,data,q);const r=await sb.from('diarias').insert({empresa_id:p.empresa_id,funcionario_id:f.id,obra_id,checklist_id,data,quantidade:q,valor_unitario:v,valor_total:v*q,paga:false,observacoes:b.querySelector('.obs').value.trim()||null});if(r.error)throw r.error;b.remove();await window.OBRIX_EQUIPE?.refresh?.()}catch(e){btn.disabled=false;btn.textContent='Registrar';alert(e?.message||'Não foi possível registrar a diária.')}};
 }
 function opTipoPagamento(v){return [['diaria','Diária'],['semana','Semana'],['quinzena','Quinzena'],['mes','Mês']].map(([x,l])=>`<option value="${x}" ${x===v?'selected':''}>${l}</option>`).join('')}
 function opTipoConta(v){return [['','Não informado'],['corrente','Conta corrente'],['poupanca','Poupança'],['pagamento','Conta de pagamento']].map(([x,l])=>`<option value="${x}" ${x===String(v||'')?'selected':''}>${l}</option>`).join('')}
