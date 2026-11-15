@@ -72,6 +72,12 @@ Deno.serve(async (req:Request)=>{
         const limpeza=await excluirArquivosEmpresa(admin.storage,empresaId);
         arquivosRemovidos=limpeza.arquivosRemovidos;
         bytesEstimados=limpeza.bytesEstimados;
+        // Tabelas legadas sem FK de empresa ON DELETE CASCADE.
+        // Remover explicitamente para impedir registros órfãos após a exclusão.
+        for(const tabela of ["relatorio_fotos","notas"]){
+          const {error:residuoErr}=await admin.from(tabela).delete().eq("empresa_id",empresaId);
+          if(residuoErr)throw Error("Não foi possível limpar todos os registros da empresa. Tente novamente.");
+        }
         const {error:estornoErr}=await userClient.from("financeiro")
           .update({status_lancamento:"estornado"})
           .eq("empresa_id",empresaId).neq("origem","manual").eq("status_lancamento","ativo");
