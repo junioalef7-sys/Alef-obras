@@ -5,6 +5,9 @@ const num=v=>{const n=Number(String(v??'').replace(',','.'));return Number.isFin
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate=v=>{if(!v)return'';const [y,m,d]=String(v).slice(0,10).split('-');return d&&m&&y?`${d}/${m}/${y}`:String(v)};
 let orcamentos=[],itens=[];
+// Modelo original por nó: módulos de impressão/tema podem decorar o DOM sem
+// que essa decoração signifique uma alteração de dados do orçamento.
+const modeloOriginalPorCard=new WeakMap();
 
 function ensure(){
   if(document.getElementById('orcamentosMain'))return;
@@ -74,17 +77,15 @@ function render(){
   const idsAtuais=new Set();
   itensNovos.forEach((card,index)=>{
     const id=card.dataset.id,antigo=anteriores.get(id);idsAtuais.add(id);
-    let reaproveitar=false;
-    if(antigo){
-      const comparador=antigo.cloneNode(true);comparador.querySelector('.orcCardBody')?.classList.add('hidden');
-      // Estilos visuais inline são aplicados por outros módulos; não significam alteração de orçamento.
-      comparador.querySelectorAll('[style]').forEach(el=>el.removeAttribute('style'));
-      comparador.removeAttribute('style');
-      reaproveitar=comparador.outerHTML===card.outerHTML;
-    }
+    // Comparar modelos canônicos, não o HTML já decorado por impressão e tema.
+    // O botão de impressão ganha texto e atributos próprios após o render:
+    // comparar outerHTML vivo fazia a lista substituir o cartão inteiro.
+    const modeloNovo=card.outerHTML;
+    const reaproveitar=!!antigo&&modeloOriginalPorCard.get(antigo)===modeloNovo;
     if(reaproveitar){
       if(box.children[index]!==antigo)box.insertBefore(antigo,box.children[index]||null);
     }else{
+      modeloOriginalPorCard.set(card,modeloNovo);
       if(abertos.has(id))card.querySelector('.orcCardBody')?.classList.remove('hidden');
       box.insertBefore(card,box.children[index]||null);
       antigo?.remove();
@@ -92,7 +93,13 @@ function render(){
   });
   [...box.querySelectorAll(':scope > .orcCard')].forEach(el=>{if(!idsAtuais.has(el.dataset.id))el.remove()});
   box.__obrixMarkup=html;
-  box.querySelectorAll('.orcCard').forEach(el=>{const o=orcamentos.find(x=>String(x.id)===String(el.dataset.id));if(!o)return;el.querySelector('.orcCardHead').onclick=()=>el.querySelector('.orcCardBody').classList.toggle('hidden');el.querySelector('.editar').onclick=()=>edit(o);el.querySelector('.imprimir').onclick=()=>printSaved(o);el.querySelector('[data-orc-apagar]').onclick=()=>removeO(o)});
+  box.querySelectorAll('.orcCard').forEach(el=>{const o=orcamentos.find(x=>String(x.id)===String(el.dataset.id));if(!o)return;const head=el.querySelector('.orcCardHead'),body=el.querySelector('.orcCardBody');head.setAttribute('aria-expanded',String(!body.classList.contains('hidden')));head.onclick=event=>{
+    // Este clique só expande/recolhe detalhes; não acionar handlers globais de
+    // navegação, ícones, estilos e cabeçalho no percurso de propagação.
+    event.stopPropagation();
+    const oculto=body.classList.toggle('hidden');
+    head.setAttribute('aria-expanded',String(!oculto));
+  };el.querySelector('.editar').onclick=()=>edit(o);el.querySelector('.imprimir').onclick=()=>printSaved(o);el.querySelector('[data-orc-apagar]').onclick=()=>removeO(o)});
 }
 
 function itemTemplate(i={}){const row=document.createElement('div');row.className='orcItem';row.innerHTML=`<div class="orcGridItem"><label>Descrição<input class="desc" value="${esc(i.descricao||'')}" placeholder="Serviço ou material"></label><label>Quantidade<input class="qtd" type="number" step="0.01" min="0.01" value="${esc(i.quantidade??1)}"></label><label>Unidade<select class="uni"><option>un</option><option>m</option><option>m²</option><option>m³</option><option>kg</option><option>dia</option><option>h</option><option>vb</option></select></label><label>Valor unitário<input class="vu" type="number" step="0.01" min="0" value="${esc(i.valor_unitario??0)}"></label><div class="orcItemTotal"><span>Total</span><b class="vt">R$ 0,00</b></div><button class="orcRemove" type="button" title="Remover item">×</button></div><label>Observações do item<input class="obs" value="${esc(i.observacoes||'')}" placeholder="Opcional"></label>`;
@@ -169,6 +176,17 @@ html[data-theme="dark"] #orcamentosMain .orcRemove{background:#391b28!important;
 html[data-theme="dark"] #orcamentosMain .orcSec{background:#253347!important;color:#f8fafc!important}
 html[data-theme="dark"] #orcamentosMain .orcItem,
 html[data-theme="dark"] #orcamentosMain .orcResumo div{background:#111827!important;color:#f8fafc!important;border-color:#334155!important}
+/* Somente o cabeçalho clicável de orçamentos já criados. */
+#orcamentosMain .orcCardHead{
+ -webkit-tap-highlight-color:transparent;
+ animation:none!important;transition:none!important;
+}
+#orcamentosMain .orcCardHead:focus:not(:focus-visible){
+ outline:none!important;
+}
+#orcamentosMain .orcCardHead:focus-visible{
+ outline:2px solid var(--ob-accent,#ff5a00)!important;outline-offset:2px!important;
+}
 @media(max-width:800px){.orcGridItem{grid-template-columns:1fr 1fr}.orcRemove{grid-column:2}.orcItemTotal{padding-bottom:0}.orcResumo{grid-template-columns:1fr 1fr}}@media(max-width:700px){.orcKpis,.orcGrid2,.orcGrid3{grid-template-columns:1fr}.orcCardHead{align-items:flex-start}.orcCardRight{min-width:105px}.orcItensHead{align-items:flex-start}.orcResumo{grid-template-columns:1fr 1fr}}`;
 document.head.appendChild(css);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{ensure();wireNavigation()});else{ensure();wireNavigation()}
