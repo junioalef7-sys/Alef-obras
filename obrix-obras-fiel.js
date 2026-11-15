@@ -4,7 +4,7 @@ if(window.__OBRIX_OBRAS_FIEL)return;window.__OBRIX_OBRAS_FIEL=true;
 const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 let rendering=false,filtro='todas',busca='',detalhe=null;
 const dados=o=>{const extras=window.extras||[],fin=(window.financeiro||[]).filter(x=>(!x.status_lancamento||x.status_lancamento==='ativo')&&String(x.obra_id)===String(o.id)),ex=extras.filter(x=>String(x.obra_id)===String(o.id)).reduce((s,x)=>s+Number(x.valor||0),0),rec=fin.filter(x=>x.tipo==='receita').reduce((s,x)=>s+Number(x.valor||0),0),ds=fin.filter(x=>x.tipo==='despesa'),desp=ds.reduce((s,x)=>s+Number(x.valor||0),0),tot=Number(o.valor_contrato||0)+ex,res=tot-desp,lucro=rec-desp,receber=Math.max(0,tot-rec),margem=tot?res/tot*100:0;return{ex,rec,desp,tot,res,lucro,receber,margem}};
-const status=o=>{const v=String(o.status||'planejada').toLowerCase();return v==='em_andamento'?'andamento':v};
+const status=o=>{const v=String(o.status||'planejada').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\s-]+/g,'_');return ['em_andamento','em_execucao'].includes(v)?'andamento':v};
 const statusTxt=s=>s==='andamento'?'Em andamento':s==='pausada'?'Pausada':s==='concluida'||s==='concluída'?'Concluída':'Planejada';
 const progresso=o=>{
  const confirmado=window.OBRIX_PROGRESS_CORE?.progressFor?.(o.id);
