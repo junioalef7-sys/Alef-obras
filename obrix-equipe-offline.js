@@ -250,6 +250,19 @@ async function sync(){
           if(diariaExistente.data?.length)
             throw Error('Registro em conflito: já existe diária nesta data.');
         }
+        if(table==='diarias'){
+          const [faltaExistente,diariasExistentes]=await Promise.all([
+            sb.from('faltas').select('id').eq('empresa_id',empresa()).eq('funcionario_id',funcionarioId).eq('data',data).limit(1),
+            sb.from('diarias').select('id,quantidade').eq('empresa_id',empresa()).eq('funcionario_id',funcionarioId).eq('data',data).is('cancelada_em',null)
+          ]);
+          if(faltaExistente.error)throw faltaExistente.error;
+          if(diariasExistentes.error)throw diariasExistentes.error;
+          if(faltaExistente.data?.length)throw Error('Registro em conflito: já existe falta nesta data.');
+          const soma=(diariasExistentes.data||[]).filter(x=>String(x.id)!==String(item.id))
+            .reduce((total,x)=>total+Number(x.quantidade||0),0);
+          if(soma+Number(item.payload?.quantidade||0)>1.000001)
+            throw Error('Limite diário atingido. Registro offline mantido pendente para revisão.');
+        }
         const r=await sb.from(table).insert({...item.payload,id:item.id,empresa_id:empresa()});
         if(r.error){
           if(String(r.error.code)!=='23505')throw r.error;
