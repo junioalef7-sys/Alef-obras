@@ -18,11 +18,11 @@ css.textContent=[
 ].join('');
 document.head.appendChild(css);
 const targets='button,input[type="submit"],input[type="button"],a[role="button"]';
-const accept=/^[+✓✔●•\s]*(salvar|registrar|confirmar|adicionar)\b/i;
+const accept=/^[^A-Za-zÀ-ÿ0-9]*(salvar|registrar|confirmar|adicionar)\b/i;
 const reject=/\b(excluir|exclus[aã]o|apagar|remover|estornar|estorno|cancelar|desativar|encerrar)\b/i;
 function mark(el){
- const label=String((el.tagName==='INPUT'?el.value:el.textContent)||el.getAttribute('aria-label')||'').replace(/\s+/g,' ').trim();
- const positive=accept.test(label)&&!reject.test(label)&&!el.matches('[data-obrix-acao-destrutiva],.danger,.btn-danger,.destructive');
+ const valores=[el.tagName==='INPUT'?el.value:el.textContent,el.getAttribute('aria-label'),el.getAttribute('title')].filter(Boolean).map(x=>String(x).replace(/\s+/g,' ').trim());
+ const positive=valores.some(x=>accept.test(x))&&!valores.some(x=>reject.test(x))&&!el.matches('[data-obrix-acao-destrutiva],.danger,.btn-danger,.destructive');
  el.classList.toggle('obrix-acao-laranja',positive);
 }
 function scan(root){if(root?.matches?.(targets))mark(root);root?.querySelectorAll?.(targets).forEach(mark)}
