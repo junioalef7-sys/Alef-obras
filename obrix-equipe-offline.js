@@ -119,6 +119,13 @@ function falta(f){
     btn.disabled=true;
     try{
       if(!navigator.onLine){
+        const mesmoDia=x=>String(x.funcionario_id)===String(f.id)&&String(x.data)===String(data);
+        const c=cache(),pendentes=mine();
+        if(c.faltas.some(mesmoDia)||pendentes.some(x=>x.type==='falta'&&mesmoDia(x.payload)))
+          throw Error('Este funcionário já possui uma falta registrada nesta data. Não é permitido registrar outra falta no mesmo dia.');
+        if(c.diarias.some(x=>mesmoDia(x)&&!x.cancelada_em)||globals().diarias.some(x=>mesmoDia(x)&&!x.cancelada_em)
+           ||pendentes.some(x=>x.type==='diaria'&&mesmoDia(x.payload)))
+          throw Error('Não é possível registrar falta. Este funcionário já possui diária registrada nesta data.');
         queue('falta',payload);
         const c=cache();
         c.faltas=[{...payload,empresa_id:empresa(),__offline:true},...c.faltas];
@@ -128,6 +135,14 @@ function falta(f){
         return;
       }
       const sb=await OBRIX_BACKEND.init();
+      const [faltaExistente,diariaExistente]=await Promise.all([
+        sb.from('faltas').select('id').eq('empresa_id',empresa()).eq('funcionario_id',f.id).eq('data',data).limit(1),
+        sb.from('diarias').select('id').eq('empresa_id',empresa()).eq('funcionario_id',f.id).eq('data',data).is('cancelada_em',null).limit(1)
+      ]);
+      if(faltaExistente.error)throw faltaExistente.error;
+      if(diariaExistente.error)throw diariaExistente.error;
+      if(faltaExistente.data?.length)throw Error('Este funcionário já possui uma falta registrada nesta data. Não é permitido registrar outra falta no mesmo dia.');
+      if(diariaExistente.data?.length)throw Error('Não é possível registrar falta. Este funcionário já possui diária registrada nesta data.');
       const r=await sb.from('faltas').insert({...payload,empresa_id:empresa()});
       if(r.error)throw r.error;
       b.remove();
@@ -214,8 +229,26 @@ async function sync(){
     for(const item of items){
       try{
         const table=item.type==='falta'?'faltas':'diarias';
+        const data=item.payload?.data,funcionarioId=item.payload?.funcionario_id;
+        if(table==='faltas'){
+          const [faltaExistente,diariaExistente]=await Promise.all([
+            sb.from('faltas').select('id').eq('empresa_id',empresa()).eq('funcionario_id',funcionarioId).eq('data',data).limit(1),
+            sb.from('diarias').select('id').eq('empresa_id',empresa()).eq('funcionario_id',funcionarioId).eq('data',data).is('cancelada_em',null).limit(1)
+          ]);
+          if(faltaExistente.error)throw faltaExistente.error;
+          if(diariaExistente.error)throw diariaExistente.error;
+          if(faltaExistente.data?.length&&String(faltaExistente.data[0].id)!==String(item.id))
+            throw Error('Falta duplicada: já existe registro para este funcionário e esta data.');
+          if(diariaExistente.data?.length)
+            throw Error('Registro em conflito: já existe diária nesta data.');
+        }
         const r=await sb.from(table).insert({...item.payload,id:item.id,empresa_id:empresa()});
-        if(r.error&&String(r.error.code)!=='23505')throw r.error;
+        if(r.error){
+          if(String(r.error.code)!=='23505')throw r.error;
+          const existente=await sb.from(table).select('id').eq('id',item.id).eq('empresa_id',empresa()).maybeSingle();
+          if(existente.error)throw existente.error;
+          if(!existente.data?.id)throw Error('Registro duplicado para esta data. Revise o histórico antes de sincronizar.');
+        }
       }catch(e){keep.push({...item,error:e?.message||'Falha ao sincronizar'})}
     }
     replaceMine(keep);
