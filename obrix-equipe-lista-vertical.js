@@ -130,6 +130,15 @@
         if(ro.error)throw ro.error;if(rf.error)throw rf.error;
         if(ro.data?.status!=='andamento')throw Error('Só é permitido registrar faltas em obras em andamento.');
         if(rf.data?.ativo!==true)throw Error('Somente funcionários ativos podem registrar faltas.');
+        // Uma falta por funcionario/data, independente da obra e da justificativa.
+        const [faltasDoDia,diariasDoDia]=await Promise.all([
+          sb.from('faltas').select('id').eq('empresa_id',p.empresa_id).eq('funcionario_id',f.id).eq('data',data).limit(1),
+          sb.from('diarias').select('id').eq('empresa_id',p.empresa_id).eq('funcionario_id',f.id).eq('data',data).is('cancelada_em',null).limit(1)
+        ]);
+        if(faltasDoDia.error)throw faltasDoDia.error;
+        if(diariasDoDia.error)throw diariasDoDia.error;
+        if(faltasDoDia.data?.length)throw Error('Este funcionário já possui uma falta registrada nesta data. Não é permitido registrar outra falta no mesmo dia.');
+        if(diariasDoDia.data?.length)throw Error('Não é possível registrar falta. Este funcionário já possui diária registrada nesta data.');
         const {error}=await sb.from('faltas').insert({empresa_id:p.empresa_id,funcionario_id:f.id,obra_id,data,justificada:back.querySelector('.tipo').value==='true',motivo:back.querySelector('.motivo').value.trim()||null,observacoes:back.querySelector('.obs').value.trim()||null});
         if(error)throw error;back.remove();window.dispatchEvent(new CustomEvent('obrix:equipe-registro',{detail:{table:'faltas',funcionarioId:f.id}}));if(window.OBRIX_AVISO)await window.OBRIX_AVISO('Falta registrada e enviada para a contagem do período.','Equipe');else alert('Falta registrada.');
       }catch(e){alert(e.message||'Não foi possível registrar a falta.')}finally{btn.disabled=false}
