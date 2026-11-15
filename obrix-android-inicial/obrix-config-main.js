@@ -46,4 +46,26 @@ const css=document.createElement('style');css.textContent=`.cfgHero{display:flex
   background:#111e2c!important;background-color:#111e2c!important;
   color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;
   box-shadow:none!important;text-shadow:none!important;
-}.cfgDeleteGrid button:disabled{opacity:.5}.cfgStatus{margin-top:10px}.cfgStatus b{color:#166534}.cfgModal{max-width:520px}html[data-theme="dark"] #configMain .card,html[data-theme="dark"] #configMain .hero{background:#0d1722!important;background-color:#0d1722!important;color:#f8fafc!important;border-color:#293b4d!important}html[data-theme="dark"] #configMain .cfgUserData>div,html[data-theme="dark"] #configMain .cfgTheme button,html[data-theme="dark"] #configMain .cfgAccountActions button,html[data-theme="dark"] #configMain #cfgSair{background:#111e2c!important;background-color:#111e2c!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;border-color:#293b4d!important}html[data-theme="light"] #configMain .card,html[data-theme="light"] #configMain .hero{background:#f8fafc!important;background-color:#f8fafc!important;color:#0f172a!important;border-color:#cbd5df!important}html[data-theme="light"] #configMain .cfgUserData>div,html[data-theme="light"] #configMain .cfgTheme button,html[data-theme="light"] #configMain .cfgAccountActions button,html[data-theme="light"] #configMain #cfgSair{background:#e5eaf0!important;background-color:#e5eaf0!important;color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;border-color:#cbd5df!important}@media(max-width:520px){.cfgTheme,.cfgUserData,.cfgAccountActions,.cfgDeleteGrid{grid-template-columns:1fr}.cfgHero{align-items:flex-start}.cfgFechar{padding:8px 10px}}`;document.head.appendChild(css);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(ensure,200));else setTimeout(ensure,200);window.OBRIX_CONFIG={open,apagarModulo,trocarEmail,trocarSenha};})();
+}.cfgDeleteGrid button:disabled{opacity:.5}.cfgStatus{margin-top:10px}.cfgStatus b{color:#166534}.cfgModal{max-width:520px}html[data-theme="dark"] #configMain .card,html[data-theme="dark"] #configMain .hero{background:#0d1722!important;background-color:#0d1722!important;color:#f8fafc!important;border-color:#293b4d!important}html[data-theme="dark"] #configMain .cfgUserData>div,html[data-theme="dark"] #configMain .cfgTheme button,html[data-theme="dark"] #configMain .cfgAccountActions button,html[data-theme="dark"] #configMain #cfgSair{background:#111e2c!important;background-color:#111e2c!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;border-color:#293b4d!important}html[data-theme="light"] #configMain .card,html[data-theme="light"] #configMain .hero{background:#f8fafc!important;background-color:#f8fafc!important;color:#0f172a!important;border-color:#cbd5df!important}html[data-theme="light"] #configMain .cfgUserData>div,html[data-theme="light"] #configMain .cfgTheme button,html[data-theme="light"] #configMain .cfgAccountActions button,html[data-theme="light"] #configMain #cfgSair{background:#e5eaf0!important;background-color:#e5eaf0!important;color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;border-color:#cbd5df!important}@media(max-width:520px){.cfgTheme,.cfgUserData,.cfgAccountActions,.cfgDeleteGrid{grid-template-columns:1fr}.cfgHero{align-items:flex-start}.cfgFechar{padding:8px 10px}}
+/* Cartões de Configurações no tema claro: não afeta o tema escuro ou outras telas. */
+html[data-theme="light"] body #app #configMain > .card{
+ background:#fff!important;background-color:#fff!important;background-image:none!important;
+ border:1px solid #d7dee8!important;border-radius:15px!important;
+ color:#0f172a!important;box-shadow:none!important;
+}
+html[data-theme="light"] body #app #configMain .cfgUserData>div,
+html[data-theme="light"] body #app #configMain .cfgTheme>button,
+html[data-theme="light"] body #app #configMain .cfgAccountActions>button,
+html[data-theme="light"] body #app #configMain .cfgDeleteGrid>button,
+html[data-theme="light"] body #app #configMain #cfgSair,
+html[data-theme="light"] body #app #configMain #cfgFechar{
+ box-sizing:border-box!important;min-height:46px!important;
+ background:#f8fafc!important;background-color:#f8fafc!important;background-image:none!important;
+ border:1px solid #d7dee8!important;border-radius:12px!important;
+ color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;
+ box-shadow:none!important;animation:none!important;transition:none!important;
+}
+html[data-theme="light"] body #app #configMain .cfgTheme>button.active{
+ border-color:#ff8d4d!important;outline:2px solid #ff8d4d!important;outline-offset:1px!important;
+}
+`;document.head.appendChild(css);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(ensure,200));else setTimeout(ensure,200);window.OBRIX_CONFIG={open,apagarModulo,trocarEmail,trocarSenha};})();
