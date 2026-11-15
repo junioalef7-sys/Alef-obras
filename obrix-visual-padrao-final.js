@@ -1,5 +1,11 @@
 (()=>{'use strict';if(window.__OBRIX_VISUAL_PADRAO_FINAL)return;window.__OBRIX_VISUAL_PADRAO_FINAL=true;
 const st=document.createElement('style');st.id='obrix-visual-padrao-final';st.textContent=`
+/* Correção restrita à seta superior de Orçamentos. */
+html body #app:has(> #orcamentosMain:not(.hidden)) > .top #obrixHeaderVoltar{
+ display:inline-flex!important;visibility:visible!important;opacity:1!important;
+ animation:none!important;transition:none!important;
+}
+
 /* Setas superiores disponíveis somente nos acessos originados pelo Menu. */
 html[data-obrix-financeiro-origem="rodape"]:not(.obrixSubTelaAtiva) #app:has(#financeiroMain:not(.hidden)) > .top #obrixHeaderVoltar,
 html[data-obrix-financeiro-origem="rodape"] #app:has(#financeiroMain:not(.hidden)) > .top button[aria-label="Voltar"]{
@@ -199,7 +205,8 @@ const obrasViaRodape=obrasVisiveis&&document.documentElement.dataset.obrixObrasO
 const subTela=!!document.querySelector('body>.modalBack:not(.hidden),body>#docViewerModal:not(.hidden),body>[role="dialog"]:not(.hidden),#app [role="dialog"]:not(.hidden)');
 document.documentElement.classList.toggle('obrixSubTelaAtiva',subTela);
 const apenasRaizRodape=(equipeViaRodape||obrasViaRodape||financeiroViaRodape)&&!subTela;
-b.classList.toggle('hidden',noInicio||noMenu||apenasRaizRodape||(!p&&!noResumo&&!paginaEstavel&&!subTela));b.onclick=()=>{
+const orcamentosVisivel=visTopo(document.getElementById('orcamentosMain'));
+b.classList.toggle('hidden',!orcamentosVisivel&&(noInicio||noMenu||apenasRaizRodape||(!p&&!noResumo&&!paginaEstavel&&!subTela)));b.onclick=()=>{
 if(subTela){const aberto=document.querySelector('body>.modalBack:not(.hidden),body>#docViewerModal:not(.hidden)');const fechar=aberto?.querySelector('[data-obp-fechar],#docViewerClose,.obrix-hist-pag-x,.cancelar,[aria-label="Fechar"],button[data-close]');if(fechar){fechar.click();return}}
 const voltaObra=document.querySelector('#obras:not(.hidden) #obxVoltarObras');if(voltaObra){voltaObra.click();return}
 if(noResumo){const rs=window.OBRIX_RESUMO_GERAL?.status?.()||{};if(rs.view==='obra'){window.OBRIX_RESUMO_GERAL?.open?.();return}resumo.classList.add('hidden');if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();return}}if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();return}if(typeof window.abrir==='function')window.abrir('inicio')}}
