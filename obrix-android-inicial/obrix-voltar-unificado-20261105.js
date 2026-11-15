@@ -65,7 +65,11 @@
     if(top)new MutationObserver(schedule).observe(top,{childList:true,subtree:true});
     const works=document.getElementById('listaObras');
     if(works)new MutationObserver(schedule).observe(works,{childList:true,subtree:true});
-    document.addEventListener('click',()=>{schedule();setTimeout(schedule,100)},true);
+    document.addEventListener('click',event=>{
+      // Não reexaminar nem ajustar setas quando apenas se expande um orçamento.
+      if(event.target?.closest?.('#orcamentosMain .orcCardHead'))return;
+      schedule();setTimeout(schedule,100);
+    },true);
     window.addEventListener('pageshow',schedule);
     ['obrix:modules-ready','obrix:modules-online-ready','obrix:grupo-pronto'].forEach(x=>window.addEventListener(x,schedule));
     setTimeout(schedule,300);setTimeout(schedule,1200);
