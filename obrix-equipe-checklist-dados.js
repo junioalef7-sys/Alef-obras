@@ -2,7 +2,7 @@
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const hoje=()=>new Date().toISOString().slice(0,10);
+const hoje=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
 function modal(html,cls=''){const b=document.createElement('div');b.className='modalBack';b.innerHTML=`<div class="modal ${cls}">${html}</div>`;document.body.appendChild(b);return b}
 function listaObras(sel=''){const os=typeof obras!=='undefined'?obras:[];return '<option value="">Sem obra vinculada</option>'+os.filter(o=>o.status!=='concluida').map(o=>`<option value="${o.id}" ${String(o.id)===String(sel)?'selected':''}>${esc(o.nome)}</option>`).join('')}
 async function carregarChecklist(select,obraId,selecionado=''){
