@@ -22,7 +22,7 @@ const GROUPS={
 };
 const FEATURES={
  diario:['./obrix-diario-main.js','./obrix-diario-equipe.js'],
- orcamentos:['./obrix-orcamentos-main.js','./obrix-orcamentos-itens-topo.js','./obrix-orcamentos-rascunho-print.js'],
+ orcamentos:['./obrix-orcamentos-main.js?v=20261115-orc-cartao-dom-estavel3','./obrix-orcamentos-itens-topo.js','./obrix-orcamentos-rascunho-print.js'],
  relatorios:['./obrix-relatorios-v2.js','./obrix-relatorios-mobile-fix.js','./obrix-relatorios-complementos.js','./obrix-relatorio-financeiro-obra.js','./obrix-relatorio-diario.js'],
  documentos:['./obrix-documentos-main.js','./obrix-documentos-direto.js'],
  notas:['./obrix-notas-main.js'],
