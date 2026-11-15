@@ -83,7 +83,11 @@ function init(){
  new MutationObserver(records=>{
   if(records.some(r=>r.addedNodes.length||r.removedNodes.length))schedule()
  }).observe(app,{childList:true,subtree:true});
- document.addEventListener('click',()=>setTimeout(schedule,70),{passive:true});
+ document.addEventListener('click',event=>{
+  // Alterar apenas a expansão de um orçamento não requer reconstruir ícones.
+  if(event.target?.closest?.('#orcamentosMain .orcCardHead'))return;
+  setTimeout(schedule,70);
+},{passive:true});
  window.addEventListener('pageshow',schedule,{passive:true});
  window.addEventListener('obrix:modules-ready',schedule,{passive:true});
 }
