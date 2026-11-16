@@ -28,7 +28,7 @@ test('visualização móvel prioriza o PDF nativo e conserva opção de janela c
  assert.ok(script.includes('if(!win)window.location.assign(link)'));
 });
 test('url assinada vem do Storage e a consulta limita-se à empresa autenticada',async()=>{
- const popup={closed:false,location:{replace(url){this.opened=url}}};
+ const popup={closed:false,document:{title:''},location:{replace(url){this.opened=url}}};
  const document={addEventListener(){}};
  const window={open(){return popup}};
  const id='11111111-1111-4111-8111-111111111111';
