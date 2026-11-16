@@ -90,3 +90,15 @@ Arquivos: `obrix-documentos-direto.js`, `obrix-offline-v3.js` e `tests/obrix-doc
 **Teste:** cinco cenários automatizados aprovados, incluindo fluxo de iPhone simulado, URL assinada vinda do Storage e filtro de consulta por empresa. O pipeline GitHub Actions [43866113947](https://github.com/junioalef7-sys/Alef-obras/actions/runs/43866113947) executou essa suíte com `success`.
 
 **Limite:** ainda não foi possível executar visualização real de arquivo multipágina em dispositivos físicos, nem verificar comportamento de impressão no Safari instalado como PWA. A correção não autoriza publicação por si só.
+
+## Realtime, desempenho e segurança: verificações complementares
+
+**Realtime oficial (consulta somente leitura):** a publicação `supabase_realtime` está configurada para operações `INSERT`, `UPDATE` e `DELETE` e inclui 12 tabelas fundamentais analisadas (`obras`, `funcionarios`, `diarias`, `vales`, `financeiro`, `pagamentos_equipe`, `documentos`, `notas`, `orcamentos`, `relatorios_fotograficos`, `fotos_obra` e `diarios_obra`). Essa configuração é necessária, mas **não comprova entrega em tempo real entre dispositivos**.
+
+**Benchmark isolado:** `EXPLAIN ANALYZE SELECT obrix_seg_hml_20261116.executar_testes_exclusao_bloqueio_v1()` concluiu com **127,11 ms** para uma execução sintética da suíte de 21 verificações no laboratório. Este número não representa latência do PWA, carga concorrente, fila de Realtime ou desempenho Android/iPhone/desktop. O checklist de desempenho de uso contínuo permanece aberto.
+
+**Advisor de segurança da produção:** 16 funções `SECURITY DEFINER` podem ser chamadas por `authenticated` (algumas são operações intencionais do aplicativo). A verificação de leitura confirmou controle de empresa/acesso no wrapper dessas funções ou identificação por `auth.uid()`; também foram inspecionados os delegados de backup e compras para comprovar filtragem por empresa. Isso **não é auditoria de exploração completa**, nem justifica revogar todas as chamadas de uma vez. O alerta de senhas vazadas continua ativo; sua configuração depende do plano e dos controles de Auth do Supabase. Consulta técnica: https://supabase.com/docs/guides/auth/password-security .
+
+**Testes automatizados:** após a correção de Documentos, a execução [43866913530](https://github.com/junioalef7-sys/Alef-obras/actions/runs/43866913530) terminou em `success` para o commit `5bcbd551a39b9716e6bdc06cb6da7ffc3edfdacd`.
+
+**Não houve merge, deploy em produção, alteração das políticas de Storage oficiais nem modificação de dados de clientes.**
