@@ -125,6 +125,8 @@ test('ensaio E2E é restrito a uma branch efêmera e não contém credenciais',(
  expect(runtime,'PROJETO_VALIDO');
  expect(runtime,'REFS_BLOQUEADOS');
  expect(runtime,'obrix_hml_claim_once_v1');
+ expect(runtime,'OBRIX_HML_E2E_TOKEN');
+ expect(runtime,'x-obrix-hml-e2e-token');
  expect(runtime,'excluirContaVerificada');
  assert.equal(runtime.includes('const PROJECT="ygcwnozfseojqronhaan"'),false);
  const claim=read('database/release/obrix_hml_fixture_executor_one_shot_20261116.sql');
