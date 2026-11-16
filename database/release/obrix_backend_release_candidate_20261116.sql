@@ -365,7 +365,7 @@ END $triggers$;
 CREATE TRIGGER obrix_exclusao_bloquear_gravacoes
  BEFORE UPDATE OR DELETE ON public.empresas FOR EACH ROW
  EXECUTE FUNCTION obrix_conta_interna.bloquear_gravacoes_empresa();
-CREATE OR REPLACE FUNCTION public.obrix_storage_upload_permitido(p_empresa_prefix text)
+CREATE OR REPLACE FUNCTION obrix_conta_interna.obrix_storage_upload_permitido(p_empresa_prefix text)
  RETURNS boolean
  LANGUAGE plpgsql
  SECURITY DEFINER
