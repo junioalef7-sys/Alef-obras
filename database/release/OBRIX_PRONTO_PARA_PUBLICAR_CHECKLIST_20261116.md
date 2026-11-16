@@ -112,3 +112,13 @@ A auditoria de `information_schema.columns` identificou **89 divergências** nas
 **Status:** a homologação de paridade integral e o teste em PWA apontando para banco isolado continuam pendentes; não liberar promoção nem apresentar o release como pronto.
 
 [Ver inventário de diferenças e teste](./OBRIX_HOMOLOGACAO_PARIDADE_BANCO_20261116.md).
+
+## Atualização após reconstrução real e teste descartável (16/11/2026)
+
+A baseline estrutural **sem dados** foi gerada a partir do esquema oficial e testada em uma ramificação isolada. O SQL criou as 41 tabelas `public`, funções, triggers e políticas esperadas, e a migração candidata também compilou nesse ambiente. A dependência de índice UNIQUE anterior a FK foi corrigida.
+
+O teste integrado Auth/Equipe/Financeiro/Documentos/Storage passou em **15 verificações funcionais**. Houve falha na **conferência pós-exclusão** por `service_role` não ter `SELECT` direto em `financeiro`, não na própria exclusão; consulta SQL administrativa comprovou a remoção de todos os registros e objetos da empresa fictícia. A asserção de token antigo **não foi executada**. A tentativa de atualizar a função temporária foi bloqueada pelas configurações de segurança; não houve contorno.
+
+A ramificação temporária foi excluída, e a listagem final mostrou somente a ramificação oficial, evitando custo contínuo. O relatório completo está em [OBRIX_HOMOLOGACAO_BASELINE_INTEGRADA_20261116.md](./OBRIX_HOMOLOGACAO_BASELINE_INTEGRADA_20261116.md).
+
+**Status de release ainda BLOQUEADO:** o replay das 110 migrações oficiais não reconstrói o banco do zero sem baseline adicional; testes físicos nos três dispositivos, JWT antigo, recuperação/backup, desempenho contínuo e alertas de segurança continuam pendentes. Não promover o PR nem alterar produção até fechar essas verificações.
