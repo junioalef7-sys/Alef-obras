@@ -81,6 +81,17 @@ jobs:
           OBRIX_LOCAL_SUPABASE_STATUS="$RUNNER_TEMP/obrix-local-status.json" \
             node --test tests/obrix-hml-local-integracao.cjs
 
+      - name: Diagnosticar erro local de Auth/Postgres sem credenciais
+        if: failure()
+        run: |
+          docker ps --format '{{.Names}}' | grep -E '^supabase_(auth|db)_' | while read name; do
+            echo "Logs de erros do contêiner: $name"
+            docker logs --tail 150 "$name" 2>&1 |
+              grep -Eai 'error|fatal|permission denied|relation |trigger|function |schema |SQLSTATE|failed to|exception' |
+              sed -E 's/(Bearer|apikey|password|token)[=: ][^ ,;"]+/\1=[REDACTED]/Ig' |
+              tail -45 || true
+          done
+
       - name: Remover Supabase local e dados fictícios
         if: always()
         run: |
