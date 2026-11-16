@@ -51,7 +51,7 @@ Deno.serve(async req=>{
   const args={p_funcionario_id:f,p_data_pagamento:"2026-11-16",p_diaria_ids:d.map(x=>x.id),p_vale_ids:[v],p_bonus_ids:[bonus],p_obra_pagamento_id:a,p_liquido_esperado:210};
   const pago=unwrap(await client.rpc("obrix_pagar_equipe_transacional_v2",args),"Pagamento");
   checks.pagamento=pago?.ok===true&&Number(pago.valor_liquido)===210;
-  const rateio=unwrap(await admin.from("financeiro").select("obra_id,valor").eq("pagamento_equipe_id",pago.pagamento_id),"Rateio");
+  const rateio=unwrap(await client.from("financeiro").select("obra_id,valor").eq("pagamento_equipe_id",pago.pagamento_id),"Rateio");
   checks.rateio=rateio.length===2&&rateio.reduce((s,x)=>s+Number(x.valor),0)===210;
   const repeat=await client.rpc("obrix_pagar_equipe_transacional_v2",args);
   checks.duplicado=!!repeat.error;
@@ -71,9 +71,8 @@ Deno.serve(async req=>{
   checks.exclusao=deletion?.ok===true&&deletion.escopo==="empresa";
   const files=unwrap(await admin.storage.from("obrix-documentos").list(empresaId,{limit:50}),"Checar Storage");
   checks.storage_limpo=files.length===0;
-  const company=unwrap(await admin.from("empresas").select("id").eq("id",empresaId),"Checar empresa");
-  const fin=unwrap(await admin.from("financeiro").select("id").eq("empresa_id",empresaId),"Checar financeiro");
-  checks.banco_limpo=company.length===0&&fin.length===0;
+  const journal=unwrap(await admin.rpc("obrix_consultar_exclusao_v1",{p_usuario_id:userId}),"Checar journal");
+  checks.banco_limpo=journal?.encontrado===true&&journal?.etapa==="finalizado";
   const auth=await admin.auth.admin.getUserById(userId);
   checks.auth_removido=!!auth.error&&(Number(auth.error.status)===404||auth.error.code==="user_not_found");
   const stale=await client.auth.getUser(token);
