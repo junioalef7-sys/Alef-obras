@@ -66,3 +66,22 @@ Verificação final: **0** linhas em `obrix_operacional_lab.empresas`, `perfis`,
 Supabase Security Advisor do projeto de auditoria ainda apresentou avisos de `authenticated_security_definer_function_executable` e proteção contra senhas vazadas não ativada, além do aviso informativo `rls_enabled_no_policy`. Eles não foram declarados resolvidos.
 
 **Pendências antes da versão oficial:** desenhar fluxo de retomada de exclusão em caso de falha entre Storage, SQL e Auth; validar concorrência com transações de usuários; testar o endpoint autenticado com conta fictícia isolada; revisão de todas as FKs e vínculos de Storage; validar o botão em preview iPhone/Android/computador, a sessão e a remoção de arquivos físicos; aprovação explícita antes de qualquer alteração no oficial.
+
+
+## Validação de retomada, Auth e Storage — 16/11/2026
+
+O Supabase de auditoria possui **3 registros em Auth e 243 objetos em Storage** (2 buckets). Eles foram preservados: nenhuma conta Auth e nenhum arquivo físico foram excluídos nos testes desta rodada.
+
+Foi instalado exclusivamente em `obrix_exclusao_hml_20261116` o registro `solicitacoes` com fases `preparado`, `storage_concluido`, `banco_concluido` e `finalizado`. As funções privadas `obrix_reservar_exclusao_v1`, `obrix_avancar_exclusao_v1` e `obrix_consultar_exclusao_v1` permitem retomar a partir da última confirmação, impedir etapas fora de ordem e impedir que outro usuário assuma a solicitação. A fase `banco_concluido` é gravada na mesma transação que exclui os dados da empresa.
+
+A suíte SQL `obrix_seg_hml_20261116.executar_testes_exclusao_journal_v1()` retornou todas as verificações `true`, incluindo: `reserva_idempotente`, `reserva_outro_usuario_rejeitada`, `salto_de_etapas_rejeitado`, `storage_checkpoint_idempotente`, `banco_checkpoint_idempotente`, `solicitacao_persiste_apos_exclusao`, `auth_checkpoint_simulado`, `preflight_transacional_reverte_dados`, `exclusao_empresa_transacional_concluida`, `outra_empresa_intacta`, `protecao_financeira_outra_empresa_mantida` e `fixtures_revertidas`.
+
+A rotina JavaScript `account-deletion-workflow.mjs` passou a utilizar checkpoints, com consulta de retomada por usuário mesmo após a exclusão do perfil empresarial. Detecta `deleteUser` executado anteriormente e só considera a conta removida se `getUserById` comprovar **404**. Testes simulados dessa versão: **18/18** (fluxo/Auth) e **8/8** (Storage), executados com funções em memória. Os arquivos de testes estão em `tests/obrix-excluir-conta-fluxo-seguro.cjs` e `tests/obrix-delete-account-storage.cjs`.
+
+A checagem final do laboratório encontrou: `auth_users=3`, `storage_objects=243`, `lab_empresas=0`, `lab_financeiro=0`, `solicitacoes=0` e `contextos=0`. Permissões de `authenticated` em `solicitacoes` e nas RPCs de journal: negadas. O `service_role` tem EXECUTE nos métodos privados, mas **não tem USAGE no schema privado do laboratório**, e essas funções não estão expostas pelo PostgREST. A Edge Function não foi implantada nem testada por HTTP nessa etapa.
+
+**Limites antes de aprovar clientes:** criar um usuário inteiramente fictício pelo Auth Admin do projeto de auditoria, arquivos novos criados exclusivamente para o teste via Storage API e executar uma requisição autenticada real à Edge Function isolada. Garantir bloqueio de novos registros e uploads durante o encerramento (concorrência), revisão dos tokens/sessões que permanecem válidos até `exp`, inventário de paths legados, jobs interrompidos após remoção do Auth e suporte à retomada administrativa. Não publicar no OBRIX oficial antes de aprovação expressa.
+
+**Arquivos:** [journal SQL](./obrix_hml_journal_exclusao_retomavel_20261116.sql), [fluxo retomável](../supabase/functions/obrix-delete-account/account-deletion-workflow.mjs), [testes](../tests/obrix-excluir-conta-fluxo-seguro.cjs).
+
+**Referências:** https://supabase.com/docs/guides/auth/managing-user-data e https://supabase.com/docs/guides/storage/management/delete-objects.
