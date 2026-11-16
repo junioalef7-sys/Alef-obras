@@ -24,7 +24,7 @@ const FEATURES={
  diario:['./obrix-diario-main.js','./obrix-diario-equipe.js'],
  orcamentos:['./obrix-orcamentos-main.js?v=20261115-orc-cartao-dom-estavel3','./obrix-orcamentos-itens-topo.js','./obrix-orcamentos-rascunho-print.js'],
  relatorios:['./obrix-relatorios-v2.js','./obrix-relatorios-mobile-fix.js','./obrix-relatorios-complementos.js','./obrix-relatorio-financeiro-obra.js','./obrix-relatorio-diario.js'],
- documentos:['./obrix-documentos-main.js','./obrix-documentos-direto.js'],
+ documentos:['./obrix-documentos-main.js','./obrix-documentos-direto.js?v=20261116-pdf-integral1'],
  notas:['./obrix-notas-main.js'],
  backup:['./obrix-backup-v2.js?v=20261115-backup-loop-header-orc2','./obrix-backup-import-run.js?v=20261115-backup-loop-header-orc2','./obrix-backup-completo.js?v=20261115-backup-loop-header-orc2'],
  config:['./obrix-config-main.js']
