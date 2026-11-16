@@ -104,7 +104,7 @@ export async function excluirContaVerificada({admin,userId,perfil,limparStorage}
     if(error||!Number.isInteger(count)||count<1)
       throw Error('Não foi possível conferir os usuários da empresa.');
     if(count===1){
-      if(!['proprietario','admin'].includes(perfil.papel))
+      if(!['proprietario','administrador'].includes(perfil.papel))
         throw Error('Somente o titular ou administrador pode excluir a última conta da empresa.');
       const entrada=await rpcSegura(admin,'obrix_reservar_exclusao_v1',
         {p_empresa_id:empresaId,p_usuario_id:userId});
