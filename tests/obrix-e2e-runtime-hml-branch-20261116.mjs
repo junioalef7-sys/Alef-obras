@@ -2,14 +2,17 @@
 import {createClient} from "npm:@supabase/supabase-js@2.117.1";
 import {excluirContaVerificada} from "./account-deletion-workflow.mjs";
 import {excluirArquivosEmpresa} from "./storage-cleanup.mjs";
-const PROJECT="ygcwnozfseojqronhaan";
+// Somente uma branch efêmera explícita, nunca produção nem auditoria preexistente.
+const PROJECT=String(Deno.env.get("OBRIX_HML_PROJECT_REF")||"").trim();
+const REFS_BLOQUEADOS=new Set(["gnvclctqnwxnjxydzhwc","mjzlwnuklfopdmgcvdcs"]);
+const PROJETO_VALIDO=/^[a-z]{20}$/.test(PROJECT)&&!REFS_BLOQUEADOS.has(PROJECT);
 const ORIGIN="https://"+PROJECT+".supabase.co";
 const out=(status,body)=>new Response(JSON.stringify(body),{status,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const unwrap=(r,msg)=>{if(r?.error)throw Error(msg+": "+String(r.error.message||r.error));return r.data};
 Deno.serve(async req=>{
  if(req.method!=="POST")return out(405,{ok:false,error:"Método recusado"});
  let host="";try{host=new URL(Deno.env.get("SUPABASE_URL")||"http://invalid").hostname}catch{}
- if(host!==PROJECT+".supabase.co")return out(403,{ok:false,error:"Projeto diferente do laboratório"});
+ if(!PROJETO_VALIDO||host!==PROJECT+".supabase.co")return out(403,{ok:false,error:"Executor restrito a branch fictícia de homologação"});
  const secret=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||(()=>{try{return JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS")||"{}").default||""}catch{return""}})();
  const pub=Deno.env.get("SUPABASE_ANON_KEY")||Deno.env.get("SUPABASE_PUBLISHABLE_KEY")||"";
  if(!secret||!pub)return out(503,{ok:false,error:"Chaves de homologação não configuradas"});
@@ -20,7 +23,7 @@ Deno.serve(async req=>{
  const errors=[];
  let userId=null,empresaId=null,bucket=false,token="",client=null;
  try{
-  const email="obrix-e2e-20261116-"+crypto.randomUUID()+"@example.com";
+  const email="obrix-e2e-branch-"+crypto.randomUUID()+"@example.com";
   const senha=crypto.randomUUID()+crypto.randomUUID();
   const u=unwrap(await admin.auth.admin.createUser({email,password:senha,email_confirm:true,user_metadata:{nome:"HML FICTICIO",empresa_nome:"HML EMPRESA FICTICIA"}}),"Auth");
   userId=u.user?.id;if(!userId)throw Error("Auth não retornou UUID");
