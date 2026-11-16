@@ -36,3 +36,26 @@ Os dados de teste foram revertidos; contagem de empresas, pagamentos, financeiro
 8. Conferir advisers de segurança e rollback, obter aprovação explícita antes de qualquer migração/deploy oficial.
 
 **Não executar este material em produção como uma migração automática.**
+
+## Rodada de homologação adicional — 16/11/2026
+
+**Aplicado apenas no banco de auditoria**, mantendo `authenticated` sem `EXECUTE` da nova função. O schema privado `obrix_operacional_lab` segue sem `USAGE` para o navegador.
+
+Alterações verificadas: a nova função recusa diárias com `cancelada_em`, vales com `estornado_em`, identificadores repetidos, dados de outra empresa e vínculos ativos; reconcilia vales históricos não lançados **dentro da mesma transação**; preserva `checklist_id`, `checklist_ids` e `checklist_valores` conforme o rateio real da obra, e mantém o lançamento líquido em uma obra autorizada quando há compensação entre obras.
+
+A suíte `obrix_seg_hml_20261116.executar_testes_operacionais_v3()` confirmou `true` para:
+
+- `diaria_cancelada_rejeitada`, `vale_estornado_rejeitado`, `ids_duplicados_rejeitados`;
+- `vale_antigo_lancado_uma_vez`, `vale_nao_duplicado_apos_repagamento`, `rateio_checklist_por_obra`;
+- `pagamento_outra_empresa_rejeitado`, `estorno_outra_empresa_rejeitado`;
+- `pagamento_220`, `financeiro_duas_obras`, `duas_meias_diarias`;
+- `duplicidade_rejeitada`, `valor_desatualizado_bloqueado`;
+- `estorno_reabre_pendencias`, `estorno_financeiro`, `estorno_idempotente`;
+- `compensacao_obras_120`, `compensacao_destino_indevido_bloqueado`, `compensacao_estorno_reabre_pendencias`;
+- `restauracao_backup_dados`, `falha_backup_reverte_transacao`, `fixtures_revertidas`.
+
+**Bloqueio novo reproduzido:** `exclusao_empresa_cascata=false`. A trigger `obrix_proteger_financeiro_automatico` impede a exclusão em cascata de um lançamento automático durante a exclusão da empresa (inclusive quando os pagamentos já foram estornados, pois um vale histórico permanece ativo). É necessário desenhar um fluxo transacional de exclusão de conta autorizado e específico, que cubra dados, Auth e Storage; não afrouxar a proteção contra exclusão manual para contornar o problema.
+
+**Front-end:** na ramificação de teste, `obrix-equipe-liquidacao-segura.js` possui uma rota de RPC protegida por flag desativada e por verificação do host do Supabase de auditoria. O adaptador separado `OBRIX_BACKEND_HML` não está configurado; por isso o aplicativo não chama a nova função em navegação normal. A interface de teste ainda aponta ao Supabase oficial pela configuração pública e **não deve ser usada para gravar pagamentos de teste**. O Financeiro deixou de reenviar `origem` e `status_lancamento` quando edita um lançamento manual.
+
+**Pendências antes de qualquer publicação oficial:** criar um ambiente de interface realmente isolado com autenticação de teste; expor apenas o endpoint transacional auditado com privilégio mínimo e validação por empresa; completar testes reais no Android, iPhone e computador; corrigir exclusão de conta; revisar concorrência, outros pagamentos e autorização de usuários; apresentar para aprovação antes de promover.
