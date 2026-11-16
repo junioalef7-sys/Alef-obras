@@ -122,3 +122,21 @@ O teste integrado Auth/Equipe/Financeiro/Documentos/Storage passou em **15 verif
 A ramificação temporária foi excluída, e a listagem final mostrou somente a ramificação oficial, evitando custo contínuo. O relatório completo está em [OBRIX_HOMOLOGACAO_BASELINE_INTEGRADA_20261116.md](./OBRIX_HOMOLOGACAO_BASELINE_INTEGRADA_20261116.md).
 
 **Status de release ainda BLOQUEADO:** o replay das 110 migrações oficiais não reconstrói o banco do zero sem baseline adicional; testes físicos nos três dispositivos, JWT antigo, recuperação/backup, desempenho contínuo e alertas de segurança continuam pendentes. Não promover o PR nem alterar produção até fechar essas verificações.
+
+## Conclusão do ensaio de esquema completo — 16/11/2026
+
+**NÃO LIBERADO PARA PUBLICAÇÃO.**
+
+Foi criada uma baseline de banco **somente de definições**, incluindo 41 tabelas `public`, 2 tabelas `private`, 66 funções, 38 gatilhos, 65 políticas, 239 restrições e 149 índices independentes. Ela foi validada em transação com `ROLLBACK` e instalada apenas em ramificação Supabase temporária. A migração candidata de pagamento e exclusão compilou e foi instalada nessa mesma ramificação. Verificou-se equivalência inicial de 41 tabelas, 56 funções e 54 políticas no esquema público.
+
+O E2E autenticado no banco reconstruído aprovou criação de conta, perfil, trial, login, duas obras, funcionário, duas meias diárias em obras diferentes, vale, bônus, pagamento, rateio e bloqueio de duplicidade. A RPC de estorno foi aceita e uma consulta posterior confirmou duas diárias e um vale reabertos e dois lançamentos financeiros estornados. A leitura direta com `service_role` do Financeiro e das Diárias foi bloqueada por ACLs que **também existem no banco oficial**; o teste não ampliou privilégios para contorná-las.
+
+**Não concluídos nessa ramificação:** integração real de Documentos, remoção Auth+Storage+DB, retomada, carga/realtime e teste em três aparelhos. A função HTTP temporária foi substituída por resposta 410 e autenticação obrigatória; a ramificação deixou de constar na lista de branches/projetos do Supabase antes da última bateria de SQL. Não atribuir causa ou custo final sem confirmação da plataforma.
+
+**Bloqueio primário persistente:** as 110 migrações históricas do banco oficial ainda não iniciam o projeto do zero: a primeira depende de `public.atualizar_updated_at_diario()` e de várias tabelas preexistentes. A baseline em GitHub **não altera automaticamente esse histórico**. Corrigir a linhagem de migração com procedimento de baseline/reconciliação rigoroso, sem operar em produção antes de aprovação específica.
+
+[Resultados técnicos, evidências e casos pendentes](./OBRIX_HOMOLOGACAO_RESULTADOS_BRANCH_20261116.md).
+
+A versão oficial da Vercel continua em `92495c4898e66d45c44b9e4b240a63a336af4e59` (`READY`). O PR #35 permanece em rascunho. O Supabase Pro continua ativo, mesmo sem branch temporária; acompanhar a cobrança mensal.
+
+**Segurança adicional:** o repositório `junioalef7-sys/Alef-obras` está PUBLIC, e o novo arquivo de baseline contém a implementação de funções e políticas. A varredura inicial de literais não localizou tokens JWT ou chaves conhecidas, mas **não substitui auditoria de segredos**; avaliar tornar o repositório privado antes da comercialização. Não alterar sua visibilidade automaticamente.
