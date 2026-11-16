@@ -57,3 +57,9 @@ Se o CI falhar, um cenário real de Auth/Storage não puder ser executado, ou o 
 - https://supabase.com/docs/guides/storage/security/access-control
 - https://supabase.com/docs/guides/auth/managing-user-data
 - https://vercel.com/docs/deployments
+
+## Divergência confirmada entre produção e main — BLOQUEIO DE MERGE
+
+Consulta GitHub de 16/11/2026: `main` e o commit atualmente publicado `92495c4` estão divergentes. A comparação apresentou **17 commits em `main` além do ancestral comum** e **1.344 commits do histórico oficial não presentes em `main`** (contagens da API de comparação, sujeitas a mudanças posteriores). Portanto **nunca usar merge automático para main como forma de publicar esta correção**. Foi criada a branch base `review/obrix-oficial-92495c4-base-20261116` no SHA oficial, e o [PR #35](https://github.com/junioalef7-sys/Alef-obras/pull/35) foi redirecionado para ela como **rascunho**.
+
+A versão a promover deverá ser um build staged derivado do SHA aprovado e verificado (não da branch `main` divergente). Nenhum merge/prod deployment está autorizado nesta fase.
