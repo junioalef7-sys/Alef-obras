@@ -42,3 +42,27 @@ Teste fonte: `tests/obrix-excluir-conta-fluxo-seguro.cjs`.
 - https://supabase.com/docs/guides/auth/managing-user-data
 - https://supabase.com/docs/guides/storage/management/delete
 - https://supabase.com/docs/guides/database/postgres/row-level-security
+
+## Homologação do banco concluída — 16/11/2026
+
+**Ambiente exclusivamente utilizado:** Supabase `mjzlwnuklfopdmgcvdcs` (auditoria). Nenhuma migração foi aplicada ao banco oficial `gnvclctqnwxnjxydzhwc`; a função `public.obrix_excluir_empresa_dados_v1(uuid,uuid,boolean)` não existe na produção.
+
+Após confirmação do acesso, a lógica foi adaptada somente para os esquemas privados `obrix_operacional_lab`, `obrix_exclusao_hml_20261116` e `obrix_seg_hml_20261116`. A versão efetivamente validada foi registrada em [obrix_hml_exclusao_empresa_lab_validado_20261116.sql](./obrix_hml_exclusao_empresa_lab_validado_20261116.sql). O arquivo mantém uma guarda transacional intencional e não deve ser executado diretamente nem usado na produção.
+
+A suíte `obrix_seg_hml_20261116.executar_testes_exclusao_v1()` confirmou **true** para:
+- `exclusao_financeiro_direta_bloqueada`: lançamento automático continua protegido contra DELETE direto.
+- `usuario_sem_vinculo_rejeitado`: usuário estranho não autoriza remoção.
+- `empresa_com_multiplos_usuarios_preservada`: não apaga dados compartilhados quando existem vários membros.
+- `preflight_transacional_reverte_dados`: teste real de exclusão executa operação e reverte seus efeitos.
+- `exclusao_empresa_transacional_concluida`: pagamento, vale, financeiro e empresa são apagados na mesma transação.
+- `outra_empresa_intacta`: obras, autenticação operacional e lançamentos de empresa diferente não são afetados.
+- `protecao_financeira_outra_empresa_mantida`: DELETE direto de **outro pagamento automático** segue bloqueado após exclusão autorizada.
+- `registro_manual_outra_empresa_preservado`: lançamento manual de outra empresa permanece.
+- `contexto_transacional_limpo`: não sobram exceções temporárias ativas.
+- `fixtures_revertidas`: a suíte descarta integralmente os dados artificiais ao terminar.
+
+Verificação final: **0** linhas em `obrix_operacional_lab.empresas`, `perfis`, `financeiro`, `pagamentos_equipe` e `obrix_exclusao_hml_20261116.contexto`. `authenticated` não tem EXECUTE na RPC privada; `service_role` possui privilégio EXECUTE, mas não tem USAGE no esquema privado da suíte. Portanto, a API Edge **ainda não está integrada** a essa versão de laboratório. Nenhuma conta Auth nem arquivo real foi excluído.
+
+Supabase Security Advisor do projeto de auditoria ainda apresentou avisos de `authenticated_security_definer_function_executable` e proteção contra senhas vazadas não ativada, além do aviso informativo `rls_enabled_no_policy`. Eles não foram declarados resolvidos.
+
+**Pendências antes da versão oficial:** desenhar fluxo de retomada de exclusão em caso de falha entre Storage, SQL e Auth; validar concorrência com transações de usuários; testar o endpoint autenticado com conta fictícia isolada; revisão de todas as FKs e vínculos de Storage; validar o botão em preview iPhone/Android/computador, a sessão e a remoção de arquivos físicos; aprovação explícita antes de qualquer alteração no oficial.
