@@ -87,3 +87,45 @@ test('o caminho de produção permanece desligado por padrão',()=>{
  assert.equal(window.__OBRIX_PAGAMENTO_ATOMICO_PRODUCAO,undefined);
  assert.equal(typeof window.OBRIX_LIQUIDACAO_SEGURA.registrar,'function');
 });
+
+
+test('prévia HML usa RPC atômica no banco isolado sem ativar produção',async()=>{
+ const calls=[];
+ const window={
+   location:{hostname:'alef-obras-hml-obrix3.vercel.app'},
+   __OBRIX_HML_PROJECT_REF:'xnvjqolbvzgozlmuagpi'
+ };
+ vm.runInNewContext(SCRIPT,{window,navigator:{onLine:true},URL,setTimeout,clearTimeout},{
+   filename:'obrix-equipe-liquidacao-segura.js',timeout:3000
+ });
+ window.OBRIX_BACKEND={
+   init:async()=>cliente('https://xnvjqolbvzgozlmuagpi.supabase.co',calls),
+   profile:async()=>({empresa_id:EMPRESA})
+ };
+ const result=await window.OBRIX_LIQUIDACAO_SEGURA.registrar(ARG);
+ assert.equal(result.ok,true);
+ assert.equal(result.homologacao,true);
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].name,'obrix_pagar_equipe_transacional_v2');
+ assert.equal(window.__OBRIX_PAGAMENTO_ATOMICO_PRODUCAO,undefined);
+});
+
+test('prévia HML recusa cliente apontando para banco oficial sem gravar',async()=>{
+ const calls=[];
+ const window={
+   location:{hostname:'alef-obras-hml-obrix3.vercel.app'},
+   __OBRIX_HML_PROJECT_REF:'xnvjqolbvzgozlmuagpi'
+ };
+ vm.runInNewContext(SCRIPT,{window,navigator:{onLine:true},URL,setTimeout,clearTimeout},{
+   filename:'obrix-equipe-liquidacao-segura.js',timeout:3000
+ });
+ window.OBRIX_BACKEND={
+   init:async()=>cliente('https://gnvclctqnwxnjxydzhwc.supabase.co',calls),
+   profile:async()=>({empresa_id:EMPRESA})
+ };
+ await assert.rejects(
+   ()=>window.OBRIX_LIQUIDACAO_SEGURA.registrar(ARG),
+   /Banco de dados diferente do ambiente autorizado/
+ );
+ assert.equal(calls.length,0);
+});
