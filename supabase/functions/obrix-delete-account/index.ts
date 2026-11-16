@@ -1,6 +1,7 @@
 import {createClient} from "npm:@supabase/supabase-js@2.117.1";
 import {excluirArquivosEmpresa} from "./storage-cleanup.mjs";
 import {excluirContaVerificada} from "./account-deletion-workflow.mjs";
+import {previewHmlPermitida} from "./cors-origin.mjs";
 
 const allowedOrigins=new Set([
   "https://obrix.junioalef7.workers.dev",
@@ -10,10 +11,17 @@ const allowedOrigins=new Set([
   // Prévia isolada já aprovada para validações do OBRIX.
   "https://alef-obras-git-test-obrix-diarias-config-diario-e-296b55-obrix3.vercel.app"
 ]);
+function origemPermitida(origin:string){
+  return allowedOrigins.has(origin)||previewHmlPermitida(
+    origin,
+    Deno.env.get("OBRIX_HML_ALLOWED_ORIGIN")||"",
+    Deno.env.get("SUPABASE_URL")||""
+  );
+}
 function cors(req:Request){
   const origin=req.headers.get("origin")||"";
   return {
-    "Access-Control-Allow-Origin":allowedOrigins.has(origin)?origin:"",
+    "Access-Control-Allow-Origin":origemPermitida(origin)?origin:"",
     "Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods":"POST, OPTIONS",
     "Cache-Control":"no-store",
@@ -34,7 +42,7 @@ Deno.serve(async (req:Request)=>{
   const headers=cors(req),origin=req.headers.get("origin")||"";
   if(req.method==="OPTIONS")return response(headers,200,{ok:true});
   if(req.method!=="POST")return response(headers,405,{error:"Método não permitido."});
-  if(origin&&!allowedOrigins.has(origin))return response(headers,403,{error:"Origem não permitida."});
+  if(origin&&!origemPermitida(origin))return response(headers,403,{error:"Origem não permitida."});
   try{
     const authHeader=req.headers.get("authorization")||"";
     if(!/^Bearer\s+\S+$/i.test(authHeader)){
