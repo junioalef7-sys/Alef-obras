@@ -1,0 +1,47 @@
+name: OBRIX - Segurança financeira e exclusão (homologação)
+on:
+  push:
+    branches:
+      - test/obrix-seguranca-pagamentos-20261116
+    paths:
+      - 'database/release/**'
+      - 'supabase/functions/obrix-delete-account/**'
+      - 'obrix-equipe-liquidacao-segura.js'
+      - 'obrix-financeiro-main.js'
+      - 'tests/obrix-prepublish-safety-gate.cjs'
+      - 'tests/obrix-excluir-conta-fluxo-seguro.cjs'
+      - 'tests/obrix-delete-account-storage.cjs'
+      - '.github/workflows/obrix-seguranca-release-candidato.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  seguranca-estatica-e-regressao:
+    name: Segurança estática e 26+ cenários simulados
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020e8
+        with:
+          node-version: '22'
+      - name: Verificar sintaxe JavaScript
+        run: |
+          node --check obrix-equipe-liquidacao-segura.js
+          node --check obrix-financeiro-main.js
+          node --check obrix-account-delete.js
+          node --check supabase/functions/obrix-delete-account/account-deletion-workflow.mjs
+          node --check supabase/functions/obrix-delete-account/storage-cleanup.mjs
+          node --check tests/obrix-prepublish-safety-gate.cjs
+          node --check tests/obrix-excluir-conta-fluxo-seguro.cjs
+          node --check tests/obrix-delete-account-storage.cjs
+      - name: Provar bloqueio de publicacao acidental e integridade do candidato
+        run: node --test tests/obrix-prepublish-safety-gate.cjs
+      - name: Simular retomada de exclusao de Auth e empresa
+        run: node --test tests/obrix-excluir-conta-fluxo-seguro.cjs
+      - name: Simular inventario, paginacao e exclusao fisica Storage
+        run: node --test tests/obrix-delete-account-storage.cjs
