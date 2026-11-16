@@ -1,7 +1,8 @@
 -- OBRIX | REPRODUÇÃO DO LABORATÓRIO SQL | 16/11/2026
 -- Somente ambiente OBRIX-AUDITORIA-AUTH-20261102 (mjzlwnuklfopdmgcvdcs).
 -- NÃO executar contra o banco oficial nem via migrações automáticas.
--- O guard abaixo bloqueia a execução intencionalmente.
+-- A transação evita que ferramentas SQL continuem após o erro da guarda.
+BEGIN;
 DO $guard$ BEGIN RAISE EXCEPTION 'OBRIX HML: execucao manual deliberada requerida'; END $guard$;
 
 -- A migração abaixo foi aplicada no laboratório com esta guarda omitida.
@@ -328,3 +329,4 @@ REVOKE ALL ON FUNCTION obrix_exclusao_hml_20261116.apagar_empresa(uuid) FROM PUB
 REVOKE ALL ON FUNCTION obrix_seg_hml_20261116.obrix_excluir_empresa_dados_v1(uuid,uuid,boolean) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION obrix_seg_hml_20261116.obrix_excluir_empresa_dados_v1(uuid,uuid,boolean) TO service_role;
 REVOKE ALL ON FUNCTION obrix_seg_hml_20261116.executar_testes_exclusao_v1() FROM PUBLIC,anon,authenticated;
+COMMIT;
