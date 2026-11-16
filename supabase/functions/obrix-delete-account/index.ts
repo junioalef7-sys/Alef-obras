@@ -8,8 +8,6 @@ const allowedOrigins=new Set([
   "https://junioalef7-sys.github.io",
   "https://alef-obras-obrix3.vercel.app",
   "https://alef-obras.vercel.app",
-  // Prévia isolada já aprovada para validações do OBRIX.
-  "https://alef-obras-git-test-obrix-diarias-config-diario-e-296b55-obrix3.vercel.app"
 ]);
 function origemPermitida(origin:string){
   return allowedOrigins.has(origin)||previewHmlPermitida(
