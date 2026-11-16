@@ -121,10 +121,16 @@ test('papel administrador verdadeiro é aceito nos controles de pagamentos',()=>
 
 test('ensaio E2E é restrito a uma branch efêmera e não contém credenciais',()=>{
  const runtime=read('tests/obrix-e2e-runtime-hml-branch-20261116.mjs');
- expect(runtime,'ygcwnozfseojqronhaan');
+ expect(runtime,'OBRIX_HML_PROJECT_REF');
+ expect(runtime,'PROJETO_VALIDO');
+ expect(runtime,'REFS_BLOQUEADOS');
  expect(runtime,'obrix_hml_claim_once_v1');
  expect(runtime,'excluirContaVerificada');
- assert.equal(runtime.includes('gnvclctqnwxnjxydzhwc'),false);
- assert.equal(runtime.includes('mjzlwnuklfopdmgcvdcs'),false);
+ assert.equal(runtime.includes('const PROJECT="ygcwnozfseojqronhaan"'),false);
+ const claim=read('database/release/obrix_hml_fixture_executor_one_shot_20261116.sql');
+ expect(claim,'OBRIX_HML_FIXTURE_BLOCKED');
+ expect(claim,'obrix_hml_claim_once_v1');
+ expect(claim,'SELECT 1 FROM auth.users');
+ expect(claim,'SELECT 1 FROM storage.objects');
  assert.equal(/eyJ[A-Za-z0-9_-]{60,}|sb_secret_[A-Za-z0-9]{20,}/.test(runtime),false);
 });
