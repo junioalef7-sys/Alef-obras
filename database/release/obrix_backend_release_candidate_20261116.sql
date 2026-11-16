@@ -49,7 +49,7 @@ begin
 
   if TG_OP = 'DELETE' and old.status_lancamento = 'estornado' then
     select p.papel into v_papel from public.perfis p where p.id = auth.uid() limit 1;
-    if coalesce(v_papel,'') in ('proprietario','admin') then
+    if coalesce(v_papel,'') in ('proprietario','administrador') then
       return old;
     end if;
   end if;
@@ -154,7 +154,7 @@ BEGIN
    FROM public.perfis WHERE empresa_id=p_empresa_id;
   IF v_usuarios<>1 OR NOT EXISTS(
     SELECT 1 FROM public.perfis WHERE empresa_id=p_empresa_id
-     AND id=p_usuario_id AND papel IN ('proprietario','admin')
+     AND id=p_usuario_id AND papel IN ('proprietario','administrador')
   ) THEN
     RAISE EXCEPTION 'A exclusão total requer um único titular autorizado.';
   END IF;
@@ -209,7 +209,7 @@ BEGIN
  IF v_qtd<>1 OR NOT EXISTS (
    SELECT 1 FROM public.perfis
    WHERE empresa_id=p_empresa_id AND id=p_usuario_id
-   AND papel IN ('proprietario','admin')
+   AND papel IN ('proprietario','administrador')
  ) THEN RAISE EXCEPTION 'Exclusão exige um único titular autorizado.'; END IF;
 
  -- Verifica os DELETEs com rollback real antes de criar a solicitação.
@@ -448,7 +448,7 @@ begin
  select nome into v_nome from public.funcionarios where id=p_funcionario_id and empresa_id=v_empresa;
  if not found then raise exception 'Funcionário não pertence à empresa atual.'; end if;
  select papel into v_papel from public.perfis where id=(select auth.uid()) and empresa_id=v_empresa;
- if coalesce(v_papel,'') not in ('proprietario','admin') then raise exception 'Operação restrita ao proprietário ou administrador.'; end if;
+ if coalesce(v_papel,'') not in ('proprietario','administrador') then raise exception 'Operação restrita ao proprietário ou administrador.'; end if;
 
  -- Lock the selected rows deterministically to serialize competing payments.
  perform 1 from public.diarias
