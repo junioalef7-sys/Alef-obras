@@ -75,3 +75,9 @@ test('cache local apontando ao oficial não contorna isolamento da preview',asyn
   assert.equal(x.requests.length,1);
   assert.equal(x.clients[0]?.url,'https://'+HML+'.supabase.co');
 });
+
+test('HTML do OBRIX invalida cache da versão anterior',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'..','obrix.html'),'utf8');
+  assert.ok(html.includes('./obrix-backend-adapter.js?v=20261116-preview-hml-isolado1'));
+  assert.equal(html.includes('./obrix-backend-adapter.js?v=20261102sessao2'),false);
+});
