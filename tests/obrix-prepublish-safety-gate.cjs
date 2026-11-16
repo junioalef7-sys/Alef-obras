@@ -75,3 +75,23 @@ test('account deletion has journal and safe recovery behavior',()=>{
  expect(account,'banco_concluido');
  expect(account,'storage_concluido');
 });
+
+
+test('cadastro de perfis e notificacoes sem empresa continua funcionando',()=>{
+ const triggerStart=sql.indexOf('CREATE OR REPLACE FUNCTION obrix_conta_interna.bloquear_gravacoes_empresa()');
+ const triggerEnd=sql.indexOf('CREATE OR REPLACE FUNCTION obrix_conta_interna.obrix_storage_upload_permitido(',triggerStart);
+ assert.ok(triggerStart>=0&&triggerEnd>triggerStart);
+ const trigger=sql.slice(triggerStart,triggerEnd);
+ expect(trigger,'IF v_empresa IS NULL THEN');
+ expect(trigger,'IF v_destino IS NULL THEN');
+ expect(trigger,"RETURN CASE WHEN TG_OP='DELETE' THEN OLD ELSE NEW END");
+ expect(trigger,'WHERE empresa_id=v_destino');
+ expect(trigger,"USING ERRCODE='42501'");
+ assert.equal(trigger.includes("IF v_empresa IS NULL THEN RAISE EXCEPTION 'Empresa obrigatória.'"),false);
+ const suite=read('database/release/obrix_hml_regressao_empresa_nula_20261116.sql');
+ expect(suite,"to_regnamespace('obrix_exclusao_hml_20261116')");
+ expect(suite,'empresa_id uuid NULL');
+ expect(suite,'UPDATE obrix_nullable_regressao SET empresa_id=e1');
+ expect(suite,'INSERT INTO obrix_nullable_regressao');
+ expect(suite,'ROLLBACK;');
+});
