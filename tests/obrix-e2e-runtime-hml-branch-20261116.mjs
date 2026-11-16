@@ -62,8 +62,14 @@ Deno.serve(async req=>{
   if(rev.error)throw Error("Estorno: "+rev.error.message);
   const abertas=unwrap(await admin.from("diarias").select("id,paga").in("id",d.map(x=>x.id)),"Diárias estornadas");
   checks.estorno=abertas.length===2&&abertas.every(x=>!x.paga);
-  const made=await admin.storage.createBucket("obrix-documentos",{public:false});
-  unwrap(made,"Bucket");bucket=true;
+  const existingBuckets=unwrap(await admin.storage.listBuckets(),"Inventário de buckets");
+  const existingDocBucket=existingBuckets.find(b=>b.id==="obrix-documentos");
+  if(existingDocBucket){
+    if(existingDocBucket.public===true)throw Error("Bucket de documentos inesperadamente público");
+  }else{
+    unwrap(await admin.storage.createBucket("obrix-documentos",{public:false}),"Bucket de homologação");
+    bucket=true;
+  }
   const file=empresaId+"/obra-a/documento-hml.pdf";
   unwrap(await client.storage.from("obrix-documentos").upload(file,new Blob(["%PDF-1.1\n%%EOF\n"],{type:"application/pdf"}),{contentType:"application/pdf",upsert:false}),"Upload PDF");
   const doc=unwrap(await client.from("documentos").insert({empresa_id:empresaId,obra_id:a,titulo:"HML PDF",nome_arquivo:"documento-hml.pdf",caminho_arquivo:file,tipo_arquivo:"application/pdf"}).select("id").single(),"Documento");
@@ -80,7 +86,10 @@ Deno.serve(async req=>{
   checks.auth_removido=!!auth.error&&(Number(auth.error.status)===404||auth.error.code==="user_not_found");
   const stale=await client.auth.getUser(token);
   checks.token_antigo=!!stale.error||!stale.data?.user;
-  unwrap(await admin.storage.deleteBucket("obrix-documentos"),"Excluir bucket");bucket=false;
+  if(bucket){
+    unwrap(await admin.storage.deleteBucket("obrix-documentos"),"Excluir bucket temporário");
+    bucket=false;
+  }
   const success=Object.values(checks).every(Boolean);
   return out(success?200:422,{ok:success,checks,errors:success?[]:["Verificações incompletas"]});
  }catch(e){
