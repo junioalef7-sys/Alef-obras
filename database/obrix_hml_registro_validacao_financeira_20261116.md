@@ -66,3 +66,15 @@ A suíte `obrix_seg_hml_20261116.executar_testes_operacionais_v3()` confirmou `t
 - `obrix_seg_hml_20261116.executar_testes_operacionais_v4()`: todos os testes funcionais e `exclusao_empresa_fluxo_edge` retornaram `true`, `fixtures_revertidas=true`, sem `erro_inesperado`.
 - A função oficial de exclusão de conta (Edge Function v11) foi **lida, não alterada**. Ela limpa o Storage antes de alterações no banco e exclusão do Auth, operações que não formam uma única transação. Ainda há risco de exclusão parcial caso uma etapa posterior falhe, exigindo teste de repetição/recovery e confirmação da cobertura dos arquivos.
 - Apenas as ações SQL da sequência oficial foram simuladas no esquema do laboratório. Não foram excluídos usuários reais, contas reais, arquivos ou tokens.
+
+
+## Próxima etapa: exclusão de conta segura
+
+- Diagnóstico: a Edge Function `obrix-delete-account` realizava `UPDATE status_lancamento='estornado'` seguido de `DELETE` direto de Financeiro e empresa, em várias requisições. O gatilho de proteção rejeita alguns lançamentos automáticos em uma exclusão em cascata.
+- Corrigido **somente no código da ramificação de testes**: `account-deletion-workflow.mjs` usa RPC de pré-validação `obrix_excluir_empresa_dados_v1(p_simular=true)` antes do Storage; depois chama a RPC de exclusão de dados em transação, e só por último remove o login de Auth. A nova rotina nunca altera lançamentos para `estornado` como atalho.
+- Segurança: a operação empresarial requer último perfil autorizado, revalidação no banco e serviço administrativo. Empresa com outros usuários mantém dados e arquivos compartilhados.
+- [Proposta SQL](./obrix_proposta_exclusao_empresa_transacional_20261116.sql) está marcada **NÃO EXECUTAR** e possui `RAISE EXCEPTION` inicial que bloqueia execução acidental. O plano usa contexto privado por ID da transação para permitir exclusivamente exclusão corporativa autorizada, não exclusão manual.
+- Oito cenários de função testados por execução simulada: titular único; pré-validação falha; erro na transação; vários membros; papel sem autorização; perfil divergente; recuperação sem perfil; falha de Auth. Resultado: **8/8 aprovados**, sem operações no Supabase.
+- Pendente: conectar ferramenta Supabase, conferir a definição **atual** do gatilho e todas as dependências, aplicar SQL ajustado **no banco de auditoria** com dados fictícios e validar cascata completa + Storage + Auth em contas exclusivamente de teste.
+- Risco remanescente: API de Storage e exclusão de Auth não participam da transação SQL; se ocorrer falha entre etapas, o fluxo informa exclusão parcial, exige suporte e deve ser retomável. Necessário testar concorrência e arquivos gravados durante a exclusão.
+- O app oficial continua no commit `92495c4898e66d45c44b9e4b240a63a336af4e59`; nenhuma publicação ou migração de produção autorizada nesta etapa.
