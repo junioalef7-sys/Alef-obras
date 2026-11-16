@@ -153,7 +153,7 @@ async function registrarAtomicoHomologacao({funcionarioId,data,obraPagamentoId,e
  }finally{emProcessamento.delete(id)}
 }
 
-async function registrarAtomicoProducao({funcionarioId,data,obraPagamentoId,esperado}={}){
+async function registrarAtomicoProducao({funcionarioId,data,obraPagamentoId,esperado}={},ambiente='producao'){
  const id=str(funcionarioId),hml=window.OBRIX_BACKEND;
  if(emProcessamento.has(id))throw Error('Este funcionário já possui pagamento em andamento.');
  emProcessamento.add(id);
@@ -165,8 +165,11 @@ async function registrarAtomicoProducao({funcionarioId,data,obraPagamentoId,espe
    throw Error('O backend de pagamentos não foi configurado. Operação bloqueada.');
   const sb=await hml.init();
   const endereco=new URL(sb?.supabaseUrl||'https://invalido.invalid');
-  if(endereco.origin!=='https://gnvclctqnwxnjxydzhwc.supabase.co')
-   throw Error('Ambiente diferente do OBRIX oficial. Operação bloqueada.');
+  const hml=ambiente==='homologacao';
+  const origemEsperada=hml?'https://xnvjqolbvzgozlmuagpi.supabase.co'
+    :'https://gnvclctqnwxnjxydzhwc.supabase.co';
+  if(endereco.origin!==origemEsperada)
+   throw Error('Banco de dados diferente do ambiente autorizado. Pagamento bloqueado.');
   if(typeof sb.rpc!=='function')throw Error('Cliente Supabase incompatível com pagamento transacional.');
   const dados=await hml.profile(),eid=dados?.empresa_id;
   if(!eid)throw Error('Empresa do OBRIX não identificada.');
@@ -207,13 +210,19 @@ async function registrarAtomicoProducao({funcionarioId,data,obraPagamentoId,espe
    vales:Number(resposta.data.valor_vales||0),
    liquido:Number(resposta.data.valor_liquido||0),
    despesasNovas:Number(resposta.data.valor_liquido||0),
-   homologacao:false
+   homologacao:hml
   };
  }finally{emProcessamento.delete(id)}
 }
 
 
 async function registrar({funcionarioId,data,obraPagamentoId,esperado}={}){
+ // Pagamento atômico habilitado apenas na Preview ligada ao novo Supabase HML.
+ const host=String(window.location?.hostname||'').toLowerCase();
+ const hmlPreview=host.startsWith('alef-obras-')&&host.endsWith('.vercel.app')
+   &&!['alef-obras-obrix3.vercel.app','alef-obras.vercel.app'].includes(host)
+   &&String(window.__OBRIX_HML_PROJECT_REF||'')==='xnvjqolbvzgozlmuagpi';
+ if(hmlPreview)return registrarAtomicoProducao({funcionarioId,data,obraPagamentoId,esperado},'homologacao');
  // Ative somente após migrar, validar e liberar a RPC no backend oficial.
  if(window.__OBRIX_PAGAMENTO_ATOMICO_PRODUCAO===true)
   return registrarAtomicoProducao({funcionarioId,data,obraPagamentoId,esperado});
