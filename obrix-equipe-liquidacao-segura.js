@@ -92,7 +92,70 @@ async function garantirValesFinanceiros(sb,eid,funcionario,vs){
    if(ins.error)throw new Error('Não foi possível registrar o vale no Financeiro: '+ins.error.message);
  }
 }
+// Integração opt-in apenas para homologação. Não modificar o fluxo oficial.
+// Sem backend isolado e Supabase de auditoria, falhar fechado antes de qualquer gravação.
+async function registrarAtomicoHomologacao({funcionarioId,data,obraPagamentoId,esperado}={}){
+ const id=str(funcionarioId),hml=window.OBRIX_BACKEND_HML;
+ if(emProcessamento.has(id))throw Error('Este funcionário já possui pagamento em andamento.');
+ emProcessamento.add(id);
+ try{
+  if(!navigator.onLine)throw Error('É necessário estar conectado para pagar.');
+  if(!data||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(data))
+   throw Error('Data inválida para pagamento.');
+  if(!hml||typeof hml.init!=='function'||typeof hml.profile!=='function')
+   throw Error('O banco de homologação não foi configurado. Pagamento bloqueado sem alterar dados.');
+  const sb=await hml.init();
+  const endereco=new URL(sb?.supabaseUrl||'https://invalido.invalid');
+  if(endereco.origin!=='https://mjzlwnuklfopdmgcvdcs.supabase.co')
+   throw Error('Ambiente diferente do banco de testes. Operação bloqueada.');
+  if(typeof sb.schema!=='function')throw Error('Cliente de homologação incompatível.');
+  const dados=await hml.profile(),eid=dados?.empresa_id;
+  if(!eid)throw Error('Empresa de homologação não identificada.');
+  const lab=sb.schema('obrix_operacional_lab');
+  const [fr,dr,vr,br]=await Promise.all([
+   lab.from('funcionarios').select('id,nome').eq('empresa_id',eid).eq('id',id).maybeSingle(),
+   lab.from('diarias').select('*').eq('empresa_id',eid).eq('funcionario_id',id).eq('paga',false).is('cancelada_em',null),
+   lab.from('vales').select('*').eq('empresa_id',eid).eq('funcionario_id',id).eq('quitado',false).is('estornado_em',null),
+   lab.from('bonus_extras').select('*').eq('empresa_id',eid).eq('funcionario_id',id).eq('pago',false)
+  ]);
+  for(const resposta of [fr,dr,vr,br])if(resposta.error)throw resposta.error;
+  if(!fr.data)throw Error('Funcionário de homologação não encontrado.');
+  const calc=calcular({ds:dr.data||[],vs:vr.data||[],bs:br.data||[]});
+  if(calc.erros.length)throw Error(calc.erros.join(' '));
+  if(esperado!=null&&cent(esperado)!==calc.liquido)
+   throw Error('O valor da folha mudou; atualize antes de confirmar.');
+  let destino=str(obraPagamentoId);
+  if(calc.negativas.length&&calc.liquido>0){
+   if(!destino&&calc.obrasTrabalhadas.length===1)destino=calc.obrasTrabalhadas[0].id;
+   if(!calc.obrasTrabalhadas.some(o=>o.id===destino))
+    throw Error('Selecione uma obra válida para receber o líquido.');
+  }
+  const req={
+   p_funcionario_id:id,p_data_pagamento:data,
+   p_diaria_ids:(dr.data||[]).map(x=>x.id),
+   p_vale_ids:(vr.data||[]).map(x=>x.id),
+   p_bonus_ids:(br.data||[]).map(x=>x.id),
+   p_obra_pagamento_id:destino||null,
+   p_liquido_esperado:valor(calc.liquido)
+  };
+  const resposta=await lab.rpc('obrix_pagar_equipe_transacional_v2',req);
+  if(resposta.error)throw resposta.error;
+  if(resposta.data?.ok!==true||!resposta.data.pagamento_id)
+   throw Error('Pagamento transacional não confirmado pelo servidor.');
+  return{
+   ok:true,id:resposta.data.pagamento_id,nome:fr.data.nome,
+   bruto:Number(resposta.data.valor_bruto||0),
+   vales:Number(resposta.data.valor_vales||0),
+   liquido:Number(resposta.data.valor_liquido||0),
+   despesasNovas:Number(resposta.data.valor_liquido||0),
+   homologacao:true
+  };
+ }finally{emProcessamento.delete(id)}
+}
+
 async function registrar({funcionarioId,data,obraPagamentoId,esperado}={}){
+ if(window.__OBRIX_PAGAMENTO_ATOMICO_HML===true)
+  return registrarAtomicoHomologacao({funcionarioId,data,obraPagamentoId,esperado});
  const id=str(funcionarioId);
  if(emProcessamento.has(id))throw Error('Este funcionário já possui pagamento em andamento.');
  emProcessamento.add(id);let pid=null,sb=null;
