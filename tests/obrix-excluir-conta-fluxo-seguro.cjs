@@ -197,3 +197,16 @@ test('falha na consulta da solicitação não permite exclusão órfã',async()=
   assert.match(r.erro.message,/exclusão anterior/);
   assert.deepEqual(r.eventos,['consulta']);
 });
+
+test('administrador válido no esquema oficial pode concluir exclusão de empresa',async()=>{
+  const r=await executar({papel:'administrador'});
+  assert.ifError(r.erro);
+  assert.equal(r.resultado.escopo,'empresa');
+  assert.equal(r.etapa(),'finalizado');
+});
+
+test('papel admin inexistente no esquema oficial não autoriza exclusão',async()=>{
+  const r=await executar({papel:'admin'});
+  assert.match(r.erro.message,/titular ou administrador/);
+  assert.deepEqual(r.eventos,['contagem']);
+});
