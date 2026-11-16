@@ -85,3 +85,13 @@ A checagem final do laboratório encontrou: `auth_users=3`, `storage_objects=243
 **Arquivos:** [journal SQL](./obrix_hml_journal_exclusao_retomavel_20261116.sql), [fluxo retomável](../supabase/functions/obrix-delete-account/account-deletion-workflow.mjs), [testes](../tests/obrix-excluir-conta-fluxo-seguro.cjs).
 
 **Referências:** https://supabase.com/docs/guides/auth/managing-user-data e https://supabase.com/docs/guides/storage/management/delete-objects.
+
+## Bloqueio de alterações durante exclusão — teste concluído em 16/11/2026
+
+**Somente Supabase de auditoria**: foi instalada a trigger `obrix_hml_bloquear_gravacoes_exclusao` em **35 tabelas** clonadas do schema `obrix_operacional_lab` (inclusive controle de DELETE/UPDATE da empresa). O código `obrix_exclusao_hml_20261116.bloquear_gravacoes_empresa()` usa o mesmo lock consultivo transacional do journal, valida a fase da exclusão e permite somente a transação privada autorizada que está removendo os dados da empresa. Não altera as tabelas reais de `public`.
+
+A suíte `obrix_seg_hml_20261116.executar_testes_exclusao_bloqueio_v1()` retornou todos os **21 indicadores como true**, incluindo `insert_apos_reserva_bloqueado`, `update_apos_reserva_bloqueado`, `delete_apos_reserva_bloqueado` e `outra_empresa_continua_editavel`. Manteve as validações anteriores de exclusão transacional, preflight com rollback, isolamento da outra empresa, rastreabilidade do journal e bloqueio de DELETE financeiro direto. Todos os dados sintéticos da suíte foram revertidos.
+
+[SQL de evidência e suíte de testes](./obrix_hml_trava_gravacoes_exclusao_20261116.sql) — arquivo com guarda de execução para evitar migração acidental.
+
+**Escopo não coberto:** gravação de novos arquivos na API Supabase Storage e sessões JWT já emitidas **não são barradas por este gatilho de tabelas**. Continuam obrigatórios testes HTTP reais com uma nova conta Auth totalmente fictícia, arquivos novos exclusivamente de teste e verificação de uploads concorrentes. A interface de teste ainda não executa a exclusão real completa; publicação oficial continua proibida sem aprovação expressa.
