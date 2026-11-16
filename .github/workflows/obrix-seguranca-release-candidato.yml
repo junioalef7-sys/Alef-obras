@@ -12,6 +12,9 @@ on:
       - 'tests/obrix-excluir-conta-fluxo-seguro.cjs'
       - 'tests/obrix-delete-account-storage.cjs'
       - 'tests/obrix-pagamento-rpc-frontend.cjs'
+      - 'tests/obrix-documentos-viewer.cjs'
+      - 'obrix-documentos-direto.js'
+      - 'obrix-offline-v3.js'
       - '.github/workflows/obrix-seguranca-release-candidato.yml'
   pull_request:
     branches:
@@ -25,6 +28,9 @@ on:
       - 'tests/obrix-excluir-conta-fluxo-seguro.cjs'
       - 'tests/obrix-delete-account-storage.cjs'
       - 'tests/obrix-pagamento-rpc-frontend.cjs'
+      - 'tests/obrix-documentos-viewer.cjs'
+      - 'obrix-documentos-direto.js'
+      - 'obrix-offline-v3.js'
       - '.github/workflows/obrix-seguranca-release-candidato.yml'
   workflow_dispatch:
 
@@ -54,6 +60,9 @@ jobs:
           node --check tests/obrix-excluir-conta-fluxo-seguro.cjs
           node --check tests/obrix-delete-account-storage.cjs
           node --check tests/obrix-pagamento-rpc-frontend.cjs
+          node --check obrix-documentos-direto.js
+          node --check obrix-offline-v3.js
+          node --check tests/obrix-documentos-viewer.cjs
       - name: Provar bloqueio de publicacao acidental e integridade do candidato
         run: node --test tests/obrix-prepublish-safety-gate.cjs
       - name: Simular retomada de exclusao de Auth e empresa
@@ -62,3 +71,5 @@ jobs:
         run: node --test tests/obrix-delete-account-storage.cjs
       - name: Simular pagamento atomico e compensacao entre obras
         run: node --test tests/obrix-pagamento-rpc-frontend.cjs
+      - name: Verificar visualização integral e isolada de documentos
+        run: node --test tests/obrix-documentos-viewer.cjs
