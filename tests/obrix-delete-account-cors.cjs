@@ -39,4 +39,5 @@ test('a Edge consome a política e preserva validação do token',()=>{
  assert.ok(code.includes('origemPermitida(origin)'));
  assert.ok(code.includes('userClient.auth.getUser()'));
  assert.ok(code.includes('EXCLUIR CONTA'));
+ assert.equal(code.includes('alef-obras-git-test-obrix-diarias-config-diario-e-296b55-obrix3'),false);
 });
