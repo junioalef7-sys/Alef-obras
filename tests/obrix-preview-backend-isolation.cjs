@@ -92,3 +92,19 @@ test('HTML injeta configuração de homologação ANTES do backend',()=>{
   assert.ok(source.includes("window.__OBRIX_HML_PROJECT_REF=''"));
   assert.equal(/eyJ[A-Za-z0-9_-]{40,}|sb_secret_[A-Za-z0-9]{16,}/.test(source),false);
 });
+
+test('domínio de teste desconhecido não conecta silenciosamente ao oficial',async()=>{
+  const x=start({host:'obrix-preview.exemplo.com',config:{
+    url:'https://'+PROD+'.supabase.co',publishableKey:'public-test-key'
+  }});
+  await assert.rejects(x.init(),/Prévia de testes bloqueada/);
+  assert.equal(x.requests.length,0);
+  assert.equal(x.clients.length,0);
+});
+test('Cloudflare oficial mantém origem aprovada existente',async()=>{
+  const x=start({host:'obrix.junioalef7.workers.dev',config:{
+    url:'https://'+PROD+'.supabase.co',publishableKey:'public-test-key'
+  }});
+  await x.init();
+  assert.equal(x.clients[0]?.url,'https://'+PROD+'.supabase.co');
+});
