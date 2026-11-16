@@ -2,13 +2,16 @@
   'use strict';
   const CONFIG_URL='https://gnvclctqnwxnjxydzhwc.supabase.co/functions/v1/obrix-public-config';
   const OFFICIAL_REF='gnvclctqnwxnjxydzhwc';
-  const OFFICIAL_HOSTS=new Set(['alef-obras-obrix3.vercel.app','alef-obras.vercel.app']);
-  function ehPreviewVercel(){
+  const OFFICIAL_HOSTS=new Set([
+    'alef-obras-obrix3.vercel.app','alef-obras.vercel.app',
+    'obrix.junioalef7.workers.dev','junioalef7-sys.github.io'
+  ]);
+  function ehAmbienteNaoOficial(){
     const host=String(window.location?.hostname||'').toLowerCase();
-    return host.endsWith('.vercel.app')&&host.startsWith('alef-obras-')&&!OFFICIAL_HOSTS.has(host);
+    return !OFFICIAL_HOSTS.has(host);
   }
   function urlConfigSegura(){
-    if(!ehPreviewVercel())return {url:CONFIG_URL,ref:OFFICIAL_REF};
+    if(!ehAmbienteNaoOficial())return {url:CONFIG_URL,ref:OFFICIAL_REF};
     const ref=String(window.__OBRIX_HML_PROJECT_REF||'').trim().toLowerCase();
     if(!/^[a-z]{20}$/.test(ref)||ref===OFFICIAL_REF){
       throw new Error('Prévia de testes bloqueada: configure um Supabase de homologação isolado.');
@@ -19,7 +22,7 @@
     if(!cfg?.url||!cfg?.publishableKey)throw new Error('Configuração OBRIX indisponível.');
     let hostname;
     try{hostname=new URL(cfg.url).hostname}catch(_){throw new Error('URL do Supabase inválida.')}
-    if(ehPreviewVercel()&&hostname!==ref+'.supabase.co'){
+    if(ehAmbienteNaoOficial()&&hostname!==ref+'.supabase.co'){
       throw new Error('Prévia bloqueada: configuração aponta para outro banco de dados.');
     }
     return cfg;
