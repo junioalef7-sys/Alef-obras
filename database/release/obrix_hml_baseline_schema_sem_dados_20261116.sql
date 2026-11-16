@@ -5442,4 +5442,10 @@ REVOKE ALL ON FUNCTION public.set_pagamentos_assinatura_atualizado_em() FROM PUB
 REVOKE ALL ON FUNCTION public.set_planos_assinatura_atualizado_em() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON SEQUENCE "public"."compras_numero_pedido_seq" FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON SEQUENCE "public"."orcamentos_numero_seq" FROM PUBLIC, anon, authenticated;
+-- 11. GRANTS DOS ESQUEMAS PRIVADOS (conferidos no projeto oficial, sem dados)
+-- public e storage são gerenciados pelo Supabase e preservam suas permissões.
+REVOKE ALL ON SCHEMA "private" FROM PUBLIC, anon;
+GRANT USAGE ON SCHEMA "private" TO authenticated, service_role;
+REVOKE ALL ON SCHEMA "obrix_private" FROM PUBLIC, anon, authenticated, service_role;
+
 COMMIT;
