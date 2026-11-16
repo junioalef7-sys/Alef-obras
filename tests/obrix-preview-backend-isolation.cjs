@@ -78,7 +78,7 @@ test('cache local apontando ao oficial não contorna isolamento da preview',asyn
 
 test('HTML do OBRIX invalida cache da versão anterior',()=>{
   const html=fs.readFileSync(path.join(__dirname,'..','obrix.html'),'utf8');
-  assert.ok(html.includes('./obrix-backend-adapter.js?v=20261116-preview-hml-isolado1'));
+  assert.ok(html.includes('./obrix-backend-adapter.js?v=20261116-preview-hml-isolado2'));
   assert.equal(html.includes('./obrix-backend-adapter.js?v=20261102sessao2'),false);
 });
 
@@ -86,7 +86,7 @@ test('HTML do OBRIX invalida cache da versão anterior',()=>{
 test('HTML injeta configuração de homologação ANTES do backend',()=>{
   const html=fs.readFileSync(path.join(__dirname,'..','obrix.html'),'utf8');
   const config=html.indexOf('./obrix-hml-config.js?v=20261116-hml1');
-  const backend=html.indexOf('./obrix-backend-adapter.js?v=20261116-preview-hml-isolado1');
+  const backend=html.indexOf('./obrix-backend-adapter.js?v=20261116-preview-hml-isolado2');
   assert.ok(config>=0&&backend>config);
   const source=fs.readFileSync(path.join(__dirname,'..','obrix-hml-config.js'),'utf8');
   assert.ok(source.includes("window.__OBRIX_HML_PROJECT_REF=''"));
