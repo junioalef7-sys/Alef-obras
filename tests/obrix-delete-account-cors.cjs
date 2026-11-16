@@ -26,7 +26,7 @@ test('recusa preview em produção e em auditoria com dados anteriores',async()=
 test('recusa preview se URL do backend for inválida',async()=>{
  assert.equal(await check(PREVIEW,PREVIEW,'https://evil.test'),false);
  assert.equal(await check(PREVIEW,PREVIEW,'javascript:alert(1)'),false);
- assert.equal(await check(PREVIEW,PREVIEW,'https://AAAAAAAAAAAAAAAAAAAA.supabase.co'),false);
+ assert.equal(await check(PREVIEW,PREVIEW,'https://abcdefghijklmnopqrst.supabase.co.evil.test'),false);
 });
 test('nunca libera domínios de terceiros ou origem oficial por essa exceção',async()=>{
  assert.equal(await check('https://evil.example', 'https://evil.example',HML),false);
