@@ -21,7 +21,7 @@ function ensure(){
   <label>Materiais utilizados<textarea id="diarioMateriais" placeholder="Ex.: Cimento, areia, blocos..."></textarea></label>
   <label>Equipamentos utilizados<textarea id="diarioEquipamentos" placeholder="Ex.: Betoneira, andaime..."></textarea></label>
   <label>Observações<textarea id="diarioObs"></textarea></label>
-  <div class="diarioActions"><button class="btn" id="diarioSalvar" type="button">Salvar diário</button><button class="btn diarioSecundario" id="diarioCancelar" type="button">Cancelar</button></div><div id="diarioMsg" class="diarioMsg hidden"></div></div>
+  <div class="diarioActions"><button class="btn" id="diarioSalvar" type="button">Salvar diário</button><button class="btn diarioSecundario" id="diarioCancelar" type="button">Cancelar</button></div></div><div id="diarioMsg" class="diarioMsg hidden" role="status" aria-live="polite"></div>
   <div class="card"><div class="sectionHead"><strong>Obras com diários</strong><span class="muted">Toque na obra para ver os registros</span></div><div id="diarioLista"></div></div>`;
   app.insertBefore(main,bottom);
   main.querySelector('.diarioAtualizar').onclick=()=>load().catch(showError);
