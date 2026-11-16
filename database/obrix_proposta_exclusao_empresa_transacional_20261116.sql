@@ -79,39 +79,21 @@ BEGIN
 END;
 $fn$;
 
--- 3. Única operação de exclusão de dados, com pré-validação sem efeitos
--- colaterais. Service-role apenas, invocada DEPOIS da limpeza Storage.
-CREATE OR REPLACE FUNCTION public.obrix_excluir_empresa_dados_v1(
- p_empresa_id uuid, p_usuario_id uuid, p_simular boolean DEFAULT false
-) RETURNS jsonb
-LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
-AS $fn$
+-- 3. Exclusão interna, nunca exposta ao usuário nem ao navegador.
+-- Toda remoção e verificação acontecem NA MESMA transação SQL.
+CREATE OR REPLACE FUNCTION obrix_exclusao_interna.apagar_empresa(p_empresa_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $apagar$
 DECLARE
   v_removidas integer;
-  v_usuarios integer;
   v_tabela record;
   v_restantes boolean;
 BEGIN
-  IF p_empresa_id IS NULL OR p_usuario_id IS NULL THEN
-    RAISE EXCEPTION 'Empresa e usuário obrigatórios.';
-  END IF;
-  -- O lock protege a empresa contra operações concorrentes que exijam FK.
-  PERFORM 1 FROM public.empresas WHERE id=p_empresa_id FOR UPDATE;
-  IF NOT FOUND THEN RAISE EXCEPTION 'Empresa não encontrada.'; END IF;
-  SELECT count(*) INTO v_usuarios
-   FROM public.perfis WHERE empresa_id=p_empresa_id;
-  IF v_usuarios<>1 OR NOT EXISTS(
-    SELECT 1 FROM public.perfis WHERE empresa_id=p_empresa_id
-     AND id=p_usuario_id AND papel IN ('proprietario','admin')
-  ) THEN RAISE EXCEPTION 'A exclusão total requer um único titular autorizado.'; END IF;
-
-  IF p_simular THEN RETURN jsonb_build_object('ok',true,'simulacao',true); END IF;
   INSERT INTO obrix_exclusao_interna.contexto(transacao,empresa_id)
     VALUES(txid_current(),p_empresa_id);
-  -- Apagar Financeiro ANTES de pagamentos, evitando ON DELETE SET NULL
-  -- nos vínculos, que também acionaria os gatilhos de proteção.
+  -- Financeiro antes dos pagamentos evita perda de vínculos e segue
+  -- auditável pela exceção exclusiva desta transação de exclusão.
   DELETE FROM public.financeiro WHERE empresa_id=p_empresa_id;
-  -- Legados sem FK ON DELETE CASCADE (conferir antes de executar).
   IF to_regclass('public.relatorio_fotos') IS NOT NULL THEN
     EXECUTE 'DELETE FROM public.relatorio_fotos WHERE empresa_id=$1' USING p_empresa_id;
   END IF;
@@ -120,12 +102,9 @@ BEGIN
   END IF;
   DELETE FROM public.empresas WHERE id=p_empresa_id;
   GET DIAGNOSTICS v_removidas=ROW_COUNT;
-  IF v_removidas<>1 THEN RAISE EXCEPTION 'Exclusão incompleta da empresa.'; END IF;
-
-  -- Bloqueia o commit se qualquer tabela pública ainda contiver dados da
-  -- empresa. Não apagar silenciosamente tabelas que não foram auditadas.
+  IF v_removidas<>1 THEN RAISE EXCEPTION 'Empresa não removida integralmente.'; END IF;
   FOR v_tabela IN
-    SELECT c.table_schema,c.table_name FROM information_schema.columns c
+    SELECT DISTINCT c.table_schema,c.table_name FROM information_schema.columns c
     JOIN information_schema.tables t
       ON t.table_schema=c.table_schema AND t.table_name=c.table_name
     WHERE c.table_schema='public' AND c.column_name='empresa_id'
@@ -133,17 +112,61 @@ BEGIN
   LOOP
     EXECUTE format(
       'SELECT EXISTS(SELECT 1 FROM %I.%I WHERE empresa_id::text=$1)',
-      v_tabela.table_schema,v_tabela.table_name)
+       v_tabela.table_schema,v_tabela.table_name)
       INTO v_restantes USING p_empresa_id::text;
     IF v_restantes THEN
-      RAISE EXCEPTION 'Ainda existem registros da empresa em %.',v_tabela.table_name;
+      RAISE EXCEPTION 'Restaram dados da empresa na tabela %.',v_tabela.table_name;
     END IF;
   END LOOP;
   DELETE FROM obrix_exclusao_interna.contexto
    WHERE transacao=txid_current() AND empresa_id=p_empresa_id;
+END;
+$apagar$;
+REVOKE ALL ON FUNCTION obrix_exclusao_interna.apagar_empresa(uuid)
+ FROM PUBLIC,anon,authenticated;
+
+-- 4. RPC pública com EXECUTE exclusivo de service_role.
+-- O modo prévia REALMENTE tenta todas as exclusões e REVERTE por savepoint
+-- PL/pgSQL; não retorna aprovação só por verificar uma contagem de perfis.
+CREATE OR REPLACE FUNCTION public.obrix_excluir_empresa_dados_v1(
+ p_empresa_id uuid, p_usuario_id uuid, p_simular boolean DEFAULT false
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $rpc$
+DECLARE
+  v_usuarios integer;
+BEGIN
+  IF p_empresa_id IS NULL OR p_usuario_id IS NULL THEN
+    RAISE EXCEPTION 'Empresa e usuário obrigatórios.';
+  END IF;
+  PERFORM 1 FROM public.empresas WHERE id=p_empresa_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Empresa não encontrada.'; END IF;
+  SELECT count(*) INTO v_usuarios
+   FROM public.perfis WHERE empresa_id=p_empresa_id;
+  IF v_usuarios<>1 OR NOT EXISTS(
+    SELECT 1 FROM public.perfis WHERE empresa_id=p_empresa_id
+     AND id=p_usuario_id AND papel IN ('proprietario','admin')
+  ) THEN
+    RAISE EXCEPTION 'A exclusão total requer um único titular autorizado.';
+  END IF;
+  IF p_simular THEN
+    BEGIN
+      PERFORM obrix_exclusao_interna.apagar_empresa(p_empresa_id);
+      -- Um RAISE/EXCEPTION nesta subtransação desfaz as exclusões,
+      -- inclusive as cascatas de FK e o contexto transitório da trigger.
+      RAISE EXCEPTION 'OBRIX_SIMULACAO_ROLLBACK_20261116';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLERRM='OBRIX_SIMULACAO_ROLLBACK_20261116' THEN
+        RETURN jsonb_build_object('ok',true,'simulacao',true);
+      END IF;
+      RAISE;
+    END;
+  END IF;
+
+  PERFORM obrix_exclusao_interna.apagar_empresa(p_empresa_id);
   RETURN jsonb_build_object('ok',true,'simulacao',false,'empresaRemovida',true);
 END;
-$fn$;
+$rpc$;
 
 REVOKE ALL ON FUNCTION public.obrix_excluir_empresa_dados_v1(uuid,uuid,boolean)
  FROM PUBLIC,anon,authenticated;
