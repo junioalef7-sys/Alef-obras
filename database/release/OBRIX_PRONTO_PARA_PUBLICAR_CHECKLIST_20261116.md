@@ -107,7 +107,7 @@ Arquivos: `obrix-documentos-direto.js`, `obrix-offline-v3.js` e `tests/obrix-doc
 
 A auditoria de `information_schema.columns` identificou **89 divergências** nas 23 tabelas comparadas: 308 colunas no oficial e 279 colunas no laboratório anterior. A tabela `notificacoes` não está presente no laboratório; `perfis.empresa_id` é opcional no oficial, mas obrigatório na cópia. A nova migração foi corrigida para respeitar `NULL`, e o teste transacional de regressão foi aprovado com `ROLLBACK`. A migração continua bloqueada contra execução acidental.
 
-Foi tentada a criação de uma branch Supabase isolada a partir do oficial, porém a operação requer **confirmação específica de custo (`confirm_cost_id`)**, ainda não concedida. Nenhuma branch paga foi criada.
+**Atualização 16/11/2026:** o plano Supabase Pro foi confirmado; a autorização de custo por hora foi registrada e a ramificação `obrix-homologacao-final-20261116` foi criada. Entretanto, a criação terminou em `MIGRATIONS_FAILED` porque a primeira das 110 migrações oficiais (`20261016235013_audit_security_performance_base`) tenta modificar `public.atualizar_updated_at_diario()`, ausente em um banco vazio. O repositório não inclui a baseline `supabase/migrations` reprodutível. A branch vazia foi **excluída e a exclusão confirmada** para interromper o custo por hora. Antes de uma nova tentativa é obrigatório reconstruir e versionar a baseline do schema sem dados; [diagnóstico completo](./OBRIX_HOMOLOGACAO_BRANCH_FALHA_REPLAY_20261116.md).
 
 **Status:** a homologação de paridade integral e o teste em PWA apontando para banco isolado continuam pendentes; não liberar promoção nem apresentar o release como pronto.
 
