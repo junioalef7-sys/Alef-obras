@@ -11,6 +11,7 @@ on:
       - 'tests/obrix-prepublish-safety-gate.cjs'
       - 'tests/obrix-excluir-conta-fluxo-seguro.cjs'
       - 'tests/obrix-delete-account-storage.cjs'
+      - 'tests/obrix-pagamento-rpc-frontend.cjs'
       - '.github/workflows/obrix-seguranca-release-candidato.yml'
   workflow_dispatch:
 
@@ -39,9 +40,12 @@ jobs:
           node --check tests/obrix-prepublish-safety-gate.cjs
           node --check tests/obrix-excluir-conta-fluxo-seguro.cjs
           node --check tests/obrix-delete-account-storage.cjs
+          node --check tests/obrix-pagamento-rpc-frontend.cjs
       - name: Provar bloqueio de publicacao acidental e integridade do candidato
         run: node --test tests/obrix-prepublish-safety-gate.cjs
       - name: Simular retomada de exclusao de Auth e empresa
         run: node --test tests/obrix-excluir-conta-fluxo-seguro.cjs
       - name: Simular inventario, paginacao e exclusao fisica Storage
         run: node --test tests/obrix-delete-account-storage.cjs
+      - name: Simular pagamento atomico e compensacao entre obras
+        run: node --test tests/obrix-pagamento-rpc-frontend.cjs
