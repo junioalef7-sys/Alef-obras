@@ -13,6 +13,11 @@ Deno.serve(async req=>{
  if(req.method!=="POST")return out(405,{ok:false,error:"Método recusado"});
  let host="";try{host=new URL(Deno.env.get("SUPABASE_URL")||"http://invalid").hostname}catch{}
  if(!PROJETO_VALIDO||host!==PROJECT+".supabase.co")return out(403,{ok:false,error:"Executor restrito a branch fictícia de homologação"});
+ const senhaE2E=String(Deno.env.get("OBRIX_HML_E2E_TOKEN")||"");
+ const apresentada=String(req.headers.get("x-obrix-hml-e2e-token")||"");
+ if(!/^[A-Za-z0-9_-]{32,128}$/.test(senhaE2E)||apresentada!==senhaE2E){
+   return out(403,{ok:false,error:"Execução de homologação não autorizada"});
+ }
  const secret=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||(()=>{try{return JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS")||"{}").default||""}catch{return""}})();
  const pub=Deno.env.get("SUPABASE_ANON_KEY")||Deno.env.get("SUPABASE_PUBLISHABLE_KEY")||"";
  if(!secret||!pub)return out(503,{ok:false,error:"Chaves de homologação não configuradas"});
