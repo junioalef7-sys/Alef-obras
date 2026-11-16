@@ -31,7 +31,8 @@ test('integração real em Supabase LOCAL — Auth, trial, pagamentos, documento
   const {excluirArquivosEmpresa}=await import(pathToFileURL(path.resolve(__dirname,'../supabase/functions/obrix-delete-account/storage-cleanup.mjs')).href);
 
   const email='obrix-ci-'+crypto.randomUUID()+'@example.com';
-  const password=crypto.randomUUID()+crypto.randomUUID()+'A!';
+  const password=crypto.randomUUID()+'aA1!';
+  assert.ok(Buffer.byteLength(password,'utf8')<=72,'Senha fictícia excede o limite do bcrypt');
   const created=must(await admin.auth.admin.createUser({
     email,password,email_confirm:true,
     user_metadata:{nome:'OBRIX TESTE LOCAL',empresa_nome:'EMPRESA DE HOMOLOGAÇÃO'}
