@@ -102,3 +102,13 @@ Arquivos: `obrix-documentos-direto.js`, `obrix-offline-v3.js` e `tests/obrix-doc
 **Testes automatizados:** após a correção de Documentos, a execução [43866913530](https://github.com/junioalef7-sys/Alef-obras/actions/runs/43866913530) terminou em `success` para o commit `5bcbd551a39b9716e6bdc06cb6da7ffc3edfdacd`.
 
 **Não houve merge, deploy em produção, alteração das políticas de Storage oficiais nem modificação de dados de clientes.**
+
+## Bloqueio obrigatório: laboratório ainda não equivalente ao oficial
+
+A auditoria de `information_schema.columns` identificou **89 divergências** nas 23 tabelas comparadas: 308 colunas no oficial e 279 colunas no laboratório anterior. A tabela `notificacoes` não está presente no laboratório; `perfis.empresa_id` é opcional no oficial, mas obrigatório na cópia. A nova migração foi corrigida para respeitar `NULL`, e o teste transacional de regressão foi aprovado com `ROLLBACK`. A migração continua bloqueada contra execução acidental.
+
+Foi tentada a criação de uma branch Supabase isolada a partir do oficial, porém a operação requer **confirmação específica de custo (`confirm_cost_id`)**, ainda não concedida. Nenhuma branch paga foi criada.
+
+**Status:** a homologação de paridade integral e o teste em PWA apontando para banco isolado continuam pendentes; não liberar promoção nem apresentar o release como pronto.
+
+[Ver inventário de diferenças e teste](./OBRIX_HOMOLOGACAO_PARIDADE_BANCO_20261116.md).
