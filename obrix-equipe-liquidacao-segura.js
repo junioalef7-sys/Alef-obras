@@ -165,11 +165,12 @@ async function registrarAtomicoProducao({funcionarioId,data,obraPagamentoId,espe
    throw Error('O backend de pagamentos não foi configurado. Operação bloqueada.');
   const sb=await hml.init();
   const endereco=new URL(sb?.supabaseUrl||'https://invalido.invalid');
-  const hml=ambiente==='homologacao';
-  const origemEsperada=hml?'https://xnvjqolbvzgozlmuagpi.supabase.co'
+  const modoHml=ambiente==='homologacao';
+  const origemEsperada=modoHml?'https://xnvjqolbvzgozlmuagpi.supabase.co'
     :'https://gnvclctqnwxnjxydzhwc.supabase.co';
   if(endereco.origin!==origemEsperada)
-   throw Error('Banco de dados diferente do ambiente autorizado. Pagamento bloqueado.');
+   throw Error(modoHml?'Banco de dados diferente do ambiente autorizado. Pagamento bloqueado.'
+     :'Ambiente diferente do OBRIX oficial. Operação bloqueada.');
   if(typeof sb.rpc!=='function')throw Error('Cliente Supabase incompatível com pagamento transacional.');
   const dados=await hml.profile(),eid=dados?.empresa_id;
   if(!eid)throw Error('Empresa do OBRIX não identificada.');
@@ -210,7 +211,7 @@ async function registrarAtomicoProducao({funcionarioId,data,obraPagamentoId,espe
    vales:Number(resposta.data.valor_vales||0),
    liquido:Number(resposta.data.valor_liquido||0),
    despesasNovas:Number(resposta.data.valor_liquido||0),
-   homologacao:hml
+   homologacao:modoHml
   };
  }finally{emProcessamento.delete(id)}
 }
