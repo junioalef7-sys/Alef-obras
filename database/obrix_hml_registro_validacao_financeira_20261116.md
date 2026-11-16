@@ -54,8 +54,15 @@ A suíte `obrix_seg_hml_20261116.executar_testes_operacionais_v3()` confirmou `t
 - `compensacao_obras_120`, `compensacao_destino_indevido_bloqueado`, `compensacao_estorno_reabre_pendencias`;
 - `restauracao_backup_dados`, `falha_backup_reverte_transacao`, `fixtures_revertidas`.
 
-**Bloqueio novo reproduzido:** `exclusao_empresa_cascata=false`. A trigger `obrix_proteger_financeiro_automatico` impede a exclusão em cascata de um lançamento automático durante a exclusão da empresa (inclusive quando os pagamentos já foram estornados, pois um vale histórico permanece ativo). É necessário desenhar um fluxo transacional de exclusão de conta autorizado e específico, que cubra dados, Auth e Storage; não afrouxar a proteção contra exclusão manual para contornar o problema.
+**Exclusão de conta — resultado esclarecido:** a exclusão direta de `empresas`, sem preparar o Financeiro, é bloqueada pela trigger por projeto. No teste `executar_testes_operacionais_v4()`, reproduzi o fluxo SQL efetivamente existente na Edge Function `obrix-delete-account`: mudar lançamentos automáticos ativos para `estornado`, removê-los e então remover a empresa. **`exclusao_empresa_fluxo_edge=true`**; todos os demais testes financeiros também passaram. Isso **não** atesta a operação completa da Edge Function, pois Auth e Storage são serviços separados e ainda não passaram por um teste integrado. Não remover as proteções da exclusão direta.
 
 **Front-end:** na ramificação de teste, `obrix-equipe-liquidacao-segura.js` possui uma rota de RPC protegida por flag desativada e por verificação do host do Supabase de auditoria. O adaptador separado `OBRIX_BACKEND_HML` não está configurado; por isso o aplicativo não chama a nova função em navegação normal. A interface de teste ainda aponta ao Supabase oficial pela configuração pública e **não deve ser usada para gravar pagamentos de teste**. O Financeiro deixou de reenviar `origem` e `status_lancamento` quando edita um lançamento manual.
 
 **Pendências antes de qualquer publicação oficial:** criar um ambiente de interface realmente isolado com autenticação de teste; expor apenas o endpoint transacional auditado com privilégio mínimo e validação por empresa; completar testes reais no Android, iPhone e computador; corrigir exclusão de conta; revisar concorrência, outros pagamentos e autorização de usuários; apresentar para aprovação antes de promover.
+
+
+### Evidência de homologação v4
+
+- `obrix_seg_hml_20261116.executar_testes_operacionais_v4()`: todos os testes funcionais e `exclusao_empresa_fluxo_edge` retornaram `true`, `fixtures_revertidas=true`, sem `erro_inesperado`.
+- A função oficial de exclusão de conta (Edge Function v11) foi **lida, não alterada**. Ela limpa o Storage antes de alterações no banco e exclusão do Auth, operações que não formam uma única transação. Ainda há risco de exclusão parcial caso uma etapa posterior falhe, exigindo teste de repetição/recovery e confirmação da cobertura dos arquivos.
+- Apenas as ações SQL da sequência oficial foram simuladas no esquema do laboratório. Não foram excluídos usuários reais, contas reais, arquivos ou tokens.
