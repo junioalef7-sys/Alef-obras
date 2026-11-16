@@ -95,3 +95,36 @@ test('cadastro de perfis e notificacoes sem empresa continua funcionando',()=>{
  expect(suite,'INSERT INTO obrix_nullable_regressao');
  expect(suite,'ROLLBACK;');
 });
+
+
+test('baseline do banco reconstruído está protegida',()=>{
+ const baseline=read('database/release/obrix_hml_baseline_schema_sem_dados_20261116.sql');
+ expect(baseline,"OBRIX_BASELINE_REFUSED");
+ expect(baseline,"current_setting('obrix.allow_baseline_hml', true)");
+ expect(baseline,'CREATE TABLE "public"."empresas"');
+ expect(baseline,'CREATE TABLE "public"."financeiro"');
+ expect(baseline,'CREATE TABLE "public"."documentos"');
+ expect(baseline,'CREATE TABLE "private"."pagamento_eventos"');
+ expect(baseline,'CREATE POLICY');
+ expect(baseline,'CREATE TRIGGER');
+ expect(baseline,'-- Independent indexes required by composite FKs');
+ const pos=baseline.indexOf('-- Independent indexes required by composite FKs');
+ const fk=baseline.indexOf('-- Foreign keys');
+ assert.ok(pos>0 && fk>pos,'Índices devem anteceder chaves estrangeiras');
+});
+
+test('papel administrador verdadeiro é aceito nos controles de pagamentos',()=>{
+ const match=sql.match(/\('proprietario','administrador'\)/g)||[];
+ assert.equal(match.length,4,'Os quatro controles precisam aceitar o papel do esquema oficial');
+ assert.equal(sql.includes("('proprietario','admin')"),false);
+});
+
+test('ensaio E2E é restrito a uma branch efêmera e não contém credenciais',()=>{
+ const runtime=read('tests/obrix-e2e-runtime-hml-branch-20261116.mjs');
+ expect(runtime,'ygcwnozfseojqronhaan');
+ expect(runtime,'obrix_hml_claim_once_v1');
+ expect(runtime,'excluirContaVerificada');
+ assert.equal(runtime.includes('gnvclctqnwxnjxydzhwc'),false);
+ assert.equal(runtime.includes('mjzlwnuklfopdmgcvdcs'),false);
+ assert.equal(/eyJ[A-Za-z0-9_-]{60,}|sb_secret_[A-Za-z0-9]{20,}/.test(runtime),false);
+});
