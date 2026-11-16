@@ -35,7 +35,8 @@ Corrigir as operações financeiras da equipe e a exclusão de conta, preservand
 - [ ] Habilitar o novo pagamento **só no ambiente de teste apropriado**, com a RPC já migrada para o mesmo banco, testando valores por obra, checklists, vales antigos, bônus, duas meias diárias, faltas, duplicidade, estorno e rede intermitente.
 - [ ] Validar fluxo end-to-end no iPhone, Android e computador em ambos os temas, sem alterar visual ou navegação; consultar logs de erros, travamentos e sincronização.
 - [ ] Confirmar backup e restauração de teste do banco e mídias, além de rollback em ambiente equivalente.
-- [ ] Executar o CI do PR e revisar os avisos do Supabase Security Advisor. A produção ainda registra `authenticated_security_definer_function_executable` e `auth_leaked_password_protection`; **não marcar como resolvidos sem revisão real**.
+- [x] Executar CI da homologação: [GitHub Actions 43866113947](https://github.com/junioalef7-sys/Alef-obras/actions/runs/43866113947), **sucesso**, incluindo testes de Documentos, Storage, Auth (simulado) e pagamentos.
+- [ ] Concluir a análise e eventual correção dos avisos do Supabase Security Advisor: produção ainda registra `authenticated_security_definer_function_executable` (16 funções) e `auth_leaked_password_protection` (recurso de proteção de senha desativado). A revisão preliminar confirmou que as 16 funções têm controle de empresa/acesso ou identificação de usuário, mas a análise de funções internas delegadas e o alerta de senhas ainda exigem validação e decisão de configuração. **Não tratar os avisos como resolvidos.**
 - [ ] Aprovar explicitamente o **SHA exato**, depois promover a versão testada conforme procedimento oficial.
 
 ## Ordem de promoção, somente após aprovação
@@ -80,3 +81,12 @@ A primeira execução de diagnóstico foi interrompida pelo gatilho de limite do
 **O que este E2E não confirma:** a implementação da migração no `public` oficial, concorrência simultânea com dois clientes enviando arquivo, desempenho, recuperação real após falha intermediária da rede, fluxos de contas com vários membros, testes visuais em Android/iPhone/desktop e integração do cliente com a RPC oficial. Essas etapas permanecem pendentes.
 
 **Fontes da API:** https://supabase.com/docs/guides/auth/managing-user-data , https://supabase.com/docs/guides/storage/security/access-control , https://supabase.com/docs/guides/storage/management/delete-objects .
+
+
+## Correção isolada de visualização de Documentos — 16/11/2026
+
+Arquivos: `obrix-documentos-direto.js`, `obrix-offline-v3.js` e `tests/obrix-documentos-viewer.cjs`. A área de `iframe` recebeu `min-height:0`/altura dinâmica `dvh` e o visualizador passou a oferecer a ação `Abrir completo`, que abre a URL assinada em resposta a um toque/clique direto. O carregador recebeu versão atualizada para evitar asset antigo no cache. Os demais módulos, cores e layout das telas não foram modificados.
+
+**Teste:** cinco cenários automatizados aprovados, incluindo fluxo de iPhone simulado, URL assinada vinda do Storage e filtro de consulta por empresa. O pipeline GitHub Actions [43866113947](https://github.com/junioalef7-sys/Alef-obras/actions/runs/43866113947) executou essa suíte com `success`.
+
+**Limite:** ainda não foi possível executar visualização real de arquivo multipágina em dispositivos físicos, nem verificar comportamento de impressão no Safari instalado como PWA. A correção não autoriza publicação por si só.
