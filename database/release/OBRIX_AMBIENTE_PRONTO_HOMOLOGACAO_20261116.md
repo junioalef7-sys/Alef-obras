@@ -1,7 +1,7 @@
 # OBRIX — Preparação para homologação controlada
 
 **Data:** 16/11/2026  
-**Estado da automação local:** verificar último GitHub Actions antes de classificar como aprovado.  
+**Estado da automação local:** **APROVADA** no GitHub Actions [43927903721](https://github.com/junioalef7-sys/Alef-obras/actions/runs/43927903721), com integração real Auth, Storage, financeiro, Documentos e exclusão.  
 **Escopo:** exclusivamente testes da branch `test/obrix-seguranca-pagamentos-20261116`.  
 **PROIBIDO:** alterar banco Supabase oficial, publicar Vercel Production ou remover guardas da migração original sem aprovação específica.
 
@@ -39,10 +39,25 @@ A criação de um projeto Supabase adicional de homologação foi cotada em **US
 
 ## Critério de entrada na homologação manual
 
-- [ ] GitHub Actions — E2E local terminou com **success**, sem falhas ignoradas.
+- [x] GitHub Actions — E2E local terminou com **success**, incluindo criação e exclusão de conta, PDF físico, pagamento atômico e estorno. [Execução 43927903721](https://github.com/junioalef7-sys/Alef-obras/actions/runs/43927903721).
 - [x] Testes de segurança e regressão SQL do laboratório aprovado: 45/45, com fixtures revertidas.
 - [x] Preview bloqueada contra banco oficial por padrão e testes unitários do isolamento.
 - [ ] Backend independente remoto provisionado, com buckets privados e Edge de homologação, sem dados reais, antes de testes móveis.
 - [ ] Aprovação de dispositivo e responsável pelo teste; nenhum deploy em Production.
 
 Documentação Supabase: [Migrações](https://supabase.com/docs/guides/deployment/database-migrations), [Branching e erros](https://supabase.com/docs/guides/deployment/branching/troubleshooting), [Segurança do Auth](https://supabase.com/docs/guides/auth/password-security).
+
+
+## Resultado comprovado em 16/11/2026
+
+Após corrigir uma senha fictícia de teste que ultrapassava os **72 bytes** aceitos pelo bcrypt da versão local do Supabase Auth, o pipeline concluiu **success** em todos os passos:
+
+- CLI Supabase local 2.111.0 inicializada.
+- Baseline do schema público/privado reconstruída integralmente no PostgreSQL local.
+- Backend candidato aplicado por cópia temporária, sem desativar a guarda no arquivo original.
+- E2E real do cliente Supabase cobrindo Auth Admin, trial, sessão, duas obras e duas meias diárias, vale, bônus, pagamento, rateio, duplicidade, estorno, upload PDF, URL assinada e exclusão completa.
+- Stack e dados fictícios descartados mesmo após o teste.
+
+**Conclusão específica:** backend **apto a entrar na homologação de interface e dispositivos**. Não equivale a GO de publicação comercial nem resolve o histórico de 110 migrações hospedadas.
+
+**Evidência de segurança:** a suíte de regras e isolamento continua aprovada, com 45/45 verificações no laboratório independente.
