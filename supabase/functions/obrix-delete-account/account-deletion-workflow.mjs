@@ -73,9 +73,15 @@ async function completarExclusaoEmpresa({admin,userId,empresaId,etapa,limparStor
   if(etapa==='banco_concluido'){
     const {error}=await admin.auth.admin.deleteUser(userId);
     if(error){
-      throw Error('O banco foi processado, mas o login não foi removido. A solicitação pode ser retomada sem excluir novamente a empresa.');
+      // Se o login já foi apagado em uma tentativa anterior, um 404 verificável
+      // permite retomar só o checkpoint. Qualquer outra falha permanece bloqueada.
+      try {
+        await confirmarLoginRemovido(admin,userId);
+      }catch(_){
+        throw Error('O banco foi processado, mas o login não foi removido. A solicitação pode ser retomada sem excluir novamente a empresa.');
+      }
     }
-    // A confirmação da finalização só ocorre após a API Auth responder sem erro.
+    // A confirmação só ocorre depois da resposta Auth ou da verificação 404.
     const concluida=await rpcSegura(admin,'obrix_avancar_exclusao_v1',
       {...pedido,p_etapa:'finalizado'});
     if(concluida.etapa!=='finalizado')
