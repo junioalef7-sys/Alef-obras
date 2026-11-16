@@ -318,7 +318,20 @@ BEGIN
    END IF;
    IF TG_OP='UPDATE' THEN v_destino:=NEW.empresa_id; END IF;
  END IF;
- IF v_empresa IS NULL THEN RAISE EXCEPTION 'Empresa obrigatória.'; END IF;
+ IF v_empresa IS NULL THEN
+   -- Perfis em cadastro inicial e notificações globais podem não ter empresa.
+   -- Ao vincular posteriormente a uma empresa, respeitar o bloqueio da exclusão.
+   IF v_destino IS NULL THEN
+     RETURN CASE WHEN TG_OP='DELETE' THEN OLD ELSE NEW END;
+   END IF;
+   PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_destino::text,8102026));
+   IF EXISTS(SELECT 1 FROM obrix_conta_interna.solicitacoes
+      WHERE empresa_id=v_destino) THEN
+     RAISE EXCEPTION 'Empresa de destino em exclusão. Gravação bloqueada.'
+       USING ERRCODE='42501';
+   END IF;
+   RETURN NEW;
+ END IF;
  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_empresa::text,8102026));
  IF v_destino IS NOT NULL AND v_destino IS DISTINCT FROM v_empresa THEN
    PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_destino::text,8102026));
