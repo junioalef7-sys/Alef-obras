@@ -89,7 +89,8 @@ test('HTML injeta configuração de homologação ANTES do backend',()=>{
   const backend=html.indexOf('./obrix-backend-adapter.js?v=20261116-preview-hml-isolado2');
   assert.ok(config>=0&&backend>config);
   const source=fs.readFileSync(path.join(__dirname,'..','obrix-hml-config.js'),'utf8');
-  assert.ok(source.includes("window.__OBRIX_HML_PROJECT_REF=''"));
+  assert.ok(source.includes("window.__OBRIX_HML_PROJECT_REF='xnvjqolbvzgozlmuagpi'"));
+  assert.equal(source.includes("window.__OBRIX_HML_PROJECT_REF='gnvclctqnwxnjxydzhwc'"),false);
   assert.equal(/eyJ[A-Za-z0-9_-]{40,}|sb_secret_[A-Za-z0-9]{16,}/.test(source),false);
 });
 
