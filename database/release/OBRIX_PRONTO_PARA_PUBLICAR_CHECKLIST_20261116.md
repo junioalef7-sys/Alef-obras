@@ -30,7 +30,7 @@ Corrigir as operações financeiras da equipe e a exclusão de conta, preservand
 
 - [ ] Revisar a proposta SQL integral contra o esquema oficial e testar no clone isolado **com todos os campos, FKs, triggers e políticas**; a guarda permanece ativa até então.
 - [ ] Validar que o gatilho de exclusão não causa degradação de latência, deadlocks ou perda de Realtime nas operações mais usadas.
-- [ ] Executar E2E de uma **conta Auth 100% fictícia e criada para o teste**, com fotos/documentos sintéticos, via executor autorizado com credenciais exclusivamente server-side. A tentativa anterior foi bloqueada por políticas de segurança antes de chegar ao servidor; não se comprovou a exclusão real Auth+Storage.
+- [x] Executar E2E de **conta Auth inteiramente fictícia**, PDF e foto sintéticos, através de função temporária da auditoria com credenciais administrativas somente no servidor. **12/12 verificações aprovadas em 16/11/2026**, HTTP 200. A função foi desativada e os auxiliares removidos após o teste. Não houve execução no banco oficial.
 - [ ] Confirmar bloqueio de uploads concorrentes, tentativas de escrita usando tokens antigos, recuperação de jobs interrompidos, conta com múltiplos membros e exclusão física de arquivos.
 - [ ] Habilitar o novo pagamento **só no ambiente de teste apropriado**, com a RPC já migrada para o mesmo banco, testando valores por obra, checklists, vales antigos, bônus, duas meias diárias, faltas, duplicidade, estorno e rede intermitente.
 - [ ] Validar fluxo end-to-end no iPhone, Android e computador em ambos os temas, sem alterar visual ou navegação; consultar logs de erros, travamentos e sincronização.
@@ -63,3 +63,20 @@ Se o CI falhar, um cenário real de Auth/Storage não puder ser executado, ou o 
 Consulta GitHub de 16/11/2026: `main` e o commit atualmente publicado `92495c4` estão divergentes. A comparação apresentou **17 commits em `main` além do ancestral comum** e **1.344 commits do histórico oficial não presentes em `main`** (contagens da API de comparação, sujeitas a mudanças posteriores). Portanto **nunca usar merge automático para main como forma de publicar esta correção**. Foi criada a branch base `review/obrix-oficial-92495c4-base-20261116` no SHA oficial, e o [PR #35](https://github.com/junioalef7-sys/Alef-obras/pull/35) foi redirecionado para ela como **rascunho**.
 
 A versão a promover deverá ser um build staged derivado do SHA aprovado e verificado (não da branch `main` divergente). Nenhum merge/prod deployment está autorizado nesta fase.
+
+
+## E2E real Auth + Storage concluído — 16/11/2026
+
+**Projeto:** `OBRIX-AUDITORIA-AUTH-20261102` (`mjzlwnuklfopdmgcvdcs`). **Não realizado em produção.**
+
+Foi criada uma identidade fictícia via `auth.admin.createUser`, uma empresa e perfil em `obrix_operacional_lab`, um bucket novo e isolado e dois arquivos (PDF e PNG) enviados por uma **sessão real**. A função Edge de auditoria chamou o fluxo da branch `account-deletion-workflow.mjs` e `storage-cleanup.mjs`, com um adaptador RPC service_role exclusivo ao laboratório. A solicitação foi reservada antes da tentativa de upload adicional.
+
+**Resultado HTTP 200: 12/12 verificações `true`**: `auth_criado`, `empresa_ficticia_criada`, `login_real_validado`, `bucket_isolado_criado`, `pdf_enviado`, `foto_enviada`, `upload_durante_exclusao_bloqueado`, `arquivos_removidos`, `dados_empresa_removidos`, `auth_removido`, `token_anterior_recusado` e `bucket_temporario_removido`. A execução usou somente os novos UUIDs gerados, e nenhuma conta preexistente foi consultada para exclusão.
+
+A primeira execução de diagnóstico foi interrompida pelo gatilho de limite do trial ao tentar criar uma obra sem JWT de usuário. O fixture foi limitado a empresa/perfil (exatamente o necessário para Auth+Storage), e a segunda execução passou integralmente; isso **não prova** o comportamento do trial/limite de obras no PWA.
+
+**Limpeza pós-teste comprovada:** 3 usuários Auth, 243 objetos Storage e 2 buckets (mesmos números anteriores); 0 empresas, 0 solicitações e 0 usuários sintéticos remanescentes. As RPCs temporárias, política exclusiva do bucket de teste e `pg_net` foram removidos. A função Edge de execução única foi desativada, responde apenas 410 e voltou a exigir JWT. `authenticated` não ficou com USAGE no esquema interno da suíte. **Não ocorreu alteração no oficial.**
+
+**O que este E2E não confirma:** a implementação da migração no `public` oficial, concorrência simultânea com dois clientes enviando arquivo, desempenho, recuperação real após falha intermediária da rede, fluxos de contas com vários membros, testes visuais em Android/iPhone/desktop e integração do cliente com a RPC oficial. Essas etapas permanecem pendentes.
+
+**Fontes da API:** https://supabase.com/docs/guides/auth/managing-user-data , https://supabase.com/docs/guides/storage/security/access-control , https://supabase.com/docs/guides/storage/management/delete-objects .
