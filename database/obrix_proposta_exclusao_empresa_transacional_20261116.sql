@@ -1,3 +1,9 @@
+-- PROPOSTA ANTIGA / SUPERADA EM 16/11/2026.
+-- A Edge Function de teste agora exige o journal retomável:
+-- obrix_reservar_exclusao_v1, obrix_avancar_exclusao_v1,
+-- obrix_consultar_exclusao_v1 e o registro persistente de estados.
+-- Este arquivo isoladamente NÃO satisfaz essa API; NÃO aplicar.
+-- O arquivo mantém sua guarda de abortar execução intencionalmente.
 -- OBRIX | PROPOSTA PARA REVISÃO HUMANA — NÃO EXECUTADA
 -- NÃO EXECUTAR EM PRODUÇÃO. Primeiro testar num clone autorizado com dados fictícios.
 -- O bloqueio inicial é proposital: remova-o somente após revisar o estado real
