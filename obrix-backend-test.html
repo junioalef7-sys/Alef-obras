@@ -43,8 +43,9 @@ async function runCheck(){
     }
     const user=await client.auth.getUser();
     if(user.error||!user.data?.user?.id)throw new Error('Faça login na conta de homologação.');
-    const profile=await window.OBRIX_BACKEND.profile();
-    if(!profile?.empresa_id)throw new Error('A conta não está vinculada a uma empresa.');
+    const profileRes=await client.from('perfis').select('empresa_id').eq('id',user.data.user.id).maybeSingle();
+    if(profileRes.error||!profileRes.data?.empresa_id)throw new Error('A conta não está vinculada a uma empresa.');
+    const profile=profileRes.data;
     const plan=await client.from('assinaturas').select('status,plano,trial_fim,empresa_id').eq('empresa_id',profile.empresa_id).maybeSingle();
     if(plan.error||!plan.data)throw new Error('Assinatura da empresa não encontrada.');
     const expected={obras:6,funcionarios:7,diarias:164,financeiro:113,documentos:4,relatorio_fotos:65};
