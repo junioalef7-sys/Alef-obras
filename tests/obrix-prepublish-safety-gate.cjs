@@ -136,3 +136,21 @@ test('ensaio E2E é restrito a uma branch efêmera e não contém credenciais',(
  expect(claim,'SELECT 1 FROM storage.objects');
  assert.equal(/eyJ[A-Za-z0-9_-]{60,}|sb_secret_[A-Za-z0-9]{20,}/.test(runtime),false);
 });
+
+test('migration is replay safe while keeping release guard enabled',()=>{
+ expect(sql,"RAISE EXCEPTION 'OBRIX RELEASE BLOCKED");
+ expect(sql,'CREATE OR REPLACE TRIGGER obrix_exclusao_bloquear_gravacoes');
+ for(const name of ['obrix_exclusao_restricao_upload','obrix_exclusao_restricao_alteracao']){
+   expect(sql,'DROP POLICY IF EXISTS '+name+' ON storage.objects;');
+   expect(sql,'CREATE POLICY '+name);
+ }
+ assert.ok(sql.trimEnd().endsWith('COMMIT;'));
+});
+
+test('rollback candidate preserves journal and cannot run accidentally',()=>{
+ const rollback=read('database/release/obrix_backend_rollback_candidate_20261116.sql');
+ expect(rollback,"RAISE EXCEPTION 'OBRIX ROLLBACK BLOCKED");
+ expect(rollback,'Exclusões pendentes: rollback recusado.');
+ expect(rollback,'NÃO DROP SCHEMA: manter journal');
+ assert.ok(rollback.trimEnd().endsWith('COMMIT;'));
+});
