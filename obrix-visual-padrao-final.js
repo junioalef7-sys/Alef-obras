@@ -21,6 +21,17 @@ html[data-obrix-financeiro-origem="rodape"] #app:has(#financeiroMain:not(.hidden
 html[data-theme="light"] #app>.top #obrixTheme{
  animation:none!important;transition:none!important;opacity:1!important;visibility:visible!important;
 }
+/* Na ficha do funcionário existe um Voltar interno funcional.
+   A seta do cabeçalho geral aparecia por cima da navegação e piscava
+   quando o detalhe era selecionado ou os seus dados eram atualizados.
+   Isolar somente a ficha evita interferência em menu, obras e demais telas. */
+html body #app:has(> #equipe.obp-team-selected:not(.hidden)) > .top #obrixHeaderVoltar{
+  display:none!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  animation:none!important;
+  transition:none!important;
+}
 /* A seta superior só existe para Equipe quando a navegação veio do Menu. */
 html[data-obrix-equipe-origem="rodape"]:not(.obrixSubTelaAtiva) #app:has(#equipe:not(.hidden)) > .top #obrixHeaderVoltar,
 html[data-obrix-equipe-origem="rodape"] #app:has(#equipe:not(.hidden)) > .top button[aria-label="Voltar"]{
