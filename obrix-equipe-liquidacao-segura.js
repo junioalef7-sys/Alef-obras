@@ -166,7 +166,7 @@ async function registrarAtomicoProducao({funcionarioId,data,obraPagamentoId,espe
   const sb=await hml.init();
   const endereco=new URL(sb?.supabaseUrl||'https://invalido.invalid');
   const modoHml=ambiente==='homologacao';
-  const origemEsperada=modoHml?'https://xnvjqolbvzgozlmuagpi.supabase.co'
+  const origemEsperada=modoHml?'https://xavwkfgrnowmusbkbiea.supabase.co'
     :'https://gnvclctqnwxnjxydzhwc.supabase.co';
   if(endereco.origin!==origemEsperada)
    throw Error(modoHml?'Banco de dados diferente do ambiente autorizado. Pagamento bloqueado.'
@@ -201,16 +201,25 @@ async function registrarAtomicoProducao({funcionarioId,data,obraPagamentoId,espe
    p_obra_pagamento_id:destino||null,
    p_liquido_esperado:valor(calc.liquido)
   };
-  const resposta=await lab.rpc('obrix_pagar_equipe_transacional_v2',req);
+  const seguro={
+   p_funcionario_id:id,p_data_pagamento:data,
+   p_diaria_ids:req.p_diaria_ids,p_vale_ids:req.p_vale_ids,p_bonus_ids:req.p_bonus_ids
+  };
+  const resposta=await lab.rpc('obrix_pagar_funcionario_seguro',seguro);
   if(resposta.error)throw resposta.error;
-  if(resposta.data?.ok!==true||!resposta.data.pagamento_id)
-   throw Error('Pagamento transacional não confirmado pelo servidor.');
+  const pagamentoId=String(resposta.data||'');
+  if(!/^[0-9a-f-]{36}$/i.test(pagamentoId))
+   throw Error('Pagamento não confirmado. Consulte o histórico antes de tentar novamente.');
+  const info=await lab.from('pagamentos_equipe').select('id,valor_bruto,valor_vales,valor_liquido')
+   .eq('empresa_id',eid).eq('id',pagamentoId).maybeSingle();
+  if(info.error||!info.data)
+   throw Error('Pagamento registrado; consulte o histórico antes de repetir.');
   return{
-   ok:true,id:resposta.data.pagamento_id,nome:fr.data.nome,
-   bruto:Number(resposta.data.valor_bruto||0),
-   vales:Number(resposta.data.valor_vales||0),
-   liquido:Number(resposta.data.valor_liquido||0),
-   despesasNovas:Number(resposta.data.valor_liquido||0),
+   ok:true,id:pagamentoId,nome:fr.data.nome,
+   bruto:Number(info.data.valor_bruto||0),
+   vales:Number(info.data.valor_vales||0),
+   liquido:Number(info.data.valor_liquido||0),
+   despesasNovas:Number(info.data.valor_liquido||0),
    homologacao:modoHml
   };
  }finally{emProcessamento.delete(id)}
@@ -220,9 +229,8 @@ async function registrarAtomicoProducao({funcionarioId,data,obraPagamentoId,espe
 async function registrar({funcionarioId,data,obraPagamentoId,esperado}={}){
  // Pagamento atômico habilitado apenas na Preview ligada ao novo Supabase HML.
  const host=String(window.location?.hostname||'').toLowerCase();
- const hmlPreview=host.startsWith('alef-obras-')&&host.endsWith('.vercel.app')
-   &&!['alef-obras-obrix3.vercel.app','alef-obras.vercel.app'].includes(host)
-   &&String(window.__OBRIX_HML_PROJECT_REF||'')==='xnvjqolbvzgozlmuagpi';
+ const hmlPreview=host.startsWith('obrix-restauracao-app-isolado-20261118')&&host.endsWith('.vercel.app')
+   &&String(window.__OBRIX_HML_PROJECT_REF||'')==='xavwkfgrnowmusbkbiea';
  if(hmlPreview)return registrarAtomicoProducao({funcionarioId,data,obraPagamentoId,esperado},'homologacao');
  // Ative somente após migrar, validar e liberar a RPC no backend oficial.
  if(window.__OBRIX_PAGAMENTO_ATOMICO_PRODUCAO===true)
