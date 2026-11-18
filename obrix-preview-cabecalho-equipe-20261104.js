@@ -45,9 +45,40 @@ function apply(){
 function queue(){
   if(scheduled)return;
   scheduled=true;
-  setTimeout(()=>{scheduled=false;apply()},65);
+  // Dentro da Equipe, a troca de classes deve ocorrer antes do próximo paint:
+  // o atraso anterior de 65 ms deixava o cabeçalho em estados diferentes.
+  const equipeEmTransicao=visibleTeam()||document.documentElement.classList.contains('obrix-preview-team-active');
+  const executar=()=>{scheduled=false;apply()};
+  if(equipeEmTransicao)queueMicrotask(executar);
+  else setTimeout(executar,65);
+}
+function cabecalhoEquipeEstavel(){
+  if(document.getElementById('obrixCabecalhoEquipeEstavel20261118'))return;
+  const style=document.createElement('style');
+  style.id='obrixCabecalhoEquipeEstavel20261118';
+  // A seta global já fica oculta na Equipe. Outras regras ainda alternavam
+  // a classe "hidden" desse botão e o seletor :has ocultava o MENU,
+  // fazendo piscar o cabeçalho inteiro.
+  style.textContent=`
+    html body #app:has(> #equipe:not(.hidden)) > .top{
+      display:flex!important;align-items:center!important;
+      justify-content:space-between!important;gap:8px!important;
+      opacity:1!important;visibility:visible!important;
+      animation:none!important;transition:none!important
+    }
+    html body #app:has(> #equipe:not(.hidden)) > .top > #bMenu,
+    html body #app:has(> #equipe:not(.hidden)) > .top:has(> #obrixHeaderVoltar:not(.hidden)) > #bMenu{
+      display:inline-flex!important;visibility:visible!important;
+      opacity:1!important;animation:none!important;transition:none!important
+    }
+    html body #app:has(> #equipe:not(.hidden)) > .top > #obrixHeaderVoltar{
+      display:none!important;visibility:hidden!important;pointer-events:none!important
+    }
+  `;
+  document.head.appendChild(style);
 }
 function boot(){
+  cabecalhoEquipeEstavel();
   apply();
   const app=$('#app'),team=$('#equipe'),top=$('#app>.top');
   if(app)new MutationObserver(queue).observe(app,{attributes:true,attributeFilter:['class']});
