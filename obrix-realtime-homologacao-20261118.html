@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover">
+<title>OBRIX — Homologação Realtime</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f5f9;color:#182538;font:16px/1.5 system-ui,Arial,sans-serif}
+main{max-width:880px;margin:auto;padding:18px 14px 42px}
+section{background:white;border:1px solid #dce2eb;border-radius:14px;padding:18px;margin:14px 0}
+h1{font-size:25px;margin:8px 0}h2{font-size:18px;margin:0 0 12px}
+.muted{font-size:14px;color:#566777}.box{background:#edf2f9;padding:12px;border-radius:10px;white-space:pre-wrap}
+input,select,button{font:inherit;min-height:46px;border-radius:9px}input,select{display:block;width:100%;border:1px solid #bbc8d5;padding:9px;margin:7px 0 15px}
+button{border:0;background:#e27b20;color:white;padding:10px 14px;font-weight:750;cursor:pointer;margin:6px 0}
+button:disabled{opacity:.52}.alt{background:#334c68}
+label{font-weight:700}.hide{display:none}.row{display:flex;gap:10px;flex-wrap:wrap}.row button{flex:1}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.grid div{background:#edf2f9;border-radius:10px;padding:10px}.grid strong{display:block;font-size:25px}
+.grid small{display:block;font-size:12px;color:#5e6b7d}#events{max-height:310px;overflow:auto;font:13px/1.5 ui-monospace,Consolas,monospace}
+@media(max-width:500px){h1{font-size:21px}section{padding:13px}.grid{grid-template-columns:1fr 1fr}}
+</style>
+</head><body><main>
+<h1>OBRIX — Teste de sincronização</h1>
+<p class="muted">Somente no Supabase isolado. Os eventos não alteram obras, equipe, pagamentos, documentos ou fotos.</p>
+<section><h2>Teste nos três aparelhos</h2>
+<p>Abra este mesmo endereço no <strong>computador, iPhone e Android</strong> e faça login com a conta Gmail de teste.</p>
+<p>Confira se todos estão <strong>Conectados</strong>. No computador, clique em <strong>Enviar três alterações</strong>. Verifique se os outros dois aparelhos receberam três eventos. Repita pelo iPhone e Android.</p></section>
+<section id="loginBox"><h2>Entrar no ambiente isolado</h2>
+<label>E-mail de teste<input id="email" type="email" autocomplete="username"></label>
+<label>Senha de teste<input id="password" type="password" autocomplete="current-password"></label>
+<button id="loginBtn">Entrar</button><div class="box" id="loginStatus">Verificando sessão...</div></section>
+<section id="testBox" class="hide">
+<h2>Conexão em tempo real</h2><div class="box" id="connection">Conectando...</div>
+<label>Este aparelho
+<select id="device"><option>Computador</option><option>iPhone</option><option>Android</option></select></label>
+<div class="grid"><div><strong id="received">0</strong><small>Eventos recebidos</small></div>
+<div><strong id="remote">0</strong><small>Recebidos de outro aparelho</small></div>
+<div><strong id="sent">0</strong><small>Alterações enviadas</small></div></div>
+<p class="muted">1ª alteração: INSERT. 2ª e 3ª: UPDATE. Todas as operações ficam em uma tabela exclusiva de testes protegida por RLS.</p>
+<div class="row"><button id="send" disabled>Enviar três alterações</button><button id="copy" class="alt">Copiar resultado</button></div>
+<h2 style="margin-top:15px">Eventos</h2><div class="box" id="events">Nenhum evento ainda.</div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
+<script src="./obrix-hml-config.js"></script><script src="./obrix-backend-adapter.js"></script>
+<script>
+(()=>{'use strict';
+const PROJECT='xavwkfgrnowmusbkbiea',TABLE='obrix_hml_realtime_probe';
+const el=x=>document.getElementById(x);
+let client,user,company,channel,online=false,device='Computador',sent=0,received=0,remote=0,busy=false;
+const log=[];
+device=/iPhone/i.test(navigator.userAgent)?'iPhone':/Android/i.test(navigator.userAgent)?'Android':'Computador';
+el('device').value=device;
+function append(m){log.unshift(new Date().toLocaleTimeString('pt-BR',{hour12:false})+' - '+m);if(log.length>35)log.pop();el('events').textContent=log.join('\n');}
+function counters(){el('sent').textContent=sent;el('received').textContent=received;el('remote').textContent=remote;}
+function state(s){el('connection').textContent=s;}
+function idKey(){return 'obrix_realtime_probe_id:'+company+':'+device;}
+async function start(){
+ client=await window.OBRIX_BACKEND.init();
+ if(new URL(client.supabaseUrl).hostname!==PROJECT+'.supabase.co')throw Error('Origem de banco diferente do isolado.');
+ const r=await client.auth.getUser();if(r.error||!r.data?.user?.id)throw Error('Login de homologação necessário.');
+ user=r.data.user;
+ const p=await client.from('perfis').select('empresa_id').eq('id',user.id).maybeSingle();
+ if(p.error||!p.data?.empresa_id)throw Error('Perfil não associado à empresa de teste.');
+ company=p.data.empresa_id;
+ el('loginBox').classList.add('hide');el('testBox').classList.remove('hide');
+ if(channel)await client.removeChannel(channel);
+ channel=client.channel('obrix-hml-diagnostico-'+company+'-'+Math.random().toString(36).slice(2))
+ .on('postgres_changes',{event:'*',schema:'public',table:TABLE,filter:'empresa_id=eq.'+company},payload=>{
+  received++;const d=payload.new?.dispositivo||payload.old?.dispositivo||'?';
+  if(d!==device)remote++;counters();
+  append((d===device?'MESMO APARELHO':'OUTRO APARELHO')+' '+d+' '+payload.eventType+' sequência '+String(payload.new?.sequencia||'?'));
+ }).subscribe((status,error)=>{
+   online=status==='SUBSCRIBED';el('send').disabled=!online||busy;
+   state(online?'Conectado ao Realtime — '+device:status+(error?.message?' — '+error.message:''));
+   if(status==='SUBSCRIBED')append('Conexão Realtime confirmada.');
+ });
+}
+async function emit(){
+ const key=idKey();let id=localStorage.getItem(key);
+ let prev=id?await client.from(TABLE).select('id,sequencia').eq('id',id).maybeSingle():{data:null};
+ if(prev.error)throw prev.error;
+ if(!prev.data||prev.data.sequencia>=19){
+  id=crypto.randomUUID();
+  const r=await client.from(TABLE).insert({id,empresa_id:company,user_id:user.id,dispositivo:device,sequencia:1}).select('id').single();
+  if(r.error)throw r.error;localStorage.setItem(key,id);
+  append('Enviado INSERT por '+device);
+ }else{
+  const n=prev.data.sequencia+1;
+  const r=await client.from(TABLE).update({sequencia:n,atualizado_em:new Date().toISOString()}).eq('id',id).select('id').single();
+  if(r.error)throw r.error;
+  append('Enviado UPDATE '+n+' por '+device);
+ }
+ sent++;counters();
+}
+el('send').addEventListener('click',async()=>{
+ if(busy||!online)return;
+ busy=true;el('send').disabled=true;
+ try{
+  for(let i=1;i<=3;i++){if(!navigator.onLine)throw Error('Sem rede');await emit();if(i<3)await new Promise(ok=>setTimeout(ok,1100))}
+  append('Envio concluído: 3 gravações aceitas pela API.');
+ }catch(e){append('Erro de envio: '+String(e.message||e))}
+ finally{busy=false;el('send').disabled=!online}
+});
+el('device').addEventListener('change',()=>{device=el('device').value;state(online?'Conectado ao Realtime — '+device:'Conectando...')});
+el('loginBtn').addEventListener('click',async()=>{
+ el('loginBtn').disabled=true;el('loginStatus').textContent='Autenticando...';
+ try{
+  const sb=await window.OBRIX_BACKEND.init();
+  const r=await sb.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});
+  el('password').value='';
+  if(r.error||!r.data?.session)throw r.error||Error('Sessão recusada');
+  await start();
+ }catch(e){el('loginStatus').textContent=String(e.message||e)}finally{el('loginBtn').disabled=false}
+});
+el('copy').addEventListener('click',async()=>{
+ const t='OBRIX realtime isolado - '+device+'\nConectado: '+online+'\nRecebidos: '+received+'\nDe outros: '+remote+'\nEnviados: '+sent+'\n'+log.join('\n');
+ try{await navigator.clipboard.writeText(t);el('copy').textContent='Copiado';}catch(_){el('copy').textContent='Fotografe os dados acima';}
+});
+window.addEventListener('beforeunload',()=>{if(channel&&client)void client.removeChannel(channel)});
+(async()=>{try{const sb=await window.OBRIX_BACKEND.init();const s=await sb.auth.getSession();
+if(s.data?.session)await start();else el('loginStatus').textContent='Entre com a conta Gmail de teste.'}
+catch(e){el('loginStatus').textContent=String(e.message||e)}})();
+})();
+</script>
+</body></html>
