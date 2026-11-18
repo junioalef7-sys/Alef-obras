@@ -358,7 +358,9 @@ END;
 $function$
 ;
 
--- O gatilho já está homologado nas 35 tabelas do laboratório.
+-- Gatilhos atualizados de forma idempotente: reaplicar o SQL não gera
+-- conflito por nome já existente. O CREATE OR REPLACE mantém a versão
+-- exigida, sob a mesma transação de implantação; não remove outras triggers.
 -- Analisar overhead e concorrência em produção antes de remover a guarda.
 DO $triggers$
 DECLARE tab record;
@@ -371,11 +373,11 @@ BEGIN
      AND t.table_type='BASE TABLE'
  LOOP
   EXECUTE format(
-    'CREATE TRIGGER obrix_exclusao_bloquear_gravacoes BEFORE INSERT OR UPDATE OR DELETE ON public.%I FOR EACH ROW EXECUTE FUNCTION obrix_conta_interna.bloquear_gravacoes_empresa()',
+    'CREATE OR REPLACE TRIGGER obrix_exclusao_bloquear_gravacoes BEFORE INSERT OR UPDATE OR DELETE ON public.%I FOR EACH ROW EXECUTE FUNCTION obrix_conta_interna.bloquear_gravacoes_empresa()',
     tab.table_name);
  END LOOP;
 END $triggers$;
-CREATE TRIGGER obrix_exclusao_bloquear_gravacoes
+CREATE OR REPLACE TRIGGER obrix_exclusao_bloquear_gravacoes
  BEFORE UPDATE OR DELETE ON public.empresas FOR EACH ROW
  EXECUTE FUNCTION obrix_conta_interna.bloquear_gravacoes_empresa();
 CREATE OR REPLACE FUNCTION obrix_conta_interna.obrix_storage_upload_permitido(p_empresa_prefix text)
@@ -645,8 +647,10 @@ GRANT EXECUTE ON FUNCTION public.obrix_pagar_equipe_transacional_v2(
   uuid,date,uuid[],uuid[],uuid[],uuid,numeric) TO authenticated;
 -- Não REVOGAR gravações diretas enquanto o fluxo novo não for validado e ativado.
 
--- Não substitui políticas anteriores. AS RESTRICTIVE faz interseção com todas
+-- Políticas recriadas atomicamente para permitir reaplicação após sucesso.
+-- Não altera políticas anteriores. AS RESTRICTIVE faz interseção com todas
 -- permissões existentes: bloqueia uploads concorrentes somente nesses buckets.
+DROP POLICY IF EXISTS obrix_exclusao_restricao_upload ON storage.objects;
 CREATE POLICY obrix_exclusao_restricao_upload
 ON storage.objects AS RESTRICTIVE FOR INSERT TO authenticated
 WITH CHECK (
@@ -654,6 +658,7 @@ WITH CHECK (
  OR obrix_conta_interna.obrix_storage_upload_permitido(
        (storage.foldername(name))[1])
 );
+DROP POLICY IF EXISTS obrix_exclusao_restricao_alteracao ON storage.objects;
 CREATE POLICY obrix_exclusao_restricao_alteracao
 ON storage.objects AS RESTRICTIVE FOR UPDATE TO authenticated
 USING (
