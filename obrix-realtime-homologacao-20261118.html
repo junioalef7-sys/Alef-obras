@@ -45,7 +45,7 @@ label{font-weight:700}.hide{display:none}.row{display:flex;gap:10px;flex-wrap:wr
 (()=>{'use strict';
 const PROJECT='xavwkfgrnowmusbkbiea',TABLE='obrix_hml_realtime_probe';
 const el=x=>document.getElementById(x);
-let client,user,company,channel,online=false,device='Computador',sent=0,received=0,remote=0,busy=false;
+let client,user,company,channel,online=false,device='Computador',sent=0,received=0,remote=0,busy=false,subscribed=false,readyTimer=0;
 const log=[];
 device=/iPhone/i.test(navigator.userAgent)?'iPhone':/Android/i.test(navigator.userAgent)?'Android':'Computador';
 el('device').value=device;
@@ -68,10 +68,24 @@ async function start(){
   received++;const d=payload.new?.dispositivo||payload.old?.dispositivo||'?';
   if(d!==device)remote++;counters();
   append((d===device?'MESMO APARELHO':'OUTRO APARELHO')+' '+d+' '+payload.eventType+' sequência '+String(payload.new?.sequencia||'?'));
+ }).on('system','*',payload=>{
+  if(payload?.extension==='postgres_changes'&&payload?.status==='ok'&&subscribed){
+   clearTimeout(readyTimer);online=true;el('send').disabled=busy;
+   state('Conectado ao Realtime — '+device);append('Replicação PostgreSQL pronta.');
+  }
  }).subscribe((status,error)=>{
-   online=status==='SUBSCRIBED';el('send').disabled=!online||busy;
-   state(online?'Conectado ao Realtime — '+device:status+(error?.message?' — '+error.message:''));
-   if(status==='SUBSCRIBED')append('Conexão Realtime confirmada.');
+   if(status==='SUBSCRIBED'){
+    subscribed=true;state('Conectado ao servidor; aguardando replicação PostgreSQL...');
+    // Fallback documentado quando a confirmação da extensão não chega ao cliente.
+    clearTimeout(readyTimer);readyTimer=setTimeout(()=>{
+      if(!subscribed)return;online=true;el('send').disabled=busy;
+      state('Conectado ao Realtime — '+device);append('Canal estabilizado.');
+    },1600);
+   }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+    subscribed=false;online=false;clearTimeout(readyTimer);el('send').disabled=true;
+    state('Conexão indisponível: '+status+(error?.message?' — '+error.message:''));
+    append('Erro de conexão '+status);
+   }else if(!subscribed){state('Canal: '+status)}
  });
 }
 async function emit(){
