@@ -1,6 +1,6 @@
 (()=>{'use strict';
 if(window.__OBRIX_LOGIN_RESCUE_V2)return;window.__OBRIX_LOGIN_RESCUE_V2=true;
-function obrixRecoveryRedirectUrl(){const host=String(location.hostname||'').toLowerCase();const isPreview=/^alef-obras-[a-z0-9-]+-obrix3\.vercel\.app$/.test(host)&&host!=='alef-obras-obrix3.vercel.app';return isPreview?'https://alef-obras-git-test-obrix-seguranca-pagamentos-20261116-obrix3.vercel.app/obrix.html':'https://alef-obras-obrix3.vercel.app/obrix.html';}
+function obrixRecoveryRedirectUrl(){const host=String(location.hostname||'').toLowerCase();const official=new Set(['alef-obras-obrix3.vercel.app','alef-obras.vercel.app','obrix.junioalef7.workers.dev','junioalef7-sys.github.io']);return official.has(host)?'https://alef-obras-obrix3.vercel.app/obrix.html':new URL('./obrix.html',location.href).href;}
  const $=id=>document.getElementById(id),RECOVERY_URL=obrixRecoveryRedirectUrl();let running=false,lastAttempt=0,unsub=null;
 function loginVisible(){const l=$('login');return !!(l&&!l.classList.contains('hidden'))}
 function timeout(p,ms,msg){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg||'Tempo esgotado.')),ms))])}
