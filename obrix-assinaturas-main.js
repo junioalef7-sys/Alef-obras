@@ -42,14 +42,16 @@
         if(pr.error)throw pr.error;if(sr.error)throw sr.error;
         const a=sr.data?.[0]||null;
         let statusHtml='';
+        const pagamentoVigente=!!(a&&a.status==='ativo'&&(a.plano==='permanente'||((a.plano==='mensal'||a.plano==='anual')&&a.periodo_fim&&new Date(a.periodo_fim).getTime()>Date.now())));
         if(!a)statusHtml='<h3>Assinatura</h3><p class="muted">Nenhuma assinatura encontrada para esta empresa.</p>';
         else if(a.status==='teste'){
           const dias=diasRestantes(a.trial_fim);
-          statusHtml=`<h3>Teste grátis</h3><div class="assBig">${dias} dia${dias===1?'':'s'} restante${dias===1?'':'s'}</div><p class="muted">Teste válido até ${fmtDate(a.trial_fim)}. Após o teste, sem pagamento, o acesso fica limitado a 1 obra e 1 funcionário.</p>`;
+          statusHtml=dias>0?`<h3>Teste grátis</h3><div class="assBig">${dias} dia${dias===1?'':'s'} restante${dias===1?'':'s'}</div><p class="muted">Teste válido até ${fmtDate(a.trial_fim)}. Após o teste, sem pagamento, o acesso fica limitado a 1 obra e 1 funcionário.</p>`:'<h3>Teste encerrado</h3><div class="assBig">Plano limitado</div><p class="muted">É possível usar uma obra e um funcionário. Escolha um plano para recuperar o acesso completo.</p>';
         }else if(a.status==='ativo'&&a.plano==='permanente')
           statusHtml='<h3>Plano permanente</h3><div class="assBig">Acesso completo</div><p class="muted">Sem data de vencimento.</p>';
-        else if(a.status==='ativo')
+        else if(pagamentoVigente)
           statusHtml=`<h3>Assinatura ativa</h3><div class="assBig">${a.plano==='anual'?'Plano Anual':'Plano Mensal'}</div><p class="muted">Acesso completo${a.periodo_fim?' até '+fmtDate(a.periodo_fim):''}.</p>`;
+        else if(a.status==='ativo') statusHtml='<h3>Assinatura</h3><div class="assBig">Renovação necessária</div><p class="muted">O período pago terminou ou está sem vencimento definido. Escolha um plano para recuperar o acesso completo.</p>';
         else statusHtml=`<h3>Assinatura</h3><div class="assBig">${String(a.status||'inativa').replace('_',' ')}</div><p class="muted">Escolha um plano para liberar o acesso completo.</p>`;
         const planosHtml=(a?.status==='ativo'&&a.plano==='permanente')?'<div class="card muted">Acesso permanente ativo. Nenhuma nova assinatura é necessária.</div>':(pr.data||[]).map(p=>{
           const anual=p.periodo==='anual'||p.codigo==='anual';
