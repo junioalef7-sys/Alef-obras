@@ -1,0 +1,105 @@
+name: OBRIX - E2E em Supabase local descartável
+
+on:
+  push:
+    branches:
+      - test/obrix-seguranca-pagamentos-20261116
+    paths:
+      - '.github/workflows/obrix-hml-local-integracao.yml'
+      - 'tests/obrix-hml-local-integracao.cjs'
+      - 'database/release/obrix_hml_baseline_schema_sem_dados_20261116.sql'
+      - 'database/release/obrix_backend_release_candidate_20261116.sql'
+      - 'supabase/functions/obrix-delete-account/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auth-financeiro-documentos-exclusao:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020e8
+        with:
+          node-version: '22'
+
+      - name: Instalar Supabase CLI v2 fixa
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.111.0
+
+      - name: Iniciar Supabase descartável somente neste runner
+        run: |
+          mkdir -p .hml-local
+          cd .hml-local
+          supabase init
+          supabase start
+          supabase status --output json > "$RUNNER_TEMP/obrix-local-status.json"
+          node -e "const s=require(process.env.RUNNER_TEMP+'/obrix-local-status.json'); if(!String(s.API_URL||'').includes('127.0.0.1')) process.exit(1); console.log('Supabase local disponível; nenhuma credencial será impressa.');"
+
+      - name: Instalar cliente psql e Supabase JS
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          npm install --no-save --no-package-lock @supabase/supabase-js@2.117.1
+
+      - name: Reconstruir schema exclusivamente em localhost
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -X -v ON_ERROR_STOP=1 \
+            -c "SET obrix.allow_baseline_hml = 'sandbox-20261116'" \
+            -f database/release/obrix_hml_baseline_schema_sem_dados_20261116.sql \
+            > "$RUNNER_TEMP/baseline.log"
+          echo "Baseline aplicada exclusivamente no banco descartável."
+
+      - name: Preparar cópia local de release preservando a guarda no Git
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const path=require('node:path');
+          let sql=fs.readFileSync('database/release/obrix_backend_release_candidate_20261116.sql','utf8');
+          const marker="DO $block$ BEGIN\n  RAISE EXCEPTION 'OBRIX RELEASE BLOCKED: exige homologação integrada e aprovação';\nEND $block$;";
+          if(!sql.includes(marker)||sql.split(marker).length!==2)throw Error('A guarda mudou; CI recusado');
+          sql=sql.replace(marker,'');
+          fs.writeFileSync(path.join(process.env.RUNNER_TEMP,'obrix-release-local.sql'),sql);
+          console.log('Release para localhost criado sem alterar arquivo protegido.');
+          NODE
+
+      - name: Aplicar backend candidato somente em localhost
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -X -v ON_ERROR_STOP=1 \
+            -f "$RUNNER_TEMP/obrix-release-local.sql" \
+            > "$RUNNER_TEMP/release.log"
+          echo "Backend candidato aplicado exclusivamente em localhost."
+
+      - name: Teste real Auth, trial, pagamentos, Documentos, Storage e exclusão
+        run: |
+          OBRIX_LOCAL_SUPABASE_STATUS="$RUNNER_TEMP/obrix-local-status.json" \
+            node --test tests/obrix-hml-local-integracao.cjs
+
+      - name: Diagnosticar erro local de Auth/Postgres sem credenciais
+        if: failure()
+        run: |
+          docker ps --format '{{.Names}}' | grep -E '^supabase_(auth|db)_' | while read name; do
+            echo "Logs de erros do contêiner: $name"
+            docker logs --tail 150 "$name" 2>&1 |
+              grep -Eai 'error|fatal|permission denied|relation |trigger|function |schema |SQLSTATE|failed to|exception' |
+              sed -E 's/(Bearer|apikey|password|token)[=: ][^ ,;"]+/\1=[REDACTED]/Ig' |
+              tail -45 || true
+          done
+
+      - name: Remover Supabase local e dados fictícios
+        if: always()
+        run: |
+          if [ -d .hml-local/supabase ]; then
+            cd .hml-local
+            supabase stop --no-backup || true
+          fi

@@ -4,11 +4,23 @@ function fechar(){document.querySelector('.accountDeleteBack')?.remove()}
 function abrirConfirmacao(){fechar();const b=document.createElement('div');b.className='modalBack accountDeleteBack';b.innerHTML=`<div class="modal accountDeleteModal"><button type="button" class="accountDeleteClose" aria-label="Fechar">×</button><h2>Excluir conta</h2><p class="accountDeleteWarn"><b>Atenção:</b> esta ação é permanente.</p><p>Seu login será excluído. Se for o único usuário da empresa, o OBRIX também apagará obras, equipe, financeiro, fotos, capas, documentos, relatórios e arquivos da empresa armazenados no Supabase. Se houver outros usuários, os dados compartilhados serão preservados. Cópias de segurança externas não são abrangidas.</p><p class="muted">Para confirmar, digite <b>EXCLUIR CONTA</b>.</p><input class="accountDeleteText" autocomplete="off" placeholder="EXCLUIR CONTA"><div class="accountDeleteError"></div><div class="modalActions"><button type="button" class="btn excluir">Excluir conta definitivamente</button></div></div>`;document.body.appendChild(b);b.querySelector('.accountDeleteClose').onclick=fechar;b.querySelector('.excluir').onclick=()=>excluirConta(b);setTimeout(()=>b.querySelector('.accountDeleteText')?.focus(),50)}
 async function excluirConta(back){const input=back.querySelector('.accountDeleteText'),btn=back.querySelector('.excluir'),err=back.querySelector('.accountDeleteError');err.textContent='';
 const origensOficiais=['alef-obras-obrix3.vercel.app','alef-obras.vercel.app','obrix.junioalef7.workers.dev','junioalef7-sys.github.io'];
-if(!origensOficiais.includes(location.hostname)){
-  err.textContent='A exclusão completa está em validação. Nenhuma conta será excluída pela versão de teste.';
+const hmlRef=String(window.__OBRIX_HML_PROJECT_REF||'').trim().toLowerCase();
+const previewHml=location.hostname.endsWith('.vercel.app')
+  &&location.hostname.startsWith('alef-obras-')
+  &&!origensOficiais.includes(location.hostname)
+  &&/^[a-z]{20}$/.test(hmlRef)
+  &&!['gnvclctqnwxnjxydzhwc','mjzlwnuklfopdmgcvdcs'].includes(hmlRef);
+if(!origensOficiais.includes(location.hostname)&&!previewHml){
+  err.textContent='A exclusão de conta está bloqueada nesta prévia sem Supabase de homologação isolado.';
   return;
 }
-if(String(input?.value||'').trim().toUpperCase()!=='EXCLUIR CONTA'){err.textContent='Digite EXCLUIR CONTA exatamente para confirmar.';return}btn.disabled=true;btn.textContent='Excluindo...';try{const sb=await OBRIX_BACKEND.init();const {data,error}=await sb.functions.invoke('obrix-delete-account',{body:{confirmacao:'EXCLUIR CONTA'}});if(error){let msg=data?.error||error.message||'Não foi possível excluir a conta.';try{const j=await error.context?.json?.();if(j?.error)msg=j.error}catch(_){}throw new Error(msg)}if(!data?.ok)throw new Error(data?.error||'Não foi possível excluir a conta.');try{await sb.auth.signOut({scope:'local'})}catch(_){}try{sessionStorage.clear()}catch(_){}location.replace(location.origin+location.pathname+'?conta=excluida')}catch(e){console.warn('Exclusão de conta OBRIX',e);err.textContent=e?.message||'Não foi possível excluir a conta.';btn.disabled=false;btn.textContent='Excluir conta definitivamente'}}
+if(String(input?.value||'').trim().toUpperCase()!=='EXCLUIR CONTA'){err.textContent='Digite EXCLUIR CONTA exatamente para confirmar.';return}btn.disabled=true;btn.textContent='Excluindo...';try{const sb=await OBRIX_BACKEND.init();
+if(previewHml){
+  let endpoint='';
+  try{endpoint=new URL(sb.supabaseUrl).hostname}catch(_){}
+  if(endpoint!==hmlRef+'.supabase.co')throw Error('A prévia não está conectada ao banco de homologação. Exclusão bloqueada.');
+}
+const {data,error}=await sb.functions.invoke('obrix-delete-account',{body:{confirmacao:'EXCLUIR CONTA'}});if(error){let msg=data?.error||error.message||'Não foi possível excluir a conta.';try{const j=await error.context?.json?.();if(j?.error)msg=j.error}catch(_){}throw new Error(msg)}if(!data?.ok)throw new Error(data?.error||'Não foi possível excluir a conta.');try{await sb.auth.signOut({scope:'local'})}catch(_){}try{sessionStorage.clear()}catch(_){}location.replace(location.origin+location.pathname+'?conta=excluida')}catch(e){console.warn('Exclusão de conta OBRIX',e);err.textContent=e?.message||'Não foi possível excluir a conta.';btn.disabled=false;btn.textContent='Excluir conta definitivamente'}}
 // Estilo exclusivo do botão. Evitar reescrever style quando o valor já é igual:
  // isso disparava MutationObservers e alternava cores de outros módulos.
 const modelosVisualConta=new Map();

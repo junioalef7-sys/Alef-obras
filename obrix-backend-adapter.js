@@ -1,6 +1,32 @@
 (function(){
   'use strict';
   const CONFIG_URL='https://gnvclctqnwxnjxydzhwc.supabase.co/functions/v1/obrix-public-config';
+  const OFFICIAL_REF='gnvclctqnwxnjxydzhwc';
+  const OFFICIAL_HOSTS=new Set([
+    'alef-obras-obrix3.vercel.app','alef-obras.vercel.app',
+    'obrix.junioalef7.workers.dev','junioalef7-sys.github.io'
+  ]);
+  function ehAmbienteNaoOficial(){
+    const host=String(window.location?.hostname||'').toLowerCase();
+    return !OFFICIAL_HOSTS.has(host);
+  }
+  function urlConfigSegura(){
+    if(!ehAmbienteNaoOficial())return {url:CONFIG_URL,ref:OFFICIAL_REF};
+    const ref=String(window.__OBRIX_HML_PROJECT_REF||'').trim().toLowerCase();
+    if(!/^[a-z]{20}$/.test(ref)||ref===OFFICIAL_REF){
+      throw new Error('Prévia de testes bloqueada: configure um Supabase de homologação isolado.');
+    }
+    return {url:'https://'+ref+'.supabase.co/functions/v1/obrix-public-config',ref};
+  }
+  function validarConfigAmbiente(cfg,ref){
+    if(!cfg?.url||!cfg?.publishableKey)throw new Error('Configuração OBRIX indisponível.');
+    let hostname;
+    try{hostname=new URL(cfg.url).hostname}catch(_){throw new Error('URL do Supabase inválida.')}
+    if(ehAmbienteNaoOficial()&&hostname!==ref+'.supabase.co'){
+      throw new Error('Prévia bloqueada: configuração aponta para outro banco de dados.');
+    }
+    return cfg;
+  }
   const CONFIG_CACHE='obrix_public_config_v2';
   const CONFIG_TTL=6*60*60*1000;
   const OFFLINE_BASE='obrix_offline_base_v3',OFFLINE_BASE_OLD='obrix_offline_base_v2';
@@ -31,14 +57,21 @@
   }
   function salvarConfigCache(cfg){try{localStorage.setItem(CONFIG_CACHE,JSON.stringify({at:Date.now(),cfg}))}catch(_){}}
   async function carregarConfig(){
+    // Resolve a origem antes de usar cache, impedindo fuga para o banco oficial na prévia.
+    const {url,ref}=urlConfigSegura();
     const cache=lerConfigCache();
-    if(cache&&Date.now()-Number(cache.at||0)<CONFIG_TTL)return cache.cfg;
+    if(cache&&Date.now()-Number(cache.at||0)<CONFIG_TTL){
+      try{return validarConfigAmbiente(cache.cfg,ref)}catch(_){}
+    }
     try{
-      const r=await fetch(CONFIG_URL,{cache:'no-store'}),cfg=await r.json();
-      if(!r.ok||!cfg.url||!cfg.publishableKey)throw new Error('Configuração OBRIX indisponível.');
+      const r=await fetch(url,{cache:'no-store'}),cfg=await r.json();
+      if(!r.ok)throw new Error('Configuração OBRIX indisponível.');
+      validarConfigAmbiente(cfg,ref);
       salvarConfigCache(cfg);return cfg;
     }catch(e){
-      if(cache?.cfg?.url&&cache?.cfg?.publishableKey)return cache.cfg;
+      if(cache?.cfg?.url&&cache?.cfg?.publishableKey){
+        try{return validarConfigAmbiente(cache.cfg,ref)}catch(_){}
+      }
       throw e;
     }
   }

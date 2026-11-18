@@ -273,7 +273,9 @@
         if(obraAtual.data?.status!=='andamento')throw Error('Só é permitido registrar lançamentos em obras em andamento.');
       }
       const payload={obra_id:obraSelecionada,checklist_id:ids[0]||null,checklist_ids:ids,checklist_valores:valores,tipo,categoria:$('fmCat')?.value||'outros',subcategoria:$('fmSubcat')?.value.trim()||null,descricao,valor,data:$('fmData')?.value,origem:'manual',status_lancamento:'ativo',atualizado_em:new Date().toISOString()};
-      const q=id?await sb.from('financeiro').update(payload).eq('id',id).eq('empresa_id',empresaId).eq('origem','manual').select('*').single():await sb.from('financeiro').insert({...payload,empresa_id:empresaId}).select('*').single();
+      // Edição não altera origem nem status: campos reservados às rotinas de estorno no servidor.
+      const {origem:_origemInicial,status_lancamento:_statusInicial,...dadosEditaveis}=payload;
+      const q=id?await sb.from('financeiro').update(dadosEditaveis).eq('id',id).eq('empresa_id',empresaId).eq('origem','manual').select('*').single():await sb.from('financeiro').insert({...payload,empresa_id:empresaId}).select('*').single();
       if(q.error)throw q.error;
       const atual=Array.isArray(window.financeiro)?window.financeiro.slice():[],idx=atual.findIndex(z=>String(z.id)===String(q.data.id));if(idx>=0)atual[idx]=q.data;else atual.unshift(q.data);window.financeiro=atual;
       $('fmForm').classList.add('hidden');renderLocal();window.OBRIX_DASH?.paint?.();
