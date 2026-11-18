@@ -964,3 +964,73 @@ estilosRegistros.id='obpEquipeRegistrosAprovados20261105';
 estilosRegistros.textContent="\n#equipe #obpEquipe .obp-perfil-topo{display:flex!important;align-items:center;gap:12px;background:var(--obp-panel,#fff);border:1px solid var(--obp-border,#dce3ec);padding:14px;border-radius:15px;margin:10px 0 9px}\n#equipe #obpEquipe .obp-perfil-avatar{width:52px;height:52px;flex:none;border-radius:50%;border:1px solid var(--obp-border,#dce3ec);display:grid;place-items:center;background:var(--obp-panel2,#f9fafb);color:#1264c4;font-size:27px}\n#equipe #obpEquipe .obp-perfil-texto{flex:1;min-width:0}\n#equipe #obpEquipe .obp-perfil-texto h2{margin:0!important;font-size:21px!important;line-height:1.2}\n#equipe #obpEquipe .obp-perfil-texto .obp-role{margin:4px 0 0!important;font-size:14px}\n#equipe #obpEquipe .obp-perfil-situacao{padding:5px 8px;border-radius:7px;background:#10882d;color:#fff!important;font-size:12px;font-weight:800}\n#equipe #obpEquipe .obp-perfil-pagamento{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 2px 11px;color:var(--obp-muted,#64748b);font-size:13px}\n#equipe #obpEquipe .obp-perfil-pagamento small{font-size:12px}\n#equipe #obpEquipe .obp-perfil-pagamento strong{color:var(--obp-text,#172331);white-space:nowrap}\n#equipe #obpEquipe .obp-detail-finance{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin:5px 0 12px!important}\n#equipe #obpEquipe .obp-detail-finance>div{min-width:0;min-height:78px;display:flex;flex-direction:column;justify-content:center;border:0!important;border-radius:11px!important;padding:10px!important;box-shadow:none!important}\n#equipe #obpEquipe .obp-detail-finance>div small{font-size:12px!important;line-height:1.3!important}\n#equipe #obpEquipe .obp-detail-finance>div b{font-size:clamp(16px,4.7vw,21px)!important;line-height:1.25!important;overflow-wrap:anywhere}\n#equipe #obpEquipe .obp-detail-finance>div:nth-child(1){background:#dff9e6!important;color:#11512a!important}\n#equipe #obpEquipe .obp-detail-finance>div:nth-child(2){background:#ffe7e7!important;color:#8a1b1b!important}\n#equipe #obpEquipe .obp-detail-finance>div:nth-child(3),#equipe #obpEquipe .obp-detail-finance>div:nth-child(4){background:#e1efff!important;color:#123b72!important}\n#equipe #obpEquipe .obp-detail-finance>div:nth-child(5){background:#efe6ff!important;color:#4b267f!important}\n#equipe #obpEquipe .obp-detail-finance>div:nth-child(6){background:#fff3d7!important;color:#835718!important}\n#equipe #obpEquipe .obp-detail-finance>div small,#equipe #obpEquipe .obp-detail-finance>div b{color:inherit!important;-webkit-text-fill-color:currentColor!important}\n#equipe #obpEquipe .obp-attendance-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:13px 0}\n#equipe #obpEquipe .obp-attendance-card{border:2px solid #1667ce;border-radius:12px;padding:10px 8px;display:flex;align-items:center;gap:9px;min-height:84px;background:var(--obp-panel,#fff);color:var(--obp-text,#172331)}\n#equipe #obpEquipe .obp-attendance-card>span{font-size:27px;color:#1169d8;flex:none}\n#equipe #obpEquipe .obp-attendance-absence>span{color:#d32f2f}\n#equipe #obpEquipe .obp-attendance-card>div{display:flex;flex-direction:column;gap:3px;min-width:0}\n#equipe #obpEquipe .obp-attendance-card small{font-size:12px;font-weight:800;color:inherit;line-height:1.25}\n#equipe #obpEquipe .obp-attendance-card strong{font-size:14px;line-height:1.25;white-space:normal}\n#equipe #obpEquipe .obp-registros-principal{width:100%;min-height:51px;display:flex;align-items:center;gap:10px;background:#0e3e7c!important;color:white!important;-webkit-text-fill-color:white!important;border:0;border-radius:12px;padding:11px 14px;font-size:16px;font-weight:850;margin:10px 0}\n#equipe #obpEquipe .obp-registros-principal span{flex:1;text-align:left}\n#equipe #obpEquipe .obp-registros-principal b{font-size:25px}\n#equipe #obpEquipe .obp-person-actions{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:8px!important}\n#equipe #obpEquipe .obp-person-actions button{grid-column:span 2;min-width:0!important;min-height:52px!important;padding:8px 4px!important}\n#equipe #obpEquipe .obp-person-actions button:nth-child(n+4){grid-column:span 3}\n.obp-registros-premium-modal{z-index:2147481000!important}\n.obp-registros-premium-modal .obp-registros-tela{width:min(95vw,590px)!important;max-width:590px!important;max-height:90dvh!important;overflow:auto!important;padding:16px!important;border-radius:17px!important;background:var(--ob-surface,#fff)!important;color:var(--ob-text,#111827)!important;box-sizing:border-box!important}\n.obp-registros-premium-modal .obp-registros-topo{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-bottom:15px}\n.obp-registros-premium-modal .obp-registros-topo h2{font-size:clamp(18px,4.4vw,23px);font-weight:850;margin:0;line-height:1.25}\n.obp-registros-premium-modal [data-obp-fechar]{font-size:28px;min-width:43px;min-height:43px;border:0;background:transparent;color:inherit}\n.obp-registros-premium-modal .obp-registros-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-bottom:15px}\n.obp-registros-premium-modal .obp-registros-tabs button{border:1px solid var(--ob-border,#cbd5e1);border-radius:10px;min-width:0;padding:10px 2px;background:var(--ob-surface,#fff);color:var(--ob-text,#111827);font-size:clamp(11px,3vw,14px);font-weight:750}\n.obp-registros-premium-modal .obp-registros-tabs button.active{background:#0e3e7c!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#0e3e7c!important}\n.obp-registros-premium-modal .obp-registros-indicadores{display:grid;grid-template-columns:1.25fr .75fr .9fr;gap:6px}\n.obp-registros-premium-modal .obp-registros-indicadores>div{display:flex;flex-direction:column;gap:4px;justify-content:center;min-width:0;border:1px solid var(--ob-border,#cbd5e1);border-radius:12px;padding:9px 6px;min-height:77px}\n.obp-registros-premium-modal .obp-registros-indicadores small{font-size:11px;font-weight:800;line-height:1.25;color:var(--ob-text,#111827)}\n.obp-registros-premium-modal .obp-registros-indicadores strong{font-size:15px;overflow-wrap:anywhere;color:var(--ob-text,#111827)}\n.obp-registros-premium-modal .obp-registros-tela h3{font-size:19px;margin:21px 0 12px}\n.obp-registros-premium-modal .obp-registros-aviso{padding:9px;border-radius:9px;background:#fff4df;color:#804800;font-size:12px}\n.obp-registros-premium-modal .obp-registro-linha{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--ob-border,#cbd5e1);min-width:0}\n.obp-registros-premium-modal .obp-registro-icone{width:35px;height:35px;flex:none;display:grid;place-items:center;border-radius:50%;background:#edf5ff;color:#1264c4;font-size:22px}\n.obp-registros-premium-modal .obp-registro-icone.falta{background:#ffe7e7;color:#c41e1e}\n.obp-registros-premium-modal .obp-registro-info{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}\n.obp-registros-premium-modal .obp-registro-info b{font-size:14px;line-height:1.2;color:var(--ob-text,#111827)}\n.obp-registros-premium-modal .obp-registro-info small{font-size:11px;line-height:1.25;color:var(--ob-muted,#64748b);overflow-wrap:anywhere}\n.obp-registros-premium-modal .obp-registro-direita{flex:none;display:flex;align-items:flex-end;flex-direction:column;gap:5px}\n.obp-registros-premium-modal .obp-registro-direita time{font-size:11px;color:var(--ob-muted,#64748b)}\n.obp-registros-premium-modal .obp-registro-direita strong{font-size:14px;color:#12863d}\n.obp-registros-premium-modal .obp-registro-direita button{min-height:33px;border:1px solid #df2727!important;border-radius:8px;background:transparent!important;color:#b91c1c!important;-webkit-text-fill-color:#b91c1c!important;font-size:12px;font-weight:800;padding:5px 10px}\n.obp-registros-premium-modal .obp-registros-vazio{padding:16px;text-align:center;color:var(--ob-muted,#64748b)}\n.obp-registros-premium-modal .obp-registros-mais{width:100%;min-height:44px;background:transparent;color:inherit;border:1px solid var(--ob-border,#cbd5e1);border-radius:10px;margin-top:10px}\n@media(max-width:390px){#equipe #obpEquipe .obp-attendance-card{padding:9px 6px;gap:6px}#equipe #obpEquipe .obp-attendance-card small{font-size:11px}#equipe #obpEquipe .obp-attendance-card strong{font-size:13px}}\n";
 document.head.appendChild(estilosRegistros);
 })();
+
+/* Diagnóstico temporário da seta: executa apenas com ?diagnostico_seta=1, sem consultar ou modificar dados. */
+(function(){
+'use strict';
+if(new URLSearchParams(location.search).get('diagnostico_seta')!=='1')return;
+if(window.__OBRIX_DIAG_SETA_ATIVO)return;
+window.__OBRIX_DIAG_SETA_ATIVO=true;
+const ids=new WeakMap(),c={superior:0,interna:0,ficha:0,recriadas:0,classe:0,duas:0};
+let seq=0,ativa=false,fechada=false,t0=0,quadro=0,ant=null,atual=null,painel=null,saida=null,botao=null;
+const eventos=[];
+function id(el){if(!el)return'-';if(!ids.has(el))ids.set(el,++seq);return String(ids.get(el))}
+function vis(el){if(!el||!el.isConnected)return false;const st=getComputedStyle(el);return st.display!=='none'&&st.visibility!=='hidden'&&Number(st.opacity)!==0&&!!el.getClientRects().length;}
+function amostra(){
+  const equipe=document.getElementById('equipe'),detalhe=document.getElementById('obpDetalhe');
+  const global=document.getElementById('obrixHeaderVoltar'),interno=detalhe?.querySelector('[data-team-back]');
+  return {tela:!!(equipe&&!equipe.classList.contains('hidden')),ficha:!!(equipe?.classList.contains('obp-team-selected')&&detalhe&&!detalhe.hidden),superior:vis(global),interna:vis(interno),supId:id(global),intId:id(interno),supHidden:!!global?.classList.contains('hidden')};
+}
+function evento(t){eventos.push('+'+Math.round(performance.now()-t0)+'ms '+t);if(eventos.length>80)eventos.shift()}
+function mostrar(){
+  if(!saida)return;
+  const s=atual||amostra();
+  saida.textContent=(ativa?'GRAVANDO. Abra um funcionário e volte.\n':fechada?'DIAGNÓSTICO FINALIZADO.\n':'Abra Equipe e selecione um funcionário.\n')+
+  'Seta superior alternou: '+c.superior+'\n'+
+  'Seta interna alternou: '+c.interna+'\n'+
+  'Ficha alternou: '+c.ficha+'\n'+
+  'Setas recriadas: '+c.recriadas+'\n'+
+  'Classes da seta superior mudaram: '+c.classe+'\n'+
+  'As duas visíveis: '+c.duas+'\n'+
+  'Estado atual: '+(s.ficha?'ficha aberta':'lista')+', superior '+(s.superior?'visível':'oculta')+', interna '+(s.interna?'visível':'oculta')+'\n'+
+  'Quadros: '+quadro+'\nÚltimos eventos: '+eventos.slice(-5).join(' | ');
+}
+function finalizar(){ativa=false;fechada=true;if(botao)botao.textContent='Repetir diagnóstico';mostrar()}
+function medir(t){
+ if(!ativa)return;const s=amostra();atual=s;quadro++;
+ if(ant){
+   if(s.superior!==ant.superior){c.superior++;evento('SUPERIOR '+(s.superior?'apareceu':'sumiu'))}
+   if(s.interna!==ant.interna){c.interna++;evento('INTERNA '+(s.interna?'apareceu':'sumiu'))}
+   if(s.ficha!==ant.ficha){c.ficha++;evento('FICHA '+(s.ficha?'abriu':'fechou'))}
+   if(s.supId!==ant.supId&&s.supId!=='-'&&ant.supId!=='-'){c.recriadas++;evento('SUPERIOR recriada')}
+   if(s.intId!==ant.intId&&s.intId!=='-'&&ant.intId!=='-'){c.recriadas++;evento('INTERNA recriada')}
+   if(s.supHidden!==ant.supHidden)c.classe++;
+   if(s.superior&&s.interna)c.duas++;
+ }
+ ant=s;if(quadro%15===0)mostrar();
+ if(t-t0<12000)requestAnimationFrame(medir);else finalizar();
+}
+function iniciar(){
+ if(ativa)return;Object.keys(c).forEach(k=>c[k]=0);eventos.length=0;ativa=true;fechada=false;quadro=0;
+ t0=performance.now();ant=amostra();atual=ant;evento('início');
+ if(botao)botao.textContent='Gravando (12 segundos)...';
+ mostrar();requestAnimationFrame(medir);
+}
+function montar(){
+ if(painel||!document.getElementById('app'))return;
+ painel=document.createElement('aside');painel.setAttribute('aria-label','Diagnóstico da seta OBRIX');
+ painel.style.cssText='position:fixed!important;z-index:2147483000!important;right:12px;bottom:12px;width:min(430px,90vw);box-sizing:border-box;padding:12px;background:#11263b!important;color:#fff!important;border:2px solid #f59e0b;border-radius:12px;box-shadow:0 4px 20px #0006;font:13px/1.4 Arial,sans-serif';
+ const titulo=document.createElement('strong');titulo.textContent='OBRIX — Diagnóstico da seta';
+ saida=document.createElement('pre');saida.style.cssText='white-space:pre-wrap;font:12px/1.5 Consolas,monospace;color:#fff!important;max-height:240px;overflow:auto';
+ botao=document.createElement('button');botao.textContent='Iniciar diagnóstico';botao.style.cssText='padding:9px;border:0;border-radius:8px;background:#f59e0b!important;color:#11263b!important;font-weight:bold;cursor:pointer';
+ botao.addEventListener('click',iniciar);
+ const copia=document.createElement('button');copia.textContent='Copiar resultado';copia.style.cssText='margin-left:6px;padding:9px;border:0;border-radius:8px;background:#fff!important;color:#11263b!important;cursor:pointer';
+ copia.addEventListener('click',async()=>{try{await navigator.clipboard.writeText('OBRIX: diagnóstico da seta, sem dados pessoais\n'+saida.textContent+'\n'+eventos.join('\n'));copia.textContent='Copiado';}catch(_){copia.textContent='Fotografe o painel';}});
+ painel.append(titulo,saida,botao,copia);document.body.appendChild(painel);mostrar();
+ document.addEventListener('click',e=>{
+   if(e.target.closest?.('#equipe [data-team-id]')){if(!ativa)iniciar();evento('CLIQUE funcionário');}
+   else if(e.target.closest?.('#equipe [data-team-back]'))evento('CLIQUE voltar');
+ },true);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',montar,{once:true});else montar();
+})();
