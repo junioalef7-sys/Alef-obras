@@ -25,6 +25,7 @@ html[data-theme="light"] #app>.top #obrixTheme{
    A seta do cabeçalho geral aparecia por cima da navegação e piscava
    quando o detalhe era selecionado ou os seus dados eram atualizados.
    Isolar somente a ficha evita interferência em menu, obras e demais telas. */
+html[data-obrix-equipe-detalhe-ativo="1"] body #app:has(> #equipe:not(.hidden)) > .top #obrixHeaderVoltar,
 html body #app:has(> #equipe.obp-team-selected:not(.hidden)) > .top #obrixHeaderVoltar{
   display:none!important;
   visibility:hidden!important;
@@ -249,7 +250,8 @@ const subTela=!!document.querySelector('body>.modalBack:not(.hidden),body>#docVi
 document.documentElement.classList.toggle('obrixSubTelaAtiva',subTela);
 const apenasRaizRodape=(equipeViaRodape||obrasViaRodape||financeiroViaRodape)&&!subTela;
 const orcamentosVisivel=visTopo(document.getElementById('orcamentosMain'));
-b.classList.toggle('hidden',!orcamentosVisivel&&(noInicio||noMenu||apenasRaizRodape||(!p&&!noResumo&&!paginaEstavel&&!subTela)));b.onclick=()=>{
+const equipeDetalheAtivo=equipeVisivel&&(document.documentElement.dataset.obrixEquipeDetalheAtivo==='1'||document.getElementById('equipe')?.classList.contains('obp-team-selected'));
+b.classList.toggle('hidden',!orcamentosVisivel&&(equipeDetalheAtivo||noInicio||noMenu||apenasRaizRodape||(!p&&!noResumo&&!paginaEstavel&&!subTela)));b.onclick=()=>{
 if(subTela){const aberto=document.querySelector('body>.modalBack:not(.hidden),body>#docViewerModal:not(.hidden)');const fechar=aberto?.querySelector('[data-obp-fechar],#docViewerClose,.obrix-hist-pag-x,.cancelar,[aria-label="Fechar"],button[data-close]');if(fechar){fechar.click();return}}
 const voltaObra=document.querySelector('#obras:not(.hidden) #obxVoltarObras');if(voltaObra){voltaObra.click();return}
 if(noResumo){const rs=window.OBRIX_RESUMO_GERAL?.status?.()||{};if(rs.view==='obra'){window.OBRIX_RESUMO_GERAL?.open?.();return}resumo.classList.add('hidden');if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();return}}if(window.OBRIX_MENU?.open){window.OBRIX_MENU.open();return}if(typeof window.abrir==='function')window.abrir('inicio')}}
