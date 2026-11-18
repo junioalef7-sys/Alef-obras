@@ -10,7 +10,7 @@ const ativo=a=>{
   if(!a)return false;
   const now=Date.now();
   if(a.status==='teste')return !!a.trial_fim&&new Date(a.trial_fim).getTime()>now;
-  return a.status==='ativo'&&(a.plano==='permanente'||!a.periodo_fim||new Date(a.periodo_fim).getTime()>now);
+  return a.status==='ativo'&&(a.plano==='permanente'||((a.plano==='mensal'||a.plano==='anual')&&!!a.periodo_fim&&new Date(a.periodo_fim).getTime()>now));
 };
 let version=0;
 async function refresh(sb,perfil,assinatura){
