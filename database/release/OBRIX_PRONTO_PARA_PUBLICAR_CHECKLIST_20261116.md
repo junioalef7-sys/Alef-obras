@@ -140,3 +140,21 @@ O E2E autenticado no banco reconstruído aprovou criação de conta, perfil, tri
 A versão oficial da Vercel continua em `92495c4898e66d45c44b9e4b240a63a336af4e59` (`READY`). O PR #35 permanece em rascunho. O Supabase Pro continua ativo, mesmo sem branch temporária; acompanhar a cobrança mensal.
 
 **Segurança adicional:** o repositório `junioalef7-sys/Alef-obras` está PUBLIC, e o novo arquivo de baseline contém a implementação de funções e políticas. A varredura inicial de literais não localizou tokens JWT ou chaves conhecidas, mas **não substitui auditoria de segredos**; avaliar tornar o repositório privado antes da comercialização. Não alterar sua visibilidade automaticamente.
+
+
+## Verificações adicionais — 17/11/2026 (somente homologação)
+
+**Correção confirmada:** a função `public.obrix_guard_sensitive_write()` utilizava o papel inexistente `admin` em vez de `administrador`, valor permitido por `perfis_papel_check`. Migração pontual aplicada no Supabase isolado `xnvjqolbvzgozlmuagpi`, preservando assinatura e permissões. Fonte versionada: `database/release/obrix_correcao_permissao_administrador_financeiro_20261117.sql`. Resultado após correção: `proprietario` permite, `administrador` permite, `usuario` bloqueia; transações de teste revertidas.
+
+**Testes reais de banco, com `BEGIN ... ROLLBACK`:**
+- Pagamento transacional de duas meias diárias (duas obras), vale e bônus, validação de rateio e estorno: diárias (2), vale (1) e bônus (1) reabertos; nenhum pagamento financeiro ativo após estorno.
+- Exclusão simulada de empresa temporária: pré-validação, reserva idempotente, bloqueio de gravações, `storage_concluido`, `banco_concluido`, `finalizado`, journal preservado na própria transação; todas as alterações revertidas. **A etapa Storage foi apenas um checkpoint simulado, não uma exclusão física de arquivos**.
+- Após rollback: nenhuma obra, funcionário, diária, vale, pagamento, exclusão pendente ou lançamento financeiro fictício permaneceu no Supabase de homologação. A empresa e o perfil originais foram preservados.
+
+**Compatibilidade estrutural:** 41/41 tabelas públicas com mesmas colunas, tipos, nulabilidade e ordem entre homologação e produção. Diferenças de expressões default devem ser reconciliadas separadamente. O banco oficial `gnvclctqnwxnjxydzhwc` continua sem `obrix_pagar_equipe_transacional_v2` e sem `obrix_conta_interna.solicitacoes`; não instalar UI transacional antes do backend.
+
+**CI verificado:** [GitHub Actions 44216022433](https://github.com/junioalef7-sys/Alef-obras/actions/runs/44216022433), sucesso, sobre commit `b05ad7e0a65d23ff3ffa6d908b84bb16724e0142`. Preview de teste READY. Oficial preservado no deploy `92495c4898e66d45c44b9e4b240a63a336af4e59`.
+
+**Bloqueios restantes (NO-GO):** confirmação independente de backup/restauração de dados e Storage (usuário informou backup, mas não foi restaurado em ensaio); Auth de homologação sem login/recuperação E2E concluídos; exclusão de arquivo físico e de identidade Auth, recuperação e upload concorrente com sessão real ainda pendentes; replay automático das migrações falhando; testes prolongados nos três dispositivos; revisão dos avisos `authenticated_security_definer_function_executable` e `auth_leaked_password_protection`.
+
+**Regra de liberação:** não remover a guarda da migração candidata nem mudar o domínio oficial até que os bloqueios restantes sejam efetivamente testados. Não confundir o resultado dos testes transacionais de banco com homologação completa de front, Storage e Auth.
