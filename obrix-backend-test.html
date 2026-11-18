@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OBRIX — Teste do novo backend</title>
+<title>OBRIX — Homologação de restauração, somente leitura</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f7fb;color:#111827}.wrap{max-width:760px;margin:32px auto;padding:16px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 8px 28px rgba(0,0,0,.06)}h1{margin:0 0 8px;font-size:24px}h2{font-size:18px}label{display:block;font-weight:700;margin:12px 0 6px}input,button{width:100%;padding:12px;border-radius:10px;font-size:16px}input{border:1px solid #cbd5e1}button{border:0;background:#111827;color:#fff;font-weight:700;margin-top:12px;cursor:pointer}.secondary{background:#e5e7eb;color:#111827}.status{margin-top:12px;padding:12px;border-radius:10px;background:#f1f5f9;white-space:pre-wrap}.ok{background:#ecfdf5;color:#065f46}.err{background:#fef2f2;color:#991b1b}.hidden{display:none!important}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="card"><h1>OBRIX — Teste do novo backend</h1><p>Esta página valida o novo Supabase sem alterar a versão principal do aplicativo.</p></div>
+  <div class="card"><h1>OBRIX — Homologação da restauração</h1><p>Somente leitura: confere contagens, autenticação e abertura de uma fotografia no Supabase isolado. Não cria nem altera registros.</p></div>
   <div class="card" id="loginCard">
     <h2>Entrar com usuário de teste</h2>
     <label>E-mail</label><input id="email" type="email" autocomplete="username">
@@ -26,6 +26,7 @@
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
+<script src="./obrix-hml-config.js"></script>
 <script src="./obrix-backend-adapter.js"></script>
 <script>
 const loginCard=document.getElementById('loginCard');
@@ -34,21 +35,59 @@ const loginStatus=document.getElementById('loginStatus');
 const result=document.getElementById('result');
 function paint(el,text,ok){el.textContent=text;el.className='status '+(ok?'ok':'err');el.classList.remove('hidden')}
 async function runCheck(){
-  paint(result,'Validando autenticação, perfil, assinatura, obras, equipe e financeiro...',true);
-  try{
-    const h=await window.OBRIX_BACKEND.healthcheck();
-    const a=h.assinatura||{};
-    paint(result,
-      'Conexão com o novo OBRIX: OK\n'+
-      'Perfil/RLS: OK\n'+
-      'Plano: '+(a.plano||'-')+'\n'+
-      'Status da assinatura: '+(a.status||'-')+'\n'+
-      'Obras visíveis: '+h.contagens.obras+'\n'+
-      'Funcionários visíveis: '+h.contagens.funcionarios+'\n'+
-      'Lançamentos financeiros visíveis: '+h.contagens.financeiro,
-      true
-    );
-  }catch(e){paint(result,'Falha no teste: '+e.message,false)}
+  paint(result,'Verificando autenticação, regras de acesso e integridade dos arquivos...',true);
+  try {
+    const client=await window.OBRIX_BACKEND.init();
+    if(new URL(client.supabaseUrl).hostname!=='xavwkfgrnowmusbkbiea.supabase.co'){
+      throw new Error('Ambiente diferente do projeto isolado. Teste bloqueado.');
+    }
+    const user=await client.auth.getUser();
+    if(user.error||!user.data?.user?.id)throw new Error('Faça login na conta de homologação.');
+    const profile=await window.OBRIX_BACKEND.profile();
+    if(!profile?.empresa_id)throw new Error('A conta não está vinculada a uma empresa.');
+    const plan=await client.from('assinaturas').select('status,plano,trial_fim,empresa_id').eq('empresa_id',profile.empresa_id).maybeSingle();
+    if(plan.error||!plan.data)throw new Error('Assinatura da empresa não encontrada.');
+    const expected={obras:6,funcionarios:7,diarias:164,financeiro:113,documentos:4,relatorio_fotos:65};
+    const names={obras:'Obras',funcionarios:'Funcionários',diarias:'Diárias',financeiro:'Financeiro',documentos:'Documentos',relatorio_fotos:'Relatório fotográfico'};
+    const keys=Object.keys(expected);
+    const responses=await Promise.all(keys.map(table=>client.from(table).select('id',{count:'exact',head:true})));
+    let lines=['PROJETO ISOLADO: verificado','Autenticação real: aprovada','Perfil empresarial: aprovado','Assinatura: '+plan.data.status+' / '+plan.data.plano,''];
+    let errors=[];
+    for(let i=0;i<keys.length;i++){
+      const k=keys[i],r=responses[i];
+      if(r.error){lines.push(names[k]+': FALHOU ('+r.error.message+')');errors.push(k+': '+r.error.message);}
+      else {
+        const ok=r.count===expected[k];
+        lines.push(names[k]+': '+r.count+' / '+expected[k]+' — '+(ok?'APROVADO':'DIVERGÊNCIA'));
+        if(!ok)errors.push(k+': esperado '+expected[k]+', recebido '+r.count);
+      }
+    }
+    const photo=await client.from('relatorio_fotos').select('storage_path').not('storage_path','is',null).limit(1).maybeSingle();
+    if(photo.error||!photo.data?.storage_path){
+      lines.push('Leitura real de foto: não validada');
+      errors.push('Nenhuma foto elegível para validação');
+    }else{
+      const signed=await client.storage.from('relatorio-fotografico').createSignedUrl(photo.data.storage_path,45);
+      if(signed.error||!signed.data?.signedUrl){
+        lines.push('Leitura real de foto: FALHOU');
+        errors.push('Storage: '+(signed.error?.message||'Não gerou URL assinada'));
+      }else{
+        const u=new URL(signed.data.signedUrl);
+        if(u.hostname!=='xavwkfgrnowmusbkbiea.supabase.co')throw new Error('Origem externa inesperada para a foto: leitura bloqueada.');
+        const response=await fetch(u.href,{headers:{Range:'bytes=0-31'},cache:'no-store'});
+        if(!response.ok){
+          lines.push('Leitura real de foto: HTTP '+response.status);
+          errors.push('Arquivo não abriu: HTTP '+response.status);
+        }else{
+          lines.push('Leitura real de foto: APROVADA (HTTP '+response.status+')');
+        }
+        try{await response.body?.cancel();}catch(_){}
+      }
+    }
+    lines.push('','RESULTADO: '+(errors.length?'REVISÃO NECESSÁRIA':'APROVADO'));
+    if(errors.length)lines.push('Revise: '+errors.join('; '));
+    paint(result,lines.join('\n'),!errors.length);
+  }catch(e){paint(result,'TESTE NÃO CONCLUÍDO: '+(e?.message||e),false)}
 }
 document.getElementById('loginBtn').onclick=async()=>{
   const btn=document.getElementById('loginBtn');btn.disabled=true;
@@ -57,7 +96,7 @@ document.getElementById('loginBtn').onclick=async()=>{
     const sb=await window.OBRIX_BACKEND.init();
     const {data,error}=await sb.auth.signInWithPassword({email:document.getElementById('email').value.trim(),password:document.getElementById('password').value});
     if(error||!data?.session)throw error||new Error('Sessão não criada.');
-    loginCard.classList.add('hidden');resultCard.classList.remove('hidden');
+    document.getElementById('password').value='';loginCard.classList.add('hidden');resultCard.classList.remove('hidden');
     await runCheck();
   }catch(e){paint(loginStatus,'Erro: '+e.message,false)}finally{btn.disabled=false}
 };
