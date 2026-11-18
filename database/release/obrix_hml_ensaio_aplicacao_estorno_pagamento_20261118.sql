@@ -108,7 +108,7 @@ begin
     'periodo_concedido_fim', v_fim
   );
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.obrix_reverter_pagamento_assinatura_hml_ensaio(p_pagamento_id uuid, p_motivo text DEFAULT NULL::text)
@@ -221,7 +221,7 @@ begin
     'novo_periodo_fim', v_novo_fim
   );
 end;
-$function$
+$function$;
 
 
 REVOKE ALL ON FUNCTION private.obrix_aplicar_pagamento_assinatura_hml_ensaio(uuid) FROM PUBLIC, anon, authenticated;
