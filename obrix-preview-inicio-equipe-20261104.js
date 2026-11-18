@@ -502,8 +502,8 @@ function renderEquipe(){
   if(listaFuncionarios.__obpUltimoHtml!==funcionariosHtml){listaFuncionarios.innerHTML=funcionariosHtml;listaFuncionarios.__obpUltimoHtml=funcionariosHtml}
   const f=acharFunc(selecionado);
   const detalhe=$('obpDetalhe'),diretorio=$('obpTeamDirectory');
-  if(!f){diretorio.hidden=false;detalhe.hidden=true;detalhe.innerHTML='';sec.classList.remove('obp-team-selected');return}
-  diretorio.hidden=true;detalhe.hidden=false;sec.classList.add('obp-team-selected');
+  if(!f){diretorio.hidden=false;detalhe.hidden=true;detalhe.innerHTML='';sec.classList.remove('obp-team-selected');delete document.documentElement.dataset.obrixEquipeDetalheAtivo;return}
+  diretorio.hidden=true;sec.classList.add('obp-team-selected');
   const r=resumoEquipe(f);
   const base=String(f.tipo_pagamento)==='mes'?Number(f.salario_mensal||0):Number(f.valor_diaria||0);
   const totalPago=window.OBRIX_EQUIPE_TOTAL_PAGO?.get?.(f.id);
@@ -561,6 +561,8 @@ function renderEquipe(){
     detalhe.__obpEmployeeId=String(f.id);
     detalhe.__obpLastHtml=detalheHtml;
   }
+  // Só tornar visível a ficha depois que a seta de voltar estiver montada.
+  detalhe.hidden=false;
   obpAtualizarFaltas(f.id);
 }
 
@@ -867,6 +869,8 @@ async function cliqueEquipe(e){
       rolagem:window.scrollY||document.documentElement.scrollTop||0,
       topo:atual?.getBoundingClientRect().top||0
     };
+    // Oculte a seta global antes de alterar a tela, sem esperar o observer.
+    document.documentElement.dataset.obrixEquipeDetalheAtivo='1';
     selecionado=String(t.dataset.teamId);renderEquipe();
     window.scrollTo({top:0,behavior:'instant'});return;
   }
