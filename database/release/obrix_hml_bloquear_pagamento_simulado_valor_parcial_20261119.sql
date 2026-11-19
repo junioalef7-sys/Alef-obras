@@ -127,7 +127,7 @@ begin
     'periodo_concedido_fim', v_fim
   );
 end;
-$function$
+$function$;
 
 REVOKE ALL ON FUNCTION private.obrix_aplicar_pagamento_assinatura_hml_ensaio(uuid)
   FROM PUBLIC, anon, authenticated;
