@@ -35,6 +35,12 @@ function mount(sb,perfil){
     resposta_sem_token:'Servidor respondeu, mas não forneceu token válido',
     falha_na_conexao_ou_certificado:'Falha de conexão ou certificado — verificar configuração',
     certificado_ou_chave_invalida:'Certificado ou chave privada com formato inválido',
+    certificado_ou_chave_ilegivel:'Certificado ou chave privada não puderam ser lidos pelo servidor',
+    chave_nao_corresponde_ao_certificado:'A chave privada não corresponde ao certificado — verificar o par',
+    falha_ao_inicializar_cliente_tls:'Falha ao iniciar conexão segura no Supabase — verificar compatibilidade do runtime',
+    falha_na_conexao_tls_com_efi:'Não foi possível estabelecer a conexão TLS com a Efí',
+    tempo_limite_na_conexao_tls:'A conexão TLS com a Efí excedeu o tempo limite',
+    erro_ao_interpretar_resposta_oauth:'Falha ao interpretar resposta da Efí',
     configuracao_pix_incompleta:'Faltam credenciais ou certificado Pix',
     configuracao_cobrancas_incompleta:'Faltam credenciais de Cobranças',
     endereco_de_homologacao_incorreto:'Endereço incorreto para homologação'
