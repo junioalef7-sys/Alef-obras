@@ -39,9 +39,10 @@ function mount(sb,perfil){
       makeRow('Endereço Pix de homologação',pix.enderecoDeHomologacaoCorreto);
       makeRow('Certificado Pix de teste',pix.certificadoConfigurado);
       makeRow('Chave Pix de teste',pix.chavePixConfigurada);
-      makeRow('Credenciais OAuth',pix.credenciaisConfiguradas);
+      makeRow('Credenciais OAuth — Pix',pix.credenciaisConfiguradas);
       makeRow('Proteção do webhook Pix',pix.protecaoWebhookConfigurada);
       makeRow('Boletos — configuração básica',bol.prontoParaTesteDeAutenticacao);
+      makeRow('Credenciais OAuth — Cobranças',bol.credenciaisConfiguradas);
       makeRow('Endereço de cobranças',bol.enderecoDeHomologacaoCorreto);
       makeRow('Proteção do webhook de cobranças',bol.protecaoWebhookConfigurada);
       result.append(add('p','Importante: este resultado confirma apenas a presença das configurações. A autenticação real com a Efí ainda depende de um teste separado.'));
