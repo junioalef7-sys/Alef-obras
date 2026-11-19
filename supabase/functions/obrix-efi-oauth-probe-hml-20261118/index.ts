@@ -18,7 +18,7 @@ function respond(body:unknown,status=200){
   return new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json; charset=utf-8'}})
 }
 const env=(name:string)=>String(Deno.env.get(name)||'').trim()
-const pem=(name:string)=>env(name).replace(/\\n/g,'\n')
+const pem=(name:string)=>env(name).replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\r\n/g,'\n')
 function basic(id:string,secret:string){
   return 'Basic '+btoa(id+':'+secret)
 }
@@ -31,27 +31,33 @@ function failFromError(_e:unknown):Resultado{
   // Não incluir e.message: exceções TLS/network podem trazer dados sensíveis.
   return {ok:false,estado:'falha_na_conexao_ou_certificado'}
 }
+function validarBlocoPem(texto:string,tipo:'CERTIFICATE'|'PRIVATE KEY',prefixo:string):string{
+  const inicio='-----BEGIN '+tipo+'-----'
+  const fim='-----END '+tipo+'-----'
+  const posInicio=texto.indexOf(inicio)
+  if(posInicio<0)return prefixo+'_sem_cabecalho'
+  const posFim=texto.indexOf(fim,posInicio+inicio.length)
+  if(posFim<0)return prefixo+'_sem_rodape'
+  const payload=texto.slice(posInicio+inicio.length,posFim).replace(/\\s+/g,'')
+  if(payload.length<160)return prefixo+'_incompleto'
+  if(!/^[A-Za-z0-9+/]*={0,2}$/.test(payload))return prefixo+'_caracteres_invalidos'
+  if(payload.length%4!==0)return prefixo+'_base64_incompleto'
+  try{
+    const der=atob(payload)
+    if(der.length<100||der.charCodeAt(0)!==0x30)return prefixo+'_der_invalido'
+  }catch{return prefixo+'_base64_ilegivel'}
+  return 'ok'
+}
 function verificarEstruturaPem(cert:string,key:string):string{
-  // Validação local de formato, sem devolver conteúdo.
-  // O cliente Deno precisa de chave PKCS#8: BEGIN PRIVATE KEY.
+  // Retorna somente classes de erro: NUNCA retorna Base64, partes do PEM
+  // ou valores das variáveis de ambiente.
   if(/-----BEGIN (?:RSA|EC) PRIVATE KEY-----/.test(key))
-    return 'formato_chave_privada_legado';
+    return 'formato_chave_privada_legado'
   if(!key.includes('-----BEGIN PRIVATE KEY-----'))
-    return 'chave_privada_sem_cabecalho_pkcs8';
-  const valid=(pem:string,tipo:string)=>{
-    const re=new RegExp('-----BEGIN '+tipo+'-----\\s*([A-Za-z0-9+/=\\s]+?)\\s*-----END '+tipo+'-----');
-    const block=re.exec(pem)
-    if(!block)return false;
-    const b64=block[1].replace(/\s+/g,'');
-    if(b64.length<160||b64.length%4!==0)return false;
-    try{
-      const bytes=atob(b64);
-      return bytes.length>=100 && bytes.charCodeAt(0)===0x30;
-    }catch{return false;}
-  };
-  if(!valid(cert,'CERTIFICATE'))return 'certificado_pem_com_formato_invalido';
-  if(!valid(key,'PRIVATE KEY'))return 'chave_privada_pem_com_formato_invalido';
-  return 'ok';
+    return 'chave_privada_sem_cabecalho_pkcs8'
+  const c=validarBlocoPem(cert,'CERTIFICATE','certificado')
+  if(c!=='ok')return c
+  return validarBlocoPem(key,'PRIVATE KEY','chave_privada')
 }
 function verificarParQuandoSuportado(cert:string,key:string):string{
   // O node:crypto no Supabase Edge pode ter métodos X509 indisponíveis.
