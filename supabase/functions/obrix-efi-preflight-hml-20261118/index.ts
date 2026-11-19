@@ -52,22 +52,23 @@ Deno.serve(async (req: Request) => {
     }
 
     // Somente nomes e flags: valores/segredos nunca saem deste processo.
-    const credenciais = Boolean(env("EFI_CLIENT_ID") && env("EFI_CLIENT_SECRET"));
+    const pixCredenciais = Boolean(env("EFI_PIX_CLIENT_ID") && env("EFI_PIX_CLIENT_SECRET"));
+    const cobrancasCredenciais = Boolean(env("EFI_COBRANCAS_CLIENT_ID") && env("EFI_COBRANCAS_CLIENT_SECRET"));
     const pixAmbiente = onlySandbox(env("EFI_PIX_BASE_URL"), PIX_HOST);
     const cobrancasAmbiente = onlySandbox(env("EFI_COBRANCAS_BASE_URL"), COB_HOST);
     const certificadoPix = Boolean(env("EFI_PIX_CERT_PEM") && env("EFI_PIX_KEY_PEM"));
     const chavePix = Boolean(env("EFI_PIX_CHAVE"));
     const webhookPix = Boolean(env("EFI_WEBHOOK_HMAC"));
     const webhookCobrancas = Boolean(env("EFI_COBRANCAS_WEBHOOK_HMAC"));
-    const pixPronto = credenciais && pixAmbiente && certificadoPix && chavePix && webhookPix;
-    const boletoPronto = credenciais && cobrancasAmbiente && webhookCobrancas;
+    const pixPronto = pixCredenciais && pixAmbiente && certificadoPix && chavePix && webhookPix;
+    const boletoPronto = cobrancasCredenciais && cobrancasAmbiente && webhookCobrancas;
     return json({
       ok: true,
       ambiente: "homologacao_isolada",
       verificaSomentePresenca: true,
       pix: {
         prontoParaTesteDeAutenticacao: pixPronto,
-        credenciaisConfiguradas: credenciais,
+        credenciaisConfiguradas: pixCredenciais,
         enderecoDeHomologacaoCorreto: pixAmbiente,
         certificadoConfigurado: certificadoPix,
         chavePixConfigurada: chavePix,
@@ -75,7 +76,7 @@ Deno.serve(async (req: Request) => {
       },
       boleto: {
         prontoParaTesteDeAutenticacao: boletoPronto,
-        credenciaisConfiguradas: credenciais,
+        credenciaisConfiguradas: cobrancasCredenciais,
         enderecoDeHomologacaoCorreto: cobrancasAmbiente,
         protecaoWebhookConfigurada: webhookCobrancas
       },
