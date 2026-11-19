@@ -19,6 +19,22 @@ function respond(body:unknown,status=200){
 }
 const env=(name:string)=>String(Deno.env.get(name)||'').trim()
 const pem=(name:string)=>env(name).replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\r\n/g,'\n')
+function certificadoPix(){
+  // Alternativa de homologação para entrada multilinha no Dashboard:
+  // certificado PÚBLICO PEM codificado numa única linha Base64.
+  const unico=env('EFI_PIX_CERT_B64')
+  if(!unico)return {cert:pem('EFI_PIX_CERT_PEM'),erro:''}
+  try{
+    if(unico.length>32768||!/^[A-Za-z0-9+/]*={0,2}$/.test(unico)||unico.length%4!==0)
+      return {cert:'',erro:'certificado_codificacao_invalida'}
+    const binario=atob(unico)
+    const bytes=Uint8Array.from(binario,caractere=>caractere.charCodeAt(0))
+    const cert=new TextDecoder('utf-8',{fatal:true}).decode(bytes).replace(/\r\n/g,'\n').trim()
+    return {cert,erro:''}
+  }catch{
+    return {cert:'',erro:'certificado_codificacao_invalida'}
+  }
+}
 function basic(id:string,secret:string){
   return 'Basic '+btoa(id+':'+secret)
 }
@@ -78,7 +94,9 @@ function verificarParQuandoSuportado(cert:string,key:string):string{
 async function testarPix():Promise<Resultado>{
   if(env('EFI_PIX_BASE_URL')!==PIX)return {ok:false,estado:'endereco_de_homologacao_incorreto'}
   const id=env('EFI_PIX_CLIENT_ID'),secret=env('EFI_PIX_CLIENT_SECRET')
-  const cert=pem('EFI_PIX_CERT_PEM'),key=pem('EFI_PIX_KEY_PEM')
+  const dadosCert=certificadoPix()
+  if(dadosCert.erro)return {ok:false,estado:dadosCert.erro}
+  const cert=dadosCert.cert,key=pem('EFI_PIX_KEY_PEM')
   if(!id||!secret||!cert||!key)return {ok:false,estado:'configuracao_pix_incompleta'}
   // Identificar separadamente certificado e chave; a validação estrutural
   // abaixo retorna o motivo sem expor os conteúdos dos segredos.
