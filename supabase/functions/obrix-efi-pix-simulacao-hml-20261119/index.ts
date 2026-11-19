@@ -81,7 +81,7 @@ Deno.serve(async (req:Request)=>{
   let body:any=null
   try{body=await req.json()}catch{return result({ok:false,erro:'JSON inválido'},400)}
   const action=String(body?.acao||'')
-  if(action!=='criar'&&action!=='consultar')return result({ok:false,erro:'Ação inválida'},400)
+  if(!['criar','consultar','webhook-status'].includes(action))return result({ok:false,erro:'Ação inválida'},400)
   const admin=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}})
   try{
     const {data:u,error:e}=await admin.auth.getUser(tokenJwt)
@@ -116,6 +116,31 @@ Deno.serve(async (req:Request)=>{
       if(!auth.ok||!data?.access_token)
         return result({ok:false,erro:errorCategory(auth.status)},502)
       const accessToken=String(data.access_token)
+      // Inspeciona apenas a configuração atual do webhook Efí. NÃO cadastra,
+      // substitui nem remove URLs. Nunca devolve webhookUrl ou chave Pix.
+      if(action==='webhook-status'){
+        const check=await efirequest(client,accessToken,'GET',
+          '/v2/webhook/'+encodeURIComponent(chavePix))
+        if(check.status===404)
+          return result({ok:true,ambiente:'homologacao',acao:'webhook-status',
+            configuracao:'nao_configurado',assinaturaAlterada:false})
+        if(check.status===403)
+          return result({ok:false,erro:'sem_permissao_webhook_read'},403)
+        if(!check.ok)
+          return result({ok:false,erro:'falha_consulta_webhook_pix'},502)
+        const raw=String(check.data?.webhookUrl||'')
+        if(!raw)
+          return result({ok:false,erro:'resposta_webhook_sem_url'},502)
+        let hostAtual=''
+        try{hostAtual=new URL(raw).hostname}catch{
+          return result({ok:false,erro:'endereco_webhook_invalido'},502)
+        }
+        return result({ok:true,ambiente:'homologacao',acao:'webhook-status',
+          configuracao:hostAtual===HML_REF+'.supabase.co'
+            ?'configurado_no_projeto_isolado':'configurado_em_outro_endereco',
+          assinaturaAlterada:false,
+          mensagem:'Consulta somente leitura. Nenhuma configuração da Efí foi alterada.'})
+      }
       const txid=await txidFor(u.user.id,String(p.empresa_id))
       const path='/v2/cob/'+txid
       let resposta=await efirequest(client,accessToken,'GET',path)
