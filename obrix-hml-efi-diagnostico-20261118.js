@@ -61,7 +61,38 @@ function mount(sb,perfil){
   }
   createTrial.onclick=()=>testarTrial('criar');
   checkTrial.onclick=()=>testarTrial('consultar');
-  trialArea.append(trialTitle,trialNote,createTrial,checkTrial,trialResult);
+  const webhookTitle=add('h4','Webhook Pix — verificar configuração');
+  webhookTitle.style.cssText='margin:20px 0 6px;font-size:16px';
+  const webhookInfo=add('p','Consulta somente leitura para identificar se já existe uma URL de webhook vinculada à chave Pix da Efí. Não cadastra, altera ou remove webhooks.');
+  webhookInfo.style.cssText='font-size:14px;line-height:1.5';
+  const webhookCheck=add('button','Consultar webhook Pix cadastrado');
+  webhookCheck.type='button';webhookCheck.className='btn';
+  webhookCheck.style.cssText='margin:5px 0;padding:11px 12px;border:1px solid #64748b;border-radius:10px;background:#223146;color:#fff;font-weight:700';
+  const webhookOutput=add('p','');webhookOutput.setAttribute('role','status');
+  webhookOutput.setAttribute('aria-live','polite');
+  webhookOutput.style.cssText='margin:8px 0;font-size:14px;line-height:1.5';
+  webhookCheck.addEventListener('click',async()=>{
+    if(webhookCheck.disabled)return;
+    webhookCheck.disabled=true;webhookOutput.textContent='Consultando a configuração existente na Efí...';
+    try{
+      const {data,error}=await sb.functions.invoke('obrix-efi-pix-simulacao-hml-20261119',{body:{acao:'webhook-status'}});
+      if(error||!data?.ok)throw Error(String(data?.erro||error?.message||'Falha na consulta'));
+      if(data.ambiente!=='homologacao'||data.acao!=='webhook-status'||data.assinaturaAlterada!==false)
+        throw Error('Resposta fora da homologação');
+      webhookOutput.textContent=({
+        nao_configurado:'Nenhum webhook Pix cadastrado para esta chave no ambiente de teste.',
+        configurado_no_projeto_isolado:'Existe um webhook Pix apontando para o Supabase isolado. Entrega mTLS e eventos ainda não testados.',
+        configurado_em_outro_endereco:'Existe um webhook Pix apontando para outro endereço. Não substituir sem revisão.'
+      })[data.configuracao]||'Configuração não reconhecida.';
+    }catch(err){
+      const code=String(err?.message||'Falha na consulta');
+      webhookOutput.textContent=code==='sem_permissao_webhook_read'
+        ?'O aplicativo Efí não tem permissão webhook.read para esta consulta.'
+        :'PENDENTE — '+code;
+    }finally{webhookCheck.disabled=false}
+  });
+  trialArea.append(trialTitle,trialNote,createTrial,checkTrial,trialResult,
+    webhookTitle,webhookInfo,webhookCheck,webhookOutput);
   box.append(h,p,btn,result,authBtn,authResult,trialArea);
   status.insertAdjacentElement('afterend',box);
   const statusText=estado=>({
