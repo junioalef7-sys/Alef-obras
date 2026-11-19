@@ -38,7 +38,7 @@ function validarBlocoPem(texto:string,tipo:'CERTIFICATE'|'PRIVATE KEY',prefixo:s
   if(posInicio<0)return prefixo+'_sem_cabecalho'
   const posFim=texto.indexOf(fim,posInicio+inicio.length)
   if(posFim<0)return prefixo+'_sem_rodape'
-  const payload=texto.slice(posInicio+inicio.length,posFim).replace(/\\s+/g,'')
+  const payload=texto.slice(posInicio+inicio.length,posFim).replace(/\s+/g,'')
   if(payload.length<160)return prefixo+'_incompleto'
   if(!/^[A-Za-z0-9+/]*={0,2}$/.test(payload))return prefixo+'_caracteres_invalidos'
   if(payload.length%4!==0)return prefixo+'_base64_incompleto'
