@@ -12,7 +12,7 @@ function baseUrl(){
   return 'https://cobrancas-h.api.efipay.com.br'
 }
 async function authToken(base:string){
-  const basic=btoa(`${required('EFI_CLIENT_ID')}:${required('EFI_CLIENT_SECRET')}`)
+  const basic=btoa(`${required('EFI_COBRANCAS_CLIENT_ID')}:${required('EFI_COBRANCAS_CLIENT_SECRET')}`)
   const r=await fetch(`${base}/v1/authorize`,{method:'POST',headers:{Authorization:`Basic ${basic}`,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({grant_type:'client_credentials'})})
   const d=await r.json().catch(()=>({}))
   if(!r.ok||!d?.access_token)throw new Error(`Falha na autenticação Efí Cobranças (${r.status}).`)
