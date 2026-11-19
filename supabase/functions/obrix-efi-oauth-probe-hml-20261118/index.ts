@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'npm:@supabase/supabase-js@2.118.0'
+import { X509Certificate, createPrivateKey, createPublicKey } from 'node:crypto'
 
 // OBRIX | Homologação isolada | Teste apenas OAuth; não gera cobranças.
 // Nenhuma credencial, certificado, chave privada ou access_token sai na resposta.
@@ -30,6 +31,19 @@ function failFromError(_e:unknown):Resultado{
   // Não incluir e.message: exceções TLS/network podem trazer dados sensíveis.
   return {ok:false,estado:'falha_na_conexao_ou_certificado'}
 }
+function verificarPar(cert:string,key:string):string{
+  // Comparar certificados e chaves dentro da Edge Function. Não logar nem
+  // retornar dados dos segredos.
+  try{
+    const pubCert=new Uint8Array(new X509Certificate(cert).publicKey.export({format:'der',type:'spki'}))
+    const privada=createPrivateKey(key)
+    const pubKey=new Uint8Array(createPublicKey(privada).export({format:'der',type:'spki'}))
+    if(pubCert.length!==pubKey.length)return 'chave_nao_corresponde_ao_certificado'
+    let diff=0
+    for(let i=0;i<pubCert.length;i++)diff|=pubCert[i]^pubKey[i]
+    return diff===0?'ok':'chave_nao_corresponde_ao_certificado'
+  }catch{return 'certificado_ou_chave_ilegivel'}
+}
 async function testarPix():Promise<Resultado>{
   if(env('EFI_PIX_BASE_URL')!==PIX)return {ok:false,estado:'endereco_de_homologacao_incorreto'}
   const id=env('EFI_PIX_CLIENT_ID'),secret=env('EFI_PIX_CLIENT_SECRET')
@@ -39,9 +53,13 @@ async function testarPix():Promise<Resultado>{
      !/-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/.test(key)){
     return {ok:false,estado:'certificado_ou_chave_invalida'}
   }
+  const par=verificarPar(cert,key)
+  if(par!=='ok')return {ok:false,estado:par}
   let client:Deno.HttpClient|null=null
+  let etapa='inicializar_cliente_tls'
   try{
     client=Deno.createHttpClient({cert,key})
+    etapa='conectar_ao_servidor_pix'
     const resp=await fetch(PIX+'/oauth/token',{
       method:'POST',client,
       headers:{
@@ -52,13 +70,21 @@ async function testarPix():Promise<Resultado>{
       body:JSON.stringify({grant_type:'client_credentials'}),
       signal:AbortSignal.timeout(12000)
     })
+    etapa='interpretar_resposta_oauth'
     if(!resp.ok)return {ok:false,estado:classify(resp.status)}
     const data=await resp.json().catch(()=>null)
     return data && typeof data.access_token==='string' && data.access_token.length>10
       ?{ok:true,estado:'autenticacao_confirmada'}
       :{ok:false,estado:'resposta_sem_token'}
-  }catch(e){return failFromError(e)}
-  finally{try{client?.close()}catch{/* close is best effort */}}
+  }catch(e){
+    // Somente a etapa, jamais Error.message, stack ou conteúdo dos Secrets.
+    return {ok:false,estado:
+      etapa==='inicializar_cliente_tls'?'falha_ao_inicializar_cliente_tls':
+      etapa==='conectar_ao_servidor_pix'?
+        (e instanceof DOMException && e.name==='TimeoutError'?
+          'tempo_limite_na_conexao_tls':'falha_na_conexao_tls_com_efi'):
+      'erro_ao_interpretar_resposta_oauth'}
+  }finally{try{client?.close()}catch{/* melhor esforço */}}
 }
 async function testarCobrancas():Promise<Resultado>{
   if(env('EFI_COBRANCAS_BASE_URL')!==COB)return {ok:false,estado:'endereco_de_homologacao_incorreto'}
