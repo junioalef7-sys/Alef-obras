@@ -80,10 +80,8 @@ async function testarPix():Promise<Resultado>{
   const id=env('EFI_PIX_CLIENT_ID'),secret=env('EFI_PIX_CLIENT_SECRET')
   const cert=pem('EFI_PIX_CERT_PEM'),key=pem('EFI_PIX_KEY_PEM')
   if(!id||!secret||!cert||!key)return {ok:false,estado:'configuracao_pix_incompleta'}
-  if(!cert.includes('-----BEGIN CERTIFICATE-----') ||
-     !/-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/.test(key)){
-    return {ok:false,estado:'certificado_ou_chave_invalida'}
-  }
+  // Identificar separadamente certificado e chave; a validação estrutural
+  // abaixo retorna o motivo sem expor os conteúdos dos segredos.
   const estrutura=verificarEstruturaPem(cert,key)
   if(estrutura!=='ok')return {ok:false,estado:estrutura}
   const par=verificarParQuandoSuportado(cert,key)
