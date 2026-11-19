@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'npm:@supabase/supabase-js@2.118.0'
+import { timingSafeEqual } from 'node:crypto'
 
 function required(name:string){const v=(Deno.env.get(name)||'').trim();if(!v)throw new Error(`${name} não configurado.`);return v}
 function baseUrl(){
@@ -17,13 +18,12 @@ async function authToken(base:string){
   if(!r.ok||!d?.access_token)throw new Error(`Falha na autenticação Efí Cobranças (${r.status}).`)
   return String(d.access_token)
 }
-async function webhookHmac(serviceKey:string){
-  const configured=(Deno.env.get('EFI_COBRANCAS_WEBHOOK_HMAC')||'').trim()
-  if(configured)return configured
-  const enc=new TextEncoder(),key=await crypto.subtle.importKey('raw',enc.encode(serviceKey),{name:'HMAC',hash:'SHA-256'},false,['sign'])
-  const sig=await crypto.subtle.sign('HMAC',key,enc.encode('OBRIX_EFI_COBRANCAS_WEBHOOK_V1'))
-  return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('')
+function safeEqual(a:string,b:string){
+  const aa=new TextEncoder().encode(a),bb=new TextEncoder().encode(b)
+  return aa.length===bb.length && timingSafeEqual(aa,bb)
 }
+function webhookHmac(){return required('EFI_COBRANCAS_WEBHOOK_HMAC')}
+
 function mapStatus(s:string){
   switch(String(s||'').toLowerCase()){
     case 'paid': return 'aprovado'
@@ -54,16 +54,22 @@ async function extractNotification(req:Request){
 }
 
 Deno.serve(async(req:Request)=>{
-  if(req.method!=='POST')return new Response('ok',{status:200})
+  if(req.method!=='POST')return new Response('Método não permitido',{status:405})
   const supabaseUrl=Deno.env.get('SUPABASE_URL')!,serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   // Fail closed: função exclusiva do projeto de homologação isolado.
   if(new URL(supabaseUrl).hostname!=='xavwkfgrnowmusbkbiea.supabase.co') return new Response('Ambiente isolado obrigatório',{status:503})
   if(!serviceKey) return new Response('Configuração indisponível',{status:503})
-  const expected=await webhookHmac(serviceKey),got=new URL(req.url).searchParams.get('hmac')||''
-  if(!got||got!==expected)return new Response('unauthorized',{status:401})
+  let expected=''
+  try{expected=webhookHmac()}catch{return new Response('Webhook não configurado',{status:503})}
+  const got=new URL(req.url).searchParams.get('hmac')||''
+  if(!got||!safeEqual(got,expected))return new Response('unauthorized',{status:401})
   const notification=await extractNotification(req)
-  if(!notification)return new Response('ok',{status:200})
+  if(!notification)return new Response('Token ausente',{status:400})
   const admin=createClient(supabaseUrl,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}})
+  // Guardar antes do GET: para a Efí, consultar o token equivale a recebê-lo.
+  const {data:novo,error:reserveError}=await admin.rpc('obrix_hml_efi_reservar_notificacao',{p_token:notification})
+  if(reserveError)return new Response('Não foi possível registrar notificação',{status:503})
+  if(!novo)return new Response(null,{status:204})
   try{
     const base=baseUrl(),token=await authToken(base)
     const r=await fetch(`${base}/v1/notification/${encodeURIComponent(notification)}`,{headers:{Authorization:`Bearer ${token}`,Accept:'application/json'}})
@@ -77,9 +83,12 @@ Deno.serve(async(req:Request)=>{
       const key=String(chargeId),prev=latest.get(key)
       if(!prev||Number(ev?.id||0)>=Number(prev?.id||0))latest.set(key,ev)
     }
+    let pagamentosLocalizados=0
     for(const [chargeId,ev] of latest.entries()){
-      const {data:p}=await admin.from('pagamentos_assinatura').select('id,status,valor,detalhes').eq('provedor','efi').eq('provedor_recurso_tipo','payment_link').eq('provedor_pagamento_id',chargeId).maybeSingle()
+      const {data:p,error:findError}=await admin.from('pagamentos_assinatura').select('id,status,valor,detalhes').eq('provedor','efi').eq('provedor_recurso_tipo','payment_link').eq('provedor_pagamento_id',chargeId).maybeSingle()
+      if(findError)throw new Error('Erro ao localizar cobrança no OBRIX')
       if(!p?.id)continue
+      pagamentosLocalizados++
       const providerStatus=String(ev?.status?.current||'').toLowerCase(),localStatus=mapStatus(providerStatus)
       if(!localStatus)continue
       const expectedCents=Math.round(Number(p.valor)*100),paidValue=ev?.value!=null?Number(ev.value):null
@@ -87,25 +96,31 @@ Deno.serve(async(req:Request)=>{
         throw new Error('Valor confirmado ausente na notificação da Efí; necessária reconciliação')
       }
       if(providerStatus==='paid'&&paidValue!==expectedCents){
-        await admin.from('pagamentos_assinatura').update({status:'rejeitado',detalhes:{...(p.detalhes||{}),notificacao:ev,erro:'Valor confirmado pela Efí diferente do valor esperado.'}}).eq('id',p.id)
-        continue
+        // Divergência financeira não deve ser resolvida marcando o pagamento como rejeitado.
+        throw new Error('Valor confirmado pela Efí diferente do valor esperado: exigir revisão')
       }
+      if(localStatus==='pendente' && ['aprovado','reembolsado','estornado'].includes(p.status))continue
       const update:any={status:localStatus,detalhes:{...(p.detalhes||{}),ultima_notificacao:ev,notification_token:notification}}
       if(localStatus==='aprovado')update.aprovado_em=new Date().toISOString()
-      const {error:ue}=await admin.from('pagamentos_assinatura').update(update).eq('id',p.id)
-      if(ue)throw new Error('Falha ao atualizar status do pagamento')
+      const {data:saved,error:ue}=await admin.from('pagamentos_assinatura').update(update).eq('id',p.id).select('id')
+      if(ue || !Array.isArray(saved) || saved.length!==1)throw new Error('Falha ao atualizar status do pagamento')
       if(localStatus==='aprovado'){
-        const {error:applyError}=await admin.rpc('obrix_aplicar_pagamento_assinatura',{p_pagamento_id:p.id})
+        const {error:applyError}=await admin.rpc('obrix_hml_aplicar_pagamento_assinatura',{p_pagamento_id:p.id})
         if(applyError)throw new Error('Falha ao aplicar o pagamento confirmado')
       }else if(deveReverter(localStatus)){
-        const {error:reverseError}=await admin.rpc('obrix_reverter_pagamento_assinatura',{p_pagamento_id:p.id,p_motivo:`Efí Cobranças: ${providerStatus}`})
+        const {error:reverseError}=await admin.rpc('obrix_hml_reverter_pagamento_assinatura',{p_pagamento_id:p.id,p_motivo:`Efí Cobranças: ${providerStatus}`})
         if(reverseError)throw new Error('Falha ao registrar estorno no sistema')
       }
     }
+    if(latest.size>0 && pagamentosLocalizados===0)throw new Error('Notificação sem cobranças OBRIX correspondentes')
+    const {error:doneError}=await admin.rpc('obrix_hml_efi_finalizar_notificacao',{p_token:notification,p_erro:null})
+    if(doneError)throw new Error('Falha ao concluir notificação no registro interno')
   }catch(e){
-    console.error('Webhook Efí: falha na conciliação',e instanceof Error?e.message:'erro sem detalhes')
-    // Retornar 503 permite que o provedor tente novamente quando suportado.
-    // Um job periódico de conciliação deverá cobrir falhas sem reenvio.
+    const errorMsg=e instanceof Error?e.message:'erro inesperado'
+    console.error('Webhook Efí: falha na conciliação',errorMsg)
+    // Registrar para replay. HTTP 503 isoladamente NÃO garante reenvio pela Efí após GET.
+    const {error:logError}=await admin.rpc('obrix_hml_efi_finalizar_notificacao',{p_token:notification,p_erro:errorMsg})
+    if(logError)console.error('Webhook Efí: falha ao registrar pendência')
     return new Response('Falha temporária na conciliação',{status:503})
   }
   return new Response('ok',{status:200})
