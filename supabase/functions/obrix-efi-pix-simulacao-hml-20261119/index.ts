@@ -125,9 +125,15 @@ Deno.serve(async (req:Request)=>{
           return result({ok:true,ambiente:'homologacao',acao:'webhook-status',
             configuracao:'nao_configurado',assinaturaAlterada:false})
         if(check.status===403)
-          return result({ok:false,erro:'sem_permissao_webhook_read'},403)
-        if(!check.ok)
-          return result({ok:false,erro:'falha_consulta_webhook_pix'},502)
+          return result({ok:false,erro:'sem_permissao_webhook_read',httpEfipay:403},403)
+        if(!check.ok){
+          // Somente codigo HTTP numerico recebido da Efí; nao repassar
+          // corpo de erro, identificadores, URL, chave ou token.
+          const httpEfipay=Number(check.status)
+          return result({ok:false,erro:'falha_consulta_webhook_pix',
+            httpEfipay:Number.isInteger(httpEfipay) && httpEfipay>=400 && httpEfipay<=599
+              ?httpEfipay:null},502)
+        }
         const raw=String(check.data?.webhookUrl||'')
         if(!raw)
           return result({ok:false,erro:'resposta_webhook_sem_url'},502)
