@@ -31,18 +31,43 @@ function failFromError(_e:unknown):Resultado{
   // Não incluir e.message: exceções TLS/network podem trazer dados sensíveis.
   return {ok:false,estado:'falha_na_conexao_ou_certificado'}
 }
-function verificarPar(cert:string,key:string):string{
-  // Comparar certificados e chaves dentro da Edge Function. Não logar nem
-  // retornar dados dos segredos.
+function verificarEstruturaPem(cert:string,key:string):string{
+  // Validação local de formato, sem devolver conteúdo.
+  // O cliente Deno precisa de chave PKCS#8: BEGIN PRIVATE KEY.
+  if(/-----BEGIN (?:RSA|EC) PRIVATE KEY-----/.test(key))
+    return 'formato_chave_privada_legado';
+  if(!key.includes('-----BEGIN PRIVATE KEY-----'))
+    return 'chave_privada_sem_cabecalho_pkcs8';
+  const valid=(pem:string,tipo:string)=>{
+    const re=new RegExp('-----BEGIN '+tipo+'-----\\s*([A-Za-z0-9+/=\\s]+?)\\s*-----END '+tipo+'-----');
+    const block=re.exec(pem)
+    if(!block)return false;
+    const b64=block[1].replace(/\s+/g,'');
+    if(b64.length<160||b64.length%4!==0)return false;
+    try{
+      const bytes=atob(b64);
+      return bytes.length>=100 && bytes.charCodeAt(0)===0x30;
+    }catch{return false;}
+  };
+  if(!valid(cert,'CERTIFICATE'))return 'certificado_pem_com_formato_invalido';
+  if(!valid(key,'PRIVATE KEY'))return 'chave_privada_pem_com_formato_invalido';
+  return 'ok';
+}
+function verificarParQuandoSuportado(cert:string,key:string):string{
+  // O node:crypto no Supabase Edge pode ter métodos X509 indisponíveis.
+  // Se a biblioteca não suportar a análise, não declarar a chave inválida:
+  // o mTLS do Deno será a verificação determinante da conexão.
   try{
     const pubCert=new Uint8Array(new X509Certificate(cert).publicKey.export({format:'der',type:'spki'}))
-    const privada=createPrivateKey(key)
-    const pubKey=new Uint8Array(createPublicKey(privada).export({format:'der',type:'spki'}))
-    if(pubCert.length!==pubKey.length)return 'chave_nao_corresponde_ao_certificado'
-    let diff=0
-    for(let i=0;i<pubCert.length;i++)diff|=pubCert[i]^pubKey[i]
-    return diff===0?'ok':'chave_nao_corresponde_ao_certificado'
-  }catch{return 'certificado_ou_chave_ilegivel'}
+    const priv=createPrivateKey(key)
+    const pubChave=new Uint8Array(createPublicKey(priv).export({format:'der',type:'spki'}))
+    if(pubCert.length!==pubChave.length)return 'chave_nao_corresponde_ao_certificado'
+    let diferenca=0
+    for(let i=0;i<pubCert.length;i++)diferenca|=pubCert[i]^pubChave[i]
+    return diferenca===0?'ok':'chave_nao_corresponde_ao_certificado'
+  }catch{
+    return 'analise_criptografica_indisponivel'
+  }
 }
 async function testarPix():Promise<Resultado>{
   if(env('EFI_PIX_BASE_URL')!==PIX)return {ok:false,estado:'endereco_de_homologacao_incorreto'}
@@ -53,8 +78,13 @@ async function testarPix():Promise<Resultado>{
      !/-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/.test(key)){
     return {ok:false,estado:'certificado_ou_chave_invalida'}
   }
-  const par=verificarPar(cert,key)
-  if(par!=='ok')return {ok:false,estado:par}
+  const estrutura=verificarEstruturaPem(cert,key)
+  if(estrutura!=='ok')return {ok:false,estado:estrutura}
+  const par=verificarParQuandoSuportado(cert,key)
+  if(par==='chave_nao_corresponde_ao_certificado')return {ok:false,estado:par}
+  // Quando a biblioteca de X509 não é compatível, testar mTLS diretamente
+  // com a chave PKCS#8 validada, sem ignorar erros da conexão.
+
   let client:Deno.HttpClient|null=null
   let etapa='inicializar_cliente_tls'
   try{
