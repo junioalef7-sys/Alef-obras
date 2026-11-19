@@ -57,7 +57,7 @@
           const anual=p.periodo==='anual'||p.codigo==='anual';
           return `<div class="card assPlano ${anual?'assDestaque':''}"><div class="assPlanoTop"><h3>${p.nome||p.codigo}</h3>${anual?'<span class="assEconomiaBadge">Economize 17%</span>':''}</div><div class="assPreco">${money(p.valor)}<small>/${anual?'ano':'mês'}</small></div><p class="muted">${p.descricao||''}</p><div class="assPayActions"><button type="button" class="btn obrixPermanentNeutral obrixPayMethod" data-ass-plano="${p.codigo}">Pagar com Pix</button><button type="button" class="btn obrixPermanentNeutral obrixPayMethod" data-ass-boleto="${p.codigo}">Pagar com boleto</button></div></div>`
         }).join('')||'<div class="card muted">Nenhum plano disponível.</div>';
-        htmlEstavel(status,statusHtml);htmlEstavel(planosBox,planosHtml);if(window.__OBRIX_HML_PROJECT_REF==='xavwkfgrnowmusbkbiea')await window.OBRIX_HML_LIMIT_PANEL?.refresh?.(sb,perfil,a);
+        htmlEstavel(status,statusHtml);htmlEstavel(planosBox,planosHtml);if(window.__OBRIX_HML_PROJECT_REF==='xavwkfgrnowmusbkbiea'){await window.OBRIX_HML_LIMIT_PANEL?.refresh?.(sb,perfil,a);window.OBRIX_HML_EFI_DIAGNOSTICO?.mount?.(sb,perfil);}
         planosBox.querySelectorAll('[data-ass-plano]').forEach(btn=>btn.onclick=()=>abrirPagamento(btn.dataset.assPlano));
         planosBox.querySelectorAll('[data-ass-boleto]').forEach(btn=>btn.onclick=()=>abrirBoleto(btn.dataset.assBoleto));
         pagamentoId=localStorage.getItem(K.id)||'';
