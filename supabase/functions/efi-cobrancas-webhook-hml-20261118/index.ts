@@ -83,7 +83,10 @@ Deno.serve(async(req:Request)=>{
       const providerStatus=String(ev?.status?.current||'').toLowerCase(),localStatus=mapStatus(providerStatus)
       if(!localStatus)continue
       const expectedCents=Math.round(Number(p.valor)*100),paidValue=ev?.value!=null?Number(ev.value):null
-      if(providerStatus==='paid'&&paidValue!=null&&paidValue!==expectedCents){
+      if(providerStatus==='paid'&&(!Number.isFinite(paidValue))){
+        throw new Error('Valor confirmado ausente na notificação da Efí; necessária reconciliação')
+      }
+      if(providerStatus==='paid'&&paidValue!==expectedCents){
         await admin.from('pagamentos_assinatura').update({status:'rejeitado',detalhes:{...(p.detalhes||{}),notificacao:ev,erro:'Valor confirmado pela Efí diferente do valor esperado.'}}).eq('id',p.id)
         continue
       }
