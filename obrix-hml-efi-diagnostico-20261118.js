@@ -76,14 +76,30 @@ function mount(sb,perfil){
     webhookCheck.disabled=true;webhookOutput.textContent='Consultando a configuração existente na Efí...';
     try{
       const {data,error}=await sb.functions.invoke('obrix-efi-pix-simulacao-hml-20261119',{body:{acao:'webhook-status'}});
-      if(error||!data?.ok)throw Error(String(data?.erro||error?.message||'Falha na consulta'));
-      if(data.ambiente!=='homologacao'||data.acao!=='webhook-status'||data.assinaturaAlterada!==false)
+      let detalhes=data;
+      if(error && error.context && typeof error.context.json==='function'){
+        try{detalhes=await error.context.json()}catch{/* responder sem segredos */}
+      }
+      if(error||!detalhes?.ok){
+        const erro=String(detalhes?.erro||'consulta_indisponivel');
+        const http=Number(detalhes?.httpEfipay);
+        const httpValid=Number.isInteger(http)&&http>=400&&http<=599?http:null;
+        const mensagens={
+          sem_permissao_webhook_read:'Efí negou a consulta ao webhook (HTTP 403). Verifique a autorização webhook.read.',
+          falha_consulta_webhook_pix:'A Efí retornou erro ao consultar o webhook'+(httpValid?' (HTTP '+httpValid+')':'')+'. A configuração ainda não foi determinada.',
+          resposta_webhook_sem_url:'A Efí respondeu, mas sem o endereço do webhook.',
+          endereco_webhook_invalido:'A Efí retornou um endereço de webhook não reconhecido.',
+          consulta_indisponivel:'A função de consulta não respondeu normalmente. Confira a sessão de homologação.'
+        };
+        throw Error(mensagens[erro]||'Consulta pendente — código de erro não reconhecido.');
+      }
+      if(detalhes.ambiente!=='homologacao'||detalhes.acao!=='webhook-status'||detalhes.assinaturaAlterada!==false)
         throw Error('Resposta fora da homologação');
       webhookOutput.textContent=({
         nao_configurado:'Nenhum webhook Pix cadastrado para esta chave no ambiente de teste.',
         configurado_no_projeto_isolado:'Existe um webhook Pix apontando para o Supabase isolado. Entrega mTLS e eventos ainda não testados.',
         configurado_em_outro_endereco:'Existe um webhook Pix apontando para outro endereço. Não substituir sem revisão.'
-      })[data.configuracao]||'Configuração não reconhecida.';
+      })[detalhes.configuracao]||'Configuração não reconhecida.';
     }catch(err){
       const code=String(err?.message||'Falha na consulta');
       webhookOutput.textContent=code==='sem_permissao_webhook_read'
