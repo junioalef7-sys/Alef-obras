@@ -25,7 +25,44 @@ function mount(sb,perfil){
   const authResult=add('div');
   authResult.setAttribute('role','status');authResult.setAttribute('aria-live','polite');
   authResult.style.cssText='margin-top:10px;white-space:normal;font-size:14px;line-height:1.5';
-  box.append(h,p,btn,result,authBtn,authResult);
+  const trialArea=add('div');
+  trialArea.style.cssText='margin-top:18px;border-top:1px solid #475569;padding-top:12px';
+  const trialTitle=add('h4','Pix simulado — ambiente de homologação');
+  const trialNote=add('p','Teste técnico de uma cobrança simulada de R$ 1,00, sem dinheiro real. Não ativa nenhum plano ou assinatura OBRIX. Repetições reutilizam a mesma cobrança.');
+  trialNote.style.cssText='font-size:14px;line-height:1.55';
+  const createTrial=add('button','Gerar Pix simulado — R$ 1,00');
+  const checkTrial=add('button','Consultar confirmação do Pix de teste');
+  for(const el of [createTrial,checkTrial]){
+    el.type='button';el.className='btn';
+    el.style.cssText='margin:5px 8px 5px 0;padding:11px 12px;border:1px solid #64748b;border-radius:10px;background:#223146;color:#fff;font-weight:700';
+  }
+  const trialResult=add('div');
+  trialResult.style.cssText='margin-top:9px;font-size:14px;line-height:1.5';
+  trialResult.setAttribute('role','status');trialResult.setAttribute('aria-live','polite');
+  const trialStatus={
+    CONCLUIDA:'APROVADO — confirmação simulada da Efí. Nenhuma assinatura foi liberada.',
+    ATIVA:'PENDENTE — cobrança de teste ativa, ainda sem confirmação.',
+    nao_criado:'Ainda não há cobrança simulada para esta conta.'
+  };
+  async function testarTrial(acao){
+    if(createTrial.disabled||checkTrial.disabled)return;
+    createTrial.disabled=true;checkTrial.disabled=true;
+    trialResult.replaceChildren(add('p','Consultando apenas a Efí de homologação...'));
+    try{
+      const {data,error}=await sb.functions.invoke('obrix-efi-pix-simulacao-hml-20261119',{body:{acao}});
+      if(error||!data?.ok)throw Error(String(data?.erro||error?.message||'Falha no teste'));
+      if(data.ambiente!=='homologacao'||data.assinaturaAlterada!==false)
+        throw Error('Resultado fora do ambiente isolado');
+      trialResult.replaceChildren(add('p',trialStatus[data.estado]||('Status do teste: '+String(data.estado||'desconhecido'))));
+      trialResult.append(add('p','Valor de teste: R$ 1,00. Nenhum plano foi ativado.'));
+    }catch(e){
+      trialResult.replaceChildren(add('p','PENDENTE — '+String(e?.message||'Falha na consulta')));
+    }finally{createTrial.disabled=false;checkTrial.disabled=false}
+  }
+  createTrial.onclick=()=>testarTrial('criar');
+  checkTrial.onclick=()=>testarTrial('consultar');
+  trialArea.append(trialTitle,trialNote,createTrial,checkTrial,trialResult);
+  box.append(h,p,btn,result,authBtn,authResult,trialArea);
   status.insertAdjacentElement('afterend',box);
   const statusText=estado=>({
     autenticacao_confirmada:'Conexão autenticada com sucesso',
