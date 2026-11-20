@@ -23,6 +23,35 @@ function requestId(key){
  cache.set(key,id);
  return id;
 }
+// The ledger survives a page refresh in the SAME browser session. A lost
+// HTTP response can be recovered with the original request UUID and rows.
+function pendingKey(company,employee,work,day){
+ return 'obrix:hml:pagamento-pendente:'+JSON.stringify([company,employee,work,day]);
+}
+function pendingRead(key){
+ try{
+  const entry=JSON.parse(sessionStorage.getItem(key)||'null');
+  if(!entry||typeof entry!=='object'||!uuid(entry.operation)||
+     !Number.isFinite(entry.created)||
+     Date.now()-entry.created>48*3600*1000||
+     Date.now()+60000<entry.created)return null;
+  const ids=entry.ids;
+  if(!ids||!Array.isArray(ids.d)||!Array.isArray(ids.v)||!Array.isArray(ids.b))
+   return null;
+  if(![...ids.d,...ids.v,...ids.b].every(uuid)||
+     ids.d.length+ids.v.length+ids.b.length===0||
+     [ids.d.length,ids.v.length,ids.b.length].some(n=>n>100))
+   return null;
+  return entry;
+ }catch{return null}
+}
+function pendingSave(key,operation,signature,ids,expected){
+ try{
+  sessionStorage.setItem(key,JSON.stringify({
+   operation,signature,ids,expected,created:Date.now()
+  }));
+ }catch{/* one-tab fallback: database also blocks reuse of paid entries */}
+}
 api.registrar=async function(payload={}){
  const backend=window.OBRIX_BACKEND;
  if(!backend?.init||!backend?.profile)
@@ -62,18 +91,36 @@ api.registrar=async function(payload={}){
  }
  if(!func.data)return erro('Funcionário autorizado não encontrado.');
  const ds=diarias.data||[],vs=vales.data||[],bs=bonus.data||[];
- const calculo=api.calcular({ds,vs,bs});
- if(calculo.erros?.length)return erro(calculo.erros.join(' '));
- if(payload.esperado!==undefined&&payload.esperado!==null&&
-    Math.round(Number(payload.esperado)*100)!==calculo.liquido)
-  return erro('O valor da folha mudou; abra novamente o pagamento.');
- const ids={
-  d:ds.map(x=>x.id).sort(),
-  v:vs.map(x=>x.id).sort(),
-  b:bs.map(x=>x.id).sort()
+ const currentIds={
+  d:ds.map(x=>x.id).sort(),v:vs.map(x=>x.id).sort(),b:bs.map(x=>x.id).sort()
  };
- const signature=JSON.stringify([company,employee,work,day,ids]);
- const operation=requestId(signature);
+ const rowCount=currentIds.d.length+currentIds.v.length+currentIds.b.length;
+ const ledgerKey=pendingKey(company,employee,work,day);
+ const previous=pendingRead(ledgerKey);
+ let ids=currentIds;
+ let signature=JSON.stringify([company,employee,work,day,currentIds]);
+ let operation;
+ if(rowCount===0&&previous){
+  // Lost response recovery only. Re-run the same request; DB returns the
+  // previous payment or rejects records no longer available.
+  if(payload.esperado!==undefined&&payload.esperado!==null&&
+     Math.round(Number(payload.esperado)*100)!==previous.expected)
+   return erro('Valor do pagamento anterior divergente. Consulte o histórico.');
+  ids=previous.ids;
+  signature=JSON.stringify([company,employee,work,day,ids]);
+  if(signature!==previous.signature)
+   return erro('Identificador de reenvio inconsistente. Consulte o histórico.');
+  operation=previous.operation;
+ }else{
+  const calculo=api.calcular({ds,vs,bs});
+  if(calculo.erros?.length)return erro(calculo.erros.join(' '));
+  if(payload.esperado!==undefined&&payload.esperado!==null&&
+     Math.round(Number(payload.esperado)*100)!==calculo.liquido)
+   return erro('O valor da folha mudou; abra novamente o pagamento.');
+  operation=requestId(signature);
+  // Write *before* calling the RPC, so a lost response remains recoverable.
+  pendingSave(ledgerKey,operation,signature,currentIds,calculo.liquido);
+ }
  const result=await sb.rpc('obrix_hml_pagar_equipe_limitado',{
   p_request_id:operation,
   p_funcionario_id:employee,
@@ -91,7 +138,10 @@ api.registrar=async function(payload={}){
   return erro('Pagamento não confirmado pelo banco. Consulte o histórico.');
  if(data.estornado===true){
   cache.delete(signature);
-  try{sessionStorage.removeItem('obrix:hml:pagamento-limitado:'+signature)}catch{}
+  try{
+   sessionStorage.removeItem('obrix:hml:pagamento-limitado:'+signature);
+   sessionStorage.removeItem(ledgerKey);
+  }catch{}
   return erro('Este pagamento foi estornado. Confira o histórico e confirme novamente se deseja pagar.');
  }
  let valores=data;
