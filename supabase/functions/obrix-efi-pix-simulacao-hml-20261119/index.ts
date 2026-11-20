@@ -126,6 +126,42 @@ Deno.serve(async (req:Request)=>{
             configuracao:'nao_configurado',assinaturaAlterada:false})
         if(check.status===403)
           return result({ok:false,erro:'sem_permissao_webhook_read',httpEfipay:403},403)
+        if(check.status===400){
+          // 400 não é sinônimo de webhook inexistente. Consultar a lista
+          // documentada pela Efí, apenas leitura e sem expor chaves/URLs.
+          const inicio='2026-01-01T00:00:00Z'
+          const fim=new Date().toISOString().slice(0,19)+'Z'
+          const query='/v2/webhook/?inicio='+encodeURIComponent(inicio)+
+            '&fim='+encodeURIComponent(fim)
+          const lista=await efirequest(client,accessToken,'GET',query)
+          if(lista.ok&&Array.isArray(lista.data?.webhooks)){
+            const registro=lista.data.webhooks.find((item:unknown)=>{
+              if(!item||typeof item!=='object')return false
+              return String((item as {chave?:unknown}).chave||'')===chavePix
+            })
+            if(registro){
+              let endereco=''
+              try{endereco=new URL(String(registro.webhookUrl||'')).hostname}
+              catch{return result({ok:false,erro:'endereco_webhook_invalido'},502)}
+              return result({ok:true,ambiente:'homologacao',acao:'webhook-status',
+                fonte:'consulta_lista',configuracao:endereco===HML_REF+'.supabase.co'
+                  ?'configurado_no_projeto_isolado':'configurado_em_outro_endereco',
+                assinaturaAlterada:false})
+            }
+            const paginas=Number(lista.data?.parametros?.paginacao?.quantidadeDePaginas)
+            return result({ok:true,ambiente:'homologacao',acao:'webhook-status',
+              fonte:'consulta_lista',assinaturaAlterada:false,
+              configuracao:'nao_localizado_na_lista',
+              listaCompleta:Number.isInteger(paginas)&&paginas<=1})
+          }
+          const nome=String(check.data?.nome||'').toLowerCase()
+          const classe=['valor_invalido','chave_invalida','webhook_invalido']
+            .includes(nome)?nome:'erro_nao_classificado'
+          return result({ok:false,erro:'falha_consulta_webhook_pix',httpEfipay:400,
+            classificacao:classe,
+            consultaListaHttp:Number.isInteger(Number(lista.status))?
+              Number(lista.status):null},502)
+        }
         if(!check.ok){
           // Somente codigo HTTP numerico recebido da Efí; nao repassar
           // corpo de erro, identificadores, URL, chave ou token.
