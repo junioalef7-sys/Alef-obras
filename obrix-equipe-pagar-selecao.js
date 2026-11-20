@@ -5,7 +5,42 @@ const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'B
 async function aviso(mensagem,titulo='Pagamento da equipe'){if(typeof window.OBRIX_AVISO==='function')return window.OBRIX_AVISO(mensagem,titulo);console.warn('OBRIX:',mensagem)}
 function confirmarPagamento(mensagem){return new Promise(resolve=>{const box=document.createElement('div');box.className='obrixConfirmOverlay obrixPagarConfirmOverlay';box.innerHTML='<div class="obrixConfirmBox" role="dialog" aria-modal="true"><h2>Confirmar pagamento</h2><p></p><div class="obrixConfirmActions"><button type="button" class="obrixConfirmCancel">Cancelar</button><button type="button" class="obrixPagarConfirmar">Confirmar</button></div></div>';box.querySelector('p').textContent=mensagem;let done=false;const key=e=>{if(e.key==='Escape'){e.preventDefault();finish(false)}};function finish(v){if(done)return;done=true;document.removeEventListener('keydown',key,true);box.remove();resolve(v)}box.querySelector('.obrixConfirmCancel').onclick=()=>finish(false);box.querySelector('.obrixPagarConfirmar').onclick=()=>finish(true);box.addEventListener('click',e=>{if(e.target===box)finish(false)});document.body.appendChild(box);document.addEventListener('keydown',key,true);box.querySelector('.obrixConfirmCancel').focus()})}
 function modal(html){const b=document.createElement('div');b.className='modalBack obrix-pagar-back';b.innerHTML=`<div class="modal obrix-pagar-selecao-modal">${html}</div>`;document.body.appendChild(b);b.addEventListener('click',e=>{if(e.target===b)b.remove()});return b}
-async function dadosAbertos(){const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile(),eid=p.empresa_id;const [fr,dr,vr,br]=await Promise.all([sb.from('funcionarios').select('id,nome,ativo').eq('empresa_id',eid).order('nome'),sb.from('diarias').select('*').eq('empresa_id',eid).eq('paga',false).is('cancelada_em',null),sb.from('vales').select('*').eq('empresa_id',eid).eq('quitado',false),sb.from('bonus_extras').select('*').eq('empresa_id',eid).eq('pago',false)]);for(const r of [fr,dr,vr,br])if(r.error)throw r.error;return{sb,eid,funcs:fr.data||[],ds:dr.data||[],vs:vr.data||[],bs:br.data||[]}}
+async function dadosAbertos(){
+ const sb=await OBRIX_BACKEND.init(),p=await OBRIX_BACKEND.profile(),eid=p?.empresa_id;
+ if(!eid)throw Error('Empresa não identificada.');
+ let restricao=null;
+ const host=String(location.hostname||'').toLowerCase();
+ const somenteHml=window.__OBRIX_HML_PROJECT_REF==='xavwkfgrnowmusbkbiea'&&
+   host.startsWith('obrix-restauracao-app-isolado-20261118')&&host.endsWith('.vercel.app');
+ if(somenteHml){
+  if(new URL(sb.supabaseUrl||'https://invalid.invalid').origin!=='https://xavwkfgrnowmusbkbiea.supabase.co')
+   throw Error('A tela de homologação está conectada a outro banco.');
+  const acesso=await sb.rpc('obrix_acesso_total',{p_empresa_id:eid});
+  if(acesso.error||typeof acesso.data!=='boolean')
+   throw Error('Não foi possível verificar a assinatura da conta.');
+  if(acesso.data===false){
+   const escolhido=await sb.from('obrix_hml_limite_selecao')
+    .select('obra_id,funcionario_id').eq('empresa_id',eid).maybeSingle();
+   if(escolhido.error)throw Error('Não foi possível verificar a seleção do plano limitado.');
+   if(!escolhido.data?.obra_id||!escolhido.data?.funcionario_id)
+    throw Error('Plano limitado: selecione uma obra e um funcionário antes de pagar.');
+   restricao=escolhido.data;
+  }
+ }
+ let f=sb.from('funcionarios').select('id,nome,ativo').eq('empresa_id',eid).order('nome');
+ let d=sb.from('diarias').select('*').eq('empresa_id',eid).eq('paga',false).is('cancelada_em',null);
+ let v=sb.from('vales').select('*').eq('empresa_id',eid).eq('quitado',false);
+ let bonus=sb.from('bonus_extras').select('*').eq('empresa_id',eid).eq('pago',false);
+ if(restricao){
+  f=f.eq('id',restricao.funcionario_id);
+  d=d.eq('obra_id',restricao.obra_id).eq('funcionario_id',restricao.funcionario_id);
+  v=v.eq('obra_id',restricao.obra_id).eq('funcionario_id',restricao.funcionario_id).is('estornado_em',null);
+  bonus=bonus.eq('obra_id',restricao.obra_id).eq('funcionario_id',restricao.funcionario_id);
+ }
+ const [fr,dr,vr,br]=await Promise.all([f,d,v,bonus]);
+ for(const r of [fr,dr,vr,br])if(r.error)throw r.error;
+ return{sb,eid,funcs:fr.data||[],ds:dr.data||[],vs:vr.data||[],bs:br.data||[]};
+}
 function calc(base,fid){
  const api=window.OBRIX_LIQUIDACAO_SEGURA;
  const ds=base.ds.filter(x=>String(x.funcionario_id)===String(fid));
