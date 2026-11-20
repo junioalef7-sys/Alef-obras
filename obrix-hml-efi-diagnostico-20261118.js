@@ -84,9 +84,18 @@ function mount(sb,perfil){
         const erro=String(detalhes?.erro||'consulta_indisponivel');
         const http=Number(detalhes?.httpEfipay);
         const httpValid=Number.isInteger(http)&&http>=400&&http<=599?http:null;
+        const httpLista=Number(detalhes?.consultaListaHttp);
+        const httpListaValido=Number.isInteger(httpLista)&&httpLista>=200&&httpLista<=599?httpLista:null;
+        const classificacao=String(detalhes?.classificacao||'');
+        const aviso400=httpValid===400?
+          ' A consulta pela chave foi rejeitada (HTTP 400).'+
+          (httpListaValido?' A consulta alternativa da lista também não retornou uma lista válida (HTTP '+httpListaValido+').':'')+
+          (classificacao==='valor_invalido'||classificacao==='chave_invalida'
+            ?' A Efí indicou parâmetro ou chave inválidos; verificar a chave configurada no ambiente de teste, sem divulgá-la.':''):'';
         const mensagens={
           sem_permissao_webhook_read:'Efí negou a consulta ao webhook (HTTP 403). Verifique a autorização webhook.read.',
-          falha_consulta_webhook_pix:'A Efí retornou erro ao consultar o webhook'+(httpValid?' (HTTP '+httpValid+')':'')+'. A configuração ainda não foi determinada.',
+          falha_consulta_webhook_pix:aviso400 ||
+            'A Efí retornou erro ao consultar o webhook'+(httpValid?' (HTTP '+httpValid+')':'')+'. A configuração ainda não foi determinada.',
           resposta_webhook_sem_url:'A Efí respondeu, mas sem o endereço do webhook.',
           endereco_webhook_invalido:'A Efí retornou um endereço de webhook não reconhecido.',
           consulta_indisponivel:'A função de consulta não respondeu normalmente. Confira a sessão de homologação.'
@@ -98,7 +107,8 @@ function mount(sb,perfil){
       webhookOutput.textContent=({
         nao_configurado:'Nenhum webhook Pix cadastrado para esta chave no ambiente de teste.',
         configurado_no_projeto_isolado:'Existe um webhook Pix apontando para o Supabase isolado. Entrega mTLS e eventos ainda não testados.',
-        configurado_em_outro_endereco:'Existe um webhook Pix apontando para outro endereço. Não substituir sem revisão.'
+        configurado_em_outro_endereco:'Existe um webhook Pix apontando para outro endereço. Não substituir sem revisão.',
+        nao_localizado_na_lista:'A consulta direta foi rejeitada (HTTP 400). A consulta alternativa não localizou a chave Pix no intervalo pesquisado. Isso NÃO confirma ausência de webhook.'
       })[detalhes.configuracao]||'Configuração não reconhecida.';
     }catch(err){
       const code=String(err?.message||'Falha na consulta');
