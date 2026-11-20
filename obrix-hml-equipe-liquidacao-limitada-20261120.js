@@ -89,13 +89,24 @@ api.registrar=async function(payload={}){
  const data=result.data;
  if(data?.ok!==true||!uuid(data.pagamento_id))
   return erro('Pagamento não confirmado pelo banco. Consulte o histórico.');
- if(data.estornado===true)
-  return erro('Este pagamento foi estornado. Atualize os registros antes de tentar novamente.');
+ if(data.estornado===true){
+  cache.delete(signature);
+  try{sessionStorage.removeItem('obrix:hml:pagamento-limitado:'+signature)}catch{}
+  return erro('Este pagamento foi estornado. Confira o histórico e confirme novamente se deseja pagar.');
+ }
+ let valores=data;
+ if(data.ja_registrado===true){
+  const saved=await sb.from('pagamentos_equipe')
+   .select('valor_bruto,valor_vales,valor_liquido')
+   .eq('empresa_id',company).eq('id',data.pagamento_id).maybeSingle();
+  if(saved.error||!saved.data)return erro('Pagamento encontrado, mas não foi possível conferir os valores.');
+  valores=saved.data;
+ }
  return {
   ok:true,id:data.pagamento_id,nome:func.data.nome,
-  bruto:Number(data.valor_bruto||0),vales:Number(data.valor_vales||0),
-  liquido:Number(data.valor_liquido||0),
-  despesasNovas:Number(data.valor_liquido||0),
+  bruto:Number(valores.valor_bruto||0),vales:Number(valores.valor_vales||0),
+  liquido:Number(valores.valor_liquido||0),
+  despesasNovas:Number(valores.valor_liquido||0),
   homologacao:true
  };
 };
