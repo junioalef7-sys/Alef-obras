@@ -91,7 +91,16 @@ async function refresh(sb,perfil,assinatura){
     if(selected||!donos.includes(String(perfil.papel||'')))return;
     let confirmation=false;
     const btn=el('button',simulado?'Simular seleção':'Confirmar seleção','btn');
-    btn.type='button';btn.style.cssText='background:#ea7800;color:white;border:0;border-radius:10px;padding:12px 14px;font-weight:750';
+    btn.type='button';
+    btn.classList.add('obrixHmlLimitConfirm');
+    btn.style.cssText='border:0;border-radius:10px;padding:12px 14px;font-weight:750;min-height:44px';
+    // O layout global possui regras !important que anulam o fundo da classe .btn.
+    // Estas prioridades afetam exclusivamente este botao do painel isolado.
+    for(const [prop,val] of [
+      ['background','#ff5a00'],['background-color','#ff5a00'],['background-image','none'],
+      ['color','#ffffff'],['-webkit-text-fill-color','#ffffff'],['border','0'],
+      ['opacity','1'],['box-shadow','none']
+    ])btn.style.setProperty(prop,val,'important');
     const note=el('div');note.setAttribute('role','status');note.style.marginTop='8px';
     btn.addEventListener('click',async()=>{
       const p_obra_id=escolha.obra_id||obra.value||null;
