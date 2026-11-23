@@ -1,6 +1,19 @@
 (()=>{'use strict';
 if(window.__OBRIX_LOGIN_RESCUE_V2)return;window.__OBRIX_LOGIN_RESCUE_V2=true;
-function obrixRecoveryRedirectUrl(){const host=String(location.hostname||'').toLowerCase();const official=new Set(['alef-obras-obrix3.vercel.app','alef-obras.vercel.app','obrix.junioalef7.workers.dev','junioalef7-sys.github.io']);return official.has(host)?'https://alef-obras-obrix3.vercel.app/obrix.html':new URL('./obrix.html',location.href).href;}
+function obrixRecoveryRedirectUrl(){
+    const host=String(location.hostname||'').toLowerCase();
+    const official=new Set(['alef-obras-obrix3.vercel.app','alef-obras.vercel.app','obrix.junioalef7.workers.dev','junioalef7-sys.github.io']);
+    if(official.has(host))return 'https://alef-obras-obrix3.vercel.app/obrix.html';
+    const redirect=new URL('./obrix.html',location.href);
+    // A pre-visualizacao isolada usa link Vercel protegido e temporario.
+    // Preservar exclusivamente o acesso compartilhado no callback de e-mail,
+    // sem transferir parametros de login/recovery nem alterar o endereco oficial.
+    if(/^obrix-restauracao-app-isolado-20261118[-.]/.test(host)){
+      const share=new URLSearchParams(location.search).get('_vercel_share');
+      if(share&&/^[a-zA-Z0-9_-]{16,128}$/.test(share))redirect.searchParams.set('_vercel_share',share);
+    }
+    return redirect.href;
+  }
  const $=id=>document.getElementById(id),RECOVERY_URL=obrixRecoveryRedirectUrl();let running=false,lastAttempt=0,unsub=null;
 function loginVisible(){const l=$('login');return !!(l&&!l.classList.contains('hidden'))}
 function timeout(p,ms,msg){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg||'Tempo esgotado.')),ms))])}
