@@ -4,6 +4,11 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const pt=e=>window.OBRIX_PT_ERROR?.(e)||e?.message||String(e||'Não foi possível concluir a operação.');
   const hml=()=>window.__OBRIX_HML_PROJECT_REF==='xavwkfgrnowmusbkbiea';
+  // Somente a tela da Preview: nenhum prazo ou registro é modificado no servidor.
+  const previewTrialExpirado=()=>{
+    try{return hml()&&new URLSearchParams(location.search).get('obrix_hml_trial_visual')==='expirado'}
+    catch(_){return false}
+  };
   const K={id:'obrix_efi_pagamento_id',plano:'obrix_efi_pagamento_plano',req:'obrix_efi_request_id',pix:'obrix_efi_pix_copia_cola',qr:'obrix_efi_qr_code',venc:'obrix_efi_pix_vencimento'};
   const KB={id:'obrix_efi_boleto_pagamento_id',plano:'obrix_efi_boleto_plano',req:'obrix_efi_boleto_request_id',url:'obrix_efi_boleto_url',venc:'obrix_efi_boleto_vencimento'};
   let main=null,planoSelecionado='mensal',pagamentoId='',boletoPagamentoId='';
@@ -49,11 +54,12 @@
         ]);
         if(pr.error)throw pr.error;if(sr.error)throw sr.error;
         const a=sr.data?.[0]||null;
+        const simulacaoVisual=previewTrialExpirado()&&a?.status==='teste';
         let statusHtml='';
         const pagamentoVigente=!!(a&&a.status==='ativo'&&(a.plano==='permanente'||((a.plano==='mensal'||a.plano==='anual')&&a.periodo_fim&&new Date(a.periodo_fim).getTime()>Date.now())));
         if(!a)statusHtml='<h3>Assinatura</h3><p class="muted">Nenhuma assinatura encontrada para esta empresa.</p>';
         else if(a.status==='teste'){
-          const dias=diasRestantes(a.trial_fim);
+          const dias=simulacaoVisual?0:diasRestantes(a.trial_fim);
           statusHtml=dias>0?`<h3>Teste grátis</h3><div class="assBig">${dias} dia${dias===1?'':'s'} restante${dias===1?'':'s'}</div><p class="muted">Teste válido até ${fmtDate(a.trial_fim)}. Após o teste, sem pagamento, o acesso fica limitado a 1 obra e 1 funcionário.</p>`:'<h3>Teste encerrado</h3><div class="assBig">Plano limitado</div><p class="muted">É possível usar uma obra e um funcionário. Escolha um plano para recuperar o acesso completo.</p>';
         }else if(a.status==='ativo'&&a.plano==='permanente')
           statusHtml='<h3>Plano permanente</h3><div class="assBig">Acesso completo</div><p class="muted">Sem data de vencimento.</p>';
@@ -68,6 +74,7 @@
             : `<div class="assPayActions"><button type="button" class="btn obrixPermanentNeutral obrixPayMethod" data-ass-plano="${p.codigo}">Pagar com Pix</button><button type="button" class="btn obrixPermanentNeutral obrixPayMethod" data-ass-boleto="${p.codigo}">Pagar com boleto</button></div>`;
           return `<div class="card assPlano ${anual?'assDestaque':''}"><div class="assPlanoTop"><h3>${p.nome||p.codigo}</h3>${anual?'<span class="assEconomiaBadge">Economize 17%</span>':''}</div><div class="assPreco">${money(p.valor)}<small>/${anual?'ano':'mês'}</small></div><p class="muted">${p.descricao||''}</p>${acoesPagamento}</div>`
         }).join('')||'<div class="card muted">Nenhum plano disponível.</div>';
+        if(simulacaoVisual)statusHtml='<p role="status" style="margin:0 0 12px;padding:10px;border:1px solid currentColor;border-radius:10px;font-weight:700">SIMULAÇÃO VISUAL — teste grátis vencido. A assinatura continua ativa no banco de homologação. Nenhuma escolha será gravada.</p>'+statusHtml;
         htmlEstavel(status,statusHtml);htmlEstavel(planosBox,planosHtml);if(window.__OBRIX_HML_PROJECT_REF==='xavwkfgrnowmusbkbiea'){await window.OBRIX_HML_LIMIT_PANEL?.refresh?.(sb,perfil,a);window.OBRIX_HML_EFI_DIAGNOSTICO?.mount?.(sb,perfil);}
         planosBox.querySelectorAll('[data-ass-plano]').forEach(btn=>btn.onclick=()=>abrirPagamento(btn.dataset.assPlano));
         planosBox.querySelectorAll('[data-ass-boleto]').forEach(btn=>btn.onclick=()=>abrirBoleto(btn.dataset.assBoleto));
