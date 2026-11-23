@@ -113,6 +113,9 @@ async function atualizarAoRetornar(){
 }
 function botao(txt,plano,metodo){const b=document.createElement('button');b.type='button';b.className='btn assCobEfiBtn obrixPermanentNeutral obrixPayMethod';b.dataset.obrixPermanentNeutral='1';b.textContent=txt;b.dataset.assCobEfi=`${plano}:${metodo}`;b.onclick=()=>abrir(plano,metodo);return b}
 function scan(){
+  // A homologação usa apenas os controles seguros de obrix-assinaturas-main.js.
+  // Evita duplicar os botões de boleto e expor o checkout de cartão nessa tela.
+  if(window.__OBRIX_HML_PROJECT_REF==='xavwkfgrnowmusbkbiea')return;
   const box=$('assPlanos');if(!box)return;
   box.querySelectorAll('.assPlano').forEach(card=>{
     const pix=card.querySelector('[data-ass-plano]');if(!pix)return;const plano=pix.dataset.assPlano||'mensal';
