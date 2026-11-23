@@ -120,7 +120,10 @@ function mount(sb,perfil){
   trialArea.append(trialTitle,trialNote,createTrial,checkTrial,trialResult,
     webhookTitle,webhookInfo,webhookCheck,webhookOutput);
   box.append(h,p,btn,result,authBtn,authResult,trialArea);
-  status.insertAdjacentElement('afterend',box);
+  // Na simulacao do trial vencido, a escolha da obra e do funcionario vem antes do diagnostico Efí.
+  // Mesmo com ambos os paineis, mantemos a ordem sem qualquer gravacao no backend.
+  const limitedPanel=document.getElementById('obrixHmlLimitedPanel');
+  (limitedPanel?.isConnected?limitedPanel:status).insertAdjacentElement('afterend',box);
   const statusText=estado=>({
     autenticacao_confirmada:'Conexão autenticada com sucesso',
     credenciais_ou_permissoes_recusadas:'Credenciais recusadas ou sem permissão',
