@@ -12,13 +12,21 @@ const ativo=a=>{
   if(a.status==='teste')return !!a.trial_fim&&new Date(a.trial_fim).getTime()>now;
   return a.status==='ativo'&&(a.plano==='permanente'||((a.plano==='mensal'||a.plano==='anual')&&!!a.periodo_fim&&new Date(a.periodo_fim).getTime()>now));
 };
+// Modificação exclusivamente visual quando o link de preview contém o parâmetro.
+function previewVisual(assinatura){
+  try{return window.__OBRIX_HML_PROJECT_REF==='xavwkfgrnowmusbkbiea'
+    && new URLSearchParams(location.search).get('obrix_hml_trial_visual')==='expirado'
+    && assinatura?.status==='teste';}
+  catch(_){return false}
+}
 let version=0;
 async function refresh(sb,perfil,assinatura){
   const current=++version;
+  const simulado=previewVisual(assinatura);
   const status=document.getElementById('assStatus');
   if(!status||!perfil?.empresa_id)return;
   let box=document.getElementById(key);
-  if(ativo(assinatura)){
+  if(ativo(assinatura)&&!simulado){
     box?.remove();
     return;
   }
@@ -34,6 +42,14 @@ async function refresh(sb,perfil,assinatura){
     el('p','Após o vencimento, somente uma obra e um funcionário poderão ser editados. Os demais ficarão preservados para consulta. A escolha não poderá ser trocada enquanto o plano estiver limitado.'),
     el('p','Carregando opções disponíveis...')
   );
+  if(simulado){
+    const aviso=el('p','SIMULAÇÃO VISUAL — esta tela não altera planos, obras nem funcionários.');
+    aviso.style.cssText='font-weight:700;border:1px solid currentColor;border-radius:9px;padding:10px;margin:0 0 10px';
+    box.prepend(aviso);
+    box.dataset.obrixTrialSimulado='true';
+  }else{
+    delete box.dataset.obrixTrialSimulado;
+  }
   try{
     const [sr,or,fr]=await Promise.all([
       sb.from('obrix_hml_limite_selecao').select('obra_id,funcionario_id').eq('empresa_id',perfil.empresa_id).maybeSingle(),
@@ -46,6 +62,11 @@ async function refresh(sb,perfil,assinatura){
     const h=el('h3','Plano limitado — escolha dos registros');
     const p=el('p','Apenas a obra e o funcionário escolhidos poderão ser editados. Os demais continuam preservados para consulta. A seleção é definitiva durante o período limitado.');
     box.replaceChildren(h,p);
+    if(simulado){
+      const aviso=el('p','PRÉ-VISUALIZAÇÃO: escolha demonstrativa; nenhuma alteração será salva.');
+      aviso.style.cssText='font-weight:700;border:1px solid currentColor;border-radius:9px;padding:10px;margin:0 0 10px';
+      box.prepend(aviso);
+    }
     const donos=['proprietario','administrador'];
     const form=[];
     function row(label,id,items,fixed){
@@ -69,7 +90,7 @@ async function refresh(sb,perfil,assinatura){
     info.style.fontSize='13px';box.append(info);
     if(selected||!donos.includes(String(perfil.papel||'')))return;
     let confirmation=false;
-    const btn=el('button','Confirmar seleção','btn');
+    const btn=el('button',simulado?'Simular seleção':'Confirmar seleção','btn');
     btn.type='button';btn.style.cssText='background:#ea7800;color:white;border:0;border-radius:10px;padding:12px 14px;font-weight:750';
     const note=el('div');note.setAttribute('role','status');note.style.marginTop='8px';
     btn.addEventListener('click',async()=>{
@@ -77,7 +98,14 @@ async function refresh(sb,perfil,assinatura){
       const p_funcionario_id=escolha.funcionario_id||func.value||null;
       if(!p_obra_id&&!p_funcionario_id){note.textContent='Escolha ao menos um registro.';return;}
       if(!confirmation){
-        confirmation=true;btn.textContent='Confirmar escolha definitiva';note.textContent='Atenção: não será possível trocar esses registros antes de reativar a assinatura.';
+        confirmation=true;
+        btn.textContent=simulado?'Concluir simulação (sem salvar)':'Confirmar escolha definitiva';
+        note.textContent=simulado?'Demonstração apenas: confirme para visualizar o resultado. Nenhuma escolha será registrada.':'Atenção: não será possível trocar esses registros antes de reativar a assinatura.';
+        return;
+      }
+      if(simulado){
+        btn.disabled=true;btn.textContent='Simulação concluída';
+        note.textContent='Simulação concluída. A interface coletou a escolha sem gravá-la; os registros e o prazo real não foram alterados.';
         return;
       }
       btn.disabled=true;note.textContent='Registrando seleção...';
@@ -88,7 +116,7 @@ async function refresh(sb,perfil,assinatura){
         await refresh(sb,perfil,assinatura);
       }catch(e){btn.disabled=false;confirmation=false;btn.textContent='Confirmar seleção';note.textContent=fmt(e);}
     });
-    for(const s of form)s.addEventListener('change',()=>{confirmation=false;btn.textContent='Confirmar seleção';note.textContent=''});
+    for(const s of form)s.addEventListener('change',()=>{confirmation=false;btn.disabled=false;btn.textContent=simulado?'Simular seleção':'Confirmar seleção';note.textContent=''});
     box.append(btn,note);
   }catch(e){
     if(current!==version||!box.isConnected)return;
