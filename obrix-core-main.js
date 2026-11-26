@@ -166,7 +166,18 @@ function renderObras(){
   const box=$('listaObras');if(!box)return;box.innerHTML=obras.length?obras.map(o=>{const ex=extras.filter(x=>String(x.obra_id)===String(o.id)).reduce((s,x)=>s+Number(x.valor||0),0),rec=financeiro.filter(x=>String(x.obra_id)===String(o.id)&&x.tipo==='receita'&&(!x.status_lancamento||x.status_lancamento==='ativo')).reduce((s,x)=>s+Number(x.valor||0),0),desp=financeiro.filter(x=>String(x.obra_id)===String(o.id)&&x.tipo==='despesa'&&(!x.status_lancamento||x.status_lancamento==='ativo')).reduce((s,x)=>s+Number(x.valor||0),0),tot=Number(o.valor_contrato||0)+ex;return `<div class="card item"><h3>${esc(o.nome||'Obra')}</h3><div class="muted">${esc(o.cliente||'')} • ${esc(o.status||'')}</div><div class="grid"><div class="mini"><small>Total atualizado</small><b>${money(tot)}</b></div><div class="mini"><small>Recebido</small><b>${money(rec)}</b></div><div class="mini"><small>A receber</small><b>${money(Math.max(0,tot-rec))}</b></div><div class="mini"><small>Despesas</small><b>${money(desp)}</b></div></div></div>`}).join(''):'<div class="card muted">Nenhuma obra cadastrada.</div>'}
 function renderEquipe(){const box=$('listaEquipe');if(!box)return;box.innerHTML=funcionarios.length?funcionarios.map(f=>{const ds=diarias.filter(x=>String(x.funcionario_id)===String(f.id)&&!x.paga),vs=vales.filter(x=>String(x.funcionario_id)===String(f.id)&&!x.quitado),bs=bonus.filter(x=>String(x.funcionario_id)===String(f.id)&&!x.pago),vd=ds.reduce((s,x)=>s+Number(x.valor_total||0),0),vv=vs.reduce((s,x)=>s+Number(x.valor||0),0),vb=bs.reduce((s,x)=>s+Number(x.valor||0),0),liq=vd+vb-vv;return `<div class="card item"><h3>${esc(f.nome||'Funcionário')}</h3><div class="muted">${esc(f.cargo||'')} • ${f.ativo===false?'Inativo':'Ativo'}</div><div class="grid"><div class="mini"><small>Diárias em aberto</small><b>${ds.length}</b></div><div class="mini"><small>Total pendente</small><b>${money(vd)}</b></div><div class="mini"><small>Vale</small><b>${money(vv)}</b></div><div class="mini"><small>Bônus e Extras</small><b>${money(vb)}</b></div><div class="mini"><small>Líquido</small><b>${money(liq)}</b></div></div><div class="actions"><button onclick="equipeAcao('${f.id}','diaria')">Registrar diária</button><button onclick="equipeAcao('${f.id}','vale')">Vale</button><button onclick="equipeAcao('${f.id}','bonus')">Bônus e Extras</button><button onclick="equipeAcao('${f.id}','pagar')">Pagar</button></div></div>`}).join(''):'<div class="card muted">Nenhum funcionário cadastrado.</div>'}
 function equipeAcao(id,tipo){alert('Carregando ação da equipe...')}
-async function entrarSeguro(){const btn=$('entrar');if(!btn||btn.dataset.busy==='1')return;btn.dataset.busy='1';btn.disabled=true;btn.textContent='Entrando...';$('erro')?.classList.add('hidden');try{
+function obrixDiagnosticoLoginHml(etapa,erro){
+  if(window.__OBRIX_HML_PROJECT_REF!=='xavwkfgrnowmusbkbiea'||!/^obrix-restauracao-app-isolado-20261118[-.]/i.test(location.hostname))return;
+  try{
+    let box=document.getElementById('obrixHmlLoginDiag');
+    if(!box){box=document.createElement('div');box.id='obrixHmlLoginDiag';box.setAttribute('role','status');box.style.cssText='font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:10px';$('erro')?.insertAdjacentElement('afterend',box);}
+    const code=typeof erro?.code==='string'&&/^[a-z0-9_]{1,64}$/i.test(erro.code)?erro.code:'';
+    const status=Number.isInteger(erro?.status)?erro.status:'';
+    if(etapa==='L01')box.textContent='Diagnostico HML v1';
+    box.textContent+='\n'+etapa+(status?' HTTP '+status:'')+(code?' '+code:'');
+  }catch(_){}
+}
+async function entrarSeguro(){const btn=$('entrar');if(!btn||btn.dataset.busy==='1')return;btn.dataset.busy='1';btn.disabled=true;btn.textContent='Entrando...';$('erro')?.classList.add('hidden');let etapa='L01';obrixDiagnosticoLoginHml(etapa);try{
   if(!navigator.onLine){
     const typed=($('email')?.value||'').trim().toLowerCase();
     const b=lerBaseOffline();
@@ -176,8 +187,8 @@ async function entrarSeguro(){const btn=$('entrar');if(!btn||btn.dataset.busy===
     if(!restaurarOfflineCore('login-offline'))throw new Error('Não foi possível restaurar a conta salva neste aparelho. Conecte à internet uma vez e tente novamente.');
     return;
   }
-  const sb=await timeout(OBRIX_BACKEND.init(),10000,'Não foi possível iniciar a conexão.');const r=await timeout(sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('senha').value}),15000,'A conexão demorou demais. Tente novamente.');if(r.error)throw r.error;const ok=await carregar();if(!ok)throw new Error(($('erro')?.textContent||'Não foi possível carregar o aplicativo.').trim())
-}catch(e){mostrarErro(e)}finally{btn.dataset.busy='0';btn.disabled=false;btn.textContent='Entrar'}}
+  etapa='L02';obrixDiagnosticoLoginHml(etapa);const sb=await timeout(OBRIX_BACKEND.init(),10000,'Não foi possível iniciar a conexão.');etapa='L03';obrixDiagnosticoLoginHml(etapa);const r=await timeout(sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('senha').value}),15000,'A conexão demorou demais. Tente novamente.');if(r.error)throw r.error;etapa='L04';obrixDiagnosticoLoginHml(etapa);const ok=await carregar();if(!ok)throw new Error(($('erro')?.textContent||'Não foi possível carregar o aplicativo.').trim());etapa='L05';obrixDiagnosticoLoginHml(etapa)
+}catch(e){obrixDiagnosticoLoginHml(etapa+' FALHA',e);mostrarErro(e)}finally{btn.dataset.busy='0';btn.disabled=false;btn.textContent='Entrar'}}
 $('entrar').onclick=entrarSeguro;
 $('sair').onclick=async()=>{try{const sb=await OBRIX_BACKEND.init();await sb.auth.signOut()}catch(_){}finally{try{localStorage.removeItem(OFFLINE_BASE_KEY);localStorage.removeItem('obrix_offline_base_v2');localStorage.removeItem(OFFLINE_IDENTITY_KEY)}catch(_){}location.reload()}};
 (async()=>{if(restaurarOfflineCore('core-auto'))return;try{const sb=await timeout(OBRIX_BACKEND.init(),10000),{data}=await timeout(sb.auth.getSession(),10000);if(data?.session)await carregar()}catch(e){if(!restaurarOfflineCore('core-auto-fallback'))console.warn('OBRIX: sessão automática não carregou',e)}})();
