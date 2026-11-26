@@ -76,8 +76,11 @@
     }
   }
 
+  let initPromise=null;
   async function init(){
     if(client)return client;
+    if(initPromise)return initPromise;
+    initPromise=(async()=>{
     const cfg=await carregarConfig();
     client=window.supabase.createClient(cfg.url,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
     client.auth.onAuthStateChange((event,session)=>{
@@ -88,6 +91,8 @@
       }
     });
     return client;
+    })();
+    try{return await initPromise}catch(e){client=null;throw e}finally{initPromise=null}
   }
 
   async function currentUser(force=false){
