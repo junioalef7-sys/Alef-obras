@@ -62,7 +62,23 @@ function restaurarOfflineCore(reason='core'){
   }catch(_){}
   return true
 }
-async function carregarSecundarios(eid){try{const sb=await OBRIX_BACKEND.init(),[ex,di,va,bo]=await Promise.all([sb.from('servicos_extras').select('*').eq('empresa_id',eid),sb.from('diarias').select('*').eq('empresa_id',eid),sb.from('vales').select('*').eq('empresa_id',eid),sb.from('bonus_extras').select('*').eq('empresa_id',eid)]);[ex,di,va,bo].forEach(r=>{if(r.error)throw r.error});extras=ex.data||[];diarias=di.data||[];vales=va.data||[];bonus=bo.data||[];publicarGlobais();salvarBaseOffline();atualizarInicio();if($('obras')&&!$('obras').classList.contains('hidden'))renderObras();if($('equipe')&&!$('equipe').classList.contains('hidden'))renderEquipe();window.OBRIX_DASH?.paint?.()}catch(e){console.warn('OBRIX: dados secundários serão sincronizados depois',e)}}
+async function obrixLerPaginasCore(sb,tabela,eid,ordem){
+  const tamanho=500, registros=[], vistos=new Set();
+  if(!eid)throw new Error('Empresa não identificada.');
+  for(let inicio=0;;inicio+=tamanho){
+    let q=sb.from(tabela).select('*').eq('empresa_id',eid);
+    if(ordem)q=q.order(ordem,{ascending:false});
+    const {data,error}=await q.order('id',{ascending:true}).range(inicio,inicio+tamanho-1);
+    if(error)throw error;
+    if(!Array.isArray(data))throw new Error('Resposta inválida ao carregar '+tabela);
+    for(const item of data){
+      if(!item.id||vistos.has(item.id))throw new Error('Consulta instável ao carregar '+tabela);
+      vistos.add(item.id);registros.push(item);
+    }
+    if(data.length<tamanho)return {data:registros,error:null};
+  }
+}
+async function carregarSecundarios(eid){try{const sb=await OBRIX_BACKEND.init(),[ex,di,va,bo]=await Promise.all([obrixLerPaginasCore(sb,'servicos_extras',eid),obrixLerPaginasCore(sb,'diarias',eid),obrixLerPaginasCore(sb,'vales',eid),obrixLerPaginasCore(sb,'bonus_extras',eid)]);[ex,di,va,bo].forEach(r=>{if(r.error)throw r.error});if(profile?.empresa_id!==eid)return;extras=ex.data||[];diarias=di.data||[];vales=va.data||[];bonus=bo.data||[];publicarGlobais();salvarBaseOffline();atualizarInicio();if($('obras')&&!$('obras').classList.contains('hidden'))renderObras();if($('equipe')&&!$('equipe').classList.contains('hidden'))renderEquipe();window.OBRIX_DASH?.paint?.()}catch(e){console.warn('OBRIX: dados secundários serão sincronizados depois',e)}}
 // Reconciliacao pontual com o servidor: nao refaz o login nem substitui dados financeiros locais.
 function obrasIguaisSemProgresso(a,b){
   if(!Array.isArray(a)||!Array.isArray(b)||a.length!==b.length)return false;
@@ -95,8 +111,8 @@ async function sincronizarObrasDoServidor(){
   obrasSyncPendente=(async()=>{
     const eid=profile.empresa_id,sb=await OBRIX_BACKEND.init();
     const [ro,re]=await Promise.all([
-      sb.from('obras').select('*').eq('empresa_id',eid).order('criado_em',{ascending:false}),
-      sb.from('servicos_extras').select('*').eq('empresa_id',eid)
+      obrixLerPaginasCore(sb,'obras',eid,'criado_em'),
+      obrixLerPaginasCore(sb,'servicos_extras',eid)
     ]);
     if(ro.error||re.error)throw(ro.error||re.error);
     // Uma conta trocada durante a consulta nao pode receber dados da anterior.
@@ -121,7 +137,7 @@ async function sincronizarObrasDoServidor(){
   return obrasSyncPendente;
 }
 window.OBRIX_CORE_OBRAS_SYNC=sincronizarObrasDoServidor;
-async function carregar(){if(restaurarOfflineCore('core-carregar'))return true;if(carregandoCore)return;carregandoCore=true;try{profile=await timeout(OBRIX_BACKEND.profile(),12000,'Não foi possível carregar seu perfil. Tente novamente.');salvarIdentidadeOffline(profile);const anterior=lerBaseOffline();const sb=await OBRIX_BACKEND.init(),eid=profile.empresa_id;const [ow,fn,fi]=await timeout(Promise.all([sb.from('obras').select('*').eq('empresa_id',eid).order('criado_em',{ascending:false}),sb.from('funcionarios').select('*').eq('empresa_id',eid).order('criado_em',{ascending:false}),sb.from('financeiro').select('*').eq('empresa_id',eid).order('data',{ascending:false})]),15000,'A conexão demorou demais. Tente novamente.');[ow,fn,fi].forEach(r=>{if(r.error)throw r.error});obras=ow.data||[];funcionarios=fn.data||[];financeiro=fi.data||[];extras=Array.isArray(anterior?.extras)?anterior.extras:[];diarias=Array.isArray(anterior?.diarias)?anterior.diarias:[];vales=Array.isArray(anterior?.vales)?anterior.vales:[];bonus=Array.isArray(anterior?.bonus)?anterior.bonus:[];publicarGlobais();salvarBaseOffline();atualizarInicio();if($('usuario'))$('usuario').textContent=profile.nome||profile.email||'';renderObras();renderEquipe();mostrarApp();window.__OBRIX_CORE_LAST_LOAD=Date.now();window.dispatchEvent(new CustomEvent('obrix:obras-carregadas',{detail:{empresa_id:eid,quantidade:obras.length}}));void carregarSecundarios(eid);return true}catch(e){if(restaurarOfflineCore('core-fallback'))return true;mostrarErro(e);return false}finally{carregandoCore=false}}
+async function carregar(){if(restaurarOfflineCore('core-carregar'))return true;if(carregandoCore)return;carregandoCore=true;try{profile=await timeout(OBRIX_BACKEND.profile(),12000,'Não foi possível carregar seu perfil. Tente novamente.');salvarIdentidadeOffline(profile);const anterior=lerBaseOffline();const sb=await OBRIX_BACKEND.init(),eid=profile.empresa_id;const [ow,fn,fi]=await timeout(Promise.all([obrixLerPaginasCore(sb,'obras',eid,'criado_em'),obrixLerPaginasCore(sb,'funcionarios',eid,'criado_em'),obrixLerPaginasCore(sb,'financeiro',eid,'data')]),15000,'A conexão demorou demais. Tente novamente.');[ow,fn,fi].forEach(r=>{if(r.error)throw r.error});obras=ow.data||[];funcionarios=fn.data||[];financeiro=fi.data||[];extras=Array.isArray(anterior?.extras)?anterior.extras:[];diarias=Array.isArray(anterior?.diarias)?anterior.diarias:[];vales=Array.isArray(anterior?.vales)?anterior.vales:[];bonus=Array.isArray(anterior?.bonus)?anterior.bonus:[];publicarGlobais();salvarBaseOffline();atualizarInicio();if($('usuario'))$('usuario').textContent=profile.nome||profile.email||'';renderObras();renderEquipe();mostrarApp();window.__OBRIX_CORE_LAST_LOAD=Date.now();window.dispatchEvent(new CustomEvent('obrix:obras-carregadas',{detail:{empresa_id:eid,quantidade:obras.length}}));void carregarSecundarios(eid);return true}catch(e){if(restaurarOfflineCore('core-fallback'))return true;mostrarErro(e);return false}finally{carregandoCore=false}}
 function abrir(id){
   // Uma rota principal substitui a tela anterior, inclusive módulos abertos pelo Menu.
   // Limitar ao nível superior para preservar formulários e cartões internos.
