@@ -65,7 +65,7 @@ function restore(){
 function obraOpts(sel=''){
   let os=[];
   try{os=typeof obras!=='undefined'?obras:(window.obras||[])}catch{os=window.obras||[]}
-  return '<option value="">Selecione a obra</option>'+os.filter(o=>o.status!=='concluida').map(o=>`<option value="${o.id}" ${String(o.id)===String(sel)?'selected':''}>${esc(o.nome||'Obra')}</option>`).join('');
+  return '<option value="">Selecione a obra</option>'+os.filter(o=>o.status==='andamento').map(o=>`<option value="${o.id}" ${String(o.id)===String(sel)?'selected':''}>${esc(o.nome||'Obra')}</option>`).join('');
 }
 function modal(title,html){
   const b=document.createElement('div');
