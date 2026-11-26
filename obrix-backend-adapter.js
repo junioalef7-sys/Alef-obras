@@ -127,11 +127,23 @@
 
   async function readTable(table,orderColumn){
     const sb=await init();
-    let q=sb.from(table).select('*');
-    if(orderColumn)q=q.order(orderColumn,{ascending:false});
-    const {data,error}=await q;
-    if(error)throw error;
-    return data||[];
+    const p=await profile(), eid=p.empresa_id;
+    if(!eid)throw new Error('Empresa não identificada.');
+    const tamanho=500, registros=[], vistos=new Set();
+    for(let inicio=0;;inicio+=tamanho){
+      let q=sb.from(table).select('*');
+      if(['obras','funcionarios','financeiro','assinaturas','servicos_extras','diarias','vales','bonus_extras'].includes(table))q=q.eq('empresa_id',eid);
+      if(orderColumn)q=q.order(orderColumn,{ascending:false});
+      if(orderColumn!=='id')q=q.order('id',{ascending:true});
+      const {data,error}=await q.range(inicio,inicio+tamanho-1);
+      if(error)throw error;
+      if(!Array.isArray(data))throw new Error('Resposta inválida ao carregar '+table);
+      for(const item of data){
+        if(!item.id||vistos.has(item.id))throw new Error('Consulta instável ao carregar '+table);
+        vistos.add(item.id);registros.push(item);
+      }
+      if(data.length<tamanho)return registros;
+    }
   }
 
   async function healthcheck(){
