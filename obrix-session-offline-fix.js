@@ -62,9 +62,20 @@ async function restoreOffline(reason){
   }
   return ok;
 }
+function diagHml(stage,e){
+  if(window.__OBRIX_HML_PROJECT_REF!=='xavwkfgrnowmusbkbiea'||!/^obrix-restauracao-app-isolado-20261118[-.]/i.test(location.hostname))return;
+  try{
+    let box=$('obrixHmlLoginDiag');
+    if(!box){box=document.createElement('div');box.id='obrixHmlLoginDiag';box.setAttribute('role','status');box.style.cssText='font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere';$('login')?.appendChild(box)}
+    if(stage==='A01')box.textContent='Diagnostico HML v3';
+    const code=typeof e?.code==='string'&&/^[a-z0-9_]{1,64}$/i.test(e.code)?e.code:'';
+    box.textContent+='\n'+stage+(Number.isInteger(e?.status)?' HTTP '+e.status:'')+(code?' '+code:'');
+  }catch(_){}
+}
 async function login(){
   const btn=$('entrar');if(!btn||btn.dataset.obrixSessionBusy==='1')return;
   btn.dataset.obrixSessionBusy='1';btn.disabled=true;btn.textContent='Entrando...';hideError();unlock();
+  let stage='A01';diagHml(stage);
   try{
     releaseOffline();
     const b=base(),typed=($('email')?.value||'').trim().toLowerCase(),cached=String(b?.profile?.email||'').trim().toLowerCase();
@@ -74,14 +85,15 @@ async function login(){
       if(!await restoreOffline('login-offline-v2'))throw new Error('Não foi possível abrir a base offline salva neste aparelho.');
       return;
     }
-    const sb=await limit(window.OBRIX_BACKEND.init(),8000,'Não foi possível iniciar a conexão.');
-    const r=await limit(sb.auth.signInWithPassword({email:($('email')?.value||'').trim(),password:$('senha')?.value||''}),12000,'A conexão demorou demais.');
+    stage='A02';diagHml(stage);const sb=await limit(window.OBRIX_BACKEND.init(),8000,'Não foi possível iniciar a conexão.');
+    stage='A03';diagHml(stage);const r=await limit(sb.auth.signInWithPassword({email:($('email')?.value||'').trim(),password:$('senha')?.value||''}),12000,'A conexão demorou demais.');
     if(r?.error)throw r.error;
-    releaseOffline();unlock();
+    stage='A04';diagHml(stage);releaseOffline();unlock();
     const ok=await limit(Promise.resolve(window.carregar?.()),17000,'A conexão demorou demais ao carregar o aplicativo.');
     if(ok===false)throw new Error(($('erro')?.textContent||'Não foi possível carregar o aplicativo.').trim());
-    setTimeout(()=>window.OBRIX_OFFLINE_V2?.prepare?.(true),1200);
+    diagHml('A05');setTimeout(()=>window.OBRIX_OFFLINE_V2?.prepare?.(true),1200);
   }catch(e){
+    diagHml(stage+' FALHA',e);
     const b=base();
     if(netErr(e)&&b?.profile?.empresa_id){
       const typed=($('email')?.value||'').trim().toLowerCase(),cached=String(b?.profile?.email||'').trim().toLowerCase();
