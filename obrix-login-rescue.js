@@ -59,7 +59,7 @@ function recoveryStyle(){
   `;document.head.appendChild(s);
 }
 function closeRecovery(){document.getElementById('obrixRecoveryScreen')?.remove()}
-function recoveryMessage(e){const s=String(e?.message||e||'Não foi possível enviar o link.');if(/network|fetch|internet|offline/i.test(s))return'Não foi possível conectar agora. Verifique sua internet e tente novamente.';if(/email|invalid/i.test(s))return'Informe um endereço de e-mail válido.';return s}
+function recoveryMessage(e){const s=String(e?.message||e||'Não foi possível enviar o link.');if(/network|fetch|internet|offline/i.test(s))return'Não foi possível conectar agora. Verifique sua internet e tente novamente.';if(e?.status===429||/rate_limit|rate limit|too many requests/i.test(String(e?.code||'')+' '+s))return'Limite temporário de envio de e-mails atingido. Aguarde e tente novamente mais tarde.';if(e?.code==='email_address_invalid'||e?.code==='email_address_not_authorized'||/invalid email|email address.*invalid/i.test(s))return'Não foi possível enviar para este endereço de e-mail. Verifique o endereço ou contate o suporte.';return s}
 function openRecoveryScreen(){
   recoveryStyle();closeRecovery();
   const screen=document.createElement('div');screen.id='obrixRecoveryScreen';screen.className='obrixRecoveryScreen';
