@@ -48,12 +48,13 @@ async function refresh(){
   const e=empresa();if(!e)return false;
   refreshPendente=(async()=>{
     try{
-      const sb=await OBRIX_BACKEND.init();
-      const r=await sb.from('obras').select('*').eq('empresa_id',e).order('criado_em',{ascending:false});
-      if(r.error)throw r.error;
+      const p=await OBRIX_BACKEND.profile();
+      if(String(p?.empresa_id||'')!==String(e))throw new Error('Empresa divergente ao atualizar obras.');
+      const rows=await OBRIX_BACKEND.readTable('obras','criado_em');
       if(empresa()!==e)return false;
-      saveCache(r.data||[]);
-      publishRows(merge(r.data||[]));
+      if(!Array.isArray(rows)||rows.some(row=>String(row.empresa_id)!==String(e)))throw new Error('Resposta inválida ao atualizar obras.');
+      saveCache(rows);
+      publishRows(merge(rows));
       lastError='';
       return true;
     }catch(err){
