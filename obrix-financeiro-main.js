@@ -16,7 +16,7 @@
     outros:['Alimentação','Hospedagem','Taxas / impostos','Telefone / internet','Outros']
   };
 
-  let salvando=false,realtime=null,realtimeTimer=null,polling=false,renderPromise=null,lastSync='',extrasFinanceiro=[],checklistFinanceiro=[];
+  let salvando=false,realtime=null,realtimeTimer=null,polling=false,renderPromise=null,lastSync='',extrasFinanceiro=[],checklistFinanceiro=[],nomesObrasFinanceiro=new Map(),empresaNomesFinanceiro=null;
 
   function ensure(){
     if($('financeiroMain'))return;
@@ -54,7 +54,12 @@
     ]);
     [rows,extras,checks].forEach(r=>{if(r.error)throw r.error});
     window.financeiro=rows.data||[];extrasFinanceiro=extras.data||[];checklistFinanceiro=checks.data||[];
-    lastSync=signature(window.financeiro,extrasFinanceiro,checklistFinanceiro);return lastSync;
+    if(empresaNomesFinanceiro!==eid){nomesObrasFinanceiro=new Map();empresaNomesFinanceiro=eid;}
+    const ids=[...new Set((rows.data||[]).map(x=>x.obra_id).filter(Boolean))];
+    const nomes=new Map();
+    for(let inicio=0;inicio<ids.length;inicio+=100){const q=await sb.from('obras').select('id,nome').eq('empresa_id',eid).in('id',ids.slice(inicio,inicio+100));if(q.error)throw q.error;for(const o of q.data||[])nomes.set(String(o.id),o.nome);}
+    nomesObrasFinanceiro=nomes;
+    lastSync=signature(window.financeiro,extrasFinanceiro,checklistFinanceiro)+'||'+JSON.stringify([...nomesObrasFinanceiro].sort());return lastSync;
   }
   function atualizarObras(){const sec=document.getElementById('obras');if(!sec||sec.classList.contains('hidden'))return;try{window.OBRIX_OBRAS?.render?.()}catch(_){}}
   function podeExcluir(x){return x.origem==='manual'&&!x.compra_id}
@@ -106,7 +111,7 @@
       const o=os.find(z=>String(z.id)===String(x.obra_id)),manual=x.origem==='manual',checks=resumoChecklists(x);
       const totalChecks=Object.values(valoresChecklist(x)).reduce((s,v)=>s+Number(v||0),0),sem=Math.max(0,Number(x.valor||0)-totalChecks);
       const checkTxt=checks.length?`Checklists: ${checks.join(', ')}${sem>0?` • Sem checklist: ${money(sem)}`:''}`:'Sem checklist';
-      const meta=[o?.nome||'Sem obra',x.data||'',labels[x.categoria]||x.categoria||'',x.subcategoria||'',checkTxt].filter(Boolean);
+      const meta=[x.obra_id?(nomesObrasFinanceiro.get(String(x.obra_id))||o?.nome||'Obra vinculada — nome indisponível'):(x.origem==='compra'?'Estoque geral':'Sem obra'),x.data||'',labels[x.categoria]||x.categoria||'',x.subcategoria||'',checkTxt].filter(Boolean);
       return `<div class="card item" data-fin-card="1" data-id="${esc(x.id)}" data-obra="${esc(x.obra_id||'')}" data-tipo="${esc(x.tipo||'')}" data-categoria="${esc(x.categoria||'')}"><h3>${esc(x.descricao||'Lançamento')}</h3><div class="muted">${meta.map(esc).join(' • ')}</div><div class="grid"><div class="mini"><small>${x.tipo==='receita'?'Receita':x.origem==='estoque'?'Custo da obra (sem saída de caixa)':'Despesa'}</small><b>${money(x.valor)}</b></div></div>${podeExcluir(x)||podeEstornar(x)?`<div class="actions">${manual?`<button type="button" data-fin="editar" data-id="${x.id}">Editar</button>`:''}${podeEstornar(x)?`<button type="button" data-fin="estornar" data-id="${x.id}">Estornar</button>`:`<button type="button" data-fin="excluir" data-id="${x.id}">Excluir</button>`}</div>`:''}</div>`;
     }).join(''):'<div class="card muted">Nenhum lançamento financeiro.</div>';
     // Atualizar somente cartões novos/alterados, preservando os existentes.
