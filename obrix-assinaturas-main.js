@@ -89,6 +89,40 @@
       for(const row of rows||[]){const p=add('p',(row.tipo==='cancelamento'?'Cancelamento':'Reembolso')+' — '+(labels[row.status]||'Indisponível')+' · '+fmtDate(row.criado_em));p.appendChild(document.createElement('br'));const small=add('small','Protocolo: '+row.id,p);small.style.overflowWrap='anywhere';}
     }catch(_){msg.textContent='Não foi possível consultar as solicitações. Tente novamente.';}
   }
+  async function adminSolicitacoesHml(sb){
+    $('assAdminHml')?.remove();
+    if(!hml())return;
+    const auth=await sb.rpc('obrix_hml_admin_autorizado');
+    if(auth.error||auth.data!==true)return;
+    const box=document.createElement('section');box.id='assAdminHml';box.className='card';$('assSolicitacoesHml')?.insertAdjacentElement('afterend',box);
+    const add=(parent,tag,txt)=>{const e=document.createElement(tag);e.textContent=txt;parent.appendChild(e);return e;};
+    add(box,'h3','Administração OBRIX — homologação');add(box,'p','Análise administrativa. Não movimenta dinheiro nem encerra assinaturas.');
+    const msg=add(box,'p','');msg.setAttribute('role','status');
+    const search=add(box,'input','');search.placeholder='Buscar protocolo ou ID do cliente';search.setAttribute('aria-label',search.placeholder);
+    const filter=add(box,'select','');filter.setAttribute('aria-label','Situação');for(const [v,t] of [['','Todas'],['recebida','Recebida'],['em_analise','Em análise'],['indeferida','Indeferida'],['concluida','Concluída']]){const o=add(filter,'option',t);o.value=v;}
+    const start=add(box,'input','');start.type='date';start.setAttribute('aria-label','Data inicial');const end=add(box,'input','');end.type='date';end.setAttribute('aria-label','Data final');
+    const list=add(box,'div','');let rows=[];
+    const render=()=>{
+      list.replaceChildren();
+      const q=search.value.trim().toLowerCase();
+      for(const row of rows.filter(x=>(!q||(x.id+' '+x.user_id).toLowerCase().includes(q))&&(!filter.value||x.status===filter.value)&&(!start.value||new Date(x.criado_em)>=new Date(start.value+'T00:00:00'))&&(!end.value||new Date(x.criado_em)<=new Date(end.value+'T23:59:59.999')))){
+        const card=add(list,'article','');card.className='card';add(card,'strong',row.tipo+' — '+row.status);add(card,'p','Protocolo: '+row.id);add(card,'p','Cliente: '+row.user_id);add(card,'p',fmtDate(row.criado_em));
+        const hist=add(card,'button','Histórico das decisões');hist.type='button';hist.className='btn';
+        hist.onclick=async()=>{const h=await sb.rpc('obrix_hml_admin_historico',{p_id:row.id});const prior=card.querySelector('[data-historico]');prior?.remove();const log=add(card,'div','');log.dataset.historico='1';if(h.error){add(log,'p','Histórico indisponível.');return;}for(const d of h.data||[])add(log,'p',fmtDate(d.criado_em)+' — '+d.anterior+' → '+d.novo+': '+d.justificativa);if(!h.data?.length)add(log,'p','Sem decisões registradas.');};
+        if(['recebida','em_analise'].includes(row.status)){
+          const reason=add(card,'textarea','');reason.placeholder='Justificativa obrigatória (10 a 2000 caracteres)';reason.maxLength=2000;reason.setAttribute('aria-label','Justificativa');
+          for(const [st,label] of [['em_analise','Encaminhar para análise'],['indeferida','Recusar solicitação']]){
+            if(st===row.status)continue;
+            const b=add(card,'button',label);b.type='button';b.className='btn';b.onclick=async()=>{if(reason.value.trim().length<10){msg.textContent='Informe uma justificativa com pelo menos 10 caracteres.';return;}if(!confirm('Confirma esta decisão administrativa de teste?'))return;b.disabled=true;const a=await sb.rpc('obrix_hml_admin_decidir',{p_id:row.id,p_status:st,p_justificativa:reason.value.trim()});if(a.error){msg.textContent='Não foi possível registrar a decisão.';b.disabled=false;return;}await loadRows();};
+          }
+        }
+      }
+      if(!list.childElementCount)add(list,'p','Nenhuma solicitação encontrada.');
+    };
+    async function loadRows(){const res=await sb.from('obrix_solicitacoes_assinatura').select('id,user_id,tipo,status,criado_em').order('criado_em',{ascending:false}).limit(500);if(res.error){rows=[];msg.textContent='Consulta indisponível.';render();return;}rows=res.data||[];msg.textContent='Registros carregados: '+rows.length+' (até 500) | Cancelamentos pendentes: '+rows.filter(x=>x.tipo==='cancelamento'&&['recebida','em_analise'].includes(x.status)).length+' | Reembolsos pendentes: '+rows.filter(x=>x.tipo==='reembolso'&&['recebida','em_analise'].includes(x.status)).length;render();}
+    for(const e of [search,filter,start,end])e.addEventListener('input',render);
+    await loadRows();
+  }
   let carregandoAssinatura=null;
   const htmlEstavel=(node,html)=>{if(!node)return;const assinatura=String(html);if(node.__obrixAssMarkup===assinatura&&node.childNodes.length)return;node.innerHTML=assinatura;node.__obrixAssMarkup=assinatura};
   async function load(){
@@ -132,7 +166,7 @@
         planosBox.querySelectorAll('[data-ass-boleto]').forEach(btn=>btn.onclick=()=>abrirBoleto(btn.dataset.assBoleto));
         pagamentoId=localStorage.getItem(K.id)||'';
         boletoPagamentoId=localStorage.getItem(KB.id)||'';
-        if(hml())await solicitacoesHml(sb,perfil,a);
+        if(hml()){await solicitacoesHml(sb,perfil,a);await adminSolicitacoesHml(sb);}
       }catch(e){
         console.warn('Assinaturas: consulta indisponível',e);
         if(!planosBox.childElementCount)htmlEstavel(status,'<h3>Planos e Assinaturas</h3><div class="status">'+pt(e)+'</div>');
