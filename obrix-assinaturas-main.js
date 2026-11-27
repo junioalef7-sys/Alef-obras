@@ -104,11 +104,28 @@
     const prep=add(box,'button','Preparar devolução Pix mensal de R$ 1,00');prep.type='button';prep.className='btn';prep.style.cssText='margin:8px 0;max-width:100%;white-space:normal';
     prep.onclick=async()=>{if(!await confirmarAdmin('Preparar somente a reserva de teste? Nenhum valor será devolvido nesta etapa.'))return;prep.disabled=true;diagResult.textContent='Validando Pix mensal na Efí...';try{const r=await sb.functions.invoke('obrix-hml-diagnostico-devolucao',{body:{acao:'preparar_mensal'}});if(r.error||!r.data?.preparado){let m=r.data?.error;try{if(!m&&r.error?.context instanceof Response)m=(await r.error.context.json()).error;}catch(_){}diagResult.textContent=m||'Não foi possível preparar a devolução.';return;}diagResult.textContent='Pix mensal preparado — R$ 1,00 — Identificador: '+r.data.devolucaoId+' — Nenhum valor devolvido.';}catch(_){diagResult.textContent='Preparação inconclusiva; consulte antes de repetir.';}finally{prep.disabled=false;}};
 
-    const refundStatus=add(box,'p','');refundStatus.setAttribute('role','status');
-    for(const [acao,txt] of [['executar','Executar devolução Pix mensal de teste — R$ 1,00'],['consultar','Consultar resultado da devolução mensal']]){
-      const btn=add(box,'button',txt);btn.type='button';btn.className='btn';btn.style.cssText='margin:8px 0;max-width:100%;white-space:normal;display:block';
-      btn.onclick=async()=>{if(acao==='executar'&&!await confirmarAdmin('Executar a devolução de R$ 1,00 exclusivamente no ambiente de homologação Efí? Nenhum dinheiro real será movimentado.'))return;btn.disabled=true;refundStatus.textContent='Consultando Efí de homologação...';try{const r=await sb.functions.invoke('obrix-hml-executar-devolucao-mensal',{body:{acao}});if(r.error||r.data?.error){let m=r.data?.error;try{if(!m&&r.error?.context instanceof Response)m=(await r.error.context.json()).error;}catch(_){}refundStatus.textContent=m||'Operação inconclusiva. Consulte antes de repetir.';return;}const d=r.data;refundStatus.textContent=({DEVOLVIDO:'Devolução confirmada pela Efí',EM_PROCESSAMENTO:'Devolução em processamento',NAO_REALIZADO:'Devolução não realizada'}[d.status]||'Estado indefinido')+' — R$ 1,00 — Homologação — Identificador: '+d.devolucaoId;}catch(_){refundStatus.textContent='Operação inconclusiva. Consulte antes de repetir.';}finally{btn.disabled=false;}};
+    const refundStatus=add(box,'p','Consultando situação registrada...');refundStatus.setAttribute('role','status');
+    const executeRefund=add(box,'button','Executar devolução Pix mensal de teste — R$ 1,00');
+    const consultRefund=add(box,'button','Consultar resultado da devolução mensal');
+    for(const btn of [executeRefund,consultRefund]){btn.type='button';btn.className='btn';btn.style.cssText='margin:8px 0;max-width:100%;white-space:normal;display:block';}
+    executeRefund.disabled=true;
+    let busy=false;
+    async function refundAction(acao){
+      if(busy)return;
+      busy=true;executeRefund.disabled=true;consultRefund.disabled=true;
+      let allowExecute=false;
+      try{
+        if(acao==='executar'&&!await confirmarAdmin('Executar devolução exclusivamente em homologação?')){await readRefundState();return;}
+        const r=await sb.functions.invoke('obrix-hml-executar-devolucao-mensal',{body:{acao}});
+        if(r.error||r.data?.error){let m=r.data?.error;try{if(!m&&r.error?.context instanceof Response)m=(await r.error.context.json()).error;}catch(_){}refundStatus.textContent=m||'Operação inconclusiva. Consulte antes de repetir.';return;}
+        const d=r.data;refundStatus.textContent=({preparado:'Reserva preparada',DEVOLVIDO:'Devolução confirmada pela Efí',EM_PROCESSAMENTO:'Devolução em processamento',NAO_REALIZADO:'Devolução não realizada'}[d.status]||'Estado indefinido')+' — R$ 1,00 — Homologação — Identificador: '+d.devolucaoId;
+        allowExecute=d.status==='preparado'&&acao==='estado';
+      }catch(_){refundStatus.textContent='Operação inconclusiva. Consulte antes de repetir.';}
+      finally{busy=false;executeRefund.disabled=!allowExecute;consultRefund.disabled=false;}
     }
+    async function readRefundState(){const r=await sb.functions.invoke('obrix-hml-executar-devolucao-mensal',{body:{acao:'estado'}});if(!r.error&&r.data?.status==='preparado')refundStatus.textContent='Reserva preparada. Atualize a tela para habilitar a execução.';}
+    executeRefund.onclick=()=>refundAction('executar');consultRefund.onclick=()=>refundAction('consultar');
+    await refundAction('estado');
     diag.onclick=async()=>{diag.disabled=true;diagResult.textContent='Consultando cobranças de teste...';try{const r=await sb.functions.invoke('obrix-hml-diagnostico-devolucao',{body:{}});if(r.error||r.data?.error)throw new Error('Consulta indisponível');diagResult.replaceChildren();for(const item of r.data?.resultados||[]){add(diagResult,'p',(item.plano==='mensal'?'Mensal':'Anual')+' — '+money(item.valor)+' — '+(item.confirmado?'Pix confirmado pela Efí':item.status)+(item.possuiDevolucao?' — Possui devolução':''));}if(!r.data?.resultados?.length)add(diagResult,'p','Nenhum Pix de teste encontrado.');}catch(_){diagResult.textContent='Não foi possível consultar a Efí de homologação.';}finally{diag.disabled=false;}};
 
     const labels={recebida:'Recebida',em_analise:'Em análise',indeferida:'Indeferida',concluida:'Concluída',cancelamento:'Cancelamento',reembolso:'Reembolso'};const label=v=>labels[v]||v;const filters=add(box,'div','');filters.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px;margin:12px 0';const search=add(filters,'input','');search.placeholder='Nome, e-mail ou protocolo';search.setAttribute('aria-label',search.placeholder);
