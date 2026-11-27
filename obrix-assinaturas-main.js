@@ -104,6 +104,19 @@
     const prep=add(box,'button','Preparar devolução Pix mensal de R$ 1,00');prep.type='button';prep.className='btn';prep.style.cssText='margin:8px 0;max-width:100%;white-space:normal';
     prep.onclick=async()=>{if(!await confirmarAdmin('Preparar somente a reserva de teste? Nenhum valor será devolvido nesta etapa.'))return;prep.disabled=true;diagResult.textContent='Validando Pix mensal na Efí...';try{const r=await sb.functions.invoke('obrix-hml-diagnostico-devolucao',{body:{acao:'preparar_mensal'}});if(r.error||!r.data?.preparado){let m=r.data?.error;try{if(!m&&r.error?.context instanceof Response)m=(await r.error.context.json()).error;}catch(_){}diagResult.textContent=m||'Não foi possível preparar a devolução.';return;}diagResult.textContent='Pix mensal preparado — R$ 1,00 — Identificador: '+r.data.devolucaoId+' — Nenhum valor devolvido.';}catch(_){diagResult.textContent='Preparação inconclusiva; consulte antes de repetir.';}finally{prep.disabled=false;}};
 
+    const boletoBox=add(box,'div','');add(boletoBox,'h3','Consulta de boletos de homologação');add(boletoBox,'p','Somente cobranças da sua conta. Nenhuma assinatura será ativada.');
+    const boletoSelect=add(boletoBox,'select','');boletoSelect.setAttribute('aria-label','Cobrança de boleto');boletoSelect.style.cssText='max-width:100%;display:block;margin:8px 0';
+    const boletoMsg=add(boletoBox,'p','');boletoMsg.setAttribute('role','status');
+    const boletoBtn=add(boletoBox,'button','Consultar boleto na Efí');boletoBtn.type='button';boletoBtn.className='btn';boletoBtn.disabled=true;
+    try{
+      const auth=await sb.auth.getUser();if(auth.error||!auth.data?.user)throw Error('Sessão indisponível.');
+      const perfil=await sb.from('perfis').select('empresa_id').eq('id',auth.data.user.id).single();if(perfil.error||!perfil.data?.empresa_id)throw Error('Empresa indisponível.');
+      const pagamentos=await sb.from('pagamentos_assinatura').select('id,plano,valor,provedor_pagamento_id').eq('empresa_id',perfil.data.empresa_id).eq('provedor','efi').eq('metodo','boleto').eq('provedor_recurso_tipo','payment_link').order('criado_em',{ascending:false}).limit(50);
+      if(pagamentos.error)throw pagamentos.error;
+      for(const p of pagamentos.data||[]){const op=add(boletoSelect,'option',p.provedor_pagamento_id+' — '+p.plano+' — '+money(p.valor));op.value=p.id;}
+      boletoBtn.disabled=!boletoSelect.options.length;boletoMsg.textContent=boletoBtn.disabled?'Nenhum boleto encontrado nesta conta.':'Selecione uma cobrança existente.';
+    }catch(_){boletoMsg.textContent='Não foi possível listar os boletos desta conta.';}
+    boletoBtn.onclick=async()=>{if(!boletoSelect.value)return;boletoBtn.disabled=true;boletoSelect.disabled=true;boletoMsg.textContent='Consultando Efí de homologação...';try{const r=await sb.functions.invoke('efi-reconciliar-cobranca',{body:{pagamentoId:boletoSelect.value}});if(r.error||r.data?.error){let m=r.data?.error;try{if(!m&&r.error?.context instanceof Response)m=(await r.error.context.json()).error;}catch(_){}boletoMsg.textContent=m||'Consulta indisponível.';return;}boletoMsg.textContent='Efí: '+String(r.data.provedorStatus||'indefinido')+' — OBRIX: '+String(r.data.status||'indefinido')+' — Somente leitura; nenhuma assinatura ativada.';}catch(_){boletoMsg.textContent='Consulta indisponível.';}finally{boletoBtn.disabled=false;boletoSelect.disabled=false;}};
     const refundStatus=add(box,'p','Consultando situação registrada...');refundStatus.setAttribute('role','status');
     const executeRefund=add(box,'button','Executar devolução Pix mensal de teste — R$ 1,00');
     const consultRefund=add(box,'button','Consultar resultado da devolução mensal');
