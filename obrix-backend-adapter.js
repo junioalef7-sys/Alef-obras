@@ -110,11 +110,44 @@
     try{return await userPromise}finally{userPromise=null}
   }
 
+
+  // Aceite expresso em homologação: nunca ativar no banco oficial.
+  async function exigirAceiteHml(sb,user){
+    if(window.__OBRIX_HML_PROJECT_REF!=='xavwkfgrnowmusbkbiea'||!ehAmbienteNaoOficial())return;
+    const versao='1.0-hml';
+    const {data,error}=await sb.from('obrix_aceites_legais').select('versao').eq('user_id',user.id).eq('versao',versao).maybeSingle();
+    if(error)throw error;
+    if(data)return;
+    await new Promise((resolve,reject)=>{
+      const dialog=document.createElement('dialog');
+      dialog.setAttribute('aria-labelledby','obrixAceiteTitulo');
+      dialog.style.cssText='width:min(460px,calc(100% - 32px));max-height:85dvh;overflow:auto;box-sizing:border-box;padding:22px;border:1px solid var(--border,#64748b);border-radius:16px;background:var(--surface,#fff);color:var(--text,#0f172a);';
+      dialog.innerHTML=`<h2 id="obrixAceiteTitulo">Documentos legais</h2><p>Leia os documentos abaixo. Esta é uma versão de homologação, sem contratação comercial.</p><details style="margin:10px 0"><summary>Termos de Uso — versão 1.0 (homologação)</summary><p>OBRIX Gestão de Obras: ferramenta de gestão de obras, equipes, finanças, estoques e documentos. Proteja suas credenciais e mantenha registros corretos. O sistema não substitui orientação contábil, jurídica ou técnica. Teste gratuito de sete dias; após vencimento, acesso limitado a uma obra e um funcionário. Mensal R$ 39,90; anual R$ 399,00. Pagamento confirmado libera o plano. Condições de renovação devem ser exibidas antes da contratação. Atendimento: obrixapp@hotmail.com / (31) 97356-5930. Identificação completa do fornecedor pendente de publicação controlada. Minuta de teste, não destinada a contratação comercial.</p></details><details style="margin:10px 0"><summary>Política de Privacidade — versão 1.0 (homologação)</summary><p>Tratamos dados de cadastro, autenticação, obras, equipes, finanças, documentos, fotos e dados técnicos para prestar o serviço, sincronizar, suportar, prevenir fraudes e cumprir obrigações legais. O OBRIX atua como controlador de suas contas e pode atuar como operador dos dados inseridos pelos clientes. Fornecedores incluem Supabase, Vercel e Efí. Transferências internacionais devem observar a LGPD. Retenção conforme finalidade e obrigações legais; exclusão sujeita às hipóteses legais de conservação e aos backups. Solicite acesso, correção, eliminação e demais direitos pelo e-mail obrixapp@hotmail.com. Identificação completa e prazos de retenção pendentes de revisão. Minuta de teste.</p></details><label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" class="aceite">Li e aceito os Termos de Uso e declaro ciência da Política de Privacidade.</label><p role="alert" class="erro"></p><button class="btn confirmar" type="button" disabled style="background:#ea580c;color:white">Aceitar e continuar</button> <button class="btn sair" type="button">Sair</button>`;
+      const checkbox=dialog.querySelector('.aceite'),btn=dialog.querySelector('.confirmar'),sair=dialog.querySelector('.sair'),erro=dialog.querySelector('.erro');
+      checkbox.onchange=()=>{btn.disabled=!checkbox.checked};
+      dialog.addEventListener('cancel',e=>e.preventDefault());
+      btn.onclick=async()=>{
+        if(!checkbox.checked)return;
+        btn.disabled=true;checkbox.disabled=true;sair.disabled=true;erro.textContent='';
+        try{
+          const current=await sb.auth.getUser();
+          if(current.error||current.data?.user?.id!==user.id)throw new Error('Sessão alterada. Entre novamente.');
+          const result=await sb.rpc('obrix_aceitar_documentos_hml',{p_versao:versao});
+          if(result.error||result.data!==true)throw result.error||new Error('Aceite não confirmado.');
+          dialog.close();dialog.remove();resolve();
+        }catch(e){erro.textContent='Não foi possível registrar o aceite. Tente novamente.';checkbox.disabled=false;btn.disabled=!checkbox.checked;sair.disabled=false;}
+      };
+      sair.onclick=async()=>{sair.disabled=true;btn.disabled=true;try{const result=await sb.auth.signOut();if(result.error)throw result.error;dialog.close();dialog.remove();reject(new Error('Aceite não realizado.'));}catch(e){erro.textContent='Não foi possível sair. Tente novamente.';sair.disabled=false;btn.disabled=!checkbox.checked;}};
+      document.body.appendChild(dialog);dialog.showModal();
+    });
+  }
+
   async function profile(force=false){
     if(profileCache&&!force)return profileCache;
     if(profilePromise&&!force)return profilePromise;
     profilePromise=(async()=>{
       const sb=await init(),user=await currentUser(force);
+      await exigirAceiteHml(sb,user);
       const {data,error}=await sb.from('perfis').select('id,empresa_id,nome,email,papel').eq('id',user.id).maybeSingle();
       if(error)throw error;
       if(!data)throw new Error('Perfil OBRIX não encontrado.');
