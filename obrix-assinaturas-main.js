@@ -37,6 +37,58 @@
   async function criarBoleto(btn){try{if(btn){btn.disabled=true;btn.textContent='Gerando boleto...'}bolStatus('Gerando boleto na Efí...');const sb=await OBRIX_BACKEND.init();let requestId=localStorage.getItem(KB.req)||'';const planoSalvo=localStorage.getItem(KB.plano)||'';if(!requestId||planoSalvo!==planoSelecionado){requestId=crypto.randomUUID();localStorage.setItem(KB.req,requestId)}localStorage.setItem(KB.plano,planoSelecionado);const {data,error}=await sb.functions.invoke('efi-criar-cobranca-link',{body:{plano:planoSelecionado,metodo:'boleto',requestId}});if(error)throw error;if(data?.error)throw new Error(data.error);if(!data?.pagamentoId||!data?.checkoutUrl)throw new Error('A Efí não retornou o boleto.');boletoPagamentoId=String(data.pagamentoId);localStorage.setItem(KB.id,boletoPagamentoId);localStorage.setItem(KB.url,String(data.checkoutUrl));if(data.vencimento)localStorage.setItem(KB.venc,String(data.vencimento));else localStorage.removeItem(KB.venc);restaurarBoleto();$('assBolVerificar').classList.remove('hidden');bolStatus(hml()?'Link de boleto de teste criado. Não efetue pagamento; nenhuma assinatura será ativada.':'Boleto emitido. O acesso continuará bloqueado até a Efí confirmar o pagamento.')}catch(e){bolStatus(pt(e),false)}finally{if(btn){btn.disabled=false;btn.textContent=hml()?(boletoPagamentoId?'Reabrir boleto de teste':'Gerar boleto de teste'):(boletoPagamentoId?'Abrir/Gerar boleto':'Gerar boleto')}}}
   async function verificarPagamento(){const btn=$('assPgVerificar');try{if(btn){btn.disabled=true;btn.textContent='Verificando...'}const sb=await OBRIX_BACKEND.init();const id=pagamentoId||localStorage.getItem(K.id)||'';if(!id)throw new Error('Nenhum pagamento Pix foi gerado ainda.');const {data,error}=await sb.functions.invoke('efi-reconciliar-pix',{body:{pagamentoId:id}});if(error)throw error;if(data?.error)throw new Error(data.error);if(!hml()&&data?.status==='aprovado'&&data?.aplicado){limparPagamento();pgStatus('Pagamento confirmado. Assinatura OBRIX ativada com sucesso.');setTimeout(async()=>{fecharPagamento();await load()},700)}else{const st=String(data?.status||'pendente');pgStatus(hml()?`Status do Pix de teste: ${st}. Nenhuma assinatura será ativada.`:`Status do pagamento: ${st}. O acesso só será liberado quando a Efí confirmar o Pix.`,st!=='rejeitado'&&st!=='cancelado')}}catch(e){pgStatus(pt(e),false)}finally{if(btn){btn.disabled=false;btn.textContent='Verificar pagamento'}}}
   async function verificarBoleto(){const btn=$('assBolVerificar');try{if(btn){btn.disabled=true;btn.textContent='Verificando...'}const sb=await OBRIX_BACKEND.init();const id=boletoPagamentoId||localStorage.getItem(KB.id)||'';if(!id)throw new Error('Nenhum boleto foi gerado ainda.');const {data,error}=await sb.functions.invoke('efi-reconciliar-cobranca',{body:{pagamentoId:id}});if(error)throw error;if(data?.error)throw new Error(data.error);if(!hml()&&data?.status==='aprovado'&&data?.aplicado){limparBoleto();bolStatus('Pagamento confirmado pela Efí. Assinatura OBRIX ativada com sucesso.');setTimeout(async()=>{fecharBoleto();await load()},700)}else{const st=String(data?.status||'pendente');bolStatus(hml()?`Status do boleto de teste: ${st}. Nenhuma assinatura será ativada.`:`Status do boleto: ${st}. O acesso só será liberado quando a Efí confirmar o pagamento.`,st!=='rejeitado'&&st!=='cancelado')}}catch(e){bolStatus(pt(e),false)}finally{if(btn){btn.disabled=false;btn.textContent='Verificar pagamento'}}}
+  async function solicitacoesHml(sb,perfil,a){
+    if(!hml())return;
+    let box=$('assSolicitacoesHml');
+    if(!box){box=document.createElement('section');box.id='assSolicitacoesHml';box.className='card';$('assPlanos').insertAdjacentElement('afterend',box);}
+    box.replaceChildren();
+    const add=(tag,txt,parent=box)=>{const e=document.createElement(tag);e.textContent=txt;parent.appendChild(e);return e;};
+    add('h3','Cancelamento e reembolso');
+    add('p','Homologação: registra solicitações de teste. Não cancela cobranças, não devolve valores e não exclui a conta.');
+    const msg=add('p','Carregando solicitações…');msg.setAttribute('role','status');
+    const link=add('a','Consultar política de cancelamento e reembolso');link.href='./obrix-cancelamento-reembolso.html';link.target='_blank';link.rel='noopener noreferrer';
+    try{
+      const {data:auth,error:ae}=await sb.auth.getUser();if(ae||!auth?.user)throw ae||new Error('Sessão indisponível.');
+      const uid=auth.user.id;
+      const {data:own,error:oe}=await sb.from('perfis').select('id,empresa_id,papel').eq('id',uid).single();
+      if(oe||!own||own.empresa_id!==perfil.empresa_id)throw oe||new Error('Perfil indisponível.');
+      const {data:rows,error:re}=await sb.from('obrix_solicitacoes_assinatura').select('id,tipo,status,criado_em,assinatura_id,pagamento_id').eq('user_id',uid).order('criado_em',{ascending:false});
+      if(re)throw re;
+      msg.textContent='';
+      if(own.papel==='proprietario'){
+        const {data:payments,error:pe}=await sb.from('pagamentos_assinatura').select('id,assinatura_id,valor,aprovado_em,metodo').eq('empresa_id',own.empresa_id).eq('status','aprovado').not('aplicado_em','is',null).is('revertido_em',null).order('aprovado_em',{ascending:false});
+        if(pe)throw pe;
+        const actions=add('div','');actions.style.cssText='display:grid;gap:10px;margin:12px 0';
+        function button(label,kind,subscription,payment,disabled){
+          const b=add('button',label,actions);b.type='button';b.className='btn';b.disabled=disabled;
+          b.onclick=()=>{
+            const dialog=document.createElement('dialog');dialog.style.cssText='width:min(440px,calc(100% - 32px));max-height:85vh;overflow:auto;border-radius:14px;background:var(--surface,#fff);color:var(--text,#0f172a);padding:20px';
+            add('h3',label,dialog);add('p','Confirma o envio desta solicitação de teste? Nenhum pagamento será devolvido e sua assinatura não será alterada.',dialog);
+            const feedback=add('p','',dialog);feedback.setAttribute('role','alert');
+            const no=add('button','Voltar',dialog);no.type='button';no.className='btn';
+            const yes=add('button','Confirmar solicitação',dialog);yes.type='button';yes.className='btn';yes.style.cssText='background:#ea580c;color:#fff;margin:8px';
+            const close=()=>{dialog.close();dialog.remove();};no.onclick=close;
+            dialog.addEventListener('cancel',e=>{e.preventDefault();if(!yes.disabled)close();});
+            yes.onclick=async()=>{yes.disabled=true;no.disabled=true;try{
+              const current=await sb.auth.getUser();if(current.error||current.data?.user?.id!==uid)throw new Error('Sessão alterada.');
+              const {data,error}=await sb.from('obrix_solicitacoes_assinatura').insert({user_id:uid,empresa_id:own.empresa_id,assinatura_id:subscription,pagamento_id:payment,tipo:kind}).select('id').single();
+              if(error)throw error;
+              close();await solicitacoesHml(sb,perfil,a);const fresh=$('assSolicitacoesHml');if(fresh){const p=add('p','Solicitação recebida. Protocolo: '+data.id,fresh);p.setAttribute('role','status');}
+            }catch(e){feedback.textContent=e?.code==='23505'?'Já existe uma solicitação para esta operação.':'Não foi possível registrar a solicitação. Confira sua conexão e tente novamente.';yes.disabled=false;no.disabled=false;}};
+            document.body.appendChild(dialog);dialog.showModal();
+          };
+        }
+        if(a&&['mensal','anual'].includes(a.plano)){button('Cancelar assinatura','cancelamento',a.id,null,(rows||[]).some(x=>x.tipo==='cancelamento'&&x.assinatura_id===a.id&&['recebida','em_analise'].includes(x.status)));}
+        else add('p','Não há assinatura mensal ou anual disponível para solicitar cancelamento.',actions);
+        for(const pg of payments||[]){if(!pg.assinatura_id)continue;button('Solicitar reembolso — '+money(pg.valor)+' · '+fmtDate(pg.aprovado_em),'reembolso',pg.assinatura_id,pg.id,(rows||[]).some(x=>x.tipo==='reembolso'&&x.pagamento_id===pg.id&&['recebida','em_analise','concluida'].includes(x.status)));}
+        if(!(payments||[]).length)add('p','Nenhum pagamento aprovado disponível para solicitar reembolso.',actions);
+      }
+      add('h4','Histórico de solicitações');
+      if(!(rows||[]).length)add('p','Nenhuma solicitação registrada.');
+      const labels={recebida:'Recebida',em_analise:'Em análise',concluida:'Concluída',indeferida:'Indeferida'};
+      for(const row of rows||[]){const p=add('p',(row.tipo==='cancelamento'?'Cancelamento':'Reembolso')+' — '+(labels[row.status]||'Indisponível')+' · '+fmtDate(row.criado_em));p.appendChild(document.createElement('br'));const small=add('small','Protocolo: '+row.id,p);small.style.overflowWrap='anywhere';}
+    }catch(_){msg.textContent='Não foi possível consultar as solicitações. Tente novamente.';}
+  }
   let carregandoAssinatura=null;
   const htmlEstavel=(node,html)=>{if(!node)return;const assinatura=String(html);if(node.__obrixAssMarkup===assinatura&&node.childNodes.length)return;node.innerHTML=assinatura;node.__obrixAssMarkup=assinatura};
   async function load(){
@@ -80,6 +132,7 @@
         planosBox.querySelectorAll('[data-ass-boleto]').forEach(btn=>btn.onclick=()=>abrirBoleto(btn.dataset.assBoleto));
         pagamentoId=localStorage.getItem(K.id)||'';
         boletoPagamentoId=localStorage.getItem(KB.id)||'';
+        if(hml())await solicitacoesHml(sb,perfil,a);
       }catch(e){
         console.warn('Assinaturas: consulta indisponível',e);
         if(!planosBox.childElementCount)htmlEstavel(status,'<h3>Planos e Assinaturas</h3><div class="status">'+pt(e)+'</div>');
