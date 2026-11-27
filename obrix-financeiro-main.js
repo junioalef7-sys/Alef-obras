@@ -57,7 +57,7 @@
     lastSync=signature(window.financeiro,extrasFinanceiro,checklistFinanceiro);return lastSync;
   }
   function atualizarObras(){const sec=document.getElementById('obras');if(!sec||sec.classList.contains('hidden'))return;try{window.OBRIX_OBRAS?.render?.()}catch(_){}}
-  function podeExcluir(x){return x.origem==='manual'||!!x.compra_id}
+  function podeExcluir(x){return x.origem==='manual'&&!x.compra_id}
   function podeEstornar(x){return (x.origem==='pagamento_equipe'&&!!x.pagamento_equipe_id)||(x.origem==='vale_equipe'&&!!x.vale_id)}
   function resumoChecklists(x){
     const mapa=new Map(checklistFinanceiro.map(c=>[String(c.id),c.nome||'Etapa'])),vals=valoresChecklist(x);
@@ -91,7 +91,7 @@
     ensure();
     const f=active(),os=window.obras||[];
     const contratoBase=os.reduce((s,o)=>s+Number(o.valor_contrato||0),0),adicionais=extrasFinanceiro.reduce((s,x)=>s+Number(x.valor||0),0),contratoAtualizado=contratoBase+adicionais;
-    const rec=f.filter(x=>x.tipo==='receita').reduce((s,x)=>s+Number(x.valor||0),0),des=f.filter(x=>x.tipo==='despesa').reduce((s,x)=>s+Number(x.valor||0),0),resultado=contratoAtualizado-des;
+    const rec=f.filter(x=>x.tipo==='receita').reduce((s,x)=>s+Number(x.valor||0),0),des=f.filter(x=>x.tipo==='despesa'&&x.origem!=='estoque').reduce((s,x)=>s+Number(x.valor||0),0),resultado=contratoAtualizado-des;
     const set=(id,val)=>{const el=$(id);if(el&&el.textContent!==val)el.textContent=val};
     set('fmContrato',money(contratoAtualizado));set('fmRecebido',money(rec));set('fmDespesas',money(des));set('fmResultado',money(resultado));
     const c=$('fmContrato')?.closest('.kpi')?.querySelector('small'),r=$('fmResultado')?.closest('.kpi')?.querySelector('small');if(c&&c.textContent!=='Contrato atualizado')c.textContent='Contrato atualizado';if(r&&r.textContent!=='Resultado da obra')r.textContent='Resultado da obra';
@@ -107,7 +107,7 @@
       const totalChecks=Object.values(valoresChecklist(x)).reduce((s,v)=>s+Number(v||0),0),sem=Math.max(0,Number(x.valor||0)-totalChecks);
       const checkTxt=checks.length?`Checklists: ${checks.join(', ')}${sem>0?` • Sem checklist: ${money(sem)}`:''}`:'Sem checklist';
       const meta=[o?.nome||'Sem obra',x.data||'',labels[x.categoria]||x.categoria||'',x.subcategoria||'',checkTxt].filter(Boolean);
-      return `<div class="card item" data-fin-card="1" data-id="${esc(x.id)}" data-obra="${esc(x.obra_id||'')}" data-tipo="${esc(x.tipo||'')}" data-categoria="${esc(x.categoria||'')}"><h3>${esc(x.descricao||'Lançamento')}</h3><div class="muted">${meta.map(esc).join(' • ')}</div><div class="grid"><div class="mini"><small>${x.tipo==='receita'?'Receita':'Despesa'}</small><b>${money(x.valor)}</b></div></div>${podeExcluir(x)||podeEstornar(x)?`<div class="actions">${manual?`<button type="button" data-fin="editar" data-id="${x.id}">Editar</button>`:''}${podeEstornar(x)?`<button type="button" data-fin="estornar" data-id="${x.id}">Estornar</button>`:`<button type="button" data-fin="excluir" data-id="${x.id}">Excluir</button>`}</div>`:''}</div>`;
+      return `<div class="card item" data-fin-card="1" data-id="${esc(x.id)}" data-obra="${esc(x.obra_id||'')}" data-tipo="${esc(x.tipo||'')}" data-categoria="${esc(x.categoria||'')}"><h3>${esc(x.descricao||'Lançamento')}</h3><div class="muted">${meta.map(esc).join(' • ')}</div><div class="grid"><div class="mini"><small>${x.tipo==='receita'?'Receita':x.origem==='estoque'?'Custo da obra (sem saída de caixa)':'Despesa'}</small><b>${money(x.valor)}</b></div></div>${podeExcluir(x)||podeEstornar(x)?`<div class="actions">${manual?`<button type="button" data-fin="editar" data-id="${x.id}">Editar</button>`:''}${podeEstornar(x)?`<button type="button" data-fin="estornar" data-id="${x.id}">Estornar</button>`:`<button type="button" data-fin="excluir" data-id="${x.id}">Excluir</button>`}</div>`:''}</div>`;
     }).join(''):'<div class="card muted">Nenhum lançamento financeiro.</div>';
     // Atualizar somente cartões novos/alterados, preservando os existentes.
     const listaMudou=atualizarListaEstavel(lista,html);
