@@ -104,6 +104,36 @@
     const prep=add(box,'button','Preparar devolução Pix mensal de R$ 1,00');prep.type='button';prep.className='btn';prep.style.cssText='margin:8px 0;max-width:100%;white-space:normal';
     prep.onclick=async()=>{if(!await confirmarAdmin('Preparar somente a reserva de teste? Nenhum valor será devolvido nesta etapa.'))return;prep.disabled=true;diagResult.textContent='Validando Pix mensal na Efí...';try{const r=await sb.functions.invoke('obrix-hml-diagnostico-devolucao',{body:{acao:'preparar_mensal'}});if(r.error||!r.data?.preparado){let m=r.data?.error;try{if(!m&&r.error?.context instanceof Response)m=(await r.error.context.json()).error;}catch(_){}diagResult.textContent=m||'Não foi possível preparar a devolução.';return;}diagResult.textContent='Pix mensal preparado — R$ 1,00 — Identificador: '+r.data.devolucaoId+' — Nenhum valor devolvido.';}catch(_){diagResult.textContent='Preparação inconclusiva; consulte antes de repetir.';}finally{prep.disabled=false;}};
 
+    {
+    const integralBox=add(box,'div','')
+    add(integralBox,'h3','Pagamento integral de homologação')
+    const period=add(integralBox,'select','')
+    period.setAttribute('aria-label','Plano de teste')
+    for(const [value,title] of [['mensal','Mensal — R$ 39,90'],['anual','Anual — R$ 399,00']]){const opt=add(period,'option',title);opt.value=value}
+    const method=add(integralBox,'select','')
+    method.setAttribute('aria-label','Forma de pagamento')
+    for(const [value,title] of [['pix','Pix'],['boleto','Boleto por link'],['direto','Boleto direto'],['cartao','Cartão na página da Efí']]){const opt=add(method,'option',title);opt.value=value}
+    const start=add(integralBox,'button','Emitir no sandbox');start.type='button';start.className='btn'
+    const open=add(integralBox,'a','Abrir cobrança na Efí');open.hidden=true;open.target='_blank';open.rel='noopener noreferrer'
+    const note=add(integralBox,'p','Use dados fictícios no ambiente da Efí.');note.setAttribute('role','status')
+    start.onclick=async()=>{
+      start.disabled=true;open.hidden=true
+      try{
+        const {data:session,error:sessionError}=await sb.auth.getUser()
+        if(sessionError||!session.user)throw Error('Entre com sua conta de teste.')
+        const key=['obrix-integral-v1',session.user.id,period.value,method.value].join(':')
+        let requestId=localStorage.getItem(key)
+        if(!requestId){requestId=crypto.randomUUID();localStorage.setItem(key,requestId)}
+        const pix=method.value==='pix'
+        const body={serie:'bloco1-hml-v1',requestId,plano:period.value,metodo:method.value==='direto'?'boleto':method.value,forma:method.value}
+        const {data,error}=await sb.functions.invoke(pix?'efi-criar-pix':'efi-criar-cobranca-link',{body})
+        if(error||!data?.pagamentoId)throw Error('Emissão inconclusiva. Consulte o mesmo pedido antes de repetir.')
+        if(data.checkoutUrl && new URL(data.checkoutUrl).protocol==='https:'){open.href=data.checkoutUrl;open.hidden=false}
+        note.textContent='Pedido '+data.pagamentoId+' · '+data.status+(pix?' · A Efí mantém este valor pendente no sandbox.':' · Acompanhe a confirmação no sandbox.')
+        if(['aprovado','cancelado','expirado','rejeitado','reembolsado','estornado'].includes(data.status))localStorage.removeItem(key)
+      }catch(e){note.textContent=e.message}finally{start.disabled=false}
+    }
+    }
     const boletoBox=add(box,'div','');add(boletoBox,'h3','Consulta de boletos de homologação');add(boletoBox,'p','Somente cobranças da sua conta. Nenhuma assinatura será ativada.');
     const boletoSelect=add(boletoBox,'select','');boletoSelect.setAttribute('aria-label','Cobrança de boleto');boletoSelect.style.cssText='max-width:100%;display:block;margin:8px 0';
     const boletoMsg=add(boletoBox,'p','');boletoMsg.setAttribute('role','status');
